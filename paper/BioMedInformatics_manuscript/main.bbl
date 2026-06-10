@@ -55,6 +55,13 @@ Pampari, A.; Shcherbina, A.; Kvon, E.Z.; Kosicki, M.; Nair, S.; Kundu, S.;
 \newblock {\em bioRxiv} {\bf 2025}.
 \newblock Preprint, {\url{https://doi.org/10.1101/2024.12.25.630221}}.
 
+\bibitem[Sung et~al.(2014)Sung, Guertin, Baek, and Hager]{sung2014}
+Sung, M.H.; Guertin, M.J.; Baek, S.; Hager, G.L.
+\newblock {DNase} footprint signatures are dictated by factor dynamics and
+  {DNA} sequence.
+\newblock {\em Molecular Cell} {\bf 2014}, {\em 56},~275--285.
+\newblock {\url{https://doi.org/10.1016/j.molcel.2014.08.016}}.
+
 \bibitem[Pedregosa et~al.(2011)Pedregosa, Varoquaux, Gramfort, Michel, Thirion,
   Grisel, Blondel, Prettenhofer, Weiss, Dubourg, Vanderplas, Passos,
   Cournapeau, Brucher, Perrot, and Duchesnay]{pedregosa2011sklearn}

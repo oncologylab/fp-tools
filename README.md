@@ -74,21 +74,17 @@ Broader-ecosystem tools are discussed in the manuscript rather than asserted her
 `fp-tools roadmap` describes larger biological benchmarks and later model extensions that are
 planned but not yet complete.
 
-The comparators occupy three different methodological niches, so the rows are grouped
-accordingly. Symbols: ✅ native first-class support, ⚠️ partial or indirect support, ❌ absent.
+Symbols: ✅ native first-class support, ⚠️ partial or indirect support, ❌ absent.
 
 | Feature | fp-tools<br>current | fp-tools<br>roadmap | TOBIAS | HINT-<br>ATAC | PRINT /<br>scPrinter | ChromBPNet | maxATAC |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Classical unsupervised footprinting** | | | | | | | |
 | Bulk ATAC footprinting | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ |
 | Tn5 bias correction | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Classical footprint scoring | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ |
+| Classical footprint scoring | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Multiscale / nucleosome-aware | ✅ opt-in | broader validation | ❌ | ⚠️ | ✅ | ⚠️ | ❌ |
-| **Supervised / sequence prediction** | | | | | | | |
 | Supervised TFBS prediction | ✅ tabular | public benchmark | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Variant scoring | ✅ footprint/motif/model deltas | public variant benchmark | ❌ | ❌ | ❌ | ✅ | ✅ |
-| **Interpretation / discovery / single-cell** | | | | | | | |
-| Motif-relaxed / motif-free recovery | ✅ candidate/rerank | motif-removal benchmark | ❌ | ❌ | ⚠️ | ⚠️ | ❌ |
+| Motif-relaxed / motif-free recovery | ✅ candidate/rerank | motif-removal benchmark | ❌ | ❌ | ❌ | ⚠️ | ❌ |
 | De novo motif discovery | ✅ MEME/Tomtom helpers | attribution route later | ❌ | ❌ | ✅ | ✅ | ❌ |
 | scATAC / pseudobulk support | ✅ pseudobulk utility | public pseudobulk benchmark | ⚠️ | ⚠️ | ✅ | ⚠️ | ⚠️ |
 | Visualization / reporting | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ |

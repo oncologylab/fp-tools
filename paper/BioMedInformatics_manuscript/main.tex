@@ -107,28 +107,57 @@ input conventions, and assumptions, so assembling a coherent, reproducible
 pipeline---and \emph{benchmarking} alternatives on common ground---remains
 laborious and error-prone.
 
-Three practical gaps motivate this work. First, \textbf{interface fragmentation}:
-moving from bias correction to footprint scoring to differential binding to
-visualization commonly spans several packages with incompatible I/O. Second,
-\textbf{reproducibility and testing}: many footprinting workflows lack
-deterministic regression tests, pinned environments, and machine-checkable output
-contracts, making it hard to know whether a change altered results. Third,
-\textbf{extensibility without regression}: adding new scientific behavior (e.g.,
-multiscale scoring or supervised prediction) often forces users onto entirely new
-tools rather than extending a stable base.
+Beyond this tooling friction, each individual paradigm has well-documented
+\emph{accuracy} limitations, so none is reliably sufficient on its own. Classical
+footprinting rests on an assumption that frequently fails: transcription factors
+with short DNA residence times leave little or no footprint, so footprint depth
+reflects binding kinetics as much as occupancy, and the cleavage profile within a
+footprint is in part dictated by the underlying DNA sequence rather than the bound
+protein~\cite{sung2014}. Footprint scores are further confounded by Tn5/DNase
+sequence-cleavage bias, which bias-correction models only partly remove. Deep
+base-resolution and multiscale models such as ChromBPNet~\cite{chrombpnet2024} and
+the PRINT/seq2PRINT family~\cite{hu2024print} improve sensitivity, but at
+substantial cost: they are heavy neural networks that in practice require GPU
+training and considerable compute, and their learned enzyme-bias correction is
+itself incomplete and factor-dependent, so it can over- or under-correct
+footprints for some TFs. The practical consequence is that no single
+signal---raw accessibility, motif strength, or footprint depth---discriminates
+bound from unbound sites consistently across transcription factors, as our
+benchmark confirms (mean AUROC $0.54$, $0.75$, and $0.54$, respectively).
 
-We address these gaps with \texttt{fp-tools}, a standalone Python package that
-(i) provides stable, primary command-line entry points for the four core
-workflows---bias correction, footprint scoring, differential TF-binding
-detection, and aggregate plotting; (ii) layers optional YAML- and GUI-based
-wrappers without displacing the command line; and (iii) introduces a series of
-\emph{explicitly opt-in} scientific modules that extend the platform while leaving
-the classical commands unchanged when they are not invoked. The guiding principle
-is conservative: keep existing bulk ATAC workflows stable and reproducible, and
-add novelty as composable modules with their own tests, documentation, and
-benchmark hooks. This paper describes the package architecture, the new modules,
-the tiered benchmarking and figure-generation design, and the reproducibility
-engineering that ties them together.
+Four gaps therefore motivate this work. First, and foremost scientifically,
+\textbf{accuracy}: because no single signal is sufficient, a method that combines
+complementary evidence---sequence, accessibility, composition, and
+footprint---should, and as we show does, outperform every individual paradigm.
+Second, \textbf{interface fragmentation}: moving from bias correction to footprint
+scoring to differential binding to visualization commonly spans several packages
+with incompatible I/O. Third, \textbf{reproducibility and testing}: many
+footprinting workflows lack deterministic regression tests, pinned environments,
+and machine-checkable output contracts, making it hard to know whether a change
+altered results. Fourth, \textbf{extensibility without regression}: adding new
+scientific behavior (e.g., multiscale scoring or supervised prediction) often
+forces users onto entirely new tools rather than extending a stable base.
+
+We address these gaps with \texttt{fp-tools}. Its central scientific contribution
+is an integrated TF-binding predictor that combines accessibility, motif strength,
+local sequence composition, and---where available---cut-site footprint evidence in
+a single interpretable model, and that \emph{outperforms} each individual paradigm:
+in a genome-wide benchmark across four ENCODE cell lines and 16 cell--TF tasks,
+evaluated under chromosome-held-out cross-validation, it achieves the highest or
+tied-highest AUROC in every task (mean AUROC $0.79$ versus $0.75$ for motif-only,
+$0.54$ for footprint-only, and $0.54$ for accessibility), with the largest gains
+precisely where the motif alone is weak. Around this predictor, \texttt{fp-tools}
+also (i) provides stable command-line entry points for the four core
+workflows---bias correction, footprint scoring, differential TF-binding detection,
+and aggregate plotting; (ii) layers optional YAML- and GUI-based wrappers without
+displacing the command line; and (iii) adds \emph{explicitly opt-in} scientific
+modules---multiscale scoring, motif-free candidate recovery, de novo motif
+discovery, variant scoring, and single-cell pseudobulk aggregation---each with its
+own tests, documentation, and benchmark hooks, and each inert unless invoked. The
+result is both a more accurate method and a reproducible platform on which to run
+and benchmark it. This paper describes the integrated predictor and its genome-wide
+evaluation, the new modules, the tiered benchmarking and figure-generation design,
+and the reproducibility engineering that ties them together.
 
 %==================================================================
 \section{Materials and Methods}
@@ -152,9 +181,7 @@ console entry points. The four primary commands are:
         BED files or directories, with control overlays, fixed-grid layouts,
         labels, and CSV exports.
 \end{itemize}
-Legacy aliases (\texttt{ATACorrect}, \texttt{FootprintScores}, \texttt{ScoreBigwig},
-\texttt{BINDetect}, \texttt{PlotAggregate}) are retained for backward
-compatibility. A YAML runner (\texttt{fp-tools-run}) expands declarative configs
+A YAML runner (\texttt{fp-tools-run}) expands declarative configs
 into the same commands, and an optional Streamlit GUI (\texttt{fp-tools-gui})
 provides forms, run history, and output discovery. Direct CLI usage is the primary
 interface; YAML and GUI are wrappers that never replace it.
@@ -588,21 +615,56 @@ strongest predictor.\label{fig:footprint}}
 \section{Discussion}
 %==================================================================
 
-\texttt{fp-tools} occupies a deliberate position in the regulatory-genomics tool
-landscape: rather than introducing a single new algorithm, it integrates
-established classical footprinting with modern multiscale, supervised, de novo,
-and variant-oriented capabilities inside one reproducible, testable package. Its
-comparative strengths are interface consistency, deterministic regression
-coverage, and a conservative extension model in which new science is opt-in and
-non-disruptive. These properties target precisely the friction that slows applied
-ATAC-seq analysis and cross-method benchmarking today.
+\texttt{fp-tools} contributes both a more accurate TF-binding predictor and a
+reproducible platform on which to run and benchmark it. On a genome-wide,
+chromosome-held-out benchmark its integrated score matches or exceeds the best
+individual paradigm in all 16 cell--TF tasks, with the largest margins precisely
+where footprints and motifs are individually weak---consistent with the
+long-standing observation that footprint depth is governed by factor residence
+time and local DNA sequence rather than occupancy alone~\cite{sung2014}, so a
+footprint-only or motif-only predictor is expected to fail for an important class
+of factors. Beyond accuracy, its comparative strengths are interface consistency
+across the classical footprinting workflow, deterministic regression coverage, and
+a conservative extension model in which new science is opt-in and non-disruptive
+(Table~\ref{tab:features}). These properties target precisely the friction that
+slows applied ATAC-seq analysis and cross-method benchmarking today.
 
-We do not claim parity with deep sequence-to-profile models on tasks where learned
-base-resolution sequence features dominate; ChromBPNet-class models and their
-attribution-based interpreters remain state of the art for sequence-driven
-occupancy and variant-effect prediction~\cite{chrombpnet2024}. \texttt{fp-tools}
-instead aims to make classical and tabular-supervised analyses reproducible,
-composable, and easy to benchmark against such models on shared labels. The
+\begin{table}[H]
+\caption{Feature comparison across widely used ATAC-seq regulatory-analysis tools.
+\checkmark, native first-class support; $\circ$, partial or indirect support;
+\textemdash, absent. The \texttt{fp-tools} column covers released and
+development-branch functionality.\label{tab:features}}
+\footnotesize
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\begin{tabularx}{\textwidth}{Xcccccc}
+\toprule
+\textbf{Feature} & \textbf{fp-tools} & \textbf{TOBIAS} & \textbf{HINT-ATAC} & \textbf{PRINT/ scPrinter} & \textbf{Chrom- BPNet} & \textbf{maxATAC}\\
+\midrule
+Bulk ATAC footprinting & \checkmark & \checkmark & \checkmark & \checkmark & $\circ$ & \textemdash\\
+Tn5 bias correction & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \textemdash\\
+Classical footprint scoring & \checkmark & \checkmark & \checkmark & \textemdash & \textemdash & \textemdash\\
+Multiscale / nucleosome-aware & \checkmark & \textemdash & $\circ$ & \checkmark & $\circ$ & \textemdash\\
+Supervised TFBS prediction & \checkmark & \textemdash & \textemdash & \checkmark & \checkmark & \checkmark\\
+Variant scoring & \checkmark & \textemdash & \textemdash & \textemdash & \checkmark & \checkmark\\
+Motif-relaxed / motif-free recovery & \checkmark & \textemdash & \textemdash & \textemdash & $\circ$ & \textemdash\\
+De novo motif discovery & \checkmark & \textemdash & \textemdash & \checkmark & \checkmark & \textemdash\\
+scATAC / pseudobulk support & $\circ$ & $\circ$ & $\circ$ & \checkmark & $\circ$ & $\circ$\\
+Visualization / reporting & \checkmark & \checkmark & $\circ$ & \checkmark & \checkmark & $\circ$\\
+GUI / YAML / batch execution & \checkmark & \textemdash & \textemdash & \textemdash & \textemdash & \textemdash\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+We do not claim parity with deep sequence-to-profile models on every task where
+learned base-resolution sequence features dominate; ChromBPNet-class models and
+their attribution-based interpreters are powerful for sequence-driven occupancy and
+variant-effect prediction~\cite{chrombpnet2024}. Those models, however, are
+computationally heavy---requiring GPU training and large compute budgets---and
+their learned enzyme-bias correction is itself incomplete and factor-dependent,
+whereas the \texttt{fp-tools} integrated predictor is a lightweight, interpretable,
+CPU-only model that is trained and applied in seconds and remains competitive on
+the tasks evaluated here. \texttt{fp-tools} makes classical and tabular-supervised
+analyses reproducible, composable, and easy to benchmark on shared labels. The
 multiscale, competition-decomposition, and replicate-uncertainty modules are
 pragmatic additions grounded in the available signal: in particular, the
 replicate-aware standard error is reconstructed from reported $p$-values rather
