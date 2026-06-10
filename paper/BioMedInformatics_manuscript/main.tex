@@ -51,12 +51,14 @@ competition-aware decomposition of overlapping TF-scale and nucleosome-scale
 footprint signals. (3) Results: The package provides deterministic,
 regression-tested workflows; a tiered public-data benchmark design with AUROC,
 AUPRC, recall-at-FDR, calibration, and bootstrap-confidence-interval metrics; and
-paper-ready figure generators. In an end-to-end demonstration on ENCODE ATAC-seq,
-the harness resolves a significant, reproducible gain from motif-aware scoring over
-a raw accessibility baseline across six transcription factors in K562 (mean AUROC
-$0.50\rightarrow0.78$) and two in GM12878, with non-overlapping bootstrap intervals;
-it further shows that footprint occupancy is recoverable only at Tn5 cut-site
-resolution (AUROC $0.68$) and not from smoothed coverage ($0.24$). New modules
+paper-ready figure generators. In ENCODE chromosome-4 benchmarks spanning three
+cell lines and 12 cell--TF tasks, an integrated \texttt{fp-tools} score combining
+accessibility, motif strength, GC content, and available cut-site footprint
+features achieved the highest AUROC in every task (mean AUROC $0.80$),
+outperforming motif-only scoring ($0.77$), raw accessibility ($0.52$), and
+footprint-only scoring where available ($0.55$). The same benchmark shows that
+footprint occupancy is recoverable only at Tn5 cut-site resolution (AUROC $0.68$)
+and not from smoothed coverage ($0.24$). New modules
 preserve the behavior of the classical commands when they are not invoked. (4)
 Conclusions: \texttt{fp-tools} integrates
 established footprinting strengths with modern multiscale, supervised, and
@@ -361,66 +363,73 @@ The tiered benchmark design (Table~\ref{tab:tiers}), the
 metric/calibration/bootstrap scripts, the label-overlap and motif-removal table
 builders, and the pipeline runner together provide an executable path from public
 ENCODE data to publication-ready metrics and figures. To demonstrate this path
-end-to-end on real data---and to quantify the benefit of motif-aware scoring over
-raw accessibility---we benchmarked two predictors on ENCODE ATAC-seq peaks
-restricted to chromosome~4, labeling each accessible region positive when it
-overlaps a matched ChIP-seq peak for the target factor. The first predictor ranks
-regions by their raw accessibility magnitude (peak signal value); the second is the
-motif-aware score produced by scanning each region against the factor's JASPAR
-motif over the hg38 sequence and taking the best two-strand log-odds match. We
-evaluated six transcription factors in K562 (CTCF, GATA1, SPI1, REST, MAX, JUND;
-$n=1{,}900$ accessible regions each) and, for cross-cell generalization, two
-factors in GM12878 (CTCF, SPI1; $n=9{,}482$ regions).
+end-to-end on real data, we benchmarked four scoring paradigms on ENCODE ATAC-seq
+peaks restricted to chromosome~4, labeling each accessible region positive when it
+overlaps a matched ChIP-seq peak for the target factor. The compared predictors
+were raw accessibility magnitude, best JASPAR PWM motif log-odds score, cut-site
+footprint occupancy at the best motif hit where ATAC BAM data were available, and
+an integrated \texttt{fp-tools} score from out-of-fold logistic regression over
+accessibility, motif score, local GC content, and available footprint features.
+For tasks without BAM-derived cut-site footprints, the integrated model used the
+available accessibility, motif, and GC features. We evaluated 12 cell--TF tasks:
+six transcription factors in K562 (CTCF, GATA1, SPI1, REST, MAX, JUND;
+$n=1{,}900$ accessible regions each), two in GM12878 (CTCF, SPI1; $n=9{,}482$),
+and four in HepG2 (CTCF, MAX, JUND, REST; $n=8{,}068$).
 
-Motif-aware scoring significantly outperforms the accessibility baseline for
-\emph{every} factor tested, with non-overlapping 200-resample bootstrap confidence
-intervals (Table~\ref{tab:k562}, Figure~\ref{fig:k562}). Across the six K562
-factors the mean AUROC rises from $0.50$ (accessibility, i.e.\ chance) to $0.78$
-(motif), with the largest gain for the long, information-rich CTCF motif
-($0.53\rightarrow0.87$) and smaller but still significant gains for shorter or more
-degenerate motifs such as GATA1 ($0.58\rightarrow0.72$) and REST
-($0.48\rightarrow0.72$). The effect generalizes to a second cell type: in GM12878,
-motif-aware scoring lifts CTCF AUROC from $0.57$ to $0.90$ and SPI1 from $0.50$ to
-$0.78$, closely matching the corresponding K562 values. This confirms the expected
-biology---total accessibility alone does not distinguish bound from unbound open
-chromatin, while sequence/motif evidence does---and validates that the
-\texttt{fp-tools} benchmark harness cleanly and reproducibly resolves real effects
-between competing predictors across factors and cell types. Full genome-wide,
-multi-cell benchmarks and external comparator runs are reported in the accompanying
-benchmark release (see Data Availability) and are not reproduced here to keep large
-generated outputs out of version control.
+The integrated \texttt{fp-tools} score achieved the highest AUROC in all 12 tasks
+(Table~\ref{tab:methods}, Figure~\ref{fig:method_multi}). Mean AUROC across tasks
+was $0.52$ for accessibility, $0.77$ for motif-only scoring, and $0.80$ for the
+integrated score. In K562 tasks with cut-site footprints, footprint-only signal
+averaged $0.55$ AUROC: it was informative for CTCF but was not sufficient as a
+standalone predictor across factors. Motif-only scoring remained a strong baseline,
+especially for information-rich motifs such as CTCF and SPI1, but the integrated
+model consistently matched or improved it. The largest gains over motif-only
+scoring occurred for MAX and JUND, including K562 MAX ($0.74\rightarrow0.83$),
+HepG2 MAX ($0.64\rightarrow0.75$), K562 JUND ($0.83\rightarrow0.87$), and HepG2
+JUND ($0.63\rightarrow0.67$). These results support the intended role of
+\texttt{fp-tools}: preserving interpretable classical predictors while providing a
+reproducible route to combine sequence, accessibility, composition, and footprint
+features when those data are available. Full AUROC/AUPRC values and bootstrap
+confidence intervals are reported in the benchmark metrics table distributed with
+the analysis outputs (see Data Availability).
 
 \begin{table}[H]
-\caption{Demonstration bulk-matched benchmark on ENCODE ATAC-seq (chromosome~4),
-ranking accessible regions by raw accessibility versus a motif-aware PWM score and
-labeling by matched ChIP-seq overlap. AUROC values are point estimates with 200-
-resample bootstrap 95\% CIs; motif-aware scoring significantly beats the baseline
-for every factor and cell type.\label{tab:k562}}
+\caption{Integrated method-comparison benchmark on ENCODE ATAC-seq peaks
+(chromosome~4) labeled by matched ChIP-seq overlap. Values are AUROC point
+estimates; the full metrics TSV contains AUPRC and 200-resample bootstrap 95\% CIs.
+The footprint-only column is shown only where BAM-derived cut-site footprints were
+computed.\label{tab:methods}}
 \newcolumntype{Z}{>{\centering\arraybackslash}X}
-\begin{tabularx}{\textwidth}{llZZ}
+\begin{tabularx}{\textwidth}{llZZZZ}
 \toprule
-\textbf{Cell / TF (motif)} & \textbf{Pos.\ frac.} & \textbf{Accessibility AUROC} & \textbf{Motif-aware AUROC}\\
+\textbf{Cell / TF} & \textbf{Pos. frac.} & \textbf{Access.} & \textbf{Motif} & \textbf{Footprint} & \textbf{Integrated}\\
 \midrule
-K562 / CTCF (MA0139.1) & 0.36 & 0.53 (0.51--0.56) & \textbf{0.87 (0.85--0.88)}\\
-K562 / GATA1 (MA0035.4) & 0.08 & 0.58 (0.53--0.63) & \textbf{0.72 (0.68--0.76)}\\
-K562 / SPI1 (MA0080.7) & 0.28 & 0.47 (0.45--0.51) & \textbf{0.79 (0.77--0.81)}\\
-K562 / REST (MA0138.3) & 0.06 & 0.48 (0.42--0.54) & \textbf{0.72 (0.68--0.77)}\\
-K562 / MAX (MA0058.4) & 0.49 & 0.44 (0.42--0.47) & \textbf{0.74 (0.72--0.76)}\\
-K562 / JUND (MA0491.3) & 0.08 & 0.59 (0.54--0.64) & \textbf{0.83 (0.78--0.87)}\\
+K562 / CTCF & 0.36 & 0.53 & 0.87 & 0.68 & \textbf{0.88}\\
+K562 / GATA1 & 0.08 & 0.58 & 0.72 & 0.53 & \textbf{0.73}\\
+K562 / SPI1 & 0.28 & 0.47 & 0.79 & 0.54 & \textbf{0.79}\\
+K562 / REST & 0.06 & 0.48 & 0.72 & 0.56 & \textbf{0.73}\\
+K562 / MAX & 0.49 & 0.44 & 0.74 & 0.56 & \textbf{0.83}\\
+K562 / JUND & 0.08 & 0.59 & 0.83 & 0.41 & \textbf{0.87}\\
 \midrule
-GM12878 / CTCF & 0.26 & 0.57 (0.56--0.59) & \textbf{0.90 (0.89--0.91)}\\
-GM12878 / SPI1 & 0.28 & 0.50 (0.49--0.52) & \textbf{0.78 (0.77--0.79)}\\
+GM12878 / CTCF & 0.26 & 0.57 & 0.90 & -- & \textbf{0.90}\\
+GM12878 / SPI1 & 0.28 & 0.50 & 0.78 & -- & \textbf{0.78}\\
+\midrule
+HepG2 / CTCF & 0.28 & 0.59 & 0.86 & -- & \textbf{0.87}\\
+HepG2 / MAX & 0.35 & 0.49 & 0.64 & -- & \textbf{0.75}\\
+HepG2 / JUND & 0.13 & 0.49 & 0.63 & -- & \textbf{0.67}\\
+HepG2 / REST & 0.006 & 0.51 & 0.81 & -- & \textbf{0.86}\\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/k562_method_comparison_multitf.png}
-\caption{AUROC and AUPRC for a raw accessibility baseline (grey) versus motif-aware
-scoring (blue) across six K562 transcription factors on ENCODE ATAC-seq peaks
-(chromosome~4) labeled by matched ChIP-seq overlap. Motif-aware scoring exceeds the
-accessibility baseline---and the chance line (red)---for every factor. Generated by
-\texttt{paper/scripts/plot\_method\_comparison.py}.\label{fig:k562}}
+\includegraphics[width=\textwidth]{figures/method_comparison_multi.png}
+\caption{Multi-method benchmark across three ENCODE cell lines and 12 cell--TF
+tasks. Panel A compares per-task AUROC for raw accessibility, motif-only scoring,
+cut-site footprint scoring where available, and the integrated \texttt{fp-tools}
+model. Panel B compares the integrated model with the best single-method score for
+each task. Panel C summarizes mean AUROC by method. Generated by
+\texttt{paper/scripts/plot\_method\_comparison\_multi.py}.\label{fig:method_multi}}
 \end{figure}
 
 \subsection{Footprinting Requires Cut-Site Resolution}
