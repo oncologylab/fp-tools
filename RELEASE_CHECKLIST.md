@@ -60,7 +60,7 @@ Validate metadata when `twine` is available:
 - Confirm `pyproject.toml` version is correct.
 - Confirm `project.urls` point to `https://github.com/oncologylab/fp-tools`.
 - Confirm README renders on GitHub, especially the feature comparison table.
-- Confirm `DEV_PLAN.md` and `fp-tools-research-report.md` remain ignored and local-only.
+- Confirm `DEV_PLAN.md` remains local-only and that the former research report stays consolidated in `DEV_PLAN.md`.
 
 ## 6. Data Hygiene
 

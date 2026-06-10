@@ -4,7 +4,7 @@
 Provide an optional browser-based GUI for `fp-tools` that runs as a per-user process on a Linux server without changing the core command-line workflows.
 
 ## Current Status
-The first working GUI layer is implemented.
+The first working GUI layer is implemented and remains an optional wrapper around the command-line tools.
 
 Available commands:
 - `fp-tools-gui`
@@ -74,17 +74,17 @@ Core packaged commands remain primary and unchanged:
 Ready-to-load GUI YAML:
 - `examples/gui_configs/`
 
-GUI run metadata and logs:
+GUI run metadata and logs are written locally under ignored run directories, typically:
 - `examples/gui_runs/`
 
-GUI example output files:
+GUI example output files are also local and ignored, typically:
 - `examples/gui_demo_outputs/`
 
 ### Validation Completed
-- local syntax checks for new GUI/config modules
+- local syntax checks for GUI/config modules
 - local `fp-tools-run --help`
 - local `fp-tools-gui --help`
-- local real YAML-driven `PlotAggregate` run through `fp-tools-run`
+- local YAML-driven `PlotAggregate` run through `fp-tools-run`
 - local `fp-tools-gui` launch validation
 - remote install on `cy232`
 - remote `fp-tools-gui --help`
