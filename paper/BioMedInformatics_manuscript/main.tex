@@ -51,14 +51,14 @@ competition-aware decomposition of overlapping TF-scale and nucleosome-scale
 footprint signals. (3) Results: The package provides deterministic,
 regression-tested workflows; a tiered public-data benchmark design with AUROC,
 AUPRC, recall-at-FDR, calibration, and bootstrap-confidence-interval metrics; and
-paper-ready figure generators. In ENCODE chromosome-4 benchmarks spanning three
-cell lines and 12 cell--TF tasks, an integrated \texttt{fp-tools} score combining
-accessibility, motif strength, GC content, and available cut-site footprint
-features achieved the highest AUROC in every task (mean AUROC $0.80$),
-outperforming motif-only scoring ($0.77$), raw accessibility ($0.52$), and
-footprint-only scoring where available ($0.55$). The same benchmark shows that
-footprint occupancy is recoverable only at Tn5 cut-site resolution (AUROC $0.68$)
-and not from smoothed coverage ($0.24$). New modules
+paper-ready figure generators. In a chromosome-4 ENCODE pilot benchmark spanning
+three cell lines and 12 cell--TF tasks, an integrated \texttt{fp-tools} score
+combining accessibility, motif strength, GC content, and available cut-site
+footprint features achieved the highest AUROC among the evaluated predictors in
+every task (mean AUROC $0.80$), compared with motif-only scoring ($0.77$), raw
+accessibility ($0.52$), and footprint-only scoring where available ($0.55$). The
+same pilot shows that footprint occupancy is recoverable only at Tn5 cut-site
+resolution (AUROC $0.68$) and not from smoothed coverage ($0.24$). New modules
 preserve the behavior of the classical commands when they are not invoked. (4)
 Conclusions: \texttt{fp-tools} integrates
 established footprinting strengths with modern multiscale, supervised, and
@@ -150,6 +150,17 @@ compatibility. A YAML runner (\texttt{fp-tools-run}) expands declarative configs
 into the same commands, and an optional Streamlit GUI (\texttt{fp-tools-gui})
 provides forms, run history, and output discovery. Direct CLI usage is the primary
 interface; YAML and GUI are wrappers that never replace it.
+
+For classical footprint scoring, let $x_i$ denote corrected Tn5 cut-site signal
+around candidate position $p$. The default footprint score is a center-versus-flank
+contrast,
+\[
+F(p)=\frac{1}{|L|+|R|}\left(\sum_{i\in L}x_i+\sum_{i\in R}x_i\right)-
+\frac{1}{|C|}\sum_{i\in C}x_i,
+\]
+where $C$ is the protected center and $L$ and $R$ are flanking windows. Larger
+values therefore correspond to the expected footprint pattern: fewer cuts at the
+putative bound site and more cuts in nearby accessible flanks.
 
 \subsection{Opt-in Scientific Modules}
 
@@ -369,14 +380,21 @@ overlaps a matched ChIP-seq peak for the target factor. The compared predictors
 were raw accessibility magnitude, best JASPAR PWM motif log-odds score, cut-site
 footprint occupancy at the best motif hit where ATAC BAM data were available, and
 an integrated \texttt{fp-tools} score from out-of-fold logistic regression over
-accessibility, motif score, local GC content, and available footprint features.
-For tasks without BAM-derived cut-site footprints, the integrated model used the
-available accessibility, motif, and GC features. We evaluated 12 cell--TF tasks:
+accessibility, motif score, local GC content, and available footprint features:
+\[
+\Pr(y=1\mid z)=\sigma(\beta_0+\beta_1 a+\beta_2 m+\beta_3 g+\beta_4 f),
+\]
+where $y$ denotes ChIP-supported binding, $a$ is accessibility, $m$ is motif score,
+$g$ is GC content, and $f$ is the cut-site footprint score when available. Model
+coefficients were learned within cross-validation, and performance was reported on
+held-out folds. For tasks without BAM-derived cut-site footprints, the integrated
+model used the available accessibility, motif, and GC features. We evaluated 12 cell--TF tasks:
 six transcription factors in K562 (CTCF, GATA1, SPI1, REST, MAX, JUND;
 $n=1{,}900$ accessible regions each), two in GM12878 (CTCF, SPI1; $n=9{,}482$),
 and four in HepG2 (CTCF, MAX, JUND, REST; $n=8{,}068$).
 
-The integrated \texttt{fp-tools} score achieved the highest AUROC in all 12 tasks
+In this chromosome-4 pilot, the integrated \texttt{fp-tools} score achieved the
+highest AUROC among the evaluated predictors in all 12 tasks
 (Table~\ref{tab:methods}, Figure~\ref{fig:method_multi}). Mean AUROC across tasks
 was $0.52$ for accessibility, $0.77$ for motif-only scoring, and $0.80$ for the
 integrated score. In K562 tasks with cut-site footprints, footprint-only signal
@@ -391,10 +409,11 @@ JUND ($0.63\rightarrow0.67$). These results support the intended role of
 reproducible route to combine sequence, accessibility, composition, and footprint
 features when those data are available. Full AUROC/AUPRC values and bootstrap
 confidence intervals are reported in the benchmark metrics table distributed with
-the analysis outputs (see Data Availability).
+the analysis outputs (see Data Availability). Whole-genome and chromosome-held-out
+benchmarks are the next validation step before making broad superiority claims.
 
 \begin{table}[H]
-\caption{Integrated method-comparison benchmark on ENCODE ATAC-seq peaks
+\caption{Integrated method-comparison pilot benchmark on ENCODE ATAC-seq peaks
 (chromosome~4) labeled by matched ChIP-seq overlap. Values are AUROC point
 estimates; the full metrics TSV contains AUPRC and 200-resample bootstrap 95\% CIs.
 The footprint-only column is shown only where BAM-derived cut-site footprints were
@@ -487,9 +506,10 @@ than from per-replicate scores, so it should be read as a calibrated uncertainty
 heuristic rather than a full hierarchical model, and per-replicate inputs would
 enable a stronger formulation in future work.
 
-Limitations include the dependence of the public-benchmark results on external
-data acquisition and comparator execution, which are intentionally kept outside
-version control for size and licensing reasons; the tabular supervised models
+Limitations include the chromosome-4 scope of the current pilot benchmark, the
+dependence of larger public-benchmark results on external data acquisition and
+comparator execution, which are intentionally kept outside version control for
+size and licensing reasons; the tabular supervised models
 trade base-resolution sequence modeling for transparency and speed; and several
 roadmap items (attribution-based discovery, RNA-prior weighting for pseudobulk,
 hierarchical differential binding) are scaffolded but not yet fully realized.
@@ -506,9 +526,10 @@ competition-decomposition modules. By keeping core workflows stable and
 test-covered while adding new scientific behavior as composable, independently
 validated modules---and by pairing them with a tiered public-data benchmark and
 figure infrastructure---the package lowers the barrier to standardized,
-benchmarkable regulatory-genomics analysis. Future work will complete the full
-public biological benchmark, strengthen the supervised and hierarchical
-differential-binding models, and integrate attribution-based discovery.
+benchmarkable regulatory-genomics analysis. Future work will complete whole-genome
+or chromosome-held-out public biological benchmarks, strengthen the supervised and
+hierarchical differential-binding models, and integrate attribution-based
+discovery.
 
 \vspace{6pt}
 

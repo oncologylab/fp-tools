@@ -10,14 +10,16 @@ The PyPI distribution is named `fp-tools-bio`; the installed Python package is `
 pip install fp-tools-bio
 ```
 
-## Commands
+## Current Release Commands
 
 - `atac-correct`: correct ATAC-seq cutsite signal for Tn5 sequence bias.
-- `score-footprints`: calculate footprint, sum, mean, or pass-through scores from bigWig signal.
+- `score-footprints`: calculate footprint, multiscale, sum, mean, or pass-through scores from bigWig signal.
 - `detect-tf-binding`: scan motifs, infer bound sites, and compare TF binding across conditions.
 - `plot-aggregate`: plot aggregate signal around TFBS or region sets.
 - `fp-tools-run`: run optional YAML batch configs.
 - `fp-tools-gui`: launch the optional Streamlit GUI wrapper.
+
+Additional opt-in commands support tabular TFBS feature/model workflows, candidate generation and reranking, de novo motif-discovery orchestration, variant scoring, pseudobulk fragment grouping, replicate-aware BINDetect reports, and multiscale competition decomposition. These commands are available in the source tree and development builds; biological validation benchmarks for several of them are still being expanded.
 
 Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.
 
@@ -32,6 +34,19 @@ detect-tf-binding --help
 plot-aggregate --help
 fp-tools-run --help
 fp-tools-gui --help
+fp-tools-build-tfbs-features --help
+fp-tools-train-tfbs-model --help
+fp-tools-predict-tfbs --help
+fp-tools-generate-candidates --help
+fp-tools-rerank-candidates --help
+fp-tools-export-candidate-fasta --help
+fp-tools-meme-command --help
+fp-tools-motif-discovery-plan --help
+fp-tools-summarize-motifs --help
+fp-tools-score-variants --help
+fp-tools-pseudobulk --help
+fp-tools-bindetect-replicate-report --help
+fp-tools-decompose-competition --help
 ```
 
 ## Minimal Workflow

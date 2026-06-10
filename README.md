@@ -38,21 +38,21 @@ Legacy aliases remain available for compatibility: `ATACorrect`, `FootprintScore
 
 ## Feature Comparison Across the Field
 
-`fp-tools current` describes released functionality. `fp-tools roadmap` describes planned opt-in modules under development, not current released functionality.
+`fp-tools current` describes the command surface in this source tree. `fp-tools validation roadmap` describes larger biological benchmarks and later model extensions that are not yet complete.
 
 Symbols: ✅ native first-class support, ⚠️ partial or indirect support, ❌ absent.
 
-| Feature | fp-tools<br>current | fp-tools<br>roadmap | TOBIAS | HINT-<br>ATAC | PRINT /<br>scPrinter | TAMC | maxATAC | ChromBPNet<br>Suite | REUNION | DENIS |
+| Feature | fp-tools<br>current | fp-tools<br>validation roadmap | TOBIAS | HINT-<br>ATAC | PRINT /<br>scPrinter | TAMC | maxATAC | ChromBPNet<br>Suite | REUNION | DENIS |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Bulk ATAC<br>footprinting | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ | ⚠️ | ⚠️ |
 | Tn5 bias<br>correction | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Classical<br>footprint scoring | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ⚠️ |
-| Multiscale /<br>nucleosome-aware | ❌ | ✅ | ❌ | ⚠️ | ✅ | ❌ | ❌ | ⚠️ | ❌ | ❌ |
-| Supervised<br>TFBS prediction | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Motif-relaxed /<br>motif-free recovery | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| De novo<br>motif discovery | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Variant<br>scoring | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| scATAC /<br>pseudobulk support | ⚠️ | ✅ | ⚠️ | ⚠️ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ✅ |
+| Multiscale /<br>nucleosome-aware | ✅ opt-in | broader validation | ❌ | ⚠️ | ✅ | ❌ | ❌ | ⚠️ | ❌ | ❌ |
+| Supervised<br>TFBS prediction | ✅ tabular | public benchmark | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Motif-relaxed /<br>motif-free recovery | ✅ candidate/rerank | motif-removal benchmark | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| De novo<br>motif discovery | ✅ MEME/Tomtom helpers | attribution route later | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
+| Variant<br>scoring | ✅ footprint/motif/model deltas | public variant benchmark | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
+| scATAC /<br>pseudobulk support | ✅ pseudobulk utility | public pseudobulk benchmark | ⚠️ | ⚠️ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ✅ |
 | Visualization /<br>reporting | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ✅ | ⚠️ | ✅ |
 | GUI / YAML /<br>batch execution | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 

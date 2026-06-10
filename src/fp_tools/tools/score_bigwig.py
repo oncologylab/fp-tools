@@ -14,6 +14,7 @@ import argparse
 import numpy as np
 import pyBigWig
 import multiprocessing as mp
+from contextlib import closing
 
 # Internal functions and classes (fp_tools namespace)
 from fp_tools.parsers import add_scorebigwig_arguments
@@ -134,6 +135,21 @@ def calculate_scores(regions, args):
     return 1
 
 
+def _validate_bigwig_output(path, logger):
+    """Fail loudly if the writer did not produce a readable bigWig."""
+
+    if not path or not os.path.exists(path):
+        raise RuntimeError(f"Expected score bigWig was not created: {path}")
+    if os.path.getsize(path) == 0:
+        raise RuntimeError(f"Expected score bigWig is empty: {path}")
+
+    try:
+        with closing(pyBigWig.open(path)) as bw:
+            if not bw or not bw.chroms():
+                raise RuntimeError(f"Expected score bigWig has no chromosome header: {path}")
+    except Exception as exc:
+        raise RuntimeError(f"Expected score bigWig is not readable: {path}") from exc
+
 # ----------------------------------------------------------------------------- #
 def run_scorebigwig(args):
     # Ensure paths are sane and the output directory exists
@@ -219,20 +235,18 @@ def run_scorebigwig(args):
     logger.info("Calculating footprints in regions...")
     regions_chunks = regions.chunks(args.split)
 
-    # Pools
     args.cores = check_cores(args.cores, logger)
-    writer_cores = 1
-    worker_cores = max(1, args.cores - writer_cores)
-    logger.debug(f"Worker cores: {worker_cores}")
-    logger.debug(f"Writer cores: {writer_cores}")
+    logger.debug(f"Worker cores: {args.cores}")
+    logger.debug("Writer cores: 1")
 
-    worker_pool = mp.Pool(processes=worker_cores)
-    writer_pool = mp.Pool(processes=writer_cores)
     manager = mp.Manager()
+    pool = None
+    writer_pool = None
 
     # Start bigwig writer
     q = manager.Queue()
-    writer_pool.apply_async(bigwig_writer, args=(q, {"scores": args.output}, header, regions, args))
+    writer_pool = mp.Pool(processes=1)
+    writer_result = writer_pool.apply_async(bigwig_writer, args=(q, {"scores": args.output}, header, regions, args))
     writer_pool.close()  # no more jobs to writer_pool
     writer_qs = {"scores": q}
     args.writer_qs = writer_qs
@@ -244,22 +258,27 @@ def run_scorebigwig(args):
         pool.close()
         monitor_progress(task_list, logger)
         results = [task.get() for task in task_list]
+        pool.join()
         if getattr(args, "output_multiscale_npz", None):
             records = [record for chunk_records in results for record in chunk_records]
             records.sort(key=lambda item: (reference_chroms.index(item[0][0]), item[0][1]))
             write_multiscale_npz(args.output_multiscale_npz, records, args.scales, args.multiscale_summary)
             logger.info(f"Wrote multiscale tensor sidecar: {args.output_multiscale_npz}")
     except KeyboardInterrupt:
-        logger.warning("Interrupted by user; shutting down workers/writer…")
-        pool.terminate()
-        pool.join()
+        logger.warning("Interrupted by user; shutting down workers/writer...")
+        if pool is not None:
+            pool.terminate()
+            pool.join()
+        raise
     finally:
         # Tell writer to finish and clean up either way
         for q in writer_qs.values():
             q.put((None, None, None))
-        writer_pool.join()
-        worker_pool.terminate()
-        worker_pool.join()
+        if writer_pool is not None:
+            writer_pool.join()
+
+    writer_result.get()
+    _validate_bigwig_output(args.output, logger)
 
     logger.stop_logger_queue()
     logger.end()

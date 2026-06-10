@@ -236,15 +236,16 @@
       </section>
 
       <section id="commands">
-        <h2>Commands</h2>
+        <h2>Current Release Commands</h2>
         <ul>
           <li><code>atac-correct</code>: correct ATAC-seq cutsite signal for Tn5 sequence bias.</li>
-          <li><code>score-footprints</code>: calculate footprint, sum, mean, or pass-through scores from bigWig signal.</li>
+          <li><code>score-footprints</code>: calculate footprint, multiscale, sum, mean, or pass-through scores from bigWig signal.</li>
           <li><code>detect-tf-binding</code>: scan motifs, infer bound sites, and compare TF binding across conditions.</li>
           <li><code>plot-aggregate</code>: plot aggregate signal around TFBS or region sets.</li>
           <li><code>fp-tools-run</code>: run optional YAML batch configs.</li>
           <li><code>fp-tools-gui</code>: launch the optional Streamlit GUI wrapper.</li>
         </ul>
+        <p class="note">Additional opt-in commands support tabular TFBS feature/model workflows, candidate generation and reranking, de novo motif-discovery orchestration, variant scoring, pseudobulk fragment grouping, replicate-aware BINDetect reports, and multiscale competition decomposition. These commands are available in the source tree and development builds; biological validation benchmarks for several of them are still being expanded.</p>
         <p class="note">Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.</p>
         <p class="note">Legacy aliases remain available for compatibility: <code>ATACorrect</code>, <code>FootprintScores</code>, <code>ScoreBigwig</code>, <code>BINDetect</code>, and <code>PlotAggregate</code>.</p>
         <h3>Verify</h3>
@@ -253,7 +254,20 @@ score-footprints --help
 detect-tf-binding --help
 plot-aggregate --help
 fp-tools-run --help
-fp-tools-gui --help</pre>
+fp-tools-gui --help
+fp-tools-build-tfbs-features --help
+fp-tools-train-tfbs-model --help
+fp-tools-predict-tfbs --help
+fp-tools-generate-candidates --help
+fp-tools-rerank-candidates --help
+fp-tools-export-candidate-fasta --help
+fp-tools-meme-command --help
+fp-tools-motif-discovery-plan --help
+fp-tools-summarize-motifs --help
+fp-tools-score-variants --help
+fp-tools-pseudobulk --help
+fp-tools-bindetect-replicate-report --help
+fp-tools-decompose-competition --help</pre>
       </section>
 
       <section id="workflow">

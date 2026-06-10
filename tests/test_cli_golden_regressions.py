@@ -16,6 +16,17 @@ def max_cores() -> str:
     return str(max(1, os.cpu_count() or 1))
 
 
+def bigwig_window_summary(path, chrom="chr4", start=74000, end=75000):
+    bw = pyBigWig.open(str(path))
+    try:
+        chroms = bw.chroms()
+        intervals = bw.intervals(chrom, start, end) or []
+        total = round(sum(float(item[2]) for item in intervals), 6)
+        mean = round(total / len(intervals), 6) if intervals else 0.0
+        return chroms, len(intervals), total, mean
+    finally:
+        bw.close()
+
 def run_command(command, timeout=90):
     result = subprocess.run(
         [str(item) for item in command],
@@ -55,15 +66,46 @@ class CliGoldenRegressionTest(unittest.TestCase):
                 ]
             )
 
-            bw = pyBigWig.open(str(output))
-            try:
-                intervals = bw.intervals("chr4", 74000, 75000) or []
-                total = round(sum(float(item[2]) for item in intervals), 6)
-                mean = round(total / len(intervals), 6)
-            finally:
-                bw.close()
+            self.assertTrue(output.exists())
+            self.assertGreater(output.stat().st_size, 0)
+            chroms, count, total, mean = bigwig_window_summary(output)
 
-        self.assertEqual((len(intervals), total, mean), (186, 106.694972, 0.573629))
+        self.assertEqual(chroms, {"chr4": 190214555})
+        self.assertEqual((count, total, mean), (186, 106.694972, 0.573629))
+
+    def test_footprint_scores_sum_is_stable_across_core_counts(self):
+        summaries = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = pathlib.Path(tmpdir)
+            for cores in ("1", "2"):
+                output = tmp / f"footprints_sum_cores_{cores}.bw"
+                run_command(
+                    [
+                        BIN / "score-footprints",
+                        "--signal",
+                        "test_data/Bcell_corrected.bw",
+                        "--regions",
+                        "test_data/merged_peaks.bed",
+                        "--output",
+                        output,
+                        "--score",
+                        "sum",
+                        "--window",
+                        "20",
+                        "--cores",
+                        cores,
+                        "--verbosity",
+                        "1",
+                    ]
+                )
+                self.assertTrue(output.exists())
+                self.assertGreater(output.stat().st_size, 0)
+                summaries.append(bigwig_window_summary(output))
+
+        self.assertEqual(summaries[0], summaries[1])
+        self.assertEqual(summaries[0][0], {"chr4": 190214555})
+        self.assertGreater(summaries[0][1], 0)
+        self.assertGreater(summaries[0][2], 0.0)
 
     def test_plot_aggregate_text_summary_is_stable(self):
         with tempfile.TemporaryDirectory() as tmpdir:

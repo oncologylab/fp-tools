@@ -58,7 +58,7 @@ Validate metadata when `twine` is available:
 ## 5. Metadata And Docs
 
 - Confirm `pyproject.toml` version is correct.
-- Confirm `project.urls` point to `https://github.com/oncologylab/fp-tools`.
+- Confirm `project.urls` point to `https://github.com/oncologylab/fp-tools`. The currently published PyPI `0.1.7` metadata still points to the old repository until a new release is published.
 - Confirm README renders on GitHub, especially the feature comparison table.
 - Confirm `DEV_PLAN.md` remains local-only and that the former research report stays consolidated in `DEV_PLAN.md`.
 
@@ -68,7 +68,7 @@ Do not commit:
 
 - downloaded public data under `data/public/raw/` or `data/public/processed/`
 - benchmark result directories under `benchmarks/results/`
-- generated paper figures/tables except intentional small examples
+- generated paper figures/tables except intentional manuscript previews and small examples
 - BAM/BAI fixtures beyond existing local-only test data
 
 ## 7. Paper/Benchmark Gate
@@ -78,5 +78,6 @@ Before using outputs in a manuscript:
 - freeze the exact public data manifest
 - save command logs and environment versions
 - save metrics tables used by each figure
+- label chromosome-4 benchmark results as pilot evidence unless whole-genome or chromosome-held-out validation has been completed
 - generate both vector and PNG figure outputs
 - write Data Availability and Code Availability notes
