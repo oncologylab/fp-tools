@@ -23,7 +23,7 @@ import sys
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.model_selection import GroupKFold, StratifiedKFold, cross_val_predict
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -32,17 +32,40 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from compute_binary_metrics import bootstrap_confidence_intervals  # noqa: E402
 
 
-def integrated_oof_scores(frame: pd.DataFrame, features: list[str], seed: int = 2026) -> np.ndarray:
+def integrated_oof_scores(
+    frame: pd.DataFrame,
+    features: list[str],
+    seed: int = 2026,
+    groups: np.ndarray | None = None,
+) -> np.ndarray:
+    """Out-of-fold integrated probabilities.
+
+    When ``groups`` (e.g. chromosome labels) is given and spans >=2 groups, folds
+    are formed with ``GroupKFold`` so no group appears in both train and test
+    (chromosome-held-out evaluation). Otherwise stratified k-fold out-of-fold is
+    used.
+    """
     X = frame[features].to_numpy(dtype=float)
     y = frame["label"].to_numpy(dtype=int)
     if y.sum() < 5 or (len(y) - y.sum()) < 5:
         return np.full(len(y), np.nan)
     model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000, class_weight="balanced"))
+    if groups is not None and len(np.unique(groups)) >= 2:
+        n_splits = min(5, len(np.unique(groups)))
+        cv = GroupKFold(n_splits=n_splits)
+        return cross_val_predict(model, X, y, cv=cv, groups=groups, method="predict_proba")[:, 1]
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
     return cross_val_predict(model, X, y, cv=cv, method="predict_proba")[:, 1]
 
 
-def evaluate_table(path: str | Path, cell: str, tf: str, n_bootstrap: int = 300, seed: int = 2026) -> pd.DataFrame:
+def evaluate_table(
+    path: str | Path,
+    cell: str,
+    tf: str,
+    n_bootstrap: int = 300,
+    seed: int = 2026,
+    held_out: str = "oof",
+) -> pd.DataFrame:
     frame = pd.read_csv(path, sep="\t")
     has_fp = "footprint" in frame.columns and frame["footprint"].abs().sum() > 0
     methods = {
@@ -52,7 +75,10 @@ def evaluate_table(path: str | Path, cell: str, tf: str, n_bootstrap: int = 300,
     if has_fp:
         methods["footprint"] = frame["footprint"]
     feats = ["accessibility", "motif", "gc"] + (["footprint"] if has_fp else [])
-    methods["fp-tools-integrated"] = pd.Series(integrated_oof_scores(frame, feats, seed=seed), index=frame.index)
+    groups = frame["chrom"].to_numpy() if (held_out == "chrom" and "chrom" in frame.columns) else None
+    methods["fp-tools-integrated"] = pd.Series(
+        integrated_oof_scores(frame, feats, seed=seed, groups=groups), index=frame.index
+    )
 
     rows = []
     for method, score in methods.items():
@@ -79,12 +105,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", required=True)
     parser.add_argument("--bootstrap", type=int, default=300)
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--held-out", choices=["oof", "chrom"], default="oof",
+                        help="Integrated CV scheme: within-task out-of-fold (oof) or chromosome-held-out (chrom).")
     args = parser.parse_args(argv)
 
     frames = []
     for spec in args.tables:
         cell, tf, path = spec.split(":", 2)
-        frames.append(evaluate_table(path, cell, tf, n_bootstrap=args.bootstrap, seed=args.seed))
+        frames.append(evaluate_table(path, cell, tf, n_bootstrap=args.bootstrap,
+                                     seed=args.seed, held_out=args.held_out))
     out = pd.concat(frames, ignore_index=True)
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(args.out, sep="\t", index=False)

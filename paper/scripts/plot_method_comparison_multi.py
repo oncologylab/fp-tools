@@ -45,7 +45,8 @@ def plot(metrics: pd.DataFrame, out_prefix: str | Path, base_size: int = 11) -> 
     tasks = list(dict.fromkeys(metrics["task"]))
     methods = [m for m in METHOD_ORDER if m in set(metrics["method"])]
 
-    fig = plt.figure(figsize=(14, 9))
+    fig_w = max(14, len(tasks) * 0.95)
+    fig = plt.figure(figsize=(fig_w, 9))
     gs = fig.add_gridspec(2, 2, height_ratios=[1.1, 1.0])
     axA = fig.add_subplot(gs[0, :])
     axB = fig.add_subplot(gs[1, 0])

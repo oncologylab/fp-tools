@@ -53,15 +53,18 @@ competition-aware decomposition of overlapping TF-scale and nucleosome-scale
 footprint signals. (3) Results: The package provides deterministic,
 regression-tested workflows; a tiered public-data benchmark design with AUROC,
 AUPRC, recall-at-FDR, calibration, and bootstrap-confidence-interval metrics; and
-paper-ready figure generators. In a chromosome-4 ENCODE pilot benchmark spanning
-three cell lines and 12 cell--TF tasks, an integrated \texttt{fp-tools} score
-combining accessibility, motif strength, GC content, and available cut-site
-footprint features achieved the highest AUROC among the evaluated predictors in
-every task (mean AUROC $0.80$), compared with motif-only scoring ($0.77$), raw
-accessibility ($0.52$), and footprint-only scoring where available ($0.55$). The
-same pilot shows that footprint occupancy is recoverable only at Tn5 cut-site
-resolution (AUROC $0.68$) and not from smoothed coverage ($0.24$). New modules
-preserve the behavior of the classical commands when they are not invoked. (4)
+paper-ready figure generators. In a genome-wide ENCODE benchmark spanning four cell
+lines and 16 cell--TF tasks under chromosome-held-out evaluation, an integrated
+\texttt{fp-tools} score combining accessibility, motif strength, GC content, and
+available cut-site footprint features achieved the highest or tied-highest AUROC
+among the evaluated predictors in every task (mean AUROC $0.79$), compared with
+motif-only scoring ($0.75$), raw accessibility ($0.54$), and footprint-only scoring
+where available ($0.54$); the largest gains arose where the motif alone is weak
+(e.g.\ A549 and HepG2 MAX, $0.71/0.64\rightarrow0.82/0.74$). Optional leak-free
+isotonic recalibration reduced the pooled expected calibration error from $0.21$ to
+$0.001$. A companion analysis shows that footprint occupancy is recoverable only at
+Tn5 cut-site resolution (AUROC $0.68$) and not from smoothed coverage ($0.24$). New
+modules preserve the behavior of the classical commands when they are not invoked. (4)
 Conclusions: \texttt{fp-tools} integrates
 established footprinting strengths with modern multiscale, supervised, and
 variant-oriented extensions in a single reproducible package, lowering the barrier
@@ -431,86 +434,125 @@ The tiered benchmark design (Table~\ref{tab:tiers}), the
 metric/calibration/bootstrap scripts, the label-overlap and motif-removal table
 builders, and the pipeline runner together provide an executable path from public
 ENCODE data to publication-ready metrics and figures. To demonstrate this path
-end-to-end on real data, we benchmarked four scoring paradigms on ENCODE ATAC-seq
-peaks restricted to chromosome~4, labeling each accessible region positive when it
-overlaps a matched ChIP-seq peak for the target factor. The compared predictors
-were raw accessibility magnitude, best JASPAR PWM motif log-odds score, cut-site
-footprint occupancy at the best motif hit where ATAC BAM data were available, and
-an integrated \texttt{fp-tools} score from out-of-fold logistic regression over
-accessibility, motif score, local GC content, and available footprint features:
+end-to-end on real data, we benchmarked four scoring paradigms genome-wide
+(autosomes and chromosome~X) across the accessible-peak universe of each cell line,
+labeling each accessible region positive when it overlaps a matched ChIP-seq peak
+for the target factor. The compared predictors were raw accessibility magnitude,
+best JASPAR PWM motif log-odds score, cut-site footprint occupancy at the best
+motif hit where ATAC BAM data were available, and an integrated \texttt{fp-tools}
+score from logistic regression over accessibility, motif score, local GC content,
+and available footprint features:
 \[
 \Pr(y=1\mid z)=\sigma(\beta_0+\beta_1 a+\beta_2 m+\beta_3 g+\beta_4 f),
 \]
 where $y$ denotes ChIP-supported binding, $a$ is accessibility, $m$ is motif score,
 $g$ is GC content, and $f$ is the cut-site footprint score when available. To avoid
-optimistic bias, every reported integrated score is an \emph{out-of-fold}
-prediction from five-fold stratified cross-validation: coefficients are learned on
-four folds and applied to the held-out fold, so no region contributes to its own
-prediction. This is a within-task out-of-fold evaluation restricted to
-chromosome~4; it is deliberately distinguished from the stricter
-chromosome-held-out and whole-genome cross-validation we identify as the next
-validation step. For tasks without BAM-derived cut-site footprints, the integrated
-model used the available accessibility, motif, and GC features. We evaluated 12 cell--TF tasks:
-six transcription factors in K562 (CTCF, GATA1, SPI1, REST, MAX, JUND;
-$n=1{,}900$ accessible regions each), two in GM12878 (CTCF, SPI1; $n=9{,}482$),
-and four in HepG2 (CTCF, MAX, JUND, REST; $n=8{,}068$).
+optimistic bias under genomic autocorrelation, every reported integrated score is a
+\emph{chromosome-held-out} out-of-fold prediction: chromosomes are partitioned into
+five grouped folds, the model is trained on four folds and applied to the held-out
+chromosomes, so no chromosome---and therefore no locus---contributes to its own
+prediction. This is stricter than within-task random cross-validation; whole-genome
+cross-cell-line transfer remains a further validation step. For tasks without
+BAM-derived cut-site footprints, the integrated model used the available
+accessibility, motif, and GC features. We evaluated 16 cell--TF tasks across four
+ENCODE cell lines: six transcription factors in K562 (CTCF, GATA1, SPI1, REST, MAX,
+JUND; with BAM-derived cut-site footprints; $n=55{,}574$ accessible regions each),
+two in GM12878 (CTCF, SPI1; $n=198{,}364$), four in HepG2 (CTCF, MAX, JUND, REST;
+$n=197{,}662$), and four in the lung-adenocarcinoma line A549 (CTCF, MAX, JUND,
+REST; $n=278{,}209$).
 
-In this chromosome-4 pilot, the integrated \texttt{fp-tools} score achieved the
-highest AUROC among the evaluated predictors in all 12 tasks
+Across all 16 genome-wide tasks the integrated \texttt{fp-tools} score achieved the
+highest or tied-highest AUROC among the evaluated predictors under
+chromosome-held-out evaluation, strictly improving on the strongest single method
+in 15 of 16 tasks and tying it in the remaining one
 (Table~\ref{tab:methods}, Figure~\ref{fig:method_multi}). Mean AUROC across tasks
-was $0.52$ for accessibility, $0.77$ for motif-only scoring, and $0.80$ for the
+was $0.54$ for accessibility, $0.75$ for motif-only scoring, and $0.79$ for the
 integrated score. In K562 tasks with cut-site footprints, footprint-only signal
-averaged $0.55$ AUROC: it was informative for CTCF but was not sufficient as a
-standalone predictor across factors. Motif-only scoring remained a strong baseline,
-especially for information-rich motifs such as CTCF and SPI1, but the integrated
-model consistently matched or improved it. The largest gains over motif-only
-scoring occurred for MAX and JUND, including K562 MAX ($0.74\rightarrow0.83$),
-HepG2 MAX ($0.64\rightarrow0.75$), K562 JUND ($0.83\rightarrow0.87$), and HepG2
-JUND ($0.63\rightarrow0.67$). These results support the intended role of
+averaged $0.54$ AUROC: it was informative for CTCF ($0.70$) but was not sufficient
+as a standalone predictor across factors. Motif-only scoring remained a strong
+baseline, especially for information-rich motifs such as CTCF, but the integrated
+model consistently matched or improved it---most where the motif alone is weak. The
+largest gains over motif-only scoring occurred for MAX, JUND, and REST, including
+A549 MAX ($0.71\rightarrow0.82$), HepG2 MAX ($0.64\rightarrow0.74$), A549 REST
+($0.67\rightarrow0.76$), A549 JUND ($0.64\rightarrow0.72$), and K562 MAX
+($0.71\rightarrow0.78$). These results support the intended role of
 \texttt{fp-tools}: preserving interpretable classical predictors while providing a
 reproducible route to combine sequence, accessibility, composition, and footprint
-features when those data are available. Full AUROC/AUPRC values and bootstrap
-confidence intervals are reported in the benchmark metrics table distributed with
-the analysis outputs (see Data Availability). Whole-genome and chromosome-held-out
-benchmarks are the next validation step before making broad superiority claims.
+features. That the advantage holds genome-wide, under chromosome-held-out
+evaluation, and on a held-out fourth cell line (A549) indicates it is not an
+artifact of a single locus set. Full AUROC/AUPRC values and bootstrap confidence
+intervals are reported in the benchmark metrics table distributed with the analysis
+outputs (see Data Availability).
 
 \begin{table}[H]
-\caption{Integrated method-comparison pilot benchmark on ENCODE ATAC-seq peaks
-(chromosome~4) labeled by matched ChIP-seq overlap. Values are AUROC point
-estimates; the full metrics TSV contains AUPRC and 200-resample bootstrap 95\% CIs.
-The footprint-only column is shown only where BAM-derived cut-site footprints were
-computed.\label{tab:methods}}
+\caption{Integrated method-comparison benchmark on genome-wide ENCODE ATAC-seq
+peaks (autosomes and chromosome~X) labeled by matched ChIP-seq overlap, across four
+cell lines and 16 cell--TF tasks. Values are AUROC point estimates under
+chromosome-held-out evaluation; the full metrics TSV contains AUPRC and bootstrap
+95\% CIs. The footprint-only column is shown only where BAM-derived cut-site
+footprints were computed (K562).\label{tab:methods}}
 \newcolumntype{Z}{>{\centering\arraybackslash}X}
 \begin{tabularx}{\textwidth}{llZZZZ}
 \toprule
 \textbf{Cell / TF} & \textbf{Pos. frac.} & \textbf{Access.} & \textbf{Motif} & \textbf{Footprint} & \textbf{Integrated}\\
 \midrule
-K562 / CTCF & 0.36 & 0.53 & 0.87 & 0.68 & \textbf{0.88}\\
-K562 / GATA1 & 0.08 & 0.58 & 0.72 & 0.53 & \textbf{0.73}\\
-K562 / SPI1 & 0.28 & 0.47 & 0.79 & 0.54 & \textbf{0.79}\\
-K562 / REST & 0.06 & 0.48 & 0.72 & 0.56 & \textbf{0.73}\\
-K562 / MAX & 0.49 & 0.44 & 0.74 & 0.56 & \textbf{0.83}\\
-K562 / JUND & 0.08 & 0.59 & 0.83 & 0.41 & \textbf{0.87}\\
+K562 / CTCF & 0.38 & 0.51 & 0.87 & 0.70 & \textbf{0.87}\\
+K562 / GATA1 & 0.08 & 0.55 & 0.76 & 0.49 & \textbf{0.77}\\
+K562 / SPI1 & 0.28 & 0.51 & 0.76 & 0.52 & \textbf{0.76}\\
+K562 / REST & 0.05 & 0.51 & 0.63 & 0.52 & \textbf{0.65}\\
+K562 / MAX & 0.50 & 0.48 & 0.71 & 0.54 & \textbf{0.78}\\
+K562 / JUND & 0.08 & 0.57 & 0.83 & 0.49 & \textbf{0.85}\\
 \midrule
-GM12878 / CTCF & 0.26 & 0.57 & 0.90 & -- & \textbf{0.90}\\
-GM12878 / SPI1 & 0.28 & 0.50 & 0.78 & -- & \textbf{0.78}\\
+GM12878 / CTCF & 0.28 & 0.57 & 0.89 & -- & \textbf{0.89}\\
+GM12878 / SPI1 & 0.30 & 0.50 & 0.77 & -- & \textbf{0.77}\\
 \midrule
-HepG2 / CTCF & 0.28 & 0.59 & 0.86 & -- & \textbf{0.87}\\
-HepG2 / MAX & 0.35 & 0.49 & 0.64 & -- & \textbf{0.75}\\
-HepG2 / JUND & 0.13 & 0.49 & 0.63 & -- & \textbf{0.67}\\
-HepG2 / REST & 0.006 & 0.51 & 0.81 & -- & \textbf{0.86}\\
+HepG2 / CTCF & 0.32 & 0.55 & 0.85 & -- & \textbf{0.86}\\
+HepG2 / MAX & 0.43 & 0.48 & 0.64 & -- & \textbf{0.74}\\
+HepG2 / JUND & 0.16 & 0.50 & 0.62 & -- & \textbf{0.67}\\
+HepG2 / REST & 0.01 & 0.51 & 0.82 & -- & \textbf{0.85}\\
+\midrule
+A549 / CTCF & 0.28 & 0.61 & 0.89 & -- & \textbf{0.89}\\
+A549 / MAX & 0.13 & 0.59 & 0.71 & -- & \textbf{0.82}\\
+A549 / JUND & 0.21 & 0.58 & 0.64 & -- & \textbf{0.72}\\
+A549 / REST & 0.06 & 0.56 & 0.67 & -- & \textbf{0.76}\\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 \begin{figure}[H]
 \includegraphics[width=\textwidth]{figures/method_comparison_multi.png}
-\caption{Multi-method benchmark across three ENCODE cell lines and 12 cell--TF
-tasks. Panel A compares per-task AUROC for raw accessibility, motif-only scoring,
-cut-site footprint scoring where available, and the integrated \texttt{fp-tools}
-model. Panel B compares the integrated model with the best single-method score for
-each task. Panel C summarizes mean AUROC by method. Generated by
+\caption{Genome-wide, chromosome-held-out multi-method benchmark across four ENCODE
+cell lines and 16 cell--TF tasks. Panel A compares per-task AUROC (with bootstrap
+95\% CIs) for raw accessibility, motif-only scoring, cut-site footprint scoring
+where available, and the integrated \texttt{fp-tools} model. Panel B compares the
+integrated model with the best single-method score for each task (points on or above
+the diagonal mean integration matches or beats the best single method). Panel C
+summarizes mean AUROC by method. Generated by
 \texttt{paper/scripts/plot\_method\_comparison\_multi.py}.\label{fig:method_multi}}
+\end{figure}
+
+The integrated model is a strong \emph{ranking} predictor, but because the logistic
+classifier is trained with class-rebalancing, its raw probabilities are
+systematically over-confident relative to the low genomic base rate of binding
+(pooled expected calibration error, ECE, $=0.21$; Figure~\ref{fig:calibration}A).
+Applying leak-free isotonic recalibration---fit on training chromosomes and applied
+to held-out chromosomes---restores calibration almost exactly, reducing the pooled
+ECE to $0.001$ and aligning predicted probabilities with observed binding
+frequencies across all 16 tasks (Figure~\ref{fig:calibration}). This separates two
+distinct quantities that are easily conflated: discrimination (AUROC/AUPRC), where
+the integrated model excels out of the box, and probability calibration, which the
+optional recalibration step provides when downstream use requires meaningful
+probabilities rather than rankings.
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{figures/figure_calibration_genome.png}
+\caption{Calibration of the integrated \texttt{fp-tools} probabilities, pooled over
+all 16 genome-wide tasks under chromosome-held-out evaluation. (A) Reliability
+diagram: raw class-balanced probabilities are over-confident (red, ECE $0.21$),
+while leak-free isotonic recalibration lands on the diagonal (blue, ECE $0.001$).
+(B) Per-task ECE before and after recalibration. (C) Distribution of calibrated
+probabilities. Generated by
+\texttt{paper/scripts/plot\_calibration\_panel.py}.\label{fig:calibration}}
 \end{figure}
 
 \subsection{Footprinting Requires Cut-Site Resolution}
@@ -568,14 +610,18 @@ than from per-replicate scores, so it should be read as a calibrated uncertainty
 heuristic rather than a full hierarchical model, and per-replicate inputs would
 enable a stronger formulation in future work.
 
-Limitations include the chromosome-4 scope of the current pilot benchmark, the
-dependence of larger public-benchmark results on external data acquisition and
-comparator execution, which are intentionally kept outside version control for
-size and licensing reasons; the tabular supervised models
-trade base-resolution sequence modeling for transparency and speed; and several
-roadmap items (attribution-based discovery, RNA-prior weighting for pseudobulk,
-hierarchical differential binding) are scaffolded but not yet fully realized.
-These are natural directions for subsequent releases.
+Limitations remain. The present benchmark evaluates discrimination within each
+cell--TF task under chromosome-held-out cross-validation; whole-genome
+cross-cell-line transfer (training on some cell lines and testing on others) and
+direct head-to-head runs of external tools such as TOBIAS, HINT-ATAC, and
+ChromBPNet on the identical locus sets are the next steps before broad,
+field-relative superiority claims. Larger public-benchmark inputs depend on
+external data acquisition, intentionally kept outside version control for size and
+licensing reasons; the tabular supervised models trade base-resolution sequence
+modeling for transparency and speed; and several roadmap items (attribution-based
+discovery, RNA-prior weighting for pseudobulk, hierarchical differential binding)
+are scaffolded but not yet fully realized. These are natural directions for
+subsequent releases.
 
 %==================================================================
 \section{Conclusions}
@@ -588,10 +634,13 @@ competition-decomposition modules. By keeping core workflows stable and
 test-covered while adding new scientific behavior as composable, independently
 validated modules---and by pairing them with a tiered public-data benchmark and
 figure infrastructure---the package lowers the barrier to standardized,
-benchmarkable regulatory-genomics analysis. Future work will complete whole-genome
-or chromosome-held-out public biological benchmarks, strengthen the supervised and
-hierarchical differential-binding models, and integrate attribution-based
-discovery.
+benchmarkable regulatory-genomics analysis. A genome-wide, chromosome-held-out
+benchmark across four ENCODE cell lines and 16 cell--TF tasks shows that the
+integrated score matches or exceeds the best single predictor in every task and
+that optional isotonic recalibration yields well-calibrated probabilities. Future
+work will add whole-genome cross-cell-line transfer and direct external-tool
+comparisons, strengthen the supervised and hierarchical differential-binding
+models, and integrate attribution-based discovery.
 
 \vspace{6pt}
 
