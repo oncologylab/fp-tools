@@ -30,9 +30,9 @@ Motif Discovery, and Variant Scoring}
 \AuthorNames{Yaoxiang Li and Chunling Yi}
 
 \address{%
-$^{1}$ \quad Department of Oncology, Lombardi Comprehensive Cancer Center, Georgetown University Medical Center, Georgetown University, Washington, DC, USA; yl814@georgetown.edu (Y.L.); chunling.yi@georgetown.edu (C.Y.)}
+$^{1}$ \quad Department of Oncology, Lombardi Comprehensive Cancer Center, Georgetown University Medical Center, Georgetown University, Washington, DC, USA; yl814@georgetown.edu (Y.L.); cy232@georgetown.edu (C.Y.)}
 
-\corres{Correspondence: chunling.yi@georgetown.edu (C.Y.)}
+\corres{Correspondence: cy232@georgetown.edu (C.Y.)}
 
 \abstract{(1) Background: Transcription-factor (TF) footprinting from ATAC-seq is
 central to inferring regulatory activity, but the surrounding ecosystem is
@@ -44,7 +44,9 @@ correction, footprint scoring, differential TF-binding detection, and aggregate
 visualization behind stable command-line entry points, with optional YAML and
 graphical wrappers. Around this core we add explicitly opt-in scientific modules:
 multiscale and nucleosome-aware scoring, motif-centric supervised TF-binding
-prediction, motif-relaxed and motif-free candidate recovery, de novo motif
+prediction (a trainable, interpretable tabular logistic-regression classifier
+rather than an unsupervised footprint caller or a deep sequence model),
+motif-relaxed and motif-free candidate recovery, de novo motif
 discovery orchestration, footprint-aware variant scoring, single-cell pseudobulk
 aggregation, replicate-aware differential-binding uncertainty reporting, and a
 competition-aware decomposition of overlapping TF-scale and nucleosome-scale
@@ -68,6 +70,9 @@ to standardized, benchmarkable ATAC-seq regulatory analysis.}
 \keyword{ATAC-seq; transcription factor footprinting; chromatin accessibility;
 motif analysis; supervised TF-binding prediction; multiscale footprints;
 variant scoring; reproducibility; command-line bioinformatics}
+
+% Use an external BibTeX database (references.bib) with the MDPI style.
+\externalbibliography{yes}
 
 \begin{document}
 
@@ -162,6 +167,22 @@ where $C$ is the protected center and $L$ and $R$ are flanking windows. Larger
 values therefore correspond to the expected footprint pattern: fewer cuts at the
 putative bound site and more cuts in nearby accessible flanks.
 
+The multiscale module generalizes this single-scale contrast to a set of footprint
+widths $\mathcal{S}$. For a scale $s$, the center, left, and right windows
+$C_s(i)$, $L_s(i)$, $R_s(i)$ are sized to $s$, giving a scale-specific depletion
+\[
+F_s(i)=\frac{1}{|L_s(i)|+|R_s(i)|}\left(\sum_{j\in L_s(i)}x_j+\sum_{j\in R_s(i)}x_j\right)-
+\frac{1}{|C_s(i)|}\sum_{j\in C_s(i)}x_j,
+\]
+collapsed to a per-position summary by either the maximum or the mean over scales,
+\[
+F_{\max}(i)=\max_{s\in\mathcal{S}}F_s(i),\qquad
+F_{\mathrm{mean}}(i)=\frac{1}{|\mathcal{S}|}\sum_{s\in\mathcal{S}}F_s(i).
+\]
+The full scale-by-position matrix $\{F_s(i)\}$ is retained in the NPZ tensor
+sidecar, so narrow TF-scale and broader nucleosome-scale structure can be
+evaluated in the same regions.
+
 \subsection{Opt-in Scientific Modules}
 
 New behavior is added as separate modules, each with its own console script,
@@ -176,8 +197,12 @@ unit tests, and documentation, and each inert unless explicitly invoked:
   \item \emph{Supervised TFBS prediction}: \texttt{fp-tools-build-tfbs-features}
         assembles motif-centric feature tables (genome GC, multiscale/signal
         summaries, optional overlap labels); \texttt{fp-tools-train-tfbs-model}
-        and \texttt{fp-tools-predict-tfbs} train and apply tabular models with
-        saved bundles and calibration metrics.
+        and \texttt{fp-tools-predict-tfbs} train and apply the model. The model is
+        an intentionally compact, interpretable tabular pipeline---median
+        imputation, feature standardization, and a class-balanced logistic
+        regression~\cite{pedregosa2011sklearn}---rather than a deep sequence model, trading base-resolution
+        sequence learning for transparency, speed, and ease of benchmarking;
+        trained bundles are saved with calibration metrics.
   \item \emph{Motif-relaxed and motif-free recovery}:
         \texttt{fp-tools-generate-candidates} nominates candidates from score
         bigWigs and peaks without requiring motif hits, with an optional
@@ -186,7 +211,8 @@ unit tests, and documentation, and each inert unless explicitly invoked:
         table with provenance.
   \item \emph{De novo motif discovery}: \texttt{fp-tools-export-candidate-fasta},
         \texttt{fp-tools-meme-command}, and \texttt{fp-tools-motif-discovery-plan}
-        export candidate-centered FASTA and emit reproducible MEME/DREME, Tomtom,
+        export candidate-centered FASTA and emit reproducible
+        MEME/DREME~\cite{bailey2015meme}, Tomtom~\cite{gupta2007tomtom},
         and summary command plans; \texttt{fp-tools-summarize-motifs} parses
         MEME/Tomtom output into TSV and HTML reports with inline consensus logos.
   \item \emph{Footprint-aware variant scoring}: \texttt{fp-tools-score-variants}
@@ -206,6 +232,32 @@ unit tests, and documentation, and each inert unless explicitly invoked:
         signal into competing TF-scale and nucleosome-scale components
         (Section~\ref{sec:competition}).
 \end{itemize}
+
+Conceptually, each module answers a distinct biological question. Classical
+footprint scoring asks whether Tn5 cut sites are locally depleted at a candidate
+site relative to its flanks; multiscale scoring asks whether depletion occurs only
+at a narrow TF-like width or also at broader nucleosome-consistent widths;
+supervised TFBS prediction asks, given motif strength, accessibility, GC
+composition, and footprint evidence, what the probability is that a site is truly
+bound in labeled reference data; motif-relaxed and motif-free recovery asks whether
+real occupancy is missed because a PWM threshold is too strict or because binding
+occurs at weak or non-canonical instances; de novo discovery asks which sequence
+patterns recur among strong unexplained candidates; variant scoring asks whether an
+alternate allele weakens motif, sequence-context, or model-predicted binding
+evidence relative to the reference; and pseudobulk aggregation asks whether
+single-cell fragments can be grouped into interpretable group-level profiles that
+run through the same footprinting machinery.
+
+For the variant module, the core effects are signed ref/alt deltas. With $S_{\mathrm{PWM}}$
+the best local motif log-odds score and $\hat{p}$ the supervised TFBS probability
+when a trained model is supplied,
+\[
+\Delta_{\mathrm{PWM}} = S_{\mathrm{PWM}}(\mathrm{alt})-S_{\mathrm{PWM}}(\mathrm{ref}),
+\qquad
+\Delta_{\mathrm{model}} = \hat{p}(\mathrm{alt})-\hat{p}(\mathrm{ref}),
+\]
+so a negative $\Delta$ indicates an allele that weakens predicted binding; analogous
+deterministic deltas are computed for GC content and exact $k$-mer composition.
 
 \subsection{Replicate-aware Differential-Binding Uncertainty}
 \label{sec:replicate}
@@ -271,7 +323,12 @@ AUPRC globally and per TF-cell task, recall at 1\%, 5\%, and 10\% FDR, precision
 fixed recall, calibration curves with expected and maximum calibration error,
 Brier score for probability models, per-TF macro averages, Wilcoxon signed-rank
 tests for paired method comparisons, and stratified bootstrap confidence intervals
-for key deltas. Metric, calibration, and bootstrap computations are implemented as
+for key deltas. Expected calibration error partitions predictions into $B$
+equal-width probability bins and averages the gap between confidence and accuracy,
+\[
+\mathrm{ECE}=\sum_{b=1}^{B}\frac{n_b}{n}\left|\mathrm{acc}(b)-\mathrm{conf}(b)\right|,
+\]
+with maximum calibration error defined analogously as the worst-bin gap. Metric, calibration, and bootstrap computations are implemented as
 standalone, unit-tested scripts and combined by a benchmark pipeline runner that
 also emits PDF/SVG/PNG figure panels.
 
@@ -385,9 +442,14 @@ accessibility, motif score, local GC content, and available footprint features:
 \Pr(y=1\mid z)=\sigma(\beta_0+\beta_1 a+\beta_2 m+\beta_3 g+\beta_4 f),
 \]
 where $y$ denotes ChIP-supported binding, $a$ is accessibility, $m$ is motif score,
-$g$ is GC content, and $f$ is the cut-site footprint score when available. Model
-coefficients were learned within cross-validation, and performance was reported on
-held-out folds. For tasks without BAM-derived cut-site footprints, the integrated
+$g$ is GC content, and $f$ is the cut-site footprint score when available. To avoid
+optimistic bias, every reported integrated score is an \emph{out-of-fold}
+prediction from five-fold stratified cross-validation: coefficients are learned on
+four folds and applied to the held-out fold, so no region contributes to its own
+prediction. This is a within-task out-of-fold evaluation restricted to
+chromosome~4; it is deliberately distinguished from the stricter
+chromosome-held-out and whole-genome cross-validation we identify as the next
+validation step. For tasks without BAM-derived cut-site footprints, the integrated
 model used the available accessibility, motif, and GC features. We evaluated 12 cell--TF tasks:
 six transcription factors in K562 (CTCF, GATA1, SPI1, REST, MAX, JUND;
 $n=1{,}900$ accessible regions each), two in GM12878 (CTCF, SPI1; $n=9{,}482$),
@@ -562,48 +624,6 @@ and software publicly available.}
 \conflictsofinterest{The author declares no conflicts of interest.}
 
 %==================================================================
-\begin{thebibliography}{99}
-
-\bibitem{buenrostro2013}
-Buenrostro, J.D.; Giresi, P.G.; Zaba, L.C.; Chang, H.Y.; Greenleaf, W.J.
-Transposition of native chromatin for fast and sensitive epigenomic profiling of
-open chromatin, DNA-binding proteins and nucleosome position. \textit{Nat.
-Methods} \textbf{2013}, \textit{10}, 1213--1218.
-
-\bibitem{bentsen2020}
-Bentsen, M.; Goymann, P.; Schultheis, H.; Klee, K.; Petrova, A.; Wiegandt, R.;
-Fust, A.; Preussner, J.; Kuenne, C.; Braun, T.; et al. ATAC-seq footprinting
-unravels kinetics of transcription factor binding during zygotic genome
-activation. \textit{Nat. Commun.} \textbf{2020}, \textit{11}, 4267.
-
-\bibitem{li2019hint}
-Li, Z.; Schulz, M.H.; Look, T.; Begemann, M.; Zenke, M.; Costa, I.G. Identification
-of transcription factor binding sites using ATAC-seq. \textit{Genome Biol.}
-\textbf{2019}, \textit{20}, 45.
-
-\bibitem{hu2024print}
-Hu, Y.; et al. Multiscale footprinting reveals the regulatory grammar of chromatin
-accessibility (PRINT/scPrinter). \textit{Nature/bioRxiv} \textbf{2024}.
-
-\bibitem{cazares2023maxatac}
-Cazares, T.A.; Rizvi, F.W.; Iyer, B.; Chen, X.; Kotliar, M.; Bejjani, A.T.;
-Wayman, J.A.; Donmez, O.; Wronowski, B.; Parameswaran, S.; et al. maxATAC:
-Genome-scale transcription-factor binding prediction from ATAC-seq with deep neural
-networks. \textit{PLoS Comput. Biol.} \textbf{2023}, \textit{19}, e1010863.
-
-\bibitem{chrombpnet2024}
-Pampari, A.; et al. ChromBPNet: base-resolution models of chromatin accessibility
-reveal the sequence basis of TF binding and variant effects.
-\textit{bioRxiv/Nature} \textbf{2024}.
-
-\bibitem{encode2012}
-The ENCODE Project Consortium. An integrated encyclopedia of DNA elements in the
-human genome. \textit{Nature} \textbf{2012}, \textit{489}, 57--74.
-
-\bibitem{jaspar2026}
-Rauluseviciute, I.; et al. JASPAR 2026: update of the open-access database of
-transcription factor binding profiles. \textit{Nucleic Acids Res.} \textbf{2026}.
-
-\end{thebibliography}
+\bibliography{references}
 
 \end{document}

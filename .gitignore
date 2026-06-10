@@ -68,3 +68,4 @@ test_data/*.bam.bai
 /paper/BioMedInformatics_manuscript/*.fls
 /paper/BioMedInformatics_manuscript/*.log
 /paper/BioMedInformatics_manuscript/*.out
+/paper/BioMedInformatics_manuscript/*.blg

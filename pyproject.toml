@@ -45,9 +45,16 @@ dependencies = [
   "biopython>=1.85,<2.0",
   "logomaker>=0.8.7,<0.9.0",
   "xlsxwriter>=3.2.9,<4.0.0",
-  "PyYAML>=6.0,<7.0",
-  "streamlit>=1.44,<2.0"
+  "PyYAML>=6.0,<7.0"
 ]
+
+# Optional feature groups keep the core CLI/scientific install light for cluster and
+# container environments, which typically do not need the Streamlit GUI layer.
+[project.optional-dependencies]
+# Streamlit GUI wrapper: pip install "fp-tools-bio[gui]"
+gui = ["streamlit>=1.44,<2.0"]
+# Convenience meta-extra that pulls in every optional feature.
+all = ["streamlit>=1.44,<2.0"]
 
 [project.urls]
 Homepage = "https://github.com/oncologylab/fp-tools"
@@ -120,7 +127,11 @@ biopython = ">=1.85,<2.0"
 logomaker = ">=0.8.7,<0.9.0"
 xlsxwriter = ">=3.2.9,<4.0.0"
 pyyaml = ">=6.0,<7.0"
-streamlit = ">=1.44,<2.0"
+streamlit = { version = ">=1.44,<2.0", optional = true }
+
+[tool.poetry.extras]
+gui = ["streamlit"]
+all = ["streamlit"]
 
 [tool.poetry.scripts]
 atac-correct = "fp_tools.cli:main"

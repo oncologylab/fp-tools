@@ -233,10 +233,22 @@
         <h2>Install</h2>
         <p>The PyPI distribution is named <code>fp-tools-bio</code>; the installed Python package is <code>fp_tools</code>.</p>
         <pre>pip install fp-tools-bio</pre>
+        <p class="note">The core install is intentionally light for cluster and container use. The optional Streamlit GUI is installed separately through the <code>gui</code> extra:</p>
+        <pre>pip install "fp-tools-bio[gui]"</pre>
       </section>
 
       <section id="commands">
-        <h2>Current Release Commands</h2>
+        <h2>Release status legend</h2>
+        <p class="note">The same three-way status model used in <code>README.md</code> applies here:</p>
+        <ul>
+          <li><strong>Released</strong> &mdash; shipped in the current PyPI distribution (<code>fp-tools-bio</code>, version 0.1.7).</li>
+          <li><strong>Development branch</strong> &mdash; implemented and callable from the current source tree / <code>main</code>, with unit-test coverage, but biological validation is still expanding and the public release is pending.</li>
+          <li><strong>Planned</strong> &mdash; described in the validation roadmap (<code>DEV_PLAN.md</code>); not yet implemented or not yet benchmarked.</li>
+        </ul>
+        <p class="note">The PyPI page is authoritative for what <code>pip install fp-tools-bio</code> provides today.</p>
+
+        <h2>Commands</h2>
+        <h3>Released (PyPI 0.1.7)</h3>
         <ul>
           <li><code>atac-correct</code>: correct ATAC-seq cutsite signal for Tn5 sequence bias.</li>
           <li><code>score-footprints</code>: calculate footprint, multiscale, sum, mean, or pass-through scores from bigWig signal.</li>
@@ -245,9 +257,10 @@
           <li><code>fp-tools-run</code>: run optional YAML batch configs.</li>
           <li><code>fp-tools-gui</code>: launch the optional Streamlit GUI wrapper.</li>
         </ul>
-        <p class="note">Additional opt-in commands support tabular TFBS feature/model workflows, candidate generation and reranking, de novo motif-discovery orchestration, variant scoring, pseudobulk fragment grouping, replicate-aware BINDetect reports, and multiscale competition decomposition. These commands are available in the source tree and development builds; biological validation benchmarks for several of them are still being expanded.</p>
-        <p class="note">Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.</p>
         <p class="note">Legacy aliases remain available for compatibility: <code>ATACorrect</code>, <code>FootprintScores</code>, <code>ScoreBigwig</code>, <code>BINDetect</code>, and <code>PlotAggregate</code>.</p>
+        <h3>Development branch (current source tree)</h3>
+        <p class="note">Additional opt-in commands support tabular TFBS feature/model workflows, candidate generation and reranking, de novo motif-discovery orchestration, variant scoring, pseudobulk fragment grouping, replicate-aware BINDetect reports, and multiscale competition decomposition. These commands are present and callable from the current source tree and carry unit-test coverage; biological validation benchmarks for several of them are still being expanded, and they are not all guaranteed to be exposed in the released wheel until the next tagged release.</p>
+        <p class="note">Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.</p>
         <h3>Verify</h3>
         <pre>atac-correct --help
 score-footprints --help

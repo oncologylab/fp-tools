@@ -1,0 +1,94 @@
+\begin{thebibliography}{999}
+
+\bibitem[Buenrostro et~al.(2013)Buenrostro, Giresi, Zaba, Chang, and
+  Greenleaf]{buenrostro2013}
+Buenrostro, J.D.; Giresi, P.G.; Zaba, L.C.; Chang, H.Y.; Greenleaf, W.J.
+\newblock Transposition of native chromatin for fast and sensitive epigenomic
+  profiling of open chromatin, {DNA}-binding proteins and nucleosome position.
+\newblock {\em Nature Methods} {\bf 2013}, {\em 10},~1213--1218.
+\newblock {\url{https://doi.org/10.1038/nmeth.2688}}.
+
+\bibitem[Bentsen et~al.(2020)Bentsen, Goymann, Schultheis, Klee, Petrova,
+  Wiegandt, Fust, Preussner, Kuenne, Braun, Kim, and Looso]{bentsen2020}
+Bentsen, M.; Goymann, P.; Schultheis, H.; Klee, K.; Petrova, A.; Wiegandt, R.;
+  Fust, A.; Preussner, J.; Kuenne, C.; Braun, T.;  et~al.
+\newblock {ATAC}-seq footprinting unravels kinetics of transcription factor
+  binding during zygotic genome activation.
+\newblock {\em Nature Communications} {\bf 2020}, {\em 11},~4267.
+\newblock {\url{https://doi.org/10.1038/s41467-020-18035-1}}.
+
+\bibitem[Li et~al.(2019)Li, Schulz, Look, Begemann, Zenke, and
+  Costa]{li2019hint}
+Li, Z.; Schulz, M.H.; Look, T.; Begemann, M.; Zenke, M.; Costa, I.G.
+\newblock Identification of transcription factor binding sites using
+  {ATAC}-seq.
+\newblock {\em Genome Biology} {\bf 2019}, {\em 20},~45.
+\newblock {\url{https://doi.org/10.1186/s13059-019-1642-2}}.
+
+\bibitem[Hu et~al.(2025)Hu, Horlbeck, Zhang, Ma, Shrestha, Kartha, Duarte,
+  Hock, Savage, Labade, Kletzien, Meliki, Castillo, Durand, Mattei, Anderson,
+  Tay, Earl, Shoresh, Epstein, Wagers, and Buenrostro]{hu2024print}
+Hu, Y.; Horlbeck, M.A.; Zhang, R.; Ma, S.; Shrestha, R.; Kartha, V.K.; Duarte,
+  F.M.; Hock, C.; Savage, R.E.; Labade, A.;  et~al.
+\newblock Multiscale footprints reveal the organization of cis-regulatory
+  elements.
+\newblock {\em Nature} {\bf 2025}, {\em 638},~779--786.
+\newblock {\url{https://doi.org/10.1038/s41586-024-08443-4}}.
+
+\bibitem[Cazares et~al.(2023)Cazares, Rizvi, Iyer, Chen, Kotliar, Bejjani,
+  Wayman, Donmez, Wronowski, Parameswaran, Kottyan, Barski, Weirauch, Prasath,
+  and Miraldi]{cazares2023maxatac}
+Cazares, T.A.; Rizvi, F.W.; Iyer, B.; Chen, X.; Kotliar, M.; Bejjani, A.T.;
+  Wayman, J.A.; Donmez, O.; Wronowski, B.; Parameswaran, S.;  et~al.
+\newblock {maxATAC}: Genome-scale transcription-factor binding prediction from
+  {ATAC}-seq with deep neural networks.
+\newblock {\em PLoS Computational Biology} {\bf 2023}, {\em 19},~e1010863.
+\newblock {\url{https://doi.org/10.1371/journal.pcbi.1010863}}.
+
+\bibitem[Pampari et~al.(2025)Pampari, Shcherbina, Kvon, Kosicki, Nair, Kundu,
+  Kathiria, Risca, Hundenborn, Zhou, et~al.]{chrombpnet2024}
+Pampari, A.; Shcherbina, A.; Kvon, E.Z.; Kosicki, M.; Nair, S.; Kundu, S.;
+  Kathiria, A.S.; Risca, V.I.; Hundenborn, K.; Zhou, Y.;  et~al.
+\newblock {ChromBPNet}: bias factorized, base-resolution deep learning models
+  of chromatin accessibility reveal cis-regulatory sequence syntax,
+  transcription factor footprints and regulatory variants.
+\newblock {\em bioRxiv} {\bf 2025}.
+\newblock Preprint, {\url{https://doi.org/10.1101/2024.12.25.630221}}.
+
+\bibitem[Pedregosa et~al.(2011)Pedregosa, Varoquaux, Gramfort, Michel, Thirion,
+  Grisel, Blondel, Prettenhofer, Weiss, Dubourg, Vanderplas, Passos,
+  Cournapeau, Brucher, Perrot, and Duchesnay]{pedregosa2011sklearn}
+Pedregosa, F.; Varoquaux, G.; Gramfort, A.; Michel, V.; Thirion, B.; Grisel,
+  O.; Blondel, M.; Prettenhofer, P.; Weiss, R.; Dubourg, V.;  et~al.
+\newblock Scikit-learn: Machine Learning in {Python}.
+\newblock {\em Journal of Machine Learning Research} {\bf 2011}, {\em
+  12},~2825--2830.
+
+\bibitem[Bailey et~al.(2015)Bailey, Johnson, Grant, and Noble]{bailey2015meme}
+Bailey, T.L.; Johnson, J.; Grant, C.E.; Noble, W.S.
+\newblock The {MEME} Suite.
+\newblock {\em Nucleic Acids Research} {\bf 2015}, {\em 43},~W39--W49.
+\newblock {\url{https://doi.org/10.1093/nar/gkv416}}.
+
+\bibitem[Gupta et~al.(2007)Gupta, Stamatoyannopoulos, Bailey, and
+  Noble]{gupta2007tomtom}
+Gupta, S.; Stamatoyannopoulos, J.A.; Bailey, T.L.; Noble, W.S.
+\newblock Quantifying similarity between motifs.
+\newblock {\em Genome Biology} {\bf 2007}, {\em 8},~R24.
+\newblock {\url{https://doi.org/10.1186/gb-2007-8-2-r24}}.
+
+\bibitem[{The ENCODE Project Consortium}(2012)]{encode2012}
+{The ENCODE Project Consortium}.
+\newblock An integrated encyclopedia of {DNA} elements in the human genome.
+\newblock {\em Nature} {\bf 2012}, {\em 489},~57--74.
+\newblock {\url{https://doi.org/10.1038/nature11247}}.
+
+\bibitem[Baydar et~al.(2026)Baydar, Rauluseviciute, Aronsen,
+  et~al.]{jaspar2026}
+Baydar, D.O.; Rauluseviciute, I.; Aronsen, D.R.;  et~al.
+\newblock {JASPAR} 2026: expansion of transcription factor binding profiles and
+  integration of deep learning models.
+\newblock {\em Nucleic Acids Research} {\bf 2026}, {\em 54},~D184--D193.
+\newblock {\url{https://doi.org/10.1093/nar/gkaf1209}}.
+
+\end{thebibliography}

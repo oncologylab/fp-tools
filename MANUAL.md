@@ -10,7 +10,26 @@ The PyPI distribution is named `fp-tools-bio`; the installed Python package is `
 pip install fp-tools-bio
 ```
 
-## Current Release Commands
+The core install is intentionally light for cluster and container use. The optional
+Streamlit GUI is installed separately through the `gui` extra:
+
+```bash
+pip install "fp-tools-bio[gui]"
+```
+
+## Release status legend
+
+The same three-way status model used in `README.md` applies here:
+
+- **Released** — shipped in the current PyPI distribution (`fp-tools-bio`, version 0.1.7).
+- **Development branch** — implemented and callable from the current source tree / `main`, with unit-test coverage, but biological validation is still expanding and the public release is pending.
+- **Planned** — described in the validation roadmap (`DEV_PLAN.md`); not yet implemented or not yet benchmarked.
+
+The PyPI page is authoritative for what `pip install fp-tools-bio` provides today.
+
+## Commands
+
+### Released (PyPI 0.1.7)
 
 - `atac-correct`: correct ATAC-seq cutsite signal for Tn5 sequence bias.
 - `score-footprints`: calculate footprint, multiscale, sum, mean, or pass-through scores from bigWig signal.
@@ -19,11 +38,13 @@ pip install fp-tools-bio
 - `fp-tools-run`: run optional YAML batch configs.
 - `fp-tools-gui`: launch the optional Streamlit GUI wrapper.
 
-Additional opt-in commands support tabular TFBS feature/model workflows, candidate generation and reranking, de novo motif-discovery orchestration, variant scoring, pseudobulk fragment grouping, replicate-aware BINDetect reports, and multiscale competition decomposition. These commands are available in the source tree and development builds; biological validation benchmarks for several of them are still being expanded.
+Legacy aliases remain available for compatibility: `ATACorrect`, `FootprintScores`, `ScoreBigwig`, `BINDetect`, and `PlotAggregate`.
+
+### Development branch (current source tree)
+
+Additional opt-in commands support tabular TFBS feature/model workflows, candidate generation and reranking, de novo motif-discovery orchestration, variant scoring, pseudobulk fragment grouping, replicate-aware BINDetect reports, and multiscale competition decomposition. These commands are present and callable from the current source tree and carry unit-test coverage; biological validation benchmarks for several of them are still being expanded, and they are not all guaranteed to be exposed in the released wheel until the next tagged release.
 
 Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.
-
-Legacy aliases remain available for compatibility: `ATACorrect`, `FootprintScores`, `ScoreBigwig`, `BINDetect`, and `PlotAggregate`.
 
 ## Verify
 

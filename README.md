@@ -10,7 +10,26 @@ The PyPI distribution is named `fp-tools-bio`; the installed Python package is `
 pip install fp-tools-bio
 ```
 
+## Release status legend
+
+`fp-tools` is developed in the open, so a single status layer is used throughout the
+documentation to keep user expectations, the public release, and the development tree
+aligned:
+
+- **Released** — shipped in the current PyPI distribution (`fp-tools-bio`, version 0.1.7) and supported for general use.
+- **Development branch** — implemented and callable from the current source tree / `main`, with unit-test coverage, but biological validation is still expanding and the public release is pending.
+- **Planned** — described in the validation roadmap (`DEV_PLAN.md`); not yet implemented or not yet benchmarked.
+
+The same legend is mirrored in `MANUAL.md`. When the release column and the development
+column disagree, the PyPI page is authoritative for what `pip install fp-tools-bio` gives
+you today.
+
 ## Commands
+
+### Released (PyPI 0.1.7)
+
+The classical footprinting core plus the YAML/GUI wrappers are installed by
+`pip install fp-tools-bio`:
 
 - `atac-correct`: correct ATAC-seq cutsite signal for Tn5 sequence bias.
 - `score-footprints`: calculate footprint, multiscale, sum, mean, or pass-through scores from bigWig signal.
@@ -18,6 +37,16 @@ pip install fp-tools-bio
 - `plot-aggregate`: plot aggregate signal around TFBS or region sets.
 - `fp-tools-run`: run optional YAML batch configs.
 - `fp-tools-gui`: launch the optional Streamlit GUI wrapper.
+
+Legacy aliases remain available for compatibility: `ATACorrect`, `FootprintScores`, `ScoreBigwig`, `BINDetect`, and `PlotAggregate`.
+
+### Development branch (current source tree)
+
+The following extension modules are present and callable from this source tree and carry
+unit-test coverage, but their larger biological benchmarks are still in progress
+(see `DEV_PLAN.md`). They are not all guaranteed to be exposed in the released wheel until
+the next tagged release:
+
 - `fp-tools-build-tfbs-features`: build tabular supervised TFBS features from candidates, genome, signals, and labels.
 - `fp-tools-train-tfbs-model`: train an optional motif-centric supervised TFBS model from tabular features.
 - `fp-tools-predict-tfbs`: apply a saved tabular TFBS model to feature tables.
@@ -34,27 +63,42 @@ pip install fp-tools-bio
 
 Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.
 
-Legacy aliases remain available for compatibility: `ATACorrect`, `FootprintScores`, `ScoreBigwig`, `BINDetect`, and `PlotAggregate`.
-
 ## Feature Comparison Across the Field
 
-`fp-tools current` describes the command surface in this source tree. `fp-tools validation roadmap` describes larger biological benchmarks and later model extensions that are not yet complete.
+This table is deliberately conservative: every cell is mapped to a comparator's documented,
+publicly sourced capability set, and only widely used reference methods are listed
+(TOBIAS, HINT-ATAC, PRINT/scPrinter, ChromBPNet, and the supervised comparator maxATAC).
+Broader-ecosystem tools are discussed in the manuscript rather than asserted here.
 
-Symbols: ✅ native first-class support, ⚠️ partial or indirect support, ❌ absent.
+`fp-tools current` describes the command surface in this source tree (released + development branch).
+`fp-tools roadmap` describes larger biological benchmarks and later model extensions that are
+planned but not yet complete.
 
-| Feature | fp-tools<br>current | fp-tools<br>validation roadmap | TOBIAS | HINT-<br>ATAC | PRINT /<br>scPrinter | TAMC | maxATAC | ChromBPNet<br>Suite | REUNION | DENIS |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Bulk ATAC<br>footprinting | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ | ⚠️ | ⚠️ |
-| Tn5 bias<br>correction | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| Classical<br>footprint scoring | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ⚠️ |
-| Multiscale /<br>nucleosome-aware | ✅ opt-in | broader validation | ❌ | ⚠️ | ✅ | ❌ | ❌ | ⚠️ | ❌ | ❌ |
-| Supervised<br>TFBS prediction | ✅ tabular | public benchmark | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Motif-relaxed /<br>motif-free recovery | ✅ candidate/rerank | motif-removal benchmark | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| De novo<br>motif discovery | ✅ MEME/Tomtom helpers | attribution route later | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Variant<br>scoring | ✅ footprint/motif/model deltas | public variant benchmark | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| scATAC /<br>pseudobulk support | ✅ pseudobulk utility | public pseudobulk benchmark | ⚠️ | ⚠️ | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ✅ |
-| Visualization /<br>reporting | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ✅ | ⚠️ | ✅ |
-| GUI / YAML /<br>batch execution | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+The comparators occupy three different methodological niches, so the rows are grouped
+accordingly. Symbols: ✅ native first-class support, ⚠️ partial or indirect support, ❌ absent.
+
+| Feature | fp-tools<br>current | fp-tools<br>roadmap | TOBIAS | HINT-<br>ATAC | PRINT /<br>scPrinter | ChromBPNet | maxATAC |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Classical unsupervised footprinting** | | | | | | | |
+| Bulk ATAC footprinting | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ |
+| Tn5 bias correction | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Classical footprint scoring | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ | ❌ |
+| Multiscale / nucleosome-aware | ✅ opt-in | broader validation | ❌ | ⚠️ | ✅ | ⚠️ | ❌ |
+| **Supervised / sequence prediction** | | | | | | | |
+| Supervised TFBS prediction | ✅ tabular | public benchmark | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Variant scoring | ✅ footprint/motif/model deltas | public variant benchmark | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Interpretation / discovery / single-cell** | | | | | | | |
+| Motif-relaxed / motif-free recovery | ✅ candidate/rerank | motif-removal benchmark | ❌ | ❌ | ⚠️ | ⚠️ | ❌ |
+| De novo motif discovery | ✅ MEME/Tomtom helpers | attribution route later | ❌ | ❌ | ✅ | ✅ | ❌ |
+| scATAC / pseudobulk support | ✅ pseudobulk utility | public pseudobulk benchmark | ⚠️ | ⚠️ | ✅ | ⚠️ | ⚠️ |
+| Visualization / reporting | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ |
+| GUI / YAML / batch execution | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+`fp-tools` does not claim default algorithmic superiority over the classical comparators for
+single-task footprint scoring; its distinguishing contribution is an integrated,
+reproducible platform that combines the classical core with optional supervised,
+multiscale, motif-recovery, variant, and single-cell-aggregation modules behind one
+command surface. Method-level comparisons are reported in the manuscript benchmark.
 
 ## Verify
 
@@ -319,6 +363,13 @@ plot-aggregate \
 ```
 
 ## GUI
+
+The Streamlit GUI is an optional layer and is not part of the lightweight core install.
+Install it with the `gui` extra:
+
+```bash
+pip install "fp-tools-bio[gui]"
+```
 
 Start the GUI on a Linux server:
 

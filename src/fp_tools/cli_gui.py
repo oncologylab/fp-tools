@@ -23,7 +23,8 @@ def main() -> None:
 
     if importlib.util.find_spec("streamlit") is None:
         raise SystemExit(
-            "Streamlit is not installed in the current environment. Install it to use fp-tools-gui."
+            "Streamlit is not installed in the current environment. "
+            'Install the optional GUI extra to use fp-tools-gui: pip install "fp-tools-bio[gui]".'
         )
 
     port = args.port if args.port is not None else _find_free_port()
