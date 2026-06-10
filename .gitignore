@@ -56,7 +56,6 @@ test_data/*.bam.bai
 /data/public/processed/
 /benchmarks/results/
 /benchmarks/download_reports/
-/paper/BioMedInformatics_manuscript/
 /paper/figures/*.pdf
 /paper/figures/*.png
 /paper/figures/*.svg
