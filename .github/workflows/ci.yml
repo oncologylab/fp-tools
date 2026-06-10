@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      slow_regressions:
+        description: "Run opt-in slow ATACorrect regression"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bedtools samtools
+
+      - name: Install package
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -e .
+
+      - name: Run unit and regression tests
+        env:
+          FP_TOOLS_RUN_SLOW_REGRESSIONS: ${{ github.event.inputs.slow_regressions == 'true' && '1' || '0' }}
+        run: .venv/bin/python -m unittest discover -s tests -v

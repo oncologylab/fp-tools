@@ -1,0 +1,30 @@
+version: 1
+run_mode: batch
+samples:
+  - sample_id: bindetect_single_bcell
+    tool: BINDetect
+    motifs: test_data/motifs.jaspar
+    signals:
+      - test_data/Bcell_footprints.bw
+    genome: test_data/genome.fa.gz
+    peaks: test_data/merged_peaks_annotated.bed
+    peak_header: test_data/merged_peaks_annotated_header.txt
+    outdir: examples/gui_demo_outputs/bindetect_batch_single_bcell
+    cond_names:
+      - Bcell
+    cores: 1
+    skip_excel: true
+  - sample_id: bindetect_single_tcell
+    tool: BINDetect
+    motifs: test_data/motifs.jaspar
+    signals:
+      - test_data/Tcell_day1_footprints.bw
+    genome: test_data/genome.fa.gz
+    peaks: test_data/merged_peaks_annotated.bed
+    peak_header: test_data/merged_peaks_annotated_header.txt
+    outdir: examples/gui_demo_outputs/bindetect_batch_single_tcell
+    cond_names:
+      - Tcell
+    cores: 1
+    skip_excel: true
+comparisons: []

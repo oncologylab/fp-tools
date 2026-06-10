@@ -1,0 +1,65 @@
+.DS_Store
+DEV_PLAN.md
+fp-tools-research-report.md
+
+# Local environment and editor state
+.venv/
+.idea/
+
+# Coding agent / assistant state (never tracked)
+.codex
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+.cursor/
+.aider*
+.github/copilot-instructions.md
+
+# Python cache artifacts
+__pycache__/
+*.py[cod]
+*.so
+
+# Packaging and build outputs
+build/
+dist/
+*.egg-info/
+
+# Test and coverage caches
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Temporary local run outputs
+examples/atacorrect/
+examples/bindetect/BINDetect_output*/
+examples/gui_demo_outputs/
+examples/gui_runs/
+examples/reports/
+examples/scorebigwig/
+examples/atacorrect/*_local/
+examples/atacorrect/*_dev/
+examples/scorebigwig/*_local/
+examples/scorebigwig/*_dev/
+examples/bindetect/*_local/
+examples/bindetect/*_dev/
+examples/reports/*_local.*
+examples/reports/*_dev.*
+
+# Large binary fixtures are kept locally but are not suitable for normal GitHub pushes.
+test_data/*.bam
+test_data/*.bam.bai
+
+# Public benchmark data and generated paper artifacts
+/data/public/raw/
+/data/public/processed/
+/benchmarks/results/
+/benchmarks/download_reports/
+/paper/BioMedInformatics_manuscript/
+/paper/figures/*.pdf
+/paper/figures/*.png
+/paper/figures/*.svg
+/paper/tables/*.tsv
+/paper/tables/*.csv

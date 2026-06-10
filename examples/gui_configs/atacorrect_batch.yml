@@ -1,0 +1,20 @@
+version: 1
+run_mode: batch
+samples:
+  - sample_id: atacorrect_batch_a
+    tool: ATACorrect
+    bam: test_data/Bcell.bam
+    genome: test_data/genome.fa.gz
+    peaks: test_data/merged_peaks.bed
+    blacklist: test_data/blacklist.bed
+    outdir: examples/gui_demo_outputs/atacorrect_batch_a
+    cores: 1
+  - sample_id: atacorrect_batch_b
+    tool: ATACorrect
+    bam: test_data/Bcell.bam
+    genome: test_data/genome.fa.gz
+    peaks: test_data/merged_peaks.bed
+    blacklist: test_data/blacklist.bed
+    outdir: examples/gui_demo_outputs/atacorrect_batch_b
+    cores: 1
+comparisons: []

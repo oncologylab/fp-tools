@@ -1,0 +1,149 @@
+[build-system]
+# setuptools does the build; Cython & NumPy headers are available at build time
+requires = [
+  "setuptools>=68",
+  "wheel",
+  "Cython>=3.0",
+  "numpy>=1.22"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fp-tools-bio"
+version = "0.1.7"
+description = "Standalone footprint tools with vendored Cython internals"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Yaoxiang Li" }]
+requires-python = ">=3.12"
+keywords = ["ATAC-seq", "footprinting", "motif", "chromatin", "bioinformatics"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Cython",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+# Runtime deps (unified here so pip/wheel installs work without Poetry)
+dependencies = [
+  "numpy>=1.22,<3.0",
+  "scipy>=1.16,<2.0",
+  "pysam>=0.23.3,<0.24.0",
+  "pyBigWig>=0.3.24,<0.4.0",
+  "matplotlib>=3.10,<4.0",
+  "pandas>=2.3.3,<3.0",
+  "seaborn>=0.13.2,<0.14.0",
+  "pybedtools>=0.12,<0.13",
+  "scikit-learn>=1.5,<2.0",
+  "tqdm>=4.66,<5.0",
+  "kneed>=0.8.5,<0.9.0",
+  "adjustText>=1.3.0,<2.0.0",
+  "moods-python>=1.9.4.1,<2.0.0.0",
+  "biopython>=1.85,<2.0",
+  "logomaker>=0.8.7,<0.9.0",
+  "xlsxwriter>=3.2.9,<4.0.0",
+  "PyYAML>=6.0,<7.0",
+  "streamlit>=1.44,<2.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/oncologylab/fp-tools"
+Repository = "https://github.com/oncologylab/fp-tools"
+Issues = "https://github.com/oncologylab/fp-tools/issues"
+
+[project.scripts]
+atac-correct = "fp_tools.cli:main"
+score-footprints = "fp_tools.cli_scorebigwig:main"
+detect-tf-binding = "fp_tools.tools.bindetect:run_cli"
+plot-aggregate = "fp_tools.cli_plotaggregate:main"
+ATACorrect = "fp_tools.cli:main"
+FootprintScores = "fp_tools.cli_scorebigwig:main"
+ScoreBigwig = "fp_tools.cli_scorebigwig:main"
+BINDetect = "fp_tools.tools.bindetect:run_cli"
+PlotAggregate = "fp_tools.cli_plotaggregate:main"
+fp-tools-run = "fp_tools.cli_batch:main"
+fp-tools-gui = "fp_tools.cli_gui:main"
+fp-tools-build-tfbs-features = "fp_tools.tools.tfbs_features:main"
+fp-tools-train-tfbs-model = "fp_tools.tools.tfbs_model:train_main"
+fp-tools-predict-tfbs = "fp_tools.tools.tfbs_model:predict_main"
+fp-tools-generate-candidates = "fp_tools.tools.candidates:main"
+fp-tools-rerank-candidates = "fp_tools.tools.rerank:main"
+fp-tools-export-candidate-fasta = "fp_tools.tools.motif_discovery:export_fasta_main"
+fp-tools-meme-command = "fp_tools.tools.motif_discovery:meme_command_main"
+fp-tools-motif-discovery-plan = "fp_tools.tools.motif_discovery:motif_discovery_plan_main"
+fp-tools-summarize-motifs = "fp_tools.tools.motif_discovery:motif_report_main"
+fp-tools-score-variants = "fp_tools.tools.variants:main"
+fp-tools-pseudobulk = "fp_tools.tools.pseudobulk:main"
+fp-tools-bindetect-replicate-report = "fp_tools.tools.bindetect_replicate_report:main"
+fp-tools-decompose-competition = "fp_tools.tools.footprint_competition:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where   = ["src"]
+include = ["fp_tools*"]
+
+# ship .pyx/.pxd in sdists so downstream builds can compile
+[tool.setuptools.package-data]
+"fp_tools.utils" = ["*.pyx", "*.pxd"]
+
+# --- Poetry mirror of the important bits so `poetry build` works too ---
+[tool.poetry]
+name = "fp-tools-bio"
+version = "0.1.7"
+description = "Standalone footprint tools with vendored Cython internals"
+authors = ["Yaoxiang Li"]
+readme = "README.md"
+packages = [{ include = "fp_tools", from = "src" }]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+numpy = ">=1.22,<3.0"
+scipy = ">=1.16,<2.0"
+pysam = ">=0.23.3,<0.24.0"
+pybigwig = ">=0.3.24,<0.4.0"
+matplotlib = ">=3.10,<4.0"
+pandas = ">=2.3.3,<3.0"
+seaborn = ">=0.13.2,<0.14.0"
+pybedtools = ">=0.12,<0.13"
+scikit-learn = ">=1.5,<2.0"
+tqdm = ">=4.66,<5.0"
+kneed = ">=0.8.5,<0.9.0"
+adjusttext = ">=1.3.0,<2.0.0"
+moods-python = ">=1.9.4.1,<2.0.0.0"
+biopython = ">=1.85,<2.0"
+logomaker = ">=0.8.7,<0.9.0"
+xlsxwriter = ">=3.2.9,<4.0.0"
+pyyaml = ">=6.0,<7.0"
+streamlit = ">=1.44,<2.0"
+
+[tool.poetry.scripts]
+atac-correct = "fp_tools.cli:main"
+score-footprints = "fp_tools.cli_scorebigwig:main"
+detect-tf-binding = "fp_tools.tools.bindetect:run_cli"
+plot-aggregate = "fp_tools.cli_plotaggregate:main"
+ATACorrect = "fp_tools.cli:main"
+FootprintScores = "fp_tools.cli_scorebigwig:main"
+ScoreBigwig = "fp_tools.cli_scorebigwig:main"
+BINDetect = "fp_tools.tools.bindetect:run_cli"
+PlotAggregate = "fp_tools.cli_plotaggregate:main"
+fp-tools-run = "fp_tools.cli_batch:main"
+fp-tools-gui = "fp_tools.cli_gui:main"
+fp-tools-build-tfbs-features = "fp_tools.tools.tfbs_features:main"
+fp-tools-train-tfbs-model = "fp_tools.tools.tfbs_model:train_main"
+fp-tools-predict-tfbs = "fp_tools.tools.tfbs_model:predict_main"
+fp-tools-generate-candidates = "fp_tools.tools.candidates:main"
+fp-tools-rerank-candidates = "fp_tools.tools.rerank:main"
+fp-tools-export-candidate-fasta = "fp_tools.tools.motif_discovery:export_fasta_main"
+fp-tools-meme-command = "fp_tools.tools.motif_discovery:meme_command_main"
+fp-tools-motif-discovery-plan = "fp_tools.tools.motif_discovery:motif_discovery_plan_main"
+fp-tools-summarize-motifs = "fp_tools.tools.motif_discovery:motif_report_main"
+fp-tools-score-variants = "fp_tools.tools.variants:main"
+fp-tools-pseudobulk = "fp_tools.tools.pseudobulk:main"
+fp-tools-bindetect-replicate-report = "fp_tools.tools.bindetect_replicate_report:main"
+fp-tools-decompose-competition = "fp_tools.tools.footprint_competition:main"

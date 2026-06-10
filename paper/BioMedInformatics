@@ -1,0 +1,631 @@
+Instructions for Authors
+Shortcuts
+
+Submission Checklist
+Please:
+
+Read the Aims & Scope to gain an overview and assess if your manuscript is suitable for this journal.
+Use the Microsoft Word template or LaTeX template to prepare your manuscript. See “Preparing Manuscripts in LaTeX” for further details.
+Make sure that issues about publication ethics, research ethics, copyright, authorship, figure formats, data and references format have been appropriately considered.
+Ensure that all authors have approved the content of the submitted manuscript and confirm that they read the Instructions for Authors.
+Authors are encouraged to add a biography (optional) to the submission and post it to SciProfiles.
+Submit
+
+Manuscript Submission Overview
+Types of Publications
+Full experimental details must be provided so that the results can be reproduced. BioMedInformatics requires that authors publish all experimental controls and make full datasets available where possible (see the guidelines on Supplementary Materials and references to unpublished data).
+
+Manuscripts submitted to BioMedInformatics should neither be published previously nor be under consideration for publication in another journal. The main article types are listed below and a comprehensive list of article types can be found here—please note that not all article types are available for all disciplines.
+
+Article: These are original research manuscripts. The work should report scientifically sound experiments and provide a substantial amount of new information. The article should include the most recent and relevant references in the field. The structure should include an Abstract, Keywords, Introduction, Materials and Methods, Results, Discussion, and Conclusions (optional) sections.
+
+Review: Reviews offer a comprehensive analysis of the existing literature within a field of study, identifying current gaps or problems. They should be critical and constructive and provide recommendations for future research. No new, unpublished data should be presented. The structure can include an Abstract, Keywords, Introduction, Relevant Sections, Discussion, Conclusions, and Future Directions.
+
+A Scoping Review type can be submitted as a Review. The structure is similar to that of a review. Scoping reviews should strictly follow the PRISMA extension for scoping reviews checklist (https://www.prisma-statement.org/scoping) and submit the checklist as non-published material during submission. Templates for the flow diagram can be downloaded from the PRISMA website and the diagram should be included in the main text. We strongly encourage authors to register their detailed protocols, before data extraction commences, in a public registry such as the Open Science Framework (https://osf.io/) or Inplasy (https://inplasy.com/). Authors must include a statement about following the PRISMA guidelines and registration information (if available) in the Methods section.
+
+Submission Process
+Manuscripts for BioMedInformatics should be submitted online at susy.mdpi.com. The submitting author, who is generally the corresponding author, is responsible for the manuscript during the submission and peer review process. The submitting author must ensure that all eligible co-authors have been included in the author list (read the criteria to qualify for authorship) and that they have all read and approved the submitted version of the manuscript. To submit your manuscript, register and log in to the submission website. Once you have registered, click here to go to the submission form for BioMedInformatics. All co-authors can see the manuscript details in the submission system, if they register and log in using the e-mail address provided during manuscript submission.
+
+Accepted File Formats
+Authors are encouraged to use the Microsoft Word template or LaTeX template to prepare their manuscript. Using the template file will substantially shorten the time to complete copy-editing and publication of accepted manuscripts. The total amount of data for all files must not exceed 120 MB. If this is a problem, please contact the Editorial Office biomedinformatics@mdpi.com. Accepted file formats are:
+
+Microsoft Word: Manuscripts prepared in Microsoft Word must be converted into a single file before submission. When preparing manuscripts in Microsoft Word, we encourage you to use the BioMedInformatics Microsoft Word template file. Please insert your graphics (schemes, figures, etc.) in the main text after the paragraph of its first citation.
+LaTeX: Manuscripts prepared in LaTeX must be collated into one ZIP folder (including all source files and images, so that the Editorial Office can recompile the submitted PDF). When preparing manuscripts in LaTeX, we encourage you to use the BioMedInformatics LaTeX template files. You can now also use the online application writeLaTeX to submit articles directly to BioMedInformatics. The MDPI LaTeX template file should be selected from the writeLaTeX template gallery.
+Supplementary files: May be any format, but it is recommended that you use common, non-proprietary formats where possible (see below for further details).
+Disclaimer: Usage of these templates is exclusively intended for submission to the journal for peer review, and strictly limited to this purpose and it cannot be used for posting online on preprint servers or other websites.
+
+Free Format Submission
+BioMedInformatics now accepts free format submission:
+
+We do not have strict formatting requirements, but all manuscripts must contain the required sections: Author Information, Abstract, Keywords, Introduction, Materials & Methods, Results, Conclusions, Figures and Tables with Captions, Funding Information, Author Contributions, Conflict of Interest and other Ethics Statements. Check the Journal Instructions for Authors for more details.
+Your references may be in any style, provided that you use the consistent formatting throughout. It is essential to include author(s) name(s), journal or book title, article or chapter title (where required), year of publication, volume and issue (where appropriate) and pagination. DOI numbers (Digital Object Identifier) are not mandatory but highly encouraged. The bibliography software package EndNote, Zotero, Mendeley, Reference Manager are recommended.
+When your manuscript reaches the revision stage, you will be requested to format the manuscript according to the journal guidelines.
+Cover Letter
+A cover letter must be included with each manuscript submission. It should be concise and explain why the content of the paper is significant, placing the findings in the context of existing work. It should explain why the manuscript fits the scope of the journal.
+
+Any prior submissions of the manuscript to MDPI journals must be acknowledged. If this is the case, it is strongly recommended that the previous manuscript ID is provided in the submission system, which will ease your current submission process. The names of proposed and excluded reviewers should be provided in the submission system, not in the cover letter.
+
+All cover letters are required to include the following statements:
+
+We confirm that neither the manuscript nor any parts of its content are currently under consideration for publication with or published in another journal.
+All authors have approved the manuscript and agree with its submission to BioMedInformatics.
+Author Identification
+Authors are encouraged to add a biography (300–1500 characters) to the submission and upload it to SciProfiles. This should be a single paragraph and should contain the following points:
+
+Authors’ full names followed by current positions;
+Education background including institution information and year of graduation (type and level of degree received);
+Work experience;
+Current and previous research interests;
+Memberships of professional societies and awards received.
+If a manuscript is accepted for publication, we will add an icon linking to your online ORCID profile in the final version of the published paper.
+
+Author Affiliation
+All authors should list their current affiliation and the affiliation where most research was carried out for the preparation of their manuscript. We recommend adding as primary the affiliation where most of the research was conducted or supported, but please check with your institution for any contractual agreement requirements.
+
+It is very important that author names and affiliations are correct. Incorrect information can mean a lack of proper attribution or incorrect citation and can even lead to problems with promotion or funding. After the publication of an article, updates or corrections to the author’s address or affiliation may not be permitted.
+
+Independent Researcher
+If one or all the authors are not currently affiliated with a university, institution or company, or have not been during the development of the manuscript, they should list themselves as an “Independent Researcher”.
+
+[Return to top]
+
+Manuscript Preparation
+General Considerations
+Research manuscripts should comprise:
+Front matter: Title, Author list, Affiliations, Abstract, Keywords.
+Research manuscript sections: Introduction, Materials and Methods, Results, Discussion, Conclusions (optional).
+Back matter: Supplementary Materials, Author Contributions, Funding, Data Availability Statement, Acknowledgments, Conflicts of Interest, References.
+Review manuscripts should comprise:
+Front matter: Title, Author list, Affiliations, Abstract, Keywords.
+Review sections: a literature review organized logically within specific sections and subsections (optional).
+Back matter: Author Contributions, Acknowledgments, Conflicts of Interest, References.
+The template file can be also used to prepare the front and back matter of your review manuscript. It is not necessary to follow the remaining structure.
+
+Systematic reviews and meta-analyses should use the same structure as research articles and should ensure they conform to the PRISMA guidelines.
+
+Case reports should include a succinct introduction about the general medical condition or relevant symptoms that will be discussed in the case report; the case presentation including all of the relevant de-identified demographic and descriptive information about the patient(s), and a description of the symptoms, diagnosis, treatment, and outcome; a discussion providing context and any necessary explanation of specific treatment decisions; a conclusion briefly outlining the take-home message and the lessons learned.
+Graphical Abstract: A graphical abstract (GA) is an image that appears beneath the text abstract. In addition to summarizing the content, it should represent the topic of the article in an attention-grabbing way. Moreover, before you submit any figures for the graphical abstract, please check the following list to ensure your files meet MDPI’s graphical abstract (GA) criteria:
+A graphical abstract should not be exactly the same as any figure in the body of the paper, a simple superposition of several subfigures, or a combination of the text abstract and a picture.
+A graphical abstract should be original and unpublished artwork. Any postage stamps, currency from any country, or trademarked items should not be included in it. No copyrighted material should be used in a GA.
+A graphical abstract should be a high-quality illustration or diagram in any of the following file formats: PNG, JPEG, or TIFF.
+The minimum required size for the graphical abstract is 560 × 1100 pixels (height × width).
+Written text in a graphical abstract should be clear and easy to read. It is recommended to use fonts such as Times, Arial, Courier, Helvetica, Ubuntu, and Calibri.
+Please use symbols correctly, and do not use commas instead of decimal points in numbers.
+Avoid large blocks of text or large blank spaces in the image.
+Do not include “Graphical Abstract” as a heading in the image.
+The graphical abstract will be displayed on the online version of the article, but is typically absent from the print version or article PDF file.
+
+MDPI Author Services offers a premium graphical abstract creation service—click here to learn more.
+
+Acronyms/Abbreviations/Initialisms should be defined the first time they appear in each of three sections: the abstract; the main text; the first figure or table. When defined for the first time, the acronym/abbreviation/initialism should be added in parentheses after the written-out form.
+SI Units (International System of Units) should be used. Imperial, US customary and other units should be converted to SI units whenever possible.
+Accession numbers of RNA, DNA and protein sequences used in the manuscript should be provided in the Materials and Methods section. Also see the section on Deposition of Sequences and Expression Data.
+Equations: If you are using Word, please use either the Microsoft Equation Editor or the MathType add-on. Equations should be editable by the editorial office and not appear in a picture format.
+Research Data and supplementary materials: Note that publication of your manuscript implies that you must make all materials, data, and protocols associated with the publication available to readers. Disclose at the submission stage any restrictions on the availability of materials or information. Read the information about Supplementary Materials and Data Deposit for additional guidelines.
+Preregistration: Where authors have preregistered studies or analysis plans, links to the preregistration must be provided in the manuscript.
+Guidelines and standards: MDPI follows standards and guidelines for certain types of research. See https://www.mdpi.com/editorial_process for further information.
+[Return to top]
+
+Front Matter
+These sections should appear in all manuscript types
+
+Title: The title of your manuscript should be concise, specific and relevant. It should identify if the study reports (human or animal) trial data, or is a systematic review, meta-analysis or replication study. When gene or protein names are included, the abbreviated name rather than full name should be used. Please do not include abbreviated or short forms of the title, such as a running title or head. These will be removed by our Editorial Office.
+Author List and Affiliations: Authors' full first and last names must be provided. The initials of any middle names can be added. The PubMed/MEDLINE standard format is used for affiliations: complete address information including city, zip code, state/province, and country. At least one author should be designated as the corresponding author. The email addresses of all authors will be displayed on published papers. It is the responsibility of the corresponding author to ensure that consent for the display of email addresses is obtained from all authors. If an author (other than the corresponding author) does not wish to have their email addresses displayed in this way, the corresponding author must indicate as such during proofreading. After acceptance, updates to author names or affiliations may not be permitted. Equal Contributions: authors who have contributed equally should be marked with a superscript symbol (†). The symbol must be included below the affiliations, and the following statement added: “These authors contributed equally to this work”. The equal roles of authors should also be adequately disclosed in the author contributions statement. Generative artificial intelligence (GenAI) tools and other large language models (LLMs) cannot be listed as authors as these tools do not meet MDPI’s requirements for authorship. Please read the criteria to qualify for authorship.
+Abstract: The abstract should be a total of about 200 words maximum. The abstract should be a single paragraph and should follow the style of structured abstracts, but without headings: 1) Background: Place the question addressed in a broad context and highlight the purpose of the study; 2) Methods: Describe briefly the main methods or treatments applied. Include any relevant preregistration numbers, and species and strains of any animals used; 3) Results: Summarize the article's main findings; and 4) Conclusion: Indicate the main conclusions or interpretations. The abstract should be an objective representation of the article: it must not contain results which are not presented and substantiated in the main text and should not exaggerate the main conclusions.
+Keywords: Three to ten pertinent keywords need to be added after the abstract. We recommend that the keywords are specific to the article, yet reasonably common within the subject discipline.
+Research Manuscript Sections
+Introduction: The introduction should briefly place the study in a broad context and highlight why it is important. It should define the purpose of the work and its significance, including specific hypotheses being tested. The current state of the research field should be reviewed carefully and key publications cited. Please highlight controversial and diverging hypotheses when necessary. Finally, briefly mention the main aim of the work and highlight the main conclusions. Keep the introduction comprehensible to scientists working outside the topic of the paper.
+Materials and Methods: They should be described with sufficient detail to allow others to replicate and build on published results. New methods and protocols should be described in detail while well-established methods can be briefly described and appropriately cited. Give the name and version of any software used and make clear whether computer code used is available. Include any pre-registration codes. Where applicable, authors are required to disclose in this section details of how GenAI has been used in the paper (e.g., to generate text, data or graphics or assist in study design or data collection, analysis or interpretation). The use of GenAI for superficial text editing (e.g., regarding grammar, spelling, punctuation and formatting) does not need to be declared.
+Results: Provide a concise and precise description of the experimental results, their interpretation as well as the experimental conclusions that can be drawn.
+Discussion: Authors should discuss the results and how they can be interpreted in perspective of previous studies and of the working hypotheses. The findings and their implications should be discussed in the broadest context possible and limitations of the work highlighted. Future research directions may also be mentioned. This section may be combined with Results.
+Conclusions: This section is not mandatory but can be added to the manuscript if the discussion is unusually long or complex.
+Patents: This section is not mandatory but may be added if there are patents resulting from the work reported in this manuscript.
+[Return to top]
+
+Back Matter
+Supplementary Materials: Describe any supplementary material published online alongside the manuscript (figure, tables, video, spreadsheets, etc.). Please indicate the name and title of each element as follows Figure S1: title, Table S1: title, etc.
+Author Contributions: Each author is expected to have made substantial contributions to the conception or design of the work; or the acquisition, analysis, or interpretation of data; or the creation of new software used in the work; or have drafted the work or substantively revised it; AND has approved the submitted version (and version substantially edited by journal staff that involves the author’s contribution to the study); AND agrees to be personally accountable for the author’s own contributions and for ensuring that questions related to the accuracy or integrity of any part of the work, even ones in which the author was not personally involved, are appropriately investigated, resolved, and documented in the literature.
+For research articles with several authors, a short paragraph specifying their individual contributions must be provided. The following statements should be used "Conceptualization, X.X. and Y.Y.; Methodology, X.X.; Software, X.X.; Validation, X.X., Y.Y. and Z.Z.; Formal Analysis, X.X.; Investigation, X.X.; Resources, X.X.; Data Curation, X.X.; Writing – Original Draft Preparation, X.X.; Writing – Review & Editing, X.X.; Visualization, X.X.; Supervision, X.X.; Project Administration, X.X.; Funding Acquisition, Y.Y.”, please turn to the CRediT taxonomy for the term explanation. For more background on CRediT, see here. "Authorship must include and be limited to those who have contributed substantially to the work. Please read the section concerning the criteria to qualify for authorship carefully".
+Funding: All sources of funding of the study should be disclosed. Clearly indicate grants that you have received in support of your research work and if you received funds to cover publication costs. Note that some funders will not refund article processing charges (APC) if the funder and grant number are not clearly and correctly identified in the paper. Funding information can be entered separately into the submission system by the authors during submission of their manuscript. Such funding information, if available, will be deposited to FundRef if the manuscript is finally published.
+Please add: “This research received no external funding” or “This research was funded by [name of funder] grant number [xxx]” and “The APC was funded by [XXX]” in this section. Check carefully that the details given are accurate and use the standard spelling of funding agency names at https://search.crossref.org/funding, any errors may affect your future funding.
+Institutional Review Board Statement: In this section, please add the Institutional Review Board Statement and approval number for studies involving humans or animals. You might choose to exclude this statement if the study did not require ethical approval. Please note that the Editorial Office might ask you for further information. Please add “The study was conducted in accordance with the Declaration of Helsinki, and approved by the Institutional Review Board (or Ethics Committee) of NAME OF INSTITUTE (protocol code XXX and date of approval).” for studies involving humans. OR “The animal study protocol was approved by the Institutional Review Board (or Ethics Committee) of NAME OF INSTITUTE (protocol code XXX and date of approval).” for studies involving animals. OR “Ethical review and approval were waived for this study due to REASON (please provide a detailed justification).” OR “Not applicable” for studies not involving humans or animals.
+Informed Consent Statement: Any research article describing a study involving humans should contain this statement. Please add “Informed consent was obtained from all subjects involved in the study.” OR “Patient consent was waived due to REASON (please provide a detailed justification).” OR “Not applicable.” for studies not involving humans. You might also choose to exclude this statement if the study did not involve humans.
+Written informed consent for publication must be obtained from participating patients who can be identified (including by the patients themselves). Please state “Written informed consent has been obtained from the patient(s) to publish this paper” if applicable.
+Data Availability Statement: In this section, please provide details regarding where data supporting reported results can be found, including links to publicly archived datasets analyzed or generated during the study. Where no new data were created, or where data are unavailable due to privacy or ethical restrictions, a statement is still required. Please refer to the suggested Data Availability Statements in the section “MDPI Research Data Policies”.
+Acknowledgments: In this section you can acknowledge any support given which is not covered by the author contribution or funding sections. This may include administrative and technical support, or donations in kind (e.g., materials used for experiments). Where GenAI has been used for purposes such as generating text, data or graphics, study design, or data collection, analysis or interpretation, please add “During the preparation of this manuscript/study, the author(s) used [tool name, version information] for the purposes of [description of use]. The authors have reviewed and edited the output and take full responsibility for the content of this publication”.
+Conflicts of Interest: Authors must identify and declare any personal circumstances or interest that may be perceived as influencing the representation or interpretation of reported research results. If there is no conflict of interest, please state "The authors declare no conflict of interest." Any role of the funding sponsors in the choice of research project; design of the study; in the collection, analyses or interpretation of data; in the writing of the manuscript; or in the decision to publish the results must be declared in this section. BioMedInformatics does not publish studies funded partially or fully by the tobacco industry. Any projects funded by industry must pay special attention to the full declaration of funder involvement. If there is no role, please state “The sponsors had no role in the design, execution, interpretation, or writing of the study”. For more details please see Conflict of Interest.
+References: References must be numbered in order of appearance in the text (including table captions and figure legends) and listed individually at the end of the manuscript. We recommend preparing the references with a bibliography software package, such as EndNote, ReferenceManager or Zotero to avoid typing mistakes and duplicated references. We encourage citations to data, computer code and other citable research material. If available online, you may use reference style 9. below.
+Citations and References in Supplementary files are permitted provided that they also appear in the main text and in the reference list.
+In the text, reference numbers should be placed in square brackets [ ], and placed before the punctuation; for example [1], [1–3] or [1,3]. For embedded citations in the text with pagination, use both parentheses and brackets to indicate the reference number and page numbers; for example [5] (p. 10). or [6] (pp. 101–105).
+
+The reference list should include the full title, as recommended by the ACS style guide. Style files for Endnote and Zotero are available.
+
+References should be described as follows, depending on the type of work:
+
+Journal Articles:
+1. Author 1, A.B.; Author 2, C.D. Title of the article. Abbreviated Journal Name Year, Volume, page range.
+Books and Book Chapters:
+2. Author 1, A.; Author 2, B. Book Title, 3rd ed.; Publisher: Publisher Location, Country, Year; pp. 154–196.
+3. Author 1, A.; Author 2, B. Title of the chapter. In Book Title, 2nd ed.; Editor 1, A., Editor 2, B., Eds.; Publisher: Publisher Location, Country, Year; Volume 3, pp. 154–196.
+Unpublished materials intended for publication:
+4. Author 1, A.B.; Author 2, C. Title of Unpublished Work (optional). Correspondence Affiliation, City, State, Country. year, status (manuscript in preparation; to be submitted).
+5. Author 1, A.B.; Author 2, C. Title of Unpublished Work. Abbreviated Journal Name year, phrase indicating stage of publication (submitted; accepted; in press).
+Unpublished materials not intended for publication:
+6. Author 1, A.B. (Affiliation, City, State, Country); Author 2, C. (Affiliation, City, State, Country). Phase describing the material, year. (phase: Personal communication; Private communication; Unpublished work; etc.)
+Conference Proceedings:
+7. Author 1, A.B.; Author 2, C.D.; Author 3, E.F. Title of Presentation. In Title of the Collected Work (if available), Proceedings of the Name of the Conference, Location of Conference, Country, Date of Conference; Editor 1, Editor 2, Eds. (if available); Publisher: City, Country, Year (if available); Abstract Number (optional), Pagination (optional).
+Thesis:
+8. Author 1, A.B. Title of Thesis. Level of Thesis, Degree-Granting University, Location of University, Date of Completion.
+Websites:
+9. Title of Site. Available online: URL (accessed on Day Month Year).
+Unlike published works, websites may change over time or disappear, so we encourage you create an archive of the cited website using a service such as WebCite. Archived websites should be cited using the link provided as follows:
+10. Title of Site. URL (archived on Day Month Year).
+See the Reference List and Citations Guide for more detailed information.
+
+[Return to top]
+
+Preparing Figures, Schemes and Tables
+BioMedInformatics can publish multimedia files in articles or as supplementary materials. Please contact the Editorial Office for further information.
+
+Our guidance regarding various aspects of figures, schemes and tables is described below.
+
+Resolution, color and format:
+
+All figures should be of a high quality (preferably no less than 600 dpi) in PNG, JPEG or TIFF formats.
+Authors are encouraged to prepare figures and schemes in color (RGB at 8-bit per channel). There is no additional cost for publishing full-color graphics.
+Images should be combined to avoid any issues during formatting changes. There should be no editable parts in the images.
+All table columns should have an explanatory heading. To facilitate the copy-editing of larger tables, smaller fonts (no smaller than 8 pt.) may be used. Authors should use the “Table” option in Microsoft Word to create tables.
+Order:
+
+All figures, schemes and tables should be inserted into the main text close to their first citation and must be numbered following their order of appearance (e.g., Figure 1, Scheme 1, Figure 2, Scheme 2, Table 1, etc.).
+Content:
+
+Generally, figures should contain only English text and the correct mathematical symbols, e.g., - instead of — and decimal points instead of commas.
+The figure content should be complete and the characters should not be masked. Unnecessary marks such as red wavy lines and hard (soft) returns are not allowed.
+A comma should be added in numbers of five or more digits in all figures, schemes and tables. The scientific enumeration should be correct.
+All figures, schemes and tables should have a short explanatory title and caption. Any special characters or icons in an image, e.g., *, **, and #, need to have a corresponding explanation in the caption.
+Copyright:
+
+Reprinted/adapted figures or tables may have copyright issues. Whether copyright permission is required and should be obtained will need to be determined. Please add the corresponding copyright-related content in the caption if required (please refer to Intellectual Property i.a. Copyright, Patents and Licensing).
+Please note that MDPI offers professional support for creating publication-ready figures and tables that clearly communicate your research to readers. Learn more about the Figure and Table Editing service here.
+
+[Return to top]
+
+Original Images Requirements
+To ensure the integrity and scientific validity of electrophoretic blots, gels, and microscopy images, the Editorial Office reserves the right to request original, uncropped, and unadjusted images upon submission. Original images must be provided in a single zip archive as Supplementary Material files at a sufficiently high resolution (a minimum of 1000 pixels in width/height, or a resolution of 300 dpi or higher) or a link where original unprocessed images were deposited at the time of initial submission. Preferred formats for gels, blots, and microscopy images (light and electron microscopy e.g., TEM, SEM, Cryo-EM, etc.) are TIFF, PNG, GIF, and EPS. Failing to provide original images before the final decision might result in the rejection of the paper, and the issue may be raised with the authors' institutions.
+
+Digital images within the manuscript submitted should be minimally processed. A certain degree of image processing is acceptable for publication, but the final image must correctly represent the original data and conform to community standards. Please note that electron microscopy images submitted with a manuscript should be presented in full, without cropping the image, and with all the relevant details clearly visible.
+
+Where cropped images are shown in figures, a full scan of the entire original image(s) must be submitted as part of the Supplementary Material. Where control images are re-used for illustrative purposes, this must be clearly declared in the figure legend. If any form of image processing is legitimately required for the interpretation of the data, the software and the enhancement technique used must be declared in the methods section of the manuscript. Image grouping and splicing must be clearly stated in the manuscript and the figure text.
+
+The use of software filters to improve image quality is not recommended. Slight adjustments to contrast settings, brightness, intensity, color, etc., are generally acceptable but must be applied equally to the entire image. Excessive image manipulations that are specific to one area of an image and are not performed on other areas are considered part of a non-ethical practice of image processing, as this emphasizes experimental data relative to the control.
+
+Images gathered at different times or from different locations should not be combined into a single image unless it is stated that the resultant image is a product of time-averaged data or a time lapse sequence. If juxtaposing images are essential, the borders should be clearly demarcated in the figure and described in the legend.
+
+Electrophoretic gels and blots
+
+Please ensure that:
+
+All experimental samples and controls used for one comparative analysis are run on the same blot/gel. When sample processing controls are run on different gels, this must be indicated in the figure legend. Cropped gels in the paper must retain all important bands.
+Molecular weight markers are included or indicated on the raw image, and any lanes not included in the final figure are marked with an “X” above the lane label on the original blot/gel image. All labeling and annotation should be performed without obscuring any data or background bands.
+Image processing methods, such as adjusting the brightness or contrast, do not alter or distort the information in the figure and are applied to every pixel. High-contrast blots/gels are discouraged.
+Cropped blots/gels present in the main text retain all important information and bands.
+Each original image is annotated, and corresponds to the figure in the main article or supplementary materials, and each lane or loading order is labeled.
+You have checked figures for duplications and ensured the figure legends are clear and accurate. Please include all relevant information in the figure legends and clearly indicate any re-arrangement of lanes.
+Spliced gels need a thin dividing line to be added to indicate the alteration. It is fine to remove a complete lane and splice the remaining lanes together, provided that the spliced fragments originate from the same original image. In such cases, the alteration must be indicated in the figure by a thin white or black line between the juxtaposed pieces and must be described in the figure legend. Images must contain the background “noise” they originally contained. The background should not appear as one uniform color.
+
+It is not acceptable practice to “clean up” the background of images with rubberstamps, “wipe” tools to improve the aesthetic appearance or over-adjust the brightness or contrast to remove the background.
+
+All experimental samples and controls used for one comparative analysis should be run on the same blot/gel image. For quantitative analyses, please provide the blots/gels for each independent biological replicate used in the analysis.
+
+Quantitative comparisons between samples on different gels/blots are discouraged; if this is unavoidable, the figure legend must state that the samples derive from the same experiment or parallel experiments and that gels/blots were processed in parallel.
+
+We encourage the inclusion of the following with the final revised version of the manuscript for publication:
+
+In the Methods section, specify the type of equipment (microscopes/objective lenses, cameras, detectors, filter model, and batch number), the acquisition software used, and the magnification or the scale bar in the figure caption. Although we appreciate that there is some variation between instruments, equipment settings for critical measurements should also be listed.
+
+We encourage the deposition of unprocessed image files in a publicly available database (a link to the downloadable table from data availability instructions should be shared here) (including relevant metadata for acquisition information, including time and space resolution data (xyzt and pixel dimensions); image bit depth; experimental conditions such as temperature and imaging medium; and fluorochromes (excitation and emission wavelengths or ranges, filters, and dichroic beam splitters) if any).
+
+Processing software should be named in the Methods section and any manipulations should be indicated in the relevant figure legends (such as type of deconvolution, three-dimensional reconstructions, surface and volume rendering, “gamma changes”, filtering, thresholding, and projection).
+
+Comprehensive guidelines on data management and the ethical handling of digital images can obtained from The Office of Research Integrity: http://ori.hhs.gov/images/ddblock/data.pdf
+
+MDPI is a member of the Committee on Publication Ethics and takes the responsibility to uphold strict ethical policies and standards very seriously.
+
+[Return to top]
+
+Supplementary Materials, Data Deposit and Software Source Code
+MDPI Research Data Policies
+
+MDPI is committed to supporting open scientific exchange and enabling our authors to achieve best practices in sharing and archiving research data. We encourage all authors of articles published in MDPI journals to share their research data including, but not limited to protocols, analytic methods, raw data, processed data, code, software, algorithms, and study material. The data should be FAIR – findable, accessible, interoperable, and reusable – so that other researchers can locate and use the data.
+
+We recommend that data and code should be deposited in a trusted repository that will allow for maximum reuse (see the Data Preservation section below). If this is not possible, authors are encouraged to share the specific reason in the Data Availability Statement and make this material available upon request to interested researchers. In addition, research materials necessary to enable the reproduction of an experiment should be indicated in the Materials and Methods section. Individual journal guidelines can be found at the journal ‘Instructions for Authors’ page. Data sharing policies concern the minimal dataset that supports the central findings of a published study. Generated data should be publicly available and cited in accordance with journal guidelines.
+
+MDPI data policies are informed by TOP Guidelines.
+
+Where ethical, legal, or privacy issues are present, data should not be shared. The authors should clarify the availability status of the data upon submission and make any limitations or exceptions clear in the Data Availability Statement. Authors should ensure that the data shared is in accordance with consent provided by participants on the use of confidential data. Authors should ensure that the publication of such data does not compromise the anonymity of the participants or breach local data protection laws.
+
+In situations where access is restricted to protect confidential or proprietary information, authors will be requested to clearly explain the restrictions on the dataset and make the data available upon request, with permission for the purposes of peer review.
+
+MDPI recognizes that some institutions and funding agencies only require the retention of research data for a finite period after a project’s completion or publication. However, there are no such limits specified within the MDPI Data Availability Policy and, therefore, we encourage the authors to archive their research data through appropriate data repositories or provide us with minimal datasets within Supplementary Material.
+
+Data availability statements
+
+Data availability statements are required for all articles published with MDPI. During the peer review and editorial decision process, authors can be asked to share existing datasets or raw data that have been analyzed in the manuscript, and whether they will be made available to other researchers following publication. Authors will also be asked for the details of any existing datasets that have been analyzed in the manuscript.
+
+Below are the recommended Data Availability Statements:
+
+Data availability status	Recommended Data Availability Statement
+Data available in a publicly accessible repository	The original data presented in the study are openly available in [repository name, e.g., FigShare] at [DOI/URL] or [reference/accession number].
+Data available on request due to restrictions (e.g., privacy, legal or ethical reasons)	The data presented in this study are available on request from the corresponding author due to (specify the reason for the restriction).
+3rd Party Data	Restrictions apply to the availability of these data. Data were obtained from [third party] and are available [from the authors/at URL] with the permission of [third party].
+Embargo on data due to commercial restrictions	The data that support the findings will be available in [repository name] at [URL / DOI link] following an embargo from the date of publication to allow for commercialization of research findings.
+Restrictions apply to the datasets	The datasets presented in this article are not readily available because [include reason, e.g., the data are part of an ongoing study or due to technical/ time limitations]. Requests to access the datasets should be directed to [text input].
+Data derived from public domain resources	The data presented in this study are available in [repository name] at [URL/DOI], reference number [reference number]. These data were derived from the following resources available in the public domain: [list resources and URLs].
+Data sharing is not applicable (only appropriate if no new data is generated or the article describes entirely theoretical research)	No new data were created or analyzed in this study. Data sharing is not applicable to this article.
+Data is contained within the article or supplementary material	The original contributions presented in this study are included in the article/supplementary material. Further inquiries can be directed to the corresponding author(s).
+Dataset available on request from the authors	The raw data supporting the conclusions of this article will be made available by the authors on request.
+Data preservation
+
+MDPI acknowledges that researchers, institutions, journals, and data repositories have a shared responsibility to ensure long-term data preservation, and MDPI encourages authors to select data repositories with this goal in mind.
+
+MDPI encourages authors to commit to preserving their datasets on their laboratory or institutional servers, for at least five years after publication. If, during that time, the repository to which the data were originally submitted disappears or experiences data loss, we may ask the authors to upload the data to another repository and publish a correction or update to the original publication.
+
+If authors remove their data from the original public repository or change access criteria in a manner that is inconsistent with the publication, we may ask authors to notify the editorial office as soon as possible.
+
+How to choose an appropriate data repository
+
+MDPI encourages the submission of data to community-recognized data repositories where possible. We recommend the authors visit re3data.org or fairsharing.org to help identify registered and certified data repositories relevant to their subject area if no community resource is available. If the authors’ institution has its generalist data repository this can be used to host authors’ data as long as the repository can mint DataCite DOIs, and allows for data to be shared under open terms of use (for example the CC0 waiver).
+
+Data repository criteria
+
+The following criteria should be considered when selecting an appropriate repository, ensuring that platforms:
+
+Ensure long-term persistence and preservation of datasets in their published form;
+Provide stable identifiers for submitted datasets (DOIs in most cases);
+Allow public access to data without barriers, such as logins or paywalls;
+Support open licenses (CC0 and CC-BY, or their equivalents, are required in most cases);
+Provide confidential review of submitted datasets without the requirement for reviewers to provide identifying information.
+Data citation
+
+Authors are encouraged to formally cite any datasets stored in external repositories that are mentioned within their manuscript, including the main datasets that are the focus of the submission, as well as any other datasets that have been used in the work. For previously published datasets, authors should cite both the related research articles and the datasets themselves. Appropriate citation of data is checked and enforced by Journal Editorial staff before publication.
+
+Computer Code and Software
+
+For work where novel computer code was developed, authors should release the code either by depositing in a recognized, public repository such as GitHub or uploading as supplementary information to the publication. The name, version, corporation and location information for all software used should be clearly indicated. Please include all the parameters used to run software/programs analyses.
+
+Supplementary Material
+
+Additional data and files can be uploaded as "Supplementary Files" during the manuscript submission process. The supplementary files will also be available to the referees as part of the peer review process. Any file format is acceptable; however, we recommend that common, non-proprietary formats are used where possible. For more information on supplementary materials, please refer to https://www.mdpi.com/authors/layout#_bookmark83.
+
+References in Supplementary Files
+
+Citations and References in Supplementary files are permitted provided that they also appear in the reference list of the main text.
+
+Unpublished Data
+
+Restrictions on data availability should be noted during submission and in the manuscript. "Data not shown" should be avoided: authors are encouraged to publish all observations related to the submitted manuscript as Supplementary Material. "Unpublished data" intended for publication in a manuscript that is either planned, "in preparation" or "submitted" but not yet accepted, should be cited in the text and a reference should be added in the References section. "Personal Communication" should also be cited in the text and reference added in the References section. (see also the MDPI reference list and citations style guide).
+
+Remote Hosting and Large Data Sets
+
+Data may be deposited with specialized service providers or institutional/subject repositories, preferably those that use the DataCite mechanism. Large data sets and files greater than 250 MB must be deposited in this way. For a list of other repositories specialized in scientific and experimental data, please consult databib.org or re3data.org. The data repository name, link to the data set (URL) and accession number, doi or handle number of the data set must be provided in the paper. The journal Data also accepts submissions of data set papers.
+
+Deposition of Sequences and Expression Data
+
+New sequence information must be deposited to the appropriate database prior to submission of the manuscript. Accession numbers provided by the database should be included in the submitted manuscript. Manuscripts will not be published until the accession number is provided.
+
+New nucleic acid sequences must be deposited into an acceptable repository such as GenBank, EMBL, or DDBJ. Sequences should be submitted to only one database.
+New high throughput sequencing (HTS) datasets (RNA-seq, ChIP-Seq, degradome analysis, …) must be deposited either in the GEO database or in the NCBI’s Sequence Read Archive (SRA).
+New microarray data must be deposited either in the GEO or the ArrayExpress databases.The "Minimal Information About a Microarray Experiment" (MIAME) guidelines published by the Microarray Gene Expression Data Society must be followed.
+New protein sequences obtained by protein sequencing must be submitted to UniProt (submission tool SPIN). Annotated protein structure and its reference sequence must be submitted to RCSB of Protein Data Bank.
+All sequence names and the accession numbers provided by the databases must be provided in the Materials and Methods section of the article.
+
+Deposition of Proteomics Data
+
+Methods used to generate the proteomics data should be described in detail and we encourage authors to adhere to the "Minimum Information About a Proteomics Experiment". All generated mass spectrometry raw data must be deposited in the appropriate public database such as ProteomeXchange, PRIDE or jPOST. At the time of submission, please include all relevant information in the materials and methods section, such as repository where the data was submitted and link, data set identifier, username and password needed to access the data.
+
+[Return to top]
+
+Research and Publication Ethics
+Research Ethics
+Research Involving Human Subjects
+Institutional Review Board Statement
+
+When reporting on research that involves human subjects, human material, human tissues, or human data, authors must declare that the investigations were carried out following the rules of the Declaration of Helsinki of 1975, which was revised in 2013. According to point 23 of this declaration, approval from the local Institutional Review Board (IRB) or another appropriate ethics committee must be obtained before undertaking the research to confirm that the study meets national and international guidelines. As a minimum, a statement including the project identification code, date of approval, and name of the ethics committee or institutional review board must be stated in the ‘Institutional Review Board Statement’ Section of the article.
+
+Example of an Institutional review board statement: “The study was conducted in accordance with the Declaration of Helsinki, and the protocol was approved by the Ethics Committee of XXX (Project identification code) on [date of approval].”
+
+For non-interventional studies (e.g. surveys, questionnaires, social media research), all participants must be fully informed whether their anonymity is assured, why the research is being conducted, how their data will be used, and if there are any risks involved in participating. As with all research involving humans, ethical approval from an appropriate ethics committee must be obtained prior to conducting the study. If ethical approval is not required, authors must either provide an exemption from the ethics committee or cite the local or national legislation that indicates ethics approval is not required for this type of study. When a study has been granted exemption, the name of the ethics committee that provided this should be stated in the ‘Institutional Review Board Statement’ Section with a full explanation for the rejection of ethical approval.
+
+Informed Consent Statement
+
+Manuscripts reporting studies involving human participants, human data, or human tissue must include a statement of informed consent for participation in research. Verbal informed consent to participate in a study can be acceptable under some circumstances (such as in ethnographic studies). The authors must explain the rationale for using this kind of consent in the “Informed Consent Statement” Section. For verbal informed consent, a copy of the script used must be provided during the submission stage.
+
+For all manuscripts that include identifying patient/participant information (personal details, images, or videos relating to an individual person), written informed consent for the publication of these details must be obtained from patients/participants (or their relatives/guardians) before submitting to an MDPI journal. A blank version of the form used to obtain permission (without the patient/participant names or signature) should be provided upon submission. You may refer to our template permission form and provide an appropriate form after consulting with your affiliated institution.
+
+For the purposes of publishing in MDPI journals, a consent, permission, or release form should include unlimited permission for publication in all formats (including print, electronic, and online), in sublicensed and reprinted versions (including translations and derived works), and in other works and products under open access license. To respect patients’/participants’ and any other individuals’ privacy, please do not send signed forms.
+
+Private information identifying participants need not be included unless the identifiable materials are of relevance to the research (e.g., photographs of participants’ faces that show a particular symptom). Patients’/participants’ initials or other personal identifiers must not appear in any images. Patient/participant details must be anonymized as much as possible, e.g., do not mention specific age, ethnicity, or occupation where they are not relevant to the conclusions. Steps necessary to protect privacy may include de-identifying data, adding noise, or blocking portions of the database. Editors reserve the right to reject any submission that does not meet these requirements.
+
+The Editorial Office reserves the right to request further documentation when necessary. The submitted manuscript will be scrutinized by the Editorial Office, and upon request, documentary evidence (signed consent forms and any related discussion documents from the ethics board) must be provided.
+
+Example of an Informed Consent Statement: “Informed consent for participation was obtained from all subjects involved in the study.” OR “Informed consent for participation is not required as per local legislation [provide local legislation].” OR “Verbal informed consent was obtained from the participants. Verbal consent was obtained rather than written because [state the reason]”, OR “Informed consent for publication was obtained from all identifiable human participants.”
+
+Requirements for Studies on Vulnerable Groups and Organ Transplants
+
+If a study involves vulnerable groups, the manuscript will undergo an additional review by the editorial office. If requested, the author must provide documentary evidence, including blank consent forms and any related discussion documents from the ethics board or other relevant bodies. Additionally, when studies describe groups by race, ethnicity, gender, disability, disease, etc., an explanation regarding why such categorization was needed must be clearly stated in the article.
+
+Articles describing human organ transplantation studies are subject to all policies for research involving human subjects. Additionally, the authors must specify the institution(s), clinic(s), or department(s) from which the organs or tissues were sourced. MDPI does not accept manuscripts that report data on organs and/or other materials obtained from illegal commercial activity, executed prisoners, or other unethical practices relating to organ donations. Manuscripts addressing this practice, such as editorials or reports on its secondary consequences, may be considered at the discretion of the Editor-in-Chief but require a written appeal to the editorial office before submission. For further resources on organ transplantation, MDPI follows the glossary maintained by the Organ Procurement and Transplantation Network (https://optn.transplant.hrsa.gov/patients/glossary/).
+
+Clinical Trials Registration
+Registration
+
+Clinical trials are subject to all policies regarding Research Involving Human Subjects. In addition, MDPI follows the International Committee of Medical Journal Editors (ICMJE) guidelines, which require the registration of clinical trials in a public trial registry at or before the time of first patient enrollment as a condition of consideration for publication. The ICMJE defines a clinical trial as any research project that prospectively assigns people or a group of people to an intervention, with or without concurrent comparison or control groups, to study the relationship between a health-related intervention and a health outcome. Therefore, ‘clinical trial’ not only refers to studies that take place in a hospital or involve pharmaceuticals but also to all studies which involve participant randomization and group classification in the context of the intervention under assessment.
+
+Authors must preregister clinical trials with an international clinical trial register. Suitable databases include clinicaltrials.gov, the EU Clinical Trials Register, and those listed on the World Health Organisation’s International Clinical Trials Registry Platform. The name of the registry, trial registration number, and date of registration should be included in the Institutional Review Board statement or in the Materials and Methods section. 
+
+Purely observational studies (e.g., cohort studies, cross-sectional studies, and case–control studies) do not require registration. Editors may consider exceptions to pretrial registration requirements in some cases. If an exception is granted, the authors must retroactively register the trial and clearly indicate the date and reasons for the retroactive registration in the Materials and Methods section of the publication.
+
+Approval to conduct a study from an independent local, regional, or national review body is not equivalent to prospective clinical trial registration. MDPI reserves the right to decline any paper without trial registration for further peer review.
+
+Randomized Clinical Trial Reporting Guidelines
+
+In addition to clinical trial registration, MDPI requires a completed CONSORT 2025 checklist and flow diagram as a condition of submission when reporting the results of a randomized clinical trial. Checklist templates can be found on the CONSORT website, which also describes several CONSORT checklist extensions for different designs and types of data beyond two-group parallel trials. As a minimum, clinical trial articles should report the content addressed by each item of the checklist.
+
+Ethical Guidelines for the Use of Animals in Research
+The editors will require that the benefits potentially derived from any research causing harm to animals are significant in relation to any cost endured by animals, and that procedures followed are unlikely to cause offense to the majority of readers. Authors should particularly ensure that their research complies with the commonly-accepted '3Rs [1]':
+
+Replacement of animals by alternatives wherever possible,
+Reduction in number of animals used, and
+Refinement of experimental conditions and procedures to minimize the harm to animals.
+Authors must include details on housing, husbandry and pain management in their manuscript.
+
+MDPI endorses the ARRIVE guidelines (arriveguidelines.org/) for reporting experiments using live animals. Authors and reviewers must use the ARRIVE guidelines as a checklist, which can be found at https://arriveguidelines.org/sites/arrive/files/documents/Author%20Checklist%20-%20Full.pdf. The journal BioMedInformatics requires authors to submit the completed checklist at submission, and it will be made available to reviewers. Editors reserve the right to reject submissions that do not adhere to these guidelines based on ethical or animal welfare concerns, or if the procedure described does not appear to be justified by the value of the work presented.
+
+For further guidance authors should refer to the Code of Practice for the Housing and Care of Animals Used in Scientific Procedures [2], American Association for Laboratory Animal Science [3] or European Animal Research Association [4].
+
+If national legislation requires it, studies involving vertebrates or higher invertebrates must only be carried out after obtaining approval from the appropriate ethics committee. As a minimum, the project identification code, date of approval and name of the ethics committee or institutional review board should be stated in Section ‘Institutional Review Board Statement’. Research procedures must be carried out in accordance with national and institutional regulations. Statements on animal welfare should confirm that the study complied with all relevant legislation. Clinical studies involving animals and interventions outside of routine care require ethics committee oversight as per the American Veterinary Medical Association. If the study involved client-owned animals, informed client consent must be obtained and certified in the manuscript report of the research. Owners must be fully informed if there are any risks associated with the procedures and that the research will be published. If available, a high standard of veterinary care must be provided. Authors are responsible for correctness of the statements provided in the manuscript.
+
+If ethical approval is not required by national laws, authors must provide an exemption from the ethics committee, if one is available. Where a study has been granted exemption, the name of the ethics committee that provided this should be stated in Section ‘Institutional Review Board Statement’ with a full explanation on why the ethical approval was not required.
+
+If no animal ethics committee is available to review applications, authors should be aware that the ethics of their research will be evaluated by reviewers and editors. Authors should provide a statement justifying the work from an ethical perspective, using the same utilitarian framework that is used by ethics committees. Authors may be asked to provide this even if they have received ethical approval.
+
+NSW Department of Primary Industries and Animal Research Review Panel. Three Rs. Available online: https://www.dpi.nsw.gov.au/dpi/animals/animal-ethics-infolink/three-rs
+Home Office. Animals (Scientific Procedures) Act 1986. Code of Practice for the Housing and Care of Animals Bred, Supplied or Used for Scientific Purposes. Available online: https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/388535/CoPanimalsWeb.pdf
+American Association for Laboratory Animal Science. The Scientific Basis for Regulation of Animal Care and Use. Available online: https://www.aalas.org/about-aalas/position-papers/scientific-basis-for-regulation-of-animal-care-and-use
+European Animal Research Association. EU regulations on animal research. Available online: https://www.eara.eu/animal-research-law
+Research Involving Cell Lines
+Methods sections for submissions reporting on research with cell lines should state the origin of any cell lines. For established cell lines the provenance should be stated and references must also be given to either a published paper or to a commercial source. If previously unpublished de novo cell lines were used, including those gifted from another laboratory, details of institutional review board or ethics committee approval must be given, and confirmation of written informed consent must be provided if the line is of human origin.
+
+An example of Ethical Statements:
+
+The HCT116 cell line was obtained from XXXX. The MLH1+ cell line was provided by XXXXX, Ltd. The DLD-1 cell line was obtained from Dr. XXXX. The DR-GFP and SA-GFP reporter plasmids were obtained from Dr. XXX and the Rad51K133A expression vector was obtained from Dr. XXXX.
+
+Research Involving Plants
+Experimental research on plants (either cultivated or wild) including collection of plant material, must comply with institutional, national, or international guidelines. We recommend that authors comply with the Convention on Biological Diversity and the Convention on the Trade in Endangered Species of Wild Fauna and Flora.
+
+For each submitted manuscript supporting genetic information and origin must be provided. For research manuscripts involving rare and non-model plants (other than, e.g., Arabidopsis thaliana, Nicotiana benthamiana, Oryza sativa, or many other typical model plants), voucher specimens must be deposited in an accessible herbarium or museum. Vouchers may be requested for review by future investigators to verify the identity of the material used in the study (especially if taxonomic rearrangements occur in the future). They should include details of the populations sampled on the site of collection (GPS coordinates), date of collection, and document the part(s) used in the study where appropriate. For rare, threatened or endangered species this can be waived but it is necessary for the author to describe this in the cover letter.
+
+Editors reserve the rights to reject any submission that does not meet these requirements.
+
+An example of Ethical Statements:
+
+Torenia fournieri plants were used in this study. White-flowered Crown White (CrW) and violet-flowered Crown Violet (CrV) cultivars selected from ‘Crown Mix’ (XXX Company, City, Country) were kindly provided by Dr. XXX (XXX Institute, City, Country).
+
+Arabidopis mutant lines (SALKxxxx, SAILxxxx,…) were kindly provided by Dr. XXX, institute, city, country).
+
+Dual-Use Research of Concern
+MDPI follows the practical framework described in ‘Guidance for Editors: Research, Audit and Service Evaluations’ and introduced by the Committee on Publication Ethics (COPE). Research that could pose a significant threat, with broad potential consequences to public health or national security, should be clearly indicated in the manuscript, and potential dual-use research of concern should be explained in the cover letter upon submission. Potential areas of concern include, but are not limited to, biosecurity, nuclear and chemical threats, and research with a military purpose or application. For these manuscripts to be considered for peer review, the benefits to the general public or public health must outweigh the risks. The authors have a responsibility to comply with relevant national and international laws.
+
+Sex and Gender in Research
+We encourage our authors to follow the ‘Sex and Gender Equity in Research – SAGER – guidelines’ and to include sex and gender considerations where relevant. Authors should use the terms sex (biological attribute) and gender (shaped by social and cultural circumstances) carefully in order to avoid confusing both terms. Article titles and/or abstracts should indicate clearly what sex(es) the study applies to. Authors should also describe in the background, whether sex and/or gender differences may be expected; report how sex and/or gender were accounted for in the design of the study; provide disaggregated data by sex and/or gender, where appropriate; and discuss respective results. If a sex and/or gender analysis was not conducted, the rationale should be given in the Discussion. We suggest that our authors consult the full guidelines before submission.
+
+Borders and Territories
+Potential disputes over borders and territories may have particular relevance for authors in describing their research or in an author or editor correspondence address, and should be respected. Content decisions are an editorial matter and where there is a potential or perceived dispute or complaint, the editorial team will attempt to find a resolution that satisfies parties involved.
+
+MDPI stays neutral with regard to jurisdictional claims in published maps and institutional affiliations.
+
+Publication Ethics Statement
+MDPI is a member of the Committee on Publication Ethics (COPE). We fully adhere to its Code of Conduct and to its Best Practice Guidelines.
+
+The editors of this journal enforce a rigorous peer review process together with strict ethical policies and standards to ensure to add high quality scientific works to the field of scholarly publication. Unfortunately, cases of plagiarism, data falsification, image manipulation, inappropriate authorship credit, and the like, do arise. The editors of BioMedInformatics take such publishing ethics issues very seriously and are trained to proceed in such cases with a zero tolerance policy.
+
+Authors wishing to publish their papers in BioMedInformatics must abide to the following:
+
+Any facts that might be perceived as a possible conflict of interest of the author(s) must be disclosed in the paper prior to submission.
+Authors should accurately present their research findings and include an objective discussion of the significance of their findings.
+Data and methods used in the research need to be presented in sufficient detail in the paper, so that other researchers can replicate the work.
+Raw data should preferably be publicly deposited by the authors before submission of their manuscript. Authors need to at least have the raw data readily available for presentation to the referees and the editors of the journal, if requested. Authors need to ensure appropriate measures are taken so that raw data is retained in full for a reasonable time after publication.
+Simultaneous submission of manuscripts to more than one journal is not tolerated.
+The journal accepts exact translations of previously published work. All submissions of translations must conform with our policies on translations.
+If errors and inaccuracies are found by the authors after publication of their paper, they need to be promptly communicated to the editors of this journal so that appropriate actions can be taken. Please refer to our policy regarding Updating Published Papers.
+Your manuscript should not contain any information that has already been published. If you include already published figures or images, please obtain the necessary permission from the copyright holder to publish under the CC-BY license. For further information, see the Rights and Permissions page.
+Plagiarism, data fabrication and image manipulation are not tolerated.
+Plagiarism is not acceptable in BioMedInformatics submissions.
+Plagiarism includes copying text, ideas, images, or data from another source, even from your own publications, without giving any credit to the original source.
+
+Reuse of text that is copied from another source must be between quotes and the original source must be cited. If a study's design or the manuscript's structure or language has been inspired by previous works, these works must be explicitly cited.
+
+All MDPI submissions are checked for plagiarism using the industry standard software iThenticate. If plagiarism is detected during the peer review process, the manuscript may be rejected. If plagiarism is detected after publication, an investigation will take place and action taken in accordance with our policies.
+
+Image files must not be manipulated or adjusted in any way that could lead to misinterpretation of the information provided by the original image.
+Irregular manipulation includes: 1) introduction, enhancement, moving, or removing features from the original image; 2) grouping of images that should obviously be presented separately (e.g., from different parts of the same gel, or from different gels); or 3) modifying the contrast, brightness or color balance to obscure, eliminate or enhance some information.
+
+If irregular image manipulation is identified and confirmed during the peer review process, we may reject the manuscript. If irregular image manipulation is identified and confirmed after publication, we may correct or retract the paper.
+
+Our in-house editors will investigate any allegations of publication misconduct and may contact the authors' institutions or funders if necessary. If evidence of misconduct is found, appropriate action will be taken to correct or retract the publication. Authors are expected to comply with the best ethical publication practices when publishing with MDPI.
+
+Citation Policy
+Authors should ensure that where material is taken from other sources (including their own published writing) the source is clearly cited and that where appropriate permission is obtained.
+
+Authors should not engage in excessive self-citation of their own work.
+
+Authors should not copy references from other publications if they have not read the cited work.
+
+Authors should not preferentially cite their own or their friends’, peers’, or institution’s publications.
+
+Authors should not cite advertisements or advertorial material.
+
+In accordance with COPE guidelines, we expect that “original wording taken directly from publications by other researchers should appear in quotation marks with the appropriate citations.” This condition also applies to an author’s own work. COPE have produced a discussion document on citation manipulation with recommendations for best practice.
+
+[Return to top]
+
+Reviewer Suggestions
+During the submission process, please suggest three potential reviewers with the appropriate expertise to review the manuscript. The editors will not necessarily approach these referees. Please provide detailed contact information (address, homepage, phone, e-mail address). The proposed referees should neither be current collaborators of the co-authors nor have published with any of the co-authors of the manuscript within the last three years. Proposed reviewers should be from different institutions to the authors. You may identify appropriate Editorial Board members of the journal as potential reviewers. You may suggest reviewers from among the authors that you frequently cite in your paper. For detailed information regarding the qualifications and responsibilities of the reviewers, please visit https://www.mdpi.com/reviewers.
+
+[Return to top]
+
+Extensive English Editing
+It is the authors’ responsibility to submit their work in correct English. The APC includes only minor English editing, conducted by native English speakers. The APC does not include extensive English editing. If extensive editing is required, your paper could be returned to you at the English editing stage of the publication process. This could delay the publication of your work. You may have your work reviewed by an experienced English-speaking colleague or use a paid language-editing service before submitting your paper for publication. We offer rapid English editing, completed in 1 day, here: Author Services.
+
+[Return to top]
+
+Preprints and Conference Papers
+BioMedInformatics accepts submissions that have previously been made available as preprints provided that they have not undergone peer review. A preprint is a draft version of a paper made available online before submission to a journal.
+
+MDPI operates Preprints, a preprint server to which submitted papers can be uploaded directly after completing journal submission. Note that Preprints operates independently of the journal and posting a preprint does not affect the peer review process. Check the Preprints instructions for authors for further information.
+
+Expanded and high-quality conference papers can be considered as articles if they fulfill the following requirements: (1) the paper should be expanded to the size of a research article; (2) the conference paper should be cited and noted on the first page of the paper; (3) if the authors do not hold the copyright of the published conference paper, authors should seek the appropriate permission from the copyright holder; (4) authors are asked to disclose that it is conference paper in their cover letter and include a statement on what has been changed compared to the original conference paper.
+
+Unpublished conference papers that do not meet the above conditions are recommended to be submitted to the Proceedings Series journals.
+
+[Return to top]
+
+Authorship
+MDPI follows the International Committee of Medical Journal Editors (ICMJE) guidelines which state that, in order to qualify for authorship of a manuscript, the following criteria should be observed:
+
+Make substantial contributions to the conception or design of the work, or the acquisition, analysis, or interpretation of data for the work;
+Draft the work or review it critically for important intellectual content;
+Provide final approval of the version to be published;
+Agree to be accountable for all aspects of the work by ensuring that questions relating to the accuracy or integrity of any part of the work are appropriately investigated and resolved.
+Those who contributed to the work but do not qualify for authorship should be listed in the acknowledgments. More detailed guidance on authorship is given by the International Committee of Medical Journal Editors (ICMJE).
+
+Any change to the author list should be approved by all authors including any who have been removed from the list. The corresponding author should act as a point of contact between the editor and the other authors and should keep co-authors informed and involve them in major decisions about the publication. We reserve the right to request confirmation that all authors meet the authorship conditions.
+
+For more details about authorship please check MDPI ethics website.
+
+Editorial Independence
+Lack of Interference with Editorial Decisions
+Editorial independence is of utmost importance and MDPI does not interfere with editorial decisions. All articles published by MDPI are peer reviewed and assessed by our independent editorial boards, and MDPI staff are not involved in decisions to accept manuscripts. When making an editorial decision, we expect the academic editor to make their decision based only upon:
+
+The suitability of selected reviewers;
+Adequacy of reviewer comments and author response;
+Overall scientific quality of the paper.
+In all of our journals, in every aspect of operation, MDPI policies are informed by the mission to make science and research findings open and accessible as widely and rapidly as possible.
+
+Editors and Editorial Staff as Authors
+Editorial staff or editors shall not be involved in processing their own academic work. Submissions authored by editorial staff/editors will be assigned to at least two independent outside reviewers. Decisions will be made by other Editorial Board Members who do not have a conflict of interest with the author. Journal staff are not involved in the processing of their own work submitted to any MDPI journals.
+
+Conflicts of Interest
+According to The International Committee of Medical Journal Editors, “Authors should avoid entering into agreements with study sponsors, both for-profit and non-profit, that interfere with authors’ access to all of the study’s data or that interfere with their ability to analyze and interpret the data and to prepare and publish manuscripts independently when and where they choose.”
+
+All authors must disclose all relationships or interests that could inappropriately influence or bias their work. Examples of potential conflicts of interest include but are not limited to financial interests (such as membership, employment, consultancies, stocks/shares ownership, honoraria, grants or other funding, paid expert testimonies and patent-licensing arrangements) and non-financial interests (such as personal or professional relationships, affiliations, personal beliefs).
+
+Authors can disclose potential conflicts of interest via the online submission system during the submission process. Declarations regarding conflicts of interest can also be collected via the MDPI disclosure form. The corresponding author must include a summary statement in the manuscript in a separate section “Conflicts of Interest” placed just before the reference list. The statement should reflect all the collected potential conflicts of interest disclosures in the form.
+
+See below for examples of disclosures:
+
+Conflicts of Interest: Author A has received research grants from Company A. Author B has received a speaker honorarium from Company X and owns stocks in Company Y. Author C has been involved as a consultant and expert witness in Company Z. Author D is the inventor of patent X.
+
+If no conflicts exist, the authors should state:
+
+Conflicts of Interest: The authors declare no conflicts of interest.
+
+[Return to top]
+
+Editorial Procedures and Peer Review
+Pre-check
+
+Immediately after submission, the journal’s Managing Editor will perform the technical pre-check to assess:
+
+Overall suitability of the manuscript to the journal/section/Special Issue;
+Manuscript adherence to high-quality research and ethical standards;
+Standards of rigor to qualify for further review.
+The academic editor (i.e., the Editor-in-Chief in the case of regular submissions, the Guest Editor in the case of Special Issue submissions, or an Editorial Board member in the case of a conflict of interest and of regular submissions if the Editor-in-Chief allows) will be notified of the submission and invited to perform an editorial pre-check. During the editorial pre-check phase, the academic editor will assess the suitability of the submission with respect to the scope of the journal, as well as the overall scientific soundness of the manuscript, including the relevance of the references and the correctness of the applied methodology. Academic editors can decide to reject the manuscript, request revision before peer review, or continue with the peer review process and recommend suitable reviewers.
+
+Peer Review
+
+Once a manuscript passes the initial checks, it will be assigned to at least two independent experts for peer review. A single-blind review is applied, where authors' identities are known to reviewers. Peer review comments are confidential, but will be disclosed if the authors opt for open peer review.
+
+In the case of regular submissions, in-house assistant editors will invite experts, including recommendations by an academic editor. These experts may also include Editorial Board Members and Guest Editors of the journal. Potential reviewers suggested by the authors may also be considered. Reviewers should not have published with any of the co-authors during the past three years and should not currently work or collaborate with any of the institutions of the co-authors of the submitted manuscript. For more details about potential conflicts of interest, please check here, https://www.mdpi.com/reviewers#_bookmark9.
+
+Optional Open Peer Review
+
+The journal operates optional open peer review: Authors are given the option for all review reports and editorial decisions to be published alongside their manuscript. In addition, reviewers can sign their review, i.e., identify themselves in the published review reports. Authors can alter their choice for open peer review at any time before publication, but once the paper has been published changes will only be made at the discretion of the Publisher and Editor-in-Chief. We encourage authors to take advantage of this opportunity as proof of the rigorous process employed in publishing their research. To guarantee impartial refereeing, the names of referees will be revealed only if the referees agree to do so, and after a paper has been accepted for publication.
+
+Editorial Decision and Revision
+
+All the articles, reviews and communications published in MDPI journals go through the peer review process and receive at least two reviews. The in-house editor will communicate the decision of the academic editor, which will be one of the following:
+
+Accept after Minor Revision:
+In principle, the paper will be accepted after the authors revise based on the reviewers’ and the Academic Editor's comments. Authors are given five days for minor revisions; however, extensions are granted on request.
+Reconsider after Major Revision:
+The acceptance of the manuscript would depend on the revision. The authors need to provide a point-by-point response or rebuttal if some revisions based on the reviewers’ or Academic Editor's comments cannot be made. A maximum of two rounds of major revision per manuscript is normally provided. Authors will be asked to resubmit the revised paper within ten days; however, extensions are granted on request. The revised version of the manuscript will be returned to the reviewers for further comments.
+Reject and Encourage Resubmission:
+If additional experiments are needed to support the conclusions, the manuscript will be rejected and the authors will be encouraged to re-submit the paper once further experiments have been conducted.
+Reject:
+The article has serious flaws, and/or makes no original significant contribution. No offer of resubmission to the journal is provided.
+All reviewer comments should be responded to in a point-by-point fashion. Where the authors disagree with a reviewer, they must provide a clear response.
+
+In the event that the journal’s editorial office is unable to maintain communication with the author during the manuscript review or production process, the journal reserves the right to withdraw the manuscript following a designated period of inactivity.
+
+Author Appeals
+
+Authors may appeal a rejection by sending an e-mail to the Editorial Office of the journal. The appeal must provide a detailed justification, including point-by-point responses to the reviewers' and/or Editor's comments using an appeal form. Appeals can only be submitted following a “reject and decline resubmission” decision and should be submitted within three months from the decision date. Failure to meet these criteria will result in the appeal not being considered further. The Managing Editor will forward the manuscript and related information (including the identities of the referees) to a designated Editorial Board Member. The Academic Editor being consulted will be asked to provide an advisory recommendation on the manuscript and may recommend acceptance, further peer review, or uphold the original rejection decision. This decision will then be validated by the Editor-in-Chief. A reject decision at this stage is final and cannot be reversed.
+
+Production and Publication
+
+Once accepted, the manuscript will undergo professional copy-editing, English editing, proofreading by the authors, final corrections, pagination, and, publication on the www.mdpi.com website.
+
+Typically, it is not permissible for authors to change the main text after acceptance (except for layout, English grammar, etc.). If authors would like to revise the main text, authors should inform the journal editorial office and state their reasons. Then, another round of academic decisions will be made based on the manuscript and the authors’ responses.
+
+Please read detailed Editorial Process here.
+
+[Return to top]
+
+Transfer Service
+A manuscript transfer provides authors with a convenient method of resubmitting their manuscript file and any reviewer comments to another journal within our publishing portfolio.
+
+We are committed to helping authors find the right home for their research, and we will provide authors with guidance and technical support through all stages of the transfer process. Authors will be able to choose to transfer a manuscript in the two situations described below.
+
+1. Select alternative journals on submission
+We currently ask all authors to select up to three alternative journals during the submission process. The suggested alternative journals will be ordered according to the authors’ preference. If a paper is deemed to be out of scope by the first-choice journal, it will be automatically transferred to the first alternative journal. If the first alternative journal also rejects the paper because it is out of scope, it will be automatically transferred to the second alternative journal, and so on.
+
+The information below applies for the transfer of manuscripts when your paper is rejected and automatically transferred to your selected alternative journal.
+
+Note: If you did not select an alternative journal during submission, the below does not apply.
+
+
+
+How do I select an alternative journal?
+
+Authors can use our Journal Finder tool to identify suitable journals in our portfolio. We suggest that you select alternative journals based on the scope and subject area of your manuscript.
+
+All of our journals are listed here, and you can find out more about each journal by clicking through to its homepage.
+
+Do I have to pay to transfer my manuscript?
+
+No, there is no direct fee for transferring your manuscript.
+
+Open access publication fees
+
+If you transfer your manuscript to another open access (OA) journal, you will be charged an Article Processing Charge (APC) if your article is accepted for publication. The APC for each journal can be found on the individual journal’s website. For more information about APCs, please see here.
+
+Authors are encouraged to transfer manuscripts to other MDPI journals
+If the journal that an article was submitted to cannot process this manuscript, but other MDPI journals can process it or the Academic Editor encourages authors to transfer the manuscript to other MDPI journals after revision, the authors will receive an email listing the recommended journals. Authors can click on the link in the email to transfer or resubmit according to their own wishes.
+
+
+
+[Return to top]
+
+Promoting Equity, Diversity and Inclusiveness within MDPI Journals
+Our Managing Editors encourage the Editors-in-Chief and Associate Editors to appoint diverse expert Editorial Boards. This is also reflective in our multi-national and inclusive workplace. We are proud to create equal opportunities without regard to gender, ethnicity, sexual orientation, age, religion, or socio-economic status. There is no place for discrimination in our workplace and editors of MDPI journals are to uphold these principles in high regard.
+
+[Return to top]
+
+Resource Identification Initiative
+To improve the reproducibility of scientific research, the Resource Identification Initiative aims to provide unique persistent identifiers for key biological resources, including antibodies, cell lines, model organisms and tools.
+
+We encourage authors to include unique identifiers - RRIDs- provided by the Resource Identification Portal in the dedicated section of the manuscript.
+
+To help authors quickly find the correct identifiers for their materials, there is a single website where all resource types can be found and a ‘cite this’ button next to each resource, that contains a proper citation text that should be included in the methods section of the manuscript.

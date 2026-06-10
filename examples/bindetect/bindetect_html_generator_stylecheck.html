@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BINDetect Bcell / Tcell</title>
+  <style>
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #ffffff; color: #111111; }
+    .wrap { width: 600px; margin: 20px auto; }
+    h1 { margin: 0; font-size: 24px; font-weight: 700; text-align: center; }
+    .sub { margin: 6px 0 10px; text-align: center; color: #333333; font-size: 14px; }
+    .chart-box { position: relative; border: 1px solid #cccccc; background: #ffffff; }
+    #chart { width: 600px; height: 600px; display: block; }
+    .axis { stroke: #666666; stroke-width: 1; }
+    .grid { stroke: #e6e6e6; stroke-width: 1; }
+    .tick { font-size: 12px; fill: #444444; }
+    .axis-label { font-size: 14px; fill: #111111; font-weight: 700; }
+    .point { cursor: pointer; }
+    .point:hover { stroke: rgb(100,100,100); stroke-width: 1; }
+    #tooltip {
+      position: fixed; display: none; pointer-events: none; z-index: 9999;
+      background: rgba(255,255,255,0.98); color: #111111; border: 1px solid #777777;
+      padding: 6px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    #tooltip .head { font-weight: 700; margin-bottom: 3px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>BINDetect Volcano Plot</h1>
+    <p class="sub">Bcell / Tcell</p>
+    <div class="chart-box">
+      <svg id="chart" viewBox="0 0 600 600" aria-label="BINDetect volcano plot"></svg>
+    </div>
+  </div>
+  <div id="tooltip"></div>
+  <script>
+    const payload = {"comparison": "Bcell / Tcell", "cond1": "Bcell", "cond2": "Tcell", "xlim": 1.1, "ymin": 0.0, "ymax": 149.1912, "series": [{"name": "Bcell_up", "color": "rgba(51, 204, 51, .5)", "data": [{"group": "Bcell_up", "color": "rgba(51, 204, 51, .5)", "x": 0.1692, "y": 84.37, "name": "PLAG1", "base": ""}]}, {"name": "Tcell_up", "color": "rgba(223, 83, 83, .5)", "data": [{"group": "Tcell_up", "color": "rgba(223, 83, 83, .5)", "x": -0.24565, "y": 138.14, "name": "CTCF", "base": ""}]}, {"name": "n.s.", "color": "rgba(128, 128, 128, .5)", "data": [{"group": "n.s.", "color": "rgba(128, 128, 128, .5)", "x": 0.14885, "y": 84.03, "name": "Arnt", "base": ""}]}]};
+    const svg = document.getElementById('chart');
+    const tooltip = document.getElementById('tooltip');
+    const W = 600, H = 600;
+    const margin = {top: 36, right: 28, bottom: 250, left: 74};
+    const innerW = W - margin.left - margin.right;
+    const innerH = H - margin.top - margin.bottom;
+    const plotBottom = H - margin.bottom;
+    const logoBox = {x: 60, y: 350, w: 150, h: 150};
+    const legendBox = {x: 170, y: 545, w: 260, h: 34};
+
+    function sx(x) {
+      return margin.left + ((x + payload.xlim) / (2 * payload.xlim)) * innerW;
+    }
+    function sy(y) {
+      return margin.top + innerH - ((y - payload.ymin) / (payload.ymax - payload.ymin || 1)) * innerH;
+    }
+    function line(x1, y1, x2, y2, cls) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+      el.setAttribute('x2', x2); el.setAttribute('y2', y2);
+      el.setAttribute('class', cls);
+      svg.appendChild(el);
+      return el;
+    }
+    function rect(x, y, w, h, stroke='#000000', fill='none', rx='0') {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      el.setAttribute('x', x); el.setAttribute('y', y);
+      el.setAttribute('width', w); el.setAttribute('height', h);
+      el.setAttribute('stroke', stroke); el.setAttribute('fill', fill);
+      if (rx !== '0') {
+        el.setAttribute('rx', rx);
+        el.setAttribute('ry', rx);
+      }
+      svg.appendChild(el);
+      return el;
+    }
+    function text(x, y, value, cls, anchor='middle', rotate=null) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      el.setAttribute('x', x); el.setAttribute('y', y);
+      el.setAttribute('class', cls);
+      el.setAttribute('text-anchor', anchor);
+      if (rotate !== null) el.setAttribute('transform', `rotate(${rotate} ${x} ${y})`);
+      el.textContent = value;
+      svg.appendChild(el);
+      return el;
+    }
+    function circle(x, y, r, fill, stroke='none') {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      el.setAttribute('cx', x); el.setAttribute('cy', y);
+      el.setAttribute('r', r); el.setAttribute('fill', fill);
+      el.setAttribute('stroke', stroke);
+      svg.appendChild(el);
+      return el;
+    }
+    function fmt(x) {
+      const rounded = Math.abs(x) >= 1 ? x.toFixed(1) : x.toFixed(2);
+      return rounded.replace(/^-0\.00$/, '0.00').replace(/^-0\.0$/, '0.0');
+    }
+
+    const yTicks = 6;
+    for (let i = 0; i <= yTicks; i++) {
+      const yVal = payload.ymin + (payload.ymax - payload.ymin) * (i / yTicks);
+      const yy = sy(yVal);
+      line(margin.left, yy, W - margin.right, yy, 'grid');
+      text(margin.left - 10, yy + 4, yVal.toFixed(1), 'tick', 'end');
+    }
+    const xTicks = 6;
+    for (let i = 0; i <= xTicks; i++) {
+      const xVal = -payload.xlim + (2 * payload.xlim) * (i / xTicks);
+      const xx = sx(xVal);
+      line(xx, margin.top, xx, plotBottom, 'grid');
+      text(xx, plotBottom + 22, fmt(xVal), 'tick');
+    }
+
+    line(margin.left, plotBottom, W - margin.right, plotBottom, 'axis');
+    line(margin.left, margin.top, margin.left, plotBottom, 'axis');
+    const zeroX = sx(0);
+    line(zeroX, margin.top, zeroX, plotBottom, 'axis');
+
+    text(W / 2, plotBottom + 48, 'Differential binding score', 'axis-label');
+    text(24, margin.top + innerH / 2, '-log10(pvalue)', 'axis-label', 'middle', -90);
+
+    rect(logoBox.x, logoBox.y, logoBox.w, logoBox.h, '#999999', '#ffffff');
+    const logoLabel = text(logoBox.x + logoBox.w / 2, logoBox.y + logoBox.h / 2, 'Motif logo', 'tick');
+    const logoImage = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+    logoImage.setAttribute('x', logoBox.x);
+    logoImage.setAttribute('y', logoBox.y);
+    logoImage.setAttribute('width', logoBox.w);
+    logoImage.setAttribute('height', logoBox.h);
+    logoImage.style.display = 'none';
+    svg.appendChild(logoImage);
+
+    rect(legendBox.x, legendBox.y, legendBox.w, legendBox.h, '#999999', '#ffffff');
+    let lx = legendBox.x + 16;
+    const ly = legendBox.y + 21;
+    [
+      {label: cond1 + '_up', color: payload.series[0].color},
+      {label: cond2 + '_up', color: payload.series[1].color},
+      {label: 'n.s.', color: payload.series[2].color},
+    ].forEach((entry, idx) => {
+      circle(lx, ly - 4, 4, entry.color);
+      text(lx + 10, ly, entry.label, 'tick', 'start');
+      lx += idx === 2 ? 68 : 108;
+    });
+
+    function showTooltip(evt, point) {
+      tooltip.innerHTML = `<div class="head">${point.group}</div><div>${point.name}</div>`;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (evt.clientX + 14) + 'px';
+      tooltip.style.top = (evt.clientY + 14) + 'px';
+      if (point.base) {
+        logoImage.setAttributeNS('http://www.w3.org/1999/xlink', 'href', point.base);
+        logoImage.setAttribute('href', point.base);
+        logoImage.style.display = 'block';
+        logoLabel.style.display = 'none';
+      } else {
+        logoImage.style.display = 'none';
+        logoLabel.style.display = 'block';
+      }
+    }
+    function hideTooltip() {
+      tooltip.style.display = 'none';
+      logoImage.style.display = 'none';
+      logoLabel.style.display = 'block';
+    }
+
+    payload.series.forEach((series) => {
+      series.data.forEach((point) => {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        el.setAttribute('cx', sx(point.x));
+        el.setAttribute('cy', sy(point.y));
+        el.setAttribute('r', 2);
+        el.setAttribute('fill', series.color);
+        el.setAttribute('class', 'point');
+        el.addEventListener('mousemove', (evt) => showTooltip(evt, {...point, group: series.name}));
+        el.addEventListener('mouseleave', hideTooltip);
+        svg.appendChild(el);
+      });
+    });
+  </script>
+</body>
+</html>

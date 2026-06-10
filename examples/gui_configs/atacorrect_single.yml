@@ -1,0 +1,12 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: atacorrect_bcell
+    tool: ATACorrect
+    bam: test_data/Bcell.bam
+    genome: test_data/genome.fa.gz
+    peaks: test_data/merged_peaks.bed
+    blacklist: test_data/blacklist.bed
+    outdir: examples/gui_demo_outputs/atacorrect_single
+    cores: 1
+comparisons: []

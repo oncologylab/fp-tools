@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fp-tools Manual</title>
+  <style>
+    :root {
+      --page: #f6f8fb;
+      --surface: #ffffff;
+      --surface-soft: #eef3f8;
+      --ink: #18212f;
+      --muted: #596579;
+      --accent: #155c9c;
+      --accent-ink: #0d3d69;
+      --border: #d8e0ea;
+      --code: #101826;
+      --code-border: #253248;
+      --code-ink: #e8edf5;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    a { color: var(--accent); }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 32px;
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 32px 28px 56px;
+    }
+
+    nav {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+
+    nav strong {
+      display: block;
+      color: var(--accent-ink);
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    nav a {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 6px 0;
+      font-size: 14px;
+    }
+
+    nav a:hover { color: var(--accent); }
+
+    main { min-width: 0; }
+
+    .hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 34px;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      margin: 0 0 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 42px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 18px;
+      margin: 14px 0 0;
+    }
+
+    .command-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .command {
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-weight: 700;
+      color: var(--accent-ink);
+      text-align: center;
+      min-width: 0;
+    }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 26px;
+      margin-bottom: 20px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      color: var(--accent-ink);
+      font-size: 24px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 22px 0 8px;
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    p { margin: 0 0 12px; }
+    ul { margin: 10px 0 0; padding-left: 20px; }
+    li { margin: 6px 0; }
+
+    code {
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 5px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.93em;
+    }
+
+    pre {
+      margin: 10px 0 16px;
+      padding: 16px;
+      overflow-x: auto;
+      background: var(--code);
+      color: var(--code-ink);
+      border: 1px solid var(--code-border);
+      border-radius: var(--radius);
+      font-family: "Courier New", Courier, monospace;
+      font-size: 13px;
+      line-height: 1.48;
+      white-space: pre;
+    }
+
+    .note {
+      border-left: 4px solid var(--accent);
+      background: #f2f6fa;
+      padding: 12px 14px;
+      color: var(--muted);
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .muted { color: var(--muted); }
+
+    footer {
+      color: var(--muted);
+      font-size: 12px;
+      font-style: italic;
+      text-align: center;
+      padding: 18px 0 0;
+    }
+
+    @media (max-width: 900px) {
+      .shell { display: block; padding: 20px 16px 44px; }
+      nav { position: static; margin-bottom: 20px; }
+      .hero { padding: 24px; }
+      h1 { font-size: 34px; }
+      .command-strip, .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav aria-label="Manual navigation">
+      <strong>fp-tools Manual</strong>
+      <a href="#install">Install</a>
+      <a href="#commands">Commands</a>
+      <a href="#workflow">Minimal workflow</a>
+      <a href="#gui">GUI</a>
+      <a href="#yaml">YAML runner</a>
+      <a href="#extra">Extra features</a>
+    </nav>
+
+    <main>
+      <header class="hero">
+        <p class="eyebrow">ATAC-seq footprinting toolkit</p>
+        <h1>fp-tools</h1>
+        <p class="lead">A standalone, command-first package for bias correction, footprint scoring, differential binding detection, and aggregate signal plotting.</p>
+        <div class="command-strip" aria-label="Core commands">
+          <div class="command">atac-correct</div>
+          <div class="command">score-footprints</div>
+          <div class="command">detect-tf-binding</div>
+          <div class="command">plot-aggregate</div>
+        </div>
+      </header>
+
+      <section id="install">
+        <h2>Install</h2>
+        <p>The PyPI distribution is named <code>fp-tools-bio</code>; the installed Python package is <code>fp_tools</code>.</p>
+        <pre>pip install fp-tools-bio</pre>
+      </section>
+
+      <section id="commands">
+        <h2>Commands</h2>
+        <ul>
+          <li><code>atac-correct</code>: correct ATAC-seq cutsite signal for Tn5 sequence bias.</li>
+          <li><code>score-footprints</code>: calculate footprint, sum, mean, or pass-through scores from bigWig signal.</li>
+          <li><code>detect-tf-binding</code>: scan motifs, infer bound sites, and compare TF binding across conditions.</li>
+          <li><code>plot-aggregate</code>: plot aggregate signal around TFBS or region sets.</li>
+          <li><code>fp-tools-run</code>: run optional YAML batch configs.</li>
+          <li><code>fp-tools-gui</code>: launch the optional Streamlit GUI wrapper.</li>
+        </ul>
+        <p class="note">Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.</p>
+        <p class="note">Legacy aliases remain available for compatibility: <code>ATACorrect</code>, <code>FootprintScores</code>, <code>ScoreBigwig</code>, <code>BINDetect</code>, and <code>PlotAggregate</code>.</p>
+        <h3>Verify</h3>
+        <pre>atac-correct --help
+score-footprints --help
+detect-tf-binding --help
+plot-aggregate --help
+fp-tools-run --help
+fp-tools-gui --help</pre>
+      </section>
+
+      <section id="workflow">
+        <h2>Minimal Workflow</h2>
+        <h3>1. atac-correct</h3>
+        <pre>atac-correct \
+  --bam test_data/Bcell.bam \
+  --genome test_data/genome.fa.gz \
+  --peaks test_data/merged_peaks.bed \
+  --blacklist test_data/blacklist.bed \
+  --outdir examples/atacorrect/atac-correct_test2 \
+  --cores 1</pre>
+
+        <h3>2. score-footprints</h3>
+        <pre>score-footprints \
+  --signal examples/atacorrect/atac-correct_test2/Bcell_corrected.bw \
+  --regions test_data/merged_peaks.bed \
+  --output examples/scorebigwig/score-footprints_test2/Bcell_footprints.bw \
+  --cores 1</pre>
+
+        <h3>3. detect-tf-binding</h3>
+        <pre>detect-tf-binding \
+  --motifs test_data/motifs.jaspar \
+  --signals test_data/Bcell_footprints.bw test_data/Tcell_footprints.bw \
+  --genome test_data/genome.fa.gz \
+  --peaks test_data/merged_peaks_annotated.bed \
+  --peak-header test_data/merged_peaks_annotated_header.txt \
+  --outdir examples/bindetect/detect-tf-binding_output_htmlfix_014 \
+  --cond-names Bcell Tcell \
+  --cores 1</pre>
+
+        <h3>4. plot-aggregate</h3>
+        <pre>plot-aggregate \
+  --TFBS test_data/IRF1_all.bed \
+  --signals test_data/Bcell_corrected.bw \
+  --output examples/reports/plotaggregate_control_mode_test.pdf \
+  --output_aggregated_scores examples/reports/plotaggregate_control_mode_test_scores.csv</pre>
+      </section>
+
+      <section id="gui">
+        <h2>GUI</h2>
+        <p>Start the GUI on a Linux server:</p>
+        <pre>fp-tools-gui --host 0.0.0.0 --run-dir examples/gui_runs</pre>
+        <p>If <code>--port</code> is omitted, the launcher picks a free port and prints the exact URL. A fixed port can also be supplied:</p>
+        <pre>fp-tools-gui --host 0.0.0.0 --port 8891 --run-dir examples/gui_runs</pre>
+        <p>The GUI can run directly from forms, load YAML, save YAML, and inspect run history. GUI run metadata and logs are written under <code>examples/gui_runs/</code>; ready-to-load YAML examples are in <code>examples/gui_configs/</code>.</p>
+      </section>
+
+      <section id="yaml">
+        <h2>YAML Runner</h2>
+        <p>Run a saved config directly from the command line:</p>
+        <pre>fp-tools-run --config examples/gui_configs/plotaggregate_single.yml</pre>
+        <p>GUI-saved YAML files can be rerun the same way. YAML is optional for normal CLI use.</p>
+      </section>
+
+      <section id="extra">
+        <h2>Extra Features</h2>
+        <h3>detect-tf-binding Replicate Grouping</h3>
+        <pre>detect-tf-binding --motifs test_data/motifs.jaspar \
+  --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw \
+  --genome test_data/genome.fa.gz \
+  --peaks test_data/merged_peaks_annotated.bed \
+  --peak-header test_data/merged_peaks_annotated_header.txt \
+  --outdir examples/bindetect/detect-tf-binding_output_synthetic_replicates_demo \
+  --cond-names Bcell Bcell Tcell Tcell \
+  --cores 40</pre>
+        <p class="muted">Grouped results are written to <code>bindetect_results.txt</code> under the output directory.</p>
+
+        <h3>detect-tf-binding Skewness Report</h3>
+        <p>For multi-condition runs, the skewness report is written automatically to:</p>
+        <pre>&lt;outdir&gt;/bindetect_results_skewness_report.pdf</pre>
+        <p class="muted">Single-condition runs do not produce this report.</p>
+
+        <h3>plot-aggregate Control Overlay</h3>
+        <pre>plot-aggregate --TFBS test_data/IRF1_all.bed \
+  --signals test_data/Bcell_corrected.bw test_data/Tcell_corrected.bw \
+  --signal-labels Bcell Tcell \
+  --control-label Bcell \
+  --output examples/reports/plotaggregate_control_mode_test.pdf \
+  --output_aggregated_scores examples/reports/plotaggregate_control_mode_test_scores.csv</pre>
+
+        <h3>plot-aggregate Directory Input</h3>
+        <pre>plot-aggregate --TFBS examples/plotaggregate_tfbs_dir \
+  --signals test_data/Bcell_corrected.bw \
+  --output examples/reports/plotaggregate_dirinput_test.pdf \
+  --output_aggregated_scores examples/reports/plotaggregate_dirinput_test_scores.csv</pre>
+
+        <h3>plot-aggregate Fixed Grid Layout</h3>
+        <pre>plot-aggregate --TFBS examples/plotaggregate_tfbs_grid/CTCF_Bcell_bound.bed examples/plotaggregate_tfbs_grid/IRF1_Bcell_bound.bed examples/plotaggregate_tfbs_grid/ETS1_Bcell_bound.bed examples/plotaggregate_tfbs_grid/GATA3_Bcell_bound.bed examples/plotaggregate_tfbs_grid/RUNX1_Bcell_bound.bed \
+  --signals test_data/Bcell_corrected.bw test_data/Tcell_corrected.bw \
+  --signal-labels Bcell_corrected Tcell_corrected \
+  --grid 2x5 \
+  --output examples/reports/plotaggregate_grid_2x5_test.pdf \
+  --output_aggregated_scores examples/reports/plotaggregate_grid_2x5_test_scores.csv</pre>
+
+        <h3>plot-aggregate CSV Exports</h3>
+        <pre>plot-aggregate --TFBS test_data/IRF1_all.bed \
+  --signals test_data/Bcell_corrected.bw \
+  --output examples/reports/plotaggregate_signals_export_test.pdf \
+  --output_aggregated_signals examples/reports/plotaggregate_signals_export_test_signals.csv \
+  --output_aggregated_scores examples/reports/plotaggregate_signals_export_test_scores.csv</pre>
+        <p class="muted">The legacy <code>--output-csv</code> alias writes the aggregated signal CSV.</p>
+
+        <h3>Larger Motif Databases</h3>
+        <p>Large JASPAR and HOCOMOCO-scale motif databases are supported through the same detect-tf-binding command path. A JASPAR2026-scale run completed with 1019 motifs.</p>
+      </section>
+
+      <footer>Yi Lab, 2026.</footer>
+    </main>
+  </div>
+</body>
+</html>

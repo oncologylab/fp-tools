@@ -1,0 +1,31 @@
+version: 1
+run_mode: batch
+samples:
+  - sample_id: plotaggregate_panel_a
+    tool: PlotAggregate
+    TFBS:
+      - examples/plotaggregate_tfbs_dir/BATF_all.bed
+      - examples/plotaggregate_tfbs_dir/IRF1_all.bed
+    signals:
+      - test_data/Bcell_corrected.bw
+      - test_data/Tcell_corrected.bw
+    output: examples/gui_demo_outputs/plotaggregate_batch/panel_a.pdf
+    output_aggregated_scores: examples/gui_demo_outputs/plotaggregate_batch/panel_a_scores.csv
+    output_aggregated_signals: examples/gui_demo_outputs/plotaggregate_batch/panel_a_signals.csv
+    grid: 2x2
+  - sample_id: plotaggregate_panel_b
+    tool: PlotAggregate
+    TFBS:
+      - examples/plotaggregate_tfbs_grid/CTCF_Bcell_bound.bed
+      - examples/plotaggregate_tfbs_grid/ETS1_Bcell_bound.bed
+      - examples/plotaggregate_tfbs_grid/GATA3_Bcell_bound.bed
+      - examples/plotaggregate_tfbs_grid/IRF1_Bcell_bound.bed
+      - examples/plotaggregate_tfbs_grid/RUNX1_Bcell_bound.bed
+    signals:
+      - test_data/Bcell_corrected.bw
+      - test_data/Tcell_corrected.bw
+    output: examples/gui_demo_outputs/plotaggregate_batch/panel_b.pdf
+    output_aggregated_scores: examples/gui_demo_outputs/plotaggregate_batch/panel_b_scores.csv
+    output_aggregated_signals: examples/gui_demo_outputs/plotaggregate_batch/panel_b_signals.csv
+    grid: 2x5
+comparisons: []

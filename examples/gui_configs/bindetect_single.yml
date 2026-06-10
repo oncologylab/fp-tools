@@ -1,0 +1,17 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: bindetect_single_bcell
+    tool: BINDetect
+    motifs: test_data/motifs.jaspar
+    signals:
+      - test_data/Bcell_footprints.bw
+    genome: test_data/genome.fa.gz
+    peaks: test_data/merged_peaks_annotated.bed
+    peak_header: test_data/merged_peaks_annotated_header.txt
+    outdir: examples/gui_demo_outputs/bindetect_single
+    cond_names:
+      - Bcell
+    cores: 1
+    skip_excel: true
+comparisons: []

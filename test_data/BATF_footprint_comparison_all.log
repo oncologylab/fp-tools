@@ -1,0 +1,94 @@
+# TOBIAS 0.11.0 PlotAggregate (run started 2020-03-24 11:53:20.877338)
+# Working directory: /mnt/agnerds/mette.bentsen/TOBIAS_TOOL/testing
+# Command line call: TOBIAS PlotAggregate --TFBS test_data/BATF_all.bed --signals test_data/Bcell_corrected.bw test_data/Tcell_corrected.bw --output BATF_footprint_comparison_all.png --share_y both --plot_boundaries --signal-on-x
+
+# ----- Input parameters -----
+# TFBS:	['test_data/BATF_all.bed']
+# signals:	['test_data/Bcell_corrected.bw', 'test_data/Tcell_corrected.bw']
+# regions:	[]
+# whitelist:	[]
+# blacklist:	[]
+# output:	BATF_footprint_comparison_all.png
+# title:	Aggregated signals
+# flank:	60
+# TFBS_labels:	None
+# signal_labels:	None
+# region_labels:	None
+# share_y:	both
+# normalize:	False
+# negate:	False
+# smooth:	1
+# log_transform:	False
+# plot_boundaries:	True
+# signal_on_x:	True
+# remove_outliers:	1
+# verbosity:	3
+
+
+# ----- Output files -----
+# BATF_footprint_comparison_all.png
+
+
+2020-03-24 11:53:20 (39380) [INFO]	---- Processing input ----
+2020-03-24 11:53:20 (39380) [INFO]	Reading information from .bed-files
+2020-03-24 11:53:20 (39380) [STATS]	COUNT BATF_all: 990 sites
+2020-03-24 11:53:20 (39380) [INFO]	Reading signal from bigwigs
+2020-03-24 11:53:20 (39380) [INFO]	- Reading signal from Bcell_corrected
+2020-03-24 11:53:21 (39380) [INFO]	- Reading signal from Tcell_corrected
+2020-03-24 11:53:21 (39380) [INFO]	Calculating aggregate signals
+
+2020-03-24 11:53:21 (39380) [INFO]	---- Analysis ----
+2020-03-24 11:53:21 (39380) [INFO]	Calculating footprint depth measure
+2020-03-24 11:53:21 (39380) [INFO]	FPD (signal,regions): footprint_width baseline middle FPD
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 10 0.68582 -0.56800 -1.25382
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 12 0.69918 -0.47931 -1.17849
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 14 0.73410 -0.57538 -1.30948
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 16 0.75793 -0.56655 -1.32448
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 18 0.77623 -0.52307 -1.29930
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 20 0.80120 -0.51800 -1.31920
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 22 0.82775 -0.51633 -1.34408
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 24 0.84097 -0.45724 -1.29821
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 26 0.86108 -0.43005 -1.29113
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 28 0.88733 -0.42408 -1.31140
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 30 0.91044 -0.40599 -1.31643
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 32 0.92742 -0.37040 -1.29782
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 34 0.96359 -0.38555 -1.34914
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 36 0.98748 -0.36634 -1.35382
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 38 0.98849 -0.29728 -1.28577
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 40 0.97821 -0.21242 -1.19063
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 42 0.96641 -0.13381 -1.10021
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 44 0.95873 -0.07053 -1.02926
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 46 0.95986 -0.02760 -0.98745
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Bcell_corrected,BATF_all): 48 0.96017 0.01307 -0.94711
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 10 0.32215 0.20184 -0.12031
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 12 0.32830 0.16655 -0.16175
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 14 0.34284 0.07953 -0.26331
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 16 0.34980 0.06721 -0.28259
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 18 0.34634 0.11822 -0.22812
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 20 0.34523 0.14660 -0.19864
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 22 0.34914 0.14723 -0.20192
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 24 0.34251 0.19059 -0.15192
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 26 0.35322 0.16356 -0.18965
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 28 0.35451 0.17286 -0.18165
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 30 0.36489 0.15382 -0.21107
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 32 0.37269 0.14556 -0.22714
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 34 0.37281 0.15863 -0.21417
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 36 0.38168 0.14983 -0.23185
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 38 0.38612 0.15245 -0.23368
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 40 0.39420 0.14797 -0.24623
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 42 0.38419 0.17829 -0.20591
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 44 0.37063 0.21106 -0.15957
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 46 0.36033 0.23457 -0.12577
+2020-03-24 11:53:21 (39380) [STATS]	FPD (Tcell_corrected,BATF_all): 48 0.35774 0.24370 -0.11405
+
+2020-03-24 11:53:21 (39380) [INFO]	Calculating pairwise aggregate pearson correlation
+2020-03-24 11:53:21 (39380) [INFO]	CORRELATION (signal1,region1) VS (signal2,region2): PEARSONR
+2020-03-24 11:53:21 (39380) [STATS]	CORRELATION (Bcell_corrected,BATF_all) VS (Tcell_corrected,BATF_all): 0.31421
+
+2020-03-24 11:53:21 (39380) [INFO]	---- Plotting aggregates ----
+2020-03-24 11:53:21 (39380) [INFO]	Setting up plotting grid
+2020-03-24 11:53:27 (39380) [INFO]	Plotting regions BATF_all from signal Bcell_corrected
+2020-03-24 11:53:27 (39380) [INFO]	Plotting regions BATF_all from signal Tcell_corrected
+2020-03-24 11:53:27 (39380) [INFO]	Adjusting final details
+
+2020-03-24 11:53:28 (39380) [INFO]	Finished PlotAggregate run (total time elapsed: 0:00:07.938330)
