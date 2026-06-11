@@ -42,7 +42,7 @@ Legacy aliases remain available for compatibility: `ATACorrect`, `FootprintScore
 
 ### Development branch (current source tree)
 
-Additional opt-in commands support tabular TFBS feature/model workflows, candidate generation and reranking, de novo motif-discovery orchestration, variant scoring, pseudobulk fragment grouping, replicate-aware BINDetect reports, and multiscale competition decomposition. These commands are present and callable from the current source tree and carry unit-test coverage; biological validation benchmarks for several of them are still being expanded, and they are not all guaranteed to be exposed in the released wheel until the next tagged release.
+Additional opt-in commands support tabular TFBS feature/model workflows, candidate generation and reranking, de novo motif-discovery orchestration, variant scoring, 10x-style pseudobulk fragment grouping with optional indexed fragments and cut-site bigWigs, replicate-aware BINDetect reports, and multiscale competition decomposition. These commands are present and callable from the current source tree and carry unit-test coverage; biological validation benchmarks for several of them are still being expanded, and they are not all guaranteed to be exposed in the released wheel until the next tagged release.
 
 Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.
 
@@ -219,3 +219,30 @@ The legacy `--output-csv` alias writes the aggregated signal CSV.
 Large JASPAR and HOCOMOCO-scale motif databases are supported through the same detect-tf-binding command path. A JASPAR2026-scale run completed with 1019 motifs.
 
 *Yi Lab, 2026.*
+
+## Real-data pseudobulk example
+
+The paper workflow validates `fp-tools-pseudobulk` on public 10x PBMC Multiome ATAC fragments. Rebuild the prepared annotations and TF site sets from official 10x analysis tables, then run pseudobulk grouping with high core counts for per-group compression and bigWig generation:
+
+```bash
+python benchmarks/scripts/prepare_10x_pbmc_pseudobulk.py --write-example-archive
+
+fp-tools-pseudobulk \
+  --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz \
+  --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv \
+  --group-by cell_type \
+  --min-cells 300 \
+  --min-fragments 50000 \
+  --index-output \
+  --write-cutsite-bigwigs \
+  --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes \
+  --cores 32 \
+  --outdir data/public/processed/pseudobulk_pbmc/run
+
+python paper/scripts/plot_pseudobulk_tf_aggregates.py \
+  --manifest data/public/processed/pseudobulk_pbmc/run/pseudobulk_manifest.tsv \
+  --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites \
+  --out-prefix paper/manuscript/figures/supp_pseudobulk_tf_aggregates
+```
+
+Keep raw 10x files and generated pseudobulk fragments/bigWigs out of the main repository. Only scripts, manifests, compact source tables, and manuscript figures are tracked here; reusable large example-data archives belong in `oncologylab/fp-tools-data` release assets (https://github.com/oncologylab/fp-tools-data/releases/tag/pbmc-pseudobulk-v1).

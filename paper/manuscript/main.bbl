@@ -84,6 +84,14 @@ Gupta, S.; Stamatoyannopoulos, J.A.; Bailey, T.L.; Noble, W.S.
 \newblock {\em Genome Biology} {\bf 2007}, {\em 8},~R24.
 \newblock {\url{https://doi.org/10.1186/gb-2007-8-2-r24}}.
 
+\bibitem[{10x Genomics}(2021)]{tenxpbmc2021}
+{10x Genomics}.
+\newblock {PBMCs from a healthy donor (granulocyte sorted), single cell
+  multiome ATAC + gene expression}.
+\newblock 10x Genomics public dataset, Cell Ranger ARC 2.0.0,  2021.
+\newblock ATAC fragments, peak calls, TF-analysis tables, and gene-expression
+  clustering outputs downloaded from 10x Genomics sample files.
+
 \bibitem[{The ENCODE Project Consortium}(2012)]{encode2012}
 {The ENCODE Project Consortium}.
 \newblock An integrated encyclopedia of {DNA} elements in the human genome.

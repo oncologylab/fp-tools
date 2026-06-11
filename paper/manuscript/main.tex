@@ -251,7 +251,8 @@ unit tests, and documentation, and each inert unless explicitly invoked:
         ref/alt motif deltas, and optional tabular-model probability deltas.
   \item \emph{Pseudobulk aggregation}: \texttt{fp-tools-pseudobulk} groups
         single-cell ATAC fragments by annotation columns into pseudobulk fragment
-        files, TSV/YAML manifests, and downstream command plans.
+        files, TSV/YAML manifests, optional BGZF/tabix-indexed outputs, and
+        optional CPM-normalized cut-site bigWigs for downstream aggregate plots.
   \item \emph{Replicate-aware differential-binding reporting}:
         \texttt{fp-tools-bindetect-replicate-report} (this work) summarizes a
         BINDetect \texttt{*\_results.txt} table into per-comparison effect sizes,
@@ -276,7 +277,15 @@ patterns recur among strong unexplained candidates; variant scoring asks whether
 alternate allele weakens motif, sequence-context, or model-predicted binding
 evidence relative to the reference; and pseudobulk aggregation asks whether
 single-cell fragments can be grouped into interpretable group-level profiles that
-run through the same footprinting machinery.
+run through the same footprinting machinery. In this work we validate that path
+with a public 10x Genomics PBMC Multiome dataset processed by Cell Ranger ARC
+2.0.0~\cite{tenxpbmc2021}. Official 10x gene-expression graph clusters are
+collapsed into broad PBMC labels using canonical marker-gene enrichments (B cells,
+CD4 T cells, NK/cytotoxic T cells, CD14 monocytes, FCGR3A monocytes, dendritic
+cells, and mixed myeloid cells), then ATAC fragments are split by label and
+converted to CPM-normalized cut-site bigWigs. Motif-associated peak sets for PAX5,
+TCF7/TCF7L2, CEBPB, and CTCF are taken from the 10x TF-analysis peak--motif
+mapping distributed with the same dataset.
 
 For the variant module, the core effects are signed ref/alt deltas. With $S_{\mathrm{PWM}}$
 the best local motif log-odds score and $\hat{p}$ the supervised TFBS probability
@@ -348,7 +357,7 @@ The benchmark is deliberately \emph{tiered} rather than monolithic
 tier (ENCODE bulk ATAC vs. matched TF ChIP/CUT\&RUN) as the primary classical
 benchmark; a depth-robustness tier over downsampled ATAC; a motif-removal tier for
 motif-relaxed/free and de novo validation; a supervised-TFBS tier; a variant tier;
-and a later pseudobulk tier. For binary TF-binding labels we compute AUROC and
+and a real-data pseudobulk demonstration tier. For binary TF-binding labels we compute AUROC and
 AUPRC globally and per TF-cell task, recall at 1\%, 5\%, and 10\% FDR, precision at
 fixed recall, calibration curves with expected and maximum calibration error,
 Brier score for probability models, per-TF macro averages, Wilcoxon signed-rank
@@ -376,7 +385,7 @@ Depth robustness & Shallow-depth sensitivity (50/25/10/5\%) & performance-vs-dep
 Motif removal & Motif-relaxed/free and de novo validation & recovered ChIP-supported sites, rediscovered-motif stats\\
 Supervised TFBS & Tabular model benchmark & probability metrics, calibration, comparator tables\\
 Variant & Translational benchmark (caQTL/allele-specific) & delta-score enrichment, case studies\\
-Pseudobulk & Single-cell extension & cell-type TF programs, group comparisons\\
+Pseudobulk & Single-cell extension and real-data demonstration & 10x PBMC cell-type pseudobulks, TF aggregate profiles\\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -469,6 +478,41 @@ decomposition attributes overlapping footprint signal to TF-scale,
 nucleosome-scale, and shared (competing) components per region, with a competition
 index and a dominant-component label, surfacing loci where TF and nucleosome
 occupancy compete rather than treating accessibility as single-scale.
+
+
+\subsection{Real 10x PBMC Pseudobulk Validation}
+
+To test whether the pseudobulk utility supports mainstream single-cell ATAC data
+rather than only toy fixtures, we ran \texttt{fp-tools-pseudobulk} on the public
+10x Genomics PBMC granulocyte-sorted Multiome dataset~\cite{tenxpbmc2021}. The
+workflow used the official 10x ATAC fragments and GEX graph clusters, mapped 11,898
+cells into broad immune pseudobulks, and retained seven groups after requiring at
+least 300 cells and 50,000 fragments: B cells, CD4 T cells, NK/cytotoxic T cells,
+CD14 monocytes, FCGR3A monocytes, dendritic cells, and a mixed myeloid group. The
+kept pseudobulks contained 13.6--144.0 million counted fragments per group and
+were written as indexed fragment files plus CPM-normalized cut-site bigWigs. These
+outputs were readable by the same aggregate-plotting code used for bulk ATAC data.
+
+As a qualitative validation, we aggregated pseudobulk cut-site signal around 10x
+motif-associated peak centers for immune-relevant TFs (PAX5, TCF7/TCF7L2, CEBPB,
+and CTCF). The resulting multi-panel profile shows that the single-cell fragments
+can be collapsed into interpretable group-level tracks and compared across immune
+cell types without changing the downstream bulk-style visualization machinery
+(Figure~\ref{fig:pseudobulk_supp}). This result is intended as a support and
+reproducibility demonstration, not as a full single-cell benchmark.
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{figures/supp_pseudobulk_tf_aggregates.png}
+\caption{Real 10x PBMC pseudobulk TF aggregate profiles.
+Single-cell ATAC fragments from the public 10x PBMC Multiome dataset were grouped
+by broad immune-cell labels derived from official 10x gene-expression graph
+clusters, converted to CPM-normalized cut-site bigWigs, and aggregated around
+10x motif-associated peak centers for PAX5, TCF7/TCF7L2, CEBPB, and CTCF. The
+figure demonstrates that \texttt{fp-tools-pseudobulk} produces group-level signal
+tracks that can be visualized by the same aggregate-profile workflow used for bulk
+ATAC data. Generated by \texttt{paper/scripts/plot\_pseudobulk\_tf\_aggregates.py}.
+\label{fig:pseudobulk_supp}}
+\end{figure}
 
 \subsection{Benchmark and Figure Infrastructure}
 
@@ -738,10 +782,14 @@ de-identified datasets and did not involve new experiments on humans or animals.
 \dataavailability{\texttt{fp-tools} is openly available at
 \url{https://github.com/oncologylab/fp-tools}. All benchmark manifests, schemas,
 analysis scripts, and figure generators are included in the repository. Public
-input datasets are obtained from the ENCODE Project~\cite{encode2012} and motif
-databases (e.g., JASPAR~\cite{jaspar2026}) via the included discovery and download
-scripts; large raw and processed data and full benchmark outputs are regenerated
-from the committed manifests rather than stored in version control.}
+input datasets are obtained from the ENCODE Project~\cite{encode2012}, the 10x
+Genomics PBMC Multiome example~\cite{tenxpbmc2021}, and motif databases (e.g.,
+JASPAR~\cite{jaspar2026}) via the included discovery and download scripts.
+Manifests, scripts, small result tables, source tables, and figures are stored in
+the main repository; large reusable example-data files are distributed separately
+through the public 	exttt{oncologylab/fp-tools-data} repository release assets,
+and full raw public inputs are regenerated from committed manifests rather than
+stored in version control.}
 
 \acknowledgments{The author thanks the ENCODE Project Consortium and the
 maintainers of the open-source tools referenced in this work for making their data

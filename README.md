@@ -286,7 +286,7 @@ The output includes deterministic ref/alt sequence-context features such as GC s
 
 ### Optional pseudobulk fragments
 
-Group single-cell ATAC fragments by annotation columns and write a manifest for downstream bulk processing:
+Group mainstream 10x-style single-cell ATAC fragments by annotation columns and write a manifest for downstream bulk-style processing. Development builds can also BGZF/tabix-index grouped fragments and write CPM-normalized cut-site bigWigs directly for aggregate plotting:
 
 ```bash
 fp-tools-pseudobulk \
@@ -295,13 +295,15 @@ fp-tools-pseudobulk \
   --group-by donor,cell_type \
   --min-cells 200 \
   --min-fragments 50000 \
+  --index-output \
+  --write-cutsite-bigwigs \
   --write-downstream-commands \
   --genome-sizes refs/hg38.chrom.sizes \
-  --cores 16 \
+  --cores 32 \
   --outdir pseudobulk_pbmc
 ```
 
-The optional downstream command script contains reproducible `bedtools`, `bedGraphToBigWig`, and `samtools` steps for kept pseudobulk groups.
+`--cores` is used for independent per-group compression/indexing and cut-site bigWig generation where possible. The real-data paper example uses the public 10x PBMC Multiome fragments and official 10x clustering outputs; scripts and manifests live under `benchmarks/` and `paper/scripts/`, while large reusable example data belongs in the separate `oncologylab/fp-tools-data` release assets (https://github.com/oncologylab/fp-tools-data/releases/tag/pbmc-pseudobulk-v1).
 
 ### Optional replicate-aware BINDetect report
 
