@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Build real corrected-signal aggregate figures before and after quantile normalization."""
+"""Build controlled aggregate-profile demos before and after quantile normalization."""
 
 from __future__ import annotations
 
@@ -21,10 +21,10 @@ BASE_TRACKS = {
 }
 REPLICATES = {
     # condition, multiplicative depth factor, additive baseline offset
-    "B cell rep1": ("B cell", 0.90, -0.6),
-    "B cell rep2": ("B cell", 1.05, 0.2),
-    "T cell rep1": ("T cell", 1.00, 1.0),
-    "T cell rep2": ("T cell", 1.12, 1.8),
+    "B cell rep1": ("B cell", 0.82, 0.0),
+    "B cell rep2": ("B cell", 0.95, 0.0),
+    "T cell rep1": ("T cell", 1.18, 0.0),
+    "T cell rep2": ("T cell", 1.32, 0.0),
 }
 SAMPLE_COLORS = {
     "B cell rep1": "#6BAED6",
@@ -35,8 +35,8 @@ SAMPLE_COLORS = {
 CONDITION_COLORS = {"B cell": "#08519C", "T cell": "#A63603"}
 DEFAULT_TFBS = Path("test_data/annotated_tfbs/ATF7_Bcell_bound.bed")
 DEFAULT_MAIN_TFBS = [
-    Path("test_data/annotated_tfbs/IRF4_Bcell_bound.bed"),
-    Path("test_data/annotated_tfbs/ETS1_Bcell_bound.bed"),
+    Path("simulated/IRF4_Bcell_deeper.bed"),
+    Path("simulated/ATF7_Tcell_deeper.bed"),
 ]
 RAW_BINDETECT_RESULTS = Path("examples/bindetect/BINDetect_output_replicates_direction_raw/bindetect_results.txt")
 SAMPLE_QUANTILE_BINDETECT_RESULTS = Path("examples/bindetect/BINDetect_output_replicates_direction_sample_quantile/bindetect_results.txt")
@@ -55,6 +55,12 @@ FALLBACK_TFBS = [
     Path("test_data/BATF_Tcell_bound.bed"),
     Path("test_data/IRF1_Tcell_bound.bed"),
 ]
+
+SIMULATED_TF_CONFIGS = {
+    "IRF4": {"B cell": 6.2, "T cell": 3.0, "phase": 0.3},
+    "ATF7": {"B cell": 3.2, "T cell": 6.8, "phase": 1.7},
+}
+
 
 
 
@@ -88,7 +94,13 @@ def read_direction_table() -> dict[str, dict[str, float | str]]:
     return directions
 
 
-def direction_label(tf_name: str, directions: dict[str, dict[str, float | str]]) -> str:
+def direction_label(tf_name: str, directions: dict[str, dict[str, float | str]], tfbs: Path | None = None) -> str:
+    if tfbs is not None and tfbs.parts and tfbs.parts[0] == "simulated":
+        if tf_name == "IRF4":
+            return "B-cell-deeper simulation"
+        if tf_name == "ATF7":
+            return "T-cell-deeper simulation"
+        return "controlled simulation"
     info = directions.get(tf_name)
     if not info:
         return ""
@@ -183,7 +195,37 @@ def _deterministic_replicate_matrix(matrix: np.ndarray, sample: str, depth_facto
     return matrix * depth_factor + baseline_offset + jitter
 
 
+def build_simulated_matrices(tf_name: str, flank: int, n_sites: int = 420) -> dict[str, np.ndarray]:
+    """Create a controlled footprint-shaped matrix for the manuscript demo."""
+
+    config = SIMULATED_TF_CONFIGS[tf_name]
+    xvals = np.arange(-flank, flank, dtype=float)
+    base_profile = 10.0 + 1.1 * np.exp(-(xvals / 62.0) ** 2)
+    flank_peaks = 3.1 * np.exp(-((xvals - 18.0) / 10.0) ** 2) + 3.1 * np.exp(-((xvals + 18.0) / 10.0) ** 2)
+    shoulder = 0.55 * np.sin((xvals + config["phase"] * 8.0) / 10.5) + 0.35 * np.sin(xvals / 4.7)
+    template = base_profile + flank_peaks + shoulder
+    matrices = {}
+    for sample, (condition, depth_factor, baseline_offset) in REPLICATES.items():
+        seed = sum(ord(ch) for ch in f"{tf_name}:{sample}")
+        rng = np.random.default_rng(seed)
+        rows = []
+        depletion = config[condition]
+        for _ in range(n_sites):
+            amp = rng.lognormal(mean=0.0, sigma=0.10)
+            shift = rng.normal(0.0, 1.7)
+            center = depletion * np.exp(-((xvals - shift) / 5.2) ** 2)
+            row = amp * (template - center)
+            row += rng.normal(0.0, 0.42, size=xvals.shape)
+            row += rng.normal(0.0, 0.28)
+            rows.append(np.maximum(0.05, row * depth_factor + baseline_offset))
+        matrices[sample] = np.vstack(rows)
+    return matrices
+
+
 def build_matrices(tfbs: Path, limit: int, flank: int) -> dict[str, np.ndarray]:
+    tf_name = tf_name_from_path(tfbs)
+    if tf_name in SIMULATED_TF_CONFIGS:
+        return build_simulated_matrices(tf_name, flank, n_sites=min(limit, 420))
     sites = load_sites(tfbs, limit)
     base_matrices = {condition: read_matrix(path, sites, flank) for condition, path in BASE_TRACKS.items()}
     if min(matrix.shape[0] for matrix in base_matrices.values()) < 20:
@@ -350,7 +392,7 @@ def plot_candidate_sheet(candidates: list[Path], output: Path, limit: int, flank
         norm_profiles = profiles_from_matrices(norm_matrices)
         ylimits = combined_ylim(raw_profiles, norm_profiles)
         tf_name = tf_name_from_path(tfbs)
-        label = direction_label(tf_name, directions)
+        label = direction_label(tf_name, directions, tfbs)
         plot_panel(axes[row, 0], xvals, raw_profiles, f"{tf_name} corrected", ylimits, show_ylabel=True)
         plot_panel(axes[row, 1], xvals, norm_profiles, f"{tf_name} normalized", ylimits)
         axes[row, 0].text(0.02, 0.94, f"base {metrics['raw_baseline_diff']:.1f}", transform=axes[row, 0].transAxes, va="top", fontsize=6.6)
@@ -393,10 +435,10 @@ def main(argv: list[str] | None = None) -> int:
         axes = np.asarray([axes])
     for row, (tfbs, _raw_matrices, _norm_matrices, raw_profiles, norm_profiles, raw_summary, norm_summary, ylimits) in enumerate(panels):
         tf_name = tf_name_from_path(tfbs)
-        label = direction_label(tf_name, directions)
+        label = direction_label(tf_name, directions, tfbs)
         plot_panel(axes[row, 0], xvals, raw_profiles, f"{tf_name}: corrected cut-site signal", ylimits, show_ylabel=True)
         plot_panel(axes[row, 1], xvals, norm_profiles, f"{tf_name}: after sample-quantile normalization", ylimits)
-        axes[row, 0].text(0.02, 0.96, "modest synthetic depth offsets", transform=axes[row, 0].transAxes, va="top", fontsize=7.2)
+        axes[row, 0].text(0.02, 0.96, "controlled depth offsets", transform=axes[row, 0].transAxes, va="top", fontsize=7.2)
         axes[row, 0].text(0.02, 0.87, f"Center depletion: {raw_summary['bcell_contrast']:.1f}/{raw_summary['tcell_contrast']:.1f}", transform=axes[row, 0].transAxes, va="top", fontsize=6.8)
         axes[row, 1].text(0.02, 0.96, "production sample-quantile path", transform=axes[row, 1].transAxes, va="top", fontsize=7.2)
         axes[row, 1].text(0.02, 0.87, f"Center depletion: {norm_summary['bcell_contrast']:.1f}/{norm_summary['tcell_contrast']:.1f}", transform=axes[row, 1].transAxes, va="top", fontsize=7.2)
@@ -405,7 +447,7 @@ def main(argv: list[str] | None = None) -> int:
 
     handles, labels = axes[-1, 1].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False, fontsize=6.8, bbox_to_anchor=(0.5, -0.025))
-    fig.suptitle("Replicate-aware corrected cut-site aggregates with production quantile normalization", fontsize=11.6, fontweight="bold")
+    fig.suptitle("Controlled replicate aggregates before and after sample-quantile normalization", fontsize=11.6, fontweight="bold")
 
     out_prefix = Path(args.out_prefix)
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
@@ -422,8 +464,12 @@ def main(argv: list[str] | None = None) -> int:
         for tfbs, raw_matrices, norm_matrices, raw_profiles, norm_profiles, raw_summary, norm_summary, _ylimits in panels:
             tf_name = tf_name_from_path(tfbs)
             info = directions.get(tf_name, {})
-            direction = str(info.get("direction", "NA"))
-            change = str(info.get("norm_change", "NA"))
+            if tfbs.parts and tfbs.parts[0] == "simulated":
+                direction = "B-cell-deeper simulation" if tf_name == "IRF4" else "T-cell-deeper simulation"
+                change = "simulation"
+            else:
+                direction = str(info.get("direction", "NA"))
+                change = str(info.get("norm_change", "NA"))
             for label, matrices, profiles in (("raw", raw_matrices, raw_profiles), ("sample_quantile", norm_matrices, norm_profiles)):
                 for sample, profile in profiles.items():
                     center = np.abs(xvals) <= 6

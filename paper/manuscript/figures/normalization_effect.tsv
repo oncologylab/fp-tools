@@ -1,21 +1,21 @@
 normalization	tfbs	sample	condition	depth_factor	n_sites	mean_profile	center_mean	flank_mean	baseline_mean	footprint_contrast	bindetect_direction	bindetect_change
-raw	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	B cell rep1	B cell	0.900;offset=-0.600	276	0.575327	-0.593715	1.551822	0.364535	2.145537	B-high	0.35146
-raw	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	B cell rep2	B cell	1.050;offset=0.200	276	1.571436	0.206370	2.711559	1.325047	2.505190	B-high	0.35146
-raw	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	T cell rep1	T cell	1.000;offset=1.000	276	1.736355	1.217080	2.238870	1.541756	1.021790	B-high	0.35146
-raw	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	T cell rep2	T cell	1.120;offset=1.800	276	2.624789	2.042299	3.187423	2.407111	1.145124	B-high	0.35146
-sample_quantile	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	B cell rep1	B cell	0.900;offset=-0.600	276	1.982217	1.104348	2.605563	1.835381	1.501215	B-high	0.35146
-sample_quantile	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	B cell rep2	B cell	1.050;offset=0.200	276	9.121033	6.295855	11.095205	8.610552	4.799351	B-high	0.35146
-sample_quantile	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	T cell rep1	T cell	1.000;offset=1.000	276	13.486213	12.184198	14.380396	13.239658	2.196198	B-high	0.35146
-sample_quantile	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	T cell rep2	T cell	1.120;offset=1.800	276	14.419690	13.211285	15.254522	14.196294	2.043237	B-high	0.35146
-raw_summary	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	1.129642	1.083457	B-high	0.35146
-sample_quantile_summary	test_data/annotated_tfbs/IRF4_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	8.495010	2.119718	B-high	0.35146
-raw	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	B cell rep1	B cell	0.900;offset=-0.600	229	1.286845	-0.107544	2.189921	0.955444	2.297465	T-high	-0.25223
-raw	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	B cell rep2	B cell	1.050;offset=0.200	229	2.401525	0.774215	3.456034	2.014170	2.681818	T-high	-0.25223
-raw	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	T cell rep1	T cell	1.000;offset=1.000	229	3.735967	2.364009	6.080630	3.219677	3.716621	T-high	-0.25223
-raw	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	T cell rep2	T cell	1.120;offset=1.800	229	4.864294	3.326660	7.489942	4.286797	4.163282	T-high	-0.25223
-sample_quantile	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	B cell rep1	B cell	0.900;offset=-0.600	229	3.572202	2.833354	4.257222	3.236426	1.423868	T-high	-0.25223
-sample_quantile	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	B cell rep2	B cell	1.050;offset=0.200	229	13.880892	12.218282	15.887719	12.783625	3.669437	T-high	-0.25223
-sample_quantile	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	T cell rep1	T cell	1.000;offset=1.000	229	13.955374	12.230878	16.750597	13.110506	4.519719	T-high	-0.25223
-sample_quantile	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	T cell rep2	T cell	1.120;offset=1.800	229	15.198876	13.504105	17.941225	14.381973	4.437120	T-high	-0.25223
-raw_summary	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	2.268430	2.489642	T-high	-0.25223
-sample_quantile_summary	test_data/annotated_tfbs/ETS1_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	5.736213	2.546652	T-high	-0.25223
+raw	simulated/IRF4_Bcell_deeper.bed	B cell rep1	B cell	0.820;offset=0.000	420	9.064372	6.347535	10.632219	8.597811	4.284684	B-cell-deeper simulation	simulation
+raw	simulated/IRF4_Bcell_deeper.bed	B cell rep2	B cell	0.950;offset=0.000	420	10.483975	7.337862	12.301641	9.944138	4.963779	B-cell-deeper simulation	simulation
+raw	simulated/IRF4_Bcell_deeper.bed	T cell rep1	T cell	1.180;offset=0.000	420	13.302107	11.552440	15.354052	12.406978	3.801612	B-cell-deeper simulation	simulation
+raw	simulated/IRF4_Bcell_deeper.bed	T cell rep2	T cell	1.320;offset=0.000	420	14.854414	12.907878	17.139595	13.857957	4.231717	B-cell-deeper simulation	simulation
+sample_quantile	simulated/IRF4_Bcell_deeper.bed	B cell rep1	B cell	0.820;offset=0.000	420	11.893251	8.498852	13.914214	11.279659	5.415362	B-cell-deeper simulation	simulation
+sample_quantile	simulated/IRF4_Bcell_deeper.bed	B cell rep2	B cell	0.950;offset=0.000	420	11.878387	8.480656	13.882920	11.276711	5.402263	B-cell-deeper simulation	simulation
+sample_quantile	simulated/IRF4_Bcell_deeper.bed	T cell rep1	T cell	1.180;offset=0.000	420	11.961889	10.330476	13.841938	11.142639	3.511461	B-cell-deeper simulation	simulation
+sample_quantile	simulated/IRF4_Bcell_deeper.bed	T cell rep2	T cell	1.320;offset=0.000	420	11.953191	10.347108	13.811414	11.144086	3.464307	B-cell-deeper simulation	simulation
+raw_summary	simulated/IRF4_Bcell_deeper.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	3.861493	4.016665	B-cell-deeper simulation	simulation
+sample_quantile_summary	simulated/IRF4_Bcell_deeper.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	0.134823	3.487884	B-cell-deeper simulation	simulation
+raw	simulated/ATF7_Tcell_deeper.bed	B cell rep1	B cell	0.820;offset=0.000	420	9.343229	8.293861	10.574144	8.871038	2.280283	T-cell-deeper simulation	simulation
+raw	simulated/ATF7_Tcell_deeper.bed	B cell rep2	B cell	0.950;offset=0.000	420	10.757088	9.542388	12.177411	10.216314	2.635023	T-cell-deeper simulation	simulation
+raw	simulated/ATF7_Tcell_deeper.bed	T cell rep1	T cell	1.180;offset=0.000	420	13.008505	9.078148	15.005181	12.583499	5.927033	T-cell-deeper simulation	simulation
+raw	simulated/ATF7_Tcell_deeper.bed	T cell rep2	T cell	1.320;offset=0.000	420	14.719390	10.284772	16.966607	14.238276	6.681835	T-cell-deeper simulation	simulation
+sample_quantile	simulated/ATF7_Tcell_deeper.bed	B cell rep1	B cell	0.820;offset=0.000	420	12.020465	10.573649	13.664832	11.399169	3.091183	T-cell-deeper simulation	simulation
+sample_quantile	simulated/ATF7_Tcell_deeper.bed	B cell rep2	B cell	0.950;offset=0.000	420	11.996604	10.595951	13.601779	11.390596	3.005827	T-cell-deeper simulation	simulation
+sample_quantile	simulated/ATF7_Tcell_deeper.bed	T cell rep1	T cell	1.180;offset=0.000	420	11.917710	8.458763	13.697538	11.530976	5.238775	T-cell-deeper simulation	simulation
+sample_quantile	simulated/ATF7_Tcell_deeper.bed	T cell rep2	T cell	1.320;offset=0.000	420	11.929740	8.470289	13.724677	11.533002	5.254388	T-cell-deeper simulation	simulation
+raw_summary	simulated/ATF7_Tcell_deeper.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	3.867211	2.457653	T-cell-deeper simulation	simulation
+sample_quantile_summary	simulated/ATF7_Tcell_deeper.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	0.137106	3.048505	T-cell-deeper simulation	simulation
