@@ -21,9 +21,9 @@
 \datepublished{ }
 
 %------------------------------------------------------------------
-\Title{fp-tools: A Reproducible Command-Line Platform for Classical and
-Multiscale ATAC-seq Footprinting, Motif Discovery Preparation, Pseudobulk
-Aggregation, and Replicate-Aware Reporting}
+\Title{fp-tools: A Reproducible Command-Line Platform for Classical ATAC-seq
+Footprinting, Motif Discovery Preparation, Pseudobulk Aggregation, and
+Replicate-Aware Reporting}
 
 \Author{Yaoxiang Li $^{1}$ and Chunling Yi $^{1,}$*}
 
@@ -42,18 +42,16 @@ building end-to-end regulatory-genomics analyses. (2) Methods: We present
 \texttt{fp-tools}, a standalone, pip-installable Python package that unifies bias
 correction, footprint scoring, differential TF-binding detection, and aggregate
 visualization in a reproducible command-line package. Around this core we add
-first-version utilities for multiscale and nucleosome-aware scoring, de novo
-motif-discovery preparation, single-cell pseudobulk aggregation, and
-replicate-aware differential-binding reporting. (3) Results: The package provides deterministic,
+optional utilities for de novo motif-discovery preparation, single-cell
+pseudobulk aggregation, and replicate-aware differential-binding reporting. (3) Results: The package provides deterministic,
 regression-tested workflows, reproducible figure generators, and a tiered
-public-data benchmark design for the supported first-version workflow. Existing
+public-data benchmark design for the supported current workflow. Existing
 classical analyses remain unchanged when optional utilities are not invoked. (4) Conclusions: \texttt{fp-tools} integrates
-established footprinting strengths with pragmatic multiscale, replicate-aware,
-pseudobulk, and motif-discovery helper utilities in a single reproducible package,
+established footprinting strengths with pragmatic replicate-aware, pseudobulk, and motif-discovery helper utilities in a single reproducible package,
 lowering the barrier to standardized, benchmarkable ATAC-seq regulatory analysis.}
 
 \keyword{ATAC-seq; transcription factor footprinting; chromatin accessibility;
-motif analysis; multiscale footprints; pseudobulk ATAC-seq;
+motif analysis; pseudobulk ATAC-seq;
 replicate-aware reporting; reproducibility; command-line bioinformatics}
 
 % Use an external BibTeX database (references.bib) with the MDPI style.
@@ -114,11 +112,10 @@ classical workflow.
 
 We address these gaps with \texttt{fp-tools}, a reproducible ATAC-seq
 footprinting platform that keeps the classical workflow intact while adding a
-small set of practical first-version utilities. The package unifies bias
+small set of practical optional utilities. The package unifies bias
 correction, footprint scoring, motif-aware differential binding, and aggregate
-visualization, then extends this core with multiscale scoring, de novo
-motif-discovery preparation, pseudobulk ATAC aggregation, and replicate-aware
-reporting. The goal is not to replace specialized deep-learning or variant-scoring
+visualization, then extends this core with de novo motif-discovery preparation, pseudobulk ATAC
+aggregation, and replicate-aware reporting. The goal is not to replace specialized deep-learning or variant-scoring
 systems in this first version, but to make a complete footprinting analysis easier
 to run, audit, repeat, and benchmark. This paper describes the supported methods,
 tiered validation design, and reproducibility engineering that tie these workflows
@@ -151,31 +148,10 @@ where $C$ is the protected center and $L$ and $R$ are flanking windows. Larger
 values therefore correspond to the expected footprint pattern: fewer cuts at the
 putative bound site and more cuts in nearby accessible flanks.
 
-The multiscale module generalizes this single-scale contrast to a set of footprint
-widths $\mathcal{S}$. For a scale $s$, the center, left, and right windows
-$C_s(i)$, $L_s(i)$, $R_s(i)$ are sized to $s$, giving a scale-specific depletion
-\[
-F_s(i)=\frac{1}{|L_s(i)|+|R_s(i)|}\left(\sum_{j\in L_s(i)}x_j+\sum_{j\in R_s(i)}x_j\right)-
-\frac{1}{|C_s(i)|}\sum_{j\in C_s(i)}x_j,
-\]
-collapsed to a per-position summary by either the maximum or the mean over scales,
-\[
-F_{\max}(i)=\max_{s\in\mathcal{S}}F_s(i),\qquad
-F_{\mathrm{mean}}(i)=\frac{1}{|\mathcal{S}|}\sum_{s\in\mathcal{S}}F_s(i).
-\]
-The full scale-by-position matrix $\{F_s(i)\}$ is retained in the NPZ tensor
-sidecar, so narrow TF-scale and broader nucleosome-scale structure can be
-evaluated in the same regions.
-
-
-\subsection{First-Version Opt-in Utilities}
+\subsection{Optional Utilities}
 
 New behavior is added as explicit optional utilities, each inert unless selected:
 \begin{itemize}
-  \item \emph{Multiscale and nucleosome-aware scoring} computes depletion across a
-        configurable set of window sizes (default 8--147~bp), collapses the
-        scale-specific scores by maximum or mean, and can retain the full
-        scale-by-position tensor for downstream visualization.
   \item \emph{De novo motif-discovery preparation} exports candidate-centered
         sequences, records reproducible MEME/DREME~\cite{bailey2015meme} and
         Tomtom~\cite{gupta2007tomtom} settings, and summarizes discovered motifs
@@ -192,11 +168,10 @@ New behavior is added as explicit optional utilities, each inert unless selected
         differential TF-binding comparisons (Section~\ref{sec:replicate}).
 \end{itemize}
 
-Conceptually, the first-version utilities answer focused questions around the
-classical core. Multiscale scoring asks whether depletion occurs only at a narrow
-TF-like width or also at broader nucleosome-consistent widths; de novo motif
-preparation asks which sequence patterns recur among exported candidate sites;
-replicate-aware reporting asks whether repeated-condition inputs can be summarized
+Conceptually, the optional utilities answer focused questions around the
+classical core. De novo motif preparation asks which sequence patterns recur among
+exported candidate sites; replicate-aware reporting asks whether repeated-condition
+inputs can be summarized
 as condition means and replicate variation; and pseudobulk aggregation asks
 whether single-cell fragments can be grouped into interpretable group-level
 profiles that run through the same footprinting machinery. In this work we validate that path
@@ -216,10 +191,10 @@ Replicate-aware analysis is integrated directly into \texttt{detect-tf-binding}.
 If users pass repeated condition names, for example
 \texttt{--cond-names Bcell Bcell Tcell Tcell}, fp-tools treats the corresponding
 signal files as biological replicates of the same condition while preserving the
-original BINDetect-style output columns. Let $x_{c,r,i}$ be the footprint score at
+original differential-binding output columns. Let $x_{c,r,i}$ be the footprint score at
 site or background position $i$ for replicate $r$ of condition $c$. With
 \texttt{--normalization sample-quantile}, each replicate is normalized before
-condition averaging using the same BINDetect-style multiplicative quantile curve
+condition averaging using the same multiplicative quantile curve
 used throughout fp-tools. For sample $s$, fp-tools computes empirical positive
 score quantiles $q_s(p)$ and the reference quantile
 $q_\ast(p)=S^{-1}\sum_s q_s(p)$ across the $S$ input samples, then fits a smooth
@@ -237,7 +212,7 @@ same sample-first versus condition-first ordering are used by
 \texttt{plot-aggregate}, so aggregate visualizations and
 \texttt{detect-tf-binding} comparisons are normalized consistently. Because this
 step removes distribution-level depth and background offsets, differential
-interpretation is based on normalized per-site contrasts and the BINDetect
+interpretation is based on normalized per-site contrasts and the differential-binding
 comparison statistic, not on global baseline height alone.
 
 After normalization, condition-level scores are summarized as
@@ -251,7 +226,7 @@ interpretable footprint-score difference and a stabilized log fold change,
 \Delta_i=\bar{x}_{c_1,i}-\bar{x}_{c_2,i},\qquad
 L_i=\log_2\frac{\bar{x}_{c_1,i}+\epsilon}{\bar{x}_{c_2,i}+\epsilon},
 \]
-where $\epsilon$ is the BINDetect pseudocount estimated from the background signal
+where $\epsilon$ is the pseudocount estimated from the background signal
 unless supplied explicitly. When both conditions have replicate support, approximate
 standard errors are reported as
 \[
@@ -262,8 +237,8 @@ standard errors are reported as
 \sqrt{\frac{s_1^2}{n_1(\mu_1+\epsilon)^2}+
       \frac{s_2^2}{n_2(\mu_2+\epsilon)^2}}.
 \]
-The original BINDetect standardized \texttt{change} and \texttt{pvalue} columns
-remain unchanged for compatibility. Additional columns include replicate counts,
+The standard \texttt{change} and \texttt{pvalue} columns remain unchanged for
+compatibility. Additional columns include replicate counts,
 condition score SDs, mean $\Delta$, mean $L$, and standard-error summaries. A
 legacy replicate-report command remains available as a post-hoc helper for
 existing \texttt{*\_results.txt} files.
@@ -357,17 +332,6 @@ plotting, plus smoke tests for public entry points and YAML dry-runs. This conve
 into an automatically checked contract, and provides the stable base on which the
 opt-in modules are layered without disturbing default behavior.
 
-\subsection{Multiscale and Nucleosome-aware Extension}
-
-The multiscale module augments single-scale footprint scoring with a
-scale-by-position view of accessibility depletion. The compressed NPZ tensor
-sidecar serves as a paper-figure input for scale-by-position visualization. On synthetic constructs, narrow TF-scale and broad
-nucleosome-scale depletions are recovered at their respective scales, and the
-companion aggregate visualization (scale-by-position heatmap, collapsed profile,
-and per-scale means) renders these directly. Crucially, default single-scale
-scoring is unchanged unless multiscale mode is requested.
-
-
 \subsection{De Novo Motif Preparation}
 
 The de novo motif-preparation path exports candidate-centered FASTA files,
@@ -383,7 +347,7 @@ additional motifs not represented in the selected database.
 \caption{De novo motif-discovery preparation workflow. Candidate-centered
 sequences are exported from BED-like intervals, external MEME/STREME and Tomtom
 runs are captured as reproducible command plans, and motif summaries are returned
-as concise tables and reports. This first-version utility prepares reproducible
+as concise tables and reports. This optional utility prepares reproducible
 motif-discovery inputs and reports without claiming a new motif-calling
 algorithm.\label{fig:denovo_motif_prep}}
 \end{figure}
@@ -510,8 +474,7 @@ strongest predictor.\label{fig:footprint}}
 first-version ATAC-seq footprinting workflows. Its comparative strengths are
 interface consistency across bias correction, footprint scoring, differential
 binding, and aggregate visualization; deterministic regression coverage; explicit
-handling of replicate-aware summaries; and an extension model in which multiscale,
-de novo motif-preparation, and pseudobulk utilities are opt-in and non-disruptive
+handling of replicate-aware summaries; and an extension model in which de novo motif-preparation and pseudobulk utilities are opt-in and non-disruptive
 (Table~\ref{tab:features}). These properties target the practical friction that
 slows applied ATAC-seq analysis and cross-method benchmarking today.
 
@@ -528,7 +491,6 @@ slows applied ATAC-seq analysis and cross-method benchmarking today.
 Bulk ATAC footprinting & \checkmark & \checkmark & \checkmark & \checkmark & $\circ$ & \textemdash\\
 Tn5 bias correction & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \textemdash\\
 Classical footprint scoring & \checkmark & \checkmark & \checkmark & \textemdash & \textemdash & \textemdash\\
-Multiscale / nucleosome-aware & \checkmark & \textemdash & $\circ$ & \checkmark & $\circ$ & \textemdash\\
 De novo motif discovery & \checkmark & \textemdash & \textemdash & \checkmark & \checkmark & \textemdash\\
 scATAC / pseudobulk support & $\circ$ & $\circ$ & $\circ$ & \checkmark & $\circ$ & $\circ$\\
 Replicate-aware reporting & \checkmark & $\circ$ & $\circ$ & $\circ$ & \textemdash & \textemdash\\
@@ -568,13 +530,13 @@ models, and additional public validation datasets.
 %==================================================================
 
 We presented \texttt{fp-tools}, a standalone, reproducible command-line platform
-that unifies classical ATAC-seq footprinting with opt-in multiscale,
-motif-discovery-preparation, pseudobulk, and replicate-aware reporting utilities.
+that unifies classical ATAC-seq footprinting with optional motif-discovery-preparation, pseudobulk, and replicate-aware reporting utilities.
 By keeping core workflows stable and test-covered while adding new behavior as
 composable utilities---and by pairing them with a tiered public-data benchmark and
 figure infrastructure---the package lowers the barrier to standardized,
 benchmarkable regulatory-genomics analysis. Future work will add larger whole-genome transfer studies, direct external-tool
-comparisons, and stronger hierarchical differential-binding validation.
+comparisons, multiscale and nucleosome-aware validation, and stronger hierarchical
+differential-binding validation.
 
 \vspace{6pt}
 

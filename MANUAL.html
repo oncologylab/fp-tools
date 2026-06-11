@@ -236,23 +236,22 @@
 
       <section id="commands">
         <h2>Scope</h2>
-        <p><code>fp-tools</code> is focused on a practical first-version workflow for ATAC-seq footprinting: Tn5 bias correction, footprint scoring, motif-aware differential binding, aggregate visualization, multiscale footprint scoring, de novo motif-discovery preparation, pseudobulk ATAC aggregation, and replicate-aware reporting.</p>
+        <p><code>fp-tools</code> is focused on a practical current workflow for ATAC-seq footprinting: Tn5 bias correction, footprint scoring, motif-aware differential binding, aggregate visualization, de novo motif-discovery preparation, pseudobulk ATAC aggregation, and replicate-aware reporting.</p>
 
         <h2>Commands</h2>
         <h3>Core workflow</h3>
         <ul>
           <li><code>atac-correct</code>: correct ATAC-seq cutsite signal for Tn5 sequence bias.</li>
-          <li><code>score-footprints</code>: calculate footprint, multiscale, sum, mean, or pass-through scores from bigWig signal.</li>
+          <li><code>score-footprints</code>: calculate footprint, sum, mean, or pass-through scores from bigWig signal.</li>
           <li><code>detect-tf-binding</code>: scan motifs, infer bound sites, and compare TF binding across conditions.</li>
           <li><code>plot-aggregate</code>: plot aggregate signal around TFBS or region sets.</li>
           <li><code>fp-tools-run</code>: run optional YAML batch configs.</li>
         </ul>
-        <h3>First-version utilities</h3>
+        <h3>Optional utilities</h3>
         <ul>
-          <li>Multiscale scoring compares narrow TF-scale depletion with broader nucleosome-scale structure.</li>
-          <li>De novo motif-discovery preparation exports candidate-centered sequences, records reproducible MEME/STREME/Tomtom runs, and summarizes discovered motifs.</li>
-          <li>Pseudobulk support groups single-cell ATAC fragments into bulk-like profiles.</li>
-          <li>Replicate-aware reporting summarizes condition-level effects and replicate variation for differential TF-binding analysis.</li>
+          <li><code>fp-tools-motif-discovery-plan</code>: prepare candidate-centered sequence input, reproducible de novo motif-discovery runs, and known-motif comparisons.</li>
+          <li><code>fp-tools-pseudobulk</code>: group single-cell ATAC fragments into pseudobulk fragment files and manifests.</li>
+          <li><code>detect-tf-binding</code>: run replicate-aware differential TF-binding analysis using repeated condition names and optional report output.</li>
         </ul>
         <p class="note">Direct command-line usage is the primary interface. YAML configs are optional for saved or repeated runs.</p>
         <h3>Verify</h3>
@@ -263,7 +262,6 @@ plot-aggregate --help
 fp-tools-run --help
 fp-tools-motif-discovery-plan --help
 fp-tools-pseudobulk --help
-fp-tools-bindetect-replicate-report --help
 </pre>
       </section>
 
@@ -322,7 +320,7 @@ fp-tools-bindetect-replicate-report --help
   --outdir examples/bindetect/detect-tf-binding_output_synthetic_replicates_demo \
   --cond-names Bcell Bcell Tcell Tcell \
   --cores 40</pre>
-        <p class="muted">Grouped results are written to <code>bindetect_results.txt</code> under the output directory.</p>
+        <p class="muted">The report summarizes condition means, replicate variation, and differential TF-binding statistics.</p>
 
         <h3>detect-tf-binding Skewness Report</h3>
         <p>For multi-condition runs, the skewness report is written automatically to:</p>

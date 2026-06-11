@@ -76,3 +76,7 @@ Planned work:
 Until the work above is complete, the README, manuscript, and feature-comparison
 tables should describe these items as future plans or development prototypes, not
 as first-version supported capabilities.
+
+### Multiscale and Nucleosome-Aware Scoring
+
+Multiscale scoring is retained as a future validation target rather than part of the current paper scope. Before claiming it as a supported biological utility, validate TF-scale and nucleosome-scale components against public matched labels and document where the scale-by-position tensor changes interpretation beyond classical footprint scoring.

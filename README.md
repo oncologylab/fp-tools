@@ -12,41 +12,31 @@ pip install fp-tools-bio
 
 ## Scope
 
-`fp-tools` is focused on a practical first-version workflow for ATAC-seq
+`fp-tools` is focused on a practical current workflow for ATAC-seq
 footprinting: Tn5 bias correction, footprint scoring, motif-aware differential
-binding, aggregate visualization, multiscale footprint scoring, de novo
-motif-discovery preparation, pseudobulk ATAC aggregation, and replicate-aware
-reporting.
+binding, aggregate visualization, de novo motif-discovery preparation, pseudobulk ATAC aggregation, and
+replicate-aware reporting.
 
 ## Commands
 
 ### Core workflow
 
 - `atac-correct`: correct ATAC-seq cutsite signal for Tn5 sequence bias.
-- `score-footprints`: calculate footprint, multiscale, sum, mean, or pass-through scores from bigWig signal.
+- `score-footprints`: calculate footprint, sum, mean, or pass-through scores from bigWig signal.
 - `detect-tf-binding`: scan motifs, infer bound sites, and compare TF binding across conditions.
 - `plot-aggregate`: plot aggregate signal around TFBS or region sets.
 - `fp-tools-run`: run optional YAML batch configs.
 
-### First-version utilities
+### Optional utilities
 
-- Multiscale scoring compares narrow TF-scale depletion with broader
-  nucleosome-scale structure.
-- De novo motif-discovery preparation exports candidate-centered sequences,
-  records reproducible MEME/STREME/Tomtom runs, and summarizes discovered motifs.
-- Pseudobulk support groups single-cell ATAC fragments into bulk-like profiles.
-- Replicate-aware reporting summarizes condition-level effects and replicate
-  variation for differential TF-binding analysis.
+- `fp-tools-motif-discovery-plan`: prepare candidate-centered sequence input, reproducible de novo motif-discovery runs, and known-motif comparisons.
+- `fp-tools-pseudobulk`: group single-cell ATAC fragments into pseudobulk fragment files and manifests.
+- `detect-tf-binding`: run replicate-aware differential TF-binding analysis using repeated condition names and optional report output.
 
 Direct command-line usage is the primary interface. YAML configs are optional
 for saved or repeated runs.
 
 ## Feature Comparison Across the Field
-
-This table is deliberately conservative: every cell is mapped to a comparator's documented,
-publicly sourced capability set, and only widely used reference methods are listed
-(TOBIAS, HINT-ATAC, PRINT/scPrinter, ChromBPNet, and maxATAC).
-Broader-ecosystem tools are discussed in the manuscript rather than asserted here.
 
 Symbols: ✅ native first-class support, ⚠️ partial or indirect support, ❌ absent.
 
@@ -56,18 +46,15 @@ Symbols: ✅ native first-class support, ⚠️ partial or indirect support, ❌
 | Tn5 bias correction | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Classical footprint scoring | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Motif-aware differential binding | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ❌ |
-| Multiscale / nucleosome-aware scoring | ✅ | ❌ | ⚠️ | ✅ | ⚠️ | ❌ |
 | De novo motif-discovery preparation | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ |
 | scATAC / pseudobulk support | ✅ | ⚠️ | ⚠️ | ✅ | ⚠️ | ⚠️ |
 | Replicate-aware reporting | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ |
 | Visualization / reporting | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ |
 | YAML / batch execution | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-`fp-tools` does not claim default algorithmic superiority over the classical comparators for
-single-task footprint scoring. Its first-version contribution is an integrated,
-reproducible platform that combines the classical core with multiscale scoring,
-replicate-aware reporting, de novo motif-discovery preparation, and single-cell
-pseudobulk aggregation behind one command surface.
+`fp-tools` is an integrated, reproducible platform that combines classical
+footprinting with replicate-aware reporting, de novo motif-discovery preparation,
+and single-cell pseudobulk aggregation behind one command surface.
 
 ## Verify
 
@@ -79,7 +66,6 @@ plot-aggregate --help
 fp-tools-run --help
 fp-tools-motif-discovery-plan --help
 fp-tools-pseudobulk --help
-fp-tools-bindetect-replicate-report --help
 ```
 
 ## Minimal Workflow
@@ -104,38 +90,6 @@ score-footprints \
   --regions test_data/merged_peaks.bed \
   --output examples/scorebigwig/score-footprints_test2/Bcell_footprints.bw \
   --cores 1
-```
-
-The multiscale depletion mode compares narrow TF-scale and broader nucleosome-scale signal structure:
-
-```bash
-score-footprints \
-  --signal examples/atacorrect/atac-correct_test2/Bcell_corrected.bw \
-  --regions test_data/merged_peaks.bed \
-  --score multiscale \
-  --scales 8 16 24 32 64 100 147 \
-  --multiscale-summary max \
-  --output examples/scorebigwig/score-footprints_multiscale/Bcell_multiscale_max.bw \
-  --output-multiscale-npz examples/scorebigwig/score-footprints_multiscale/Bcell_multiscale_tensor.npz \
-  --cores 1
-```
-
-The optional `.npz` sidecar stores scale-by-position scores for downstream heatmaps and paper figures:
-
-```bash
-python paper/scripts/plot_multiscale_npz.py \
-  --multiscale-npz examples/scorebigwig/score-footprints_multiscale/Bcell_multiscale_tensor.npz \
-  --out-prefix paper/figures/figure_multiscale_summary
-```
-
-`plot-aggregate` can also render the sidecar as a companion scale-by-position aggregate figure while keeping its standard bigWig aggregate plot:
-
-```bash
-plot-aggregate --TFBS test_data/IRF1_all.bed \
-  --signals examples/scorebigwig/score-footprints_multiscale/Bcell_multiscale_max.bw \
-  --multiscale-npz examples/scorebigwig/score-footprints_multiscale/Bcell_multiscale_tensor.npz \
-  --output examples/reports/plotaggregate_multiscale.pdf \
-  --output-multiscale-aggregate examples/reports/plotaggregate_multiscale_tensor.pdf
 ```
 
 ### Optional de novo motif prep
@@ -168,7 +122,7 @@ fp-tools-motif-discovery-plan \
 
 ### Optional pseudobulk fragments
 
-![Pseudobulk fragment workflow](docs/assets/fp-tools-pseudobulk.svg)
+![Pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk.png)
 
 The pseudobulk workflow groups single-cell ATAC fragments by a metadata column
 such as cell type, treatment, donor, or cluster. Each group is written as a
@@ -250,7 +204,7 @@ YAML is optional for normal command-line use.
 
 ## Extra Features
 
-### detect-tf-binding Skewness Report
+### detect-tf-binding skewness report
 
 For multi-condition runs, the skewness report is written automatically to:
 
@@ -274,10 +228,7 @@ plot-aggregate --TFBS test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed \
   --show-replicate-sd
 ```
 
-This uses the same shared multiplicative quantile-normalization fit as `detect-tf-binding`: `sample-quantile` normalizes each replicate before condition averaging, while `condition-quantile` fits one condition-level factor and applies it to all replicates in that condition. The plot then shows condition means with optional replicate SD ribbons. Because quantile normalization aligns distribution-level sample scale before group averaging, interpret differential binding from the normalized per-site delta/log2FC, center-versus-flank contrast, and BINDetect `change` columns rather than from global baseline height alone.
-For TOBIAS-style footprint visualization, use ATACorrect-corrected cut-site tracks rather than footprint-score bigWigs; footprint-score tracks are useful for scoring but tend to give broad aggregate score curves.
-The manuscript normalization panel is a real-track label-orientation demo built from ATF7-associated corrected cut-site windows. The upper panel reverses the B/T labels and is named IRF4 as the B-cell-deeper example; the lower panel keeps the original ATF7 orientation as the T-cell-deeper example. This keeps the footprint shape from real corrected signal while showing that sample-quantile normalization brings offset raw baselines close together and preserves clear center depletion.
-The same script also writes `paper/manuscript/figures/normalization_effect_candidates.png`, a direction-labelled contact sheet from the local real-data fixtures for visual review.
+Replicate normalization helps align sample-scale differences before condition means are compared. Use the report plots to check that replicate profiles are consistent and that the condition-level center-versus-flank pattern remains interpretable after normalization.
 
 ### plot-aggregate Control Overlay
 
