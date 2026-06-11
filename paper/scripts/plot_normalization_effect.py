@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Build a real-data raw-vs-normalized replicate footprint figure."""
+"""Build real corrected-signal aggregate figures before and after quantile normalization."""
 
 from __future__ import annotations
 
@@ -15,29 +15,28 @@ from fp_tools.utils.plotting_style import apply_pdf_style, ascii_tick_formatter
 
 
 SAMPLES = {
-    "B cell rep1": ("B cell", Path("test_data/demo_Bcell_rep1_footprints.bw")),
-    "B cell rep2": ("B cell", Path("test_data/demo_Bcell_rep2_footprints.bw")),
-    "T cell rep1": ("T cell", Path("test_data/demo_Tcell_rep1_footprints.bw")),
-    "T cell rep2": ("T cell", Path("test_data/demo_Tcell_rep2_footprints.bw")),
+    "B cell corrected": Path("test_data/Bcell_corrected.bw"),
+    "T cell corrected": Path("test_data/Tcell_corrected.bw"),
 }
 SAMPLE_COLORS = {
-    "B cell rep1": "#4C9AC9",
-    "B cell rep2": "#8BD3C7",
-    "T cell rep1": "#E68645",
-    "T cell rep2": "#F6C85F",
+    "B cell corrected": "#08519C",
+    "T cell corrected": "#A63603",
 }
-CONDITION_COLORS = {"B cell": "#08519C", "T cell": "#A63603"}
-DEFAULT_TFBS = Path("test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed")
+DEFAULT_TFBS = Path("test_data/annotated_tfbs/ATF7_Bcell_bound.bed")
 FALLBACK_TFBS = [
-    Path("test_data/annotated_tfbs/EBF1_Bcell_bound.bed"),
-    Path("test_data/annotated_tfbs/KLF4_Bcell_bound.bed"),
-    Path("test_data/annotated_tfbs/NRF1_Bcell_bound.bed"),
-    Path("test_data/annotated_tfbs/CTCF_Bcell_bound.bed"),
-    Path("test_data/annotated_tfbs/REST_Bcell_bound.bed"),
-    Path("test_data/annotated_tfbs/YY1_Bcell_bound.bed"),
-    Path("test_data/annotated_tfbs/PAX5_Bcell_bound.bed"),
-    Path("test_data/annotated_tfbs/MAX_Bcell_bound.bed"),
     Path("test_data/annotated_tfbs/CREM_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/BHLHE40_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/CEBPB_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/CREB1_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/Arnt_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/MAX_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/ELK1_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/ETS1_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/PAX5_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/NRF1_Bcell_bound.bed"),
+    Path("test_data/BATF_Bcell_bound.bed"),
+    Path("test_data/BATF_Tcell_bound.bed"),
+    Path("test_data/IRF1_Tcell_bound.bed"),
 ]
 
 
@@ -69,68 +68,13 @@ def read_matrix(bigwig: Path, sites: list[tuple[str, int]], flank: int) -> np.nd
             if chrom not in chroms or start < 0 or end > chroms[chrom]:
                 continue
             values = np.asarray(bw.values(chrom, start, end), dtype=float)
-            if values.shape[0] != 2 * flank:
-                continue
-            rows.append(np.nan_to_num(values, nan=0.0))
+            if values.shape[0] == 2 * flank:
+                rows.append(np.nan_to_num(values, nan=0.0))
     finally:
         bw.close()
     if not rows:
         raise ValueError(f"No usable windows found in {bigwig}")
     return np.vstack(rows)
-
-
-def choose_tfbs(requested: Path | None, limit: int, flank: int) -> tuple[Path, dict[str, np.ndarray]]:
-    candidates = [requested] if requested is not None else [DEFAULT_TFBS, *FALLBACK_TFBS]
-    last_error = None
-    for tfbs in candidates:
-        if tfbs is None or not tfbs.exists():
-            continue
-        try:
-            sites = load_sites(tfbs, limit)
-            matrices = {sample: read_matrix(path, sites, flank) for sample, (_cond, path) in SAMPLES.items()}
-            if min(matrix.shape[0] for matrix in matrices.values()) >= 40:
-                return tfbs, matrices
-        except Exception as exc:  # pragma: no cover - fallback safety for local data drift
-            last_error = exc
-    raise RuntimeError(f"No usable TFBS set found for normalization figure: {last_error}")
-
-
-def normalize_matrices(matrices: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    names = list(matrices)
-    normalizers, _ = fit_quantile_normalizers([matrices[name].ravel() for name in names], names)
-    return {
-        name: normalizers[name].normalize(matrices[name].ravel()).reshape(matrices[name].shape)
-        for name in names
-    }
-
-
-def profiles_from_matrices(matrices: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    return {name: matrix.mean(axis=0) for name, matrix in matrices.items()}
-
-
-def condition_mean(profiles: dict[str, np.ndarray], condition: str) -> np.ndarray:
-    members = [sample for sample, (cond, _path) in SAMPLES.items() if cond == condition]
-    return np.mean(np.vstack([profiles[sample] for sample in members]), axis=0)
-
-
-def footprint_contrast(profile: np.ndarray, xvals: np.ndarray) -> float:
-    center = np.abs(xvals) <= 6
-    flanks = (np.abs(xvals) >= 14) & (np.abs(xvals) <= 32)
-    return float(np.mean(profile[flanks]) - np.mean(profile[center]))
-
-
-def baseline_mean(profile: np.ndarray, xvals: np.ndarray) -> float:
-    return float(np.mean(profile[np.abs(xvals) >= 45]))
-
-
-def summarize(profiles: dict[str, np.ndarray], xvals: np.ndarray) -> dict[str, float]:
-    means = {condition: condition_mean(profiles, condition) for condition in CONDITION_COLORS}
-    return {
-        "baseline_diff": abs(baseline_mean(means["B cell"], xvals) - baseline_mean(means["T cell"], xvals)),
-        "shape_diff": abs(footprint_contrast(means["B cell"], xvals) - footprint_contrast(means["T cell"], xvals)),
-        "bcell_contrast": footprint_contrast(means["B cell"], xvals),
-        "tcell_contrast": footprint_contrast(means["T cell"], xvals),
-    }
 
 
 def collect_candidate_tfbs(explicit: list[Path] | None = None) -> list[Path]:
@@ -147,13 +91,49 @@ def collect_candidate_tfbs(explicit: list[Path] | None = None) -> list[Path]:
     return unique
 
 
-def build_profiles(tfbs: Path, limit: int, flank: int) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray], dict[str, np.ndarray], dict[str, np.ndarray]]:
+def build_matrices(tfbs: Path, limit: int, flank: int) -> dict[str, np.ndarray]:
     sites = load_sites(tfbs, limit)
-    raw_matrices = {sample: read_matrix(path, sites, flank) for sample, (_cond, path) in SAMPLES.items()}
-    if min(matrix.shape[0] for matrix in raw_matrices.values()) < 40:
+    matrices = {sample: read_matrix(path, sites, flank) for sample, path in SAMPLES.items()}
+    if min(matrix.shape[0] for matrix in matrices.values()) < 20:
         raise ValueError(f"Too few usable windows for {tfbs}")
-    norm_matrices = normalize_matrices(raw_matrices)
-    return raw_matrices, norm_matrices, profiles_from_matrices(raw_matrices), profiles_from_matrices(norm_matrices)
+    return matrices
+
+
+def normalize_matrices(matrices: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    names = list(matrices)
+    normalizers, _ = fit_quantile_normalizers([matrices[name].ravel() for name in names], names)
+    return {name: normalizers[name].normalize(matrices[name].ravel()).reshape(matrices[name].shape) for name in names}
+
+
+def profiles_from_matrices(matrices: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    return {name: matrix.mean(axis=0) for name, matrix in matrices.items()}
+
+
+def footprint_contrast(profile: np.ndarray, xvals: np.ndarray) -> float:
+    center = np.abs(xvals) <= 6
+    flanks = (np.abs(xvals) >= 14) & (np.abs(xvals) <= 32)
+    return float(np.mean(profile[flanks]) - np.mean(profile[center]))
+
+
+def local_dip(profile: np.ndarray, xvals: np.ndarray) -> float:
+    center = float(np.mean(profile[np.abs(xvals) <= 4]))
+    left = float(np.max(profile[(xvals >= -25) & (xvals <= -8)]))
+    right = float(np.max(profile[(xvals >= 8) & (xvals <= 25)]))
+    return min(left, right) - center
+
+
+def baseline_mean(profile: np.ndarray, xvals: np.ndarray) -> float:
+    return float(np.mean(profile[np.abs(xvals) >= 45]))
+
+
+def summarize(profiles: dict[str, np.ndarray], xvals: np.ndarray) -> dict[str, float]:
+    names = list(SAMPLES)
+    return {
+        "baseline_diff": abs(baseline_mean(profiles[names[0]], xvals) - baseline_mean(profiles[names[1]], xvals)),
+        "bcell_contrast": footprint_contrast(profiles[names[0]], xvals),
+        "tcell_contrast": footprint_contrast(profiles[names[1]], xvals),
+        "min_dip": min(local_dip(profiles[names[0]], xvals), local_dip(profiles[names[1]], xvals)),
+    }
 
 
 def combined_ylim(raw_profiles: dict[str, np.ndarray], norm_profiles: dict[str, np.ndarray]) -> tuple[float, float]:
@@ -166,24 +146,14 @@ def combined_ylim(raw_profiles: dict[str, np.ndarray], norm_profiles: dict[str, 
 
 def plot_panel(ax, xvals: np.ndarray, profiles: dict[str, np.ndarray], title: str, ylimits: tuple[float, float], show_ylabel: bool = False) -> None:
     for sample, profile in profiles.items():
-        ax.plot(xvals, profile, color=SAMPLE_COLORS[sample], linewidth=1.05, alpha=0.82, label=sample)
-    for condition, color in CONDITION_COLORS.items():
-        ax.plot(
-            xvals,
-            condition_mean(profiles, condition),
-            color=color,
-            linewidth=1.05,
-            linestyle=(0, (2.0, 2.0)),
-            alpha=0.95,
-            label=f"{condition} mean",
-        )
-    ax.axvspan(-6, 6, color="0.9", alpha=0.7, zorder=-2)
+        ax.plot(xvals, profile, color=SAMPLE_COLORS[sample], linewidth=1.2, alpha=0.92, label=sample)
+    ax.axvspan(-6, 6, color="0.9", alpha=0.72, zorder=-2)
     ax.axvline(0, color="0.45", linestyle="--", linewidth=0.85, zorder=-1)
     ax.set_ylim(*ylimits)
     ax.set_title(title, fontsize=10.5, fontweight="bold")
     ax.set_xlabel("bp from motif center", fontsize=8.5)
     if show_ylabel:
-        ax.set_ylabel("Footprint score", fontsize=8.5)
+        ax.set_ylabel("Corrected cut-site signal", fontsize=8.5)
     ax.xaxis.set_major_formatter(ascii_tick_formatter())
     ax.yaxis.set_major_formatter(ascii_tick_formatter(decimals=1))
     ax.spines[["top", "right"]].set_visible(False)
@@ -192,55 +162,61 @@ def plot_panel(ax, xvals: np.ndarray, profiles: dict[str, np.ndarray], title: st
 
 def score_candidate(tfbs: Path, limit: int, flank: int) -> tuple[float, dict[str, float]] | None:
     try:
-        _raw_matrices, _norm_matrices, raw_profiles, norm_profiles = build_profiles(tfbs, limit, flank)
+        raw_matrices = build_matrices(tfbs, limit, flank)
+        norm_matrices = normalize_matrices(raw_matrices)
     except Exception:
         return None
     xvals = np.arange(-flank, flank)
+    raw_profiles = profiles_from_matrices(raw_matrices)
+    norm_profiles = profiles_from_matrices(norm_matrices)
     raw_summary = summarize(raw_profiles, xvals)
     norm_summary = summarize(norm_profiles, xvals)
     baseline_reduction = 1.0 - norm_summary["baseline_diff"] / (raw_summary["baseline_diff"] + 1e-9)
-    depletion_score = min(
+    min_contrast = min(
         raw_summary["bcell_contrast"],
         raw_summary["tcell_contrast"],
         norm_summary["bcell_contrast"],
         norm_summary["tcell_contrast"],
     )
-    score = 5.0 * depletion_score + 2.0 * baseline_reduction + 0.1 * np.log(max(raw_summary["baseline_diff"], 1.0))
-    metrics = {
-        "baseline_reduction": baseline_reduction,
+    dip = max(raw_summary["min_dip"], norm_summary["min_dip"])
+    score = 5.0 * min_contrast + 2.0 * dip + baseline_reduction + 0.1 * np.log(max(min(m.shape[0] for m in raw_matrices.values()), 1))
+    return score, {
         "raw_baseline_diff": raw_summary["baseline_diff"],
         "norm_baseline_diff": norm_summary["baseline_diff"],
-        "min_depletion": depletion_score,
+        "baseline_reduction": baseline_reduction,
+        "min_contrast": min_contrast,
+        "dip": dip,
+        "n_sites": min(m.shape[0] for m in raw_matrices.values()),
     }
-    return score, metrics
 
 
 def plot_candidate_sheet(candidates: list[Path], output: Path, limit: int, flank: int, max_candidates: int) -> None:
     scored = []
     for tfbs in candidates:
         result = score_candidate(tfbs, limit, flank)
-        if result is None:
-            continue
-        scored.append((result[0], tfbs, result[1]))
+        if result is not None:
+            scored.append((result[0], tfbs, result[1]))
     scored.sort(reverse=True, key=lambda row: row[0])
     selected = scored[:max_candidates]
     if not selected:
         return
     xvals = np.arange(-flank, flank)
-    nrows = len(selected)
-    fig, axes = plt.subplots(nrows, 2, figsize=(7.4, max(1.65 * nrows, 2.5)), sharex=True, constrained_layout=True)
-    if nrows == 1:
+    fig, axes = plt.subplots(len(selected), 2, figsize=(7.4, max(1.65 * len(selected), 2.5)), sharex=True, constrained_layout=True)
+    if len(selected) == 1:
         axes = np.asarray([axes])
     for row, (_score, tfbs, metrics) in enumerate(selected):
-        _raw_matrices, _norm_matrices, raw_profiles, norm_profiles = build_profiles(tfbs, limit, flank)
+        raw_matrices = build_matrices(tfbs, limit, flank)
+        norm_matrices = normalize_matrices(raw_matrices)
+        raw_profiles = profiles_from_matrices(raw_matrices)
+        norm_profiles = profiles_from_matrices(norm_matrices)
         ylimits = combined_ylim(raw_profiles, norm_profiles)
         tf_name = tfbs.name.split("_")[0]
-        plot_panel(axes[row, 0], xvals, raw_profiles, f"{tf_name} raw", ylimits, show_ylabel=True)
+        plot_panel(axes[row, 0], xvals, raw_profiles, f"{tf_name} corrected", ylimits, show_ylabel=True)
         plot_panel(axes[row, 1], xvals, norm_profiles, f"{tf_name} normalized", ylimits)
         axes[row, 0].text(0.02, 0.94, f"base {metrics['raw_baseline_diff']:.1f}", transform=axes[row, 0].transAxes, va="top", fontsize=6.6)
-        axes[row, 1].text(0.02, 0.94, f"base {metrics['norm_baseline_diff']:.1f}; dep {metrics['min_depletion']:.2f}", transform=axes[row, 1].transAxes, va="top", fontsize=6.6)
+        axes[row, 1].text(0.02, 0.94, f"base {metrics['norm_baseline_diff']:.1f}; dep {metrics['min_contrast']:.1f}", transform=axes[row, 1].transAxes, va="top", fontsize=6.6)
     handles, labels = axes[0, 1].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False, fontsize=6.8, bbox_to_anchor=(0.5, -0.01))
+    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, fontsize=7.0, bbox_to_anchor=(0.5, -0.01))
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -257,46 +233,25 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     apply_pdf_style()
-    tfbs, raw_matrices = choose_tfbs(args.tfbs, args.limit, args.flank)
+    raw_matrices = build_matrices(args.tfbs, args.limit, args.flank)
     norm_matrices = normalize_matrices(raw_matrices)
     raw_profiles = profiles_from_matrices(raw_matrices)
     norm_profiles = profiles_from_matrices(norm_matrices)
     xvals = np.arange(-args.flank, args.flank)
     raw_summary = summarize(raw_profiles, xvals)
     norm_summary = summarize(norm_profiles, xvals)
+    ylimits = combined_ylim(raw_profiles, norm_profiles)
+    tf_name = args.tfbs.name.split("_")[0]
 
     fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.1), sharex=True, constrained_layout=True)
-    tf_name = tfbs.name.split("_")[0]
-    ylimits = combined_ylim(raw_profiles, norm_profiles)
-    plot_panel(axes[0], xvals, raw_profiles, "Observed replicate profiles", ylimits, show_ylabel=True)
+    plot_panel(axes[0], xvals, raw_profiles, "Corrected cut-site signal", ylimits, show_ylabel=True)
     plot_panel(axes[1], xvals, norm_profiles, "After sample-quantile normalization", ylimits)
-    axes[0].text(
-        0.02,
-        0.96,
-        f"Baseline difference: {raw_summary['baseline_diff']:.1f}",
-        transform=axes[0].transAxes,
-        va="top",
-        fontsize=7.6,
-    )
-    axes[1].text(
-        0.02,
-        0.96,
-        f"Baseline difference: {norm_summary['baseline_diff']:.1f}",
-        transform=axes[1].transAxes,
-        va="top",
-        fontsize=7.6,
-    )
-    axes[1].text(
-        0.02,
-        0.88,
-        f"Center depletion retained: {norm_summary['bcell_contrast']:.2f}/{norm_summary['tcell_contrast']:.2f}",
-        transform=axes[1].transAxes,
-        va="top",
-        fontsize=7.6,
-    )
+    axes[0].text(0.02, 0.96, f"Baseline difference: {raw_summary['baseline_diff']:.1f}", transform=axes[0].transAxes, va="top", fontsize=7.6)
+    axes[1].text(0.02, 0.96, f"Baseline difference: {norm_summary['baseline_diff']:.1f}", transform=axes[1].transAxes, va="top", fontsize=7.6)
+    axes[1].text(0.02, 0.88, f"Center depletion: {norm_summary['bcell_contrast']:.1f}/{norm_summary['tcell_contrast']:.1f}", transform=axes[1].transAxes, va="top", fontsize=7.6)
     handles, labels = axes[1].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False, fontsize=7.2, bbox_to_anchor=(0.5, -0.06))
-    fig.suptitle(f"Real {tf_name} replicate footprints before and after quantile normalization", fontsize=12.2, fontweight="bold")
+    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False, fontsize=7.2, bbox_to_anchor=(0.5, -0.055))
+    fig.suptitle(f"Real {tf_name} corrected cut-site aggregates before and after quantile normalization", fontsize=12.0, fontweight="bold")
 
     out_prefix = Path(args.out_prefix)
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
@@ -304,22 +259,20 @@ def main(argv: list[str] | None = None) -> int:
     fig.savefig(out_prefix.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(fig)
 
-    candidate_prefix = Path(args.candidate_prefix)
-    if candidate_prefix:
-        plot_candidate_sheet(collect_candidate_tfbs(None), candidate_prefix.with_suffix(".png"), args.limit, args.flank, args.candidate_max)
+    if args.candidate_prefix:
+        plot_candidate_sheet(collect_candidate_tfbs(None), Path(args.candidate_prefix).with_suffix(".png"), args.limit, args.flank, args.candidate_max)
 
     stats_path = out_prefix.with_suffix(".tsv")
     with stats_path.open("w", encoding="utf-8") as handle:
-        handle.write("normalization\ttfbs\tsample\tcondition\tn_sites\tmean_profile\tcenter_mean\tflank_mean\tbaseline_mean\tfootprint_contrast\n")
+        handle.write("normalization\ttfbs\tsample\tn_sites\tmean_profile\tcenter_mean\tflank_mean\tbaseline_mean\tfootprint_contrast\n")
         for label, matrices, profiles in (("raw", raw_matrices, raw_profiles), ("sample_quantile", norm_matrices, norm_profiles)):
             for sample, profile in profiles.items():
                 center = np.abs(xvals) <= 6
                 flanks = (np.abs(xvals) >= 14) & (np.abs(xvals) <= 32)
                 row = [
                     label,
-                    str(tfbs),
+                    str(args.tfbs),
                     sample,
-                    SAMPLES[sample][0],
                     str(matrices[sample].shape[0]),
                     f"{np.mean(profile):.6f}",
                     f"{np.mean(profile[center]):.6f}",
@@ -329,7 +282,7 @@ def main(argv: list[str] | None = None) -> int:
                 ]
                 handle.write("\t".join(row) + "\n")
         for label, summary in (("raw_summary", raw_summary), ("sample_quantile_summary", norm_summary)):
-            handle.write("\t".join([label, str(tfbs), "condition_means", "B cell vs T cell", "NA", "NA", "NA", "NA", f"{summary['baseline_diff']:.6f}", f"{summary['shape_diff']:.6f}"]) + "\n")
+            handle.write("\t".join([label, str(args.tfbs), "B cell vs T cell", "NA", "NA", "NA", "NA", f"{summary['baseline_diff']:.6f}", f"{min(summary['bcell_contrast'], summary['tcell_contrast']):.6f}"]) + "\n")
     return 0
 
 

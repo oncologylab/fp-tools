@@ -1,11 +1,7 @@
-normalization	tfbs	sample	condition	n_sites	mean_profile	center_mean	flank_mean	baseline_mean	footprint_contrast
-raw	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	B cell rep1	B cell	382	23.720795	24.617308	24.687922	22.676619	0.070614
-raw	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	B cell rep2	B cell	382	23.072908	23.771409	23.876248	22.202866	0.104839
-raw	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	T cell rep1	T cell	382	37.022845	38.119010	38.245505	35.663104	0.126494
-raw	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	T cell rep2	T cell	382	35.350773	35.955570	36.448623	34.247958	0.493053
-sample_quantile	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	B cell rep1	B cell	382	31.751719	33.057985	33.286099	30.128479	0.228114
-sample_quantile	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	B cell rep2	B cell	382	31.842331	32.914623	33.176441	30.427195	0.261817
-sample_quantile	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	T cell rep1	T cell	382	28.378531	29.142130	29.257026	27.405500	0.114896
-sample_quantile	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	T cell rep2	T cell	382	28.504764	28.892405	29.253979	27.754433	0.361574
-raw_summary	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	condition_means	B cell vs T cell	NA	NA	NA	NA	12.515789	0.222047
-sample_quantile_summary	test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed	condition_means	B cell vs T cell	NA	NA	NA	NA	2.697870	0.006731
+normalization	tfbs	sample	n_sites	mean_profile	center_mean	flank_mean	baseline_mean	footprint_contrast
+raw	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell corrected	80	1.740265	-10.783454	4.621612	3.001266	15.405067
+raw	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	T cell corrected	80	3.530686	-10.951935	7.993078	4.637023	18.945012
+sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell corrected	80	2.375749	-13.818400	6.128291	4.002663	19.946691
+sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	T cell corrected	80	2.809049	-8.995873	6.418404	3.711789	15.414277
+raw_summary	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell vs T cell	NA	NA	NA	NA	1.635757	15.405067
+sample_quantile_summary	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell vs T cell	NA	NA	NA	NA	0.290874	15.414277
