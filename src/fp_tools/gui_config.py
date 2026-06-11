@@ -62,6 +62,14 @@ FLAG_NAME_MAP = {
     "output_csv": "--output-csv",
     "output_aggregated_signals": "--output_aggregated_signals",
     "output_aggregated_scores": "--output_aggregated_scores",
+    "output_aggregated_stats": "--output_aggregated_stats",
+    "normalization": "--normalization",
+    "normalization_comparison_output": "--normalization-comparison-output",
+    "replicate_report": "--replicate-report",
+    "replicate_map": "--replicate-map",
+    "replicate_report_out": "--replicate-report-out",
+    "replicate_summary_out": "--replicate-summary-out",
+    "replicate_figure_out": "--replicate-figure-out",
     "control_label": "--control-label",
     "TFBS_labels": "--TFBS-labels",
     "signal_labels": "--signal-labels",
@@ -70,6 +78,7 @@ FLAG_NAME_MAP = {
     "log_transform": "--log-transform",
     "plot_boundaries": "--plot-boundaries",
     "signal_on_x": "--signal-on-x",
+    "show_replicate_sd": "--show-replicate-sd",
     "remove_outliers": "--remove-outliers",
 }
 

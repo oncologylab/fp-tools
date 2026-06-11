@@ -253,11 +253,11 @@ unit tests, and documentation, and each inert unless explicitly invoked:
         single-cell ATAC fragments by annotation columns into pseudobulk fragment
         files, TSV/YAML manifests, optional BGZF/tabix-indexed outputs, and
         optional CPM-normalized cut-site bigWigs for downstream aggregate plots.
-  \item \emph{Replicate-aware differential-binding reporting}:
-        \texttt{fp-tools-bindetect-replicate-report} (this work) summarizes a
-        BINDetect \texttt{*\_results.txt} table into per-comparison effect sizes,
-        $p$-values, replicate support category, and a $p$-value--derived
-        uncertainty model (Section~\ref{sec:replicate}).
+  \item \emph{Replicate-aware differential binding}: repeated
+        \texttt{--cond-names} in \texttt{detect-tf-binding} define biological
+        replicate groups. The command can apply condition-level or sample-level
+        quantile normalization, report condition means and SDs, and emit integrated
+        replicate-aware diagnostic tables and figures (Section~\ref{sec:replicate}).
   \item \emph{Competition-aware footprint decomposition}:
         \texttt{fp-tools-decompose-competition} (this work) decomposes multiscale
         signal into competing TF-scale and nucleosome-scale components
@@ -298,25 +298,54 @@ when a trained model is supplied,
 so a negative $\Delta$ indicates an allele that weakens predicted binding; analogous
 deterministic deltas are computed for GC content and exact $k$-mer composition.
 
-\subsection{Replicate-aware Differential-Binding Uncertainty}
+
+\subsection{Replicate-aware Differential Binding and Quantile Normalization}
 \label{sec:replicate}
 
-BINDetect-style result tables report, per motif and comparison, an aggregate
-effect size (\texttt{change}) and a two-sided $p$-value, but not per-replicate
-scores. We infer replicate counts $n_c$ per condition from (in order of priority)
-an explicit \texttt{condition}/\texttt{n\_replicates} or
-\texttt{condition}/\texttt{replicate} map, \texttt{<condition>\_n\_replicates}
-columns in the result table, or a single-replicate fallback. Each comparison is
-labeled \texttt{replicate-supported} when $\min(n_1,n_2)\ge 2$ and
-\texttt{single-replicate} otherwise. To attach uncertainty we recover an
-approximate standard error from the reported $p$-value, $\mathrm{SE} =
-|\text{change}|/z$ with $z = \Phi^{-1}(1-p/2)$, and report a replicate-shrunk
-effect $\widehat{\text{change}} = w\cdot\text{change}$ with shrinkage weight
-$w = n_\text{min}/(n_\text{min}+1)$ that grows toward~1 with replicate support,
-together with a 95\% interval $\text{change}\pm 1.96\,\mathrm{SE}$. The tool emits
-a per-comparison long-form table, a comparison-level summary (significant-motif
-counts, median effect SE, mean shrinkage weight), and an optional diagnostic
-figure.
+Replicate-aware analysis is integrated directly into \texttt{detect-tf-binding}.
+If users pass repeated condition names, for example
+\texttt{--cond-names Bcell Bcell Tcell Tcell}, fp-tools treats the corresponding
+signal files as biological replicates of the same condition while preserving the
+original BINDetect-style output columns. Let $x_{c,r,i}$ be the footprint score at
+site or background position $i$ for replicate $r$ of condition $c$. With
+\texttt{--normalization sample-quantile}, each replicate is first mapped to a
+shared empirical reference distribution,
+\[
+\tilde{x}_{s,i}=Q_\ast\{F_s(x_{s,i})\},
+\]
+where $F_s$ is the empirical CDF of sample $s$ and $Q_\ast$ is the average
+reference quantile function across samples. The default
+\texttt{condition-quantile} mode preserves the previous behavior by fitting the
+quantile transform after condition-level aggregation; \texttt{none} disables this
+step.
+
+After normalization, condition-level scores are summarized as
+\[
+\bar{x}_{c,i}=\frac{1}{n_c}\sum_{r=1}^{n_c}\tilde{x}_{c,r,i},\qquad
+s_{c,i}=\sqrt{\frac{1}{n_c-1}\sum_{r=1}^{n_c}(\tilde{x}_{c,r,i}-\bar{x}_{c,i})^2}.
+\]
+For a comparison between conditions $c_1$ and $c_2$, fp-tools reports both an
+interpretable footprint-score difference and a stabilized log fold change,
+\[
+\Delta_i=\bar{x}_{c_1,i}-\bar{x}_{c_2,i},\qquad
+L_i=\log_2\frac{\bar{x}_{c_1,i}+\epsilon}{\bar{x}_{c_2,i}+\epsilon},
+\]
+where $\epsilon$ is the BINDetect pseudocount estimated from the background signal
+unless supplied explicitly. When both conditions have replicate support, approximate
+standard errors are reported as
+\[
+\mathrm{SE}(\Delta)=\sqrt{\frac{s_1^2}{n_1}+\frac{s_2^2}{n_2}},
+\]
+\[
+\mathrm{SE}(L)\approx\frac{1}{\ln 2}
+\sqrt{\frac{s_1^2}{n_1(\mu_1+\epsilon)^2}+
+      \frac{s_2^2}{n_2(\mu_2+\epsilon)^2}}.
+\]
+The original BINDetect standardized \texttt{change} and \texttt{pvalue} columns
+remain unchanged for compatibility. Additional columns include replicate counts,
+condition score SDs, mean $\Delta$, mean $L$, and standard-error summaries. A
+legacy replicate-report command remains available as a post-hoc helper for
+existing \texttt{*\_results.txt} files.
 
 \subsection{Competition-aware Overlap Decomposition}
 \label{sec:competition}
@@ -467,18 +496,36 @@ sequence-context deltas, optional PWM ref/alt motif deltas, and optional model
 probability deltas. Each module is independently tested and documented, and none
 alters the classical commands when unused.
 
-\subsection{Replicate-aware Uncertainty and Competition Decomposition}
 
-The replicate-aware report adds an interpretable uncertainty layer to differential
-binding: comparisons are categorized by replicate support, and effect sizes are
-reported with a $p$-value--derived standard error, a replicate-driven shrinkage
-weight, and confidence intervals, so single-replicate comparisons are flagged and
-conservatively shrunk relative to replicate-supported ones. The competition
-decomposition attributes overlapping footprint signal to TF-scale,
-nucleosome-scale, and shared (competing) components per region, with a competition
-index and a dominant-component label, surfacing loci where TF and nucleosome
-occupancy compete rather than treating accessibility as single-scale.
+\subsection{Replicate-aware Normalization and Competition Decomposition}
 
+Replicate-aware \texttt{detect-tf-binding} adds an interpretable layer to
+differential binding: repeated condition names define biological replicate groups,
+condition means are reported alongside per-condition SDs, and optional
+sample-level quantile normalization reduces sequencing-depth-driven scale
+differences before group averages are compared. To make the effect visible, we
+constructed a controlled IRF1 example from the existing B-cell and T-cell footprint
+tracks by applying known replicate-specific scale factors. In the raw profiles,
+replicate scaling produces large amplitude differences; after sample-level
+quantile normalization, the same aggregate footprint profiles remain centered on
+IRF1 sites but the depth-driven amplitude spread is strongly reduced
+(Figure~\ref{fig:normalization_effect}). The competition decomposition attributes
+overlapping footprint signal to TF-scale, nucleosome-scale, and shared (competing)
+components per region, with a competition index and a dominant-component label,
+surfacing loci where TF and nucleosome occupancy compete rather than treating
+accessibility as single-scale.
+
+\begin{figure}[H]
+\includegraphics[width=0.95\textwidth]{figures/normalization_effect.png}
+\caption{Effect of sample-level quantile normalization on replicate aggregate profiles.
+IRF1 aggregate profiles were computed from existing B-cell and T-cell footprint
+tracks after applying controlled replicate-specific scale factors. The raw panels
+show depth-driven amplitude differences between simulated replicates and conditions,
+whereas sample-level quantile normalization reduces scale differences while
+retaining the aggregate footprint profile around IRF1 sites. Generated by
+\texttt{paper/scripts/plot\_normalization\_effect.py}.}
+\label{fig:normalization_effect}
+\end{figure}
 
 \subsection{Real 10x PBMC Pseudobulk Validation}
 

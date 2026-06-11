@@ -141,6 +141,12 @@ def add_bindetect_arguments(parser):
 													 				This will limit all analysis to the regions in --output-peaks. 
 																	NOTE: --peaks must still be set to the full peak set!""")
 	optargs.add_argument('--norm-off', action='store_true', help="Turn off normalization of footprint scores across conditions")
+	optargs.add_argument('--normalization', choices=["condition-quantile", "sample-quantile", "none"], default="condition-quantile", help="Cross-sample normalization mode (default: condition-quantile; --norm-off maps to none)")
+	optargs.add_argument('--replicate-report', choices=["auto", "on", "off"], default="auto", help="Write replicate-aware BINDetect diagnostic report (default: auto for repeated condition names or --replicate-map)")
+	optargs.add_argument('--replicate-map', metavar="<tsv>", help="Optional TSV with condition/replicate or condition/n_replicates columns")
+	optargs.add_argument('--replicate-report-out', metavar="<tsv>", help="Output long-form replicate diagnostic TSV (default: <outdir>/<prefix>_replicate_report.tsv)")
+	optargs.add_argument('--replicate-summary-out', metavar="<tsv>", help="Output replicate diagnostic summary TSV (default: <outdir>/<prefix>_replicate_summary.tsv)")
+	optargs.add_argument('--replicate-figure-out', metavar="<figure>", help="Output replicate diagnostic figure (default: <outdir>/<prefix>_replicate_report.png)")
 
 	runargs = parser.add_argument_group("Run arguments")
 	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory to place TFBS/plots in (default: bindetect_output)", default="bindetect_output")
@@ -265,6 +271,7 @@ def add_aggregate_arguments(parser):
 	PLOT.add_argument('--flank', metavar="", help="Flanking basepairs (+/-) to show in plot (counted from middle of the TFBS) (default: 60)", default=60, type=int)
 	PLOT.add_argument('--TFBS-labels', metavar="", help="Labels used for each TFBS file (default: prefix of each --TFBS)", nargs="*")
 	PLOT.add_argument('--signal-labels', metavar="", help="Labels used for each signal file (default: prefix of each --signals)", nargs="*")
+	PLOT.add_argument('--cond-names', metavar="<name>", nargs="*", help="Condition names for --signals; repeated names are averaged as replicates")
 	PLOT.add_argument('--region-labels', metavar="", help="Labels used for each regions file (default: prefix of each --regions)", nargs="*")
 	PLOT.add_argument('--control-label', metavar="<label>", help="Overlay each non-control signal against this control signal label (must match one of --signal-labels)", default=None)
 	PLOT.add_argument('--grid', metavar="<rows>x<cols>", help="Explicit grid layout for subplots, e.g. 2x5 or 3x4. Panels fill in order of the input signal files.", default=None)
@@ -272,6 +279,10 @@ def add_aggregate_arguments(parser):
 	
 	#Signals / regions
 	PLOT.add_argument('--normalize', action='store_true', help="Normalize the aggregate signal(s) to be between 0-1 (default: the true range of values is shown)")
+	PLOT.add_argument('--normalization', choices=["none", "condition-quantile", "sample-quantile"], default="none", help="BINDetect-compatible quantile normalization before aggregate plotting (default: none)")
+	PLOT.add_argument('--normalization-comparison-output', metavar="", help="Optional paired raw-vs-normalized aggregate figure")
+	PLOT.add_argument('--output_aggregated_stats', metavar="", default=None, help="Path to CSV file for aggregate mean/SD/stat summaries (default: None)")
+	PLOT.add_argument('--show-replicate-sd', action="store_true", help="Draw replicate SD ribbons when --cond-names contains repeated condition names")
 	PLOT.add_argument('--negate', action='store_true', help="Negate overlap with regions")
 	PLOT.add_argument('--smooth', metavar="<int>", type=int, help="Smooth output signal by taking the mean of <smooth> bp windows (default: 1 (no smooth)", default=1)
 	PLOT.add_argument('--log-transform', help="Log transform the signals before aggregation", action="store_true")

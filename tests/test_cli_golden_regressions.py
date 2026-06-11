@@ -181,6 +181,64 @@ class CliGoldenRegressionTest(unittest.TestCase):
         self.assertAlmostEqual(float(row["Tcell_mean_score"]), 7.58304, places=5)
         self.assertAlmostEqual(float(row["Bcell_Tcell_change"]), 0.34019, places=5)
 
+    def test_bindetect_replicate_grouping_writes_diagnostics(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            outdir = pathlib.Path(tmpdir) / "bindetect_reps"
+            run_command(
+                [
+                    BIN / "BINDetect",
+                    "--signals",
+                    "test_data/demo_Bcell_rep1_footprints.bw",
+                    "test_data/demo_Bcell_rep2_footprints.bw",
+                    "test_data/demo_Tcell_rep1_footprints.bw",
+                    "test_data/demo_Tcell_rep2_footprints.bw",
+                    "--motifs",
+                    "test_data/individual_motifs/MA0050.2.jaspar",
+                    "--genome",
+                    "test_data/genome.fa.gz",
+                    "--peaks",
+                    "test_data/merged_peaks.bed",
+                    "--cond-names",
+                    "Bcell",
+                    "Bcell",
+                    "Tcell",
+                    "Tcell",
+                    "--outdir",
+                    outdir,
+                    "--prefix",
+                    "bindetect_probe",
+                    "--cores",
+                    max_cores(),
+                    "--skip-excel",
+                    "--verbosity",
+                    "1",
+                    "--normalization",
+                    "sample-quantile",
+                    "--replicate-report",
+                    "on",
+                ],
+                timeout=120,
+            )
+            results = pd.read_csv(outdir / "bindetect_probe_results.txt", sep="	")
+            report = pd.read_csv(outdir / "bindetect_probe_replicate_report.tsv", sep="	")
+
+        row = results.iloc[0]
+        for column in (
+            "Bcell_n_replicates",
+            "Bcell_score_sd",
+            "Tcell_n_replicates",
+            "Tcell_score_sd",
+            "Bcell_Tcell_mean_delta_fp",
+            "Bcell_Tcell_mean_log2fc",
+            "Bcell_Tcell_delta_fp_se",
+            "Bcell_Tcell_log2fc_se",
+        ):
+            self.assertIn(column, results.columns)
+        self.assertEqual(int(row["Bcell_n_replicates"]), 2)
+        self.assertEqual(int(row["Tcell_n_replicates"]), 2)
+        self.assertGreater(float(row["Bcell_score_sd"]), 0.0)
+        self.assertTrue((report["replicate_support"] == "replicate-supported").all())
+
     @unittest.skipUnless(os.environ.get("FP_TOOLS_RUN_SLOW_REGRESSIONS") == "1", "slow ATACorrect regression is opt-in")
     def test_atacorrect_fixture_smoke_outputs_corrected_bigwig(self):
         with tempfile.TemporaryDirectory() as tmpdir:

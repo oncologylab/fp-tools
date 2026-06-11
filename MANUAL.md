@@ -146,7 +146,7 @@ GUI-saved YAML files can be rerun the same way. YAML is optional for normal CLI 
 
 ## Extra Features
 
-### detect-tf-binding Replicate Grouping
+### detect-tf-binding Replicate Grouping, Normalization, and Report
 
 ```bash
 detect-tf-binding --motifs test_data/motifs.jaspar \
@@ -156,10 +156,12 @@ detect-tf-binding --motifs test_data/motifs.jaspar \
   --peak-header test_data/merged_peaks_annotated_header.txt \
   --outdir examples/bindetect/detect-tf-binding_output_synthetic_replicates_demo \
   --cond-names Bcell Bcell Tcell Tcell \
-  --cores 40
+  --normalization sample-quantile \
+  --replicate-report auto \
+  --cores 32
 ```
 
-Grouped results are written to `bindetect_results.txt` under the output directory.
+Repeated condition names define replicate groups. The result table keeps the original BINDetect columns and adds replicate counts, per-condition SD, mean delta footprint, mean log2FC, and standard-error summaries. Report files are written automatically when replicate support is present.
 
 ### detect-tf-binding Skewness Report
 
@@ -170,6 +172,22 @@ For multi-condition runs, the skewness report is written automatically to:
 ```
 
 Single-condition runs do not produce this report.
+
+### plot-aggregate Replicate Normalization
+
+```bash
+plot-aggregate --TFBS test_data/IRF1_all.bed \
+  --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw \
+  --signal-labels Bcell_rep1 Bcell_rep2 Tcell_rep1 Tcell_rep2 \
+  --cond-names Bcell Bcell Tcell Tcell \
+  --normalization sample-quantile \
+  --normalization-comparison-output examples/reports/plotaggregate_raw_vs_normalized.png \
+  --output examples/reports/plotaggregate_replicate_normalized.pdf \
+  --output_aggregated_stats examples/reports/plotaggregate_replicate_normalized_stats.csv \
+  --show-replicate-sd
+```
+
+This uses the same quantile-normalization modes as `detect-tf-binding`, then plots condition means with optional replicate SD ribbons.
 
 ### plot-aggregate Control Overlay
 

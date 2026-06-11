@@ -8,7 +8,8 @@ installable from source as `fp-tools-bio`. The repository includes:
   `detect-tf-binding`, `plot-aggregate`) and their legacy aliases;
 - the optional YAML runner (`fp-tools-run`) and Streamlit GUI (`fp-tools-gui`);
 - the opt-in scientific modules described in this manuscript, including
-  `fp-tools-bindetect-replicate-report` and `fp-tools-decompose-competition`;
+  replicate-aware `detect-tf-binding`, BINDetect report compatibility support,
+  and `fp-tools-decompose-competition`;
 - the unit-test suite and the continuous-integration workflow used for the
   deterministic golden CLI regressions;
 - the benchmark scripts (`benchmarks/scripts/`) and paper figure generators

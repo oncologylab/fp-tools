@@ -20,8 +20,6 @@ import os
 import numpy as np
 import pandas as pd
 import scipy
-from scipy import interpolate
-from scipy.optimize import curve_fit
 try:
     from tqdm import tqdm
 except ImportError:
@@ -47,6 +45,7 @@ from fp_tools.utils.motifs import *
 from fp_tools.utils.signals import *
 from fp_tools.utils.utilities import show_worker_progress
 from fp_tools.utils.logger import FpToolsLogger
+from fp_tools.utils.normalization import ArrayNorm, fit_quantile_normalizers
 from fp_tools.utils.plotting_style import PDF_FONT_SIZE, apply_pdf_style, apply_ascii_minus_to_figure
 
 # bump open-file limit
@@ -68,33 +67,6 @@ except (ImportError, ValueError):
 apply_pdf_style()
 
 
-# ----------------------------------------------------------------------------- #
-def sigmoid(x, a, b, L, shift):
-    return L / (1 + np.exp(-b * (x - a))) + shift
-
-
-class ArrayNorm:
-    """Encapsulates a normalization curve/function and applies it to arrays."""
-    def __init__(self, function, popt, value_min, value_max):
-        self.func = function
-        self.popt = popt
-        self.value_min = value_min
-        self.value_max = value_max
-
-    def get_norm_factor(self, arr):
-        if self.func == "sigmoid":
-            return sigmoid(arr, *self.popt)
-        elif self.func == "constant":
-            return arr * 0 + self.popt
-        else:
-            raise ValueError("Unknown normalization func")
-
-    def normalize(self, arr):
-        arr_capped = np.where(arr > self.value_max, self.value_max, arr)
-        arr_capped = np.where(arr_capped < self.value_min, self.value_min, arr_capped)
-        return arr * self.get_norm_factor(arr_capped)
-
-
 def dict_to_tab(dict_list, fname, chosen_columns, header=False):
     out_str = ("\t".join(chosen_columns) + "\n") if header else ""
     out_str += "\n".join(["\t".join([str(line[c]) for c in chosen_columns]) for line in dict_list])
@@ -104,16 +76,13 @@ def dict_to_tab(dict_list, fname, chosen_columns, header=False):
 
 
 def quantile_normalization(list_of_arrays, names, pdfpages=None, logger=FpToolsLogger()):
-    n = len(list_of_arrays)
-    norm_objects = {}
-
-    quantiles = np.linspace(0.05, 0.99, 1000, endpoint=True)
-    array_quantiles = [np.quantile(([0] if (arr > 0).sum() == 0 else arr[arr > 0]), quantiles) for arr in list_of_arrays]
-    mean_array_quantiles = [np.mean([array_quantiles[i][j] for i in range(n)]) for j in range(len(quantiles))]
+    norm_objects, diagnostics = fit_quantile_normalizers(list_of_arrays, names, logger=logger)
+    array_quantiles = diagnostics["array_quantiles"]
+    mean_array_quantiles = diagnostics["mean_array_quantiles"]
 
     if pdfpages is not None:
         fig, ax = plt.subplots()
-        for i in range(n):
+        for i in range(len(names)):
             plt.plot(array_quantiles[i], mean_array_quantiles, label=f"Quantiles for '{names[i]}'")
         plt.title("Quantile-quantile plot", fontsize=PDF_FONT_SIZE, fontweight="bold")
         ax.set_xlabel("Value quantiles"); ax.set_ylabel("Mean quantiles")
@@ -124,43 +93,16 @@ def quantile_normalization(list_of_arrays, names, pdfpages=None, logger=FpToolsL
 
     for i, bigwig in enumerate(names):
         xdata = array_quantiles[i]
-        ydata = mean_array_quantiles / xdata
-
-        pad = 50
-        ydata_pad = np.pad(ydata, pad, "edge")
-        ydata_smooth = fast_rolling_math(ydata_pad, pad, "mean")[pad:-pad]
-
-        p = interpolate.interp1d(xdata, ydata_smooth, kind="linear", fill_value="extrapolate")
-        xvals = np.linspace(np.min(xdata), np.max(xdata), 1000)
-        y_inter = p(xvals)
-        mask = ~np.isnan(y_inter)
-        xvals, y_inter = xvals[mask], y_inter[mask]
-
-        try:
-            a_range = (np.min(xdata), np.max(xdata))
-            L_range = np.diff(np.percentile(y_inter, [5, 95]))[0]
-            bounds = ((a_range[0], -np.inf, 0, 0), (a_range[1], np.inf, L_range, np.inf))
-            popt, _ = curve_fit(sigmoid, xvals, y_inter, bounds=bounds)
-            func = "sigmoid"
-        except Exception as e:
-            popt = float(np.mean(y_inter))
-            logger.warning(f"Curve-fitting quantile normalization failed for '{bigwig}'. "
-                           f"Falling back to 'constant' normalization (factor = {popt:.2f}).")
-            logger.warning(f"Error was: {e}")
-            func = "constant"
-
-        value_min, value_max = np.min(xdata), np.max(xdata)
-        norm_objects[bigwig] = ArrayNorm(func, popt, value_min=value_min, value_max=value_max)
+        ydata = np.divide(mean_array_quantiles, xdata, out=np.ones_like(mean_array_quantiles), where=~np.isclose(xdata, 0.0))
 
         fig, ax = plt.subplots(nrows=2, ncols=1, constrained_layout=True)
         ax[0].set_xlabel("Original value"); ax[0].set_ylabel("Multiplication factor")
         ax[0].set_title(f"Multiplication needed for normalization of '{bigwig}'", fontsize=PDF_FONT_SIZE, fontweight="bold")
         ax[0].plot(xdata, ydata, color="black", linewidth=3, label="Original")
-        ax[0].plot(xvals, p(xvals), linestyle='dashed', color="red", label="Interpolation")
         ax[0].plot(xdata, norm_objects[bigwig].get_norm_factor(xdata), label="Norm function")
         ax[0].legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
-        arr = np.sort(list_of_arrays[i])
+        arr = np.sort(np.asarray(list_of_arrays[i], dtype=float))
         normalized = norm_objects[bigwig].normalize(arr)
         ax[1].set_title("Normalized vs. original", fontsize=PDF_FONT_SIZE, fontweight="bold")
         ax[1].plot(arr, normalized)
@@ -175,8 +117,6 @@ def quantile_normalization(list_of_arrays, names, pdfpages=None, logger=FpToolsL
         plt.close()
 
     return norm_objects
-
-
 def plot_score_distribution(list_of_arr, labels=None, title="Score distribution"):
     labels = labels or [f"arr_{i}" for i in range(len(list_of_arr))]
     fig, ax = plt.subplots(1, 1)
@@ -213,18 +153,26 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
     logger.debug("Setting up scanner/bigwigs/fasta")
     motifs_obj.setup_moods_scanner()
 
-    # open all bigwigs (list per condition) & average replicates
-    pybw = {}
+    # open all bigwigs as individual samples; repeated condition names define replicate groups
+    sample_bigwigs = {}
+    signal_to_sample = {}
     for condition, rep_idxs in args.cond_groups.items():
         files = [args.signals[i] for i in rep_idxs]
         logger.debug(f"[scan_and_score] Condition '{condition}' -> opening {files}")
-        pybw[condition] = [pyBigWig.open(path, "rb") for path in files]
+        for rep_no, signal_idx in enumerate(rep_idxs, start=1):
+            sample_name = f"{condition}_rep{rep_no}"
+            sample_bigwigs[sample_name] = pyBigWig.open(args.signals[signal_idx], "rb")
+            signal_to_sample[signal_idx] = sample_name
 
     fasta_obj = pysam.FastaFile(args.genome)
     chrom_boundaries = dict(zip(fasta_obj.references, fasta_obj.lengths))
 
     rand_window = 200
-    background_signal = {"gc": [], "signal": {c: [] for c in args.cond_names}}
+    background_signal = {
+        "gc": [],
+        "signal": {c: [] for c in args.cond_names},
+        "sample_signal": {s: [] for s in args.sample_names},
+    }
 
     logger.debug("Scanning for motif occurrences")
     all_TFBS = {motif.prefix: RegionList() for motif in motifs_obj}
@@ -257,19 +205,23 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
         rand_positions = random.sample(range(reglen), max(1, int(reglen / rand_window)))
         logger.spam(f"Random indices: {rand_positions} for len {reglen}")
 
-        # read signals for all replicates in this region, average per condition
+        # read signals for all samples, then summarize replicate groups per condition
+        sample_footprints = {}
+        for sample_name in args.sample_names:
+            bw = sample_bigwigs[sample_name]
+            arr = region.get_signal(bw, logger=logger, key=sample_name)
+            if len(arr) == 0:
+                logger.error(f"Error reading signal for '{sample_name}' in region {region}")
+                raise Exception
+            sample_footprints[sample_name] = arr
+            for pos in rand_positions:
+                background_signal["sample_signal"][sample_name].append(arr[pos])
+
         footprints = {}
-        for condition, bw_list in pybw.items():
-            rep_signals = []
-            for bw in bw_list:
-                arr = region.get_signal(bw, logger=logger, key=condition)
-                if len(arr) == 0:
-                    logger.error(f"Error reading signal for '{condition}' in region {region}")
-                    raise Exception
-                rep_signals.append(arr)
+        for condition in args.cond_names:
+            rep_signals = [sample_footprints[sample_name] for sample_name in args.condition_samples[condition]]
             stacked = np.vstack(rep_signals)
             footprints[condition] = np.mean(stacked, axis=0)
-            # INFO keep only at spam level
             logger.spam(
                 f"[scan_and_score] region {i} '{condition}': "
                 f"averaged {len(rep_signals)} reps -> len {footprints[condition].shape[0]}"
@@ -287,8 +239,8 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
             motif_len = TFBS.end - TFBS.start
             pos = TFBS.start - region.start + int(motif_len / 2.0)
             TFBS.extend(extra_columns)
-            for cond in args.cond_names:
-                score = footprints[cond][pos]
+            for sample_name in args.sample_names:
+                score = sample_footprints[sample_name][pos]
                 TFBS.append(f"{score:.5f}")
 
         for TFBS in region_TFBS:
@@ -305,9 +257,8 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
     overlap = global_TFBS.count_overlaps()
 
     fasta_obj.close()
-    for condition, bw_list in pybw.items():
-        for bw in bw_list:
-            bw.close()
+    for bw in sample_bigwigs.values():
+        bw.close()
 
     logger.stop()
     logger.debug(f"Done: 'scan_and_score' finished for this chunk (time elapsed: {logger.total_time})")
@@ -339,7 +290,7 @@ def process_tfbs(TF_name, args, log2fc_params):
     stime = datetime.now()
     header = ["TFBS_chr", "TFBS_start", "TFBS_end", "TFBS_name", "TFBS_score", "TFBS_strand"] \
              + args.peak_header_list \
-             + [f"{cond}_score" for cond in args.cond_names]
+             + [f"{sample}_score" for sample in args.sample_names]
     with open(filename) as f:
         bedlines = [dict(zip(header, line.rstrip().split("\t"))) for line in f.readlines()]
     n_rows = len(bedlines)
@@ -347,33 +298,45 @@ def process_tfbs(TF_name, args, log2fc_params):
     if n_rows == 0:
         logger.warning(f"No TFBS found for TF {TF_name} - outputs will be empty (xlsx skipped).")
 
-    # local: normalize, threshold, log2fc
+    # local: normalize, aggregate replicates, threshold, delta/log2fc
     stime = datetime.now()
     bedlines = sorted(bedlines, key=lambda line: (line["TFBS_chr"], int(line["TFBS_start"]), int(line["TFBS_end"])))
     for line in bedlines:
+        for sample_name in args.sample_names:
+            line[sample_name + "_score"] = float(line[sample_name + "_score"])
+            if args.normalization == "sample-quantile":
+                val = args.norm_objects[sample_name].normalize(line[sample_name + "_score"])
+            elif args.normalization == "condition-quantile":
+                cond = args.sample_to_condition[sample_name]
+                val = args.norm_objects[cond].normalize(line[sample_name + "_score"])
+            else:
+                val = line[sample_name + "_score"]
+            line[sample_name + "_score"] = round(max(0.0, float(val)), 5)
+
         for condition in args.cond_names:
             threshold = args.thresholds[condition]
-            line[condition + "_score"] = float(line[condition + "_score"])
-            original = line[condition + "_score"]
-            val = args.norm_objects[condition].normalize(original)
-            val = max(0.0, float(val))
-            line[condition + "_score"] = round(val, 5)
-            if line[condition + "_score"] < 0:
-                logger.error(f"negative values: {line[condition + '_score']}. Original: {original}")
+            rep_values = np.array([line[sample + "_score"] for sample in args.condition_samples[condition]], dtype=float)
+            mean_score = float(np.mean(rep_values)) if len(rep_values) else np.nan
+            sd_score = float(np.std(rep_values, ddof=1)) if len(rep_values) > 1 else np.nan
+            line[condition + "_score"] = round(mean_score, 5)
+            line[condition + "_score_sd"] = round(sd_score, 5) if np.isfinite(sd_score) else "NA"
             line[condition + "_bound"] = 1 if line[condition + "_score"] > threshold else 0
 
         for (cond1, cond2) in comparisons:
             base = f"{cond1}_{cond2}"
+            line[base + "_delta_fp"] = round(line[cond1 + "_score"] - line[cond2 + "_score"], 5)
             line[base + "_log2fc"] = round(np.log2((line[cond1 + "_score"] + args.pseudo) /
                                                    (line[cond2 + "_score"] + args.pseudo)), 5)
 
+    condition_columns = [f"{cond}_score" for cond in args.cond_names]
+    condition_sd_columns = [f"{cond}_score_sd" for cond in args.cond_names]
     # write *_all.bed
     outfile = os.path.join(bed_outdir, TF_name + "_all.bed")
-    dict_to_tab(bedlines, outfile, header)
+    dict_to_tab(bedlines, outfile, header + condition_columns + condition_sd_columns)
 
     # write bound/unbound per condition
     for condition in args.cond_names:
-        chosen_columns = header[:-no_cond] + [condition + "_score"]
+        chosen_columns = header[:-len(args.sample_names)] + [condition + "_score"]
         for state in ["bound", "unbound"]:
             chosen_bool = 1 if state == "bound" else 0
             subset = [bl for bl in bedlines if bl[condition + "_bound"] == chosen_bool]
@@ -381,7 +344,8 @@ def process_tfbs(TF_name, args, log2fc_params):
             dict_to_tab(subset, outfile, chosen_columns)
 
     # overview (txt + optional xlsx)
-    overview_columns = header + [c + "_bound" for c in args.cond_names] \
+    overview_columns = header + condition_columns + condition_sd_columns + [c + "_bound" for c in args.cond_names] \
+                       + [f"{c1}_{c2}_delta_fp" for (c1, c2) in comparisons] \
                        + [f"{c1}_{c2}_log2fc" for (c1, c2) in comparisons]
     overview_txt = os.path.join(args.outdir, TF_name, TF_name + "_overview.txt")
     dict_to_tab(bedlines, overview_txt, overview_columns, header=True)
@@ -402,13 +366,16 @@ def process_tfbs(TF_name, args, log2fc_params):
 
     # global summary row
     info_columns = ["total_tfbs"]
-    info_columns += [f"{cond}_{metric}" for cond, metric in itertools.product(args.cond_names, ["mean_score", "bound"])]
-    info_columns += [f"{c1}_{c2}_{metric}" for (c1, c2), metric in itertools.product(comparisons, ["change", "pvalue"])]
+    info_columns += [f"{cond}_{metric}" for cond, metric in itertools.product(args.cond_names, ["mean_score", "score_sd", "n_replicates", "bound"])]
+    info_columns += [f"{c1}_{c2}_{metric}" for (c1, c2), metric in itertools.product(comparisons, ["change", "pvalue", "mean_delta_fp", "mean_log2fc", "delta_fp_se", "log2fc_se"])]
     info_table = pd.DataFrame(np.nan, columns=info_columns, index=[TF_name])
 
     info_table.at[TF_name, "total_tfbs"] = n_rows
     for condition in args.cond_names:
         info_table.at[TF_name, condition + "_mean_score"] = round(float(np.mean(bed_table[condition + "_score"])), 5) if n_rows > 0 else np.nan
+        sd_values = pd.to_numeric(bed_table[condition + "_score_sd"], errors="coerce") if n_rows > 0 else pd.Series(dtype=float)
+        info_table.at[TF_name, condition + "_score_sd"] = round(float(np.nanmean(sd_values)), 5) if len(sd_values.dropna()) else np.nan
+        info_table.at[TF_name, condition + "_n_replicates"] = args.condition_replicates.get(condition, 1)
         info_table.at[TF_name, condition + "_bound"] = int(np.sum(bed_table[condition + "_bound"].values))
 
     # per-comparison stats and figure
@@ -425,6 +392,20 @@ def process_tfbs(TF_name, args, log2fc_params):
                                                                        subset.iloc[:, 1].values,
                                                                        subset.iloc[:, 2].values)]
             observed_log2fcs = subset.groupby('peak_id')[base + '_log2fc'].mean().reset_index()[base + "_log2fc"].values
+            observed_deltas = subset.groupby('peak_id')[base + '_delta_fp'].mean().reset_index()[base + "_delta_fp"].values
+            info_table.at[TF_name, base + "_mean_delta_fp"] = np.round(float(np.mean(observed_deltas)), 5) if len(observed_deltas) else np.nan
+            info_table.at[TF_name, base + "_mean_log2fc"] = np.round(float(np.mean(observed_log2fcs)), 5) if len(observed_log2fcs) else np.nan
+            n1 = max(1, args.condition_replicates.get(cond1, 1))
+            n2 = max(1, args.condition_replicates.get(cond2, 1))
+            sd1 = pd.to_numeric(subset[cond1 + "_score_sd"], errors="coerce").to_numpy(dtype=float)
+            sd2 = pd.to_numeric(subset[cond2 + "_score_sd"], errors="coerce").to_numpy(dtype=float)
+            mu1 = pd.to_numeric(subset[cond1 + "_score"], errors="coerce").to_numpy(dtype=float)
+            mu2 = pd.to_numeric(subset[cond2 + "_score"], errors="coerce").to_numpy(dtype=float)
+            if np.isfinite(sd1).any() and np.isfinite(sd2).any():
+                delta_se = np.sqrt(np.nanmean((sd1 ** 2) / n1 + (sd2 ** 2) / n2))
+                log2fc_se = (1.0 / np.log(2.0)) * np.sqrt(np.nanmean((sd1 ** 2) / (n1 * (mu1 + args.pseudo) ** 2) + (sd2 ** 2) / (n2 * (mu2 + args.pseudo) ** 2)))
+                info_table.at[TF_name, base + "_delta_fp_se"] = np.round(float(delta_se), 5)
+                info_table.at[TF_name, base + "_log2fc_se"] = np.round(float(log2fc_se), 5)
 
             bg_mean, bg_std = log2fc_params[(cond1, cond2)]
             obs_params = scipy.stats.norm.fit(observed_log2fcs)

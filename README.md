@@ -307,20 +307,25 @@ fp-tools-pseudobulk \
 
 `--cores` is used for independent per-group compression/indexing and cut-site bigWig generation where possible. The real-data paper example uses the public 10x PBMC Multiome fragments and official 10x clustering outputs; scripts and manifests live under `benchmarks/` and `paper/scripts/`, while large reusable example data belongs in the separate `oncologylab/fp-tools-data` release assets (https://github.com/oncologylab/fp-tools-data/releases/tag/pbmc-pseudobulk-v1).
 
-### Optional replicate-aware BINDetect report
+### Replicate-aware detect-tf-binding
 
-Summarize a BINDetect `*_results.txt` table into per-comparison effect sizes, p-values, replicate support, and replicate-aware uncertainty:
+Use repeated `--cond-names` to tell `detect-tf-binding` which signal bigWigs are biological replicates of the same condition. The command keeps the original BINDetect-style result columns and adds replicate counts, per-condition score SD, mean delta footprint, mean log2FC, and standard-error summaries. `--normalization sample-quantile` normalizes individual replicate samples before condition averaging; the default `condition-quantile` preserves the previous condition-level behavior.
 
 ```bash
-fp-tools-bindetect-replicate-report \
-  --results BINDetect_output/bindetect_results.txt \
-  --replicate-map replicate_counts.tsv \
-  --out replicate_report.tsv \
-  --summary-out replicate_summary.tsv \
-  --figure-out replicate_report.png
+detect-tf-binding \
+  --motifs test_data/motifs.jaspar \
+  --signals Bcell_rep1.bw Bcell_rep2.bw Tcell_rep1.bw Tcell_rep2.bw \
+  --genome test_data/genome.fa.gz \
+  --peaks test_data/merged_peaks_annotated.bed \
+  --peak-header test_data/merged_peaks_annotated_header.txt \
+  --cond-names Bcell Bcell Tcell Tcell \
+  --normalization sample-quantile \
+  --replicate-report auto \
+  --cores 32 \
+  --outdir bindetect_replicates
 ```
 
-Replicate counts can come from a `condition`/`n_replicates` (or `condition`/`replicate`) map, from `<condition>_n_replicates` columns in the results table, or fall back to single-replicate. Each comparison is labelled `single-replicate` or `replicate-supported`, and reported with a p-value-derived standard error, shrinkage weight, and confidence interval.
+The integrated report writes `<prefix>_replicate_report.tsv`, `<prefix>_replicate_summary.tsv`, and `<prefix>_replicate_report.png` when replicate support is detected. `fp-tools-bindetect-replicate-report` remains available as a post-hoc compatibility helper for existing `*_results.txt` files.
 
 ### Optional competition-aware footprint decomposition
 
@@ -397,7 +402,7 @@ GUI-saved YAML files can be rerun the same way. YAML is optional for normal CLI 
 
 ## Extra Features
 
-### detect-tf-binding Replicate Grouping
+### detect-tf-binding Replicate Grouping, Normalization, and Report
 
 ```bash
 detect-tf-binding --motifs test_data/motifs.jaspar \
@@ -407,10 +412,12 @@ detect-tf-binding --motifs test_data/motifs.jaspar \
   --peak-header test_data/merged_peaks_annotated_header.txt \
   --outdir examples/bindetect/detect-tf-binding_output_synthetic_replicates_demo \
   --cond-names Bcell Bcell Tcell Tcell \
-  --cores 40
+  --normalization sample-quantile \
+  --replicate-report auto \
+  --cores 32
 ```
 
-Grouped results are written to `bindetect_results.txt` under the output directory.
+Grouped results are written to `bindetect_results.txt` under the output directory, with additive replicate-aware columns and optional report files.
 
 ### detect-tf-binding Skewness Report
 
@@ -421,6 +428,22 @@ For multi-condition runs, the skewness report is written automatically to:
 ```
 
 Single-condition runs do not produce this report.
+
+### plot-aggregate Replicate Normalization
+
+```bash
+plot-aggregate --TFBS test_data/IRF1_all.bed \
+  --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw \
+  --signal-labels Bcell_rep1 Bcell_rep2 Tcell_rep1 Tcell_rep2 \
+  --cond-names Bcell Bcell Tcell Tcell \
+  --normalization sample-quantile \
+  --normalization-comparison-output examples/reports/plotaggregate_raw_vs_normalized.png \
+  --output examples/reports/plotaggregate_replicate_normalized.pdf \
+  --output_aggregated_stats examples/reports/plotaggregate_replicate_normalized_stats.csv \
+  --show-replicate-sd
+```
+
+This uses the same quantile-normalization modes as `detect-tf-binding`, then plots condition means with optional replicate SD ribbons.
 
 ### plot-aggregate Control Overlay
 

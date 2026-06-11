@@ -43,6 +43,7 @@ import pyBigWig as pybw
 from fp_tools.parsers import add_bindetect_arguments
 from fp_tools.tools.bindetect_functions import *
 from fp_tools.tools import bindetect_skew_report as skewrep
+from fp_tools.tools.bindetect_replicate_report import build_replicate_report
 
 from fp_tools.utils.utilities import (
     check_required, check_files, make_directory, merge_dicts,
@@ -81,11 +82,25 @@ def run_bindetect(args):
     # Allow passing identical names in --cond-names to denote replicates.
     # Build: { condition -> [indices into args.signals] }
     orig = list(args.cond_names)
+    if len(orig) != len(args.signals):
+        raise ValueError("--cond-names must have the same length as --signals")
+    if getattr(args, "norm_off", False):
+        args.normalization = "none"
     idxs = {}
     for i, nm in enumerate(orig):
         idxs.setdefault(nm, []).append(i)
-    args.cond_groups = idxs                   # used in scan_and_score()
+    args.cond_groups = idxs                   # condition -> signal indices
     args.cond_names = list(idxs.keys())       # unique condition list
+    args.condition_replicates = {cond: len(indices) for cond, indices in idxs.items()}
+    args.sample_names = []
+    args.sample_to_condition = {}
+    args.condition_samples = {cond: [] for cond in args.cond_names}
+    for cond, indices in idxs.items():
+        for rep_no, signal_idx in enumerate(indices, start=1):
+            sample_name = f"{cond}_rep{rep_no}"
+            args.sample_names.append(sample_name)
+            args.sample_to_condition[sample_name] = cond
+            args.condition_samples[cond].append(sample_name)
     # ------------------------------------------------------------------------- #
 
     # outputs we’ll create
@@ -378,7 +393,9 @@ def run_bindetect(args):
                 TF_overlaps[tup] = 0
 
     for cond in args.cond_names:
-        background["signal"][cond] = np.array(background["signal"][cond])
+        background["signal"][cond] = np.array(background["signal"][cond], dtype=float)
+    for sample_name in args.sample_names:
+        background["sample_signal"][sample_name] = np.array(background["sample_signal"][sample_name], dtype=float)
 
     n_bg_values = len(background["signal"][args.cond_names[0]])
     logger.debug(f"Collected {n_bg_values} background values")
@@ -396,17 +413,33 @@ def run_bindetect(args):
 
     # normalization
     args.norm_objects = {}
-    if args.norm_off or len(args.cond_names) == 1:
+    if args.normalization == "none" or len(args.cond_names) == 1:
         for cond in args.cond_names:
             args.norm_objects[cond] = ArrayNorm("constant", popt=1.0, value_min=0, value_max=1)
+        for sample_name in args.sample_names:
+            args.norm_objects[sample_name] = ArrayNorm("constant", popt=1.0, value_min=0, value_max=1)
+    elif args.normalization == "sample-quantile":
+        logger.comment("")
+        logger.info("Normalizing scores across input samples")
+        lists = [background["sample_signal"][s] for s in args.sample_names]
+        args.norm_objects = quantile_normalization(lists, args.sample_names, pdfpages=debug_pdf if args.debug else None, logger=logger)
+        for sample_name in args.sample_names:
+            original = background["sample_signal"][sample_name]
+            normalized = args.norm_objects[sample_name].normalize(original)
+            normalized[normalized < 0] = 0
+            background["sample_signal"][sample_name] = normalized
+        for cond in args.cond_names:
+            stacked = np.vstack([background["sample_signal"][sample] for sample in args.condition_samples[cond]])
+            background["signal"][cond] = np.mean(stacked, axis=0)
+        fig = plot_score_distribution([background["signal"][c] for c in args.cond_names],
+                                      labels=args.cond_names, title="Sample-quantile normalized scores per condition")
+        apply_ascii_minus_to_figure(fig)
+        figure_pdf.savefig(fig, bbox_inches='tight'); plt.close()
     else:
         logger.comment("")
         logger.info("Normalizing scores across conditions")
         lists = [background["signal"][c] for c in args.cond_names]
-        if args.debug:
-            args.norm_objects = quantile_normalization(lists, args.cond_names, pdfpages=debug_pdf, logger=logger)
-        else:
-            args.norm_objects = quantile_normalization(lists, args.cond_names, logger=logger)
+        args.norm_objects = quantile_normalization(lists, args.cond_names, pdfpages=debug_pdf if args.debug else None, logger=logger)
 
         for cond in args.cond_names:
             original = background["signal"][cond]
@@ -417,7 +450,7 @@ def run_bindetect(args):
             logger.debug(f"Background nans after norm ({cond}): {np.isnan(normalized).sum()}")
 
         fig = plot_score_distribution([background["signal"][c] for c in args.cond_names],
-                                      labels=args.cond_names, title="Normalized scores per condition")
+                                      labels=args.cond_names, title="Condition-quantile normalized scores per condition")
         apply_ascii_minus_to_figure(fig)
         figure_pdf.savefig(fig, bbox_inches='tight'); plt.close()
 
@@ -498,8 +531,8 @@ def run_bindetect(args):
     logger.info("Processing scanned TFBS individually")
 
     info_columns = ["total_tfbs"]
-    info_columns += [f"{cond}_{metric}" for cond, metric in itertools.product(args.cond_names, ["threshold", "bound"])]
-    info_columns += [f"{c1}_{c2}_{metric}" for (c1, c2), metric in itertools.product(comparisons, ["change", "pvalue"])]
+    info_columns += [f"{cond}_{metric}" for cond, metric in itertools.product(args.cond_names, ["threshold", "bound", "n_replicates", "score_sd"])]
+    info_columns += [f"{c1}_{c2}_{metric}" for (c1, c2), metric in itertools.product(comparisons, ["change", "pvalue", "mean_delta_fp", "mean_log2fc", "delta_fp_se", "log2fc_se"])]
     info_table = pd.DataFrame(np.zeros((len(motif_names), len(info_columns))),
                               columns=info_columns, index=motif_names)
 
@@ -555,6 +588,8 @@ def run_bindetect(args):
     info_table["total_tfbs"] = info_table["total_tfbs"].map(int)
     for cond in args.cond_names:
         info_table[f"{cond}_bound"] = info_table[f"{cond}_bound"].map(int)
+        if f"{cond}_n_replicates" in info_table.columns:
+            info_table[f"{cond}_n_replicates"] = info_table[f"{cond}_n_replicates"].map(int)
 
     for (c1, c2) in comparisons:
         base = f"{c1}_{c2}"
@@ -575,6 +610,26 @@ def run_bindetect(args):
 
     bindetect_out = os.path.join(args.outdir, args.prefix + "_results.txt")
     info_table.to_csv(bindetect_out, sep="\t", index=False, header=True, na_rep="NA")
+
+    repeated_conditions = any(count > 1 for count in args.condition_replicates.values())
+    write_replicate_report = args.replicate_report == "on" or (
+        args.replicate_report == "auto" and (repeated_conditions or args.replicate_map is not None)
+    )
+    if write_replicate_report and len(args.cond_names) > 1:
+        report_out = args.replicate_report_out or os.path.join(args.outdir, args.prefix + "_replicate_report.tsv")
+        summary_out = args.replicate_summary_out or os.path.join(args.outdir, args.prefix + "_replicate_summary.tsv")
+        figure_out = args.replicate_figure_out or os.path.join(args.outdir, args.prefix + "_replicate_report.png")
+        try:
+            build_replicate_report(
+                bindetect_out,
+                report_out,
+                summary_output=summary_out,
+                figure_output=figure_out,
+                replicate_map=args.replicate_map,
+            )
+            logger.info(f"Wrote replicate-aware BINDetect report to {report_out}")
+        except Exception as exc:
+            logger.warning(f"Could not write replicate-aware BINDetect report: {exc}")
 
     if not args.skip_excel:
         bindetect_excel = os.path.join(args.outdir, args.prefix + "_results.xlsx")
