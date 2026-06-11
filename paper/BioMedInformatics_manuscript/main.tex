@@ -406,7 +406,22 @@ reformatting intermediates. The optional YAML runner reproduces any pipeline fro
 a declarative config, and the GUI exposes the same operations with run history and
 output discovery for less command-line-oriented users. Because every wrapper
 expands to the same underlying commands, results are identical across entry
-points, and the YAML config doubles as a machine-readable record of the analysis.
+points, and the YAML config doubles as a machine-readable record of the analysis
+(Figure~\ref{fig:workflow}).
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{figures/fp-tools-workflow.png}
+\caption{Overall \texttt{fp-tools} workflow. Bulk ATAC-seq inputs enter a
+legacy-compatible classical core for Tn5 bias correction, footprint scoring,
+TF-binding detection, and aggregate visualization. Optional interface layers
+(direct CLI, YAML runner, GUI, and batch workflows) orchestrate the same command
+surface, while extension modules add multiscale scoring, supervised TFBS
+prediction, motif-relaxed or motif-free recovery, de novo motif discovery,
+variant scoring, pseudobulk support, replicate-aware reporting, and competition
+decomposition. Outputs include signal tracks, reports, calibrated predictions,
+regulatory-site candidates, motif summaries, variant tables, pseudobulk manifests,
+benchmark metrics, and reproducible paper-ready figures.\label{fig:workflow}}
+\end{figure}
 
 \subsection{Deterministic Regression and CLI Coverage}
 
