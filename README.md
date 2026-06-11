@@ -447,6 +447,7 @@ plot-aggregate --TFBS test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed \
 
 This uses the same quantile-normalization modes as `detect-tf-binding`, then plots condition means with optional replicate SD ribbons.
 The manuscript normalization panel is regenerated from the real demo B/T replicate footprint tracks around TFAP2A-associated sites with `paper/scripts/plot_normalization_effect.py`.
+The same script also writes `paper/manuscript/figures/normalization_effect_candidates.png`, a contact sheet of candidate TF/site choices for visual selection.
 
 ### plot-aggregate Control Overlay
 
