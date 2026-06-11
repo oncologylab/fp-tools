@@ -447,8 +447,8 @@ plot-aggregate --TFBS test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed \
 
 This uses the same shared multiplicative quantile-normalization helper as `detect-tf-binding`: `sample-quantile` normalizes each replicate before condition averaging, while `condition-quantile` fits one condition-level factor and applies it to all replicates in that condition. The plot then shows condition means with optional replicate SD ribbons. Because quantile normalization removes distribution-level depth/background offsets, interpret differential binding from the normalized per-site delta/log2FC and BINDetect `change` columns rather than from global baseline height alone.
 For TOBIAS-style footprint visualization, use ATACorrect-corrected cut-site tracks rather than footprint-score bigWigs; footprint-score tracks are useful for scoring but tend to give broad aggregate score curves.
-The manuscript normalization panel is regenerated from real demo B/T corrected cut-site matrices around ATF7-associated sites; the script creates two deterministic depth-offset replicate profiles per condition to visibly stress-test sample-level quantile normalization.
-The same script also writes `paper/manuscript/figures/normalization_effect_candidates.png`, a contact sheet of candidate TF/site choices for visual selection.
+The manuscript normalization panel is regenerated from real demo B/T corrected cut-site matrices around NFYB- and ATF7-associated sites; the script creates two deterministic depth-offset replicate profiles per condition to visibly stress-test sample-level quantile normalization for one B-high and one T-high BINDetect example.
+The same script also writes `paper/manuscript/figures/normalization_effect_candidates.png`, a direction-labelled contact sheet that includes B-high examples such as BATF, BACH2, IRF4, and IRF1 plus T-high examples.
 
 ### plot-aggregate Control Overlay
 

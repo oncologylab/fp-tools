@@ -516,7 +516,7 @@ condition means are reported alongside per-condition SDs, and optional
 sample-level quantile normalization reduces sequencing-depth-driven scale
 differences before group averages are compared. To make the effect visible, we
 aggregated ATACorrect-corrected B-cell and T-cell cut-site matrices around
-real ATF7-associated sites from the local benchmark fixtures, then created two
+real NFYB- and ATF7-associated sites from the local benchmark fixtures, then created two
 deterministic depth-offset replicate profiles per condition to stress-test the
 normalization step. In the raw corrected profiles, the controlled baseline
 differences are clearly visible; after sample-level quantile normalization, the
@@ -532,7 +532,8 @@ accessibility as single-scale.
 \includegraphics[width=0.95\textwidth]{figures/normalization_effect.png}
 \caption{Effect of sample-level quantile normalization on replicate-aware
 corrected cut-site aggregate profiles. ATACorrect-corrected B-cell and T-cell
-matrices were aggregated around ATF7-associated sites and converted into two
+matrices were aggregated around NFYB-associated sites (a B-cell-high BINDetect example)
+and ATF7-associated sites (a T-cell-high BINDetect example), then converted into two
 deterministic depth-offset replicate profiles per condition. Condition means are
 shown with light replicate-variation ribbons. The raw panel shows a large
 condition-level baseline offset, whereas sample-level quantile normalization
