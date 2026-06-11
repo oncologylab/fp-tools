@@ -144,9 +144,13 @@ fp-tools-pseudobulk \
   --outdir data/public/processed/pseudobulk_pbmc/run
 ```
 
-Example pseudobulk aggregate output:
+Example pseudobulk cut-site aggregate output:
 
 ![Pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk-example-output.png)
+
+Example footprint-like protection score derived from the same pseudobulk cut-site tracks. Positive values indicate local center depletion relative to flanks; negative center values indicate accessibility enrichment rather than a clean footprint.
+
+![Pseudobulk footprint-like protection score](docs/assets/fp-tools-pseudobulk-footprint-like.png)
 
 ### Replicate-aware detect-tf-binding
 

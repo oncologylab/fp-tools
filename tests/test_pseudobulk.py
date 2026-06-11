@@ -154,6 +154,34 @@ class PseudobulkTest(unittest.TestCase):
             self.assertTrue(out_prefix.with_suffix(".pdf").exists())
             self.assertTrue(out_prefix.with_suffix(".tsv").exists())
 
+            footprint_prefix = tmp / "footprint_like"
+            subprocess.run(
+                [
+                    sys.executable,
+                    "paper/scripts/plot_pseudobulk_tf_aggregates.py",
+                    "--manifest",
+                    str(manifest),
+                    "--tf-site-dir",
+                    str(site_dir),
+                    "--out-prefix",
+                    str(out_prefix),
+                    "--groups",
+                    "Group",
+                    "--tfs",
+                    "TF1",
+                    "--flank",
+                    "20",
+                    "--footprint-like-output",
+                    str(footprint_prefix),
+                ],
+                cwd=Path(__file__).resolve().parents[1],
+                check=True,
+            )
+
+            self.assertTrue(footprint_prefix.with_suffix(".png").exists())
+            self.assertTrue(footprint_prefix.with_suffix(".pdf").exists())
+            self.assertTrue(footprint_prefix.with_suffix(".tsv").exists())
+
     def test_write_downstream_commands_for_kept_groups(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
