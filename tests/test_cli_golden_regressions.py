@@ -237,6 +237,9 @@ class CliGoldenRegressionTest(unittest.TestCase):
         self.assertEqual(int(row["Bcell_n_replicates"]), 2)
         self.assertEqual(int(row["Tcell_n_replicates"]), 2)
         self.assertGreater(float(row["Bcell_score_sd"]), 0.0)
+        self.assertGreater(float(row["Bcell_mean_score"]), float(row["Tcell_mean_score"]))
+        self.assertGreater(float(row["Bcell_Tcell_mean_delta_fp"]), 0.0)
+        self.assertGreater(float(row["Bcell_Tcell_mean_log2fc"]), 0.0)
         self.assertTrue((report["replicate_support"] == "replicate-supported").all())
 
     @unittest.skipUnless(os.environ.get("FP_TOOLS_RUN_SLOW_REGRESSIONS") == "1", "slow ATACorrect regression is opt-in")

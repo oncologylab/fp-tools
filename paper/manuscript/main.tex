@@ -308,16 +308,27 @@ If users pass repeated condition names, for example
 signal files as biological replicates of the same condition while preserving the
 original BINDetect-style output columns. Let $x_{c,r,i}$ be the footprint score at
 site or background position $i$ for replicate $r$ of condition $c$. With
-\texttt{--normalization sample-quantile}, each replicate is first mapped to a
-shared empirical reference distribution,
+\texttt{--normalization sample-quantile}, each replicate is normalized before
+condition averaging using the same BINDetect-style multiplicative quantile curve
+used throughout fp-tools. For sample $s$, fp-tools computes empirical positive
+score quantiles $q_s(p)$ and the reference quantile
+$q_\ast(p)=S^{-1}\sum_s q_s(p)$ across the $S$ input samples, then fits a smooth
+multiplicative factor $g_s(x)$ to the ratio $q_\ast(p)/q_s(p)$. Each score is
+transformed as
 \[
-\tilde{x}_{s,i}=Q_\ast\{F_s(x_{s,i})\},
+\tilde{x}_{s,i}=\max\{0,\,x_{s,i}g_s(x_{s,i})\}.
 \]
-where $F_s$ is the empirical CDF of sample $s$ and $Q_\ast$ is the average
-reference quantile function across samples. The default
-\texttt{condition-quantile} mode preserves the previous behavior by fitting the
-quantile transform after condition-level aggregation; \texttt{none} disables this
-step.
+The default \texttt{condition-quantile} mode preserves the previous behavior by
+first averaging replicate background distributions within each condition, fitting
+one factor $g_c(x)$ per condition, and applying that condition-level factor to
+all replicates in the condition before final condition means and SDs are reported;
+\texttt{none} disables this step. The same shared normalization helper and the
+same sample-first versus condition-first ordering are used by
+\texttt{plot-aggregate}, so aggregate visualizations and
+\texttt{detect-tf-binding} comparisons are normalized consistently. Because this
+step removes distribution-level depth and background offsets, differential
+interpretation is based on normalized per-site contrasts and the BINDetect
+comparison statistic, not on global baseline height alone.
 
 After normalization, condition-level scores are summarized as
 \[
@@ -838,7 +849,7 @@ Genomics PBMC Multiome example~\cite{tenxpbmc2021}, and motif databases (e.g.,
 JASPAR~\cite{jaspar2026}) via the included discovery and download scripts.
 Manifests, scripts, small result tables, source tables, and figures are stored in
 the main repository; large reusable example-data files are distributed separately
-through the public 	exttt{oncologylab/fp-tools-data} repository release assets,
+through the public \texttt{oncologylab/fp-tools-data} repository release assets,
 and full raw public inputs are regenerated from committed manifests rather than
 stored in version control.}
 
