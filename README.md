@@ -288,6 +288,8 @@ The output includes deterministic ref/alt sequence-context features such as GC s
 
 Group mainstream 10x-style single-cell ATAC fragments by annotation columns and write a manifest for downstream bulk-style processing. Development builds can also BGZF/tabix-index grouped fragments and write CPM-normalized cut-site bigWigs directly for aggregate plotting:
 
+![fp-tools pseudobulk workflow](docs/assets/fp-tools-pseudo-bulk.png)
+
 ```bash
 fp-tools-pseudobulk \
   --fragments pbmc_fragments.tsv.gz \
