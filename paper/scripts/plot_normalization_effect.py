@@ -35,7 +35,7 @@ SAMPLE_COLORS = {
 CONDITION_COLORS = {"B cell": "#08519C", "T cell": "#A63603"}
 DEFAULT_TFBS = Path("test_data/annotated_tfbs/ATF7_Bcell_bound.bed")
 DEFAULT_MAIN_TFBS = [
-    Path("test_data/annotated_tfbs/HNF1A_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/BATF_Bcell_bound.bed"),
     Path("test_data/annotated_tfbs/ATF7_Bcell_bound.bed"),
 ]
 RAW_BINDETECT_RESULTS = Path("examples/bindetect/BINDetect_output_replicates_direction_raw/bindetect_results.txt")
@@ -197,10 +197,7 @@ def build_matrices(tfbs: Path, limit: int, flank: int) -> dict[str, np.ndarray]:
 def normalize_matrices(matrices: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     names = list(matrices)
     normalizers, _ = fit_quantile_normalizers([matrices[name].ravel() for name in names], names)
-    return {
-        name: np.maximum(0.0, normalizers[name].normalize(matrices[name].ravel())).reshape(matrices[name].shape)
-        for name in names
-    }
+    return {name: normalizers[name].normalize(matrices[name].ravel()).reshape(matrices[name].shape) for name in names}
 
 
 def profiles_from_matrices(matrices: dict[str, np.ndarray]) -> dict[str, np.ndarray]:

@@ -1,21 +1,21 @@
 normalization	tfbs	sample	condition	depth_factor	n_sites	mean_profile	center_mean	flank_mean	baseline_mean	footprint_contrast	bindetect_direction	bindetect_change
-raw	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	B cell rep1	B cell	0.700;offset=-1.500	80	-0.669833	-1.972655	-0.188077	-0.720762	1.784578	B-high	0.22384
-raw	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	B cell rep2	B cell	0.900;offset=0.200	80	1.268063	-0.408635	1.887887	1.202268	2.296522	B-high	0.22384
-raw	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	T cell rep1	T cell	1.250;offset=4.500	80	5.159680	5.380398	5.245715	4.837508	-0.134684	B-high	0.22384
-raw	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	T cell rep2	T cell	1.450;offset=6.500	80	7.265379	7.520447	7.365041	6.892204	-0.155405	B-high	0.22384
-sample_quantile	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	B cell rep1	B cell	0.700;offset=-1.500	80	1.605280	0.726779	1.913271	1.598666	1.186492	B-high	0.22384
-sample_quantile	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	B cell rep2	B cell	0.900;offset=0.200	80	7.592090	5.073761	8.784842	7.284229	3.711081	B-high	0.22384
-sample_quantile	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	T cell rep1	T cell	1.250;offset=4.500	80	15.405934	15.373701	15.393273	15.127964	0.019572	B-high	0.22384
-sample_quantile	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	T cell rep2	T cell	1.450;offset=6.500	80	16.115934	16.109170	16.094555	15.844841	-0.014615	B-high	0.22384
-raw_summary	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	5.624103	-0.145044	B-high	0.22384
-sample_quantile_summary	test_data/annotated_tfbs/HNF1A_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	11.044955	0.002479	B-high	0.22384
+raw	test_data/annotated_tfbs/BATF_Bcell_bound.bed	B cell rep1	B cell	0.700;offset=-1.500	308	-0.536918	-2.421733	0.053320	-0.435561	2.475053	B-high	0.51138
+raw	test_data/annotated_tfbs/BATF_Bcell_bound.bed	B cell rep2	B cell	0.900;offset=0.200	308	1.438245	-0.986213	2.198224	1.568053	3.184436	B-high	0.51138
+raw	test_data/annotated_tfbs/BATF_Bcell_bound.bed	T cell rep1	T cell	1.250;offset=4.500	308	5.162101	4.641591	5.386815	5.006167	0.745224	B-high	0.51138
+raw	test_data/annotated_tfbs/BATF_Bcell_bound.bed	T cell rep2	T cell	1.450;offset=6.500	308	7.268064	6.663957	7.528584	7.087348	0.864627	B-high	0.51138
+sample_quantile	test_data/annotated_tfbs/BATF_Bcell_bound.bed	B cell rep1	B cell	0.700;offset=-1.500	308	0.048847	-0.934459	0.361042	0.083681	1.295501	B-high	0.51138
+sample_quantile	test_data/annotated_tfbs/BATF_Bcell_bound.bed	B cell rep2	B cell	0.900;offset=0.200	308	-33.169923	-51.692513	-31.880829	-28.406918	19.811684	B-high	0.51138
+sample_quantile	test_data/annotated_tfbs/BATF_Bcell_bound.bed	T cell rep1	T cell	1.250;offset=4.500	308	10.652850	9.047727	11.011436	10.846752	1.963709	B-high	0.51138
+sample_quantile	test_data/annotated_tfbs/BATF_Bcell_bound.bed	T cell rep2	T cell	1.450;offset=6.500	308	12.349368	10.998776	12.686706	12.444277	1.687930	B-high	0.51138
+raw_summary	test_data/annotated_tfbs/BATF_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	5.480512	0.804925	B-high	0.51138
+sample_quantile_summary	test_data/annotated_tfbs/BATF_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	25.807133	1.825820	B-high	0.51138
 raw	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell rep1	B cell	0.700;offset=-1.500	80	-0.282185	-9.046423	1.735315	0.599983	10.781738	T-high	-0.16622
 raw	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell rep2	B cell	0.900;offset=0.200	80	1.766895	-9.504047	4.361506	2.900604	13.865553	T-high	-0.16622
 raw	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	T cell rep1	T cell	1.250;offset=4.500	80	8.911891	-9.186766	14.490293	10.294162	23.677059	T-high	-0.16622
 raw	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	T cell rep2	T cell	1.450;offset=6.500	80	11.618314	-9.379479	18.088783	13.223639	27.468261	T-high	-0.16622
-sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell rep1	B cell	0.700;offset=-1.500	80	4.169041	1.222956	5.343024	4.286434	4.120068	T-high	-0.16622
-sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell rep2	B cell	0.900;offset=0.200	80	15.834966	6.219684	19.615791	16.207373	13.396108	T-high	-0.16622
-sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	T cell rep1	T cell	1.250;offset=4.500	80	18.769399	11.485761	22.567532	18.974779	11.081772	T-high	-0.16622
-sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	T cell rep2	T cell	1.450;offset=6.500	80	19.696808	12.277351	23.482741	19.930415	11.205390	T-high	-0.16622
+sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell rep1	B cell	0.700;offset=-1.500	80	1.785017	-3.403510	3.245397	2.215450	6.648907	T-high	-0.16622
+sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	B cell rep2	B cell	0.900;offset=0.200	80	3.746396	-20.151692	9.247821	6.150231	29.399514	T-high	-0.16622
+sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	T cell rep1	T cell	1.250;offset=4.500	80	1.832674	-24.582222	8.064715	4.376893	32.646937	T-high	-0.16622
+sample_quantile	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	T cell rep2	T cell	1.450;offset=6.500	80	4.287921	-20.746218	10.308932	6.674687	31.055150	T-high	-0.16622
 raw_summary	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	10.008607	12.323646	T-high	-0.16622
-sample_quantile_summary	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	9.205693	8.758088	T-high	-0.16622
+sample_quantile_summary	test_data/annotated_tfbs/ATF7_Bcell_bound.bed	condition means	B cell vs T cell	NA	NA	NA	NA	NA	1.342950	18.024211	T-high	-0.16622
