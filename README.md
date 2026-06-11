@@ -434,7 +434,7 @@ Single-condition runs do not produce this report.
 ### plot-aggregate Replicate Normalization
 
 ```bash
-plot-aggregate --TFBS test_data/IRF1_all.bed \
+plot-aggregate --TFBS test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed \
   --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw \
   --signal-labels Bcell_rep1 Bcell_rep2 Tcell_rep1 Tcell_rep2 \
   --cond-names Bcell Bcell Tcell Tcell \
@@ -446,6 +446,7 @@ plot-aggregate --TFBS test_data/IRF1_all.bed \
 ```
 
 This uses the same quantile-normalization modes as `detect-tf-binding`, then plots condition means with optional replicate SD ribbons.
+The manuscript normalization panel is regenerated from the real demo B/T replicate footprint tracks around TFAP2A-associated sites with `paper/scripts/plot_normalization_effect.py`.
 
 ### plot-aggregate Control Overlay
 
