@@ -10,91 +10,64 @@ The PyPI distribution is named `fp-tools-bio`; the installed Python package is `
 pip install fp-tools-bio
 ```
 
-## Release status legend
+## Scope
 
-`fp-tools` is developed in the open, so a single status layer is used throughout the
-documentation to keep user expectations, the public release, and the development tree
-aligned:
-
-- **Released** — shipped in the current PyPI distribution (`fp-tools-bio`, version 0.1.7) and supported for general use.
-- **Development branch** — implemented and callable from the current source tree / `main`, with unit-test coverage, but biological validation is still expanding and the public release is pending.
-- **Planned** — described in the validation roadmap (`DEV_PLAN.md`); not yet implemented or not yet benchmarked.
-
-The same legend is mirrored in `MANUAL.md`. When the release column and the development
-column disagree, the PyPI page is authoritative for what `pip install fp-tools-bio` gives
-you today.
+`fp-tools` is focused on a practical first-version workflow for ATAC-seq
+footprinting: Tn5 bias correction, footprint scoring, motif-aware differential
+binding, aggregate visualization, multiscale footprint scoring, de novo
+motif-discovery preparation, pseudobulk ATAC aggregation, and replicate-aware
+reporting.
 
 ## Commands
 
-### Released (PyPI 0.1.7)
-
-The classical footprinting core plus the YAML/GUI wrappers are installed by
-`pip install fp-tools-bio`:
+### Core workflow
 
 - `atac-correct`: correct ATAC-seq cutsite signal for Tn5 sequence bias.
 - `score-footprints`: calculate footprint, multiscale, sum, mean, or pass-through scores from bigWig signal.
 - `detect-tf-binding`: scan motifs, infer bound sites, and compare TF binding across conditions.
 - `plot-aggregate`: plot aggregate signal around TFBS or region sets.
 - `fp-tools-run`: run optional YAML batch configs.
-- `fp-tools-gui`: launch the optional Streamlit GUI wrapper.
 
-Legacy aliases remain available for compatibility: `ATACorrect`, `FootprintScores`, `ScoreBigwig`, `BINDetect`, and `PlotAggregate`.
+### First-version utilities
 
-### Development branch (current source tree)
+- Multiscale scoring compares narrow TF-scale depletion with broader
+  nucleosome-scale structure.
+- De novo motif-discovery preparation exports candidate-centered sequences,
+  records reproducible MEME/STREME/Tomtom runs, and summarizes discovered motifs.
+- Pseudobulk support groups single-cell ATAC fragments into bulk-like profiles.
+- Replicate-aware reporting summarizes condition-level effects and replicate
+  variation for differential TF-binding analysis.
 
-The following extension modules are present and callable from this source tree and carry
-unit-test coverage, but their larger biological benchmarks are still in progress
-(see `DEV_PLAN.md`). They are not all guaranteed to be exposed in the released wheel until
-the next tagged release:
-
-- `fp-tools-build-tfbs-features`: build tabular supervised TFBS features from candidates, genome, signals, and labels.
-- `fp-tools-train-tfbs-model`: train an optional motif-centric supervised TFBS model from tabular features.
-- `fp-tools-predict-tfbs`: apply a saved tabular TFBS model to feature tables.
-- `fp-tools-generate-candidates`: nominate motif-free footprint candidates from score bigWigs and peak BEDs.
-- `fp-tools-rerank-candidates`: combine candidate, motif, family, and model scores into a ranked site table.
-- `fp-tools-export-candidate-fasta`: export candidate-centered FASTA for de novo motif discovery.
-- `fp-tools-meme-command`: print a MEME/DREME command for exported candidate FASTA.
-- `fp-tools-motif-discovery-plan`: write or run a MEME/DREME, Tomtom, and fp-tools summary command plan.
-- `fp-tools-summarize-motifs`: summarize MEME/Tomtom results as TSV and HTML reports.
-- `fp-tools-score-variants`: annotate variants with allele checks and footprint/candidate overlaps.
-- `fp-tools-pseudobulk`: group single-cell ATAC fragments into pseudobulk fragment files and a manifest.
-- `fp-tools-bindetect-replicate-report`: summarize BINDetect comparison effects, p-values, replicate support, and uncertainty.
-- `fp-tools-decompose-competition`: decompose multiscale footprint signal into competing TF-scale and nucleosome-scale components.
-
-Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.
+Direct command-line usage is the primary interface. YAML configs are optional
+for saved or repeated runs.
 
 ## Feature Comparison Across the Field
 
 This table is deliberately conservative: every cell is mapped to a comparator's documented,
 publicly sourced capability set, and only widely used reference methods are listed
-(TOBIAS, HINT-ATAC, PRINT/scPrinter, ChromBPNet, and the supervised comparator maxATAC).
+(TOBIAS, HINT-ATAC, PRINT/scPrinter, ChromBPNet, and maxATAC).
 Broader-ecosystem tools are discussed in the manuscript rather than asserted here.
-
-`fp-tools current` describes the command surface in this source tree (released + development branch).
-`fp-tools roadmap` describes larger biological benchmarks and later model extensions that are
-planned but not yet complete.
 
 Symbols: ✅ native first-class support, ⚠️ partial or indirect support, ❌ absent.
 
-| Feature | fp-tools<br>current | fp-tools<br>roadmap | TOBIAS | HINT-<br>ATAC | PRINT /<br>scPrinter | ChromBPNet | maxATAC |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Bulk ATAC footprinting | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ |
-| Tn5 bias correction | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Classical footprint scoring | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Multiscale / nucleosome-aware | ✅ opt-in | broader validation | ❌ | ⚠️ | ✅ | ⚠️ | ❌ |
-| Supervised TFBS prediction | ✅ tabular | public benchmark | ❌ | ❌ | ✅ | ✅ | ✅ |
-| Variant scoring | ✅ footprint/motif/model deltas | public variant benchmark | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Motif-relaxed / motif-free recovery | ✅ candidate/rerank | motif-removal benchmark | ❌ | ❌ | ❌ | ⚠️ | ❌ |
-| De novo motif discovery | ✅ MEME/Tomtom helpers | attribution route later | ❌ | ❌ | ✅ | ✅ | ❌ |
-| scATAC / pseudobulk support | ✅ pseudobulk utility | public pseudobulk benchmark | ⚠️ | ⚠️ | ✅ | ⚠️ | ⚠️ |
-| Visualization / reporting | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ |
-| GUI / YAML / batch execution | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Feature | fp-tools | TOBIAS | HINT-<br>ATAC | PRINT /<br>scPrinter | ChromBPNet | maxATAC |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Bulk ATAC footprinting | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ |
+| Tn5 bias correction | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Classical footprint scoring | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Motif-aware differential binding | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ❌ |
+| Multiscale / nucleosome-aware scoring | ✅ | ❌ | ⚠️ | ✅ | ⚠️ | ❌ |
+| De novo motif-discovery preparation | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| scATAC / pseudobulk support | ✅ | ⚠️ | ⚠️ | ✅ | ⚠️ | ⚠️ |
+| Replicate-aware reporting | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ |
+| Visualization / reporting | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ |
+| YAML / batch execution | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 `fp-tools` does not claim default algorithmic superiority over the classical comparators for
-single-task footprint scoring; its distinguishing contribution is an integrated,
-reproducible platform that combines the classical core with optional supervised,
-multiscale, motif-recovery, variant, and single-cell-aggregation modules behind one
-command surface. Method-level comparisons are reported in the manuscript benchmark.
+single-task footprint scoring. Its first-version contribution is an integrated,
+reproducible platform that combines the classical core with multiscale scoring,
+replicate-aware reporting, de novo motif-discovery preparation, and single-cell
+pseudobulk aggregation behind one command surface.
 
 ## Verify
 
@@ -104,20 +77,9 @@ score-footprints --help
 detect-tf-binding --help
 plot-aggregate --help
 fp-tools-run --help
-fp-tools-gui --help
-fp-tools-build-tfbs-features --help
-fp-tools-train-tfbs-model --help
-fp-tools-predict-tfbs --help
-fp-tools-generate-candidates --help
-fp-tools-rerank-candidates --help
-fp-tools-export-candidate-fasta --help
-fp-tools-meme-command --help
 fp-tools-motif-discovery-plan --help
-fp-tools-summarize-motifs --help
-fp-tools-score-variants --help
 fp-tools-pseudobulk --help
 fp-tools-bindetect-replicate-report --help
-fp-tools-decompose-competition --help
 ```
 
 ## Minimal Workflow
@@ -144,7 +106,7 @@ score-footprints \
   --cores 1
 ```
 
-Development builds also include an opt-in multiscale depletion mode for comparing narrow TF-scale and broader nucleosome-scale signal structure:
+The multiscale depletion mode compares narrow TF-scale and broader nucleosome-scale signal structure:
 
 ```bash
 score-footprints \
@@ -176,174 +138,81 @@ plot-aggregate --TFBS test_data/IRF1_all.bed \
   --output-multiscale-aggregate examples/reports/plotaggregate_multiscale_tensor.pdf
 ```
 
-### Optional supervised TFBS model
-
-Build a feature table from candidate sites, then train a motif-centric tabular classifier with a binary `label` column and numeric features such as motif score, footprint score, and multiscale summaries:
-
-```bash
-fp-tools-build-tfbs-features \
-  --candidates examples/bindetect/motif_free_candidates.bed \
-  --genome test_data/genome.fa.gz \
-  --signals examples/scorebigwig/score-footprints_multiscale/Bcell_multiscale_max.bw \
-  --signal-labels footprint \
-  --labels-bed benchmarks/labels/ctcf_chip_positive.bed \
-  --out benchmarks/features/ctcf_train.tsv
-
-fp-tools-train-tfbs-model \
-  --train-table benchmarks/features/ctcf_train.tsv \
-  --model-out models/ctcf_tabular.pkl \
-  --metrics-out models/ctcf_tabular_metrics.tsv
-
-fp-tools-predict-tfbs \
-  --model models/ctcf_tabular.pkl \
-  --features benchmarks/features/ctcf_test.tsv \
-  --out benchmarks/predictions/ctcf_test_predictions.tsv
-```
-
-### Optional motif-free candidates
-
-Nominate high-scoring candidate binding intervals from footprint or multiscale summary signal without requiring motif hits:
-
-```bash
-fp-tools-generate-candidates \
-  --signal examples/scorebigwig/score-footprints_multiscale/Bcell_multiscale_max.bw \
-  --peaks test_data/merged_peaks.bed \
-  --out examples/bindetect/motif_free_candidates.bed \
-  --min-score 1.0 \
-  --top-n-per-region 5
-```
-
-To include motif-relaxed candidates, scan motifs externally with a weaker PWM threshold, then merge the resulting BED with the signal-local maxima. The motif intervals are filtered to peaks and scored from the same signal track:
-
-```bash
-fp-tools-generate-candidates \
-  --signal examples/scorebigwig/score-footprints_multiscale/Bcell_multiscale_max.bw \
-  --peaks test_data/merged_peaks.bed \
-  --motif-sites benchmarks/motifs/ctcf_relaxed_p1e-3.bed \
-  --motif-signal-math max \
-  --out examples/bindetect/motif_relaxed_candidates.bed
-```
-
-### Optional motif-relaxed reranking
-
-Combine motif-free candidates, motif/family annotations, and supervised probabilities into a ranked table:
-
-```bash
-fp-tools-rerank-candidates \
-  --sites benchmarks/predictions/ctcf_test_predictions.tsv \
-  --score-columns binding_probability candidate_score footprint_mean \
-  --weights 2.0 1.0 1.0 \
-  --family-map benchmarks/motif_families.tsv \
-  --motif-column motif_id \
-  --out benchmarks/predictions/ctcf_test_reranked.tsv
-```
-
 ### Optional de novo motif prep
 
-Export candidate-centered sequences for external motif discovery tools:
+![De novo motif discovery preparation workflow](docs/assets/fp-tools-de-novo-motif.png)
+
+The de novo motif-prep workflow takes candidate regulatory intervals, extracts
+sequence centered on each candidate, and prepares a reproducible external motif
+discovery run. It can be used as a standalone discovery step, or as a supplement
+to known-motif analysis when a database such as JASPAR 2026 does not yet capture
+all motifs active in a dataset. In that second use case, known motifs still anchor
+the main TF-binding analysis, while de novo discovery helps reveal recurring
+sequence patterns that may be missing, cell-type specific, poorly annotated, or
+represented by an unexpected motif family.
+
+Conceptually, the workflow has one user-facing purpose with different parameter
+choices: prepare candidate-centered sequence input, optionally compare discovered
+motifs to a known motif database, and write concise motif summaries. The important
+outputs for biologists are the candidate sequence set, discovered motif logos,
+matches to known motifs, enrichment/significance summaries, and a reproducible
+record of the external MEME/DREME/Tomtom settings.
 
 ```bash
-fp-tools-export-candidate-fasta \
-  --candidates examples/bindetect/motif_free_candidates.bed \
-  --genome test_data/genome.fa.gz \
-  --out examples/bindetect/motif_free_candidates.fa \
-  --flank 50
-
-fp-tools-meme-command \
-  --fasta examples/bindetect/motif_free_candidates.fa \
-  --outdir examples/bindetect/denovo_motifs \
-  --method meme \
-  --extra-args -dna -mod zoops
-
 fp-tools-motif-discovery-plan \
-  --fasta examples/bindetect/motif_free_candidates.fa \
+  --fasta examples/bindetect/candidate_sites.fa \
   --outdir examples/bindetect/denovo_motifs \
-  --method meme \
-  --known-motifs test_data/individual_motifs/MA0050.2.jaspar \
-  --extra-args -dna -mod zoops -nmotifs 10
+  --method dreme \
+  --known-motifs jaspar2026_vertebrates.meme
 ```
-
-The generated plan ends by running `fp-tools-summarize-motifs`, which writes TSV plus self-contained HTML reports with inline consensus-logo panels.
-
-### Optional variant scoring scaffold
-
-Annotate variants against the genome and motif-free candidate intervals as a first footprint-aware variant table:
-
-```bash
-fp-tools-score-variants \
-  --variants variants.bed \
-  --genome test_data/genome.fa.gz \
-  --candidate-scores examples/bindetect/motif_free_candidates.bed \
-  --sequence-flank 20 \
-  --kmer-size 3 \
-  --motifs test_data/individual_motifs/MA0050.2.jaspar \
-  --motif-flank 30 \
-  --tfbs-model models/ctcf_tabular.pkl \
-  --out examples/bindetect/scored_variants.tsv
-```
-
-The output includes deterministic ref/alt sequence-context features such as GC shift, allele length delta, exact k-mer disruption, optional best-motif PWM score deltas, and optional tabular model probability deltas.
 
 ### Optional pseudobulk fragments
 
-Group mainstream 10x-style single-cell ATAC fragments by annotation columns and write a manifest for downstream bulk-style processing. Development builds can also BGZF/tabix-index grouped fragments and write CPM-normalized cut-site bigWigs directly for aggregate plotting:
+![Pseudobulk fragment workflow](docs/assets/fp-tools-pseudobulk.svg)
 
-![fp-tools pseudobulk workflow](docs/assets/fp-tools-pseudo-bulk.png)
+The pseudobulk workflow groups single-cell ATAC fragments by a metadata column
+such as cell type, treatment, donor, or cluster. Each group is written as a
+bulk-like fragment file and manifest entry, so the same footprinting and
+aggregate-plot workflow can be applied to biologically interpretable groups. This
+is useful when a single-cell experiment has many cells per group but each
+individual cell is too sparse for stable footprint profiles.
 
 ```bash
 fp-tools-pseudobulk \
-  --fragments pbmc_fragments.tsv.gz \
-  --annotations cell_annotations.tsv \
-  --group-by donor,cell_type \
-  --min-cells 200 \
+  --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz \
+  --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv \
+  --group-by cell_type \
+  --min-cells 300 \
   --min-fragments 50000 \
   --index-output \
   --write-cutsite-bigwigs \
-  --write-downstream-commands \
-  --genome-sizes refs/hg38.chrom.sizes \
-  --cores 32 \
-  --outdir pseudobulk_pbmc
+  --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes \
+  --outdir data/public/processed/pseudobulk_pbmc/run
 ```
-
-`--cores` is used for independent per-group compression/indexing and cut-site bigWig generation where possible. The real-data paper example uses the public 10x PBMC Multiome fragments and official 10x clustering outputs; scripts and manifests live under `benchmarks/` and `paper/scripts/`, while large reusable example data belongs in the separate `oncologylab/fp-tools-data` release assets (https://github.com/oncologylab/fp-tools-data/releases/tag/pbmc-pseudobulk-v1).
 
 ### Replicate-aware detect-tf-binding
 
-Use repeated `--cond-names` to tell `detect-tf-binding` which signal bigWigs are biological replicates of the same condition. The command keeps the original BINDetect-style result columns and adds replicate counts, per-condition score SD, mean delta footprint, mean log2FC, and standard-error summaries. `--normalization sample-quantile` normalizes individual replicate samples before condition averaging; the default `condition-quantile` preserves the previous condition-level behavior.
+![Replicate-aware differential binding workflow](docs/assets/fp-tools-replicate-bindetect.png)
+
+Replicate-aware differential binding treats repeated samples from the same
+condition as biological replicates rather than unrelated conditions. The workflow
+reports condition means, replicate variation, and differential binding summaries,
+which makes the output easier to interpret when comparing matched B-cell and
+T-cell replicate inputs.
 
 ```bash
 detect-tf-binding \
   --motifs test_data/motifs.jaspar \
-  --signals Bcell_rep1.bw Bcell_rep2.bw Tcell_rep1.bw Tcell_rep2.bw \
+  --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw \
   --genome test_data/genome.fa.gz \
   --peaks test_data/merged_peaks_annotated.bed \
   --peak-header test_data/merged_peaks_annotated_header.txt \
+  --outdir examples/bindetect/detect-tf-binding_replicates_demo \
   --cond-names Bcell Bcell Tcell Tcell \
   --normalization sample-quantile \
   --replicate-report auto \
-  --cores 32 \
-  --outdir bindetect_replicates
+  --cores 4
 ```
-
-The integrated report writes `<prefix>_replicate_report.tsv`, `<prefix>_replicate_summary.tsv`, and `<prefix>_replicate_report.png` when replicate support is detected. `fp-tools-bindetect-replicate-report` remains available as a post-hoc compatibility helper for existing `*_results.txt` files.
-
-![Replicate-aware detect-tf-binding workflow](docs/assets/fp-tools-replicate-bindetect.png)
-
-### Optional competition-aware footprint decomposition
-
-Decompose a multiscale NPZ sidecar (`score-footprints --output-multiscale-npz`) into competing TF-scale and nucleosome-scale footprint components per region:
-
-```bash
-fp-tools-decompose-competition \
-  --npz sample_multiscale.npz \
-  --tf-band 3,30 \
-  --nucleosome-band 120,200 \
-  --out competition.tsv \
-  --summary-out competition_summary.tsv \
-  --figure-out competition.png
-```
-
-Each region is partitioned into TF-only, nucleosome-only, and shared (competing) signal, with a `competition_index` and a `dominant_component` label (`tf`, `nucleosome`, `competing`, or `none`).
 
 ### 3. detect-tf-binding
 
@@ -369,29 +238,6 @@ plot-aggregate \
   --output_aggregated_scores examples/reports/plotaggregate_control_mode_test_scores.csv
 ```
 
-## GUI
-
-The Streamlit GUI is an optional layer and is not part of the lightweight core install.
-Install it with the `gui` extra:
-
-```bash
-pip install "fp-tools-bio[gui]"
-```
-
-Start the GUI on a Linux server:
-
-```bash
-fp-tools-gui --host 0.0.0.0 --run-dir examples/gui_runs
-```
-
-If `--port` is omitted, the launcher picks a free port and prints the exact URL. A fixed port can also be supplied:
-
-```bash
-fp-tools-gui --host 0.0.0.0 --port 8891 --run-dir examples/gui_runs
-```
-
-The GUI can run directly from forms, load YAML, save YAML, and inspect run history. GUI run metadata and logs are written under `examples/gui_runs/`; ready-to-load YAML examples are in `examples/gui_configs/`.
-
 ## YAML Runner
 
 Run a saved config directly from the command line:
@@ -400,26 +246,9 @@ Run a saved config directly from the command line:
 fp-tools-run --config examples/gui_configs/plotaggregate_single.yml
 ```
 
-GUI-saved YAML files can be rerun the same way. YAML is optional for normal CLI use.
+YAML is optional for normal command-line use.
 
 ## Extra Features
-
-### detect-tf-binding Replicate Grouping, Normalization, and Report
-
-```bash
-detect-tf-binding --motifs test_data/motifs.jaspar \
-  --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw \
-  --genome test_data/genome.fa.gz \
-  --peaks test_data/merged_peaks_annotated.bed \
-  --peak-header test_data/merged_peaks_annotated_header.txt \
-  --outdir examples/bindetect/detect-tf-binding_output_synthetic_replicates_demo \
-  --cond-names Bcell Bcell Tcell Tcell \
-  --normalization sample-quantile \
-  --replicate-report auto \
-  --cores 32
-```
-
-Grouped results are written to `bindetect_results.txt` under the output directory, with additive replicate-aware columns and optional report files.
 
 ### detect-tf-binding Skewness Report
 
@@ -447,7 +276,7 @@ plot-aggregate --TFBS test_data/annotated_tfbs/TFAP2A_Bcell_bound.bed \
 
 This uses the same shared multiplicative quantile-normalization fit as `detect-tf-binding`: `sample-quantile` normalizes each replicate before condition averaging, while `condition-quantile` fits one condition-level factor and applies it to all replicates in that condition. The plot then shows condition means with optional replicate SD ribbons. Because quantile normalization aligns distribution-level sample scale before group averaging, interpret differential binding from the normalized per-site delta/log2FC, center-versus-flank contrast, and BINDetect `change` columns rather than from global baseline height alone.
 For TOBIAS-style footprint visualization, use ATACorrect-corrected cut-site tracks rather than footprint-score bigWigs; footprint-score tracks are useful for scoring but tend to give broad aggregate score curves.
-The manuscript normalization panel is a controlled algorithm demo with biologically plausible labels: IRF4 is shown as the B-cell-deeper example and ATF7 as the T-cell-deeper example. The script creates two deterministic, moderately depth-offset replicate profiles per condition, then applies the same sample-quantile normalization path used by `detect-tf-binding` and `plot-aggregate`; raw baselines are intentionally offset, and normalized baselines become closely aligned while center depletion remains visible.
+The manuscript normalization panel is a real-track label-orientation demo built from ATF7-associated corrected cut-site windows. The upper panel reverses the B/T labels and is named IRF4 as the B-cell-deeper example; the lower panel keeps the original ATF7 orientation as the T-cell-deeper example. This keeps the footprint shape from real corrected signal while showing that sample-quantile normalization brings offset raw baselines close together and preserves clear center depletion.
 The same script also writes `paper/manuscript/figures/normalization_effect_candidates.png`, a direction-labelled contact sheet from the local real-data fixtures for visual review.
 
 ### plot-aggregate Control Overlay

@@ -21,9 +21,9 @@
 \datepublished{ }
 
 %------------------------------------------------------------------
-\Title{fp-tools: A Reproducible Command-Line Platform for Classical
-and Multiscale ATAC-seq Footprinting, Supervised TF-Binding Prediction,
-Motif Discovery, and Variant Scoring}
+\Title{fp-tools: A Reproducible Command-Line Platform for Classical and
+Multiscale ATAC-seq Footprinting, Motif Discovery Preparation, Pseudobulk
+Aggregation, and Replicate-Aware Reporting}
 
 \Author{Yaoxiang Li $^{1}$ and Chunling Yi $^{1,}$*}
 
@@ -41,38 +41,20 @@ inconsistent reproducibility, and uneven test coverage, which raises the cost of
 building end-to-end regulatory-genomics analyses. (2) Methods: We present
 \texttt{fp-tools}, a standalone, pip-installable Python package that unifies bias
 correction, footprint scoring, differential TF-binding detection, and aggregate
-visualization behind stable command-line entry points, with optional YAML and
-graphical wrappers. Around this core we add explicitly opt-in scientific modules:
-multiscale and nucleosome-aware scoring, motif-centric supervised TF-binding
-prediction (a trainable, interpretable tabular logistic-regression classifier
-rather than an unsupervised footprint caller or a deep sequence model),
-motif-relaxed and motif-free candidate recovery, de novo motif
-discovery orchestration, footprint-aware variant scoring, single-cell pseudobulk
-aggregation, replicate-aware differential-binding uncertainty reporting, and a
-competition-aware decomposition of overlapping TF-scale and nucleosome-scale
-footprint signals. (3) Results: The package provides deterministic,
-regression-tested workflows; a tiered public-data benchmark design with AUROC,
-AUPRC, recall-at-FDR, calibration, and bootstrap-confidence-interval metrics; and
-paper-ready figure generators. In a genome-wide ENCODE benchmark spanning four cell
-lines and 16 cell--TF tasks under chromosome-held-out evaluation, an integrated
-\texttt{fp-tools} score combining accessibility, motif strength, GC content, and
-available cut-site footprint features achieved the highest or tied-highest AUROC
-among the evaluated predictors in every task (mean AUROC $0.79$), compared with
-motif-only scoring ($0.75$), raw accessibility ($0.54$), and footprint-only scoring
-where available ($0.54$); the largest gains arose where the motif alone is weak
-(e.g.\ A549 and HepG2 MAX, $0.71/0.64\rightarrow0.82/0.74$). Optional leak-free
-isotonic recalibration reduced the pooled expected calibration error from $0.21$ to
-$0.001$. A companion analysis shows that footprint occupancy is recoverable only at
-Tn5 cut-site resolution (AUROC $0.68$) and not from smoothed coverage ($0.24$). New
-modules preserve the behavior of the classical commands when they are not invoked. (4)
-Conclusions: \texttt{fp-tools} integrates
-established footprinting strengths with modern multiscale, supervised, and
-variant-oriented extensions in a single reproducible package, lowering the barrier
-to standardized, benchmarkable ATAC-seq regulatory analysis.}
+visualization in a reproducible command-line package. Around this core we add
+first-version utilities for multiscale and nucleosome-aware scoring, de novo
+motif-discovery preparation, single-cell pseudobulk aggregation, and
+replicate-aware differential-binding reporting. (3) Results: The package provides deterministic,
+regression-tested workflows, reproducible figure generators, and a tiered
+public-data benchmark design for the supported first-version workflow. Existing
+classical analyses remain unchanged when optional utilities are not invoked. (4) Conclusions: \texttt{fp-tools} integrates
+established footprinting strengths with pragmatic multiscale, replicate-aware,
+pseudobulk, and motif-discovery helper utilities in a single reproducible package,
+lowering the barrier to standardized, benchmarkable ATAC-seq regulatory analysis.}
 
 \keyword{ATAC-seq; transcription factor footprinting; chromatin accessibility;
-motif analysis; supervised TF-binding prediction; multiscale footprints;
-variant scoring; reproducibility; command-line bioinformatics}
+motif analysis; multiscale footprints; pseudobulk ATAC-seq;
+replicate-aware reporting; reproducibility; command-line bioinformatics}
 
 % Use an external BibTeX database (references.bib) with the MDPI style.
 \externalbibliography{yes}
@@ -107,57 +89,40 @@ input conventions, and assumptions, so assembling a coherent, reproducible
 pipeline---and \emph{benchmarking} alternatives on common ground---remains
 laborious and error-prone.
 
-Beyond this tooling friction, each individual paradigm has well-documented
-\emph{accuracy} limitations, so none is reliably sufficient on its own. Classical
-footprinting rests on an assumption that frequently fails: transcription factors
-with short DNA residence times leave little or no footprint, so footprint depth
-reflects binding kinetics as much as occupancy, and the cleavage profile within a
-footprint is in part dictated by the underlying DNA sequence rather than the bound
-protein~\cite{sung2014}. Footprint scores are further confounded by Tn5/DNase
-sequence-cleavage bias, which bias-correction models only partly remove. Deep
-base-resolution and multiscale models such as ChromBPNet~\cite{chrombpnet2024} and
-the PRINT/seq2PRINT family~\cite{hu2024print} improve sensitivity, but at
-substantial cost: they are heavy neural networks that in practice require GPU
-training and considerable compute, and their learned enzyme-bias correction is
-itself incomplete and factor-dependent, so it can over- or under-correct
-footprints for some TFs. The practical consequence is that no single
-signal---raw accessibility, motif strength, or footprint depth---discriminates
-bound from unbound sites consistently across transcription factors, as our
-benchmark confirms (mean AUROC $0.54$, $0.75$, and $0.54$, respectively).
+Beyond this tooling friction, footprint interpretation has practical limitations
+that make reproducibility and careful signal handling important. Classical
+footprinting depends on base-resolution cut-site depletion and can be confounded
+by enzyme sequence bias, local accessibility, motif strength, and factor-specific
+binding kinetics~\cite{sung2014}. Deep sequence-to-profile models and multiscale
+methods can improve sensitivity for some questions, but they often require
+substantial compute and specialized training workflows. For many applied ATAC-seq
+projects, the immediate need is therefore a transparent, repeatable workflow that
+keeps the classical analysis reliable while exposing selected extensions without
+forcing users into a different software ecosystem.
 
-Four gaps therefore motivate this work. First, and foremost scientifically,
-\textbf{accuracy}: because no single signal is sufficient, a method that combines
-complementary evidence---sequence, accessibility, composition, and
-footprint---should, and as we show does, outperform every individual paradigm.
-Second, \textbf{interface fragmentation}: moving from bias correction to footprint
-scoring to differential binding to visualization commonly spans several packages
-with incompatible I/O. Third, \textbf{reproducibility and testing}: many
-footprinting workflows lack deterministic regression tests, pinned environments,
-and machine-checkable output contracts, making it hard to know whether a change
-altered results. Fourth, \textbf{extensibility without regression}: adding new
-scientific behavior (e.g., multiscale scoring or supervised prediction) often
-forces users onto entirely new tools rather than extending a stable base.
+Four gaps motivate this work. First, \textbf{signal clarity}: users need to know
+which signal representation is appropriate for footprint scoring and how optional
+normalization changes interpretation. Second, \textbf{interface fragmentation}:
+moving from bias correction to footprint scoring to differential binding to
+visualization commonly spans several packages with incompatible I/O. Third,
+\textbf{reproducibility and testing}: many footprinting workflows lack
+deterministic regression tests, pinned environments, and machine-checkable output
+contracts, making it hard to know whether a change altered results. Fourth,
+\textbf{extensibility without regression}: adding new scientific behavior, such
+as multiscale scoring or pseudobulk aggregation, should not destabilize the
+classical workflow.
 
-We address these gaps with \texttt{fp-tools}. Its central scientific contribution
-is an integrated TF-binding predictor that combines accessibility, motif strength,
-local sequence composition, and---where available---cut-site footprint evidence in
-a single interpretable model, and that \emph{outperforms} each individual paradigm:
-in a genome-wide benchmark across four ENCODE cell lines and 16 cell--TF tasks,
-evaluated under chromosome-held-out cross-validation, it achieves the highest or
-tied-highest AUROC in every task (mean AUROC $0.79$ versus $0.75$ for motif-only,
-$0.54$ for footprint-only, and $0.54$ for accessibility), with the largest gains
-precisely where the motif alone is weak. Around this predictor, \texttt{fp-tools}
-also (i) provides stable command-line entry points for the four core
-workflows---bias correction, footprint scoring, differential TF-binding detection,
-and aggregate plotting; (ii) layers optional YAML- and GUI-based wrappers without
-displacing the command line; and (iii) adds \emph{explicitly opt-in} scientific
-modules---multiscale scoring, motif-free candidate recovery, de novo motif
-discovery, variant scoring, and single-cell pseudobulk aggregation---each with its
-own tests, documentation, and benchmark hooks, and each inert unless invoked. The
-result is both a more accurate method and a reproducible platform on which to run
-and benchmark it. This paper describes the integrated predictor and its genome-wide
-evaluation, the new modules, the tiered benchmarking and figure-generation design,
-and the reproducibility engineering that ties them together.
+We address these gaps with \texttt{fp-tools}, a reproducible ATAC-seq
+footprinting platform that keeps the classical workflow intact while adding a
+small set of practical first-version utilities. The package unifies bias
+correction, footprint scoring, motif-aware differential binding, and aggregate
+visualization, then extends this core with multiscale scoring, de novo
+motif-discovery preparation, pseudobulk ATAC aggregation, and replicate-aware
+reporting. The goal is not to replace specialized deep-learning or variant-scoring
+systems in this first version, but to make a complete footprinting analysis easier
+to run, audit, repeat, and benchmark. This paper describes the supported methods,
+tiered validation design, and reproducibility engineering that tie these workflows
+together.
 
 %==================================================================
 \section{Materials and Methods}
@@ -166,25 +131,14 @@ and the reproducibility engineering that ties them together.
 \subsection{Package Architecture and Core Workflows}
 
 \texttt{fp-tools} is distributed as a pip-installable package (\texttt{fp-tools-bio})
-with vendored Cython internals for performance-critical signal operations. Core
-scientific tools live under a single namespace and are exposed through stable
-console entry points. The four primary commands are:
-\begin{itemize}
-  \item \texttt{atac-correct} --- Tn5 sequence-bias correction producing corrected
-        and expected/bias bigWig tracks and a QC report;
-  \item \texttt{score-footprints} --- footprint, sum, mean, and pass-through
-        scoring modes over corrected signal within regions;
-  \item \texttt{detect-tf-binding} --- motif-anchored differential binding across
-        one or more conditions, with repeated-condition replicate grouping and a
-        skewness report for multi-condition runs;
-  \item \texttt{plot-aggregate} --- aggregate footprint visualization from single
-        BED files or directories, with control overlays, fixed-grid layouts,
-        labels, and CSV exports.
-\end{itemize}
-A YAML runner (\texttt{fp-tools-run}) expands declarative configs
-into the same commands, and an optional Streamlit GUI (\texttt{fp-tools-gui})
-provides forms, run history, and output discovery. Direct CLI usage is the primary
-interface; YAML and GUI are wrappers that never replace it.
+with vendored Cython internals for performance-critical signal operations. The
+core workflow has four method layers: Tn5 sequence-bias correction, footprint
+scoring over corrected signal, motif-anchored differential TF-binding analysis,
+and aggregate visualization around TFBS or region sets. These layers share common
+region, signal, motif, and sample-label conventions so intermediate files can be
+passed through a complete analysis without format-specific glue code. YAML
+configuration files provide a reproducible way to save and rerun the same analysis
+without changing the underlying methods.
 
 For classical footprint scoring, let $x_i$ denote corrected Tn5 cut-site signal
 around candidate position $p$. The default footprint score is a center-versus-flank
@@ -213,71 +167,39 @@ The full scale-by-position matrix $\{F_s(i)\}$ is retained in the NPZ tensor
 sidecar, so narrow TF-scale and broader nucleosome-scale structure can be
 evaluated in the same regions.
 
-\subsection{Opt-in Scientific Modules}
 
-New behavior is added as separate modules, each with its own console script,
-unit tests, and documentation, and each inert unless explicitly invoked:
+\subsection{First-Version Opt-in Utilities}
+
+New behavior is added as explicit optional utilities, each inert unless selected:
 \begin{itemize}
-  \item \emph{Multiscale and nucleosome-aware scoring}: \texttt{score-footprints
-        --score multiscale} computes depletion across a configurable set of scales
-        (default 8--147~bp), with \texttt{max}/\texttt{mean} scale collapse, an
-        optional summary bigWig, and a compressed NPZ tensor sidecar
-        (\texttt{--output-multiscale-npz}) of shape $n_\text{scales}\times
-        \text{positions}$ for downstream visualization.
-  \item \emph{Supervised TFBS prediction}: \texttt{fp-tools-build-tfbs-features}
-        assembles motif-centric feature tables (genome GC, multiscale/signal
-        summaries, optional overlap labels); \texttt{fp-tools-train-tfbs-model}
-        and \texttt{fp-tools-predict-tfbs} train and apply the model. The model is
-        an intentionally compact, interpretable tabular pipeline---median
-        imputation, feature standardization, and a class-balanced logistic
-        regression~\cite{pedregosa2011sklearn}---rather than a deep sequence model, trading base-resolution
-        sequence learning for transparency, speed, and ease of benchmarking;
-        trained bundles are saved with calibration metrics.
-  \item \emph{Motif-relaxed and motif-free recovery}:
-        \texttt{fp-tools-generate-candidates} nominates candidates from score
-        bigWigs and peaks without requiring motif hits, with an optional
-        lower-threshold motif-BED merge path; \texttt{fp-tools-rerank-candidates}
-        integrates candidate, motif, family, and model scores into a ranked site
-        table with provenance.
-  \item \emph{De novo motif discovery}: \texttt{fp-tools-export-candidate-fasta},
-        \texttt{fp-tools-meme-command}, and \texttt{fp-tools-motif-discovery-plan}
-        export candidate-centered FASTA and emit reproducible
-        MEME/DREME~\cite{bailey2015meme}, Tomtom~\cite{gupta2007tomtom},
-        and summary command plans; \texttt{fp-tools-summarize-motifs} parses
-        MEME/Tomtom output into TSV and HTML reports with inline consensus logos.
-  \item \emph{Footprint-aware variant scoring}: \texttt{fp-tools-score-variants}
-        performs genome reference checks, candidate-overlap annotation,
-        deterministic ref/alt sequence-context deltas, optional JASPAR/MEME PWM
-        ref/alt motif deltas, and optional tabular-model probability deltas.
-  \item \emph{Pseudobulk aggregation}: \texttt{fp-tools-pseudobulk} groups
-        single-cell ATAC fragments by annotation columns into pseudobulk fragment
-        files, TSV/YAML manifests, optional BGZF/tabix-indexed outputs, and
-        optional CPM-normalized cut-site bigWigs for downstream aggregate plots.
-  \item \emph{Replicate-aware differential binding}: repeated
-        \texttt{--cond-names} in \texttt{detect-tf-binding} define biological
-        replicate groups. The command can apply condition-level or sample-level
-        quantile normalization, report condition means and SDs, and emit integrated
-        replicate-aware diagnostic tables and figures (Section~\ref{sec:replicate}).
-  \item \emph{Competition-aware footprint decomposition}:
-        \texttt{fp-tools-decompose-competition} (this work) decomposes multiscale
-        signal into competing TF-scale and nucleosome-scale components
-        (Section~\ref{sec:competition}).
+  \item \emph{Multiscale and nucleosome-aware scoring} computes depletion across a
+        configurable set of window sizes (default 8--147~bp), collapses the
+        scale-specific scores by maximum or mean, and can retain the full
+        scale-by-position tensor for downstream visualization.
+  \item \emph{De novo motif-discovery preparation} exports candidate-centered
+        sequences, records reproducible MEME/DREME~\cite{bailey2015meme} and
+        Tomtom~\cite{gupta2007tomtom} settings, and summarizes discovered motifs
+        and matches to known motif databases. This can be run as a standalone
+        discovery step or as a supplement to known-motif analyses when a database,
+        such as a JASPAR release, may not contain all active motifs in the sample.
+  \item \emph{Pseudobulk aggregation} groups single-cell ATAC fragments by
+        annotation columns into bulk-like fragment files, manifests, optional
+        indexed outputs, and optional normalized cut-site tracks for downstream
+        footprinting and aggregate plots.
+  \item \emph{Replicate-aware differential binding} treats repeated samples from
+        the same condition as biological replicates, reports condition means and
+        replicate variation, and produces diagnostic tables and figures for
+        differential TF-binding comparisons (Section~\ref{sec:replicate}).
 \end{itemize}
 
-Conceptually, each module answers a distinct biological question. Classical
-footprint scoring asks whether Tn5 cut sites are locally depleted at a candidate
-site relative to its flanks; multiscale scoring asks whether depletion occurs only
-at a narrow TF-like width or also at broader nucleosome-consistent widths;
-supervised TFBS prediction asks, given motif strength, accessibility, GC
-composition, and footprint evidence, what the probability is that a site is truly
-bound in labeled reference data; motif-relaxed and motif-free recovery asks whether
-real occupancy is missed because a PWM threshold is too strict or because binding
-occurs at weak or non-canonical instances; de novo discovery asks which sequence
-patterns recur among strong unexplained candidates; variant scoring asks whether an
-alternate allele weakens motif, sequence-context, or model-predicted binding
-evidence relative to the reference; and pseudobulk aggregation asks whether
-single-cell fragments can be grouped into interpretable group-level profiles that
-run through the same footprinting machinery. In this work we validate that path
+Conceptually, the first-version utilities answer focused questions around the
+classical core. Multiscale scoring asks whether depletion occurs only at a narrow
+TF-like width or also at broader nucleosome-consistent widths; de novo motif
+preparation asks which sequence patterns recur among exported candidate sites;
+replicate-aware reporting asks whether repeated-condition inputs can be summarized
+as condition means and replicate variation; and pseudobulk aggregation asks
+whether single-cell fragments can be grouped into interpretable group-level
+profiles that run through the same footprinting machinery. In this work we validate that path
 with a public 10x Genomics PBMC Multiome dataset processed by Cell Ranger ARC
 2.0.0~\cite{tenxpbmc2021}. Official 10x gene-expression graph clusters are
 collapsed into broad PBMC labels using canonical marker-gene enrichments (B cells,
@@ -286,18 +208,6 @@ cells, and mixed myeloid cells), then ATAC fragments are split by label and
 converted to CPM-normalized cut-site bigWigs. Motif-associated peak sets for PAX5,
 TCF7/TCF7L2, CEBPB, and CTCF are taken from the 10x TF-analysis peak--motif
 mapping distributed with the same dataset.
-
-For the variant module, the core effects are signed ref/alt deltas. With $S_{\mathrm{PWM}}$
-the best local motif log-odds score and $\hat{p}$ the supervised TFBS probability
-when a trained model is supplied,
-\[
-\Delta_{\mathrm{PWM}} = S_{\mathrm{PWM}}(\mathrm{alt})-S_{\mathrm{PWM}}(\mathrm{ref}),
-\qquad
-\Delta_{\mathrm{model}} = \hat{p}(\mathrm{alt})-\hat{p}(\mathrm{ref}),
-\]
-so a negative $\Delta$ indicates an allele that weakens predicted binding; analogous
-deterministic deltas are computed for GC content and exact $k$-mer composition.
-
 
 \subsection{Replicate-aware Differential Binding and Quantile Normalization}
 \label{sec:replicate}
@@ -358,29 +268,6 @@ condition score SDs, mean $\Delta$, mean $L$, and standard-error summaries. A
 legacy replicate-report command remains available as a post-hoc helper for
 existing \texttt{*\_results.txt} files.
 
-\subsection{Competition-aware Overlap Decomposition}
-\label{sec:competition}
-
-Overlapping regulatory elements produce footprint signals at multiple scales
-simultaneously: short TF-scale depletions can coincide with wider
-nucleosome-scale structure. Using the multiscale NPZ tensor, we partition scales
-into a TF-scale band (default 3--30~bp) and a nucleosome-scale band (default
-120--200~bp), and collapse each band to a positionwise non-negative profile
-$t$ and $n$ by taking the per-position maximum over band scales. We then
-decompose the signal additively at each position into shared (competing),
-TF-only, and nucleosome-only components,
-\[
-\text{shared} = \min(t,n),\quad
-\text{tf\_only} = t-\text{shared},\quad
-\text{nuc\_only} = n-\text{shared},
-\]
-and integrate over the region. A \emph{competition index} is the shared fraction
-of total signal, $\text{shared}_\text{AUC}/(\text{tf\_only}_\text{AUC}+
-\text{nuc\_only}_\text{AUC}+\text{shared}_\text{AUC})$, and each region is labeled
-by its dominant component (\texttt{tf}, \texttt{nucleosome}, \texttt{competing},
-or \texttt{none}). The tool emits per-region and dataset-level tables and an
-optional figure.
-
 \subsection{Public Data, Benchmark Tiers, and Metrics}
 
 Benchmarks are organized as versioned TSV manifests recording source, benchmark
@@ -395,8 +282,7 @@ tiny fixtures, and figure code are tracked.
 The benchmark is deliberately \emph{tiered} rather than monolithic
 (Table~\ref{tab:tiers}): a fast CI-smoke tier on tiny fixtures; a bulk matched
 tier (ENCODE bulk ATAC vs. matched TF ChIP/CUT\&RUN) as the primary classical
-benchmark; a depth-robustness tier over downsampled ATAC; a motif-removal tier for
-motif-relaxed/free and de novo validation; a supervised-TFBS tier; a variant tier;
+benchmark; a depth-robustness tier over downsampled ATAC; a de novo motif-preparation tier;
 and a real-data pseudobulk demonstration tier. For binary TF-binding labels we compute AUROC and
 AUPRC globally and per TF-cell task, recall at 1\%, 5\%, and 10\% FDR, precision at
 fixed recall, calibration curves with expected and maximum calibration error,
@@ -422,9 +308,7 @@ manifests, scripts, and small smoke results are committed.\label{tab:tiers}}
 CI smoke & Install/regression checks on tiny fixtures & command success, output existence, stable summaries\\
 Bulk matched & Main classical benchmark (ATAC vs. matched TF ChIP/CUT\&RUN) & TFBS labels, predictions, AUROC/AUPRC, reports\\
 Depth robustness & Shallow-depth sensitivity (50/25/10/5\%) & performance-vs-depth and calibration curves\\
-Motif removal & Motif-relaxed/free and de novo validation & recovered ChIP-supported sites, rediscovered-motif stats\\
-Supervised TFBS & Tabular model benchmark & probability metrics, calibration, comparator tables\\
-Variant & Translational benchmark (caQTL/allele-specific) & delta-score enrichment, case studies\\
+De novo motif prep & Candidate FASTA and motif-discovery helper validation & exported FASTA, command plans, motif summaries\\
 Pseudobulk & Single-cell extension and real-data demonstration & 10x PBMC cell-type pseudobulks, TF aggregate profiles\\
 \bottomrule
 \end{tabularx}
@@ -448,36 +332,28 @@ auditability.
 \subsection{A Unified, Reproducible Footprinting Platform}
 
 \texttt{fp-tools} consolidates the four core ATAC footprinting workflows behind a
-single, consistent command-line interface with shared region/signal conventions,
-so a complete analysis---bias correction, footprint scoring, differential binding,
-and aggregate visualization---runs without crossing package boundaries or
-reformatting intermediates. The optional YAML runner reproduces any pipeline from
-a declarative config, and the GUI exposes the same operations with run history and
-output discovery for less command-line-oriented users. Because every wrapper
-expands to the same underlying commands, results are identical across entry
-points, and the YAML config doubles as a machine-readable record of the analysis
-(Figure~\ref{fig:workflow}).
+single, consistent workflow with shared region/signal conventions, so a complete
+analysis---bias correction, footprint scoring, differential binding, and aggregate
+visualization---runs without crossing package boundaries or reformatting
+intermediates. Optional YAML configuration records the same analysis in a
+machine-readable form for reruns and batch processing (Figure~\ref{fig:workflow}).
 
 \begin{figure}[H]
 \includegraphics[width=\textwidth]{figures/fp-tools-workflow.png}
 \caption{Overall \texttt{fp-tools} workflow. Bulk ATAC-seq inputs enter a
 legacy-compatible classical core for Tn5 bias correction, footprint scoring,
-TF-binding detection, and aggregate visualization. Optional interface layers
-(direct CLI, YAML runner, GUI, and batch workflows) orchestrate the same command
-surface, while extension modules add multiscale scoring, supervised TFBS
-prediction, motif-relaxed or motif-free recovery, de novo motif discovery,
-variant scoring, pseudobulk support, replicate-aware reporting, and competition
-decomposition. Outputs include signal tracks, reports, calibrated predictions,
-regulatory-site candidates, motif summaries, variant tables, pseudobulk manifests,
-benchmark metrics, and reproducible paper-ready figures.\label{fig:workflow}}
+TF-binding detection, and aggregate visualization. Optional YAML and batch layers record reproducible analyses, while first-version
+utilities add multiscale scoring, de novo motif preparation, pseudobulk support,
+and replicate-aware reporting. Outputs include
+signal tracks, reports, motif summaries, pseudobulk manifests, benchmark metrics,
+and reproducible paper-ready figures.\label{fig:workflow}}
 \end{figure}
 
 \subsection{Deterministic Regression and CLI Coverage}
 
-The classical commands are covered by deterministic golden regressions that pin
+The classical workflow is covered by deterministic golden regressions that pin
 output summaries for footprint scoring, differential binding, and aggregate
-plotting, plus CLI smoke tests for all public and legacy entry points and YAML
-dry-runs. This converts ``did this change alter results?'' from a manual judgment
+plotting, plus smoke tests for public entry points and YAML dry-runs. This converts ``did this change alter results?'' from a manual judgment
 into an automatically checked contract, and provides the stable base on which the
 opt-in modules are layered without disturbing default behavior.
 
@@ -485,55 +361,54 @@ opt-in modules are layered without disturbing default behavior.
 
 The multiscale module augments single-scale footprint scoring with a
 scale-by-position view of accessibility depletion. The compressed NPZ tensor
-sidecar serves both as a paper-figure input and as the substrate for the
-competition decomposition. On synthetic constructs, narrow TF-scale and broad
+sidecar serves as a paper-figure input for scale-by-position visualization. On synthetic constructs, narrow TF-scale and broad
 nucleosome-scale depletions are recovered at their respective scales, and the
 companion aggregate visualization (scale-by-position heatmap, collapsed profile,
 and per-scale means) renders these directly. Crucially, default single-scale
 scoring is unchanged unless multiscale mode is requested.
 
-\subsection{Supervised, Motif-relaxed, De novo, and Variant Modules}
 
-The supervised TFBS path turns candidate sites into motif-centric feature tables
-and trains reproducible tabular models with saved bundles and calibration
-outputs, providing a labeled-data complement to classical scoring. The
-motif-relaxed/free path recovers candidate sites from signal alone or from
-lower-threshold motif merges and reranks them with motif-family and model
-evidence, enabling recovery of occupancy that strict motif thresholds miss. The de
-novo path orchestrates reproducible MEME/DREME and Tomtom command plans and
-summarizes results into TSV/HTML reports with inline consensus logos. The variant
-module annotates alleles with reference checks, candidate overlap, deterministic
-sequence-context deltas, optional PWM ref/alt motif deltas, and optional model
-probability deltas. Each module is independently tested and documented, and none
-alters the classical commands when unused.
+\subsection{De Novo Motif Preparation}
 
+The de novo motif-preparation path exports candidate-centered FASTA files,
+constructs reproducible MEME/DREME and Tomtom analysis records, and summarizes
+motif results into TSV/HTML reports with inline consensus logos. This keeps
+external motif discovery reproducible without making a new motif-calling algorithm
+part of the first-version claim. The workflow can be used alone to discover
+recurring patterns in candidate intervals, or after known-motif scanning to find
+additional motifs not represented in the selected database.
 
-\subsection{Replicate-aware Normalization and Competition Decomposition}
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{figures/fp-tools-de-novo-motif.png}
+\caption{De novo motif-discovery preparation workflow. Candidate-centered
+sequences are exported from BED-like intervals, external MEME/STREME and Tomtom
+runs are captured as reproducible command plans, and motif summaries are returned
+as concise tables and reports. This first-version utility prepares reproducible
+motif-discovery inputs and reports without claiming a new motif-calling
+algorithm.\label{fig:denovo_motif_prep}}
+\end{figure}
+
+\subsection{Replicate-aware Normalization}
 
 Replicate-aware \texttt{detect-tf-binding} adds an interpretable layer to
 differential binding: repeated condition names define biological replicate groups,
 condition means are reported alongside per-condition SDs, and optional
 sample-level quantile normalization applies the same distribution-matching step
 before replicate group averages are compared. To make the effect visible, we
-used a controlled aggregate-profile simulation with biologically plausible
-labels: IRF4 as a B-cell-deeper example and ATF7 as a T-cell-deeper example. The
-simulation creates two deterministic, moderately depth-offset replicate profiles
-per condition to stress-test the normalization step without creating unrealistic
-sample differences. After sample-level quantile normalization, raw baseline
-offsets are strongly reduced while the center-versus-flank depletion direction
-remains visible (Figure~\ref{fig:normalization_effect}).
-The competition decomposition attributes
-overlapping footprint signal to TF-scale, nucleosome-scale, and shared (competing)
-components per region, with a competition index and a dominant-component label,
-surfacing loci where TF and nucleosome occupancy compete rather than treating
-accessibility as single-scale.
+used a real-track label-orientation demo built from ATF7-associated
+corrected cut-site matrices. The upper panel reverses the B/T labels and is named
+IRF4 as a B-cell-deeper example, whereas the lower panel keeps the original ATF7
+orientation as a T-cell-deeper example. This keeps the footprint shape from real
+corrected signal while showing that sample-level quantile normalization strongly
+reduces raw baseline offsets and preserves the center-versus-flank depletion
+direction (Figure~\ref{fig:normalization_effect}).
 
 \begin{figure}[H]
 \includegraphics[width=0.95\textwidth]{figures/normalization_effect.png}
 \caption{Effect of sample-level quantile normalization on replicate-aware
-corrected cut-site aggregate profiles. Controlled B-cell and T-cell aggregate profiles were simulated with IRF4 as a
-B-cell-deeper example and ATF7 as a T-cell-deeper example, then converted into two
-deterministic, moderately depth-offset replicate profiles per condition. Condition means are
+corrected cut-site aggregate profiles. Real ATF7-associated corrected cut-site matrices were used in two label
+orientations: an IRF4-named B-cell-deeper orientation with B/T labels reversed and
+the original ATF7 T-cell-deeper orientation. Condition means are
 shown with light replicate-variation ribbons. The right column uses the same nonnegative-clamped sample-quantile
 normalization path used by replicate-aware \texttt{detect-tf-binding} and
 \texttt{plot-aggregate}; raw baseline offsets are reduced and a lower center
@@ -579,130 +454,24 @@ ATAC data. Generated by \texttt{paper/scripts/plot\_pseudobulk\_tf\_aggregates.p
 
 \subsection{Benchmark and Figure Infrastructure}
 
-The tiered benchmark design (Table~\ref{tab:tiers}), the
-metric/calibration/bootstrap scripts, the label-overlap and motif-removal table
-builders, and the pipeline runner together provide an executable path from public
-ENCODE data to publication-ready metrics and figures. To demonstrate this path
-end-to-end on real data, we benchmarked four scoring paradigms genome-wide
-(autosomes and chromosome~X) across the accessible-peak universe of each cell line,
-labeling each accessible region positive when it overlaps a matched ChIP-seq peak
-for the target factor. The compared predictors were raw accessibility magnitude,
-best JASPAR PWM motif log-odds score, cut-site footprint occupancy at the best
-motif hit where ATAC BAM data were available, and an integrated \texttt{fp-tools}
-score from logistic regression over accessibility, motif score, local GC content,
-and available footprint features:
-\[
-\Pr(y=1\mid z)=\sigma(\beta_0+\beta_1 a+\beta_2 m+\beta_3 g+\beta_4 f),
-\]
-where $y$ denotes ChIP-supported binding, $a$ is accessibility, $m$ is motif score,
-$g$ is GC content, and $f$ is the cut-site footprint score when available. To avoid
-optimistic bias under genomic autocorrelation, every reported integrated score is a
-\emph{chromosome-held-out} out-of-fold prediction: chromosomes are partitioned into
-five grouped folds, the model is trained on four folds and applied to the held-out
-chromosomes, so no chromosome---and therefore no locus---contributes to its own
-prediction. This is stricter than within-task random cross-validation; whole-genome
-cross-cell-line transfer remains a further validation step. For tasks without
-BAM-derived cut-site footprints, the integrated model used the available
-accessibility, motif, and GC features. We evaluated 16 cell--TF tasks across four
-ENCODE cell lines: six transcription factors in K562 (CTCF, GATA1, SPI1, REST, MAX,
-JUND; with BAM-derived cut-site footprints; $n=55{,}574$ accessible regions each),
-two in GM12878 (CTCF, SPI1; $n=198{,}364$), four in HepG2 (CTCF, MAX, JUND, REST;
-$n=197{,}662$), and four in the lung-adenocarcinoma line A549 (CTCF, MAX, JUND,
-REST; $n=278{,}209$).
+The tiered benchmark design (Table~\ref{tab:tiers}), metric scripts, manifest
+builders, and figure-generation scripts provide an executable path from public
+inputs to publication-ready outputs. In the first-version scope, these resources
+serve three purposes. First, they verify that the classical footprinting workflow
+continues to produce stable outputs on small fixtures and public-data subsets.
+Second, they provide matched-label scaffolds for bulk ATAC comparisons against
+TF ChIP-seq or CUT\&RUN labels without making those scaffolds part of the
+first-version user workflow.
+Third, they support focused demonstrations for multiscale scoring, de novo
+motif-preparation, pseudobulk aggregation, replicate-aware normalization, and
+cut-site-resolution footprint scoring.
 
-Across all 16 genome-wide tasks the integrated \texttt{fp-tools} score achieved the
-highest or tied-highest AUROC among the evaluated predictors under
-chromosome-held-out evaluation, strictly improving on the strongest single method
-in 15 of 16 tasks and tying it in the remaining one
-(Table~\ref{tab:methods}, Figure~\ref{fig:method_multi}). Mean AUROC across tasks
-was $0.54$ for accessibility, $0.75$ for motif-only scoring, and $0.79$ for the
-integrated score. In K562 tasks with cut-site footprints, footprint-only signal
-averaged $0.54$ AUROC: it was informative for CTCF ($0.70$) but was not sufficient
-as a standalone predictor across factors. Motif-only scoring remained a strong
-baseline, especially for information-rich motifs such as CTCF, but the integrated
-model consistently matched or improved it---most where the motif alone is weak. The
-largest gains over motif-only scoring occurred for MAX, JUND, and REST, including
-A549 MAX ($0.71\rightarrow0.82$), HepG2 MAX ($0.64\rightarrow0.74$), A549 REST
-($0.67\rightarrow0.76$), A549 JUND ($0.64\rightarrow0.72$), and K562 MAX
-($0.71\rightarrow0.78$). These results support the intended role of
-\texttt{fp-tools}: preserving interpretable classical predictors while providing a
-reproducible route to combine sequence, accessibility, composition, and footprint
-features. That the advantage holds genome-wide, under chromosome-held-out
-evaluation, and on a held-out fourth cell line (A549) indicates it is not an
-artifact of a single locus set. Full AUROC/AUPRC values and bootstrap confidence
-intervals are reported in the benchmark metrics table distributed with the analysis
-outputs (see Data Availability).
-
-\begin{table}[H]
-\caption{Integrated method-comparison benchmark on genome-wide ENCODE ATAC-seq
-peaks (autosomes and chromosome~X) labeled by matched ChIP-seq overlap, across four
-cell lines and 16 cell--TF tasks. Values are AUROC point estimates under
-chromosome-held-out evaluation; the full metrics TSV contains AUPRC and bootstrap
-95\% CIs. The footprint-only column is shown only where BAM-derived cut-site
-footprints were computed (K562).\label{tab:methods}}
-\newcolumntype{Z}{>{\centering\arraybackslash}X}
-\begin{tabularx}{\textwidth}{llZZZZ}
-\toprule
-\textbf{Cell / TF} & \textbf{Pos. frac.} & \textbf{Access.} & \textbf{Motif} & \textbf{Footprint} & \textbf{Integrated}\\
-\midrule
-K562 / CTCF & 0.38 & 0.51 & 0.87 & 0.70 & \textbf{0.87}\\
-K562 / GATA1 & 0.08 & 0.55 & 0.76 & 0.49 & \textbf{0.77}\\
-K562 / SPI1 & 0.28 & 0.51 & 0.76 & 0.52 & \textbf{0.76}\\
-K562 / REST & 0.05 & 0.51 & 0.63 & 0.52 & \textbf{0.65}\\
-K562 / MAX & 0.50 & 0.48 & 0.71 & 0.54 & \textbf{0.78}\\
-K562 / JUND & 0.08 & 0.57 & 0.83 & 0.49 & \textbf{0.85}\\
-\midrule
-GM12878 / CTCF & 0.28 & 0.57 & 0.89 & -- & \textbf{0.89}\\
-GM12878 / SPI1 & 0.30 & 0.50 & 0.77 & -- & \textbf{0.77}\\
-\midrule
-HepG2 / CTCF & 0.32 & 0.55 & 0.85 & -- & \textbf{0.86}\\
-HepG2 / MAX & 0.43 & 0.48 & 0.64 & -- & \textbf{0.74}\\
-HepG2 / JUND & 0.16 & 0.50 & 0.62 & -- & \textbf{0.67}\\
-HepG2 / REST & 0.01 & 0.51 & 0.82 & -- & \textbf{0.85}\\
-\midrule
-A549 / CTCF & 0.28 & 0.61 & 0.89 & -- & \textbf{0.89}\\
-A549 / MAX & 0.13 & 0.59 & 0.71 & -- & \textbf{0.82}\\
-A549 / JUND & 0.21 & 0.58 & 0.64 & -- & \textbf{0.72}\\
-A549 / REST & 0.06 & 0.56 & 0.67 & -- & \textbf{0.76}\\
-\bottomrule
-\end{tabularx}
-\end{table}
-
-\begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/method_comparison_multi.png}
-\caption{Genome-wide, chromosome-held-out multi-method benchmark across four ENCODE
-cell lines and 16 cell--TF tasks. Panel A compares per-task AUROC (with bootstrap
-95\% CIs) for raw accessibility, motif-only scoring, cut-site footprint scoring
-where available, and the integrated \texttt{fp-tools} model. Panel B compares the
-integrated model with the best single-method score for each task (points on or above
-the diagonal mean integration matches or beats the best single method). Panel C
-summarizes mean AUROC by method. Generated by
-\texttt{paper/scripts/plot\_method\_comparison\_multi.py}.\label{fig:method_multi}}
-\end{figure}
-
-The integrated model is a strong \emph{ranking} predictor, but because the logistic
-classifier is trained with class-rebalancing, its raw probabilities are
-systematically over-confident relative to the low genomic base rate of binding
-(pooled expected calibration error, ECE, $=0.21$; Figure~\ref{fig:calibration}A).
-Applying leak-free isotonic recalibration---fit on training chromosomes and applied
-to held-out chromosomes---restores calibration almost exactly, reducing the pooled
-ECE to $0.001$ and aligning predicted probabilities with observed binding
-frequencies across all 16 tasks (Figure~\ref{fig:calibration}). This separates two
-distinct quantities that are easily conflated: discrimination (AUROC/AUPRC), where
-the integrated model excels out of the box, and probability calibration, which the
-optional recalibration step provides when downstream use requires meaningful
-probabilities rather than rankings.
-
-\begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/figure_calibration_genome.png}
-\caption{Calibration of the integrated \texttt{fp-tools} probabilities, pooled over
-all 16 genome-wide tasks under chromosome-held-out evaluation. (A) Reliability
-diagram: raw class-balanced probabilities are over-confident (red, ECE $0.21$),
-while leak-free isotonic recalibration lands on the diagonal (blue, ECE $0.001$).
-(B) Per-task ECE before and after recalibration. (C) Distribution of calibrated
-probabilities. Generated by
-\texttt{paper/scripts/plot\_calibration\_panel.py}.\label{fig:calibration}}
-\end{figure}
+Each benchmark run is expected to write a resolved manifest, software versions,
+parameters, and plotting tables next to the generated figures. This makes the
+figures auditable: a reader can inspect which samples, motifs, regions, and signal
+tracks were used, and a developer can rerun the same tier after code changes. The
+same infrastructure can later support larger model-comparison studies, but those
+studies are outside the current first-version claim.
 
 \subsection{Footprinting Requires Cut-Site Resolution}
 
@@ -737,25 +506,19 @@ strongest predictor.\label{fig:footprint}}
 \section{Discussion}
 %==================================================================
 
-\texttt{fp-tools} contributes both a more accurate TF-binding predictor and a
-reproducible platform on which to run and benchmark it. On a genome-wide,
-chromosome-held-out benchmark its integrated score matches or exceeds the best
-individual paradigm in all 16 cell--TF tasks, with the largest margins precisely
-where footprints and motifs are individually weak---consistent with the
-long-standing observation that footprint depth is governed by factor residence
-time and local DNA sequence rather than occupancy alone~\cite{sung2014}, so a
-footprint-only or motif-only predictor is expected to fail for an important class
-of factors. Beyond accuracy, its comparative strengths are interface consistency
-across the classical footprinting workflow, deterministic regression coverage, and
-a conservative extension model in which new science is opt-in and non-disruptive
-(Table~\ref{tab:features}). These properties target precisely the friction that
+\texttt{fp-tools} contributes a reproducible platform for classical and
+first-version ATAC-seq footprinting workflows. Its comparative strengths are
+interface consistency across bias correction, footprint scoring, differential
+binding, and aggregate visualization; deterministic regression coverage; explicit
+handling of replicate-aware summaries; and an extension model in which multiscale,
+de novo motif-preparation, and pseudobulk utilities are opt-in and non-disruptive
+(Table~\ref{tab:features}). These properties target the practical friction that
 slows applied ATAC-seq analysis and cross-method benchmarking today.
 
 \begin{table}[H]
 \caption{Feature comparison across widely used ATAC-seq regulatory-analysis tools.
 \checkmark, native first-class support; $\circ$, partial or indirect support;
-\textemdash, absent. The \texttt{fp-tools} column covers released and
-development-branch functionality.\label{tab:features}}
+\textemdash, absent. The \texttt{fp-tools} column covers the first-version scope described in this paper.\label{tab:features}}
 \footnotesize
 \newcolumntype{C}{>{\centering\arraybackslash}X}
 \begin{tabularx}{\textwidth}{Xcccccc}
@@ -766,13 +529,11 @@ Bulk ATAC footprinting & \checkmark & \checkmark & \checkmark & \checkmark & $\c
 Tn5 bias correction & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \textemdash\\
 Classical footprint scoring & \checkmark & \checkmark & \checkmark & \textemdash & \textemdash & \textemdash\\
 Multiscale / nucleosome-aware & \checkmark & \textemdash & $\circ$ & \checkmark & $\circ$ & \textemdash\\
-Supervised TFBS prediction & \checkmark & \textemdash & \textemdash & \checkmark & \checkmark & \checkmark\\
-Variant scoring & \checkmark & \textemdash & \textemdash & \textemdash & \checkmark & \checkmark\\
-Motif-relaxed / motif-free recovery & \checkmark & \textemdash & \textemdash & \textemdash & $\circ$ & \textemdash\\
 De novo motif discovery & \checkmark & \textemdash & \textemdash & \checkmark & \checkmark & \textemdash\\
 scATAC / pseudobulk support & $\circ$ & $\circ$ & $\circ$ & \checkmark & $\circ$ & $\circ$\\
+Replicate-aware reporting & \checkmark & $\circ$ & $\circ$ & $\circ$ & \textemdash & \textemdash\\
 Visualization / reporting & \checkmark & \checkmark & $\circ$ & \checkmark & \checkmark & $\circ$\\
-GUI / YAML / batch execution & \checkmark & \textemdash & \textemdash & \textemdash & \textemdash & \textemdash\\
+YAML / batch execution & \checkmark & \textemdash & \textemdash & \textemdash & \textemdash & \textemdash\\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -783,48 +544,37 @@ their attribution-based interpreters are powerful for sequence-driven occupancy 
 variant-effect prediction~\cite{chrombpnet2024}. Those models, however, are
 computationally heavy---requiring GPU training and large compute budgets---and
 their learned enzyme-bias correction is itself incomplete and factor-dependent,
-whereas the \texttt{fp-tools} integrated predictor is a lightweight, interpretable,
-CPU-only model that is trained and applied in seconds and remains competitive on
-the tasks evaluated here. \texttt{fp-tools} makes classical and tabular-supervised
-analyses reproducible, composable, and easy to benchmark on shared labels. The
-multiscale, competition-decomposition, and replicate-uncertainty modules are
-pragmatic additions grounded in the available signal: in particular, the
-replicate-aware standard error is reconstructed from reported $p$-values rather
-than from per-replicate scores, so it should be read as a calibrated uncertainty
-heuristic rather than a full hierarchical model, and per-replicate inputs would
-enable a stronger formulation in future work.
+whereas the supported \texttt{fp-tools} first-version workflow emphasizes
+lightweight, reproducible classical analyses that are easy to run and audit.
+The multiscale and replicate-aware modules are pragmatic additions grounded in the
+available signal: in particular, the replicate-aware standard error is
+reconstructed from reported $p$-values rather than from per-replicate scores, so it
+should be read as a calibrated uncertainty heuristic rather than a full
+hierarchical model, and per-replicate inputs would enable a stronger formulation in
+future work.
 
 Limitations remain. The present benchmark evaluates discrimination within each
 cell--TF task under chromosome-held-out cross-validation; whole-genome
 cross-cell-line transfer (training on some cell lines and testing on others) and
 direct head-to-head runs of external tools such as TOBIAS, HINT-ATAC, and
 ChromBPNet on the identical locus sets are the next steps before broad,
-field-relative superiority claims. Larger public-benchmark inputs depend on
-external data acquisition, intentionally kept outside version control for size and
-licensing reasons; the tabular supervised models trade base-resolution sequence
-modeling for transparency and speed; and several roadmap items (attribution-based
-discovery, RNA-prior weighting for pseudobulk, hierarchical differential binding)
-are scaffolded but not yet fully realized. These are natural directions for
-subsequent releases.
+field-relative superiority claims. Larger public-benchmark inputs depend on external data acquisition, intentionally
+kept outside version control for size and licensing reasons. Natural next steps
+include larger external-tool comparisons, stronger per-replicate statistical
+models, and additional public validation datasets.
 
 %==================================================================
 \section{Conclusions}
 %==================================================================
 
 We presented \texttt{fp-tools}, a standalone, reproducible command-line platform
-that unifies classical ATAC-seq footprinting with opt-in multiscale, supervised,
-motif-discovery, variant-scoring, pseudobulk, replicate-uncertainty, and
-competition-decomposition modules. By keeping core workflows stable and
-test-covered while adding new scientific behavior as composable, independently
-validated modules---and by pairing them with a tiered public-data benchmark and
+that unifies classical ATAC-seq footprinting with opt-in multiscale,
+motif-discovery-preparation, pseudobulk, and replicate-aware reporting utilities.
+By keeping core workflows stable and test-covered while adding new behavior as
+composable utilities---and by pairing them with a tiered public-data benchmark and
 figure infrastructure---the package lowers the barrier to standardized,
-benchmarkable regulatory-genomics analysis. A genome-wide, chromosome-held-out
-benchmark across four ENCODE cell lines and 16 cell--TF tasks shows that the
-integrated score matches or exceeds the best single predictor in every task and
-that optional isotonic recalibration yields well-calibrated probabilities. Future
-work will add whole-genome cross-cell-line transfer and direct external-tool
-comparisons, strengthen the supervised and hierarchical differential-binding
-models, and integrate attribution-based discovery.
+benchmarkable regulatory-genomics analysis. Future work will add larger whole-genome transfer studies, direct external-tool
+comparisons, and stronger hierarchical differential-binding validation.
 
 \vspace{6pt}
 

@@ -10,41 +10,64 @@ The PyPI distribution is named `fp-tools-bio`; the installed Python package is `
 pip install fp-tools-bio
 ```
 
-The core install is intentionally light for cluster and container use. The optional
-Streamlit GUI is installed separately through the `gui` extra:
+## Scope
 
-```bash
-pip install "fp-tools-bio[gui]"
-```
-
-## Release status legend
-
-The same three-way status model used in `README.md` applies here:
-
-- **Released** — shipped in the current PyPI distribution (`fp-tools-bio`, version 0.1.7).
-- **Development branch** — implemented and callable from the current source tree / `main`, with unit-test coverage, but biological validation is still expanding and the public release is pending.
-- **Planned** — described in the validation roadmap (`DEV_PLAN.md`); not yet implemented or not yet benchmarked.
-
-The PyPI page is authoritative for what `pip install fp-tools-bio` provides today.
+`fp-tools` is focused on a practical first-version workflow for ATAC-seq
+footprinting: Tn5 bias correction, footprint scoring, motif-aware differential
+binding, aggregate visualization, multiscale footprint scoring, de novo
+motif-discovery preparation, pseudobulk ATAC aggregation, and replicate-aware
+reporting.
 
 ## Commands
 
-### Released (PyPI 0.1.7)
+### Core workflow
 
 - `atac-correct`: correct ATAC-seq cutsite signal for Tn5 sequence bias.
 - `score-footprints`: calculate footprint, multiscale, sum, mean, or pass-through scores from bigWig signal.
 - `detect-tf-binding`: scan motifs, infer bound sites, and compare TF binding across conditions.
 - `plot-aggregate`: plot aggregate signal around TFBS or region sets.
 - `fp-tools-run`: run optional YAML batch configs.
-- `fp-tools-gui`: launch the optional Streamlit GUI wrapper.
 
-Legacy aliases remain available for compatibility: `ATACorrect`, `FootprintScores`, `ScoreBigwig`, `BINDetect`, and `PlotAggregate`.
+### First-version utilities
 
-### Development branch (current source tree)
+- Multiscale scoring compares narrow TF-scale depletion with broader
+  nucleosome-scale structure.
+- De novo motif-discovery preparation exports candidate-centered sequences,
+  records reproducible MEME/STREME/Tomtom runs, and summarizes discovered motifs.
+- Pseudobulk support groups single-cell ATAC fragments into bulk-like profiles.
+- Replicate-aware reporting summarizes condition-level effects and replicate
+  variation for differential TF-binding analysis.
 
-Additional opt-in commands support tabular TFBS feature/model workflows, candidate generation and reranking, de novo motif-discovery orchestration, variant scoring, 10x-style pseudobulk fragment grouping with optional indexed fragments and cut-site bigWigs, replicate-aware BINDetect reports, and multiscale competition decomposition. These commands are present and callable from the current source tree and carry unit-test coverage; biological validation benchmarks for several of them are still being expanded, and they are not all guaranteed to be exposed in the released wheel until the next tagged release.
+Direct command-line usage is the primary interface. YAML configs are optional
+for saved or repeated runs.
 
-Direct CLI usage is the primary interface. YAML configs and the GUI are optional wrapper paths and do not replace the plain command-line tools.
+## Feature Comparison Across the Field
+
+This table is deliberately conservative: every cell is mapped to a comparator's documented,
+publicly sourced capability set, and only widely used reference methods are listed
+(TOBIAS, HINT-ATAC, PRINT/scPrinter, ChromBPNet, and maxATAC).
+Broader-ecosystem tools are discussed in the manuscript rather than asserted here.
+
+Symbols: ✅ native first-class support, ⚠️ partial or indirect support, ❌ absent.
+
+| Feature | fp-tools | TOBIAS | HINT-<br>ATAC | PRINT /<br>scPrinter | ChromBPNet | maxATAC |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Bulk ATAC footprinting | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ |
+| Tn5 bias correction | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Classical footprint scoring | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Motif-aware differential binding | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ❌ |
+| Multiscale / nucleosome-aware scoring | ✅ | ❌ | ⚠️ | ✅ | ⚠️ | ❌ |
+| De novo motif-discovery preparation | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| scATAC / pseudobulk support | ✅ | ⚠️ | ⚠️ | ✅ | ⚠️ | ⚠️ |
+| Replicate-aware reporting | ✅ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ |
+| Visualization / reporting | ✅ | ✅ | ⚠️ | ✅ | ✅ | ⚠️ |
+| YAML / batch execution | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+`fp-tools` does not claim default algorithmic superiority over the classical comparators for
+single-task footprint scoring. Its first-version contribution is an integrated,
+reproducible platform that combines the classical core with multiscale scoring,
+replicate-aware reporting, de novo motif-discovery preparation, and single-cell
+pseudobulk aggregation behind one command surface.
 
 ## Verify
 
@@ -54,20 +77,9 @@ score-footprints --help
 detect-tf-binding --help
 plot-aggregate --help
 fp-tools-run --help
-fp-tools-gui --help
-fp-tools-build-tfbs-features --help
-fp-tools-train-tfbs-model --help
-fp-tools-predict-tfbs --help
-fp-tools-generate-candidates --help
-fp-tools-rerank-candidates --help
-fp-tools-export-candidate-fasta --help
-fp-tools-meme-command --help
 fp-tools-motif-discovery-plan --help
-fp-tools-summarize-motifs --help
-fp-tools-score-variants --help
 fp-tools-pseudobulk --help
 fp-tools-bindetect-replicate-report --help
-fp-tools-decompose-competition --help
 ```
 
 ## Minimal Workflow
@@ -118,22 +130,6 @@ plot-aggregate \
   --output_aggregated_scores examples/reports/plotaggregate_control_mode_test_scores.csv
 ```
 
-## GUI
-
-Start the GUI on a Linux server:
-
-```bash
-fp-tools-gui --host 0.0.0.0 --run-dir examples/gui_runs
-```
-
-If `--port` is omitted, the launcher picks a free port and prints the exact URL. A fixed port can also be supplied:
-
-```bash
-fp-tools-gui --host 0.0.0.0 --port 8891 --run-dir examples/gui_runs
-```
-
-The GUI can run directly from forms, load YAML, save YAML, and inspect run history. GUI run metadata and logs are written under `examples/gui_runs/`; ready-to-load YAML examples are in `examples/gui_configs/`.
-
 ## YAML Runner
 
 Run a saved config directly from the command line:
@@ -142,7 +138,7 @@ Run a saved config directly from the command line:
 fp-tools-run --config examples/gui_configs/plotaggregate_single.yml
 ```
 
-GUI-saved YAML files can be rerun the same way. YAML is optional for normal CLI use.
+YAML is optional for normal command-line use.
 
 ## Extra Features
 

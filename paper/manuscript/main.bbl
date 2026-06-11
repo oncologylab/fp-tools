@@ -62,15 +62,6 @@ Sung, M.H.; Guertin, M.J.; Baek, S.; Hager, G.L.
 \newblock {\em Molecular Cell} {\bf 2014}, {\em 56},~275--285.
 \newblock {\url{https://doi.org/10.1016/j.molcel.2014.08.016}}.
 
-\bibitem[Pedregosa et~al.(2011)Pedregosa, Varoquaux, Gramfort, Michel, Thirion,
-  Grisel, Blondel, Prettenhofer, Weiss, Dubourg, Vanderplas, Passos,
-  Cournapeau, Brucher, Perrot, and Duchesnay]{pedregosa2011sklearn}
-Pedregosa, F.; Varoquaux, G.; Gramfort, A.; Michel, V.; Thirion, B.; Grisel,
-  O.; Blondel, M.; Prettenhofer, P.; Weiss, R.; Dubourg, V.;  et~al.
-\newblock Scikit-learn: Machine Learning in {Python}.
-\newblock {\em Journal of Machine Learning Research} {\bf 2011}, {\em
-  12},~2825--2830.
-
 \bibitem[Bailey et~al.(2015)Bailey, Johnson, Grant, and Noble]{bailey2015meme}
 Bailey, T.L.; Johnson, J.; Grant, C.E.; Noble, W.S.
 \newblock The {MEME} Suite.

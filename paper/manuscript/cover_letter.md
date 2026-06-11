@@ -4,27 +4,24 @@ Dear Editor,
 
 On behalf of my co-author, I am pleased to submit our manuscript, **"fp-tools: A
 Reproducible Command-Line Platform for Classical and Multiscale ATAC-seq
-Footprinting, Supervised TF-Binding Prediction, Motif Discovery, and Variant
-Scoring,"** for consideration as an Article in *BioMedInformatics*.
+Footprinting, Motif Discovery Preparation, and Replicate-Aware Reporting,"** for consideration as an Article in *BioMedInformatics*.
 
 Transcription-factor footprinting from ATAC-seq is a central technique in
 regulatory genomics, but its surrounding software ecosystem is fragmented across
 single-purpose tools with heterogeneous interfaces, inconsistent reproducibility,
 and uneven test coverage. This raises the practical cost of building and
 benchmarking end-to-end analyses. Our manuscript presents `fp-tools`, a standalone,
-pip-installable package that unifies the core footprinting workflows behind stable
-command-line entry points and adds a series of explicitly opt-in scientific
-modules—multiscale and nucleosome-aware scoring, supervised TF-binding prediction,
-motif-relaxed/motif-free recovery, de novo motif discovery, variant scoring,
-single-cell pseudobulk aggregation, replicate-aware differential-binding
-uncertainty reporting, and a competition-aware decomposition of overlapping
-TF-scale and nucleosome-scale footprint signals—while leaving the classical
-commands unchanged when they are not invoked.
+pip-installable package that unifies the core footprinting workflows and adds a
+series of first-version scientific utilities: multiscale and nucleosome-aware
+scoring, de novo motif-discovery preparation, single-cell pseudobulk aggregation,
+and replicate-aware differential-binding reporting. The manuscript focuses on
+clear method descriptions, reproducible runs, and conservative support claims for
+this first-version scope.
 
-Using public ENCODE data across multiple transcription factors and cell types, we
-demonstrate that the package reproducibly recovers TF occupancy and that integrating
-sequence, accessibility, and cut-site footprint evidence improves discrimination
-over single-signal baselines. We believe this work fits the scope of
+Using public example data and reproducible benchmark scaffolds, we demonstrate that
+the package can run complete classical footprinting workflows, preserve command
+contracts through deterministic tests, and support realistic first-version
+extensions without disturbing the established core. We believe this work fits the scope of
 *BioMedInformatics* because it emphasizes reproducible, well-engineered informatics
 infrastructure for biomedical data analysis: deterministic regression testing, a
 tiered public-data benchmark design with standard classification and calibration

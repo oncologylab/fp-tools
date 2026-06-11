@@ -1,0 +1,309 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="500">
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#334155"/>
+    </marker>
+    <!-- single cell glyph (recolored via color attr) -->
+    <symbol id="cell" viewBox="-6 -6 12 12" overflow="visible">
+      <circle r="5.2" fill="currentColor" fill-opacity="0.16" stroke="currentColor" stroke-width="1.3"/>
+      <circle r="1.7" fill="currentColor"/>
+    </symbol>
+    <!-- file glyph -->
+    <symbol id="file" viewBox="0 0 24 28">
+      <path d="M3,1 h13 l5,5 v21 h-18 Z" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+      <path d="M16,1 v5 h5" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+      <line x1="6" y1="13" x2="18" y2="13" stroke="#cbd5e1" stroke-width="1.4"/>
+      <line x1="6" y1="17.5" x2="18" y2="17.5" stroke="#cbd5e1" stroke-width="1.4"/>
+      <line x1="6" y1="22" x2="14" y2="22" stroke="#cbd5e1" stroke-width="1.4"/>
+    </symbol>
+    <!-- bigwig glyph -->
+    <symbol id="bigwig" viewBox="0 0 30 20">
+      <line x1="1" y1="19" x2="29" y2="19" stroke="#94a3b8" stroke-width="1"/>
+      <g fill="#2563eb">
+        <rect x="3" y="9" width="3" height="10"/><rect x="8" y="4" width="3" height="15"/>
+        <rect x="13" y="11" width="3" height="8"/><rect x="18" y="6" width="3" height="13"/>
+        <rect x="23" y="10" width="3" height="9"/>
+      </g>
+    </symbol>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+
+  <!-- ================= TITLE ================= -->
+  <text x="640" y="46" text-anchor="middle" font-size="36" font-weight="700" fill="#0f172a">Pseudobulk fragments</text>
+  <text x="640" y="74" text-anchor="middle" font-size="15" fill="#475569">Group single-cell ATAC fragments into bulk-like profiles for downstream footprinting.</text>
+
+  <!-- ================= STEP HEADERS ================= -->
+  <g font-size="15" font-weight="700" fill="#0f172a">
+    <circle cx="52" cy="104" r="11" fill="#eff6ff" stroke="#2563eb" stroke-width="1.6"/>
+    <text x="52" y="109" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">1</text>
+    <text x="70" y="109">Single-cell ATAC input</text>
+
+    <circle cx="338" cy="104" r="11" fill="#eff6ff" stroke="#2563eb" stroke-width="1.6"/>
+    <text x="338" y="109" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">2</text>
+    <text x="356" y="109">Group by annotation</text>
+
+    <circle cx="586" cy="104" r="11" fill="#eff6ff" stroke="#2563eb" stroke-width="1.6"/>
+    <text x="586" y="109" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">3</text>
+    <text x="604" y="109">Aggregate fragments and QC</text>
+
+    <circle cx="828" cy="104" r="11" fill="#eff6ff" stroke="#2563eb" stroke-width="1.6"/>
+    <text x="828" y="109" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">4</text>
+    <text x="846" y="109">fp-tools-ready outputs</text>
+  </g>
+  <line x1="276" y1="104" x2="318" y2="104" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="540" y1="104" x2="568" y2="104" stroke="#475569" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ================= STEP 1 ================= -->
+  <text x="40" y="136" font-size="12" fill="#475569">10x-style fragments TSV/TSV.GZ +</text>
+  <text x="40" y="152" font-size="12" fill="#475569">cell annotations CSV/TSV</text>
+
+  <!-- fragments table -->
+  <g font-size="9">
+    <rect x="40" y="164" width="250" height="148" rx="4" fill="#ffffff" stroke="#cbd5e1"/>
+    <path d="M40,168 a4,4 0 0 1 4,-4 h242 a4,4 0 0 1 4,4 v16 h-250 Z" fill="#eef2f7"/>
+    <g stroke="#eef2f7"><rect x="40" y="184" width="250" height="18" fill="#fafbfc"/><rect x="40" y="220" width="250" height="18" fill="#fafbfc"/><rect x="40" y="256" width="250" height="18" fill="#fafbfc"/><rect x="40" y="292" width="250" height="18" fill="#fafbfc"/></g>
+    <g stroke="#e2e8f0"><line x1="88" y1="164" x2="88" y2="312"/><line x1="136" y1="164" x2="136" y2="312"/><line x1="184" y1="164" x2="184" y2="312"/><line x1="262" y1="164" x2="262" y2="312"/></g>
+    <g font-weight="700" fill="#334155"><text x="46" y="178">chrom</text><text x="94" y="178">start</text><text x="142" y="178">end</text><text x="190" y="178">barcode</text><text x="276" y="178" text-anchor="middle">count</text></g>
+    <g fill="#334155">
+      <text x="46" y="196">chr1</text><text x="94" y="196">100,559</text><text x="142" y="196">100,742</text><text x="190" y="196">AAACCTGATCGTA-1</text><text x="276" y="196" text-anchor="middle">1</text>
+      <text x="46" y="214">chr1</text><text x="94" y="214">105,210</text><text x="142" y="214">105,386</text><text x="190" y="214">AAACCTGATGTCA-1</text><text x="276" y="214" text-anchor="middle">1</text>
+      <text x="46" y="232">chr1</text><text x="94" y="232">300,732</text><text x="142" y="232">300,901</text><text x="190" y="232">AAACCTGATGGCA-1</text><text x="276" y="232" text-anchor="middle">1</text>
+      <text x="46" y="250">chr2</text><text x="94" y="250">150,120</text><text x="142" y="250">150,284</text><text x="190" y="250">AAACCTGATCECA-1</text><text x="276" y="250" text-anchor="middle">1</text>
+      <text x="46" y="268">chr3</text><text x="94" y="268">25,210</text><text x="142" y="268">25,398</text><text x="190" y="268">AAGGCTGACCTA-1</text><text x="276" y="268" text-anchor="middle">1</text>
+      <text x="46" y="286">chrX</text><text x="94" y="286">75,904</text><text x="142" y="286">76,121</text><text x="190" y="286">AAGTGAATCGAA-1</text><text x="276" y="286" text-anchor="middle">1</text>
+      <text x="46" y="304">chr2</text><text x="94" y="304">12,345</text><text x="142" y="304">12,517</text><text x="190" y="304">CTTGGTCGAAGCT-1</text><text x="276" y="304" text-anchor="middle">1</text>
+    </g>
+  </g>
+  <text x="46" y="326" font-size="9" fill="#94a3b8">...</text>
+
+  <!-- scatter + fan out -->
+  <text x="40" y="362" font-size="11" fill="#475569">many single-cell</text>
+  <text x="40" y="378" font-size="11" fill="#475569">fragment records</text>
+  <g fill="#2563eb">
+    <use href="#cell" x="150" y="350" width="12" height="12" color="#2563eb"/>
+    <use href="#cell" x="168" y="344" width="12" height="12" color="#2563eb"/>
+    <use href="#cell" x="186" y="352" width="12" height="12" color="#2563eb"/>
+    <use href="#cell" x="158" y="364" width="12" height="12" color="#2563eb"/>
+    <use href="#cell" x="178" y="368" width="12" height="12" color="#2563eb"/>
+    <use href="#cell" x="198" y="360" width="12" height="12" color="#2563eb"/>
+    <use href="#cell" x="206" y="346" width="12" height="12" color="#2563eb"/>
+    <use href="#cell" x="216" y="366" width="12" height="12" color="#2563eb"/>
+  </g>
+  <g stroke="#94a3b8" stroke-dasharray="3 3" stroke-width="1">
+    <line x1="234" y1="356" x2="285" y2="346"/>
+    <line x1="234" y1="362" x2="285" y2="362"/>
+    <line x1="234" y1="368" x2="285" y2="378"/>
+  </g>
+
+  <!-- annotations table -->
+  <g font-size="9">
+    <rect x="40" y="408" width="250" height="148" rx="4" fill="#ffffff" stroke="#cbd5e1"/>
+    <path d="M40,412 a4,4 0 0 1 4,-4 h242 a4,4 0 0 1 4,4 v16 h-250 Z" fill="#eef2f7"/>
+    <g><rect x="40" y="428" width="250" height="20" fill="#fafbfc"/><rect x="40" y="468" width="250" height="20" fill="#fafbfc"/><rect x="40" y="508" width="250" height="20" fill="#fafbfc"/></g>
+    <g stroke="#e2e8f0"><line x1="160" y1="408" x2="160" y2="556"/><line x1="210" y1="408" x2="210" y2="556"/></g>
+    <g font-weight="700" fill="#334155"><text x="46" y="422">barcode</text><text x="166" y="422">donor</text><text x="216" y="422">cell_type</text></g>
+    <g fill="#334155">
+      <text x="46" y="442">AAACCTGATCGTA-1</text><text x="166" y="442">Donor1</text><text x="216" y="442">CD4_T</text>
+      <text x="46" y="462">AAACCTGATGTCA-1</text><text x="166" y="462">Donor1</text><text x="216" y="462">CD4_T</text>
+      <text x="46" y="482">AAGTGAATCGAA-1</text><text x="166" y="482">Donor1</text><text x="216" y="482">B_cell</text>
+      <text x="46" y="502">CTTGGTCGAAGCT-1</text><text x="166" y="502">Donor1</text><text x="216" y="502" font-size="8.5">CD14_Monocyte</text>
+      <text x="46" y="522">GGGTACAGTTGA-1</text><text x="166" y="522">Donor2</text><text x="216" y="522" font-size="8.5">NK_T_cytotoxic</text>
+      <text x="46" y="540" fill="#94a3b8">...</text>
+    </g>
+  </g>
+
+  <!-- ================= STEP 2 ================= -->
+  <text x="330" y="136" font-size="12" fill="#475569">group by: cell_type</text>
+  <text x="330" y="152" font-size="12" fill="#475569">optional: donor + cell_type</text>
+
+  <!-- CD4_T -->
+  <text x="330" y="186" font-size="13" font-weight="700" fill="#2563eb">CD4_T</text>
+  <g>
+    <use href="#cell" x="332" y="196" width="15" height="15" color="#2563eb"/><use href="#cell" x="350" y="196" width="15" height="15" color="#2563eb"/><use href="#cell" x="368" y="196" width="15" height="15" color="#2563eb"/>
+    <use href="#cell" x="332" y="214" width="15" height="15" color="#2563eb"/><use href="#cell" x="350" y="214" width="15" height="15" color="#2563eb"/><use href="#cell" x="368" y="214" width="15" height="15" color="#2563eb"/>
+  </g>
+  <g font-size="8.5" fill="#334155">
+    <rect x="448" y="178" width="92" height="52" rx="4" fill="#ffffff" stroke="#2563eb" stroke-opacity="0.5"/>
+    <text x="454" y="191" font-weight="700" fill="#334155">barcodes</text>
+    <text x="454" y="204">AAACCTGATCGTA-1</text><text x="454" y="215">AAACCTGATGTCA-1</text><text x="454" y="226">AAACCTGATGGCA-1</text>
+  </g>
+
+  <!-- B_cell -->
+  <text x="330" y="256" font-size="13" font-weight="700" fill="#16a34a">B_cell</text>
+  <g>
+    <use href="#cell" x="332" y="266" width="15" height="15" color="#16a34a"/><use href="#cell" x="350" y="266" width="15" height="15" color="#16a34a"/><use href="#cell" x="368" y="266" width="15" height="15" color="#16a34a"/>
+    <use href="#cell" x="332" y="284" width="15" height="15" color="#16a34a"/><use href="#cell" x="350" y="284" width="15" height="15" color="#16a34a"/><use href="#cell" x="368" y="284" width="15" height="15" color="#16a34a"/>
+  </g>
+  <g font-size="8.5" fill="#334155">
+    <rect x="448" y="248" width="92" height="52" rx="4" fill="#ffffff" stroke="#16a34a" stroke-opacity="0.5"/>
+    <text x="454" y="261" font-weight="700" fill="#334155">barcodes</text>
+    <text x="454" y="274">AAGTGAATCGAA-1</text><text x="454" y="285">AAGTCAGTGGCA-1</text><text x="454" y="296">TTACACCATGACG-1</text>
+  </g>
+
+  <!-- CD14_Monocyte -->
+  <text x="330" y="326" font-size="13" font-weight="700" fill="#ea580c">CD14_Monocyte</text>
+  <g>
+    <use href="#cell" x="332" y="336" width="15" height="15" color="#ea580c"/><use href="#cell" x="350" y="336" width="15" height="15" color="#ea580c"/><use href="#cell" x="368" y="336" width="15" height="15" color="#ea580c"/>
+    <use href="#cell" x="332" y="354" width="15" height="15" color="#ea580c"/><use href="#cell" x="350" y="354" width="15" height="15" color="#ea580c"/><use href="#cell" x="368" y="354" width="15" height="15" color="#ea580c"/>
+  </g>
+  <g font-size="8.5" fill="#334155">
+    <rect x="448" y="318" width="92" height="52" rx="4" fill="#ffffff" stroke="#ea580c" stroke-opacity="0.5"/>
+    <text x="454" y="331" font-weight="700" fill="#334155">barcodes</text>
+    <text x="454" y="344">CTTGGTCGAAGCT-1</text><text x="454" y="355">CTTGGTCGAAGGT-1</text><text x="454" y="366">GCTTACGATGTT-1</text>
+  </g>
+
+  <!-- NK_T_cytotoxic -->
+  <text x="330" y="430" font-size="13" font-weight="700" fill="#7c3aed">NK_T_cytotoxic</text>
+  <g>
+    <use href="#cell" x="332" y="440" width="15" height="15" color="#7c3aed"/><use href="#cell" x="350" y="440" width="15" height="15" color="#7c3aed"/><use href="#cell" x="368" y="440" width="15" height="15" color="#7c3aed"/>
+    <use href="#cell" x="332" y="458" width="15" height="15" color="#7c3aed"/><use href="#cell" x="350" y="458" width="15" height="15" color="#7c3aed"/><use href="#cell" x="368" y="458" width="15" height="15" color="#7c3aed"/>
+  </g>
+  <g font-size="8.5" fill="#334155">
+    <rect x="448" y="422" width="92" height="52" rx="4" fill="#ffffff" stroke="#7c3aed" stroke-opacity="0.5"/>
+    <text x="454" y="435" font-weight="700" fill="#334155">barcodes</text>
+    <text x="454" y="448">GGGTACAGTTGA-1</text><text x="454" y="459">GGGTACAGGTGA-1</text><text x="454" y="470">TTAACCAGTTAA-1</text>
+  </g>
+
+  <!-- ================= STEP 3 ================= -->
+  <text x="560" y="136" font-size="12" fill="#475569">write one fragment file per group</text>
+
+  <!-- rows -->
+  <g font-weight="700">
+    <text x="560" y="186" font-size="13" fill="#2563eb">CD4_T</text>
+    <text x="560" y="256" font-size="13" fill="#16a34a">B_cell</text>
+    <text x="560" y="326" font-size="11" fill="#ea580c">CD14_Monocyte</text>
+    <text x="560" y="396" font-size="11" fill="#7c3aed">NK_T_cytotoxic</text>
+  </g>
+  <g stroke="#475569" stroke-width="1.4">
+    <line x1="610" y1="182" x2="664" y2="182" marker-end="url(#arrow)"/>
+    <line x1="614" y1="252" x2="664" y2="252" marker-end="url(#arrow)"/>
+    <line x1="652" y1="322" x2="658" y2="322" marker-end="url(#arrow)"/>
+    <line x1="652" y1="392" x2="658" y2="392" marker-end="url(#arrow)"/>
+  </g>
+  <use href="#file" x="668" y="170" width="22" height="26"/>
+  <use href="#file" x="668" y="240" width="22" height="26"/>
+  <use href="#file" x="662" y="310" width="22" height="26"/>
+  <use href="#file" x="662" y="380" width="22" height="26"/>
+  <g font-size="9" fill="#334155">
+    <text x="696" y="186">CD4_T_fragments.tsv.gz</text>
+    <text x="696" y="256">B_cell_fragments.tsv.gz</text>
+    <text x="690" y="326" font-size="7">CD14_Monocyte_fragments.tsv.gz</text>
+    <text x="690" y="396" font-size="7">NK_T_cytotoxic_fragments.tsv.gz</text>
+  </g>
+
+  <!-- QC box -->
+  <rect x="560" y="424" width="248" height="74" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-opacity="0.6"/>
+  <text x="684" y="442" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">QC (user-configurable)</text>
+  <text x="572" y="461" font-size="8.5" fill="#334155" font-family="monospace">passes_filters = n_cells &#8805; min_cells</text>
+  <text x="572" y="475" font-size="8.5" fill="#334155" font-family="monospace">and n_fragments &#8805; min_fragments</text>
+  <text x="560" y="516" font-size="9" fill="#475569">PBMC example: min_cells = 300, min_fragments = 50,000</text>
+
+  <!-- Optional features -->
+  <text x="560" y="546" font-size="12" font-weight="700" fill="#2563eb">Optional features</text>
+  <g font-size="11" fill="#334155">
+    <text x="568" y="565">&#8226;  BGZF/tabix indexing</text>
+    <text x="568" y="583">&#8226;  chromosome include/exclude filters</text>
+    <text x="568" y="601">&#8226;  barcode suffix normalization</text>
+  </g>
+
+  <!-- ================= STEP 4 ================= -->
+  <!-- manifest table -->
+  <g font-size="9">
+    <rect x="825" y="132" width="430" height="150" rx="4" fill="#ffffff" stroke="#cbd5e1"/>
+    <path d="M825,136 a4,4 0 0 1 4,-4 h422 a4,4 0 0 1 4,4 v18 h-430 Z" fill="#eef2f7"/>
+    <rect x="825" y="183" width="430" height="33" fill="#fafbfc"/>
+    <rect x="825" y="249" width="430" height="33" fill="#fafbfc"/>
+    <g stroke="#e2e8f0">
+      <line x1="895" y1="132" x2="895" y2="282"/><line x1="1015" y1="132" x2="1015" y2="282"/>
+      <line x1="1057" y1="132" x2="1057" y2="282"/><line x1="1117" y1="132" x2="1117" y2="282"/><line x1="1195" y1="132" x2="1195" y2="282"/>
+    </g>
+    <g font-weight="700" fill="#334155">
+      <text x="831" y="146">group</text>
+      <text x="901" y="146">fragment_file</text>
+      <text x="1036" y="146" text-anchor="middle" font-size="8">n_cells</text>
+      <text x="1087" y="146" text-anchor="middle" font-size="8">n_fragments</text>
+      <text x="1121" y="146" font-size="8">cutsite_bigwig</text>
+      <text x="1225" y="146" text-anchor="middle" font-size="8">passes_filters</text>
+    </g>
+    <!-- CD4_T -->
+    <text x="831" y="173" font-weight="700" fill="#2563eb">CD4_T</text>
+    <text x="901" y="173" font-size="7" fill="#334155">CD4_T_fragments.tsv.gz</text>
+    <text x="1036" y="173" text-anchor="middle" fill="#334155">1,243</text>
+    <text x="1087" y="173" text-anchor="middle" fill="#334155">15,872,341</text>
+    <text x="1121" y="173" font-size="6.5" fill="#334155">CD4_T.cutsites.cpm.bw</text>
+    <circle cx="1225" cy="169" r="7" fill="#16a34a"/><path d="M1221.5,169 l2.5,2.5 l4.5,-5" stroke="#fff" stroke-width="1.7" fill="none"/>
+    <!-- B_cell -->
+    <text x="831" y="206" font-weight="700" fill="#16a34a">B_cell</text>
+    <text x="901" y="206" font-size="7" fill="#334155">B_cell_fragments.tsv.gz</text>
+    <text x="1036" y="206" text-anchor="middle" fill="#334155">1,102</text>
+    <text x="1087" y="206" text-anchor="middle" fill="#334155">12,103,556</text>
+    <text x="1121" y="206" font-size="6.5" fill="#334155">B_cell.cutsites.cpm.bw</text>
+    <circle cx="1225" cy="202" r="7" fill="#16a34a"/><path d="M1221.5,202 l2.5,2.5 l4.5,-5" stroke="#fff" stroke-width="1.7" fill="none"/>
+    <!-- CD14_Monocyte -->
+    <text x="831" y="239" font-weight="700" fill="#ea580c" font-size="8">CD14_Monocyte</text>
+    <text x="901" y="239" font-size="6.5" fill="#334155">CD14_Monocyte_fragments.tsv.gz</text>
+    <text x="1036" y="239" text-anchor="middle" fill="#334155">428</text>
+    <text x="1087" y="239" text-anchor="middle" fill="#334155">4,861,221</text>
+    <text x="1156" y="239" text-anchor="middle" fill="#94a3b8">&#8212;</text>
+    <circle cx="1225" cy="235" r="7" fill="#dc2626"/><path d="M1222,232 l6,6 M1228,232 l-6,6" stroke="#fff" stroke-width="1.7"/>
+    <!-- NK_T_cytotoxic -->
+    <text x="831" y="272" font-weight="700" fill="#7c3aed" font-size="8">NK_T_cytotoxic</text>
+    <text x="901" y="272" font-size="6.5" fill="#334155">NK_T_cytotoxic_fragments.tsv.gz</text>
+    <text x="1036" y="272" text-anchor="middle" fill="#334155">652</text>
+    <text x="1087" y="272" text-anchor="middle" fill="#334155">7,945,132</text>
+    <text x="1121" y="272" font-size="6.5" fill="#334155">NK_T.cutsites.cpm.bw</text>
+    <circle cx="1225" cy="268" r="7" fill="#16a34a"/><path d="M1221.5,268 l2.5,2.5 l4.5,-5" stroke="#fff" stroke-width="1.7" fill="none"/>
+  </g>
+
+  <!-- bullets -->
+  <g font-size="11" fill="#334155">
+    <g fill="#2563eb"><circle cx="829" cy="305" r="2.4"/><circle cx="829" cy="324" r="2.4"/><circle cx="829" cy="343" r="2.4"/><circle cx="829" cy="362" r="2.4"/><circle cx="829" cy="381" r="2.4"/></g>
+    <text x="840" y="309">indexed pseudobulk fragment files per group</text>
+    <text x="840" y="328">CPM-normalized cut-site bigWigs per kept group</text>
+    <text x="840" y="347">pseudobulk_manifest.tsv</text>
+    <text x="840" y="366">fp_tools_manifest.yml</text>
+    <text x="840" y="385">optional downstream command script</text>
+  </g>
+
+  <!-- command box -->
+  <rect x="825" y="400" width="430" height="108" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="837" y="418" font-size="11" font-weight="700" fill="#0f172a">fp-tools pseudobulk command</text>
+  <g font-size="9" font-family="monospace" fill="#334155">
+    <text x="837" y="434">fp-tools pseudobulk --fragments fragments.tsv.gz \</text>
+    <text x="837" y="448">  --annotations cell_annotations.tsv --group-by cell_type \</text>
+    <text x="837" y="462">  --min-cells 300 --min-fragments 50000 --index-output \</text>
+    <text x="837" y="476">  --write-cutsite-bigwigs --genome-sizes hg38.chrom.sizes \</text>
+    <text x="837" y="490">  --cores 32 --outdir pseudobulk_pbmc</text>
+  </g>
+
+  <!-- downstream box -->
+  <rect x="825" y="520" width="430" height="120" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="837" y="538" font-size="11" font-weight="700" fill="#0f172a">Downstream examples</text>
+  <g font-size="9" font-family="monospace" fill="#334155">
+    <text x="837" y="554" font-weight="700" fill="#334155">footprint scoring</text>
+    <text x="837" y="568">score-footprints --signal CD4_T.cutsites.cpm.bw \</text>
+    <text x="837" y="582">  --regions peaks.bed --output CD4_T_footprints.tsv</text>
+    <text x="837" y="600" font-weight="700" fill="#334155">aggregate profiles</text>
+    <text x="837" y="614">plot-aggregate --TFBS tf_sites.bed \</text>
+    <text x="837" y="628">  --signals CD4_T.cutsites.cpm.bw --output CD4_T_aggregate.pdf</text>
+  </g>
+
+  <!-- ================= LEGEND ================= -->
+  <rect x="150" y="656" width="980" height="46" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <use href="#cell" x="178" y="672" width="14" height="14" color="#2563eb"/>
+  <line x1="196" y1="679" x2="222" y2="679" stroke="#94a3b8" stroke-dasharray="3 3"/>
+  <text x="230" y="683" font-size="11" fill="#334155">single-cell fragment</text>
+
+  <line x1="400" y1="679" x2="438" y2="679" stroke="#2563eb" stroke-width="3"/>
+  <text x="446" y="683" font-size="11" fill="#334155">pseudobulk fragment</text>
+
+  <use href="#bigwig" x="640" y="669" width="30" height="20"/>
+  <text x="678" y="683" font-size="11" fill="#334155">CPM-normalized cut-site bigWig</text>
+
+  <g fill="none" stroke="#64748b" stroke-width="1.2">
+    <rect x="930" y="671" width="22" height="17" rx="1"/>
+    <line x1="930" y1="677" x2="952" y2="677"/><line x1="937" y1="671" x2="937" y2="688"/><line x1="945" y1="671" x2="945" y2="688"/>
+  </g>
+  <text x="960" y="683" font-size="11" fill="#334155">manifest/QC table</text>
+</svg>

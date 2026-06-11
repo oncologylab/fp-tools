@@ -14,13 +14,12 @@ Large public data and generated benchmark results are intentionally ignored by g
 
 Start with released human GRCh38 ENCODE bulk ATAC-seq experiments matched to TF ChIP-seq or CUT&RUN labels. Commit manifests and scripts, not downloaded BAMs, bigWigs, or full outputs.
 
-## Motif-Removal Benchmarks
+## Deferred Benchmark Scaffolds
 
-For motif-relaxed and motif-free recovery experiments, use `scripts/build_motif_removal_benchmark.py` to turn scored site tables into long-form benchmark predictions. The resulting TSV can be evaluated with `scripts/compute_binary_metrics.py` and rendered with `../paper/scripts/plot_benchmark_panels.py`.
-
-## Calibration Benchmarks
-
-Use `scripts/compute_calibration.py` with supervised prediction probabilities to produce reliability bins, ECE/MCE, and Brier summaries. Render those outputs with `../paper/scripts/plot_calibration_panels.py` for manuscript-ready calibration figures.
+Motif-relaxed/motif-free recovery and supervised calibration scripts remain in
+this directory as development scaffolds, but they are not first-version paper
+requirements. See `../docs/FUTURE_PLANS.md` for the validation work needed before
+those workflows are presented as supported capabilities.
 
 ## Public-Label Benchmark Tables
 
