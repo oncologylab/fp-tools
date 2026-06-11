@@ -122,7 +122,7 @@ fp-tools-motif-discovery-plan \
 
 ### Optional pseudobulk fragments
 
-![Pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk.png)
+![Pseudobulk fragment workflow](docs/assets/fp-tools-pseudo-bulk.png)
 
 The pseudobulk workflow groups single-cell ATAC fragments by a metadata column
 such as cell type, treatment, donor, or cluster. Each group is written as a
@@ -143,6 +143,10 @@ fp-tools-pseudobulk \
   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes \
   --outdir data/public/processed/pseudobulk_pbmc/run
 ```
+
+Example pseudobulk aggregate output:
+
+![Pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk-example-output.png)
 
 ### Replicate-aware detect-tf-binding
 
