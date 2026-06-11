@@ -21,10 +21,10 @@ BASE_TRACKS = {
 }
 REPLICATES = {
     # condition, multiplicative depth factor, additive baseline offset
-    "B cell rep1": ("B cell", 0.70, -1.5),
-    "B cell rep2": ("B cell", 0.90, 0.2),
-    "T cell rep1": ("T cell", 1.25, 4.5),
-    "T cell rep2": ("T cell", 1.45, 6.5),
+    "B cell rep1": ("B cell", 0.90, -0.6),
+    "B cell rep2": ("B cell", 1.05, 0.2),
+    "T cell rep1": ("T cell", 1.00, 1.0),
+    "T cell rep2": ("T cell", 1.12, 1.8),
 }
 SAMPLE_COLORS = {
     "B cell rep1": "#6BAED6",
@@ -35,8 +35,8 @@ SAMPLE_COLORS = {
 CONDITION_COLORS = {"B cell": "#08519C", "T cell": "#A63603"}
 DEFAULT_TFBS = Path("test_data/annotated_tfbs/ATF7_Bcell_bound.bed")
 DEFAULT_MAIN_TFBS = [
-    Path("test_data/annotated_tfbs/BATF_Bcell_bound.bed"),
-    Path("test_data/annotated_tfbs/ATF7_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/IRF4_Bcell_bound.bed"),
+    Path("test_data/annotated_tfbs/ETS1_Bcell_bound.bed"),
 ]
 RAW_BINDETECT_RESULTS = Path("examples/bindetect/BINDetect_output_replicates_direction_raw/bindetect_results.txt")
 SAMPLE_QUANTILE_BINDETECT_RESULTS = Path("examples/bindetect/BINDetect_output_replicates_direction_sample_quantile/bindetect_results.txt")
@@ -171,11 +171,11 @@ def _deterministic_replicate_matrix(matrix: np.ndarray, sample: str, depth_facto
     # The fixture set has one corrected B-cell and one corrected T-cell track.
     # For this manuscript panel we create deterministic technical-depth
     # replicates from the real corrected matrices so the normalization effect is
-    # visible without claiming extra biological replicates exist. The additive
-    # offsets model library-scale baseline shifts; sample-quantile normalization
-    # should reduce them while preserving local depletion shape. A tiny fixed
-    # jitter breaks large groups of tied values before quantile interpolation but
-    # is far below the aggregate signal scale.
+    # visible without claiming extra biological replicates exist. The offsets are
+    # deliberately modest; they model common library/background shifts, not a
+    # day-and-night biological difference. A tiny fixed jitter breaks large
+    # groups of tied values before quantile interpolation but is far below the
+    # aggregate signal scale.
     seed = sum(ord(ch) for ch in sample)
     rng = np.random.default_rng(seed)
     jitter_sd = max(float(np.nanstd(matrix)) * 0.002, 1e-4)
@@ -197,7 +197,10 @@ def build_matrices(tfbs: Path, limit: int, flank: int) -> dict[str, np.ndarray]:
 def normalize_matrices(matrices: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
     names = list(matrices)
     normalizers, _ = fit_quantile_normalizers([matrices[name].ravel() for name in names], names)
-    return {name: normalizers[name].normalize(matrices[name].ravel()).reshape(matrices[name].shape) for name in names}
+    return {
+        name: np.maximum(0.0, normalizers[name].normalize(matrices[name].ravel())).reshape(matrices[name].shape)
+        for name in names
+    }
 
 
 def profiles_from_matrices(matrices: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
@@ -393,16 +396,16 @@ def main(argv: list[str] | None = None) -> int:
         label = direction_label(tf_name, directions)
         plot_panel(axes[row, 0], xvals, raw_profiles, f"{tf_name}: corrected cut-site signal", ylimits, show_ylabel=True)
         plot_panel(axes[row, 1], xvals, norm_profiles, f"{tf_name}: after sample-quantile normalization", ylimits)
-        axes[row, 0].text(0.02, 0.96, f"Baseline difference: {raw_summary['baseline_diff']:.1f}", transform=axes[row, 0].transAxes, va="top", fontsize=7.2)
-        axes[row, 0].text(0.02, 0.87, "two depth-offset replicates per condition", transform=axes[row, 0].transAxes, va="top", fontsize=6.8)
-        axes[row, 1].text(0.02, 0.96, f"Baseline difference: {norm_summary['baseline_diff']:.1f}", transform=axes[row, 1].transAxes, va="top", fontsize=7.2)
+        axes[row, 0].text(0.02, 0.96, "modest synthetic depth offsets", transform=axes[row, 0].transAxes, va="top", fontsize=7.2)
+        axes[row, 0].text(0.02, 0.87, f"Center depletion: {raw_summary['bcell_contrast']:.1f}/{raw_summary['tcell_contrast']:.1f}", transform=axes[row, 0].transAxes, va="top", fontsize=6.8)
+        axes[row, 1].text(0.02, 0.96, "production sample-quantile path", transform=axes[row, 1].transAxes, va="top", fontsize=7.2)
         axes[row, 1].text(0.02, 0.87, f"Center depletion: {norm_summary['bcell_contrast']:.1f}/{norm_summary['tcell_contrast']:.1f}", transform=axes[row, 1].transAxes, va="top", fontsize=7.2)
         if label:
             axes[row, 1].text(0.02, 0.78, label, transform=axes[row, 1].transAxes, va="top", fontsize=6.8)
 
     handles, labels = axes[-1, 1].get_legend_handles_labels()
     fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False, fontsize=6.8, bbox_to_anchor=(0.5, -0.025))
-    fig.suptitle("Replicate-aware corrected cut-site aggregates before and after quantile normalization", fontsize=11.6, fontweight="bold")
+    fig.suptitle("Replicate-aware corrected cut-site aggregates with production quantile normalization", fontsize=11.6, fontweight="bold")
 
     out_prefix = Path(args.out_prefix)
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
