@@ -327,6 +327,8 @@ detect-tf-binding \
 
 The integrated report writes `<prefix>_replicate_report.tsv`, `<prefix>_replicate_summary.tsv`, and `<prefix>_replicate_report.png` when replicate support is detected. `fp-tools-bindetect-replicate-report` remains available as a post-hoc compatibility helper for existing `*_results.txt` files.
 
+![Replicate-aware detect-tf-binding workflow](docs/assets/fp-tools-replicate-bindetect.png)
+
 ### Optional competition-aware footprint decomposition
 
 Decompose a multiscale NPZ sidecar (`score-footprints --output-multiscale-npz`) into competing TF-scale and nucleosome-scale footprint components per region:
