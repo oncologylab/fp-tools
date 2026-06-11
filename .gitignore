@@ -63,9 +63,9 @@ test_data/*.bam.bai
 /paper/tables/*.csv
 
 # LaTeX auxiliary files; keep source and intentional preview PDFs only.
-/paper/BioMedInformatics_manuscript/*.aux
-/paper/BioMedInformatics_manuscript/*.fdb_latexmk
-/paper/BioMedInformatics_manuscript/*.fls
-/paper/BioMedInformatics_manuscript/*.log
-/paper/BioMedInformatics_manuscript/*.out
-/paper/BioMedInformatics_manuscript/*.blg
+/paper/manuscript/*.aux
+/paper/manuscript/*.fdb_latexmk
+/paper/manuscript/*.fls
+/paper/manuscript/*.log
+/paper/manuscript/*.out
+/paper/manuscript/*.blg
