@@ -21,7 +21,11 @@ BOWTIE2="${BIN_DIR}/bowtie2"
 BOWTIE2_BUILD="${BIN_DIR}/bowtie2-build"
 SAMTOOLS="${BIN_DIR}/samtools"
 BEDTOOLS="${BIN_DIR}/bedtools"
-MACS2="${BIN_DIR}/macs2"
+if [[ -x "${BIN_DIR}/macs3" ]]; then
+  MACS_CALLPEAK="${BIN_DIR}/macs3"
+else
+  MACS_CALLPEAK="${BIN_DIR}/macs2"
+fi
 ATAC_CORRECT="${FP_TOOLS_ENV}/bin/atac-correct"
 SCORE_FOOTPRINTS="${FP_TOOLS_ENV}/bin/score-footprints"
 DETECT_TF_BINDING="${FP_TOOLS_ENV}/bin/detect-tf-binding"
@@ -109,7 +113,7 @@ check_inputs() {
   require_exec "${BOWTIE2_BUILD}"
   require_exec "${SAMTOOLS}"
   require_exec "${BEDTOOLS}"
-  require_exec "${MACS2}"
+  require_exec "${MACS_CALLPEAK}"
   require_exec "${ATAC_CORRECT}"
   require_exec "${SCORE_FOOTPRINTS}"
   require_exec "${DETECT_TF_BINDING}"
@@ -127,7 +131,7 @@ write_versions() {
     echo -e "bowtie2\t${BOWTIE2}"
     echo -e "samtools\t${SAMTOOLS}"
     echo -e "bedtools\t${BEDTOOLS}"
-    echo -e "macs2\t${MACS2}"
+    echo -e "macs-callpeak\t${MACS_CALLPEAK}"
     echo -e "atac-correct\t${ATAC_CORRECT}"
     echo -e "score-footprints\t${SCORE_FOOTPRINTS}"
     echo -e "detect-tf-binding\t${DETECT_TF_BINDING}"
@@ -197,7 +201,7 @@ process_sample() {
     '${SAMTOOLS}' idxstats '${final_bam}' > '${LOG_DIR}/${sample}.filtered.idxstats.txt'
   "
 
-  run_step "${sample}.macs2" "${MACS2}" callpeak \
+  run_step "${sample}.macs2" "${MACS_CALLPEAK}" callpeak \
     -t "${final_bam}" \
     -f BAMPE \
     -g hs \
