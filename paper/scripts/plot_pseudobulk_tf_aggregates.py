@@ -14,6 +14,17 @@ import pyBigWig
 
 DEFAULT_GROUPS = ["B_cell", "CD4_T", "NK_T_cytotoxic", "CD14_Monocyte", "FCGR3A_Monocyte", "Dendritic_cell"]
 DEFAULT_TFS = ["PAX5", "TCF7", "CEBPB", "CTCF"]
+TF_LABELS = {
+    "PAX5": "PAX5\nB-cell regulator, n=6 sites",
+    "TCF7": "TCF7\nT-cell regulator, n=200 sites",
+    "CEBPB": "CEBPB\nMyeloid regulator, n=27 sites",
+    "CTCF": "CTCF\nUbiquitous control, n=1,000 sites",
+}
+TF_EXPECTED_GROUPS = {
+    "PAX5": {"B_cell"},
+    "TCF7": {"CD4_T", "NK_T_cytotoxic"},
+    "CEBPB": {"CD14_Monocyte", "FCGR3A_Monocyte", "Dendritic_cell"},
+}
 GROUP_COLORS = {
     "B_cell": "#1f77b4",
     "CD4_T": "#2ca02c",
@@ -91,6 +102,15 @@ def protection_profile(values: list[float], center_half_width: int, flank_inner:
     return protected
 
 
+def line_style(tf: str, group: str) -> dict[str, float]:
+    expected = TF_EXPECTED_GROUPS.get(tf)
+    if expected is None:
+        return {"linewidth": 1.2, "alpha": 0.95}
+    if group in expected:
+        return {"linewidth": 1.8, "alpha": 1.0}
+    return {"linewidth": 0.9, "alpha": 0.45}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True)
@@ -140,10 +160,10 @@ def main(argv: list[str] | None = None) -> int:
             profile = profiles.get((tf, group))
             if profile is None:
                 continue
-            ax.plot(xvals, profile, label=group.replace("_", " "), linewidth=1.2, color=GROUP_COLORS.get(group))
+            ax.plot(xvals, profile, label=group.replace("_", " "), color=GROUP_COLORS.get(group), **line_style(tf, group))
         ax.axvline(0, color="black", linewidth=0.7, alpha=0.5)
-        ax.set_title(tf)
-        ax.set_ylabel("Cut sites (CPM)")
+        ax.set_title(TF_LABELS.get(tf, tf), fontsize=10)
+        ax.set_ylabel("Cut signal")
         ax.spines[["top", "right"]].set_visible(False)
     for ax in axes[len(tfs):]:
         ax.axis("off")
@@ -171,20 +191,20 @@ def main(argv: list[str] | None = None) -> int:
                     flank_inner=args.protection_flank_inner,
                     flank_outer=args.protection_flank_outer,
                 )
-                ax.plot(xvals, protected, label=group.replace("_", " "), linewidth=1.2, color=GROUP_COLORS.get(group))
+                ax.plot(xvals, protected, label=group.replace("_", " "), color=GROUP_COLORS.get(group), **line_style(tf, group))
                 for offset, value in zip(xvals, protected):
                     protection_records.append({"tf": tf, "group": group, "offset_bp": offset, "protection_score": value})
             ax.axhline(0, color="0.65", linewidth=0.7)
             ax.axvline(0, color="black", linewidth=0.7, alpha=0.5)
-            ax.set_title(tf)
-            ax.set_ylabel("Protection score\n(flank - center CPM)")
+            ax.set_title(TF_LABELS.get(tf, tf), fontsize=10)
+            ax.set_ylabel("Protection")
             ax.spines[["top", "right"]].set_visible(False)
         for ax in axes2[len(tfs):]:
             ax.axis("off")
         axes2[min(len(tfs), len(axes2)) - 1].legend(frameon=False, fontsize=7, loc="upper right")
         for ax in axes2[-ncols:]:
             ax.set_xlabel("Distance from motif-associated peak center (bp)")
-        fig2.suptitle("Footprint-like pseudobulk protection score", y=1.01)
+        fig2.suptitle("Footprint-like pseudobulk signal", y=1.01)
         fig2.tight_layout()
         fig2.savefig(protection_prefix.with_suffix(".png"), dpi=300)
         fig2.savefig(protection_prefix.with_suffix(".pdf"))

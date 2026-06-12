@@ -144,7 +144,7 @@ fp-tools-pseudobulk \
   --outdir data/public/processed/pseudobulk_pbmc/run
 ```
 
-Example pseudobulk cut-site aggregate output:
+Example pseudobulk cut-site aggregate output. Thicker traces mark the expected PBMC lineage context for PAX5 (B cell), TCF7 (T/NK), and CEBPB (myeloid); CTCF is shown as a ubiquitous control. PAX5 and CEBPB have small motif-site sets in this compact example, so they are useful as biology-oriented checks rather than stable quantitative benchmarks.
 
 ![Pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk-example-output.png)
 
