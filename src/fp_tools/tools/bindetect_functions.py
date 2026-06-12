@@ -713,6 +713,7 @@ def plot_interactive_bindetect(motifs, comparison, html_out, aggregate_data=None
             })
 
     points = [point for group in groups for point in points_by_group[group]]
+    aggregate_json = json.dumps(aggregate_data or {"motifs": [], "x": []})
     xvals = [p["x"] for p in points] or [0.0]
     yvals = [p["y"] for p in points] or [1.0]
     xabs = max(abs(min(xvals)), abs(max(xvals)), 1.0)
@@ -977,7 +978,7 @@ def plot_interactive_bindetect(motifs, comparison, html_out, aggregate_data=None
     const detail = document.getElementById('detail');
     const logoImg = document.getElementById('logo-img');
     const logoEmpty = document.getElementById('logo-empty');
-    const aggregateData =  + json.dumps(aggregate_data or {"motifs": [], "x": []}) + ;
+    const aggregateData = """ + aggregate_json + """;
     const aggregateControl = document.getElementById('aggregate-control');
     const aggregateSelect = document.getElementById('aggregate-select');
     const aggregateChart = document.getElementById('aggregate-chart');

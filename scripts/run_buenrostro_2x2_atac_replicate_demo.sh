@@ -176,8 +176,8 @@ write_parameters() {
     echo -e "merged_peaks	bedtools sort and merge across four replicate narrowPeak files; exclude '_' contigs and chrM/MT"
     echo -e "atac-correct	--peaks merged_peaks.bed --blacklist hg38-blacklist.v2.bed --cores ${THREADS}; defaults: extend=100, k_flank=12, read_shift=4,-5, bg_shift=100, window=100, score_mat=DWM"
     echo -e "call-footprints	--score footprint --regions merged_peaks.bed --cores ${THREADS}; defaults: fp_min=20, fp_max=50, flank_min=10, flank_max=30, smooth=1"
-    echo -e "diff-footprints_none	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization none --replicate-report auto --skip-excel --cores ${THREADS}"
-    echo -e "diff-footprints_sample_quantile	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization sample-quantile --replicate-report auto --skip-excel --cores ${THREADS}"
+    echo -e "diff-footprints_none	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization none --replicate-report auto --aggregate-signals corrected cut-site bigWigs --plot-aggregate top --plot-aggregate-top-n 5 --skip-excel --cores ${THREADS}"
+    echo -e "diff-footprints_sample_quantile	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization sample-quantile --replicate-report auto --aggregate-signals corrected cut-site bigWigs --plot-aggregate top --plot-aggregate-top-n 5 --skip-excel --cores ${THREADS}"
     echo -e "pseudobulk_pbmc	10x PBMC Multiome fragments grouped by broad immune labels; min_cells=300, min_fragments=50000, CPM-normalized cut-site bigWigs; chr1-chr22 and chrX for figures"
   } > "${OUT_DIR}/analysis_parameters.tsv"
 }
@@ -309,6 +309,14 @@ run_diff_footprints() {
     --cond-names Bcell Bcell Tcell Tcell \
     --normalization "${normalization}" \
     --replicate-report auto \
+    --aggregate-signals \
+      "${FP_DIR}/atac_correct/Bcell_rep1/Bcell_rep1.filtered_corrected.bw" \
+      "${FP_DIR}/atac_correct/Bcell_rep2/Bcell_rep2.filtered_corrected.bw" \
+      "${FP_DIR}/atac_correct/Tcell_rep1/Tcell_rep1.filtered_corrected.bw" \
+      "${FP_DIR}/atac_correct/Tcell_rep2/Tcell_rep2.filtered_corrected.bw" \
+    --plot-aggregate top \
+    --plot-aggregate-top-n 5 \
+    --aggregate-flank 100 \
     --skip-excel \
     --cores "${THREADS}"
 }
