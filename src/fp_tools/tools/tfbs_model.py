@@ -164,7 +164,7 @@ def train_main(argv: list[str] | None = None) -> int:
 
 def predict_main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Predict TFBS binding probabilities from a saved fp-tools tabular model.")
-    parser.add_argument("--model", required=True, help="Model pickle from fp-tools-train-tfbs-model.")
+    parser.add_argument("--model", required=True, help="Model pickle from the TFBS model training utility.")
     parser.add_argument("--features", required=True, help="Feature TSV to score.")
     parser.add_argument("--out", required=True, help="Output TSV with appended binding probability column.")
     parser.add_argument("--probability-column", default="binding_probability", help="Output probability column name.")

@@ -593,7 +593,104 @@ def plot_bindetect(motifs, cluster_obj, conditions, args):
     return volcano_fig, cluster_fig
 
 
-def plot_interactive_bindetect(motifs, comparison, html_out):
+
+
+def _read_bed_centers(path):
+    centers = []
+    if not os.path.exists(path):
+        return centers
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip() or line.startswith("#"):
+                continue
+            fields = line.rstrip("\n").split("\t")
+            if len(fields) < 3:
+                continue
+            try:
+                start = int(fields[1])
+                end = int(fields[2])
+            except ValueError:
+                continue
+            centers.append((fields[0], (start + end) // 2))
+    return centers
+
+
+def _mean_profile(bigwig_path, centers, flank):
+    profiles = []
+    with pyBigWig.open(bigwig_path) as bw:
+        chroms = bw.chroms()
+        for chrom, center in centers:
+            if chrom not in chroms:
+                continue
+            start = center - flank
+            end = center + flank
+            if start < 0 or end > chroms[chrom] or end <= start:
+                continue
+            values = np.asarray(bw.values(chrom, start, end, numpy=True), dtype=float)
+            if values.size != flank * 2:
+                continue
+            profiles.append(np.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0))
+    if not profiles:
+        return [0.0] * (flank * 2)
+    return [round(float(v), 6) for v in np.nanmean(np.vstack(profiles), axis=0)]
+
+
+def build_bindetect_aggregate_payload(motifs, info_table, comparison, args):
+    """Build compact aggregate profiles for embedding in comparison HTML."""
+
+    if not getattr(args, "aggregate_signals", None):
+        return None
+    if len(args.aggregate_signals) != len(args.signals):
+        raise ValueError("--aggregate-signals must have the same length as --signals")
+
+    c1, c2 = comparison
+    base = f"{c1}_{c2}"
+    rows = info_table.copy()
+    rows[base + "_pvalue_numeric"] = pd.to_numeric(rows[base + "_pvalue"], errors="coerce").fillna(1.0)
+    rows[base + "_abs_change"] = pd.to_numeric(rows[base + "_change"], errors="coerce").fillna(0.0).abs()
+    mode = getattr(args, "plot_aggregate", "sig")
+    top_n = max(1, int(getattr(args, "plot_aggregate_top_n", 20)))
+    if mode == "all":
+        selected = rows.sort_values([base + "_pvalue_numeric", base + "_abs_change"], ascending=[True, False])
+    elif mode == "top":
+        selected = rows.sort_values([base + "_pvalue_numeric", base + "_abs_change"], ascending=[True, False]).head(top_n)
+    else:
+        threshold = float(getattr(args, "aggregate_pvalue_threshold", 0.05))
+        selected = rows[rows[base + "_pvalue_numeric"] <= threshold].sort_values([base + "_pvalue_numeric", base + "_abs_change"], ascending=[True, False])
+        if selected.empty:
+            selected = rows.sort_values([base + "_pvalue_numeric", base + "_abs_change"], ascending=[True, False]).head(top_n)
+
+    flank = max(1, int(getattr(args, "aggregate_flank", 100)))
+    x = list(range(-flank, 0)) + list(range(1, flank + 1))
+    motifs_payload = []
+    for _, row in selected.iterrows():
+        prefix = str(row["output_prefix"])
+        bed_path = os.path.join(args.outdir, prefix, "beds", prefix + "_all.bed")
+        centers = _read_bed_centers(bed_path)
+        if not centers:
+            continue
+        conditions = []
+        for cond in comparison:
+            sample_profiles = []
+            for signal_idx in args.cond_groups.get(cond, []):
+                sample_profiles.append(_mean_profile(args.aggregate_signals[signal_idx], centers, flank))
+            if sample_profiles:
+                profile = [round(float(v), 6) for v in np.nanmean(np.asarray(sample_profiles, dtype=float), axis=0)]
+            else:
+                profile = [0.0] * len(x)
+            conditions.append({"name": cond, "profile": profile})
+        motifs_payload.append({
+            "prefix": prefix,
+            "name": str(row.get("name", prefix)),
+            "motif_id": str(row.get("motif_id", "")),
+            "change": float(row.get(base + "_change", 0.0)),
+            "pvalue": float(row.get(base + "_pvalue_numeric", 1.0)),
+            "n_sites": len(centers),
+            "conditions": conditions,
+        })
+    return {"x": x, "motifs": motifs_payload, "comparison": f"{c1} / {c2}"}
+
+def plot_interactive_bindetect(motifs, comparison, html_out, aggregate_data=None, title="BINDetect Volcano Plot"):
     cond1, cond2 = comparison
     groups = [cond1 + "_up", cond2 + "_up", "n.s."]
     colors = {
@@ -716,7 +813,7 @@ def plot_interactive_bindetect(motifs, comparison, html_out):
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>BINDetect """ + f"{cond1} / {cond2}" + """</title>
+  <title>""" + esc(title) + " " + f"{cond1} / {cond2}" + """</title>
   <style>
     body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #edf2f7; color: #152133; font-weight: 700; }
     .wrap { max-width: 1080px; margin: 24px auto; padding: 0 18px; }
@@ -825,6 +922,9 @@ def plot_interactive_bindetect(motifs, comparison, html_out):
       font-size: 13px;
       font-weight: 700;
     }
+    .aggregate-control { margin-top: 14px; }
+    .aggregate-control select { width: 100%; border: 1px solid #d9e2ec; border-radius: 8px; padding: 7px; font-weight: 700; color: #152133; background: #ffffff; }
+    #aggregate-chart { width: 100%; height: auto; display: block; margin-top: 10px; border: 1px solid #d9e2ec; border-radius: 12px; background: #ffffff; }
     @media (max-width: 920px) {
       .body { grid-template-columns: 1fr; }
       .side { border-left: 0; border-top: 1px solid #e7edf4; }
@@ -835,7 +935,7 @@ def plot_interactive_bindetect(motifs, comparison, html_out):
   <div class="wrap">
     <div class="panel">
       <div class="head">
-        <h1>BINDetect Volcano Plot</h1>
+        <h1>""" + esc(title) + """</h1>
         <p class="sub">""" + f"{cond1} / {cond2}" + """</p>
       </div>
       <div class="body">
@@ -864,6 +964,11 @@ def plot_interactive_bindetect(motifs, comparison, html_out):
             <img id="logo-img" alt="Motif logo">
             <span id="logo-empty">Motif logo</span>
           </div>
+          <div class="aggregate-control" id="aggregate-control" style="display:none">
+            <p class="meta-title">Aggregate profile</p>
+            <select id="aggregate-select" aria-label="Select motif aggregate"></select>
+            <svg id="aggregate-chart" viewBox="0 0 260 190" aria-label="Aggregate footprint profile"></svg>
+          </div>
         </aside>
       </div>
     </div>
@@ -872,6 +977,38 @@ def plot_interactive_bindetect(motifs, comparison, html_out):
     const detail = document.getElementById('detail');
     const logoImg = document.getElementById('logo-img');
     const logoEmpty = document.getElementById('logo-empty');
+    const aggregateData =  + json.dumps(aggregate_data or {"motifs": [], "x": []}) + ;
+    const aggregateControl = document.getElementById('aggregate-control');
+    const aggregateSelect = document.getElementById('aggregate-select');
+    const aggregateChart = document.getElementById('aggregate-chart');
+    const palette = ['#1f77b4', '#d62728', '#2ca02c', '#9467bd'];
+    function renderAggregate(prefix) {
+      if (!aggregateData.motifs || aggregateData.motifs.length === 0) return;
+      const motif = aggregateData.motifs.find((m) => m.prefix === prefix) || aggregateData.motifs[0];
+      const x = aggregateData.x;
+      const allY = motif.conditions.flatMap((c) => c.profile);
+      const ymin = Math.min(...allY, 0);
+      const ymax = Math.max(...allY, 1e-9);
+      const pad = (ymax - ymin || 1) * 0.12;
+      const y0 = ymin - pad;
+      const y1 = ymax + pad;
+      const sx2 = (v) => 32 + ((v - x[0]) / (x[x.length - 1] - x[0] || 1)) * 198;
+      const sy2 = (v) => 150 - ((v - y0) / (y1 - y0 || 1)) * 112;
+      let parts = [`<rect width="260" height="190" fill="#fff"/>`, `<line x1="32" y1="150" x2="230" y2="150" stroke="#68778d"/>`, `<line x1="32" y1="38" x2="32" y2="150" stroke="#68778d"/>`, `<line x1="${sx2(0).toFixed(1)}" y1="38" x2="${sx2(0).toFixed(1)}" y2="150" stroke="#999" stroke-dasharray="3 3"/>`, `<text x="130" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#52606d">bp from motif center</text>`];
+      motif.conditions.forEach((cond, idx) => {
+        const d = cond.profile.map((y, i) => `${i === 0 ? 'M' : 'L'}${sx2(x[i]).toFixed(1)},${sy2(y).toFixed(1)}`).join(' ');
+        parts.push(`<path d="${d}" fill="none" stroke="${palette[idx % palette.length]}" stroke-width="1.8"/>`);
+        parts.push(`<text x="42" y="${18 + idx * 14}" font-size="11" font-weight="700" fill="${palette[idx % palette.length]}">${cond.name}</text>`);
+      });
+      parts.push(`<text x="130" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#152133">${motif.name} (${motif.n_sites} sites)</text>`);
+      aggregateChart.innerHTML = parts.join('');
+    }
+    if (aggregateData.motifs && aggregateData.motifs.length > 0) {
+      aggregateControl.style.display = 'block';
+      aggregateSelect.innerHTML = aggregateData.motifs.map((m) => `<option value="${m.prefix}">${m.name}</option>`).join('');
+      aggregateSelect.addEventListener('change', () => renderAggregate(aggregateSelect.value));
+      renderAggregate(aggregateData.motifs[0].prefix);
+    }
     document.querySelectorAll('.pt').forEach((el) => {
       el.addEventListener('mouseenter', () => {
         const name = el.dataset.name;
@@ -883,6 +1020,11 @@ def plot_interactive_bindetect(motifs, comparison, html_out):
           `<p><strong>Group:</strong> ${group}</p>` +
           `<p><strong>Change:</strong> ${change.toFixed(4)}</p>` +
           `<p><strong>P-value:</strong> ${pvalue.toExponential(3)}</p>`;
+        if (aggregateData.motifs && aggregateData.motifs.some((m) => m.name === name || m.prefix === name)) {
+          const hit = aggregateData.motifs.find((m) => m.name === name || m.prefix === name);
+          aggregateSelect.value = hit.prefix;
+          renderAggregate(hit.prefix);
+        }
         if (el.dataset.logo) {
           logoImg.src = el.dataset.logo;
           logoImg.style.display = 'block';

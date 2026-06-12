@@ -3,7 +3,7 @@
 This module is an isolated wrapper around the packaged commands. Direct CLI
 usage remains primary. The GUI supports direct form-driven runs, YAML load/save,
 and batch editing while using the same normalized config model as the optional
-``fp-tools-run --config ...`` path.
+``run-workflow --config ...`` path.
 """
 
 from __future__ import annotations

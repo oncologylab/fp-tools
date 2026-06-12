@@ -1,7 +1,7 @@
 """Shared config helpers for optional GUI and YAML-driven batch execution.
 
 This module defines the normalized config shape used by the GUI and the
-optional ``fp-tools-run --config ...`` path. Direct CLI commands remain the
+optional ``run-workflow --config ...`` path. Direct CLI commands remain the
 primary interface and do not depend on this layer.
 """
 
@@ -18,16 +18,23 @@ import yaml
 CONFIG_VERSION = 1
 
 TOOL_ALIASES = {
-    "atac-correct": "ATACorrect",
-    "atacorrect": "ATACorrect",
-    "score-footprints": "FootprintScores",
-    "footprintscores": "FootprintScores",
-    "scorebigwig": "FootprintScores",
-    "score-bigwig": "FootprintScores",
-    "detect-tf-binding": "BINDetect",
-    "bindetect": "BINDetect",
-    "plot-aggregate": "PlotAggregate",
-    "plotaggregate": "PlotAggregate",
+    "atac-correct": "atac-correct",
+    "atacorrect": "atac-correct",
+    "call-footprints": "call-footprints",
+    "score-footprints": "call-footprints",
+    "footprintscores": "call-footprints",
+    "scorebigwig": "call-footprints",
+    "score-bigwig": "call-footprints",
+    "match-motifs": "match-motifs",
+    "detect-tf-binding": "diff-footprints",
+    "diff-footprints": "diff-footprints",
+    "bindetect": "diff-footprints",
+    "plot-aggregate": "plot-aggregate",
+    "plotaggregate": "plot-aggregate",
+    "plot-aggregate-batch": "plot-aggregate-batch",
+    "run-workflow": "run-workflow",
+    "motif-discovery": "motif-discovery",
+    "pseudobulk-fragments": "pseudobulk-fragments",
 }
 
 RESERVED_KEYS = {
@@ -49,10 +56,14 @@ LIST_FLAGS = {
 }
 
 REQUIRED_FIELDS = {
-    "ATACorrect": ("bam", "genome", "peaks"),
-    "FootprintScores": ("signal", "regions", "output"),
-    "BINDetect": ("motifs", "signals", "genome", "peaks"),
-    "PlotAggregate": ("TFBS", "signals", "output"),
+    "atac-correct": ("bam", "genome", "peaks"),
+    "call-footprints": ("signal", "regions", "output"),
+    "match-motifs": ("motifs", "signals", "genome", "peaks"),
+    "diff-footprints": ("motifs", "signals", "genome", "peaks"),
+    "plot-aggregate": ("TFBS", "signals", "output"),
+    "plot-aggregate-batch": ("manifest", "output"),
+    "motif-discovery": ("outdir",),
+    "pseudobulk-fragments": ("fragments", "annotations", "group_by", "outdir"),
 }
 
 FLAG_NAME_MAP = {

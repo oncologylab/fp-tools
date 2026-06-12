@@ -47,8 +47,9 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "[project.scripts] and [tool.poetry.scripts] have drifted apart.",
         )
 
-    def test_every_entry_point_is_documented_in_readme_and_manual(self):
-        for command in self.project_scripts:
+    def test_primary_entry_points_are_documented_in_readme_and_manual(self):
+        primary = set(self.project_scripts) - LEGACY_ALIASES
+        for command in primary:
             self.assertIn(command, self.readme, f"{command} is missing from README.md")
             self.assertIn(command, self.manual, f"{command} is missing from MANUAL.md")
 
@@ -68,9 +69,11 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "README `--help` block references commands that are not entry points.",
         )
 
-    def test_legacy_aliases_are_listed_as_aliases(self):
+    def test_tobias_compatible_aliases_are_registered_but_not_primary_help_commands(self):
         for alias in LEGACY_ALIASES:
-            self.assertIn(alias, self.readme, f"Legacy alias {alias} not documented in README.md")
+            self.assertIn(alias, self.project_scripts)
+        documented = _verify_help_commands(self.readme)
+        self.assertFalse(documented & LEGACY_ALIASES)
 
     def test_gui_extra_is_declared_and_documented(self):
         extras = self.data["project"].get("optional-dependencies", {})

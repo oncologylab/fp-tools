@@ -706,8 +706,14 @@ def run_bindetect(args):
             cluster_pdf.savefig(cluster_fig, bbox_inches='tight'); plt.close(cluster_fig)
 
             logger.info(f"- {c1} / {c2} (interactive plot)")
-            html_out = os.path.join(args.outdir, "bindetect_" + base + ".html")
-            plot_interactive_bindetect(motif_list, [c1, c2], html_out)
+            html_out = os.path.join(args.outdir, args.prefix + "_" + base + ".html")
+            aggregate_data = None
+            if getattr(args, "aggregate_signals", None) and getattr(args, "plot_aggregate", "off") != "off":
+                try:
+                    aggregate_data = build_bindetect_aggregate_payload(motif_list, info_table, [c1, c2], args)
+                except Exception as exc:
+                    logger.warning(f"Could not build aggregate payload for interactive HTML: {exc}")
+            plot_interactive_bindetect(motif_list, [c1, c2], html_out, aggregate_data=aggregate_data, title="Differential footprint report")
 
     if args.debug and len(args.cond_names) > 1:
         logger.info("Plotting heatmap across conditions (debug)")
@@ -758,6 +764,37 @@ def run_cli():
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
+    run_bindetect(args)
+
+
+def match_motifs_cli():
+    parser = argparse.ArgumentParser(prog="match-motifs")
+    parser = add_bindetect_arguments(parser)
+    args = parser.parse_args()
+    if len(sys.argv[1:]) == 0:
+        parser.print_help()
+        sys.exit()
+    if not args.signals or len(args.signals) != 1:
+        parser.error("match-motifs expects exactly one --signals bigWig for single-sample motif matching")
+    if args.cond_names is not None and len(args.cond_names) != 1:
+        parser.error("match-motifs expects exactly one --cond-names value when provided")
+    if args.prefix == "bindetect":
+        args.prefix = "motif_matches"
+    args.replicate_report = "off"
+    run_bindetect(args)
+
+
+def diff_footprints_cli():
+    parser = argparse.ArgumentParser(prog="diff-footprints")
+    parser = add_bindetect_arguments(parser)
+    args = parser.parse_args()
+    if len(sys.argv[1:]) == 0:
+        parser.print_help()
+        sys.exit()
+    if not args.signals or len(args.signals) < 2:
+        parser.error("diff-footprints expects at least two --signals bigWigs")
+    if args.prefix == "bindetect":
+        args.prefix = "diff_footprints"
     run_bindetect(args)
 
 

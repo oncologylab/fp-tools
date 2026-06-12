@@ -24,7 +24,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
                 self.assertGreaterEqual(len(jobs), 1)
                 for job in jobs:
                     self.assertTrue(job.job_id)
-                    self.assertIn(job.tool, {"ATACorrect", "FootprintScores", "BINDetect", "PlotAggregate"})
+                    self.assertIn(job.tool, {"atac-correct", "call-footprints", "diff-footprints", "plot-aggregate"})
                     self.assertEqual(job.command[0], job.tool)
 
     def test_all_example_yaml_configs_support_dry_run(self):
@@ -38,23 +38,21 @@ class CliAndConfigSmokeTest(unittest.TestCase):
 
     def test_packaged_entry_points_print_help(self):
         commands = [
+            "atac-correct",
+            "call-footprints",
+            "match-motifs",
+            "diff-footprints",
+            "plot-aggregate",
+            "plot-aggregate-batch",
+            "run-workflow",
+            "motif-discovery",
+            "motif-summary",
+            "pseudobulk-fragments",
             "ATACorrect",
             "FootprintScores",
+            "ScoreBigwig",
             "BINDetect",
             "PlotAggregate",
-            "fp-tools-run",
-            "fp-tools-gui",
-            "fp-tools-build-tfbs-features",
-            "fp-tools-train-tfbs-model",
-            "fp-tools-predict-tfbs",
-            "fp-tools-generate-candidates",
-            "fp-tools-rerank-candidates",
-            "fp-tools-export-candidate-fasta",
-            "fp-tools-meme-command",
-            "fp-tools-motif-discovery",
-            "fp-tools-summarize-motifs",
-            "fp-tools-score-variants",
-            "fp-tools-pseudobulk",
         ]
         for command in commands:
             exe = ROOT / ".venv" / "bin" / command

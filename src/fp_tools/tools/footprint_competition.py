@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Competition-aware overlap decomposition of multiscale footprint signal.
 
-Reads a multiscale NPZ sidecar produced by ``score-footprints
+Reads a multiscale NPZ sidecar produced by ``call-footprints
 --output-multiscale-npz`` and decomposes each region's depletion signal into a
 short TF-scale footprint band and a wide nucleosome-scale band. Where both bands
 are simultaneously strong the components compete; this tool partitions the
@@ -214,7 +214,7 @@ def _parse_band(value: str) -> tuple[float, float]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--npz", required=True, help="Multiscale NPZ sidecar from score-footprints.")
+    parser.add_argument("--npz", required=True, help="Multiscale NPZ sidecar from call-footprints.")
     parser.add_argument("--out", required=True, help="Per-region competition decomposition TSV.")
     parser.add_argument("--summary-out", help="Optional dataset-level summary TSV.")
     parser.add_argument("--figure-out", help="Optional PDF/SVG/PNG figure.")

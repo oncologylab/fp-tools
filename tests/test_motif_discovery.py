@@ -62,7 +62,7 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
         self.assertIn("meme", text)
         self.assertIn("-nmotifs 5", text)
         self.assertIn("tomtom", text)
-        self.assertIn("fp-tools-summarize-motifs", text)
+        self.assertIn("motif-summary", text)
         self.assertTrue(text.startswith("#!/usr/bin/env bash"))
 
     def test_parse_meme_tomtom_and_write_reports(self):

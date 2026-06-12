@@ -60,11 +60,10 @@ def add_atacorrect_arguments(parser):
 def add_scorebigwig_arguments(parser):
 
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=40, width=90)
-	description = "score-footprints calculates footprint, sum, mean, or pass-through scores from bigWig signal.\n\n"
-	description += "Legacy aliases: FootprintScores and ScoreBigwig.\n\n"
-	description += "Usage: score-footprints --signal <cutsites.bw> --regions <regions.bed> --output <output.bw>\n\n"
-	description += "Output:\n- <output.bw>"
-	parser.description = format_help_description("score-footprints", description)
+	description = "call-footprints calculates footprint, sum, mean, or pass-through scores from bigWig signal and can optionally call ranked footprint candidate intervals.\n\n"
+	description += "Usage: call-footprints --signal <cutsites.bw> --regions <regions.bed> --output <output.bw>\n\n"
+	description += "Output:\n- <output.bw>\n- optional candidate BED from --output-bed"
+	parser.description = format_help_description("call-footprints", description)
 	
 	parser._action_groups.pop()	#pop -h
 
@@ -87,6 +86,13 @@ def add_scorebigwig_arguments(parser):
 	multiscaleargs.add_argument('--multiscale-summary', metavar="<method>", choices=["max", "mean"], help="How to collapse scale-specific scores into the output bigWig (default: max)", default="max")
 	multiscaleargs.add_argument('--output-multiscale-npz', metavar="<npz>", help="Optional compressed NumPy sidecar with per-region scale-by-position multiscale scores (only for --score multiscale)")
 
+	callargs = parser.add_argument_group('Optional footprint candidate BED calling')
+	callargs.add_argument('--output-bed', metavar="<bed>", help="Optional BED-like file of ranked local footprint calls for de novo motif discovery")
+	callargs.add_argument('--top-n', metavar="<int>", type=int, help="Keep only the top N footprint calls by score (default: keep all)")
+	callargs.add_argument('--min-score', metavar="<float>", type=float, help="Minimum footprint score for candidate BED calls (default: no threshold)")
+	callargs.add_argument('--call-width', metavar="<bp>", type=int, default=50, help="Width of candidate BED intervals centered on local maxima (default: 50)")
+	callargs.add_argument('--min-distance', metavar="<bp>", type=int, default=20, help="Minimum distance between retained local footprint centers within a region (default: 20)")
+
 	footprintargs = parser.add_argument_group('Parameters for score == footprint')
 	footprintargs.add_argument('--fp-min', metavar="<int>", type=int, help="Minimum footprint width (default: 20)", default=20)
 	footprintargs.add_argument('--fp-max', metavar="<int>", type=int, help="Maximum footprint width (default: 50)", default=50)
@@ -107,14 +113,14 @@ def add_scorebigwig_arguments(parser):
 def add_bindetect_arguments(parser):
 
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=35, width=90)
-	description = "detect-tf-binding takes motifs, signals (footprints) and genome as input to estimate bound transcription factor binding sites and differential binding between conditions. "
+	description = "diff-footprints takes motifs, footprint signals, and genome sequence as input to infer motif-associated bound sites and compare footprint evidence across conditions. "
 	description += "The underlying method is a modified motif enrichment test to see which motifs have the largest differences in signal across input conditions. "
 	description += "The output is an in-depth overview of global changes as well as the individual binding site signal-differences.\n\n"
-	description += "Usage:\ndetect-tf-binding --signals <bigwig1> (<bigwig2> (...)) --motifs <motifs.txt> --genome <genome.fasta> --peaks <peaks.bed>\n\n"
+	description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --motifs <motifs.txt> --genome <genome.fasta> --peaks <peaks.bed>\n\n"
 	description += "Output files:\n- <outdir>/<prefix>_figures.pdf\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n"
 	description += "- <outdir>/<TF>/<TF>_overview.{txt,xlsx} (per motif)\n- <outdir>/<TF>/beds/<TF>_all.bed (per motif)\n"
 	description += "- <outdir>/<TF>/beds/<TF>_<condition>_bound.bed (per motif-condition pair)\n- <outdir>/<TF>/beds/<TF>_<condition>_unbound.bed (per motif-condition pair)\n\n"
-	parser.description = format_help_description("detect-tf-binding", description)
+	parser.description = format_help_description("diff-footprints", description)
 
 	parser._action_groups.pop()	#pop -h
 	
@@ -136,6 +142,7 @@ def add_bindetect_arguments(parser):
 
 	optargs.add_argument('--pseudo', type=float, metavar="<float>", help="Pseudocount for calculating log2fcs (default: estimated from data)", default=None)
 	optargs.add_argument('--time-series', action='store_true', help="Will only compare signals1<->signals2<->signals3 (...) in order of input, and skip all-against-all comparison.")
+	optargs.add_argument('--time-course', dest='time_series', action='store_true', help="Alias for --time-series; compare adjacent ordered conditions only.")
 	optargs.add_argument('--skip-excel', action='store_true', help="Skip creation of excel files - for large datasets, this will speed up BINDetect considerably")
 	optargs.add_argument('--output-peaks', metavar="<bed>", help="""Gives the possibility to set the output peak set differently than the input --peaks.
 													 				This will limit all analysis to the regions in --output-peaks. 
@@ -147,6 +154,11 @@ def add_bindetect_arguments(parser):
 	optargs.add_argument('--replicate-report-out', metavar="<tsv>", help="Output long-form replicate diagnostic TSV (default: <outdir>/<prefix>_replicate_report.tsv)")
 	optargs.add_argument('--replicate-summary-out', metavar="<tsv>", help="Output replicate diagnostic summary TSV (default: <outdir>/<prefix>_replicate_summary.tsv)")
 	optargs.add_argument('--replicate-figure-out', metavar="<figure>", help="Output replicate diagnostic figure (default: <outdir>/<prefix>_replicate_report.png)")
+	optargs.add_argument('--aggregate-signals', metavar="<bigwig>", nargs="*", help="Corrected cut-site bigWigs used for aggregate profiles embedded in comparison HTML")
+	optargs.add_argument('--plot-aggregate', choices=["sig", "all", "top", "off"], default="sig", help="Embed aggregate profiles in comparison HTML for significant, all, top-N, or no motifs (default: sig)")
+	optargs.add_argument('--plot-aggregate-top-n', metavar="<int>", type=int, default=20, help="Number of motifs to aggregate when --plot-aggregate top or fallback selection is used (default: 20)")
+	optargs.add_argument('--aggregate-pvalue-threshold', metavar="<float>", type=float, default=0.05, help="P-value threshold for --plot-aggregate sig (default: 0.05)")
+	optargs.add_argument('--aggregate-flank', metavar="<bp>", type=int, default=100, help="Flank around motif centers for embedded aggregate profiles (default: 100)")
 
 	runargs = parser.add_argument_group("Run arguments")
 	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory to place TFBS/plots in (default: bindetect_output)", default="bindetect_output")
@@ -263,7 +275,7 @@ def add_aggregate_arguments(parser):
 	IO.add_argument('--output-csv', metavar="", default=None, help="Legacy alias for aggregated signal CSV output (default: None)")
 	IO.add_argument('--output_aggregated_signals', metavar="", default=None, help="Path to CSV file for per-base aggregated signals (default: None)")
 	IO.add_argument('--output_aggregated_scores', metavar="", default=None, help="Path to CSV file for aggregated footprint-score table (default: None)")
-	IO.add_argument('--multiscale-npz', metavar="<npz>", help="Optional score-footprints --output-multiscale-npz sidecar to render as a scale-by-position aggregate figure")
+	IO.add_argument('--multiscale-npz', metavar="<npz>", help="Optional call-footprints --output-multiscale-npz sidecar to render as a scale-by-position aggregate figure")
 	IO.add_argument('--output-multiscale-aggregate', metavar="", help="Path for the optional multiscale aggregate figure (default: <output stem>_multiscale.<output ext>)")
 
 	PLOT = parser.add_argument_group('Plot arguments')

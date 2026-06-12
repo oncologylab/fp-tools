@@ -135,7 +135,7 @@ def write_motif_discovery_plan(
         )
         tomtom_tsv = f" --tomtom-tsv {shlex.quote(str(tomtom_dir / 'tomtom.tsv'))}"
     lines.append(
-        f"fp-tools-summarize-motifs --meme-txt {shlex.quote(str(motif_txt))}{tomtom_tsv} "
+        f"motif-summary --meme-txt {shlex.quote(str(motif_txt))}{tomtom_tsv} "
         f"--out-tsv {shlex.quote(str(summary_tsv))} --out-html {shlex.quote(str(summary_html))}"
     )
     script.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -341,7 +341,7 @@ def export_fasta_main(argv: list[str] | None = None) -> int:
 
 def meme_command_main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Print a MEME/DREME command for exported candidate FASTA.")
-    parser.add_argument("--fasta", required=True, help="Candidate FASTA from fp-tools-export-candidate-fasta.")
+    parser.add_argument("--fasta", required=True, help="Existing candidate FASTA.")
     parser.add_argument("--outdir", required=True, help="External motif discovery output directory.")
     parser.add_argument("--method", choices=["meme", "dreme"], default="meme")
     parser.add_argument("--extra-args", nargs=argparse.REMAINDER, default=[], help="Additional arguments appended to the external command.")
@@ -352,8 +352,12 @@ def meme_command_main(argv: list[str] | None = None) -> int:
 
 
 def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Write or run a de novo motif discovery command plan.")
-    parser.add_argument("--fasta", required=True, help="Candidate FASTA from fp-tools-export-candidate-fasta.")
+    parser = argparse.ArgumentParser(description="Prepare or run a de novo motif discovery command plan.")
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument("--fasta", help="Existing candidate FASTA.")
+    input_group.add_argument("--candidates", help="Candidate BED from call-footprints --output-bed or another BED-like source.")
+    parser.add_argument("--genome", help="Genome FASTA, required when --candidates is used.")
+    parser.add_argument("--flank", type=int, default=0, help="If >0 with --candidates, export +/- flank bp around each candidate center.")
     parser.add_argument("--outdir", required=True, help="External motif discovery output directory.")
     parser.add_argument("--script", help="Output shell script path. Defaults to <outdir>/run_motif_discovery.sh.")
     parser.add_argument("--method", choices=["meme", "dreme"], default="meme")
@@ -362,10 +366,21 @@ def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
     parser.add_argument("--execute", action="store_true", help="Run the generated script immediately.")
     args = parser.parse_args(argv)
 
+    outdir = Path(args.outdir)
+    if args.candidates:
+        if not args.genome:
+            parser.error("--genome is required when --candidates is used")
+        fasta = outdir / "candidate_sequences.fa"
+        written = export_candidate_fasta(args.candidates, args.genome, fasta, flank=args.flank)
+        if written == 0:
+            raise SystemExit("No candidate sequences were exported; check candidate BED and genome FASTA.")
+    else:
+        fasta = Path(args.fasta)
+
     script = write_motif_discovery_plan(
-        args.fasta,
-        args.outdir,
-        args.script or str(Path(args.outdir) / "run_motif_discovery.sh"),
+        fasta,
+        outdir,
+        args.script or str(outdir / "run_motif_discovery.sh"),
         method=args.method,
         known_motifs=args.known_motifs,
         extra_args=args.extra_args,

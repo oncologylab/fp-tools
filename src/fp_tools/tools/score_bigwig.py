@@ -53,6 +53,11 @@ def _normalize_paths(args):
         os.makedirs(out_dir, exist_ok=True)
         args.output_multiscale_npz = os.path.abspath(args.output_multiscale_npz)
 
+    if getattr(args, "output_bed", None):
+        out_dir = os.path.dirname(args.output_bed) or "."
+        os.makedirs(out_dir, exist_ok=True)
+        args.output_bed = os.path.abspath(args.output_bed)
+
     return args
 
 
@@ -135,6 +140,82 @@ def calculate_scores(regions, args):
     return 1
 
 
+
+
+def _local_maxima(values):
+    """Yield 0-based offsets that are local maxima in a one-dimensional score array."""
+
+    if len(values) == 0:
+        return
+    if len(values) == 1:
+        if np.isfinite(values[0]):
+            yield 0
+        return
+    for idx, value in enumerate(values):
+        if not np.isfinite(value):
+            continue
+        left = values[idx - 1] if idx > 0 else -np.inf
+        right = values[idx + 1] if idx < len(values) - 1 else -np.inf
+        if value >= left and value >= right and (value > left or value > right):
+            yield idx
+
+
+def _write_candidate_bed(score_bigwig, regions, output_bed, args, chrom_info, logger):
+    """Call ranked local footprint candidates from the scored bigWig."""
+
+    if args.score not in {"footprint", "FOS", "multiscale"}:
+        logger.warning("--output-bed is intended for footprint-like scores; writing calls from the selected score anyway.")
+
+    min_score = args.min_score
+    call_width = max(1, int(args.call_width))
+    half_width = max(1, call_width // 2)
+    min_distance = max(0, int(args.min_distance))
+    raw_calls = []
+
+    with closing(pyBigWig.open(score_bigwig)) as bw:
+        for region_idx, region in enumerate(regions, start=1):
+            values = np.asarray(bw.values(region.chrom, region.start, region.end, numpy=True), dtype=float)
+            values = np.nan_to_num(values, nan=-np.inf, posinf=-np.inf, neginf=-np.inf)
+            candidates = []
+            for offset in _local_maxima(values):
+                score = float(values[offset])
+                if min_score is not None and score < min_score:
+                    continue
+                center = int(region.start + offset)
+                candidates.append((score, center, region_idx, region.chrom, region.start, region.end))
+            candidates.sort(key=lambda item: (-item[0], item[1]))
+            kept_centers = []
+            for score, center, reg_i, chrom, reg_start, reg_end in candidates:
+                if any(abs(center - other) < min_distance for other in kept_centers):
+                    continue
+                kept_centers.append(center)
+                start = max(0, center - half_width)
+                end = min(int(chrom_info[chrom]), start + call_width)
+                start = max(0, end - call_width)
+                raw_calls.append({
+                    "chrom": chrom,
+                    "start": start,
+                    "end": end,
+                    "score": score,
+                    "center": center,
+                    "source_region": f"{chrom}:{reg_start}-{reg_end}",
+                })
+
+    raw_calls.sort(key=lambda row: (-row["score"], row["chrom"], row["start"]))
+    if args.top_n is not None:
+        raw_calls = raw_calls[:max(0, int(args.top_n))]
+
+    with open(output_bed, "w", encoding="utf-8") as handle:
+        handle.write("#chrom\tstart\tend\tname\tscore\tstrand\tsource_region\tcenter\traw_score\n")
+        for idx, row in enumerate(raw_calls, start=1):
+            name = f"footprint_{idx}"
+            score = f"{row['score']:.6g}"
+            handle.write(
+                f"{row['chrom']}\t{row['start']}\t{row['end']}\t{name}\t{score}\t.\t"
+                f"{row['source_region']}\t{row['center']}\t{score}\n"
+            )
+    logger.info(f"Wrote {len(raw_calls)} footprint candidate calls to {output_bed}")
+
 def _validate_bigwig_output(path, logger):
     """Fail loudly if the writer did not produce a readable bigWig."""
 
@@ -157,7 +238,7 @@ def run_scorebigwig(args):
 
     check_required(args, ["signal", "output", "regions"])
     check_files([args.signal, args.regions], "r")
-    check_files([args.output, getattr(args, "output_multiscale_npz", None)], "w")
+    check_files([args.output, getattr(args, "output_multiscale_npz", None), getattr(args, "output_bed", None)], "w")
 
     if getattr(args, "output_multiscale_npz", None) and args.score != "multiscale":
         sys.exit("--output-multiscale-npz requires --score multiscale")
@@ -169,7 +250,7 @@ def run_scorebigwig(args):
     logger.begin()
     parser = add_scorebigwig_arguments(argparse.ArgumentParser())
     logger.arguments_overview(parser, args)
-    logger.output_files([args.output, getattr(args, "output_multiscale_npz", None)])
+    logger.output_files([args.output, getattr(args, "output_multiscale_npz", None), getattr(args, "output_bed", None)])
 
     logger.debug("Setting up listener for log")
     logger.start_logger_queue()
@@ -279,6 +360,8 @@ def run_scorebigwig(args):
 
     writer_result.get()
     _validate_bigwig_output(args.output, logger)
+    if getattr(args, "output_bed", None):
+        _write_candidate_bed(args.output, regions, args.output_bed, args, chrom_info, logger)
 
     logger.stop_logger_queue()
     logger.end()

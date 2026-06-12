@@ -81,7 +81,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
                 output = tmp / f"footprints_sum_cores_{cores}.bw"
                 run_command(
                     [
-                        BIN / "score-footprints",
+                        BIN / "call-footprints",
                         "--signal",
                         "test_data/Bcell_corrected.bw",
                         "--regions",

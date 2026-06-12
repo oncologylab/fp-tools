@@ -1,7 +1,7 @@
 """Multiscale footprint feature helpers.
 
 These helpers provide a lightweight first multiscale scoring backend for
-`score-footprints --score multiscale`. They intentionally operate on in-memory
+`call-footprints --score multiscale`. They intentionally operate on in-memory
 1D arrays so the command can reuse the existing bigWig region processing path.
 """
 
