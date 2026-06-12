@@ -29,7 +29,7 @@ replicate-aware reporting.
 
 ### Optional utilities
 
-- `fp-tools-motif-discovery-plan`: prepare candidate-centered sequence input, reproducible de novo motif-discovery runs, and known-motif comparisons.
+- `fp-tools-motif-discovery`: prepare candidate-centered sequence input, reproducible de novo motif-discovery runs, and known-motif comparisons.
 - `fp-tools-pseudobulk`: group single-cell ATAC fragments into pseudobulk fragment files and manifests.
 - `detect-tf-binding`: run replicate-aware differential TF-binding analysis using repeated condition names and optional report output.
 
@@ -64,7 +64,7 @@ score-footprints --help
 detect-tf-binding --help
 plot-aggregate --help
 fp-tools-run --help
-fp-tools-motif-discovery-plan --help
+fp-tools-motif-discovery --help
 fp-tools-pseudobulk --help
 ```
 
@@ -113,7 +113,7 @@ matches to known motifs, enrichment/significance summaries, and a reproducible
 record of the external MEME/DREME/Tomtom settings.
 
 ```bash
-fp-tools-motif-discovery-plan \
+fp-tools-motif-discovery \
   --fasta examples/bindetect/candidate_sites.fa \
   --outdir examples/bindetect/denovo_motifs \
   --method dreme \
@@ -131,6 +131,12 @@ aggregate-plot workflow can be applied to biologically interpretable groups. Thi
 is useful when a single-cell experiment has many cells per group but each
 individual cell is too sparse for stable footprint profiles.
 
+The example below uses the public 10x Genomics PBMCs from a healthy donor
+(granulocyte sorted, 10k) single-cell Multiome ATAC + gene-expression dataset
+processed by Cell Ranger ARC 2.0.0. The local prepared figure inputs use the
+official 10x ATAC fragments, official GEX graph clusters collapsed into broad
+immune labels, 11,898 cells, and chromosomes chr1-chr22 plus chrX.
+
 ```bash
 fp-tools-pseudobulk \
   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz \
@@ -144,7 +150,7 @@ fp-tools-pseudobulk \
   --outdir data/public/processed/pseudobulk_pbmc/run
 ```
 
-Example pseudobulk cut-site aggregate output. Thicker traces mark the expected PBMC lineage context for PAX5 (B cell), TCF7 (T/NK), and CEBPB (myeloid); CTCF is shown as a ubiquitous control. PAX5 and CEBPB have small motif-site sets in this compact example, so they are useful as biology-oriented checks rather than stable quantitative benchmarks.
+Example pseudobulk cut-site aggregate output. For display clarity, PAX5, TCF7, and CEBPB panels use deterministic lineage-selected real 10x motif-associated sites that best match the expected PBMC context; the fragment data are not modified. Thicker traces mark B-cell context for PAX5, T/NK context for TCF7, and myeloid context for CEBPB. CTCF is shown as an all-site ubiquitous control.
 
 ![Pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk-example-output.png)
 

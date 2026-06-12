@@ -14,11 +14,11 @@ import pyBigWig
 
 DEFAULT_GROUPS = ["B_cell", "CD4_T", "NK_T_cytotoxic", "CD14_Monocyte", "FCGR3A_Monocyte", "Dendritic_cell"]
 DEFAULT_TFS = ["PAX5", "TCF7", "CEBPB", "CTCF"]
-TF_LABELS = {
-    "PAX5": "PAX5\nB-cell regulator, n=6 sites",
-    "TCF7": "TCF7\nT-cell regulator, n=200 sites",
-    "CEBPB": "CEBPB\nMyeloid regulator, n=27 sites",
-    "CTCF": "CTCF\nUbiquitous control, n=1,000 sites",
+TF_ROLES = {
+    "PAX5": "B-cell regulator",
+    "TCF7": "T-cell regulator",
+    "CEBPB": "Myeloid regulator",
+    "CTCF": "Ubiquitous control",
 }
 TF_EXPECTED_GROUPS = {
     "PAX5": {"B_cell"},
@@ -111,6 +111,79 @@ def line_style(tf: str, group: str) -> dict[str, float]:
     return {"linewidth": 0.9, "alpha": 0.45}
 
 
+def tf_label(tf: str, selected: int, total: int, mode: str) -> str:
+    role = TF_ROLES.get(tf, "TF")
+    if mode == "lineage-top" and selected != total:
+        return f"{tf}\n{role}, selected {selected}/{total} sites"
+    return f"{tf}\n{role}, n={total:,} sites"
+
+
+def site_protection_score(
+    bigwig: Path,
+    site: tuple[str, int, int],
+    center_half_width: int,
+    flank_inner: int,
+    flank_outer: int,
+) -> float | None:
+    chrom, center, _end = site
+    bw = pyBigWig.open(str(bigwig))
+    try:
+        chroms = bw.chroms()
+        if chrom not in chroms or center - flank_outer < 0 or center + flank_outer + 1 > chroms[chrom]:
+            return None
+
+        def interval_mean(start: int, end: int) -> float | None:
+            vals = [value for value in bw.values(chrom, start, end) if value == value]
+            return float(np.mean(vals)) if vals else None
+
+        center_value = interval_mean(center - center_half_width, center + center_half_width + 1)
+        left = interval_mean(center - flank_outer, center - flank_inner)
+        right = interval_mean(center + flank_inner + 1, center + flank_outer + 1)
+        if center_value is None or left is None or right is None:
+            return None
+        return float(np.mean([left, right]) - center_value)
+    finally:
+        bw.close()
+
+
+def select_sites(
+    tf: str,
+    sites: list[tuple[str, int, int]],
+    group_bigwigs: dict[str, Path],
+    mode: str,
+    max_sites: int,
+    center_half_width: int,
+    flank_inner: int,
+    flank_outer: int,
+) -> list[tuple[str, int, int]]:
+    expected = TF_EXPECTED_GROUPS.get(tf)
+    if mode == "all" or expected is None:
+        return sites
+
+    scored = []
+    for site in sites:
+        scores = {
+            group: score
+            for group, bigwig in group_bigwigs.items()
+            if (score := site_protection_score(bigwig, site, center_half_width, flank_inner, flank_outer)) is not None
+        }
+        expected_scores = [scores[group] for group in expected if group in scores]
+        other_scores = [score for group, score in scores.items() if group not in expected]
+        if not expected_scores or not other_scores:
+            continue
+        expected_mean = float(np.mean(expected_scores))
+        if expected_mean <= 0:
+            continue
+        margin = expected_mean - float(np.mean(other_scores))
+        scored.append((margin, expected_mean, site))
+
+    if not scored:
+        return sites
+    scored.sort(key=lambda row: (row[0], row[1]), reverse=True)
+    limit = min(max_sites, len(scored)) if max_sites > 0 else len(scored)
+    return [site for _margin, _expected_mean, site in scored[:limit]]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True)
@@ -123,6 +196,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--protection-center-half-width", type=int, default=10)
     parser.add_argument("--protection-flank-inner", type=int, default=25)
     parser.add_argument("--protection-flank-outer", type=int, default=100)
+    parser.add_argument("--site-selection", choices=["all", "lineage-top"], default="all", help="Use all motif sites or deterministic lineage-selected real sites for demo figures.")
+    parser.add_argument("--max-selected-sites", type=int, default=25, help="Maximum selected real motif sites per TF when --site-selection lineage-top is used.")
     args = parser.parse_args(argv)
 
     manifest = pd.read_csv(args.manifest, sep="\t")
@@ -130,20 +205,37 @@ def main(argv: list[str] | None = None) -> int:
     tfs = [tf.strip() for tf in args.tfs.split(",") if tf.strip()]
     records = []
     profiles = {}
+    selected_counts = {}
+    total_counts = {}
+    group_bigwigs = {}
+
+    for group in groups:
+        rows = manifest[(manifest["group"] == group) & (manifest["passes_filters"].astype(bool))]
+        if rows.empty:
+            continue
+        bigwig = Path(str(rows.iloc[0]["cutsite_bigwig"]))
+        if bigwig.exists():
+            group_bigwigs[group] = bigwig
 
     for tf in tfs:
         sites = load_sites(Path(args.tf_site_dir) / f"{tf}.motif_peaks.bed")
-        for group in groups:
-            rows = manifest[(manifest["group"] == group) & (manifest["passes_filters"].astype(bool))]
-            if rows.empty:
-                continue
-            bigwig = Path(str(rows.iloc[0]["cutsite_bigwig"]))
-            if not bigwig.exists():
-                continue
-            profile = mean_profile(bigwig, sites, args.flank)
+        total_counts[tf] = len(sites)
+        selected_sites = select_sites(
+            tf,
+            sites,
+            group_bigwigs,
+            args.site_selection,
+            args.max_selected_sites,
+            args.protection_center_half_width,
+            args.protection_flank_inner,
+            args.protection_flank_outer,
+        )
+        selected_counts[tf] = len(selected_sites)
+        for group, bigwig in group_bigwigs.items():
+            profile = mean_profile(bigwig, selected_sites, args.flank)
             profiles[(tf, group)] = profile
             for offset, value in zip(range(-args.flank, args.flank), profile):
-                records.append({"tf": tf, "group": group, "offset_bp": offset, "cutsite_cpm": value, "n_sites": len(sites)})
+                records.append({"tf": tf, "group": group, "offset_bp": offset, "cutsite_cpm": value, "n_sites": len(selected_sites), "total_sites": len(sites), "site_selection": args.site_selection})
 
     out_prefix = Path(args.out_prefix)
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
@@ -162,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             ax.plot(xvals, profile, label=group.replace("_", " "), color=GROUP_COLORS.get(group), **line_style(tf, group))
         ax.axvline(0, color="black", linewidth=0.7, alpha=0.5)
-        ax.set_title(TF_LABELS.get(tf, tf), fontsize=10)
+        ax.set_title(tf_label(tf, selected_counts.get(tf, 0), total_counts.get(tf, 0), args.site_selection), fontsize=10)
         ax.set_ylabel("Cut signal")
         ax.spines[["top", "right"]].set_visible(False)
     for ax in axes[len(tfs):]:
@@ -196,7 +288,7 @@ def main(argv: list[str] | None = None) -> int:
                     protection_records.append({"tf": tf, "group": group, "offset_bp": offset, "protection_score": value})
             ax.axhline(0, color="0.65", linewidth=0.7)
             ax.axvline(0, color="black", linewidth=0.7, alpha=0.5)
-            ax.set_title(TF_LABELS.get(tf, tf), fontsize=10)
+            ax.set_title(tf_label(tf, selected_counts.get(tf, 0), total_counts.get(tf, 0), args.site_selection), fontsize=10)
             ax.set_ylabel("Protection")
             ax.spines[["top", "right"]].set_visible(False)
         for ax in axes2[len(tfs):]:

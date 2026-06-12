@@ -24,7 +24,7 @@ class PublicApiAliasesTest(unittest.TestCase):
             "fp-tools-rerank-candidates": "fp_tools.tools.rerank:main",
             "fp-tools-export-candidate-fasta": "fp_tools.tools.motif_discovery:export_fasta_main",
             "fp-tools-meme-command": "fp_tools.tools.motif_discovery:meme_command_main",
-            "fp-tools-motif-discovery-plan": "fp_tools.tools.motif_discovery:motif_discovery_plan_main",
+            "fp-tools-motif-discovery": "fp_tools.tools.motif_discovery:motif_discovery_plan_main",
             "fp-tools-summarize-motifs": "fp_tools.tools.motif_discovery:motif_report_main",
             "fp-tools-score-variants": "fp_tools.tools.variants:main",
             "fp-tools-pseudobulk": "fp_tools.tools.pseudobulk:main",
@@ -35,6 +35,9 @@ class PublicApiAliasesTest(unittest.TestCase):
         for name, target in expected.items():
             self.assertEqual(scripts[name], target)
             self.assertEqual(poetry_scripts[name], target)
+
+        self.assertNotIn("fp-tools-motif-discovery-plan", scripts)
+        self.assertNotIn("fp-tools-motif-discovery-plan", poetry_scripts)
 
     def test_config_accepts_new_aliases_and_legacy_names(self):
         aliases = {

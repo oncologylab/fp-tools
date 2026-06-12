@@ -51,7 +51,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
             "fp-tools-rerank-candidates",
             "fp-tools-export-candidate-fasta",
             "fp-tools-meme-command",
-            "fp-tools-motif-discovery-plan",
+            "fp-tools-motif-discovery",
             "fp-tools-summarize-motifs",
             "fp-tools-score-variants",
             "fp-tools-pseudobulk",
