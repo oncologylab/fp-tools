@@ -91,11 +91,44 @@ diff-footprints   --motifs test_data/motifs.jaspar   --signals test_data/demo_Bc
 
 Repeated condition names define biological replicates. `diff-footprints` performs motif scanning internally, writes per-motif BEDs, differential tables, replicate-aware reports, volcano HTML, and aggregate profiles when `--aggregate-signals` is provided.
 
+#### Replicate-aware reports and aggregate embedding
+
+The older replicate-report wording is now covered by `diff-footprints`. There is no primary `fp-tools-replicate-bindetect` command in the current public API. Use `diff-footprints` directly for two-condition, replicate-aware, or ordered time-course differential footprint analysis. Repeated names in `--cond-names` define replicate groups, for example `Bcell Bcell Tcell Tcell`.
+
+`diff-footprints` supports both normalization and no-normalization runs:
+
+```bash
+# no cross-sample normalization
+diff-footprints ... --normalization none --outdir examples/diff_footprints/Bcell_vs_Tcell_no_norm
+
+# sample-level quantile normalization
+diff-footprints ... --normalization sample-quantile --outdir examples/diff_footprints/Bcell_vs_Tcell_sample_quantile
+```
+
+When `--aggregate-signals` is supplied, use corrected cut-site bigWigs in the same order as `--signals`. The `--plot-aggregate` option controls aggregate profiles embedded in the comparison HTML:
+
+- `--plot-aggregate sig`: embed significant motifs using `--aggregate-pvalue-threshold` (default).
+- `--plot-aggregate top --plot-aggregate-top-n 20`: embed the top N changed motifs.
+- `--plot-aggregate all`: embed all motifs.
+- `--plot-aggregate off`: write the volcano-style comparison HTML without aggregate profiles.
+
+The replicate diagnostic tables and figure are controlled by `--replicate-report auto|on|off`; `auto` writes them when repeated condition names or `--replicate-map` indicate replicate structure.
+
 ### 4. Plot aggregate signal
+
+`plot-aggregate` remains supported for standalone static aggregate plots. It can plot one or more TFBS BED files against one or more corrected cut-site or footprint-score bigWigs, optionally restrict sites with `--regions`, `--whitelist`, or `--blacklist`, and write PDF/PNG plus aggregated signal tables. For footprint-shape figures, corrected cut-site bigWigs are usually the clearest input.
 
 ```bash
 plot-aggregate   --TFBS examples/motif_matches/Bcell/IRF1_MA0050.2/beds/IRF1_MA0050.2_all.bed   --signals examples/atacorrect/Bcell/Bcell_corrected.bw   --output examples/reports/IRF1_aggregate.pdf   --output_aggregated_scores examples/reports/IRF1_aggregate_scores.csv
 ```
+
+For replicate-aware aggregate visualization, pass repeated condition names and choose the normalization mode:
+
+```bash
+plot-aggregate   --TFBS examples/motif_matches/Bcell/IRF1_MA0050.2/beds/IRF1_MA0050.2_all.bed   --signals examples/atacorrect/Bcell_rep1/Bcell_rep1_corrected.bw examples/atacorrect/Bcell_rep2/Bcell_rep2_corrected.bw examples/atacorrect/Tcell_rep1/Tcell_rep1_corrected.bw examples/atacorrect/Tcell_rep2/Tcell_rep2_corrected.bw   --cond-names Bcell Bcell Tcell Tcell   --normalization sample-quantile   --show-replicate-sd   --normalization-comparison-output examples/reports/IRF1_raw_vs_normalized.pdf   --output examples/reports/IRF1_replicate_aggregate.pdf   --output_aggregated_stats examples/reports/IRF1_replicate_aggregate_stats.csv
+```
+
+Supported `plot-aggregate` normalization modes are `none`, `sample-quantile`, and `condition-quantile`. `--normalization-comparison-output` writes a paired raw-vs-normalized figure, which is the direct replacement for the older README examples that compared aggregate plots with and without normalization.
 
 ### 5. Review many samples and TFs interactively
 
