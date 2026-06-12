@@ -54,7 +54,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bins", required=True, help="Reliability-bin TSV from compute_calibration.py.")
     parser.add_argument("--summary", required=True, help="Calibration summary TSV from compute_calibration.py.")
-    parser.add_argument("--out-prefix", default="paper/figures/figure_calibration")
+    parser.add_argument("--out-prefix", default="manuscript/figures/figure_calibration")
     parser.add_argument("--title", default="fp-tools calibration")
     args = parser.parse_args()
 

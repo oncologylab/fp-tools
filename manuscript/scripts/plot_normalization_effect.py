@@ -377,10 +377,10 @@ def plot_candidate_sheet(candidates: list[Path], output: Path, limit: int, flank
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tfbs", type=Path, nargs="*", default=None, help="One or more TFBS BED files for the main figure")
-    parser.add_argument("--out-prefix", default="paper/manuscript/figures/normalization_effect")
+    parser.add_argument("--out-prefix", default="manuscript/figures/normalization_effect")
     parser.add_argument("--flank", type=int, default=80)
     parser.add_argument("--limit", type=int, default=2000)
-    parser.add_argument("--candidate-prefix", default="paper/manuscript/figures/normalization_effect_candidates")
+    parser.add_argument("--candidate-prefix", default="manuscript/figures/normalization_effect_candidates")
     parser.add_argument("--candidate-max", type=int, default=16)
     args = parser.parse_args(argv)
 

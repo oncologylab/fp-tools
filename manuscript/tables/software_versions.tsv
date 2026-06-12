@@ -1,0 +1,20 @@
+tool_or_resource	version	role
+Python	3.12.3	Runtime for fp-tools, paper scripts, and provenance extraction
+fp-tools	0.1.7	ATAC correction, footprint calling, motif matching, differential footprint analysis, pseudobulk utilities, and plotting helpers
+fastp	1.3.3	Paired-end FASTQ adapter detection and trimming
+bowtie2	2.5.5	Read alignment to hg38
+samtools	1.23.1	BAM filtering, sorting, fixmate, duplicate marking, indexing, and QC summaries
+htslib	1.23.1	SAM/BAM/VCF I/O backend used by samtools
+bedtools	2.31.1	Blacklist subtraction and peak sorting/merging
+MACS3	3.0.4	ATAC-seq peak calling in paired-end mode
+NumPy	2.4.6	Numerical arrays and benchmark/figure calculations
+pandas	2.3.3	Tabular processing for benchmark, manifest, and figure builders
+SciPy	1.17.1	Statistical and interpolation utilities
+matplotlib	3.10.9	Manuscript figure rendering
+pyBigWig	0.3.25	bigWig signal reading and writing
+pysam	0.23.3	BAM and genomic interval I/O
+Biopython	1.87	Sequence and motif-related utilities
+JASPAR CORE vertebrates non-redundant	2026	Known motif database for differential footprint analysis
+Cell Ranger ARC	2.0.0	Source 10x PBMC Multiome processing used by the public 10x dataset
+hg38 reference genome	GRCh38/hg38	Read alignment and sequence extraction
+hg38 blacklist	v2	Blacklist filtering for processed bulk ATAC alignments

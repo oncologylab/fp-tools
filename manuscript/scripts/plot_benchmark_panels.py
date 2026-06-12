@@ -43,7 +43,7 @@ def plot_metrics(metrics: pd.DataFrame, out_prefix: str | Path, title: str = "fp
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--metrics", required=True, help="Metrics TSV from compute_binary_metrics.py.")
-    parser.add_argument("--out-prefix", default="paper/figures/figure_benchmark_summary")
+    parser.add_argument("--out-prefix", default="manuscript/figures/figure_benchmark_summary")
     parser.add_argument("--title", default="fp-tools benchmark summary")
     args = parser.parse_args()
 

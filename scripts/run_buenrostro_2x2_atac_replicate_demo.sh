@@ -27,8 +27,9 @@ else
   MACS_CALLPEAK="${BIN_DIR}/macs2"
 fi
 ATAC_CORRECT="${FP_TOOLS_ENV}/bin/atac-correct"
-SCORE_FOOTPRINTS="${FP_TOOLS_ENV}/bin/score-footprints"
-DETECT_TF_BINDING="${FP_TOOLS_ENV}/bin/detect-tf-binding"
+CALL_FOOTPRINTS="${FP_TOOLS_ENV}/bin/call-footprints"
+DIFF_FOOTPRINTS="${FP_TOOLS_ENV}/bin/diff-footprints"
+JASPAR2026_MOTIFS="${ROOT_DIR}/data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt"
 
 TRIM_DIR="${OUT_DIR}/trimmed_fastq"
 BAM_DIR="${OUT_DIR}/bam"
@@ -107,7 +108,7 @@ run_step() {
 check_inputs() {
   require_file "${GENOME}"
   require_file "${GENOME}.fai"
-  require_file "${ROOT_DIR}/test_data/motifs.jaspar"
+  require_file "${JASPAR2026_MOTIFS}"
   require_exec "${FASTP}"
   require_exec "${BOWTIE2}"
   require_exec "${BOWTIE2_BUILD}"
@@ -115,8 +116,8 @@ check_inputs() {
   require_exec "${BEDTOOLS}"
   require_exec "${MACS_CALLPEAK}"
   require_exec "${ATAC_CORRECT}"
-  require_exec "${SCORE_FOOTPRINTS}"
-  require_exec "${DETECT_TF_BINDING}"
+  require_exec "${CALL_FOOTPRINTS}"
+  require_exec "${DIFF_FOOTPRINTS}"
   for entry in "${SAMPLES[@]}"; do
     read -r _sample _condition run <<< "${entry}"
     require_file "${RAW_DIR}/${run}_1.fastq.gz"
@@ -126,16 +127,59 @@ check_inputs() {
 
 write_versions() {
   {
-    echo -e "tool\tpath"
-    echo -e "fastp\t${FASTP}"
-    echo -e "bowtie2\t${BOWTIE2}"
-    echo -e "samtools\t${SAMTOOLS}"
-    echo -e "bedtools\t${BEDTOOLS}"
-    echo -e "macs-callpeak\t${MACS_CALLPEAK}"
-    echo -e "atac-correct\t${ATAC_CORRECT}"
-    echo -e "score-footprints\t${SCORE_FOOTPRINTS}"
-    echo -e "detect-tf-binding\t${DETECT_TF_BINDING}"
+    echo -e "tool	path"
+    echo -e "fastp	${FASTP}"
+    echo -e "bowtie2	${BOWTIE2}"
+    echo -e "samtools	${SAMTOOLS}"
+    echo -e "bedtools	${BEDTOOLS}"
+    echo -e "macs-callpeak	${MACS_CALLPEAK}"
+    echo -e "atac-correct	${ATAC_CORRECT}"
+    echo -e "call-footprints	${CALL_FOOTPRINTS}"
+    echo -e "diff-footprints	${DIFF_FOOTPRINTS}"
+    echo -e "JASPAR2026 vertebrates	${JASPAR2026_MOTIFS}"
   } > "${OUT_DIR}/software_paths.tsv"
+
+  {
+    echo -e "tool	version"
+    echo -e "fastp	$(${FASTP} --version 2>&1 | awk '{print $2}')"
+    echo -e "bowtie2	$(${BOWTIE2} --version 2>&1 | awk '/version/{print $NF; exit}')"
+    echo -e "samtools	$(${SAMTOOLS} --version 2>&1 | awk 'NR==1{print $2}')"
+    echo -e "htslib	$(${SAMTOOLS} --version 2>&1 | awk '/Using htslib/{print $3; exit}')"
+    echo -e "bedtools	$(${BEDTOOLS} --version 2>&1 | awk '{print $2}')"
+    echo -e "macs-callpeak	$(${MACS_CALLPEAK} --version 2>&1 | awk '{print $2}')"
+    "${FP_TOOLS_ENV}/bin/python" - <<'PYVERS'
+import sys
+import fp_tools
+mods = ['numpy', 'pandas', 'scipy', 'matplotlib', 'pyBigWig', 'pysam', 'Bio']
+print(f"python	{sys.version.split()[0]}")
+print(f"fp-tools	{fp_tools.__version__}")
+for name in mods:
+    try:
+        mod = __import__(name)
+        print(f"{name}	{getattr(mod, '__version__', 'unknown')}")
+    except Exception:
+        print(f"{name}	unavailable")
+PYVERS
+    echo -e "JASPAR	2026 CORE vertebrates non-redundant"
+    echo -e "Cell Ranger ARC	2.0.0 (10x PBMC source processing)"
+  } > "${OUT_DIR}/software_versions.tsv"
+}
+
+write_parameters() {
+  {
+    echo -e "analysis	parameters"
+    echo -e "fastp	--detect_adapter_for_pe --thread ${THREADS}"
+    echo -e "bowtie2	--very-sensitive -X 2000 -p ${BOWTIE2_THREADS}"
+    echo -e "samtools_filter	view -b -f 2 -F 2828 -q 30; fixmate -m; markdup -r"
+    echo -e "blacklist_filter	exclude chrM/MT and hg38-blacklist.v2 regions"
+    echo -e "macs_callpeak	callpeak -f BAMPE -g hs --keep-dup all -q ${MACS2_QVALUE}"
+    echo -e "merged_peaks	bedtools sort and merge across four replicate narrowPeak files; exclude '_' contigs and chrM/MT"
+    echo -e "atac-correct	--peaks merged_peaks.bed --blacklist hg38-blacklist.v2.bed --cores ${THREADS}; defaults: extend=100, k_flank=12, read_shift=4,-5, bg_shift=100, window=100, score_mat=DWM"
+    echo -e "call-footprints	--score footprint --regions merged_peaks.bed --cores ${THREADS}; defaults: fp_min=20, fp_max=50, flank_min=10, flank_max=30, smooth=1"
+    echo -e "diff-footprints_none	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization none --replicate-report auto --skip-excel --cores ${THREADS}"
+    echo -e "diff-footprints_sample_quantile	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization sample-quantile --replicate-report auto --skip-excel --cores ${THREADS}"
+    echo -e "pseudobulk_pbmc	10x PBMC Multiome fragments grouped by broad immune labels; min_cells=300, min_fragments=50000, CPM-normalized cut-site bigWigs; chr1-chr22 and chrX for figures"
+  } > "${OUT_DIR}/analysis_parameters.tsv"
 }
 
 
@@ -240,7 +284,7 @@ run_fp_tools_for_sample() {
   corrected_bw="$(find "${atac_dir}" -maxdepth 1 -name '*_corrected.bw' | head -1)"
   require_file "${corrected_bw}"
 
-  run_step "${sample}.score_footprints" "${SCORE_FOOTPRINTS}" \
+  run_step "${sample}.call_footprints" "${CALL_FOOTPRINTS}" \
     --signal "${corrected_bw}" \
     --regions "${MERGED_PEAKS}" \
     --output "${footprint_bw}" \
@@ -248,11 +292,12 @@ run_fp_tools_for_sample() {
     --cores "${THREADS}"
 }
 
-run_detect_tf_binding() {
-  local outdir="${FP_DIR}/detect_tf_binding_replicates"
+run_diff_footprints() {
+  local normalization="$1"
+  local outdir="${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_${normalization//-/_}"
   mkdir -p "${outdir}"
-  run_step "detect_tf_binding.replicates" "${DETECT_TF_BINDING}" \
-    --motifs "${ROOT_DIR}/test_data/motifs.jaspar" \
+  run_step "diff_footprints.${normalization}" "${DIFF_FOOTPRINTS}" \
+    --motifs "${JASPAR2026_MOTIFS}" \
     --signals \
       "${FP_DIR}/footprints/Bcell_rep1.footprints.bw" \
       "${FP_DIR}/footprints/Bcell_rep2.footprints.bw" \
@@ -262,7 +307,7 @@ run_detect_tf_binding() {
     --peaks "${MERGED_PEAKS}" \
     --outdir "${outdir}" \
     --cond-names Bcell Bcell Tcell Tcell \
-    --normalization sample-quantile \
+    --normalization "${normalization}" \
     --replicate-report auto \
     --skip-excel \
     --cores "${THREADS}"
@@ -282,6 +327,7 @@ main() {
   log "Workflow started"
   check_inputs
   write_versions
+  write_parameters
   run_step "reference.prepare" prepare_reference
   for entry in "${SAMPLES[@]}"; do
     read -r sample condition run <<< "${entry}"
@@ -292,7 +338,8 @@ main() {
     read -r sample _condition _run <<< "${entry}"
     run_fp_tools_for_sample "${sample}"
   done
-  run_detect_tf_binding
+  run_diff_footprints none
+  run_diff_footprints sample-quantile
   write_manifest
   log "Workflow finished"
 }

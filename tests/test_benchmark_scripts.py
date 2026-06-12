@@ -25,9 +25,9 @@ def load_module(name, path):
 download_manifest = load_module("download_manifest", ROOT / "benchmarks" / "scripts" / "download_manifest.py")
 compute_binary_metrics = load_module("compute_binary_metrics", ROOT / "benchmarks" / "scripts" / "compute_binary_metrics.py")
 compute_calibration = load_module("compute_calibration", ROOT / "benchmarks" / "scripts" / "compute_calibration.py")
-plot_benchmark_panels = load_module("plot_benchmark_panels", ROOT / "paper" / "scripts" / "plot_benchmark_panels.py")
-plot_calibration_panels = load_module("plot_calibration_panels", ROOT / "paper" / "scripts" / "plot_calibration_panels.py")
-plot_multiscale_npz = load_module("plot_multiscale_npz", ROOT / "paper" / "scripts" / "plot_multiscale_npz.py")
+plot_benchmark_panels = load_module("plot_benchmark_panels", ROOT / "manuscript" / "scripts" / "plot_benchmark_panels.py")
+plot_calibration_panels = load_module("plot_calibration_panels", ROOT / "manuscript" / "scripts" / "plot_calibration_panels.py")
+plot_multiscale_npz = load_module("plot_multiscale_npz", ROOT / "manuscript" / "scripts" / "plot_multiscale_npz.py")
 build_encode_manifest = load_module("build_encode_manifest", ROOT / "benchmarks" / "scripts" / "build_encode_manifest.py")
 build_motif_removal_benchmark = load_module("build_motif_removal_benchmark", ROOT / "benchmarks" / "scripts" / "build_motif_removal_benchmark.py")
 build_label_overlap_benchmark = load_module("build_label_overlap_benchmark", ROOT / "benchmarks" / "scripts" / "build_label_overlap_benchmark.py")
@@ -37,7 +37,7 @@ footprint_from_bam = load_module("footprint_from_bam", ROOT / "benchmarks" / "sc
 footprint_occupancy_score = load_module("footprint_occupancy_score", ROOT / "benchmarks" / "scripts" / "footprint_occupancy_score.py")
 build_tf_feature_table = load_module("build_tf_feature_table", ROOT / "benchmarks" / "scripts" / "build_tf_feature_table.py")
 evaluate_methods = load_module("evaluate_methods", ROOT / "benchmarks" / "scripts" / "evaluate_methods.py")
-plot_method_comparison = load_module("plot_method_comparison", ROOT / "paper" / "scripts" / "plot_method_comparison.py")
+plot_method_comparison = load_module("plot_method_comparison", ROOT / "manuscript" / "scripts" / "plot_method_comparison.py")
 
 
 class FeatureTableAndMethodsTest(unittest.TestCase):

@@ -1,0 +1,17 @@
+analysis_step	parameters
+Buenrostro samples	B cell replicates SRR891268 and SRR891269; CD4 T cell day-1 replicates SRR891275 and SRR891276; paired-end FASTQ input from Buenrostro et al. 2013
+FASTQ preprocessing	fastp --detect_adapter_for_pe --thread 24 or 32 depending on run host; paired HTML and JSON QC reports written per sample
+Alignment	bowtie2 --very-sensitive -X 2000 against hg38; read pairs retained with samtools view -b -f 2 -F 2828 -q 30
+BAM post-processing	samtools sort -n, fixmate -m, coordinate sort, markdup -r, index, flagstat, and idxstats per replicate
+Blacklist and contig filtering	Exclude chrM/MT and nonstandard '*' contigs; subtract hg38-blacklist.v2 regions with bedtools intersect -v
+Peak calling	MACS3 callpeak -f BAMPE -g hs --keep-dup all -q 0.01 per replicate
+Merged peak set	Concatenate replicate narrowPeak intervals, remove '_' contigs and chrM/MT, bedtools sort, bedtools merge; resulting merged_peaks.bed used for footprinting and motif analysis
+Tn5 bias correction	atac-correct with filtered BAM, hg38 FASTA, merged peaks, hg38 blacklist, and default correction settings: extend=100, k_flank=12, read_shift=4,-5, bg_shift=100, window=100, score_mat=DWM
+Footprint calling	call-footprints --score footprint on each corrected cut-site bigWig over merged_peaks.bed; default footprint settings fp_min=20, fp_max=50, flank_min=10, flank_max=30, smooth=1
+Differential footprint analysis	diff-footprints with four replicate footprint bigWigs, --cond-names Bcell Bcell Tcell Tcell, JASPAR2026 CORE vertebrates non-redundant motifs, --replicate-report auto, --skip-excel, and either --normalization none or --normalization sample-quantile
+Motif scanning thresholds	Default motif scan p-value 1e-4, bound/unbound threshold 0.001, cluster threshold 0.5, and pseudocount estimated from background unless supplied
+Normalization comparison	Two Buenrostro B-cell-vs-T-cell differential footprint runs are retained for comparison: no normalization and sample-level quantile normalization
+Pseudobulk PBMC source	10x Genomics PBMC granulocyte-sorted Multiome dataset with official ATAC fragments and GEX graph clusters; Cell Ranger ARC 2.0.0 source processing
+Pseudobulk grouping	Fragments grouped by broad immune labels; kept groups require at least 300 cells and 50,000 fragments; output indexed fragments and CPM-normalized cut-site bigWigs
+Pseudobulk aggregate figures	chr1-chr22 plus chrX; aggregate profiles around 10x motif-associated peak centers for PAX5, TCF7/TCF7L2, CEBPB, and CTCF; lineage panels use deterministic real-site selection and CTCF uses all sites
+Figure generation	Manuscript scripts read versioned TSVs, bigWigs, BEDs, and manifest files and write PDF/PNG/TSV outputs under manuscript/figures and manuscript/tables

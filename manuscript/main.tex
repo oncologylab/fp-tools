@@ -2,7 +2,7 @@
 % fp-tools BioMedInformatics manuscript
 % Compile with: latexmk -pdf main.tex   (or pdflatex x3)
 % Requires the MDPI class shipped under Definitions/ (extracted from
-% paper/MDPI_template_ACS.zip by paper/scripts/prepare_biomedinformatics_template.py)
+% manuscript/templates/MDPI_template_ACS.zip by manuscript/scripts/prepare_biomedinformatics_template.py)
 %=================================================================
 \documentclass[biomedinformatics,article,submit,pdftex,moreauthors]{Definitions/mdpi}
 
@@ -183,6 +183,73 @@ cells, and mixed myeloid cells), then ATAC fragments are split by label and
 converted to CPM-normalized cut-site bigWigs. Motif-associated peak sets for PAX5,
 TCF7/TCF7L2, CEBPB, and CTCF are taken from the 10x TF-analysis peak--motif
 mapping distributed with the same dataset.
+
+
+\subsection{Public ATAC Processing and Reproducibility Provenance}
+\label{sec:processing_provenance}
+
+The bulk replicate demonstration uses true biological replicates from the
+Buenrostro et al. ATAC-seq study~\cite{buenrostro2013}: GM12878/B-cell samples
+SRR891268 and SRR891269, and day-1 CD4 T-cell samples SRR891275 and SRR891276.
+Paired-end FASTQ files were adapter-trimmed, aligned to hg38, filtered for proper
+high-quality pairs, duplicate-marked, blacklist-filtered, peak-called per
+replicate, merged into a common peak universe, bias-corrected, footprint-called,
+and analyzed by differential footprint comparison with and without sample-level
+quantile normalization. The analysis used JASPAR2026 CORE vertebrates
+non-redundant motifs for known-motif scanning. Exact command-line parameters are recorded in a source TSV in the manuscript
+\texttt{tables} directory; the main settings are summarized in
+Table~\ref{tab:analysis_parameters}.
+
+\begin{table}[H]
+\caption{Primary analysis parameters used for the public ATAC and pseudobulk
+workflows. The complete tab-separated source table is stored as
+\texttt{analysis\_parameters.tsv}.\label{tab:analysis_parameters}}
+\scriptsize
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Step & Parameters\\
+\midrule
+FASTQ preprocessing & Paired-end adapter detection with \texttt{fastp}; HTML and JSON QC reports written per sample.\\
+Alignment and BAM filtering & \texttt{bowtie2 --very-sensitive -X 2000} against hg38; retain proper pairs with \texttt{samtools view -f 2 -F 2828 -q 30}; sort, \texttt{fixmate -m}, coordinate sort, \texttt{markdup -r}, index, flagstat, and idxstats.\\
+Blacklist filtering & Exclude mitochondrial and nonstandard contigs and subtract hg38 blacklist v2 regions.\\
+Peak calling and union peaks & MACS3 paired-end peak calling with human genome size, duplicate retention, and q-value 0.01; replicate peaks are sorted and merged into one analysis peak set.\\
+Bias correction and footprint calling & \texttt{atac-correct} with merged peaks and blacklist using default Tn5-bias settings; \texttt{call-footprints --score footprint} with default footprint/flank windows.\\
+Differential footprint analysis & Four replicate footprint tracks analyzed with condition labels Bcell, Bcell, Tcell, Tcell; JASPAR2026 vertebrate non-redundant motifs; replicate report enabled; runs performed with no normalization and with sample-level quantile normalization.\\
+Pseudobulk PBMC workflow & 10x PBMC Multiome fragments grouped by broad immune labels; groups retained with at least 300 cells and 50,000 fragments; CPM-normalized cut-site bigWigs generated for aggregate profiles.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+All software versions used for the manuscript analyses are recorded in a source
+TSV in the manuscript \texttt{tables} directory and summarized in
+Table~\ref{tab:software_versions}. This table includes the FASTQ-processing tools,
+fp-tools runtime, Python scientific stack, motif database release, and external
+source-processing version for the 10x PBMC dataset.
+
+\begin{table}[H]
+\caption{Software and resource versions used for manuscript analyses. The complete
+source table is stored as \texttt{software\_versions.tsv}.\label{tab:software_versions}}
+\scriptsize
+\begin{tabularx}{\textwidth}{p{0.24\textwidth}p{0.17\textwidth}X}
+\toprule
+Tool or resource & Version & Role\\
+\midrule
+\texttt{fp-tools} & 0.1.7 & Footprinting, motif analysis, pseudobulk, and plotting utilities\\
+Python & 3.12.3 & Runtime for analyses and figure builders\\
+\texttt{fastp} & 1.3.3 & FASTQ trimming and QC\\
+\texttt{bowtie2} & 2.5.5 & hg38 read alignment\\
+\texttt{samtools}/htslib & 1.23.1/1.23.1 & BAM filtering and QC\\
+\texttt{bedtools} & 2.31.1 & Region sorting, merging, and blacklist subtraction\\
+MACS3 & 3.0.4 & ATAC-seq peak calling\\
+NumPy/pandas/SciPy & 2.4.6/2.3.3/1.17.1 & Numerical and tabular analysis\\
+matplotlib/pyBigWig & 3.10.9/0.3.25 & Figures and bigWig signal I/O\\
+pysam/Biopython & 0.23.3/1.87 & BAM I/O and sequence utilities\\
+JASPAR CORE vertebrates & 2026 non-redundant & Known motif database\\
+Cell Ranger ARC & 2.0.0 & Source 10x PBMC Multiome processing\\
+hg38 reference and blacklist & GRCh38/hg38; blacklist v2 & Alignment, sequence extraction, and artifact filtering\\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \subsection{Replicate-aware Differential Binding and Quantile Normalization}
 \label{sec:replicate}
@@ -376,9 +443,7 @@ the original ATF7 T-cell-deeper orientation. Condition means are
 shown with light replicate-variation ribbons. The right column uses the same nonnegative-clamped sample-quantile
 normalization path used by replicate-aware differential footprint analysis and
 aggregate plotting; raw baseline offsets are reduced and a lower center
-relative to the local flanks indicates stronger TF protection.
-Generated by
-\texttt{paper/scripts/plot\_normalization\_effect.py}.}
+relative to the local flanks indicates stronger TF protection.}
 \label{fig:normalization_effect}
 \end{figure}
 
@@ -420,7 +485,6 @@ expected B-cell, T/NK-cell, and myeloid contexts; CTCF uses all available sites 
 a ubiquitous control. The fragment data are unmodified. The figure demonstrates
 that the pseudobulk fragment workflow produces group-level signal tracks that can be
 visualized by the same aggregate-profile workflow used for bulk ATAC data.
-Generated by \texttt{paper/scripts/plot\_pseudobulk\_tf\_aggregates.py}.
 \label{fig:pseudobulk_supp}}
 \end{figure}
 

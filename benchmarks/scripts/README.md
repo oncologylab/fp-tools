@@ -9,9 +9,9 @@ Planned helpers from `DEV_PLAN.md`:
 - `build_label_overlap_benchmark.py`: convert scored BED-like prediction intervals plus ChIP/CUT&RUN label BEDs into metrics-ready binary label/score tables.
 - `build_motif_removal_benchmark.py`: create long-form motif-removal recovery benchmark tables from baseline, motif-free, supervised, or reranked site scores.
 - `run_benchmark_pipeline.py`: combine labeled prediction TSVs, compute metrics/calibration/bootstrap summaries, and write PDF/SVG/PNG benchmark figures.
-- `paper/scripts/plot_benchmark_panels.py`: PDF/SVG/PNG multi-panel benchmark figures for the BioMedInformatics manuscript.
-- `paper/scripts/plot_calibration_panels.py`: PDF/SVG/PNG reliability curves and ECE panels.
-- `paper/scripts/plot_multiscale_npz.py`: PDF/SVG/PNG multiscale tensor summary figures from `score-footprints --output-multiscale-npz`.
+- `manuscript/scripts/plot_benchmark_panels.py`: PDF/SVG/PNG multi-panel benchmark figures for the BioMedInformatics manuscript.
+- `manuscript/scripts/plot_calibration_panels.py`: PDF/SVG/PNG reliability curves and ECE panels.
+- `manuscript/scripts/plot_multiscale_npz.py`: PDF/SVG/PNG multiscale tensor summary figures from `call-footprints --output-multiscale-npz`.
 
 ## Matched Public-Label Benchmark Tables
 
@@ -67,9 +67,9 @@ python benchmarks/scripts/compute_binary_metrics.py \
   --group-cols removal_target method tf cell \
   --out benchmarks/results/ctcf_motif_removed_metrics.tsv
 
-python paper/scripts/plot_benchmark_panels.py \
+python manuscript/scripts/plot_benchmark_panels.py \
   --metrics benchmarks/results/ctcf_motif_removed_metrics.tsv \
-  --out-prefix paper/figures/figure_motif_removal_ctcf
+  --out-prefix manuscript/figures/figure_motif_removal_ctcf
 ```
 
 
@@ -99,8 +99,8 @@ python benchmarks/scripts/compute_calibration.py \
   --out-bins benchmarks/results/ctcf_calibration_bins.tsv \
   --out-summary benchmarks/results/ctcf_calibration_summary.tsv
 
-python paper/scripts/plot_calibration_panels.py \
+python manuscript/scripts/plot_calibration_panels.py \
   --bins benchmarks/results/ctcf_calibration_bins.tsv \
   --summary benchmarks/results/ctcf_calibration_summary.tsv \
-  --out-prefix paper/figures/figure_ctcf_calibration
+  --out-prefix manuscript/figures/figure_ctcf_calibration
 ```

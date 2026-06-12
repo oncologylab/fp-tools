@@ -87,8 +87,8 @@ def plot_multiscale_npz(npz_path: str | Path, out_prefix: str | Path, title: str
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--multiscale-npz", required=True, help="NPZ sidecar from score-footprints --output-multiscale-npz.")
-    parser.add_argument("--out-prefix", default="paper/figures/figure_multiscale_summary")
+    parser.add_argument("--multiscale-npz", required=True, help="NPZ sidecar from call-footprints --output-multiscale-npz.")
+    parser.add_argument("--out-prefix", default="manuscript/figures/figure_multiscale_summary")
     parser.add_argument("--title", default="fp-tools multiscale footprint summary")
     args = parser.parse_args()
 

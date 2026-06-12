@@ -56,8 +56,8 @@ def prepare_template(template_zip: str | Path, outdir: str | Path, *, force: boo
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--template-zip", default="paper/MDPI_template_ACS.zip")
-    parser.add_argument("--outdir", default="paper/manuscript")
+    parser.add_argument("--template-zip", default="manuscript/templates/MDPI_template_ACS.zip")
+    parser.add_argument("--outdir", default="manuscript")
     parser.add_argument("--force", action="store_true", help="Replace an existing output directory.")
     args = parser.parse_args()
     outdir = prepare_template(args.template_zip, args.outdir, force=args.force)

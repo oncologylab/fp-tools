@@ -132,7 +132,7 @@ class PseudobulkTest(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    "paper/scripts/plot_pseudobulk_tf_aggregates.py",
+                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
                     "--manifest",
                     str(manifest),
                     "--tf-site-dir",
@@ -158,7 +158,7 @@ class PseudobulkTest(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    "paper/scripts/plot_pseudobulk_tf_aggregates.py",
+                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
                     "--manifest",
                     str(manifest),
                     "--tf-site-dir",
@@ -186,7 +186,7 @@ class PseudobulkTest(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    "paper/scripts/plot_pseudobulk_tf_aggregates.py",
+                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
                     "--manifest",
                     str(manifest),
                     "--tf-site-dir",
