@@ -434,30 +434,36 @@ motif databases before running the same sample-quantile-normalized
 differential-footprint analysis.
 
 The full JASPAR2026 vertebrate non-redundant set contained 1019 motifs, while
-the de novo procedure contributed 16 candidate-derived motifs. To create a
-sensitivity test for the supplement mode, we also constructed a restricted
-JASPAR2026 set with 860 motifs and reran the comparison with and without the
-16 de novo motifs. The restricted database yielded 97 highlighted differential
-motif families; adding the de novo supplement increased this to 101 highlighted
-families, including 6 de novo-derived highlighted motifs. This result is not a
-claim that the recovered motifs are novel TFs. Rather, it demonstrates the
-intended use case: when a chosen motif database is incomplete or conservative,
-candidate-derived motifs can be carried forward into the same differential
-footprint report and can recover additional data-supported motif families
-(Figure~\ref{fig:denovo_motif_validation}).
+the de novo procedure contributed 16 candidate-derived motifs. In de novo-only
+mode, several discovered motifs had footprint-like center depletion in the
+embedded aggregate profiles; these aggregate examples were selected by negative
+center-versus-flank scores rather than by database annotation. In supplement
+mode, the discovered motifs were appended to known motif sets before the same
+motif-aware differential footprint analysis. To create a sensitivity test, we
+also constructed a restricted JASPAR2026 set with 860 motifs and reran the
+comparison with and without the 16 de novo motifs. The restricted database
+yielded 97 highlighted differential motif families; adding the de novo
+supplement increased this to 101 highlighted families, including 6 de
+novo-derived highlighted motifs. This result is not a claim that the recovered
+motifs are novel TFs. Rather, it demonstrates the intended use case: when a
+chosen motif database is incomplete or conservative, candidate-derived motifs can
+be tested alone and can also be carried forward into the same differential
+footprint report as database-supported motifs (Figure~\ref{fig:denovo_motif_validation}).
 
 \begin{figure}[H]
 \includegraphics[width=0.95\textwidth]{figures/denovo_motif_validation.png}
-\caption{Validation of de novo motif discovery as a standalone and supplement
-mode. Candidate footprints from the Buenrostro B-cell versus T-cell replicate
-comparison were exported to FASTA, analyzed with STREME in both contrast
-directions, matched back to JASPAR2026 motifs with Tomtom, and tested with
-\texttt{diff-footprints}. The restricted-database comparison illustrates the
-supplement mode: adding 16 candidate-derived motifs increased the highlighted
-motif-family count from 97 to 101 and retained de novo-derived aggregate
-profiles in the same differential report. Thin lines show individual biological
-replicates and thick lines show condition means for representative discovered
-motifs.\label{fig:denovo_motif_validation}}
+\caption{Validation of de novo motif discovery as standalone and supplement
+modes. Candidate footprints from the Buenrostro B-cell versus T-cell replicate
+comparison were exported to FASTA and analyzed with STREME in both contrast
+directions. The de novo-only branch yields candidate-derived motif families,
+with representative footprint-like aggregate profiles selected by negative
+center-versus-flank signal. The supplement branch appends the discovered motifs
+to a known database before \texttt{diff-footprints}; in the restricted-database
+sensitivity test, adding 16 candidate-derived motifs increased the highlighted
+motif-family count from 97 to 101, including 6 de novo-derived highlighted
+motifs. Tomtom labels are motif-similarity annotations rather than definitive TF
+identity calls. Thin aggregate lines show individual biological replicates and
+thick lines show condition means.\label{fig:denovo_motif_validation}}
 \end{figure}
 
 \subsection{Replicate-aware Normalization}

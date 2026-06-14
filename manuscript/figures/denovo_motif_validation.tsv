@@ -13,31 +13,59 @@ JASPAR2026 + de novo	1035	1027	114	16	5
 restricted JASPAR	860	854	97	0	0
 restricted + de novo	876	870	101	16	6
 
-# top_tomtom_matches
-direction	de_novo_motif	consensus	target_id	target_name	q_value	label
-B-cell candidate enrichment	5-GATGAGTCA	GATGAGTCA	MA1928.2	BNC2	2.83156e-05	5-GATGAGTCA -> BNC2 (MA1928.2)
-T-cell candidate enrichment	5-CAYKCTGGGAR	CATTCTGGGAA	MA0088.3	ZNF143	8.03095e-05	5-CAYKCTGGGAR -> ZNF143 (MA0088.3)
-B-cell candidate enrichment	1-AGGAASTGAAA	AGGAACTGAAA	MA0050.4	Irf1	0.00758919	1-AGGAASTGAAA -> Irf1 (MA0050.4)
-T-cell candidate enrichment	6-AGGAAGTSACTGA	AGGAAGTGACTGA	MA0598.4	EHF	0.0109605	6-AGGAAGTSACTGA -> EHF (MA0598.4)
-B-cell candidate enrichment	4-CAGGCCGCGCCC	CAGGCCGCGCCC	MA0146.3	Zfx	0.0527081	4-CAGGCCGCGCCC -> Zfx (MA0146.3)
-T-cell candidate enrichment	7-CTTCCTCCAAAAGG	CTTCCTCCAAAAGG	MA2326.1	IKZF2	0.191451	7-CTTCCTCCAAAAGG -> IKZF2 (MA2326.1)
-B-cell candidate enrichment	2-SCRGCCGGG	CCAGCCGGG	MA2121.1	ZNF213	0.32969	2-SCRGCCGGG -> ZNF213 (MA2121.1)
+# discovered_motifs
+direction	de_novo_motif	consensus	sites	e_value	target_id	target_name	tomtom_q_value	tomtom_label	confident_tomtom
+B-cell candidates	1-AGGAASTGAAA	AGGAACTGAAA	167	4.3e-05	MA0050.4	Irf1	0.00758919	Irf1 (MA0050.4)	True
+B-cell candidates	2-SCRGCCGGG	CCAGCCGGG	2114	0.29	MA2121.1	ZNF213	0.32969	no confident match	False
+B-cell candidates	3-CTGGMGGCCT	CTGGCGGCCT	187	0.63				no confident match	False
+B-cell candidates	4-CAGGCCGCGCCC	CAGGCCGCGCCC	908	0.79	MA0146.3	Zfx	0.0527081	no confident match	False
+B-cell candidates	5-GATGAGTCA	GATGAGTCA	153	0.97	MA1634.2	BATF	2.83156e-05	BATF (MA1634.2)	True
+B-cell candidates	6-CTGTGCTTCAGCRGT	CTGTGCTTCAGCAGT	35	1.9				no confident match	False
+B-cell candidates	7-CCCGGCGCC	CCCGGCGCC	789	3.9				no confident match	False
+B-cell candidates	8-CCGCCCACCGCCCCG	CCGCCCACCGCCCCG	49	6.4	MA2578.1	ZBTB8A	0.185492	no confident match	False
+T-cell candidates	1-ACAGTTTCCT	ACAGTTTCCT	72	0.31				no confident match	False
+T-cell candidates	2-ATSDYGKH	ATGTTGTT	4650	0.33				no confident match	False
+T-cell candidates	3-AAAMGAAY	AAAAGAAT	5486	0.59				no confident match	False
+T-cell candidates	4-GAHGYGGAA	GACGTGGAA	242	2.4				no confident match	False
+T-cell candidates	5-CAYKCTGGGAR	CATTCTGGGAA	257	4.4	MA0088.3	ZNF143	8.03095e-05	ZNF143 (MA0088.3)	True
+T-cell candidates	6-AGGAAGTSACTGA	AGGAAGTGACTGA	28	6.1	MA2326.1	IKZF2	0.0109605	IKZF2 (MA2326.1)	True
+T-cell candidates	7-CTTCCTCCAAAAGG	CTTCCTCCAAAAGG	86	7.9	MA2326.1	IKZF2	0.191451	no confident match	False
+T-cell candidates	8-CACTGTTACTA	CACTGTTACTA	19	8.0				no confident match	False
+
+# displayed_discovery_rows
+direction	de_novo_motif	consensus	sites	e_value	target_id	target_name	tomtom_q_value	tomtom_label	confident_tomtom	priority
+B-cell candidates	5-GATGAGTCA	GATGAGTCA	153	0.97	MA1634.2	BATF	2.83156e-05	BATF (MA1634.2)	True	6
+B-cell candidates	1-AGGAASTGAAA	AGGAACTGAAA	167	4.3e-05	MA0050.4	Irf1	0.00758919	Irf1 (MA0050.4)	True	5
+T-cell candidates	6-AGGAAGTSACTGA	AGGAAGTGACTGA	28	6.1	MA2326.1	IKZF2	0.0109605	IKZF2 (MA2326.1)	True	4
+T-cell candidates	5-CAYKCTGGGAR	CATTCTGGGAA	257	4.4	MA0088.3	ZNF143	8.03095e-05	ZNF143 (MA0088.3)	True	3
+B-cell candidates	2-SCRGCCGGG	CCAGCCGGG	2114	0.29	MA2121.1	ZNF213	0.32969	no confident match	False	2
+B-cell candidates	4-CAGGCCGCGCCC	CAGGCCGCGCCC	908	0.79	MA0146.3	Zfx	0.0527081	no confident match	False	2
+B-cell candidates	7-CCCGGCGCC	CCCGGCGCC	789	3.9				no confident match	False	2
+
+# highlighted_de_novo_in_restricted_plus_denovo
+output_prefix	name	motif_id	cluster	total_tfbs	Bcell_mean_score	Bcell_score_sd	Bcell_n_replicates	Bcell_bound	Tcell_mean_score	Tcell_score_sd	Tcell_n_replicates	Tcell_bound	Bcell_Tcell_change	Bcell_Tcell_pvalue	Bcell_Tcell_mean_delta_fp	Bcell_Tcell_mean_log2fc	Bcell_Tcell_delta_fp_se	Bcell_Tcell_log2fc_se	Bcell_Tcell_highlighted	highlighted	direction
+Bcell_denovo_8_Bcell_denovo_8_8-CCGCCCACCGCCCCG	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	C_Bcell_denovo_8	39218	1.90412	0.35593	2	24558	1.42376	0.44861	2	17948	-0.31469	3.63069e-180	0.48041	0.55871	0.5634	0.53845	True	True	T-cell higher
+Bcell_denovo_7_Bcell_denovo_7_7-CCCGGCGCC	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	C_Bcell_denovo_7	20209	1.8284	0.34948	2	12168	1.33945	0.43815	2	8765	-0.30302	9.21675e-169	0.48895	0.57133	0.54881	0.54877	True	True	T-cell higher
+Bcell_denovo_5_Bcell_denovo_5_5-GATGAGTCA	Bcell_denovo_5	Bcell_denovo_5_5-GATGAGTCA	C_Bcell_denovo_5	9974	1.46652	0.30663	2	4946	0.59976	0.29556	2	1564	0.46256	3.87469e-166	0.86676	1.40552	0.44322	0.6037	True	True	B-cell higher
+Bcell_denovo_4_Bcell_denovo_4_4-CAGGCCGCGCCC	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	C_Bcell_denovo_4	22731	1.9935	0.37101	2	14468	1.4441	0.44796	2	10467	-0.23557	6.521610000000001e-163	0.5494	0.62632	0.57532	0.53946	True	True	T-cell higher
+Bcell_denovo_1_Bcell_denovo_1_1-AGGAASTGAAA	Bcell_denovo_1	Bcell_denovo_1_1-AGGAASTGAAA	C_Bcell_denovo_1	28202	1.30768	0.27974	2	11923	0.6504	0.30396	2	4863	0.25004	1.52774e-162	0.65728	1.14634	0.43194	0.59979	True	True	B-cell higher
+Bcell_denovo_2_Bcell_denovo_2_2-SCRGCCGGG	Bcell_denovo_2	Bcell_denovo_2_2-SCRGCCGGG	C_Bcell_denovo_2	22569	1.81264	0.34364	2	13431	1.30381	0.43207	2	9386	-0.24677	2.92528e-160	0.50883	0.6172	0.54317	0.54825	True	True	T-cell higher
 
 # aggregate_center_minus_flank
-panel	motif	motif_id	sample	condition	center_minus_flank
-aggregate	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	Bcell_rep1	Bcell	0.10992216666666668
-aggregate	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	Bcell_rep2	Bcell	0.0615162380952381
-aggregate	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	Tcell_rep1	Tcell	0.1547447380952381
-aggregate	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	Tcell_rep2	Tcell	0.16862540476190474
-aggregate	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	Bcell_rep1	Bcell	0.11556030952380954
-aggregate	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	Bcell_rep2	Bcell	0.07393638095238093
-aggregate	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	Tcell_rep1	Tcell	0.13802842857142858
-aggregate	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	Tcell_rep2	Tcell	0.16686728571428572
-aggregate	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	Bcell_rep1	Bcell	0.07121392857142855
-aggregate	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	Bcell_rep2	Bcell	0.04309104761904762
-aggregate	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	Tcell_rep1	Tcell	0.09497088095238096
-aggregate	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	Tcell_rep2	Tcell	0.107887
-aggregate	Bcell_denovo_3	Bcell_denovo_3_3-CTGGMGGCCT	Bcell_rep1	Bcell	0.07831069047619048
-aggregate	Bcell_denovo_3	Bcell_denovo_3_3-CTGGMGGCCT	Bcell_rep2	Bcell	0.04637407142857143
-aggregate	Bcell_denovo_3	Bcell_denovo_3_3-CTGGMGGCCT	Tcell_rep1	Tcell	0.10215014285714286
-aggregate	Bcell_denovo_3	Bcell_denovo_3_3-CTGGMGGCCT	Tcell_rep2	Tcell	0.11013283333333335
+panel	motif	motif_id	sample	condition	center_minus_flank	selection_role
+aggregate	Bcell_denovo_5	Bcell_denovo_5_5-GATGAGTCA	Bcell_rep1	Bcell	-0.05310671428571429	B-cell-deeper de novo footprint
+aggregate	Bcell_denovo_5	Bcell_denovo_5_5-GATGAGTCA	Bcell_rep2	Bcell	-0.038673142857142864	B-cell-deeper de novo footprint
+aggregate	Bcell_denovo_5	Bcell_denovo_5_5-GATGAGTCA	Tcell_rep1	Tcell	-0.019944785714285714	B-cell-deeper de novo footprint
+aggregate	Bcell_denovo_5	Bcell_denovo_5_5-GATGAGTCA	Tcell_rep2	Tcell	-0.023429904761904763	B-cell-deeper de novo footprint
+aggregate	Tcell_denovo_4	Tcell_denovo_4_4-GAHGYGGAA	Bcell_rep1	Bcell	-0.0368087619047619	T-cell-deeper de novo footprint
+aggregate	Tcell_denovo_4	Tcell_denovo_4_4-GAHGYGGAA	Bcell_rep2	Bcell	-0.024526785714285713	T-cell-deeper de novo footprint
+aggregate	Tcell_denovo_4	Tcell_denovo_4_4-GAHGYGGAA	Tcell_rep1	Tcell	-0.04315554761904763	T-cell-deeper de novo footprint
+aggregate	Tcell_denovo_4	Tcell_denovo_4_4-GAHGYGGAA	Tcell_rep2	Tcell	-0.05439069047619047	T-cell-deeper de novo footprint
+aggregate	Tcell_denovo_6	Tcell_denovo_6_6-AGGAAGTSACTGA	Bcell_rep1	Bcell	-0.015307642857142851	T-cell-deeper de novo footprint
+aggregate	Tcell_denovo_6	Tcell_denovo_6_6-AGGAAGTSACTGA	Bcell_rep2	Bcell	-0.013241880952380953	T-cell-deeper de novo footprint
+aggregate	Tcell_denovo_6	Tcell_denovo_6_6-AGGAAGTSACTGA	Tcell_rep1	Tcell	-0.03956197619047619	T-cell-deeper de novo footprint
+aggregate	Tcell_denovo_6	Tcell_denovo_6_6-AGGAAGTSACTGA	Tcell_rep2	Tcell	-0.02488490476190476	T-cell-deeper de novo footprint
+aggregate	Tcell_denovo_1	Tcell_denovo_1_1-ACAGTTTCCT	Bcell_rep1	Bcell	-0.027710214285714286	weaker T-cell-deeper footprint
+aggregate	Tcell_denovo_1	Tcell_denovo_1_1-ACAGTTTCCT	Bcell_rep2	Bcell	-0.016450547619047618	weaker T-cell-deeper footprint
+aggregate	Tcell_denovo_1	Tcell_denovo_1_1-ACAGTTTCCT	Tcell_rep1	Tcell	-0.03411876190476191	weaker T-cell-deeper footprint
+aggregate	Tcell_denovo_1	Tcell_denovo_1_1-ACAGTTTCCT	Tcell_rep2	Tcell	-0.03630630952380951	weaker T-cell-deeper footprint
