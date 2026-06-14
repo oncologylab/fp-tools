@@ -14,6 +14,7 @@ It also includes replicate grouping support and skewness report integration.
 import os
 import sys
 import argparse
+import base64
 import time
 import numpy as np
 import multiprocessing as mp
@@ -21,6 +22,7 @@ import itertools
 import pandas as pd
 import seaborn as sns
 from collections import Counter
+from types import SimpleNamespace
 import warnings
 
 # ML / stats
@@ -66,31 +68,26 @@ def norm_fit(x, mean, std, scale):
     return scale * scipy.stats.norm.pdf(x, mean, std)
 
 
-# ----------------------------------------------------------------------------- #
-def run_bindetect(args):
-    """Run the BINDetect pipeline from parsed CLI arguments."""
-    check_required(args, ["signals", "motifs", "genome", "peaks"])
+def _prepare_condition_metadata(args):
+    """Derive condition, replicate, and comparison metadata from CLI arguments."""
 
-    # derive condition names if not given (one per input bigwig)
     args.cond_names = (
         [os.path.basename(os.path.splitext(bw)[0]) for bw in args.signals]
         if args.cond_names is None else args.cond_names
     )
     args.outdir = os.path.abspath(args.outdir)
 
-    # ----------------------------- replicate grouping ------------------------- #
-    # Allow passing identical names in --cond-names to denote replicates.
-    # Build: { condition -> [indices into args.signals] }
     orig = list(args.cond_names)
     if len(orig) != len(args.signals):
         raise ValueError("--cond-names must have the same length as --signals")
     if getattr(args, "norm_off", False):
         args.normalization = "none"
+
     idxs = {}
     for i, nm in enumerate(orig):
         idxs.setdefault(nm, []).append(i)
-    args.cond_groups = idxs                   # condition -> signal indices
-    args.cond_names = list(idxs.keys())       # unique condition list
+    args.cond_groups = idxs
+    args.cond_names = list(idxs.keys())
     args.condition_replicates = {cond: len(indices) for cond, indices in idxs.items()}
     args.sample_names = []
     args.sample_to_condition = {}
@@ -101,7 +98,177 @@ def run_bindetect(args):
             args.sample_names.append(sample_name)
             args.sample_to_condition[sample_name] = cond
             args.condition_samples[cond].append(sample_name)
-    # ------------------------------------------------------------------------- #
+
+    if args.time_series:
+        args.comparisons = list(zip(args.cond_names[:-1], args.cond_names[1:]))
+    else:
+        args.comparisons = list(itertools.combinations(args.cond_names, 2))
+    return args
+
+
+def _existing_result_motifs(info_table, comparison, args, motif_lookup=None):
+    """Build lightweight motif records from an existing diff-footprints result table."""
+
+    c1, c2 = comparison
+    base = f"{c1}_{c2}"
+    required = ["output_prefix", "name", "motif_id", base + "_change", base + "_pvalue"]
+    missing = [column for column in required if column not in info_table.columns]
+    if missing:
+        raise ValueError(
+            "Existing results table is missing required column(s) for "
+            f"{base}: {', '.join(missing)}"
+        )
+
+    rows = info_table.copy()
+    rows[base + "_change_numeric"] = pd.to_numeric(rows[base + "_change"], errors="coerce").fillna(0.0)
+    rows[base + "_pvalue_numeric"] = pd.to_numeric(rows[base + "_pvalue"], errors="coerce").fillna(1.0)
+    filtered_p = rows.loc[rows[base + "_pvalue_numeric"] > 0, base + "_pvalue_numeric"]
+    pval_min = np.percentile(filtered_p, 5) if len(filtered_p) else 1.0
+    change_min, change_max = np.percentile(rows[base + "_change_numeric"], [5, 95]) if len(rows) else (0.0, 0.0)
+
+    motifs = []
+    for _, row in rows.iterrows():
+        prefix = str(row["output_prefix"])
+        change = float(row[base + "_change_numeric"])
+        pvalue = float(row[base + "_pvalue_numeric"])
+        highlighted_col = base + "_highlighted"
+        if highlighted_col in row and not pd.isna(row[highlighted_col]):
+            highlighted = str(row[highlighted_col]).strip().lower() in {"true", "1", "yes"}
+        else:
+            highlighted = (change < change_min) or (change > change_max) or (pvalue < pval_min)
+        if highlighted:
+            group = f"{c2}_up" if change < 0 else f"{c1}_up"
+        else:
+            group = "n.s."
+        logo_path = os.path.join(args.outdir, prefix, prefix + ".png")
+        logo = ""
+        if os.path.exists(logo_path):
+            with open(logo_path, "rb") as handle:
+                logo = base64.b64encode(handle.read()).decode("utf-8")
+        matched_motif = (motif_lookup or {}).get(prefix)
+        motifs.append(
+            SimpleNamespace(
+                prefix=prefix,
+                name=str(row.get("name", prefix)),
+                id=str(row.get("motif_id", "")),
+                change=change,
+                pvalue=pvalue,
+                logpvalue=-np.log10(max(pvalue, 1e-308)),
+                highlighted=highlighted,
+                group=group,
+                base=logo,
+                counts=getattr(matched_motif, "counts", None),
+            )
+        )
+    return motifs
+
+
+def _load_reuse_motif_lookup(args, logger):
+    """Load motif matrices for vector logos during report-only regeneration."""
+
+    motif_lookup = {}
+    motif_paths = getattr(args, "motifs", None) or []
+    if not motif_paths:
+        return motif_lookup
+    try:
+        motif_list = MotifList()
+        for f in expand_dirs(motif_paths):
+            motif_list += MotifList().from_file(f)
+        for motif in motif_list:
+            motif.set_prefix(args.naming)
+        motif_prefixes = [m.prefix.upper() for m in motif_list]
+        name_count = Counter(motif_prefixes)
+        duplicated = [k for k, v in name_count.items() if v > 1]
+        motif_count = {dup: 1 for dup in duplicated}
+        for motif in motif_list:
+            if motif.prefix.upper() in duplicated:
+                original = motif.prefix
+                motif.prefix = f"{motif.prefix}_{motif_count[motif.prefix.upper()]}"
+                motif_count[original.upper()] += 1
+            motif_lookup[motif.prefix] = motif
+    except Exception as exc:
+        logger.warning(f"Could not load motif matrices for SVG logos in reuse mode: {exc}")
+    return motif_lookup
+
+
+def run_bindetect_reuse_existing_results(args):
+    """Regenerate final diff-footprints reports from completed motif-level outputs."""
+
+    _prepare_condition_metadata(args)
+    logger = FpToolsLogger("diff-footprints", args.verbosity)
+    logger.begin()
+    parser = add_bindetect_arguments(argparse.ArgumentParser())
+    args.cores = check_cores(args.cores, logger)
+    logger.arguments_overview(parser, args)
+
+    results_path = os.path.join(args.outdir, args.prefix + "_results.txt")
+    if not os.path.exists(results_path):
+        raise FileNotFoundError(
+            f"--reuse-existing-results requires an existing results table: {results_path}"
+        )
+    logger.info(f"Reusing existing diff-footprints results table: {results_path}")
+    info_table = pd.read_csv(results_path, sep="\t")
+
+    if len(args.cond_names) < 2:
+        raise ValueError("--reuse-existing-results requires at least two unique conditions")
+
+    write_replicate_report = args.replicate_report == "on" or (
+        args.replicate_report == "auto" and any(count > 1 for count in args.condition_replicates.values())
+    )
+    if write_replicate_report:
+        report_out = args.replicate_report_out or os.path.join(args.outdir, args.prefix + "_replicate_report.tsv")
+        summary_out = args.replicate_summary_out or os.path.join(args.outdir, args.prefix + "_replicate_summary.tsv")
+        figure_out = args.replicate_figure_out or os.path.join(args.outdir, args.prefix + "_replicate_report.png")
+        try:
+            build_replicate_report(
+                results_path,
+                report_out,
+                summary_output=summary_out,
+                figure_output=figure_out,
+                replicate_map=args.replicate_map,
+            )
+            logger.info(f"Regenerated replicate-aware report from existing results: {report_out}")
+        except Exception as exc:
+            logger.warning(f"Could not regenerate replicate-aware report: {exc}")
+
+    motif_lookup = _load_reuse_motif_lookup(args, logger)
+
+    for comparison in args.comparisons:
+        c1, c2 = comparison
+        base = f"{c1}_{c2}"
+        logger.info(f"Regenerating interactive diff-footprints report for {c1} / {c2}")
+        motifs = _existing_result_motifs(info_table, comparison, args, motif_lookup=motif_lookup)
+        aggregate_data = None
+        if getattr(args, "aggregate_signals", None) and getattr(args, "plot_aggregate", "off") != "off":
+            try:
+                aggregate_data = build_bindetect_aggregate_payload(motifs, info_table, comparison, args)
+                if aggregate_data is None or len(aggregate_data.get("motifs", [])) == 0:
+                    logger.warning(f"No reusable aggregate profiles were found for {base}; writing volcano-only HTML")
+            except Exception as exc:
+                logger.warning(f"Could not build aggregate payload from existing motif BEDs: {exc}")
+        html_out = os.path.join(args.outdir, args.prefix + "_" + base + ".html")
+        plot_interactive_bindetect(
+            motifs,
+            [c1, c2],
+            html_out,
+            aggregate_data=aggregate_data,
+            title="Differential footprint report",
+        )
+        logger.info(f"Wrote {html_out}")
+
+    logger.info("Reuse mode skipped motif scanning, per-motif processing, static PDFs, and clustering.")
+    logger.end()
+
+
+
+# ----------------------------------------------------------------------------- #
+def run_bindetect(args):
+    """Run the BINDetect pipeline from parsed CLI arguments."""
+    if getattr(args, "reuse_existing_results", False):
+        return run_bindetect_reuse_existing_results(args)
+
+    check_required(args, ["signals", "motifs", "genome", "peaks"])
+    _prepare_condition_metadata(args)
 
     # outputs we’ll create
     states = ["bound", "unbound"]
@@ -145,11 +312,7 @@ def run_bindetect(args):
 
     # condition comparisons
     no_conditions = len(args.cond_names)  # NOTE: use unique conditions (not #signals)
-    if args.time_series:
-        comparisons = list(zip(args.cond_names[:-1], args.cond_names[1:]))
-    else:
-        comparisons = list(itertools.combinations(args.cond_names, 2))
-    args.comparisons = comparisons
+    comparisons = args.comparisons
 
     # debug/fig PDFs
     if args.debug:

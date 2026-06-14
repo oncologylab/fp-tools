@@ -10,12 +10,14 @@ This module contains reusable routines for:
 """
 
 import base64
+import gzip
 import html
 import json
 import random
 import itertools
 from datetime import datetime
 import os
+from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 import pandas as pd
@@ -615,7 +617,7 @@ def _read_bed_centers(path):
     return centers
 
 
-def _mean_profile(bigwig_path, centers, flank):
+def _mean_profile(bigwig_path, centers, flank, norm=None):
     profiles = []
     with pyBigWig.open(bigwig_path) as bw:
         chroms = bw.chroms()
@@ -629,10 +631,217 @@ def _mean_profile(bigwig_path, centers, flank):
             values = np.asarray(bw.values(chrom, start, end, numpy=True), dtype=float)
             if values.size != flank * 2:
                 continue
-            profiles.append(np.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0))
+            values = np.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
+            if norm is not None:
+                values = norm.normalize(values)
+            profiles.append(values)
     if not profiles:
         return [0.0] * (flank * 2)
     return [round(float(v), 6) for v in np.nanmean(np.vstack(profiles), axis=0)]
+
+
+
+
+class AggregateAffineNorm:
+    """Sign-preserving affine scaler for aggregate cut-site profiles."""
+
+    def __init__(self, source_center, scale, target_center):
+        self.source_center = float(source_center)
+        self.scale = float(scale)
+        self.target_center = float(target_center)
+
+    def normalize(self, values):
+        arr = np.asarray(values, dtype=float)
+        return (arr - self.source_center) * self.scale + self.target_center
+
+
+def _robust_affine_normalizers(sample_arrays, sample_names):
+    """Fit robust linear scalers from sampled aggregate-track windows."""
+
+    centers = []
+    widths = []
+    cleaned = []
+    for arr in sample_arrays:
+        values = np.asarray(arr, dtype=float)
+        values = values[np.isfinite(values)]
+        if values.size == 0:
+            values = np.array([0.0], dtype=float)
+        q05, q50, q95 = np.nanquantile(values, [0.05, 0.5, 0.95])
+        width = float(q95 - q05)
+        if not np.isfinite(width) or width <= 1e-12:
+            width = 1.0
+        centers.append(float(q50) if np.isfinite(q50) else 0.0)
+        widths.append(width)
+        cleaned.append(values)
+    if not cleaned:
+        return {}
+    target_center = float(np.nanmedian(centers)) if centers else 0.0
+    target_width = float(np.nanmedian(widths)) if widths else 1.0
+    if not np.isfinite(target_width) or target_width <= 1e-12:
+        target_width = 1.0
+    out = {}
+    for name, center, width in zip(sample_names, centers, widths):
+        out[name] = AggregateAffineNorm(center, target_width / width, target_center)
+    return out
+
+
+def _sample_bigwig_window_values(bigwig_path, centers, flank, max_values=500000):
+    """Read a deterministic sample of cut-site values for report-level normalization."""
+
+    window = flank * 2
+    if not centers or window <= 0:
+        return np.array([0.0], dtype=float)
+    max_windows = max(1, int(max_values // window))
+    if len(centers) > max_windows:
+        indices = np.linspace(0, len(centers) - 1, max_windows, dtype=int)
+        centers = [centers[idx] for idx in indices]
+    values = []
+    with pyBigWig.open(bigwig_path) as bw:
+        chroms = bw.chroms()
+        for chrom, center in centers:
+            if chrom not in chroms:
+                continue
+            start = center - flank
+            end = center + flank
+            if start < 0 or end > chroms[chrom] or end <= start:
+                continue
+            arr = np.asarray(bw.values(chrom, start, end, numpy=True), dtype=float)
+            if arr.size != window:
+                continue
+            values.append(np.nan_to_num(arr, nan=0.0, posinf=0.0, neginf=0.0))
+    if not values:
+        return np.array([0.0], dtype=float)
+    return np.concatenate(values)
+
+
+def _fit_aggregate_normalizers(selected, outdir, aggregate_signals, cond_groups, comparison, flank, mode, logger=None):
+    """Fit one report-level normalizer for aggregate cut-site profiles.
+
+    This uses pooled windows from all displayed motifs. Fitting a separate quantile
+    curve for each motif aggregate changes that motif's within-profile rank
+    structure and can create artificial footprint shapes.
+    """
+
+    mode = (mode or "none").replace("_", "-")
+    sample_names = [f"sample_{idx + 1}" for idx in range(len(aggregate_signals))]
+    if mode == "none" or len(sample_names) <= 1:
+        return {}
+
+    all_centers = []
+    seen = set()
+    for _, row in selected.iterrows():
+        prefix = str(row["output_prefix"])
+        bed_path = os.path.join(outdir, prefix, "beds", prefix + "_all.bed")
+        for chrom, center in _read_bed_centers(bed_path):
+            key = (chrom, center)
+            if key not in seen:
+                seen.add(key)
+                all_centers.append(key)
+    if not all_centers:
+        return {}
+
+    sample_arrays = [_sample_bigwig_window_values(path, all_centers, flank) for path in aggregate_signals]
+    if mode == "sample-quantile":
+        return {"mode": mode, "sample": _robust_affine_normalizers(sample_arrays, sample_names)}
+
+    if mode == "condition-quantile":
+        condition_arrays = []
+        valid_conditions = []
+        for cond in comparison:
+            indices = [idx for idx in cond_groups.get(cond, []) if idx < len(sample_arrays)]
+            if not indices:
+                continue
+            arrays = [sample_arrays[idx] for idx in indices]
+            condition_arrays.append(np.concatenate(arrays) if arrays else np.array([0.0], dtype=float))
+            valid_conditions.append(cond)
+        if len(condition_arrays) <= 1:
+            return {}
+        return {"mode": mode, "condition": _robust_affine_normalizers(condition_arrays, valid_conditions)}
+
+    raise ValueError(f"Unsupported aggregate normalization mode: {mode}")
+
+
+def _normalize_aggregate_profiles(sample_profiles, sample_names, condition_names, cond_groups, mode, norm_spec=None):
+    """Apply report-level aggregate signal normalizers to motif profiles."""
+
+    mode = (mode or "none").replace("_", "-")
+    sample_profiles = {name: np.asarray(profile, dtype=float) for name, profile in zip(sample_names, sample_profiles)}
+    if mode == "none" or len(sample_profiles) <= 1:
+        return sample_profiles
+    norm_spec = norm_spec or {}
+
+    if mode == "sample-quantile":
+        norm_objects = norm_spec.get("sample", {})
+        return {
+            name: norm_objects[name].normalize(profile) if name in norm_objects else profile
+            for name, profile in sample_profiles.items()
+        }
+
+    if mode == "condition-quantile":
+        norm_objects = norm_spec.get("condition", {})
+        out = dict(sample_profiles)
+        for cond in condition_names:
+            norm = norm_objects.get(cond)
+            if norm is None:
+                continue
+            for idx in cond_groups.get(cond, []):
+                if idx >= len(sample_names):
+                    continue
+                name = sample_names[idx]
+                if name in sample_profiles:
+                    out[name] = norm.normalize(sample_profiles[name])
+        return out
+
+    raise ValueError(f"Unsupported aggregate normalization mode: {mode}")
+
+
+def _aggregate_payload_for_row(task):
+    row, comparison, outdir, aggregate_signals, cond_groups, flank, x_len, base, normalization, aggregate_norm_spec, sample_names = task
+    c1, c2 = comparison
+    prefix = str(row["output_prefix"])
+    bed_path = os.path.join(outdir, prefix, "beds", prefix + "_all.bed")
+    centers = _read_bed_centers(bed_path)
+    if not centers:
+        return None
+
+    if not sample_names or len(sample_names) != len(aggregate_signals):
+        sample_names = [f"sample_{idx + 1}" for idx in range(len(aggregate_signals))]
+    normalized_profiles = {}
+    sample_norms = (aggregate_norm_spec or {}).get("sample", {})
+    condition_norms = (aggregate_norm_spec or {}).get("condition", {})
+    sample_to_condition = {idx: cond for cond, indices in cond_groups.items() for idx in indices}
+    for signal_idx, signal_path in enumerate(aggregate_signals):
+        sample_name = sample_names[signal_idx]
+        norm = None
+        if normalization == "sample-quantile":
+            norm = sample_norms.get(sample_name) or sample_norms.get(f"sample_{signal_idx + 1}")
+        elif normalization == "condition-quantile":
+            norm = condition_norms.get(sample_to_condition.get(signal_idx))
+        normalized_profiles[sample_name] = np.asarray(_mean_profile(signal_path, centers, flank, norm=norm), dtype=float)
+
+    conditions = []
+    for cond in (c1, c2):
+        sample_profiles = []
+        samples = []
+        for signal_idx in cond_groups.get(cond, []):
+            sample_name = sample_names[signal_idx]
+            sample_profile = normalized_profiles.get(sample_name, np.zeros(x_len, dtype=float))
+            sample_profiles.append(sample_profile)
+            samples.append({"name": sample_name, "profile": [round(float(v), 6) for v in sample_profile]})
+        if sample_profiles:
+            profile = [round(float(v), 6) for v in np.nanmean(np.asarray(sample_profiles, dtype=float), axis=0)]
+        else:
+            profile = [0.0] * x_len
+        conditions.append({"name": cond, "profile": profile, "samples": samples})
+    return {
+        "prefix": prefix,
+        "name": str(row.get("name", prefix)),
+        "motif_id": str(row.get("motif_id", "")),
+        "change": float(row.get(base + "_change", 0.0)),
+        "pvalue": float(row.get(base + "_pvalue_numeric", 1.0)),
+        "n_sites": len(centers),
+        "conditions": conditions,
+    }
 
 
 def build_bindetect_aggregate_payload(motifs, info_table, comparison, args):
@@ -661,384 +870,154 @@ def build_bindetect_aggregate_payload(motifs, info_table, comparison, args):
             selected = rows.sort_values([base + "_pvalue_numeric", base + "_abs_change"], ascending=[True, False]).head(top_n)
 
     flank = max(1, int(getattr(args, "aggregate_flank", 100)))
-    x = list(range(-flank, 0)) + list(range(1, flank + 1))
-    motifs_payload = []
-    for _, row in selected.iterrows():
-        prefix = str(row["output_prefix"])
-        bed_path = os.path.join(args.outdir, prefix, "beds", prefix + "_all.bed")
-        centers = _read_bed_centers(bed_path)
-        if not centers:
-            continue
-        conditions = []
-        for cond in comparison:
-            sample_profiles = []
-            for signal_idx in args.cond_groups.get(cond, []):
-                sample_profiles.append(_mean_profile(args.aggregate_signals[signal_idx], centers, flank))
-            if sample_profiles:
-                profile = [round(float(v), 6) for v in np.nanmean(np.asarray(sample_profiles, dtype=float), axis=0)]
-            else:
-                profile = [0.0] * len(x)
-            conditions.append({"name": cond, "profile": profile})
-        motifs_payload.append({
-            "prefix": prefix,
-            "name": str(row.get("name", prefix)),
-            "motif_id": str(row.get("motif_id", "")),
-            "change": float(row.get(base + "_change", 0.0)),
-            "pvalue": float(row.get(base + "_pvalue_numeric", 1.0)),
-            "n_sites": len(centers),
-            "conditions": conditions,
-        })
-    return {"x": x, "motifs": motifs_payload, "comparison": f"{c1} / {c2}"}
-
-def plot_interactive_bindetect(motifs, comparison, html_out, aggregate_data=None, title="BINDetect Volcano Plot"):
-    cond1, cond2 = comparison
-    groups = [cond1 + "_up", cond2 + "_up", "n.s."]
-    colors = {
-        cond1 + "_up": "#2ca25f",
-        cond2 + "_up": "#de2d26",
-        "n.s.": "#9e9e9e",
-    }
-    points_by_group = {group: [] for group in groups}
-    for group in groups:
-        for motif in motifs:
-            if getattr(motif, "group", "n.s.") != group:
-                continue
-            points_by_group[group].append({
-                "group": group,
-                "color": colors[group],
-                "x": float(getattr(motif, "change", 0)),
-                "y": float(-np.log10(max(float(getattr(motif, "pvalue", 1)), 1e-308))),
-                "name": motif.name,
-                "base": ("data:image/png;base64," + getattr(motif, "base", "")) if getattr(motif, "base", "") else "",
-            })
-
-    points = [point for group in groups for point in points_by_group[group]]
-    aggregate_json = json.dumps(aggregate_data or {"motifs": [], "x": []})
-    xvals = [p["x"] for p in points] or [0.0]
-    yvals = [p["y"] for p in points] or [1.0]
-    xabs = max(abs(min(xvals)), abs(max(xvals)), 1.0)
-    xlim = xabs * 1.1
-    ymin = 0.0
-    ymax = max(yvals) * 1.08 if max(yvals) > 0 else 1.0
-
-    width = 980
-    height = 720
-    margin = {"top": 72, "right": 70, "bottom": 90, "left": 90}
-    inner_w = width - margin["left"] - margin["right"]
-    inner_h = 430
-    plot_x0 = margin["left"]
-    plot_y0 = margin["top"]
-    plot_x1 = plot_x0 + inner_w
-    plot_y1 = plot_y0 + inner_h
-
-    def sx(x):
-        return plot_x0 + ((x + xlim) / (2 * xlim)) * inner_w
-
-    def sy(y):
-        return plot_y1 - ((y - ymin) / (ymax - ymin or 1.0)) * inner_h
-
-    def fmt_tick(value):
-        if abs(value) >= 1:
-            out = f"{value:.1f}"
-        else:
-            out = f"{value:.2f}"
-        return out.replace("-0.00", "0.00").replace("-0.0", "0.0")
-
-    def esc(text):
-        return html.escape(str(text), quote=True)
-
-    y_ticks = []
-    for i in range(7):
-        yval = ymin + (ymax - ymin) * (i / 6.0)
-        y_ticks.append((yval, sy(yval)))
-
-    x_ticks = []
-    for i in range(7):
-        xval = -xlim + (2 * xlim) * (i / 6.0)
-        x_ticks.append((xval, sx(xval)))
-
-    grid_parts = []
-    for _, ypos in y_ticks:
-        grid_parts.append(
-            f'<line x1="{plot_x0:.2f}" y1="{ypos:.2f}" x2="{plot_x1:.2f}" y2="{ypos:.2f}" class="grid" />'
-        )
-    for _, xpos in x_ticks:
-        grid_parts.append(
-            f'<line x1="{xpos:.2f}" y1="{plot_y0:.2f}" x2="{xpos:.2f}" y2="{plot_y1:.2f}" class="grid" />'
-        )
-    zero_x = sx(0.0)
-    grid_parts.append(
-        f'<line x1="{zero_x:.2f}" y1="{plot_y0:.2f}" x2="{zero_x:.2f}" y2="{plot_y1:.2f}" class="zero" />'
+    x = list(range(-flank, flank))
+    normalization = (getattr(args, "normalization", "none") or "none").replace("_", "-")
+    cond_groups = {cond: list(indices) for cond, indices in getattr(args, "cond_groups", {}).items()}
+    aggregate_norm_spec = _fit_aggregate_normalizers(
+        selected,
+        args.outdir,
+        list(args.aggregate_signals),
+        cond_groups,
+        (c1, c2),
+        flank,
+        normalization,
+        logger=getattr(args, "logger", None),
     )
+    sample_names = list(getattr(args, "sample_names", []) or [f"sample_{idx + 1}" for idx in range(len(args.aggregate_signals))])
+    tasks = [(row.to_dict(), (c1, c2), args.outdir, list(args.aggregate_signals), cond_groups, flank, len(x), base, normalization, aggregate_norm_spec, sample_names) for _, row in selected.iterrows()]
 
-    label_parts = []
-    for yval, ypos in y_ticks:
-        label_parts.append(
-            f'<text x="{plot_x0 - 12}" y="{ypos + 4:.2f}" class="tick" text-anchor="end">{esc(f"{yval:.1f}")}</text>'
-        )
-    for xval, xpos in x_ticks:
-        label_parts.append(
-            f'<text x="{xpos:.2f}" y="{plot_y1 + 24}" class="tick" text-anchor="middle">{esc(fmt_tick(xval))}</text>'
-        )
+    cores = max(1, int(getattr(args, "cores", 1) or 1))
+    if cores > 1 and len(tasks) > 1:
+        with ProcessPoolExecutor(max_workers=min(cores, len(tasks))) as executor:
+            payloads = list(executor.map(_aggregate_payload_for_row, tasks))
+    else:
+        payloads = [_aggregate_payload_for_row(task) for task in tasks]
+    motifs_payload = [payload for payload in payloads if payload is not None]
+    y_label = "Corrected cut-site signal (a.u.)"
+    if normalization == "sample-quantile":
+        y_label = "Quantile-scaled corrected cut-site signal (a.u.)"
+    elif normalization == "condition-quantile":
+        y_label = "Condition-quantile-scaled corrected cut-site signal (a.u.)"
+    return {"x": x, "motifs": motifs_payload, "comparison": f"{c1} / {c2}", "normalization": normalization, "x_label": "Distance from motif center (bp)", "y_label": y_label}
 
-    point_parts = []
-    for group in groups:
-        for point in points_by_group[group]:
-            point_parts.append(
-                "<circle "
-                f'cx="{sx(point["x"]):.2f}" '
-                f'cy="{sy(point["y"]):.2f}" '
-                'r="4.2" '
-                f'fill="{point["color"]}" '
-                'fill-opacity="0.72" '
-                'stroke="#ffffff" stroke-width="0.8" class="pt" '
-                f'data-group="{esc(point["group"])}" '
-                f'data-name="{esc(point["name"])}" '
-                f'data-change="{point["x"]:.5f}" '
-                f'data-pvalue="{10 ** (-point["y"]):.12g}" '
-                f'data-logo="{esc(point["base"])}"'
-                " />"
-            )
 
-    legend_items = []
-    for label in groups:
-        legend_items.append(
-            '<div class="legend-item">'
-            f'<span class="swatch" style="background:{colors[label]}"></span>'
-            f'<span>{esc(label)}</span>'
-            '</div>'
-        )
+def _compressed_json_b64(payload):
+    text = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+    return base64.b64encode(gzip.compress(text.encode("utf-8"), compresslevel=9)).decode("ascii")
 
-    html_str = """<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>""" + esc(title) + " " + f"{cond1} / {cond2}" + """</title>
-  <style>
-    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #edf2f7; color: #152133; font-weight: 700; }
-    .wrap { max-width: 1080px; margin: 24px auto; padding: 0 18px; }
-    .panel {
-      background: #ffffff;
-      border: 1px solid #d9e2ec;
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(21, 33, 51, 0.08);
-      overflow: hidden;
+
+def _motif_logo_svg(motif, width=420, height=150):
+    counts = getattr(motif, "counts", None)
+    if counts is None:
+        return getattr(motif, "logo_svg", "") or ""
+    try:
+        counts = np.asarray(counts, dtype=float)
+        if counts.shape[0] != 4 or counts.shape[1] == 0:
+            return ""
+        col_sums = np.sum(counts, axis=0)
+        col_sums = np.where(np.isclose(col_sums, 0.0), 1.0, col_sums)
+        pfm = counts / col_sums
+        entropy = -np.sum(np.where(pfm > 0, pfm * np.log2(np.maximum(pfm, 1e-12)), 0.0), axis=0)
+        bits = pfm * np.maximum(0.0, 2.0 - entropy)
+    except Exception:
+        return ""
+    bases = ["A", "C", "G", "T"]
+    colors = {"A": "#198754", "C": "#0d6efd", "G": "#f59f00", "T": "#dc3545"}
+    left, right, top, bottom = 46, 14, 16, 32
+    plot_w, plot_h = width - left - right, height - top - bottom
+    npos = bits.shape[1]
+    col_w = plot_w / max(1, npos)
+    parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" role="img">', '<rect width="100%" height="100%" fill="#ffffff"/>', f'<line x1="{left}" y1="{top + plot_h}" x2="{left + plot_w}" y2="{top + plot_h}" stroke="#3b4552" stroke-width="1.2"/>', f'<line x1="{left}" y1="{top}" x2="{left}" y2="{top + plot_h}" stroke="#3b4552" stroke-width="1.2"/>', f'<text x="18" y="{top + plot_h / 2}" transform="rotate(-90 18 {top + plot_h / 2})" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="12" font-weight="700" fill="#152133">bits</text>', f'<text x="{left + plot_w / 2}" y="{height - 7}" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="12" font-weight="700" fill="#152133">position</text>']
+    for tick in [0, 1, 2]:
+        y = top + plot_h - (tick / 2.0) * plot_h
+        parts.append(f'<line x1="{left - 4}" y1="{y:.2f}" x2="{left}" y2="{y:.2f}" stroke="#3b4552" stroke-width="1"/>')
+        parts.append(f'<text x="{left - 8}" y="{y + 4:.2f}" text-anchor="end" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="700" fill="#56616f">{tick}</text>')
+    for pos in range(npos):
+        y_cursor = top + plot_h
+        order = np.argsort(bits[:, pos])
+        x_center = left + pos * col_w + col_w / 2.0
+        if npos <= 18 or pos in {0, npos - 1} or (pos + 1) % 5 == 0:
+            parts.append(f'<text x="{x_center:.2f}" y="{top + plot_h + 13}" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="700" fill="#56616f">{pos + 1}</text>')
+        for base_idx in order:
+            value = float(bits[base_idx, pos])
+            if value <= 0.015:
+                continue
+            letter_h = max(3.0, value / 2.0 * plot_h)
+            y_cursor -= letter_h
+            base = bases[base_idx]
+            font_size = max(8.0, min(40.0, letter_h * 1.25))
+            parts.append(f'<text x="{x_center:.2f}" y="{y_cursor + letter_h * 0.88:.2f}" text-anchor="middle" font-family="Arial Black,Arial,Helvetica,sans-serif" font-size="{font_size:.2f}" font-weight="900" fill="{colors[base]}">{base}</text>')
+    parts.append('</svg>')
+    return "".join(parts)
+
+
+def _motif_logo_map(motifs):
+    logos = {}
+    for motif in motifs:
+        prefix = str(getattr(motif, "prefix", getattr(motif, "name", "")))
+        svg = _motif_logo_svg(motif)
+        png = getattr(motif, "base", "") or ""
+        entry = {}
+        if svg:
+            entry["svg"] = svg
+        elif png:
+            entry["png"] = "data:image/png;base64," + png
+        if entry:
+            logos[prefix] = entry
+    return logos
+
+
+
+
+def plot_interactive_bindetect(motifs, comparison, html_out, aggregate_data=None, title='Differential footprint report'):
+    cond1, cond2 = comparison
+    groups = [cond1 + '_up', cond2 + '_up', 'n.s.']
+    colors = {cond1 + '_up': '#2563eb', cond2 + '_up': '#dc2626', 'n.s.': '#8a94a6'}
+    points = []
+    for motif in motifs:
+        group = getattr(motif, 'group', 'n.s.')
+        if group not in colors:
+            group = 'n.s.'
+        pvalue = max(float(getattr(motif, 'pvalue', 1.0)), 1e-308)
+        points.append({
+            'prefix': str(getattr(motif, 'prefix', getattr(motif, 'name', ''))),
+            'name': str(getattr(motif, 'name', '')),
+            'motif_id': str(getattr(motif, 'id', '')),
+            'group': group,
+            'change': round(float(getattr(motif, 'change', 0.0)), 6),
+            'pvalue': pvalue,
+            'neglog10p': round(float(-np.log10(pvalue)), 6),
+        })
+    payload = {
+        'title': title,
+        'comparison': f'{cond1} / {cond2}',
+        'conditions': [cond1, cond2],
+        'groups': groups,
+        'colors': colors,
+        'points': points,
+        'logos': _motif_logo_map(motifs),
+        'aggregate': aggregate_data or {'motifs': [], 'x': [], 'normalization': 'none'},
     }
-    .head {
-      padding: 18px 24px 12px;
-      border-bottom: 1px solid #e7edf4;
-      background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
-    }
-    h1 { margin: 0; font-size: 24px; font-weight: 700; }
-    .sub { margin: 6px 0 0; color: #52606d; font-size: 14px; }
-    .body {
-      display: grid;
-      grid-template-columns: 1fr 260px;
-      gap: 0;
-      align-items: start;
-    }
-    .chart-box { padding: 10px 16px 18px; }
-    #chart { width: 100%; height: auto; display: block; }
-    .grid { stroke: #e7edf4; stroke-width: 1; }
-    .axis { stroke: #5b6875; stroke-width: 1.2; }
-    .zero { stroke: #7b8794; stroke-width: 1.4; stroke-dasharray: 4 4; }
-    .tick { font-size: 12px; fill: #52606d; font-weight: 700; }
-    .axis-label { font-size: 14px; fill: #152133; font-weight: 700; }
-    .pt { cursor: pointer; }
-    .pt:hover { stroke: #152133; stroke-width: 1.4; }
-    .side {
-      border-left: 1px solid #e7edf4;
-      padding: 18px 18px 20px;
-      background: #fbfdff;
-    }
-    .legend {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      color: #334e68;
-      font-weight: 700;
-    }
-    .swatch {
-      width: 12px;
-      height: 12px;
-      border-radius: 999px;
-      display: inline-block;
-      border: 1px solid rgba(0,0,0,0.12);
-    }
-    .meta-title {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #7b8794;
-      margin: 0 0 8px;
-      font-weight: 700;
-    }
-    .detail {
-      min-height: 146px;
-      border: 1px solid #d9e2ec;
-      border-radius: 12px;
-      background: #ffffff;
-      padding: 12px;
-      box-sizing: border-box;
-    }
-    .detail h2 {
-      margin: 0 0 6px;
-      font-size: 16px;
-      line-height: 1.2;
-    }
-    .detail p {
-      margin: 4px 0;
-      font-size: 13px;
-      color: #52606d;
-      font-weight: 700;
-    }
-    .logo {
-      margin-top: 14px;
-      border: 1px solid #d9e2ec;
-      border-radius: 12px;
-      background: #ffffff;
-      min-height: 140px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      padding: 10px;
-      box-sizing: border-box;
-    }
-    .logo img {
-      max-width: 100%;
-      max-height: 120px;
-      display: none;
-    }
-    .logo span {
-      color: #7b8794;
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .aggregate-control { margin-top: 14px; }
-    .aggregate-control select { width: 100%; border: 1px solid #d9e2ec; border-radius: 8px; padding: 7px; font-weight: 700; color: #152133; background: #ffffff; }
-    #aggregate-chart { width: 100%; height: auto; display: block; margin-top: 10px; border: 1px solid #d9e2ec; border-radius: 12px; background: #ffffff; }
-    @media (max-width: 920px) {
-      .body { grid-template-columns: 1fr; }
-      .side { border-left: 0; border-top: 1px solid #e7edf4; }
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="panel">
-      <div class="head">
-        <h1>""" + esc(title) + """</h1>
-        <p class="sub">""" + f"{cond1} / {cond2}" + """</p>
-      </div>
-      <div class="body">
-        <div class="chart-box">
-          <svg id="chart" viewBox="0 0 980 720" aria-label="BINDetect volcano plot">
-            <rect x=\"0\" y=\"0\" width=\"980\" height=\"720\" fill=\"#ffffff\" />
-            <rect x=\"""" + f"{plot_x0:.2f}" + """\" y=\"""" + f"{plot_y0:.2f}" + """\" width=\"""" + f"{inner_w:.2f}" + """\" height=\"""" + f"{inner_h:.2f}" + """\" fill=\"#fbfdff\" stroke=\"#d9e2ec\" />
-            """ + "".join(grid_parts) + """
-            <line x1=\"""" + f"{plot_x0:.2f}" + """\" y1=\"""" + f"{plot_y1:.2f}" + """\" x2=\"""" + f"{plot_x1:.2f}" + """\" y2=\"""" + f"{plot_y1:.2f}" + """\" class=\"axis\" />
-            <line x1=\"""" + f"{plot_x0:.2f}" + """\" y1=\"""" + f"{plot_y0:.2f}" + """\" x2=\"""" + f"{plot_x0:.2f}" + """\" y2=\"""" + f"{plot_y1:.2f}" + """\" class=\"axis\" />
-            """ + "".join(label_parts) + """
-            <text x=\"""" + f"{(plot_x0 + plot_x1) / 2:.2f}" + """\" y=\"""" + f"{plot_y1 + 56:.2f}" + """\" class=\"axis-label\" text-anchor=\"middle\">Differential binding score</text>
-            <text x=\"26\" y=\"""" + f"{plot_y0 + inner_h / 2:.2f}" + """\" class=\"axis-label\" text-anchor=\"middle\" transform=\"rotate(-90 26 """ + f"{plot_y0 + inner_h / 2:.2f}" + """)\">-log10(pvalue)</text>
-            """ + "".join(point_parts) + """
-          </svg>
-        </div>
-        <aside class="side">
-          <p class="meta-title">Groups</p>
-          <div class="legend">""" + "".join(legend_items) + """</div>
-          <p class="meta-title">Selected motif</p>
-          <div class="detail" id="detail">
-            <h2>Hover over a point</h2>
-            <p>Motif name, group, change, and p-value appear here.</p>
-          </div>
-          <div class="logo" id="logo-box">
-            <img id="logo-img" alt="Motif logo">
-            <span id="logo-empty">Motif logo</span>
-          </div>
-          <div class="aggregate-control" id="aggregate-control" style="display:none">
-            <p class="meta-title">Aggregate profile</p>
-            <select id="aggregate-select" aria-label="Select motif aggregate"></select>
-            <svg id="aggregate-chart" viewBox="0 0 260 190" aria-label="Aggregate footprint profile"></svg>
-          </div>
-        </aside>
-      </div>
-    </div>
-  </div>
-  <script>
-    const detail = document.getElementById('detail');
-    const logoImg = document.getElementById('logo-img');
-    const logoEmpty = document.getElementById('logo-empty');
-    const aggregateData = """ + aggregate_json + """;
-    const aggregateControl = document.getElementById('aggregate-control');
-    const aggregateSelect = document.getElementById('aggregate-select');
-    const aggregateChart = document.getElementById('aggregate-chart');
-    const palette = ['#1f77b4', '#d62728', '#2ca02c', '#9467bd'];
-    function renderAggregate(prefix) {
-      if (!aggregateData.motifs || aggregateData.motifs.length === 0) return;
-      const motif = aggregateData.motifs.find((m) => m.prefix === prefix) || aggregateData.motifs[0];
-      const x = aggregateData.x;
-      const allY = motif.conditions.flatMap((c) => c.profile);
-      const ymin = Math.min(...allY, 0);
-      const ymax = Math.max(...allY, 1e-9);
-      const pad = (ymax - ymin || 1) * 0.12;
-      const y0 = ymin - pad;
-      const y1 = ymax + pad;
-      const sx2 = (v) => 32 + ((v - x[0]) / (x[x.length - 1] - x[0] || 1)) * 198;
-      const sy2 = (v) => 150 - ((v - y0) / (y1 - y0 || 1)) * 112;
-      let parts = [`<rect width="260" height="190" fill="#fff"/>`, `<line x1="32" y1="150" x2="230" y2="150" stroke="#68778d"/>`, `<line x1="32" y1="38" x2="32" y2="150" stroke="#68778d"/>`, `<line x1="${sx2(0).toFixed(1)}" y1="38" x2="${sx2(0).toFixed(1)}" y2="150" stroke="#999" stroke-dasharray="3 3"/>`, `<text x="130" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#52606d">bp from motif center</text>`];
-      motif.conditions.forEach((cond, idx) => {
-        const d = cond.profile.map((y, i) => `${i === 0 ? 'M' : 'L'}${sx2(x[i]).toFixed(1)},${sy2(y).toFixed(1)}`).join(' ');
-        parts.push(`<path d="${d}" fill="none" stroke="${palette[idx % palette.length]}" stroke-width="1.8"/>`);
-        parts.push(`<text x="42" y="${18 + idx * 14}" font-size="11" font-weight="700" fill="${palette[idx % palette.length]}">${cond.name}</text>`);
-      });
-      parts.push(`<text x="130" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#152133">${motif.name} (${motif.n_sites} sites)</text>`);
-      aggregateChart.innerHTML = parts.join('');
-    }
-    if (aggregateData.motifs && aggregateData.motifs.length > 0) {
-      aggregateControl.style.display = 'block';
-      aggregateSelect.innerHTML = aggregateData.motifs.map((m) => `<option value="${m.prefix}">${m.name}</option>`).join('');
-      aggregateSelect.addEventListener('change', () => renderAggregate(aggregateSelect.value));
-      renderAggregate(aggregateData.motifs[0].prefix);
-    }
-    document.querySelectorAll('.pt').forEach((el) => {
-      el.addEventListener('mouseenter', () => {
-        const name = el.dataset.name;
-        const group = el.dataset.group;
-        const change = Number(el.dataset.change);
-        const pvalue = Number(el.dataset.pvalue);
-        detail.innerHTML =
-          `<h2>${name}</h2>` +
-          `<p><strong>Group:</strong> ${group}</p>` +
-          `<p><strong>Change:</strong> ${change.toFixed(4)}</p>` +
-          `<p><strong>P-value:</strong> ${pvalue.toExponential(3)}</p>`;
-        if (aggregateData.motifs && aggregateData.motifs.some((m) => m.name === name || m.prefix === name)) {
-          const hit = aggregateData.motifs.find((m) => m.name === name || m.prefix === name);
-          aggregateSelect.value = hit.prefix;
-          renderAggregate(hit.prefix);
-        }
-        if (el.dataset.logo) {
-          logoImg.src = el.dataset.logo;
-          logoImg.style.display = 'block';
-          logoEmpty.style.display = 'none';
-        } else {
-          logoImg.removeAttribute('src');
-          logoImg.style.display = 'none';
-          logoEmpty.style.display = 'block';
-        }
-      });
-    });
-  </script>
-</body>
-</html>"""
-    with open(html_out, "w") as f:
+    payload_b64 = _compressed_json_b64(payload)
+    html_template = '''<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>__TITLE_ATTR__</title><style>
+:root{--ink:#152133;--muted:#596579;--line:#d9e2ec;--grid:#e8eef5;--panel:#fff;--bg:#eef3f8;--accent:#173b73;--soft:#f7fafc}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);font-weight:700}.wrap{max-width:min(1840px,calc(100vw - 28px));margin:10px auto;padding:0 10px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 14px 34px rgba(21,33,51,.10);overflow:hidden}.head{padding:10px 18px 8px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff 0%,#f7fafc 100%)}h1{margin:0;font-size:21px;line-height:1.12;font-weight:900}.sub{margin:3px 0 0;color:var(--muted);font-size:12px;font-weight:700}.top-row{display:grid;grid-template-columns:360px minmax(360px,1fr) 360px 180px;gap:10px;align-items:stretch;padding:9px 12px;border-bottom:1px solid var(--line);background:#fbfdff}.main-row{display:grid;grid-template-columns:minmax(720px,1fr) 520px;gap:0;align-items:stretch}.main-row.aggregate-wide{grid-template-columns:minmax(720px,1fr) 760px}.main-row.aggregate-full{grid-template-columns:1fr}.main-row.aggregate-full .chart-box{border-right:0;border-bottom:1px solid var(--line)}.chart-box{padding:8px 12px 10px;border-right:1px solid var(--line)}#chart{width:100%;height:min(640px,calc(100vh - 260px));min-height:560px;display:block;background:#fff}.aggregate-pane{padding:8px 12px 10px;background:#fff}#aggregate-chart{width:100%;height:315px;display:block;background:#fff}.section-title{font-size:11px;line-height:1.1;text-transform:uppercase;letter-spacing:.08em;color:#728197;margin:0 0 5px;font-weight:900}#logo-title{text-transform:none;letter-spacing:0}.card{border:1px solid var(--line);border-radius:7px;background:#fff;padding:7px;min-height:86px}.controls{display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start}.color-row{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;color:#334e68;font-weight:800;border:1px solid #e6edf5;border-radius:999px;padding:4px 6px;background:#fbfdff}.color-row input{width:28px;height:20px;border:1px solid var(--line);background:#fff;padding:0;border-radius:4px}.detail h2{margin:0 0 4px;font-size:16px;line-height:1.05;font-weight:900}.detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.detail p{margin:0;font-size:11px;color:var(--muted);font-weight:800;line-height:1.18}.logo{height:86px;min-height:86px;display:flex;align-items:center;justify-content:center;overflow:hidden}.logo svg,.logo img{max-width:100%;height:auto;display:block}.logo-empty{color:#728197;font-size:13px;font-weight:800}.button-row{display:grid;gap:5px}button{border:1px solid #b8c5d6;background:#fff;color:var(--accent);border-radius:6px;padding:5px 8px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:900;cursor:pointer}button:hover{background:#f2f6fb}.agg-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.agg-toolbar label{font-size:11px;line-height:1;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.06em}.agg-toolbar select{border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:800;padding:5px 8px}.combo{position:relative;margin-bottom:10px}.combo input{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:800;color:var(--ink);background:#fff}.combo-list{display:none;position:absolute;z-index:20;left:0;right:0;top:32px;max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:#fff;box-shadow:0 10px 24px rgba(21,33,51,.16)}.combo-list.open{display:block}.combo-option{padding:7px 10px;font-size:13px;font-weight:800;cursor:pointer;border-bottom:1px solid #eef3f8}.combo-option small{display:block;color:#728197;font-size:11px;font-weight:700}.combo-option:hover,.combo-option.active{background:#edf4ff}.axis{stroke:#3b4552;stroke-width:1.35}.grid{stroke:var(--grid);stroke-width:1}.zero{stroke:#677386;stroke-width:1.4;stroke-dasharray:4 4}.tick{font-family:Arial,Helvetica,sans-serif;font-size:12px;fill:var(--muted);font-weight:800}.axis-label{font-family:Arial,Helvetica,sans-serif;font-size:14px;fill:var(--ink);font-weight:900}.plot-title{font-family:Arial,Helvetica,sans-serif;font-size:15px;fill:var(--ink);font-weight:900}.pt{cursor:pointer}.pt:hover{stroke:#111827;stroke-width:1.5}.pt.selected{stroke:#111827;stroke-width:2.6;fill-opacity:.95}@media(max-width:1260px){.top-row{grid-template-columns:1fr 1fr}.main-row{grid-template-columns:1fr}.chart-box{border-right:0;border-bottom:1px solid var(--line)}#chart{height:auto;min-height:0}}@media(max-width:760px){.top-row{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr}}
+</style></head><body><div class="wrap"><div class="panel"><div class="head"><h1>__TITLE__</h1><p class="sub">__COND1__ / __COND2__</p></div><div class="top-row"><div><p class="section-title">Groups</p><div class="card controls" id="color-controls"></div></div><div><p class="section-title">Selected motif</p><div class="card detail" id="detail"><h2>Loading report</h2><div class="detail-grid"><p>Data are embedded in this standalone HTML file.</p></div></div></div><div><p class="section-title" id="logo-title">Motif logo</p><div class="card logo" id="logo-box"><span class="logo-empty">Motif logo</span></div></div><div><p class="section-title">Export editable SVG</p><div class="card button-row"><button id="download-volcano">Download volcano SVG</button><button id="download-aggregate">Download aggregate SVG</button><button id="download-logo">Download motif logo SVG</button></div></div></div><div class="main-row" id="main-row"><div class="chart-box"><svg id="chart" viewBox="0 0 980 620" aria-label="Differential footprint volcano plot"></svg></div><div class="aggregate-pane"><div class="agg-toolbar"><p class="section-title">Aggregate profile</p><label>Width <select id="aggregate-width"><option value="normal">Normal</option><option value="wide">Wide</option><option value="full">Full width</option></select></label></div><div class="combo" id="aggregate-combo" style="display:none"><input id="aggregate-search" type="text" autocomplete="off" placeholder="Search motif"><div class="combo-list" id="aggregate-options"></div></div><svg id="aggregate-chart" viewBox="0 0 520 315" aria-label="Aggregate footprint profile"></svg></div></div></div></div><script>
+const reportPayloadB64="__PAYLOAD__";let payload=null,selectedPrefix=null,activeOptionIndex=0,sortedAggregateMotifs=[];const chart=document.getElementById('chart'),aggregateChart=document.getElementById('aggregate-chart'),detail=document.getElementById('detail'),logoBox=document.getElementById('logo-box'),logoTitle=document.getElementById('logo-title'),colorControls=document.getElementById('color-controls'),mainRow=document.getElementById('main-row'),aggregateWidth=document.getElementById('aggregate-width'),aggregateCombo=document.getElementById('aggregate-combo'),aggregateSearch=document.getElementById('aggregate-search'),aggregateOptions=document.getElementById('aggregate-options');
+function escText(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function b64ToBytes(b64){return Uint8Array.from(atob(b64),c=>c.charCodeAt(0))}async function decodePayload(){if(!('DecompressionStream'in window))throw new Error('This standalone report needs a modern browser with gzip DecompressionStream support.');const ds=new DecompressionStream('gzip');const stream=new Blob([b64ToBytes(reportPayloadB64)]).stream().pipeThrough(ds);return JSON.parse(await new Response(stream).text())}function fmtTick(value){return Math.abs(value)>=1?value.toFixed(1).replace('-0.0','0.0'):value.toFixed(2).replace('-0.00','0.00')}function niceTicks(min,max,n){const out=[];for(let i=0;i<n;i++)out.push(min+(max-min)*(i/Math.max(1,n-1)));return out}function currentGroupColors(){const out={...payload.colors};document.querySelectorAll('[data-color-group]').forEach(inp=>out[inp.dataset.colorGroup]=inp.value);return out}function currentConditionColors(){const groupColors=currentGroupColors();return{[payload.conditions[0]]:groupColors[payload.conditions[0]+'_up'],[payload.conditions[1]]:groupColors[payload.conditions[1]+'_up']}}function pointByPrefix(prefix){return payload.points.find(p=>p.prefix===prefix)}function aggregateByPrefix(prefix){return(payload.aggregate.motifs||[]).find(m=>m.prefix===prefix)}
+function renderColorControls(){colorControls.innerHTML=payload.groups.map(group=>`<label class="color-row"><span>${escText(group)}</span><input type="color" data-color-group="${escText(group)}" value="${payload.colors[group]}"></label>`).join('');colorControls.querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{renderVolcano();renderAggregate(selectedPrefix)}))}function setAggregateLayout(mode){mainRow.classList.toggle('aggregate-wide',mode==='wide');mainRow.classList.toggle('aggregate-full',mode==='full');renderAggregate(selectedPrefix)}aggregateWidth.addEventListener('change',()=>setAggregateLayout(aggregateWidth.value));
+function renderVolcano(){const colors=currentGroupColors(),width=980,height=620,margin={top:58,right:54,bottom:72,left:92},innerW=width-margin.left-margin.right,innerH=390,plotX0=margin.left,plotY0=margin.top,plotX1=plotX0+innerW,plotY1=plotY0+innerH;const xs=payload.points.map(p=>p.change),ys=payload.points.map(p=>p.neglog10p),xabs=Math.max(1,Math.abs(Math.min(...xs,0)),Math.abs(Math.max(...xs,0)))*1.1,ymin=0,ymax=Math.max(1,Math.max(...ys,1)*1.08);const sx=x=>plotX0+((x+xabs)/(2*xabs))*innerW,sy=y=>plotY1-((y-ymin)/(ymax-ymin||1))*innerH,xTicks=niceTicks(-xabs,xabs,7),yTicks=niceTicks(ymin,ymax,7);const parts=[`<rect width="${width}" height="${height}" fill="#ffffff"/>`,`<text x="${(plotX0+plotX1)/2}" y="32" class="plot-title" text-anchor="middle">Differential footprint evidence</text>`,`<rect x="${plotX0}" y="${plotY0}" width="${innerW}" height="${innerH}" fill="#fbfdff" stroke="#d9e2ec"/>`];yTicks.forEach(v=>parts.push(`<line x1="${plotX0}" y1="${sy(v)}" x2="${plotX1}" y2="${sy(v)}" class="grid"/>`,`<text x="${plotX0-12}" y="${sy(v)+4}" class="tick" text-anchor="end">${v.toFixed(1)}</text>`));xTicks.forEach(v=>parts.push(`<line x1="${sx(v)}" y1="${plotY0}" x2="${sx(v)}" y2="${plotY1}" class="grid"/>`,`<text x="${sx(v)}" y="${plotY1+25}" class="tick" text-anchor="middle">${fmtTick(v)}</text>`));parts.push(`<line x1="${sx(0)}" y1="${plotY0}" x2="${sx(0)}" y2="${plotY1}" class="zero"/>`,`<line x1="${plotX0}" y1="${plotY1}" x2="${plotX1}" y2="${plotY1}" class="axis"/>`,`<line x1="${plotX0}" y1="${plotY0}" x2="${plotX0}" y2="${plotY1}" class="axis"/>`,`<text x="${(plotX0+plotX1)/2}" y="${plotY1+62}" class="axis-label" text-anchor="middle">Differential footprint score</text>`,`<text x="28" y="${plotY0+innerH/2}" class="axis-label" text-anchor="middle" transform="rotate(-90 28 ${plotY0+innerH/2})">-log10(p-value)</text>`);payload.points.forEach((p,idx)=>{const selected=p.prefix===selectedPrefix;parts.push(`<circle class="pt${selected?' selected':''}" data-prefix="${escText(p.prefix)}" data-index="${idx}" cx="${sx(p.change).toFixed(2)}" cy="${sy(p.neglog10p).toFixed(2)}" r="${selected?6.0:4.3}" fill="${colors[p.group]||colors['n.s.']}" fill-opacity="${selected?.95:.76}" stroke="#ffffff" stroke-width="0.9"/>`)});chart.innerHTML=parts.join('');chart.querySelectorAll('.pt').forEach(el=>el.addEventListener('click',()=>setSelectedMotif(el.dataset.prefix,{from:'volcano'})))}
+function motifLabel(item){if(!item)return'';const id=item.motif_id||item.id||'';return id?`${item.name} (${id})`:item.name}function renderDetail(point){if(!point){detail.innerHTML='<h2>No motif selected</h2><div class="detail-grid"><p>Select a motif from the volcano or aggregate search.</p></div>';return}detail.innerHTML=`<h2>${escText(motifLabel(point))}</h2><div class="detail-grid"><p><strong>Group:</strong><br>${escText(point.group)}</p><p><strong>Change:</strong><br>${Number(point.change).toFixed(4)}</p><p><strong>P-value:</strong><br>${Number(point.pvalue).toExponential(3)}</p></div>`}function renderLogo(prefix){const logo=payload.logos[prefix],agg=aggregateByPrefix(prefix),point=pointByPrefix(prefix),label=motifLabel(point)||motifLabel(agg)||'';logoTitle.textContent=label?`${label} Motif logo`:'Motif logo';if(!logo){logoBox.innerHTML='<span class="logo-empty">Motif logo unavailable</span>';return}if(logo.svg)logoBox.innerHTML=logo.svg;else logoBox.innerHTML=`<img alt="Motif logo" src="${logo.png}">`}
+function renderAggregate(prefix){const agg=payload.aggregate||{motifs:[],x:[]};if(!agg.motifs||agg.motifs.length===0){aggregateChart.innerHTML='<text x="260" y="180" text-anchor="middle" class="tick">Aggregate profiles unavailable</text>';return}const motif=aggregateByPrefix(prefix)||agg.motifs[0];const mode=aggregateWidth.value,width=mode==='full'?980:(mode==='wide'?760:520),height=315;aggregateChart.setAttribute('viewBox',`0 0 ${width} ${height}`);const x=agg.x,margin={top:44,right:26,bottom:62,left:92},innerW=width-margin.left-margin.right,innerH=height-margin.top-margin.bottom;const sampleProfiles=motif.conditions.flatMap(c=>(c.samples||[]).flatMap(s=>s.profile));const meanProfiles=motif.conditions.flatMap(c=>c.profile);const allY=[...meanProfiles,...sampleProfiles].filter(Number.isFinite);let ymin=Math.min(...allY,0),ymax=Math.max(...allY,1e-9);const minPad=Math.max(1e-4,Math.abs(ymax)*.05,Math.abs(ymin)*.05);const pad=Math.max((ymax-ymin||1)*.22,minPad);ymin-=pad;ymax+=pad;const sx=v=>margin.left+((v-x[0])/(x[x.length-1]-x[0]||1))*innerW,sy=v=>margin.top+innerH-((v-ymin)/(ymax-ymin||1))*innerH,colors=currentConditionColors(),xTicks=[x[0],Math.round(x[0]/2),0,Math.round(x[x.length-1]/2),x[x.length-1]],yTicks=niceTicks(ymin,ymax,5),lineD=profile=>profile.map((y,i)=>`${i===0?'M':'L'}${sx(x[i]).toFixed(2)},${sy(y).toFixed(2)}`).join(' ');const parts=[`<rect width="${width}" height="${height}" fill="#ffffff"/>`,`<text x="${width/2}" y="22" class="plot-title" text-anchor="middle">${escText(motifLabel(motif))} (${motif.n_sites} sites)</text>`,`<text x="${width/2}" y="37" class="tick" text-anchor="middle">${escText(agg.normalization||'none')} normalization</text>`];yTicks.forEach(v=>parts.push(`<line x1="${margin.left}" y1="${sy(v)}" x2="${margin.left+innerW}" y2="${sy(v)}" class="grid"/>`,`<text x="${margin.left-10}" y="${sy(v)+4}" class="tick" text-anchor="end">${v.toPrecision(2)}</text>`));xTicks.forEach(v=>parts.push(`<line x1="${sx(v)}" y1="${margin.top}" x2="${sx(v)}" y2="${margin.top+innerH}" class="grid"/>`,`<text x="${sx(v)}" y="${margin.top+innerH+25}" class="tick" text-anchor="middle">${v}</text>`));parts.push(`<line x1="${sx(0)}" y1="${margin.top}" x2="${sx(0)}" y2="${margin.top+innerH}" class="zero"/>`,`<line x1="${margin.left}" y1="${margin.top+innerH}" x2="${margin.left+innerW}" y2="${margin.top+innerH}" class="axis"/>`,`<line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top+innerH}" class="axis"/>`);motif.conditions.forEach((cond,idx)=>{const color=colors[cond.name]||['#2563eb','#dc2626','#16a34a','#9333ea'][idx%4];(cond.samples||[]).forEach(sample=>{parts.push(`<path d="${lineD(sample.profile)}" fill="none" stroke="${color}" stroke-width="0.9" stroke-opacity="0.30"><title>${escText(sample.name)}</title></path>`)});});motif.conditions.forEach((cond,idx)=>{const color=colors[cond.name]||['#2563eb','#dc2626','#16a34a','#9333ea'][idx%4];parts.push(`<path d="${lineD(cond.profile)}" fill="none" stroke="${color}" stroke-width="2.2"/>`,`<text x="${margin.left+8}" y="${margin.top+16+idx*16}" font-family="Arial,Helvetica,sans-serif" font-size="12" font-weight="900" fill="${color}">${escText(cond.name)} mean</text>`)});parts.push(`<text x="${margin.left+innerW/2}" y="${height-16}" class="axis-label" text-anchor="middle">${escText(agg.x_label||'Distance from motif center (bp)')}</text>`,`<text x="22" y="${margin.top+innerH/2}" class="axis-label" text-anchor="middle" transform="rotate(-90 22 ${margin.top+innerH/2})">${escText(agg.y_label||'Corrected cut-site signal (a.u.)')}</text>`);aggregateChart.innerHTML=parts.join('')}
+function filteredAggregateMotifs(){const q=aggregateSearch.value.trim().toLowerCase();const list=sortedAggregateMotifs.filter(m=>!q||(`${m.name} ${m.motif_id||''} ${m.prefix}`).toLowerCase().includes(q));return list.slice(0,80)}function renderAggregateOptions(){const list=filteredAggregateMotifs();activeOptionIndex=Math.min(activeOptionIndex,Math.max(0,list.length-1));aggregateOptions.innerHTML=list.map((m,idx)=>`<div class="combo-option${idx===activeOptionIndex?' active':''}" data-prefix="${escText(m.prefix)}"><span>${escText(m.name)}</span><small>${escText(m.prefix)} · ${m.n_sites||0} sites</small></div>`).join('');aggregateOptions.classList.add('open');aggregateOptions.querySelectorAll('.combo-option').forEach(el=>el.addEventListener('mousedown',ev=>{ev.preventDefault();setSelectedMotif(el.dataset.prefix,{from:'search'});aggregateOptions.classList.remove('open')}))}function setSearchValue(prefix){const motif=aggregateByPrefix(prefix);if(motif)aggregateSearch.value=motif.name}function setupAggregateSearch(){sortedAggregateMotifs=[...(payload.aggregate.motifs||[])].sort((a,b)=>(a.name||'').localeCompare(b.name||'')||(a.prefix||'').localeCompare(b.prefix||''));if(!sortedAggregateMotifs.length)return;aggregateCombo.style.display='block';aggregateSearch.addEventListener('focus',()=>{activeOptionIndex=0;renderAggregateOptions()});aggregateSearch.addEventListener('input',()=>{activeOptionIndex=0;renderAggregateOptions()});aggregateSearch.addEventListener('keydown',ev=>{const list=filteredAggregateMotifs();if(ev.key==='ArrowDown'){ev.preventDefault();activeOptionIndex=Math.min(activeOptionIndex+1,Math.max(0,list.length-1));renderAggregateOptions()}else if(ev.key==='ArrowUp'){ev.preventDefault();activeOptionIndex=Math.max(activeOptionIndex-1,0);renderAggregateOptions()}else if(ev.key==='Enter'){ev.preventDefault();if(list[activeOptionIndex]){setSelectedMotif(list[activeOptionIndex].prefix,{from:'search'});aggregateOptions.classList.remove('open')}}else if(ev.key==='Escape'){aggregateOptions.classList.remove('open')}});document.addEventListener('click',ev=>{if(!aggregateCombo.contains(ev.target))aggregateOptions.classList.remove('open')})}
+function setSelectedMotif(prefix,opts={}){const agg=aggregateByPrefix(prefix);const point=pointByPrefix(prefix)||payload.points.find(p=>p.name===(agg&&agg.name))||payload.points[0];const selected=(agg&&agg.prefix)||(point&&point.prefix);if(!selected)return;selectedPrefix=selected;renderDetail(point);renderLogo(selected);renderVolcano();renderAggregate(selected);if(opts.from!=='search')setSearchValue(selected)}function svgBlob(svgNode){const clone=svgNode.cloneNode(true);clone.setAttribute('xmlns','http://www.w3.org/2000/svg');const text=new XMLSerializer().serializeToString(clone);return new Blob([text],{type:'image/svg+xml;charset=utf-8'})}function downloadBlob(blob,filename){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}document.getElementById('download-volcano').addEventListener('click',()=>downloadBlob(svgBlob(chart),'diff_footprints_volcano.svg'));document.getElementById('download-aggregate').addEventListener('click',()=>downloadBlob(svgBlob(aggregateChart),'diff_footprints_aggregate.svg'));document.getElementById('download-logo').addEventListener('click',()=>{const svg=logoBox.querySelector('svg');if(svg)downloadBlob(svgBlob(svg),'diff_footprints_motif_logo.svg')});
+decodePayload().then(data=>{payload=data;renderColorControls();setupAggregateSearch();const first=(payload.aggregate.motifs&&payload.aggregate.motifs[0]&&payload.aggregate.motifs[0].prefix)||(payload.points[0]&&payload.points[0].prefix);if(first)setSelectedMotif(first);else renderVolcano()}).catch(err=>{detail.innerHTML=`<h2>Could not open report payload</h2><div class="detail-grid"><p>${escText(err.message)}</p></div>`});
+</script></body></html>'''
+    html_str = (html_template
+        .replace('__PAYLOAD__', payload_b64)
+        .replace('__TITLE_ATTR__', html.escape(f'{title} {cond1} / {cond2}', quote=True))
+        .replace('__TITLE__', html.escape(title))
+        .replace('__COND1__', html.escape(cond1))
+        .replace('__COND2__', html.escape(cond2)))
+    with open(html_out, 'w') as f:
         f.write(html_str)

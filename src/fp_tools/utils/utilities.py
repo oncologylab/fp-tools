@@ -56,13 +56,17 @@ def show_worker_progress(verbosity, total_items, is_tty=None):
 def check_cores(given_cores, logger):
     """Resolve the effective core count for local execution.
 
-    Positive user-supplied values are respected and capped at the local CPU
-    count. Invalid values fall back to all available cores.
+    Omitted values use all available CPUs. Positive user-supplied values are
+    respected and capped at the local CPU count. Invalid explicit values fall
+    back to all available cores with a warning.
     """
 
     available_cores = mp.cpu_count()
 
-    if given_cores is None or given_cores < 1:
+    if given_cores is None:
+        return available_cores
+
+    if given_cores < 1:
         logger.warning(
             "Invalid '--cores' value {0}; using all available cores ({1}).".format(
                 given_cores, available_cores

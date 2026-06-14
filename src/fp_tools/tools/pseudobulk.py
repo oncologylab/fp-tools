@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import multiprocessing
 import re
 import shlex
 from concurrent.futures import ProcessPoolExecutor
@@ -189,7 +190,7 @@ def group_fragments(
     genome_sizes: str | Path | None = None,
     write_cutsite_bigwigs: bool = False,
     cpm_normalize: bool = True,
-    cores: int = 1,
+    cores: int | None = None,
 ) -> pd.DataFrame:
     """Split fragments into pseudobulk group files and write a manifest/QC table."""
 
@@ -199,7 +200,7 @@ def group_fragments(
         compress_output = True
     if write_cutsite_bigwigs and genome_sizes is None:
         raise ValueError("--genome-sizes is required with --write-cutsite-bigwigs")
-    cores = max(1, int(cores))
+    cores = multiprocessing.cpu_count() if cores is None else max(1, int(cores))
 
     barcode_to_group = load_annotations(annotations, barcode_column, group_by, strip_barcode_suffix=strip_barcode_suffix)
     handles = {}
@@ -316,7 +317,7 @@ def write_downstream_commands(
     manifest: pd.DataFrame,
     output: str | Path,
     genome_sizes: str | Path | None = None,
-    cores: int = 1,
+    cores: int | None = None,
 ) -> Path:
     """Write a reproducible shell plan for pseudobulk BAM/bigWig generation."""
 
@@ -379,7 +380,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--no-cpm-normalize", action="store_true", help="Write raw cut counts instead of CPM-normalized bigWig values.")
     parser.add_argument("--write-downstream-commands", action="store_true", help="Write a shell script for BED/BAM/bigWig generation from kept pseudobulk groups.")
     parser.add_argument("--genome-sizes", help="Two-column chromosome sizes file used by generated bedtools/UCSC commands and cut-site bigWigs.")
-    parser.add_argument("--cores", type=int, default=1, help="Cores to place in generated samtools sort/index commands.")
+    parser.add_argument("--cores", type=int, default=None, help="Cores for compression, bigWig writing, and generated samtools commands (default: all available cores).")
     args = parser.parse_args(argv)
 
     manifest = group_fragments(

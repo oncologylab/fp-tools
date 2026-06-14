@@ -12,7 +12,6 @@ samples:
     outdir: examples/gui_demo_outputs/bindetect_batch_single_bcell
     cond_names:
       - Bcell
-    cores: 1
     skip_excel: true
   - sample_id: bindetect_single_tcell
     tool: BINDetect
@@ -25,6 +24,5 @@ samples:
     outdir: examples/gui_demo_outputs/bindetect_batch_single_tcell
     cond_names:
       - Tcell
-    cores: 1
     skip_excel: true
 comparisons: []

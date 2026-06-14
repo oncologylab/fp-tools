@@ -49,7 +49,7 @@ def add_atacorrect_arguments(parser):
 	runargs = parser.add_argument_group('Run arguments')
 	runargs.add_argument('--prefix', metavar="<prefix>", help="Prefix for output files (default: same as .bam file)")
 	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory for files (default: current working directory)", default="")
-	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: 1)", default=1)
+	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: all available cores)", default=None)
 	runargs.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)
 	
 	runargs = add_logger_args(runargs)
@@ -103,7 +103,7 @@ def add_scorebigwig_arguments(parser):
 	sumargs.add_argument('--window', metavar="<int>", type=int, help="The window for calculation of sum (default: 100)", default=100)
 
 	runargs = parser.add_argument_group('Run arguments')
-	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: 1)", default=1)
+	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: all available cores)", default=None)
 	runargs.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)
 	runargs = add_logger_args(runargs)
 
@@ -159,11 +159,12 @@ def add_bindetect_arguments(parser):
 	optargs.add_argument('--plot-aggregate-top-n', metavar="<int>", type=int, default=20, help="Number of motifs to aggregate when --plot-aggregate top or fallback selection is used (default: 20)")
 	optargs.add_argument('--aggregate-pvalue-threshold', metavar="<float>", type=float, default=0.05, help="P-value threshold for --plot-aggregate sig (default: 0.05)")
 	optargs.add_argument('--aggregate-flank', metavar="<bp>", type=int, default=100, help="Flank around motif centers for embedded aggregate profiles (default: 100)")
+	optargs.add_argument('--reuse-existing-results', action='store_true', help="Regenerate final diff-footprints reports from existing <prefix>_results.txt and per-motif BEDs without rescanning motifs")
 
 	runargs = parser.add_argument_group("Run arguments")
 	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory to place TFBS/plots in (default: bindetect_output)", default="bindetect_output")
 	optargs.add_argument('--prefix', metavar="<prefix>", help="Prefix for overview files in --outdir folder (default: bindetect)", default="bindetect")
-	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: 1)", default=1)
+	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: all available cores)", default=None)
 	runargs.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)
 	runargs.add_argument('--debug', action='store_true', help="Creates an additional '_debug.pdf'-file with debug plots")	#creates extra output for debugging
 	
@@ -201,7 +202,7 @@ def add_tfbscan_arguments(parser):
 
 	RUN = parser.add_argument_group('Run arguments')
 	RUN.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)
-	RUN.add_argument('--cores', metavar="", type=int, help='Number of cores to use (default: 1)', default=1)
+	RUN.add_argument('--cores', metavar="", type=int, help='Number of cores to use (default: all available cores)', default=None)
 	RUN.add_argument('--debug', action="store_true", help=argparse.SUPPRESS)
 	RUN = add_logger_args(optional_arguments)
 
@@ -446,7 +447,7 @@ def add_subsample_arguments(parser):
 	args.add_argument('--start', metavar="", type=int, help="Start of percent subsample (default: 0)", default=0)
 	args.add_argument('--end', metavar="", type=int, help="End of percent subsample (default: 100)", default=100)
 	args.add_argument('--step', metavar="", type=int, help="Step between --start and --end (default: 10)", default=10)
-	args.add_argument('--cores', metavar="", type=int, help="Cores for multiprocessing (default: 1)", default=1)
+	args.add_argument('--cores', metavar="", type=int, help="Cores for multiprocessing (default: all available cores)", default=None)
 	args.add_argument('--outdir', metavar="", help="Output directory (default: subsamplebam_output)", default="subsamplebam_output")
 	args.add_argument('--prefix', metavar="", help="Prefix for output files (default: prefix of .bam)")
 	args.add_argument('--force', action="store_true", help="Force creation of subsampled .bam-files (default: only create if not existing)")

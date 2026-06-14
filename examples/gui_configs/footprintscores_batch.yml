@@ -7,12 +7,10 @@ samples:
     regions: test_data/merged_peaks.bed
     output: examples/gui_demo_outputs/footprintscores_batch/Bcell_footprints.bw
     score: footprint
-    cores: 1
   - sample_id: footprints_tcell
     tool: FootprintScores
     signal: test_data/Tcell_corrected.bw
     regions: test_data/merged_peaks.bed
     output: examples/gui_demo_outputs/footprintscores_batch/Tcell_footprints.bw
     score: footprint
-    cores: 1
 comparisons: []

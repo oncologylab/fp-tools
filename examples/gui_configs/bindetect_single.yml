@@ -12,6 +12,5 @@ samples:
     outdir: examples/gui_demo_outputs/bindetect_single
     cond_names:
       - Bcell
-    cores: 1
     skip_excel: true
 comparisons: []

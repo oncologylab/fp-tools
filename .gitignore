@@ -72,6 +72,10 @@ test_data/*.bam.bai
 !/manuscript/figures/normalization_effect.png
 !/manuscript/figures/normalization_effect.tsv
 !/manuscript/figures/normalization_effect_candidates.png
+!/manuscript/figures/marker_aggregate_examples.pdf
+!/manuscript/figures/marker_aggregate_examples.png
+!/manuscript/figures/marker_aggregate_examples.svg
+!/manuscript/figures/marker_aggregate_examples.tsv
 !/manuscript/figures/supp_pseudobulk_footprint_like.pdf
 !/manuscript/figures/supp_pseudobulk_footprint_like.png
 !/manuscript/figures/supp_pseudobulk_footprint_like.tsv

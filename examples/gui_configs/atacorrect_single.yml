@@ -8,5 +8,4 @@ samples:
     peaks: test_data/merged_peaks.bed
     blacklist: test_data/blacklist.bed
     outdir: examples/gui_demo_outputs/atacorrect_single
-    cores: 1
 comparisons: []

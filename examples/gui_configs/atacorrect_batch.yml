@@ -8,7 +8,6 @@ samples:
     peaks: test_data/merged_peaks.bed
     blacklist: test_data/blacklist.bed
     outdir: examples/gui_demo_outputs/atacorrect_batch_a
-    cores: 1
   - sample_id: atacorrect_batch_b
     tool: ATACorrect
     bam: test_data/Bcell.bam
@@ -16,5 +15,4 @@ samples:
     peaks: test_data/merged_peaks.bed
     blacklist: test_data/blacklist.bed
     outdir: examples/gui_demo_outputs/atacorrect_batch_b
-    cores: 1
 comparisons: []

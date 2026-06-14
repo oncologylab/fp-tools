@@ -19,5 +19,4 @@ comparisons:
       - Bcell
       - Tcell
       - Tcell
-    cores: 1
     skip_excel: true

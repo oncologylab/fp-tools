@@ -63,16 +63,18 @@ pseudobulk-fragments --help
 
 ## Minimal Workflow
 
+Examples omit `--cores`; by default, compute-heavy commands use all available local CPU cores. Set `--cores <n>` only when you want to cap a run.
+
 ### 1. Bias-correct cut-site signal
 
 ```bash
-atac-correct   --bam test_data/Bcell.bam   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks.bed   --blacklist test_data/blacklist.bed   --outdir examples/atacorrect/Bcell   --cores 1
+atac-correct   --bam test_data/Bcell.bam   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks.bed   --blacklist test_data/blacklist.bed   --outdir examples/atacorrect/Bcell
 ```
 
 ### 2. Call footprints
 
 ```bash
-call-footprints   --signal examples/atacorrect/Bcell/Bcell_corrected.bw   --regions test_data/merged_peaks.bed   --output examples/footprints/Bcell_footprints.bw   --output-bed examples/footprints/Bcell_candidate_footprints.bed   --top-n 5000   --cores 1
+call-footprints   --signal examples/atacorrect/Bcell/Bcell_corrected.bw   --regions test_data/merged_peaks.bed   --output examples/footprints/Bcell_footprints.bw   --output-bed examples/footprints/Bcell_candidate_footprints.bed   --top-n 5000
 ```
 
 The optional BED contains ranked local footprint maxima and can be used as input for de novo motif-discovery preparation.
@@ -80,13 +82,13 @@ The optional BED contains ranked local footprint maxima and can be used as input
 ### 3a. Match motifs in one sample
 
 ```bash
-match-motifs   --motifs test_data/motifs.jaspar   --signals examples/footprints/Bcell_footprints.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/motif_matches/Bcell   --cond-names Bcell   --cores 1
+match-motifs   --motifs test_data/motifs.jaspar   --signals examples/footprints/Bcell_footprints.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/motif_matches/Bcell   --cond-names Bcell
 ```
 
 ### 3b. Compare conditions directly
 
 ```bash
-diff-footprints   --motifs test_data/motifs.jaspar   --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw   --aggregate-signals test_data/demo_Bcell_rep1_corrected.bw test_data/demo_Bcell_rep2_corrected.bw test_data/demo_Tcell_rep1_corrected.bw test_data/demo_Tcell_rep2_corrected.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/diff_footprints/Bcell_vs_Tcell   --cond-names Bcell Bcell Tcell Tcell   --normalization sample-quantile   --plot-aggregate sig   --cores 4
+diff-footprints   --motifs test_data/motifs.jaspar   --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw   --aggregate-signals test_data/demo_Bcell_rep1_corrected.bw test_data/demo_Bcell_rep2_corrected.bw test_data/demo_Tcell_rep1_corrected.bw test_data/demo_Tcell_rep2_corrected.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/diff_footprints/Bcell_vs_Tcell   --cond-names Bcell Bcell Tcell Tcell   --normalization sample-quantile   --plot-aggregate sig
 ```
 
 Repeated condition names define biological replicates. `diff-footprints` performs motif scanning internally, writes per-motif BEDs, differential tables, replicate-aware reports, volcano HTML, and aggregate profiles when `--aggregate-signals` is provided.
@@ -113,6 +115,8 @@ When `--aggregate-signals` is supplied, use corrected cut-site bigWigs in the sa
 - `--plot-aggregate off`: write the volcano-style comparison HTML without aggregate profiles.
 
 The replicate diagnostic tables and figure are controlled by `--replicate-report auto|on|off`; `auto` writes them when repeated condition names or `--replicate-map` indicate replicate structure.
+
+If motif-level outputs are already complete, `--reuse-existing-results` can regenerate the final `diff_footprints_<comparison>.html` report from the existing `<prefix>_results.txt` table and per-motif BED files. This is report-only reuse: it avoids motif rescanning, but it does not convert one normalization mode into another.
 
 ### 4. Plot aggregate signal
 

@@ -447,6 +447,29 @@ relative to the local flanks indicates stronger TF protection.}
 \label{fig:normalization_effect}
 \end{figure}
 
+As a biological consistency check for the same 2-vs-2 Buenrostro replicate
+comparison, we inspected aggregate corrected cut-site profiles for
+lineage-biased regulators selected before plotting. PAX5, a canonical B-cell
+lineage regulator, showed stronger B-cell center depletion than the paired T-cell
+profiles, and BACH2 showed a B/GM12878-biased pattern in this dataset while
+remaining biologically non-exclusive because it is also reused in T-cell states.
+Conversely, TCF7 and RORC showed stronger T-cell aggregate depletion. We treat
+these panels as an illustrative sanity check rather than a marker-classification
+benchmark; a more negative center-versus-flank profile indicates stronger
+footprint-like protection at motif centers (Figure~\ref{fig:marker_aggregates}).
+
+\begin{figure}[H]
+\includegraphics[width=0.95\textwidth]{figures/marker_aggregate_examples.png}
+\caption{Lineage-biased marker aggregates from the B-cell versus T-cell
+replicate comparison. Aggregate profiles were generated from the same
+sample-quantile-normalized corrected cut-site payload embedded in the
+\texttt{diff-footprints} HTML report. Thin lines show individual biological
+replicates and thick lines show condition means. PAX5 provides the strict B-cell
+lineage example; BACH2 is shown as B/GM12878-biased in this comparison but is not
+B-cell-exclusive; TCF7 and RORC provide T-cell-associated examples.}
+\label{fig:marker_aggregates}
+\end{figure}
+
 \subsection{Real 10x PBMC Pseudobulk Validation}
 
 To test whether the pseudobulk utility supports mainstream single-cell ATAC data

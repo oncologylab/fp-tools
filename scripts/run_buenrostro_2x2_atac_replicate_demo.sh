@@ -174,10 +174,10 @@ write_parameters() {
     echo -e "blacklist_filter	exclude chrM/MT and hg38-blacklist.v2 regions"
     echo -e "macs_callpeak	callpeak -f BAMPE -g hs --keep-dup all -q ${MACS2_QVALUE}"
     echo -e "merged_peaks	bedtools sort and merge across four replicate narrowPeak files; exclude '_' contigs and chrM/MT"
-    echo -e "atac-correct	--peaks merged_peaks.bed --blacklist hg38-blacklist.v2.bed --cores ${THREADS}; defaults: extend=100, k_flank=12, read_shift=4,-5, bg_shift=100, window=100, score_mat=DWM"
-    echo -e "call-footprints	--score footprint --regions merged_peaks.bed --cores ${THREADS}; defaults: fp_min=20, fp_max=50, flank_min=10, flank_max=30, smooth=1"
-    echo -e "diff-footprints_none	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization none --replicate-report auto --aggregate-signals corrected cut-site bigWigs --plot-aggregate top --plot-aggregate-top-n 5 --skip-excel --cores ${THREADS}"
-    echo -e "diff-footprints_sample_quantile	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization sample-quantile --replicate-report auto --aggregate-signals corrected cut-site bigWigs --plot-aggregate top --plot-aggregate-top-n 5 --skip-excel --cores ${THREADS}"
+    echo -e "atac-correct	--peaks merged_peaks.bed --blacklist hg38-blacklist.v2.bed; defaults: extend=100, k_flank=12, read_shift=4,-5, bg_shift=100, window=100, score_mat=DWM; cores=auto"
+    echo -e "call-footprints	--score footprint --regions merged_peaks.bed; defaults: fp_min=20, fp_max=50, flank_min=10, flank_max=30, smooth=1; cores=auto"
+    echo -e "diff-footprints_none	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization none --replicate-report auto --aggregate-signals corrected cut-site bigWigs --plot-aggregate sig --skip-excel; cores=auto"
+    echo -e "diff-footprints_sample_quantile	JASPAR2026 CORE vertebrates non-redundant; --cond-names Bcell Bcell Tcell Tcell --normalization sample-quantile --replicate-report auto --aggregate-signals corrected cut-site bigWigs --plot-aggregate sig --skip-excel; cores=auto"
     echo -e "pseudobulk_pbmc	10x PBMC Multiome fragments grouped by broad immune labels; min_cells=300, min_fragments=50000, CPM-normalized cut-site bigWigs; chr1-chr22 and chrX for figures"
   } > "${OUT_DIR}/analysis_parameters.tsv"
 }
@@ -277,8 +277,7 @@ run_fp_tools_for_sample() {
     --genome "${GENOME}" \
     --peaks "${MERGED_PEAKS}" \
     --blacklist "${BLACKLIST}" \
-    --outdir "${atac_dir}" \
-    --cores "${THREADS}"
+    --outdir "${atac_dir}"
 
   local corrected_bw
   corrected_bw="$(find "${atac_dir}" -maxdepth 1 -name '*_corrected.bw' | head -1)"
@@ -288,8 +287,7 @@ run_fp_tools_for_sample() {
     --signal "${corrected_bw}" \
     --regions "${MERGED_PEAKS}" \
     --output "${footprint_bw}" \
-    --score footprint \
-    --cores "${THREADS}"
+    --score footprint
 }
 
 run_diff_footprints() {
@@ -314,11 +312,9 @@ run_diff_footprints() {
       "${FP_DIR}/atac_correct/Bcell_rep2/Bcell_rep2.filtered_corrected.bw" \
       "${FP_DIR}/atac_correct/Tcell_rep1/Tcell_rep1.filtered_corrected.bw" \
       "${FP_DIR}/atac_correct/Tcell_rep2/Tcell_rep2.filtered_corrected.bw" \
-    --plot-aggregate top \
-    --plot-aggregate-top-n 5 \
+    --plot-aggregate sig \
     --aggregate-flank 100 \
-    --skip-excel \
-    --cores "${THREADS}"
+    --skip-excel
 }
 
 write_manifest() {
