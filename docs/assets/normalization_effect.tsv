@@ -1,0 +1,49 @@
+normalization	motif	motif_id	output_prefix	profile_type	condition	sample	n_sites	center_minus_flank
+No normalization	BACH2	MA1101.3	BACH2_MA1101.3	replicate	Bcell	Bcell_rep1	6500	-0.07469478571428573
+No normalization	BACH2	MA1101.3	BACH2_MA1101.3	replicate	Bcell	Bcell_rep2	6500	-0.08691988095238094
+No normalization	BACH2	MA1101.3	BACH2_MA1101.3	condition_mean	Bcell	Bcell	6500	-0.08080745238095238
+No normalization	BACH2	MA1101.3	BACH2_MA1101.3	replicate	Tcell	Tcell_rep1	6500	-0.03620857142857143
+No normalization	BACH2	MA1101.3	BACH2_MA1101.3	replicate	Tcell	Tcell_rep2	6500	-0.02843178571428571
+No normalization	BACH2	MA1101.3	BACH2_MA1101.3	condition_mean	Tcell	Tcell	6500	-0.03232028571428572
+Sample-quantile	BACH2	MA1101.3	BACH2_MA1101.3	replicate	Bcell	Bcell_rep1	6500	-0.060585857142857136
+Sample-quantile	BACH2	MA1101.3	BACH2_MA1101.3	replicate	Bcell	Bcell_rep2	6500	-0.04445516666666667
+Sample-quantile	BACH2	MA1101.3	BACH2_MA1101.3	condition_mean	Bcell	Bcell	6500	-0.05252052380952381
+Sample-quantile	BACH2	MA1101.3	BACH2_MA1101.3	replicate	Tcell	Tcell_rep1	6500	-0.04720009523809524
+Sample-quantile	BACH2	MA1101.3	BACH2_MA1101.3	replicate	Tcell	Tcell_rep2	6500	-0.0402792619047619
+Sample-quantile	BACH2	MA1101.3	BACH2_MA1101.3	condition_mean	Tcell	Tcell	6500	-0.04373969047619048
+No normalization	JUNB	MA1140.3	JUNB_MA1140.3	replicate	Bcell	Bcell_rep1	2833	-0.274347619047619
+No normalization	JUNB	MA1140.3	JUNB_MA1140.3	replicate	Bcell	Bcell_rep2	2833	-0.26473992857142853
+No normalization	JUNB	MA1140.3	JUNB_MA1140.3	condition_mean	Bcell	Bcell	2833	-0.26954380952380946
+No normalization	JUNB	MA1140.3	JUNB_MA1140.3	replicate	Tcell	Tcell_rep1	2833	-0.2246807619047619
+No normalization	JUNB	MA1140.3	JUNB_MA1140.3	replicate	Tcell	Tcell_rep2	2833	-0.19363764285714286
+No normalization	JUNB	MA1140.3	JUNB_MA1140.3	condition_mean	Tcell	Tcell	2833	-0.20915926190476186
+Sample-quantile	JUNB	MA1140.3	JUNB_MA1140.3	replicate	Bcell	Bcell_rep1	2833	-0.22252673809523807
+Sample-quantile	JUNB	MA1140.3	JUNB_MA1140.3	replicate	Bcell	Bcell_rep2	2833	-0.13540111904761903
+Sample-quantile	JUNB	MA1140.3	JUNB_MA1140.3	condition_mean	Bcell	Bcell	2833	-0.17896402380952378
+Sample-quantile	JUNB	MA1140.3	JUNB_MA1140.3	replicate	Tcell	Tcell_rep1	2833	-0.2928867857142857
+Sample-quantile	JUNB	MA1140.3	JUNB_MA1140.3	replicate	Tcell	Tcell_rep2	2833	-0.2743276904761905
+Sample-quantile	JUNB	MA1140.3	JUNB_MA1140.3	condition_mean	Tcell	Tcell	2833	-0.2836073333333334
+No normalization	ATF7	MA0834.2	ATF7_MA0834.2	replicate	Bcell	Bcell_rep1	2491	-0.2897062619047619
+No normalization	ATF7	MA0834.2	ATF7_MA0834.2	replicate	Bcell	Bcell_rep2	2491	-0.2814954523809524
+No normalization	ATF7	MA0834.2	ATF7_MA0834.2	condition_mean	Bcell	Bcell	2491	-0.2856009285714285
+No normalization	ATF7	MA0834.2	ATF7_MA0834.2	replicate	Tcell	Tcell_rep1	2491	-0.23637992857142853
+No normalization	ATF7	MA0834.2	ATF7_MA0834.2	replicate	Tcell	Tcell_rep2	2491	-0.21084276190476195
+No normalization	ATF7	MA0834.2	ATF7_MA0834.2	condition_mean	Tcell	Tcell	2491	-0.2236112619047619
+Sample-quantile	ATF7	MA0834.2	ATF7_MA0834.2	replicate	Bcell	Bcell_rep1	2491	-0.2349842380952381
+Sample-quantile	ATF7	MA0834.2	ATF7_MA0834.2	replicate	Bcell	Bcell_rep2	2491	-0.1439707380952381
+Sample-quantile	ATF7	MA0834.2	ATF7_MA0834.2	condition_mean	Bcell	Bcell	2491	-0.18947747619047617
+Sample-quantile	ATF7	MA0834.2	ATF7_MA0834.2	replicate	Tcell	Tcell_rep1	2491	-0.3081374285714286
+Sample-quantile	ATF7	MA0834.2	ATF7_MA0834.2	replicate	Tcell	Tcell_rep2	2491	-0.2987026428571428
+Sample-quantile	ATF7	MA0834.2	ATF7_MA0834.2	condition_mean	Tcell	Tcell	2491	-0.3034202380952381
+No normalization	IRF4	MA1419.2	IRF4_MA1419.2	replicate	Bcell	Bcell_rep1	10584	-0.028140761904761905
+No normalization	IRF4	MA1419.2	IRF4_MA1419.2	replicate	Bcell	Bcell_rep2	10584	-0.03187240476190476
+No normalization	IRF4	MA1419.2	IRF4_MA1419.2	condition_mean	Bcell	Bcell	10584	-0.030006595238095242
+No normalization	IRF4	MA1419.2	IRF4_MA1419.2	replicate	Tcell	Tcell_rep1	10584	-0.015966761904761907
+No normalization	IRF4	MA1419.2	IRF4_MA1419.2	replicate	Tcell	Tcell_rep2	10584	-0.02183778571428571
+No normalization	IRF4	MA1419.2	IRF4_MA1419.2	condition_mean	Tcell	Tcell	10584	-0.018902404761904763
+Sample-quantile	IRF4	MA1419.2	IRF4_MA1419.2	replicate	Bcell	Bcell_rep1	10584	-0.02282535714285714
+Sample-quantile	IRF4	MA1419.2	IRF4_MA1419.2	replicate	Bcell	Bcell_rep2	10584	-0.01630111904761905
+Sample-quantile	IRF4	MA1419.2	IRF4_MA1419.2	condition_mean	Bcell	Bcell	10584	-0.019563190476190474
+Sample-quantile	IRF4	MA1419.2	IRF4_MA1419.2	replicate	Tcell	Tcell_rep1	10584	-0.02081404761904762
+Sample-quantile	IRF4	MA1419.2	IRF4_MA1419.2	replicate	Tcell	Tcell_rep2	10584	-0.03093790476190476
+Sample-quantile	IRF4	MA1419.2	IRF4_MA1419.2	condition_mean	Tcell	Tcell	10584	-0.025875833333333334

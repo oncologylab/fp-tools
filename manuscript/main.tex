@@ -423,34 +423,31 @@ algorithm.\label{fig:denovo_motif_prep}}
 
 Replicate-aware differential footprint analysis adds an interpretable layer to
 condition comparison: repeated condition names define biological replicate groups,
-condition means are reported alongside per-condition SDs, and optional
+condition means are reported alongside individual replicate profiles, and optional
 sample-level quantile normalization applies the same distribution-matching step
-before replicate group averages are compared. To make the effect visible, we
-used a real-track label-orientation demo built from ATF7-associated
-corrected cut-site matrices. The upper panel reverses the B/T labels and is named
-IRF4 as a B-cell-deeper example, whereas the lower panel keeps the original ATF7
-orientation as a T-cell-deeper example. This keeps the footprint shape from real
-corrected signal while showing that sample-level quantile normalization strongly
-reduces raw baseline offsets and preserves the center-versus-flank depletion
-direction (Figure~\ref{fig:normalization_effect}).
+before replicate group averages are compared. To show the effect on real data, we
+used the B-cell versus T-cell 2-vs-2 Buenrostro comparison and plotted aggregate
+corrected cut-site profiles for the same four motifs used in the biological
+consistency panel. The no-normalization and sample-quantile panels were extracted
+from the corresponding embedded 	exttt{diff-footprints} HTML payloads, so the
+figure reflects the exact data used in the differential report. Thin lines show
+individual biological replicates and thick lines show condition means
+(Figure~\ref{fig:normalization_effect}).
 
 \begin{figure}[H]
 \includegraphics[width=0.95\textwidth]{figures/normalization_effect.png}
-\caption{Effect of sample-level quantile normalization on replicate-aware
-corrected cut-site aggregate profiles. Real ATF7-associated corrected cut-site matrices were used in two label
-orientations: an IRF4-named B-cell-deeper orientation with B/T labels reversed and
-the original ATF7 T-cell-deeper orientation. Condition means are
-shown with light replicate-variation ribbons. The right column uses the same nonnegative-clamped sample-quantile
-normalization path used by replicate-aware differential footprint analysis and
-aggregate plotting; raw baseline offsets are reduced and a lower center
-relative to the local flanks indicates stronger TF protection.}
+\caption{Effect of sample-level quantile normalization on real 2-vs-2
+corrected cut-site aggregate profiles. BACH2, JUNB, ATF7, and IRF4 aggregates
+were extracted from the no-normalization and sample-quantile 	exttt{diff-footprints}
+HTML reports for the Buenrostro B-cell versus T-cell replicate comparison. Thin
+lines show individual biological replicates, thick lines show condition means,
+and a lower center relative to the local flanks indicates stronger TF protection.}
 \label{fig:normalization_effect}
 \end{figure}
 
 As a biological consistency check for the same 2-vs-2 Buenrostro replicate
 comparison, we inspected aggregate corrected cut-site profiles for selected
-motifs with visible footprint-like center depletion. BACH2 showed a B/GM12878-
-biased pattern in this dataset while remaining biologically non-exclusive because
+motifs with visible footprint-like center depletion. BACH2 showed a B/GM12878-biased pattern in this dataset while remaining biologically non-exclusive because
 it is also reused in T-cell states. Conversely, JUNB and ATF7 showed stronger
 T-cell aggregate depletion; JUNB is an AP-1 family regulator of T-cell
 differentiation~\cite{koizumi2021junb}, and ATF7 is included here as a strong
@@ -467,8 +464,7 @@ footprint-like protection at motif centers (Figure~\ref{fig:marker_aggregates}).
 the B-cell versus T-cell replicate comparison. Aggregate profiles were generated
 from the same sample-quantile-normalized corrected cut-site payload embedded in
 the \texttt{diff-footprints} HTML report. Thin lines show individual biological
-replicates and thick lines show condition means. BACH2 provides the B/GM12878-
-biased shared-regulator example; JUNB and ATF7 show stronger T-cell aggregate
+replicates and thick lines show condition means. BACH2 provides the B/GM12878-biased shared-regulator example; JUNB and ATF7 show stronger T-cell aggregate
 depletion; IRF4 is included as a biologically motivated TCR-response regulator
 with a modest aggregate effect in this dataset.}
 \label{fig:marker_aggregates}

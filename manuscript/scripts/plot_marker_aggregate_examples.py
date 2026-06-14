@@ -41,6 +41,12 @@ CONDITION_COLORS = {
     "Bcell": "#1f77b4",
     "Tcell": "#d62728",
 }
+SAMPLE_STYLES = {
+    "Bcell_rep1": (0, (1.0, 1.2)),
+    "Bcell_rep2": (0, (3.0, 1.4)),
+    "Tcell_rep1": (0, (1.0, 1.2)),
+    "Tcell_rep2": (0, (3.0, 1.4)),
+}
 
 
 def load_report_payload(report_html: Path) -> dict:
@@ -145,12 +151,15 @@ def plot_marker_aggregates(payload: dict, motifs: list[str], roles: dict[str, st
             condition_name = str(condition["name"])
             color = CONDITION_COLORS.get(condition_name, "#555555")
             for sample in condition.get("samples", []):
+                sample_name = str(sample.get("name", "sample"))
                 ax.plot(
                     xvals,
                     np.asarray(sample["profile"], dtype=float),
                     color=color,
-                    linewidth=0.65,
-                    alpha=0.28,
+                    linestyle=SAMPLE_STYLES.get(sample_name, "solid"),
+                    linewidth=0.85,
+                    alpha=0.52,
+                    label=sample_name,
                     zorder=1,
                 )
             ax.plot(
@@ -173,9 +182,13 @@ def plot_marker_aggregates(payload: dict, motifs: list[str], roles: dict[str, st
         ax.axis("off")
     for ax in axes[-ncols:]:
         ax.set_xlabel("Distance from motif center (bp)")
-    axes[0].legend(frameon=False, loc="upper right", fontsize=7)
+    handles, labels = axes[0].get_legend_handles_labels()
+    unique = {}
+    for handle, label in zip(handles, labels):
+        unique.setdefault(label, handle)
+    fig.legend(unique.values(), unique.keys(), loc="lower center", ncol=6, frameon=False, fontsize=6.8, bbox_to_anchor=(0.5, -0.01))
     fig.suptitle("B-cell-biased and T-cell activation-associated aggregate examples", y=1.0)
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0.035, 1, 0.98))
 
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_prefix.with_suffix(".png"), dpi=300, bbox_inches="tight")
