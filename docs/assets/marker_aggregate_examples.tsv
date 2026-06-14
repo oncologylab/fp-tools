@@ -1,11 +1,4 @@
 motif	motif_id	output_prefix	role	profile_type	condition	sample	n_sites	center_minus_flank	interpretation
-PAX5	MA0014.4	PAX5_MA0014.4	B-cell lineage regulator	condition_mean	Bcell	Bcell	3174	-0.04031928571428572	more negative means stronger footprint-like center depletion
-PAX5	MA0014.4	PAX5_MA0014.4	B-cell lineage regulator	replicate	Bcell	Bcell_rep1	3174	-0.050110690476190475	more negative means stronger footprint-like center depletion
-PAX5	MA0014.4	PAX5_MA0014.4	B-cell lineage regulator	replicate	Bcell	Bcell_rep2	3174	-0.03052790476190476	more negative means stronger footprint-like center depletion
-PAX5	MA0014.4	PAX5_MA0014.4	B-cell lineage regulator	condition_mean	Tcell	Tcell	3174	-0.02580461904761904	more negative means stronger footprint-like center depletion
-PAX5	MA0014.4	PAX5_MA0014.4	B-cell lineage regulator	replicate	Tcell	Tcell_rep1	3174	-0.028767047619047623	more negative means stronger footprint-like center depletion
-PAX5	MA0014.4	PAX5_MA0014.4	B-cell lineage regulator	replicate	Tcell	Tcell_rep2	3174	-0.022842428571428576	more negative means stronger footprint-like center depletion
-PAX5	MA0014.4	PAX5_MA0014.4	B-cell lineage regulator	condition_delta	Bcell_minus_Tcell	Bcell_minus_Tcell	3174	-0.014514666666666676	negative delta means stronger B-cell depletion; positive delta means stronger T-cell depletion
 BACH2	MA1101.3	BACH2_MA1101.3	B/GM12878-biased shared regulator	condition_mean	Bcell	Bcell	6500	-0.05252052380952381	more negative means stronger footprint-like center depletion
 BACH2	MA1101.3	BACH2_MA1101.3	B/GM12878-biased shared regulator	replicate	Bcell	Bcell_rep1	6500	-0.060585857142857136	more negative means stronger footprint-like center depletion
 BACH2	MA1101.3	BACH2_MA1101.3	B/GM12878-biased shared regulator	replicate	Bcell	Bcell_rep2	6500	-0.04445516666666667	more negative means stronger footprint-like center depletion
@@ -13,17 +6,24 @@ BACH2	MA1101.3	BACH2_MA1101.3	B/GM12878-biased shared regulator	condition_mean	T
 BACH2	MA1101.3	BACH2_MA1101.3	B/GM12878-biased shared regulator	replicate	Tcell	Tcell_rep1	6500	-0.04720009523809524	more negative means stronger footprint-like center depletion
 BACH2	MA1101.3	BACH2_MA1101.3	B/GM12878-biased shared regulator	replicate	Tcell	Tcell_rep2	6500	-0.0402792619047619	more negative means stronger footprint-like center depletion
 BACH2	MA1101.3	BACH2_MA1101.3	B/GM12878-biased shared regulator	condition_delta	Bcell_minus_Tcell	Bcell_minus_Tcell	6500	-0.008780833333333328	negative delta means stronger B-cell depletion; positive delta means stronger T-cell depletion
-TCF7	MA0769.3	TCF7_MA0769.3	T-cell-associated regulator	condition_mean	Bcell	Bcell	9603	-0.016955285714285714	more negative means stronger footprint-like center depletion
-TCF7	MA0769.3	TCF7_MA0769.3	T-cell-associated regulator	replicate	Bcell	Bcell_rep1	9603	-0.022291428571428573	more negative means stronger footprint-like center depletion
-TCF7	MA0769.3	TCF7_MA0769.3	T-cell-associated regulator	replicate	Bcell	Bcell_rep2	9603	-0.011619047619047623	more negative means stronger footprint-like center depletion
-TCF7	MA0769.3	TCF7_MA0769.3	T-cell-associated regulator	condition_mean	Tcell	Tcell	9603	-0.04075483333333333	more negative means stronger footprint-like center depletion
-TCF7	MA0769.3	TCF7_MA0769.3	T-cell-associated regulator	replicate	Tcell	Tcell_rep1	9603	-0.040791857142857144	more negative means stronger footprint-like center depletion
-TCF7	MA0769.3	TCF7_MA0769.3	T-cell-associated regulator	replicate	Tcell	Tcell_rep2	9603	-0.04071788095238095	more negative means stronger footprint-like center depletion
-TCF7	MA0769.3	TCF7_MA0769.3	T-cell-associated regulator	condition_delta	Bcell_minus_Tcell	Bcell_minus_Tcell	9603	0.023799547619047616	negative delta means stronger B-cell depletion; positive delta means stronger T-cell depletion
-RORC	MA1151.2	RORC_MA1151.2	T-cell subset-associated regulator	condition_mean	Bcell	Bcell	5247	-0.0021760714285714283	more negative means stronger footprint-like center depletion
-RORC	MA1151.2	RORC_MA1151.2	T-cell subset-associated regulator	replicate	Bcell	Bcell_rep1	5247	-0.0019846190476190476	more negative means stronger footprint-like center depletion
-RORC	MA1151.2	RORC_MA1151.2	T-cell subset-associated regulator	replicate	Bcell	Bcell_rep2	5247	-0.0023675000000000015	more negative means stronger footprint-like center depletion
-RORC	MA1151.2	RORC_MA1151.2	T-cell subset-associated regulator	condition_mean	Tcell	Tcell	5247	-0.012469190476190474	more negative means stronger footprint-like center depletion
-RORC	MA1151.2	RORC_MA1151.2	T-cell subset-associated regulator	replicate	Tcell	Tcell_rep1	5247	-0.012104309523809524	more negative means stronger footprint-like center depletion
-RORC	MA1151.2	RORC_MA1151.2	T-cell subset-associated regulator	replicate	Tcell	Tcell_rep2	5247	-0.012834095238095242	more negative means stronger footprint-like center depletion
-RORC	MA1151.2	RORC_MA1151.2	T-cell subset-associated regulator	condition_delta	Bcell_minus_Tcell	Bcell_minus_Tcell	5247	0.010293119047619046	negative delta means stronger B-cell depletion; positive delta means stronger T-cell depletion
+JUNB	MA1140.3	JUNB_MA1140.3	T-cell activation/AP-1 regulator	condition_mean	Bcell	Bcell	2833	-0.17896402380952378	more negative means stronger footprint-like center depletion
+JUNB	MA1140.3	JUNB_MA1140.3	T-cell activation/AP-1 regulator	replicate	Bcell	Bcell_rep1	2833	-0.22252673809523807	more negative means stronger footprint-like center depletion
+JUNB	MA1140.3	JUNB_MA1140.3	T-cell activation/AP-1 regulator	replicate	Bcell	Bcell_rep2	2833	-0.13540111904761903	more negative means stronger footprint-like center depletion
+JUNB	MA1140.3	JUNB_MA1140.3	T-cell activation/AP-1 regulator	condition_mean	Tcell	Tcell	2833	-0.2836073333333334	more negative means stronger footprint-like center depletion
+JUNB	MA1140.3	JUNB_MA1140.3	T-cell activation/AP-1 regulator	replicate	Tcell	Tcell_rep1	2833	-0.2928867857142857	more negative means stronger footprint-like center depletion
+JUNB	MA1140.3	JUNB_MA1140.3	T-cell activation/AP-1 regulator	replicate	Tcell	Tcell_rep2	2833	-0.2743276904761905	more negative means stronger footprint-like center depletion
+JUNB	MA1140.3	JUNB_MA1140.3	T-cell activation/AP-1 regulator	condition_delta	Bcell_minus_Tcell	Bcell_minus_Tcell	2833	0.1046433095238096	negative delta means stronger B-cell depletion; positive delta means stronger T-cell depletion
+ATF7	MA0834.2	ATF7_MA0834.2	T-cell-deeper aggregate example	condition_mean	Bcell	Bcell	2491	-0.18947747619047617	more negative means stronger footprint-like center depletion
+ATF7	MA0834.2	ATF7_MA0834.2	T-cell-deeper aggregate example	replicate	Bcell	Bcell_rep1	2491	-0.2349842380952381	more negative means stronger footprint-like center depletion
+ATF7	MA0834.2	ATF7_MA0834.2	T-cell-deeper aggregate example	replicate	Bcell	Bcell_rep2	2491	-0.1439707380952381	more negative means stronger footprint-like center depletion
+ATF7	MA0834.2	ATF7_MA0834.2	T-cell-deeper aggregate example	condition_mean	Tcell	Tcell	2491	-0.3034202380952381	more negative means stronger footprint-like center depletion
+ATF7	MA0834.2	ATF7_MA0834.2	T-cell-deeper aggregate example	replicate	Tcell	Tcell_rep1	2491	-0.3081374285714286	more negative means stronger footprint-like center depletion
+ATF7	MA0834.2	ATF7_MA0834.2	T-cell-deeper aggregate example	replicate	Tcell	Tcell_rep2	2491	-0.2987026428571428	more negative means stronger footprint-like center depletion
+ATF7	MA0834.2	ATF7_MA0834.2	T-cell-deeper aggregate example	condition_delta	Bcell_minus_Tcell	Bcell_minus_Tcell	2491	0.11394276190476194	negative delta means stronger B-cell depletion; positive delta means stronger T-cell depletion
+IRF4	MA1419.2	IRF4_MA1419.2	TCR-response regulator; modest aggregate	condition_mean	Bcell	Bcell	10584	-0.019563190476190474	more negative means stronger footprint-like center depletion
+IRF4	MA1419.2	IRF4_MA1419.2	TCR-response regulator; modest aggregate	replicate	Bcell	Bcell_rep1	10584	-0.02282535714285714	more negative means stronger footprint-like center depletion
+IRF4	MA1419.2	IRF4_MA1419.2	TCR-response regulator; modest aggregate	replicate	Bcell	Bcell_rep2	10584	-0.01630111904761905	more negative means stronger footprint-like center depletion
+IRF4	MA1419.2	IRF4_MA1419.2	TCR-response regulator; modest aggregate	condition_mean	Tcell	Tcell	10584	-0.025875833333333334	more negative means stronger footprint-like center depletion
+IRF4	MA1419.2	IRF4_MA1419.2	TCR-response regulator; modest aggregate	replicate	Tcell	Tcell_rep1	10584	-0.02081404761904762	more negative means stronger footprint-like center depletion
+IRF4	MA1419.2	IRF4_MA1419.2	TCR-response regulator; modest aggregate	replicate	Tcell	Tcell_rep2	10584	-0.03093790476190476	more negative means stronger footprint-like center depletion
+IRF4	MA1419.2	IRF4_MA1419.2	TCR-response regulator; modest aggregate	condition_delta	Bcell_minus_Tcell	Bcell_minus_Tcell	10584	0.00631264285714286	negative delta means stronger B-cell depletion; positive delta means stronger T-cell depletion

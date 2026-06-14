@@ -448,25 +448,29 @@ relative to the local flanks indicates stronger TF protection.}
 \end{figure}
 
 As a biological consistency check for the same 2-vs-2 Buenrostro replicate
-comparison, we inspected aggregate corrected cut-site profiles for
-lineage-biased regulators selected before plotting. PAX5, a canonical B-cell
-lineage regulator, showed stronger B-cell center depletion than the paired T-cell
-profiles, and BACH2 showed a B/GM12878-biased pattern in this dataset while
-remaining biologically non-exclusive because it is also reused in T-cell states.
-Conversely, TCF7 and RORC showed stronger T-cell aggregate depletion. We treat
+comparison, we inspected aggregate corrected cut-site profiles for selected
+motifs with visible footprint-like center depletion. BACH2 showed a B/GM12878-
+biased pattern in this dataset while remaining biologically non-exclusive because
+it is also reused in T-cell states. Conversely, JUNB and ATF7 showed stronger
+T-cell aggregate depletion; JUNB is an AP-1 family regulator of T-cell
+differentiation~\cite{koizumi2021junb}, and ATF7 is included here as a strong
+T-cell-deeper aggregate example rather than a lineage-specific marker. We also
+include IRF4 because TCR signaling can drive graded IRF4 expression in T cells~\cite{andrews2020itk},
+although its aggregate depletion is modest in this dataset. We treat
 these panels as an illustrative sanity check rather than a marker-classification
 benchmark; a more negative center-versus-flank profile indicates stronger
 footprint-like protection at motif centers (Figure~\ref{fig:marker_aggregates}).
 
 \begin{figure}[H]
 \includegraphics[width=0.95\textwidth]{figures/marker_aggregate_examples.png}
-\caption{Lineage-biased marker aggregates from the B-cell versus T-cell
-replicate comparison. Aggregate profiles were generated from the same
-sample-quantile-normalized corrected cut-site payload embedded in the
-\texttt{diff-footprints} HTML report. Thin lines show individual biological
-replicates and thick lines show condition means. PAX5 provides the strict B-cell
-lineage example; BACH2 is shown as B/GM12878-biased in this comparison but is not
-B-cell-exclusive; TCF7 and RORC provide T-cell-associated examples.}
+\caption{B-cell-biased and T-cell activation-associated aggregate examples from
+the B-cell versus T-cell replicate comparison. Aggregate profiles were generated
+from the same sample-quantile-normalized corrected cut-site payload embedded in
+the \texttt{diff-footprints} HTML report. Thin lines show individual biological
+replicates and thick lines show condition means. BACH2 provides the B/GM12878-
+biased shared-regulator example; JUNB and ATF7 show stronger T-cell aggregate
+depletion; IRF4 is included as a biologically motivated TCR-response regulator
+with a modest aggregate effect in this dataset.}
 \label{fig:marker_aggregates}
 \end{figure}
 

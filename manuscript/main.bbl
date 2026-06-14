@@ -83,6 +83,20 @@ Gupta, S.; Stamatoyannopoulos, J.A.; Bailey, T.L.; Noble, W.S.
 \newblock ATAC fragments, peak calls, TF-analysis tables, and gene-expression
   clustering outputs downloaded from 10x Genomics sample files.
 
+\bibitem[Koizumi et~al.(2021)]{koizumi2021junb}
+Koizumi, S.;  et~al.
+\newblock Regulation of T cell differentiation by the AP-1 transcription factor
+  JunB.
+\newblock {\em Immunological Medicine} {\bf 2021}.
+\newblock {\url{https://doi.org/10.1080/25785826.2021.1876050}}.
+
+\bibitem[Andrews et~al.(2020)]{andrews2020itk}
+Andrews, L.P.;  et~al.
+\newblock Activation of the Tec Kinase ITK Controls Graded IRF4 Expression in
+  Response to Variations in TCR Signal Strength.
+\newblock {\em Journal of Immunology} {\bf 2020}.
+\newblock {\url{https://doi.org/10.4049/jimmunol.1901095}}.
+
 \bibitem[{The ENCODE Project Consortium}(2012)]{encode2012}
 {The ENCODE Project Consortium}.
 \newblock An integrated encyclopedia of {DNA} elements in the human genome.

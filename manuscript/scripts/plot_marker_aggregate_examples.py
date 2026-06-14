@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Plot lineage-biased marker aggregates from a diff-footprints HTML report."""
+"""Plot marker aggregate examples from a diff-footprints HTML report."""
 
 from __future__ import annotations
 
@@ -24,17 +24,17 @@ from figure_style import apply_style, bold_all_text  # noqa: E402
 
 
 DEFAULT_MOTIFS = [
-    "PAX5_MA0014.4",
     "BACH2_MA1101.3",
-    "TCF7_MA0769.3",
-    "RORC_MA1151.2",
+    "JUNB_MA1140.3",
+    "ATF7_MA0834.2",
+    "IRF4_MA1419.2",
 ]
 
 DEFAULT_ROLES = {
-    "PAX5_MA0014.4": "B-cell lineage regulator",
     "BACH2_MA1101.3": "B/GM12878-biased shared regulator",
-    "TCF7_MA0769.3": "T-cell-associated regulator",
-    "RORC_MA1151.2": "T-cell subset-associated regulator",
+    "JUNB_MA1140.3": "T-cell activation/AP-1 regulator",
+    "ATF7_MA0834.2": "T-cell-deeper aggregate example",
+    "IRF4_MA1419.2": "TCR-response regulator; modest aggregate",
 }
 
 CONDITION_COLORS = {
@@ -174,7 +174,7 @@ def plot_marker_aggregates(payload: dict, motifs: list[str], roles: dict[str, st
     for ax in axes[-ncols:]:
         ax.set_xlabel("Distance from motif center (bp)")
     axes[0].legend(frameon=False, loc="upper right", fontsize=7)
-    fig.suptitle("Lineage-biased marker aggregates in the B-cell versus T-cell replicate comparison", y=1.0)
+    fig.suptitle("B-cell-biased and T-cell activation-associated aggregate examples", y=1.0)
     fig.tight_layout()
 
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
