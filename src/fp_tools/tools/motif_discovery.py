@@ -88,12 +88,29 @@ def export_candidate_fasta(candidates: str | Path, genome_fasta: str | Path, out
     return written
 
 
-def meme_command(fasta: str | Path, outdir: str | Path, method: str = "meme", extra_args: list[str] | None = None) -> list[str]:
-    """Build an external MEME/DREME command without executing it."""
+def discovery_motif_text(method: str, discovery_dir: str | Path) -> Path:
+    """Return the MEME-format text output expected from an external discovery run."""
 
-    if method not in {"meme", "dreme"}:
-        raise ValueError("method must be 'meme' or 'dreme'")
-    command = [method, str(fasta), "-oc", str(outdir)]
+    if method == "dreme":
+        filename = "dreme.txt"
+    elif method == "streme":
+        filename = "streme.txt"
+    elif method == "meme":
+        filename = "meme.txt"
+    else:
+        raise ValueError("method must be 'meme', 'dreme', or 'streme'")
+    return Path(discovery_dir) / filename
+
+
+def meme_command(fasta: str | Path, outdir: str | Path, method: str = "meme", extra_args: list[str] | None = None) -> list[str]:
+    """Build an external MEME/DREME/STREME command without executing it."""
+
+    if method not in {"meme", "dreme", "streme"}:
+        raise ValueError("method must be 'meme', 'dreme', or 'streme'")
+    if method == "streme":
+        command = ["streme", "--p", str(fasta), "--oc", str(outdir)]
+    else:
+        command = [method, str(fasta), "-oc", str(outdir)]
     if extra_args:
         command.extend(extra_args)
     return command
@@ -107,7 +124,7 @@ def write_motif_discovery_plan(
     known_motifs: str | Path | None = None,
     extra_args: list[str] | None = None,
 ) -> Path:
-    """Write a reproducible shell script for MEME/DREME, Tomtom, and fp-tools summary."""
+    """Write a reproducible shell script for MEME/DREME/STREME, Tomtom, and fp-tools summary."""
 
     outdir = Path(outdir)
     script = Path(script)
@@ -116,7 +133,7 @@ def write_motif_discovery_plan(
     tomtom_dir = outdir / "tomtom"
     summary_tsv = outdir / "motif_summary.tsv"
     summary_html = outdir / "motif_summary.html"
-    motif_txt = discovery_dir / ("dreme.txt" if method == "dreme" else "meme.txt")
+    motif_txt = discovery_motif_text(method, discovery_dir)
 
     lines = [
         "#!/usr/bin/env bash",
@@ -340,10 +357,10 @@ def export_fasta_main(argv: list[str] | None = None) -> int:
 
 
 def meme_command_main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Print a MEME/DREME command for exported candidate FASTA.")
+    parser = argparse.ArgumentParser(description="Print a MEME/DREME/STREME command for exported candidate FASTA.")
     parser.add_argument("--fasta", required=True, help="Existing candidate FASTA.")
     parser.add_argument("--outdir", required=True, help="External motif discovery output directory.")
-    parser.add_argument("--method", choices=["meme", "dreme"], default="meme")
+    parser.add_argument("--method", choices=["meme", "dreme", "streme"], default="meme")
     parser.add_argument("--extra-args", nargs=argparse.REMAINDER, default=[], help="Additional arguments appended to the external command.")
     args = parser.parse_args(argv)
 
@@ -360,9 +377,9 @@ def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
     parser.add_argument("--flank", type=int, default=0, help="If >0 with --candidates, export +/- flank bp around each candidate center.")
     parser.add_argument("--outdir", required=True, help="External motif discovery output directory.")
     parser.add_argument("--script", help="Output shell script path. Defaults to <outdir>/run_motif_discovery.sh.")
-    parser.add_argument("--method", choices=["meme", "dreme"], default="meme")
+    parser.add_argument("--method", choices=["meme", "dreme", "streme"], default="meme")
     parser.add_argument("--known-motifs", help="Optional known motif database for Tomtom comparison.")
-    parser.add_argument("--extra-args", nargs=argparse.REMAINDER, default=[], help="Additional arguments appended to MEME/DREME.")
+    parser.add_argument("--extra-args", nargs=argparse.REMAINDER, default=[], help="Additional arguments appended to MEME/DREME/STREME.")
     parser.add_argument("--execute", action="store_true", help="Run the generated script immediately.")
     args = parser.parse_args(argv)
 

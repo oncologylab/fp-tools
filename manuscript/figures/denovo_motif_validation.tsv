@@ -1,0 +1,43 @@
+# motif_set_summary
+motif_set	n_motifs	path
+de_novo_only	16	/home/exouser/projects/fp-tools/data/public/processed/buenrostro_atac_replicates/fp_tools/denovo_motif_validation/motifs/buenrostro_denovo_streme.meme
+jaspar2026_full	1019	/home/exouser/projects/fp-tools/data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt
+jaspar2026_plus_denovo	1035	/home/exouser/projects/fp-tools/data/public/processed/buenrostro_atac_replicates/fp_tools/denovo_motif_validation/motifs/jaspar2026_plus_denovo_streme.meme
+jaspar2026_restricted	860	/home/exouser/projects/fp-tools/data/public/processed/buenrostro_atac_replicates/fp_tools/denovo_motif_validation/motifs/jaspar2026_vertebrates_restricted_sensitivity.jaspar
+jaspar2026_restricted_plus_denovo	876	/home/exouser/projects/fp-tools/data/public/processed/buenrostro_atac_replicates/fp_tools/denovo_motif_validation/motifs/restricted_jaspar_plus_denovo_streme.meme
+
+# differential_result_counts
+result_set	n_tested	n_significant	n_highlighted	n_significant_de_novo	n_highlighted_de_novo
+de novo only	16	16	2	16	2
+JASPAR2026 + de novo	1035	1027	114	16	5
+restricted JASPAR	860	854	97	0	0
+restricted + de novo	876	870	101	16	6
+
+# top_tomtom_matches
+direction	de_novo_motif	consensus	target_id	target_name	q_value	label
+B-cell candidate enrichment	5-GATGAGTCA	GATGAGTCA	MA1928.2	BNC2	2.83156e-05	5-GATGAGTCA -> BNC2 (MA1928.2)
+T-cell candidate enrichment	5-CAYKCTGGGAR	CATTCTGGGAA	MA0088.3	ZNF143	8.03095e-05	5-CAYKCTGGGAR -> ZNF143 (MA0088.3)
+B-cell candidate enrichment	1-AGGAASTGAAA	AGGAACTGAAA	MA0050.4	Irf1	0.00758919	1-AGGAASTGAAA -> Irf1 (MA0050.4)
+T-cell candidate enrichment	6-AGGAAGTSACTGA	AGGAAGTGACTGA	MA0598.4	EHF	0.0109605	6-AGGAAGTSACTGA -> EHF (MA0598.4)
+B-cell candidate enrichment	4-CAGGCCGCGCCC	CAGGCCGCGCCC	MA0146.3	Zfx	0.0527081	4-CAGGCCGCGCCC -> Zfx (MA0146.3)
+T-cell candidate enrichment	7-CTTCCTCCAAAAGG	CTTCCTCCAAAAGG	MA2326.1	IKZF2	0.191451	7-CTTCCTCCAAAAGG -> IKZF2 (MA2326.1)
+B-cell candidate enrichment	2-SCRGCCGGG	CCAGCCGGG	MA2121.1	ZNF213	0.32969	2-SCRGCCGGG -> ZNF213 (MA2121.1)
+
+# aggregate_center_minus_flank
+panel	motif	motif_id	sample	condition	center_minus_flank
+aggregate	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	Bcell_rep1	Bcell	0.10992216666666668
+aggregate	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	Bcell_rep2	Bcell	0.0615162380952381
+aggregate	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	Tcell_rep1	Tcell	0.1547447380952381
+aggregate	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	Tcell_rep2	Tcell	0.16862540476190474
+aggregate	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	Bcell_rep1	Bcell	0.11556030952380954
+aggregate	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	Bcell_rep2	Bcell	0.07393638095238093
+aggregate	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	Tcell_rep1	Tcell	0.13802842857142858
+aggregate	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	Tcell_rep2	Tcell	0.16686728571428572
+aggregate	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	Bcell_rep1	Bcell	0.07121392857142855
+aggregate	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	Bcell_rep2	Bcell	0.04309104761904762
+aggregate	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	Tcell_rep1	Tcell	0.09497088095238096
+aggregate	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	Tcell_rep2	Tcell	0.107887
+aggregate	Bcell_denovo_3	Bcell_denovo_3_3-CTGGMGGCCT	Bcell_rep1	Bcell	0.07831069047619048
+aggregate	Bcell_denovo_3	Bcell_denovo_3_3-CTGGMGGCCT	Bcell_rep2	Bcell	0.04637407142857143
+aggregate	Bcell_denovo_3	Bcell_denovo_3_3-CTGGMGGCCT	Tcell_rep1	Tcell	0.10215014285714286
+aggregate	Bcell_denovo_3	Bcell_denovo_3_3-CTGGMGGCCT	Tcell_rep2	Tcell	0.11013283333333335

@@ -18,3 +18,4 @@ JASPAR CORE vertebrates non-redundant	2026	Known motif database for differential
 Cell Ranger ARC	2.0.0	Source 10x PBMC Multiome processing used by the public 10x dataset
 hg38 reference genome	GRCh38/hg38	Read alignment and sequence extraction
 hg38 blacklist	v2	Blacklist filtering for processed bulk ATAC alignments
+MEME Suite	5.5.9	External motif discovery and motif-to-database comparison backend used for STREME and Tomtom validation

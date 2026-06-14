@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from fp_tools.tools.motif_discovery import (
+    discovery_motif_text,
     export_candidate_fasta,
     meme_command,
     parse_meme_txt,
@@ -40,6 +41,13 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
         self.assertEqual(sites[0].name, "siteA")
         self.assertEqual(meme_command("sites.fa", "motifs", method="dreme", extra_args=["-dna"]), ["dreme", "sites.fa", "-oc", "motifs", "-dna"])
 
+    def test_streme_command_and_output_path(self):
+        self.assertEqual(
+            meme_command("sites.fa", "motifs", method="streme", extra_args=["--dna", "--nmotifs", "8"]),
+            ["streme", "--p", "sites.fa", "--oc", "motifs", "--dna", "--nmotifs", "8"],
+        )
+        self.assertEqual(discovery_motif_text("streme", "motifs"), Path("motifs/streme.txt"))
+
     def test_write_motif_discovery_plan_includes_tomtom_and_summary(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -64,6 +72,26 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
         self.assertIn("tomtom", text)
         self.assertIn("motif-summary", text)
         self.assertTrue(text.startswith("#!/usr/bin/env bash"))
+
+    def test_write_streme_plan_uses_streme_txt(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            fasta = tmp / "sites.fa"
+            script = tmp / "run.sh"
+            fasta.write_text(">site1\nACGT\n", encoding="utf-8")
+
+            path = write_motif_discovery_plan(
+                fasta,
+                tmp / "motifs",
+                script,
+                method="streme",
+                extra_args=["--dna", "--nmotifs", "5"],
+            )
+            text = path.read_text(encoding="utf-8")
+
+        self.assertIn("streme --p", text)
+        self.assertIn("streme/streme.txt", text)
+        self.assertIn("--nmotifs 5", text)
 
     def test_parse_meme_tomtom_and_write_reports(self):
         with tempfile.TemporaryDirectory() as tmpdir:

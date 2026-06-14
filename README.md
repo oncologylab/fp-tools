@@ -154,10 +154,10 @@ plot-aggregate-batch   --manifest examples/reports/aggregate_manifest.tsv   --ou
 
 ![De novo motif discovery preparation workflow](docs/assets/fp-tools-de-novo-motif.png)
 
-`motif-discovery` can start from the candidate BED written by `call-footprints`, export candidate-centered sequences, and write a reproducible MEME/DREME/Tomtom command script.
+`motif-discovery` can start from the candidate BED written by `call-footprints`, export candidate-centered sequences, and write a reproducible MEME/DREME/STREME plus Tomtom command script. Use it alone for de novo-only motif discovery, or provide a known database such as JASPAR2026 so discovered motifs can supplement database-supported motif analysis.
 
 ```bash
-motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.bed   --genome test_data/genome.fa.gz   --outdir examples/motifs/Bcell_denovo   --method dreme   --known-motifs jaspar2026_vertebrates.meme
+motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.bed   --genome test_data/genome.fa.gz   --outdir examples/motifs/Bcell_denovo   --method streme   --known-motifs jaspar2026_vertebrates.meme
 ```
 
 ## Optional pseudobulk fragments

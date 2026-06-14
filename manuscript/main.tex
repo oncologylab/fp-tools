@@ -245,6 +245,7 @@ NumPy/pandas/SciPy & 2.4.6/2.3.3/1.17.1 & Numerical and tabular analysis\\
 matplotlib/pyBigWig & 3.10.9/0.3.25 & Figures and bigWig signal I/O\\
 pysam/Biopython & 0.23.3/1.87 & BAM I/O and sequence utilities\\
 JASPAR CORE vertebrates & 2026 non-redundant & Known motif database\\
+MEME Suite/STREME/Tomtom & 5.5.9 & De novo motif discovery and discovered-motif matching\\
 Cell Ranger ARC & 2.0.0 & Source 10x PBMC Multiome processing\\
 hg38 reference and blacklist & GRCh38/hg38; blacklist v2 & Alignment, sequence extraction, and artifact filtering\\
 \bottomrule
@@ -402,7 +403,7 @@ opt-in modules are layered without disturbing default behavior.
 \subsection{De Novo Motif Preparation}
 
 The de novo motif-preparation path exports candidate-centered FASTA files,
-constructs reproducible MEME/DREME and Tomtom analysis records, and summarizes
+constructs reproducible MEME/DREME/STREME and Tomtom analysis records, and summarizes
 motif results into TSV/HTML reports with inline consensus logos. This keeps
 external motif discovery reproducible without making a new motif-calling algorithm
 part of the first-version claim. The workflow can be used alone to discover
@@ -419,6 +420,46 @@ motif-discovery inputs and reports without claiming a new motif-calling
 algorithm.\label{fig:denovo_motif_prep}}
 \end{figure}
 
+\subsection{De Novo Motif Supplement Validation}
+
+To test whether this utility adds practical value beyond a fixed motif database,
+we ran a validation experiment on the same 2-vs-2 Buenrostro B-cell versus
+T-cell ATAC-seq comparison used for replicate-aware reporting. Candidate
+footprints were called from bias-corrected cut-site tracks, condition-specific
+candidate FASTA files were exported with 75 bp flanks, and STREME 5.5.9 was run
+in both directions: B-cell candidates with T-cell candidates as control, and the
+reverse. The discovered motifs were then used in two ways. First, they were
+tested alone as a de novo-only motif set. Second, they were appended to known
+motif databases before running the same sample-quantile-normalized
+differential-footprint analysis.
+
+The full JASPAR2026 vertebrate non-redundant set contained 1019 motifs, while
+the de novo procedure contributed 16 candidate-derived motifs. To create a
+sensitivity test for the supplement mode, we also constructed a restricted
+JASPAR2026 set with 860 motifs and reran the comparison with and without the
+16 de novo motifs. The restricted database yielded 97 highlighted differential
+motif families; adding the de novo supplement increased this to 101 highlighted
+families, including 6 de novo-derived highlighted motifs. This result is not a
+claim that the recovered motifs are novel TFs. Rather, it demonstrates the
+intended use case: when a chosen motif database is incomplete or conservative,
+candidate-derived motifs can be carried forward into the same differential
+footprint report and can recover additional data-supported motif families
+(Figure~\ref{fig:denovo_motif_validation}).
+
+\begin{figure}[H]
+\includegraphics[width=0.95\textwidth]{figures/denovo_motif_validation.png}
+\caption{Validation of de novo motif discovery as a standalone and supplement
+mode. Candidate footprints from the Buenrostro B-cell versus T-cell replicate
+comparison were exported to FASTA, analyzed with STREME in both contrast
+directions, matched back to JASPAR2026 motifs with Tomtom, and tested with
+\texttt{diff-footprints}. The restricted-database comparison illustrates the
+supplement mode: adding 16 candidate-derived motifs increased the highlighted
+motif-family count from 97 to 101 and retained de novo-derived aggregate
+profiles in the same differential report. Thin lines show individual biological
+replicates and thick lines show condition means for representative discovered
+motifs.\label{fig:denovo_motif_validation}}
+\end{figure}
+
 \subsection{Replicate-aware Normalization}
 
 Replicate-aware differential footprint analysis adds an interpretable layer to
@@ -429,7 +470,7 @@ before replicate group averages are compared. To show the effect on real data, w
 used the B-cell versus T-cell 2-vs-2 Buenrostro comparison and plotted aggregate
 corrected cut-site profiles for the same four motifs used in the biological
 consistency panel. The no-normalization and sample-quantile panels were extracted
-from the corresponding embedded 	exttt{diff-footprints} HTML payloads, so the
+from the corresponding embedded \texttt{diff-footprints} HTML payloads, so the
 figure reflects the exact data used in the differential report. Thin lines show
 individual biological replicates and thick lines show condition means
 (Figure~\ref{fig:normalization_effect}).
@@ -438,7 +479,7 @@ individual biological replicates and thick lines show condition means
 \includegraphics[width=0.95\textwidth]{figures/normalization_effect.png}
 \caption{Effect of sample-level quantile normalization on real 2-vs-2
 corrected cut-site aggregate profiles. BACH2, JUNB, ATF7, and IRF4 aggregates
-were extracted from the no-normalization and sample-quantile 	exttt{diff-footprints}
+were extracted from the no-normalization and sample-quantile \texttt{diff-footprints}
 HTML reports for the Buenrostro B-cell versus T-cell replicate comparison. Thin
 lines show individual biological replicates, thick lines show condition means,
 and a lower center relative to the local flanks indicates stronger TF protection.}
