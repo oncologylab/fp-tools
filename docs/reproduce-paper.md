@@ -51,8 +51,8 @@ bash scripts/run_buenrostro_denovo_motif_validation.sh
   --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt \
   --outdir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered \
   --summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv \
-  --plot-sites-per-tf 500 \
-  --site-selection top-score
+  --plot-sites-per-tf 0 \
+  --site-selection all
 .venv/bin/python manuscript/scripts/plot_pseudobulk_tf_aggregates.py \
   --manifest data/public/processed/pseudobulk_pbmc/run/pseudobulk_manifest.tsv \
   --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered \
@@ -60,10 +60,8 @@ bash scripts/run_buenrostro_denovo_motif_validation.sh
   --out-prefix manuscript/figures/supp_pseudobulk_tf_aggregates \
   --screen-output manuscript/figures/supp_pseudobulk_tf_screen.tsv \
   --footprint-like-output manuscript/figures/supp_pseudobulk_footprint_like \
-  --tfs auto \
-  --flank 250 \
-  --auto-min-sites 300 \
-  --auto-min-total-sites 500
+  --tfs SPIB,RUNX3,CEBPB,CEBPA \
+  --flank 250
 ```
 
 After public-data outputs exist, regenerate the remaining manuscript figures with the scripts

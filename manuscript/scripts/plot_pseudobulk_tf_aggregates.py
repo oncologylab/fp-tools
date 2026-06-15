@@ -84,7 +84,7 @@ def truthy(value: object) -> bool:
 
 def mean_profile(bigwig: Path, sites: list[tuple[str, int, int]], flank: int) -> list[float]:
     bw = pyBigWig.open(str(bigwig))
-    values = [0.0] * (2 * flank)
+    values = np.zeros(2 * flank, dtype=float)
     used = 0
     try:
         chroms = bw.chroms()
@@ -93,18 +93,16 @@ def mean_profile(bigwig: Path, sites: list[tuple[str, int, int]], flank: int) ->
             end = center + flank
             if chrom not in chroms or start < 0 or end > chroms[chrom]:
                 continue
-            row = bw.values(chrom, start, end)
-            if len(row) != 2 * flank:
+            row = bw.values(chrom, start, end, numpy=True)
+            if row.shape[0] != 2 * flank:
                 continue
-            for index, value in enumerate(row):
-                if value == value:
-                    values[index] += float(value)
+            values += np.nan_to_num(row, nan=0.0)
             used += 1
     finally:
         bw.close()
     if used:
-        values = [value / used for value in values]
-    return values
+        values /= used
+    return values.tolist()
 
 
 def smooth_profile(values: list[float] | np.ndarray, window: int) -> np.ndarray:

@@ -547,13 +547,11 @@ motif centers rather than around broad peak centers. JASPAR2026 vertebrate motif
 were scanned in the 10x ATAC peak set, motif hits were grouped by TF family, and
 candidate immune regulators were screened using a predeclared B-cell, T/NK-cell,
 and myeloid marker list. To avoid artificial fixed site counts in the figure, all
-motif hits were counted for each TF and only the top 500 scoring sites per TF
-were used for compact plotting. The source screen required at least 500 natural
-motif hits and 300 plotted sites, then ranked TFs by center protection in the
-expected pseudobulk groups relative to other groups. This selected SPIB as the
+motif hits were counted and used for each displayed TF. We selected SPIB as the
 B-cell-associated example, RUNX3 as the T/NK-associated example, and CEBPB and
-CEBPA as myeloid-associated examples. The fragment data and pseudobulk cut-site
-tracks were not modified; only the motif-centered site set used for aggregation
+CEBPA as myeloid-associated examples from the predeclared immune-regulator screen.
+The fragment data and pseudobulk cut-site tracks were not modified; only the
+motif-centered site set used for aggregation
 changed. The resulting profiles show that single-cell fragments can be collapsed
 into group-level tracks and inspected with the same motif-centered aggregate
 workflow used for bulk ATAC data (Figure~\ref{fig:pseudobulk_supp}). The
@@ -573,8 +571,8 @@ profile, so higher values indicate stronger local center depletion relative to t
 nearby flanks. SPIB, RUNX3, CEBPB, and CEBPA were selected by the predeclared
 lineage screen as B-cell-, T/NK-cell-, and myeloid-associated examples. Thin lines
 show all retained pseudobulk groups; thicker lines mark the expected pseudobulk
-groups for each lineage-associated TF. The source screen, natural motif-hit counts,
-and plotted-site counts are reported in
+groups for each lineage-associated TF. The source screen and natural motif-hit
+counts are reported in
 \texttt{figures/supp\_pseudobulk\_tf\_screen.tsv}. The figure demonstrates that the
 pseudobulk fragment workflow produces group-level signal tracks compatible with
 motif-centered aggregate visualization.
