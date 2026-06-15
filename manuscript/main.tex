@@ -388,14 +388,15 @@ machine-readable form for reruns and batch processing (Figure~\ref{fig:workflow}
 
 \begin{figure}[H]
 \includegraphics[width=\textwidth]{figures/fp-tools-workflow.png}
-\caption{Overall \texttt{fp-tools} workflow. Bulk ATAC-seq inputs enter an
-integrated classical core for Tn5 bias correction, footprint calling, motif
-matching, differential footprint analysis, and aggregate visualization. Optional
-workflow layers support YAML-based reruns, de novo motif-discovery preparation,
-pseudobulk fragment aggregation, and replicate-aware reporting. Outputs include
-signal tracks, motif-site tables, differential-footprint reports, aggregate
-profiles, pseudobulk manifests, benchmark metrics, and reproducible figure
-inputs.\label{fig:workflow}}
+\caption{Generic \texttt{fp-tools} regulatory-footprinting framework. Bulk
+ATAC-seq inputs enter an integrated classical core for Tn5 bias correction,
+footprint calling, motif matching, differential footprint analysis, and aggregate
+visualization. Optional branches support single-cell pseudobulk fragment
+generation, de novo motif-discovery preparation from candidate intervals, and
+replicate-aware reporting within differential comparisons. Outputs include
+corrected cut-site tracks, footprint score tracks or candidate BEDs, motif-site
+tables, differential-footprint HTML reports, aggregate profiles, pseudobulk
+manifests, de novo motif reports, and reproducibility metadata.\label{fig:workflow}}
 \end{figure}
 
 \subsection{Regression-tested Workflow Outputs}
@@ -416,6 +417,17 @@ external motif discovery reproducible while relying on established motif-discove
 algorithms. The workflow can be used alone to discover
 recurring patterns in candidate intervals, or after known-motif scanning to find
 additional motifs not represented in the selected database.
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{figures/fp-tools-de-novo-motif.png}
+\caption{Generic de novo motif-discovery preparation workflow. Candidate
+footprint intervals are converted into candidate-centered FASTA sequences,
+external motif-discovery tools such as STREME or MEME are run with recorded
+parameters and software versions, and discovered motifs are summarized alone or
+matched back to known motif databases such as JASPAR2026. The same output can be
+used as a standalone de novo result or as a supplemental motif set for downstream
+differential footprint analysis.\label{fig:denovo_workflow}}
+\end{figure}
 
 We therefore evaluated whether candidate-derived motifs add information beyond a fixed
 database using the same 2-vs-2 Buenrostro B-cell versus
@@ -523,6 +535,17 @@ prepared figure inputs used chromosomes chr1--chr22 plus chrX. The kept
 pseudobulks contained 13.6--144.0 million counted fragments per group and were
 written as indexed fragment files plus CPM-normalized cut-site bigWigs. These
 outputs were readable by the same aggregate-plotting code used for bulk ATAC data.
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{figures/fp-tools-pseudo-bulk.png}
+\caption{Example pseudobulk fragment workflow using public 10x PBMC single-cell
+ATAC data. Single-cell fragment records and cell annotations are grouped by broad
+immune-cell labels, converted into one pseudobulk fragment file per retained
+group, and summarized with QC fields, indexed outputs, and CPM-normalized
+cut-site bigWigs for downstream footprinting. The mini aggregate panels in the
+workflow illustrate motif-centered validation profiles from the same PBMC example,
+not a separate generic benchmark.\label{fig:pseudobulk_workflow}}
+\end{figure}
 
 As a qualitative validation, we aggregated pseudobulk cut-site signal around exact
 motif centers rather than around broad peak centers. JASPAR2026 vertebrate motifs

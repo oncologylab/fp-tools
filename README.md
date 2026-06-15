@@ -18,6 +18,10 @@ pip install "fp-tools-bio[gui]"
 
 ## Workflow
 
+The regulatory-footprinting framework below is a generic overview of the current command-first workflow.
+
+![fp-tools regulatory footprinting framework](manuscript/figures/fp-tools-workflow.png)
+
 The main workflow is:
 
 ```text
@@ -162,7 +166,7 @@ plot-aggregate-batch   --input-html examples/diff_footprints/Bcell_vs_Tcell/diff
 
 ![De novo motif discovery preparation workflow](docs/assets/fp-tools-de-novo-motif.png)
 
-`motif-discovery` can start from the candidate BED written by `call-footprints`, export candidate-centered sequences, and write a reproducible MEME/DREME/STREME plus Tomtom command script. Use it alone for de novo-only motif discovery, or provide a known database such as JASPAR2026 so discovered motifs can supplement database-supported motif analysis.
+The schematic above is a generic method workflow: it starts from footprint-derived candidate intervals, exports candidate-centered FASTA, records external MEME/STREME/Tomtom execution settings, and returns motif summaries that can be used downstream. `motif-discovery` can be run as de novo-only discovery, or with a known database such as JASPAR2026 so discovered motifs can supplement database-supported motif analysis.
 
 ```bash
 motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.bed   --genome test_data/genome.fa.gz   --outdir examples/motifs/Bcell_denovo   --method streme   --known-motifs jaspar2026_vertebrates.meme
@@ -172,7 +176,7 @@ motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.be
 
 ![Pseudobulk fragment workflow](docs/assets/fp-tools-pseudo-bulk.png)
 
-`pseudobulk-fragments` groups single-cell ATAC fragments by a metadata column such as cell type, treatment, donor, or cluster. Each group is written as a bulk-like fragment file and manifest entry for downstream footprinting. The example below uses public 10x PBMC fragments and aggregates CPM-normalized pseudobulk cut-site tracks around exact JASPAR2026 motif centers scanned inside 10x peaks. The motif-site summary reports the natural number of motif hits used for each aggregate.
+The schematic above is an example workflow using public 10x PBMC single-cell ATAC fragments and immune-cell annotations. `pseudobulk-fragments` groups fragments by a metadata column such as cell type, treatment, donor, or cluster; writes one bulk-like fragment file and manifest entry per retained group; and can generate CPM-normalized cut-site tracks for downstream footprinting. In this PBMC example, the validation aggregates are centered on exact JASPAR2026 motif sites scanned inside 10x peaks, and the motif-site summary reports the natural number of motif hits used for each aggregate.
 
 ```bash
 pseudobulk-fragments   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz   --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --index-output   --write-cutsite-bigwigs   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes   --outdir data/public/processed/pseudobulk_pbmc/run
