@@ -120,8 +120,8 @@ these workflows together.
 
 \begin{figure}[H]
 \includegraphics[width=\textwidth]{figures/fp-tools-workflow.png}
-\caption{Generic \texttt{fp-tools} regulatory-footprinting framework. Bulk
-ATAC-seq inputs enter an integrated core for Tn5 bias correction,
+\caption{Overall \texttt{fp-tools} regulatory-footprinting framework. Bulk or
+single-cell ATAC-seq inputs enter an integrated core for Tn5 bias correction,
 footprint calling, motif matching, differential footprint analysis, and aggregate
 visualization. Integrated branches support single-cell pseudobulk fragment
 generation, de novo motif-discovery preparation from candidate intervals, and
@@ -263,7 +263,7 @@ and analyzed by differential footprint comparison with and without sample-level
 quantile normalization. The analysis used JASPAR2026 CORE vertebrates
 non-redundant motifs for known-motif scanning. Exact command-line parameters and software versions are recorded in source TSV
 files in the manuscript \texttt{tables} directory and summarized in
-Supplementary Tables~\ref{tab:supp_analysis_parameters} and
+Tables~\ref{tab:supp_analysis_parameters} and
 \ref{tab:supp_software_versions}.
 
 \subsection{Public Data, Benchmark Tiers, and Metrics}
@@ -396,12 +396,14 @@ differential footprint analysis.\label{fig:denovo_workflow}}
 We therefore evaluated whether candidate-derived motifs add information beyond a fixed
 database using the same 2-vs-2 Buenrostro B-cell versus
 T-cell ATAC-seq comparison used for replicate-aware reporting. Candidate
-footprints were called from bias-corrected cut-site tracks, condition-specific
-candidate FASTA files were exported with 75 bp flanks, and STREME 5.5.9 was run
-in both directions: B-cell candidates with T-cell candidates as control, and the
-reverse. The discovered motifs were then used in two ways. First, they were
-tested alone as a de novo-only motif set. Second, they were appended to known
-motif databases before running the same sample-quantile-normalized
+footprints were called from bias-corrected cut-site tracks, B-cell-enriched and
+T-cell-enriched candidate FASTA files were exported with 75 bp flanks, and STREME
+5.5.9 was run in both contrast directions. The B-cell-enriched candidate set
+returned BATF-like and Irf1-like discovered motifs, whereas the T-cell-enriched
+candidate set returned IKZF2-like and ZNF143-like examples. These discovered
+motifs were then used in two modes. In de novo-only mode, the candidate-derived
+motifs were tested as their own motif set. In supplement mode, the same motifs
+were appended to a known motif database before running the sample-quantile-normalized
 differential-footprint analysis.
 
 The full JASPAR2026 vertebrate non-redundant set contained 1019 motifs, while
@@ -413,9 +415,9 @@ mode, the discovered motifs were appended to known motif sets before the same
 motif-aware differential footprint analysis. To create a sensitivity test, we
 also constructed a restricted JASPAR2026 set with 860 motifs and reran the
 comparison with and without the 16 de novo motifs. The restricted database
-yielded 97 highlighted differential motif families; adding the de novo
-supplement increased this to 101 highlighted families, including 6 de
-novo-derived highlighted motifs. These analyses show the intended use case: when a chosen motif database is
+yielded 97 highlighted differential motif families; adding the 16 de novo motifs
+increased this to 101 highlighted families, including 6 de novo-derived
+highlighted motifs. This sensitivity test illustrates the intended use case: when a chosen motif database is
 incomplete or conservative, candidate-derived motifs can be evaluated on their
 own and can also be carried forward into the same differential footprint report
 as database-supported motifs (Figure~\ref{fig:denovo_motif_validation}).
@@ -424,14 +426,16 @@ as database-supported motifs (Figure~\ref{fig:denovo_motif_validation}).
 \includegraphics[width=0.95\textwidth]{figures/denovo_motif_validation.png}
 \caption{De novo motif discovery used as de novo-only analysis and as a supplement
 to known-motif analysis. Candidate footprints from the Buenrostro B-cell versus T-cell replicate
-comparison were exported to FASTA and analyzed with STREME in both contrast
-directions. The de novo-only branch yields candidate-derived motif families,
-with representative footprint-like aggregate profiles selected by negative
-center-versus-flank signal. The supplement branch appends the discovered motifs
-to a known database before \texttt{diff-footprints}; in the restricted-database
-sensitivity test, adding 16 candidate-derived motifs increased the highlighted
-motif-family count from 97 to 101, including 6 de novo-derived highlighted
-motifs. Tomtom labels indicate motif similarity to database entries. Thin
+comparison were exported to FASTA and analyzed with STREME in B-cell-enriched and
+T-cell-enriched contrast directions. Displayed discovered examples include
+BATF-like and Irf1-like motifs from B-cell-enriched candidates and IKZF2-like and
+ZNF143-like motifs from T-cell-enriched candidates. In de novo-only mode, the
+candidate-derived motifs are tested as an independent motif set. In supplement
+mode, the discovered motifs are appended to a known database before
+\texttt{diff-footprints}; in the restricted-database sensitivity test, adding 16
+candidate-derived motifs increased the highlighted motif-family count from 97 to
+101, including 6 de novo-derived highlighted motifs. Tomtom labels indicate motif
+similarity to database entries. Thin
 aggregate lines show individual biological replicates and
 thick lines show condition means.\label{fig:denovo_motif_validation}}
 \end{figure}
@@ -527,39 +531,36 @@ workflow illustrate motif-centered validation profiles from the same PBMC exampl
 not a separate generic benchmark.\label{fig:pseudobulk_workflow}}
 \end{figure}
 
-As a qualitative validation, we aggregated pseudobulk cut-site signal around exact
-motif centers rather than around broad peak centers. JASPAR2026 vertebrate motifs
-were scanned in the 10x ATAC peak set, motif hits were grouped by TF family, and
-candidate immune regulators were screened using a predeclared B-cell, T/NK-cell,
-and myeloid marker list. To avoid artificial fixed site counts in the figure, all
-motif hits were counted and used for each displayed TF. We selected SPIB as the
-B-cell-associated example, RUNX3 as the T/NK-associated example, and CEBPB and
-CEBPA as myeloid-associated examples from the predeclared immune-regulator screen.
-The fragment data and pseudobulk cut-site tracks were not modified; only the
-motif-centered site set used for aggregation
-changed. The resulting profiles show that single-cell fragments can be collapsed
-into group-level tracks and inspected with the same motif-centered aggregate
-workflow used for bulk ATAC data (Figure~\ref{fig:pseudobulk_supp}). The
-pseudobulk module can also emit pseudo-paired BAMs for downstream bias correction
-with zero read shifting.
+As a qualitative validation, we aggregated CPM-normalized pseudobulk cut-site
+signal around exact motif centers rather than around broad peak centers.
+JASPAR2026 vertebrate motifs were scanned in the 10x ATAC peak set, motif hits
+were grouped by TF family, and candidate immune regulators were screened using a
+predeclared B-cell, T/NK-cell, and myeloid marker list. To avoid artificial fixed
+site counts in the figure, all motif hits were counted and used for each displayed
+TF. We show RUNX3 as the T/NK-associated example and CEBPB as the myeloid-associated
+example from this screen, using 37,694 and 17,454 motif-centered sites,
+respectively. The fragment data and pseudobulk cut-site tracks were not modified;
+only the motif-centered site set used for aggregation changed. The resulting
+profiles show that single-cell fragments can be collapsed into group-level tracks
+and inspected with the same motif-centered aggregate workflow used for bulk ATAC
+data (Figure~\ref{fig:pseudobulk_supp}). The pseudobulk module can also emit
+pseudo-paired BAMs for downstream bias correction with zero read shifting.
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/supp_pseudobulk_footprint_like.png}
-\caption{Motif-centered 10x PBMC pseudobulk protection-score aggregate profiles.
+\includegraphics[width=\textwidth]{figures/supp_pseudobulk_cutsite_signal.png}
+\caption{Motif-centered 10x PBMC pseudobulk cut-site signal aggregate profiles.
 Single-cell ATAC fragments from the public 10x PBMC Multiome dataset were grouped
 by broad immune-cell labels derived from official 10x gene-expression graph
 clusters, converted to CPM-normalized cut-site bigWigs, and aggregated around exact
-JASPAR2026 motif centers scanned inside 10x ATAC peaks. The plotted score is a
-flank-minus-center protection summary computed from the pseudobulk cut-site
-profile, so higher values indicate stronger local center depletion relative to the
-nearby flanks. SPIB, RUNX3, CEBPB, and CEBPA were selected by the predeclared
-lineage screen as B-cell-, T/NK-cell-, and myeloid-associated examples. Thin lines
-show all retained pseudobulk groups; thicker lines mark the expected pseudobulk
-groups for each lineage-associated TF. The source screen and natural motif-hit
-counts are reported in
-\texttt{figures/supp\_pseudobulk\_tf\_screen.tsv}. The figure demonstrates that the
-pseudobulk fragment workflow produces group-level signal tracks compatible with
-motif-centered aggregate visualization.
+JASPAR2026 motif centers scanned inside 10x ATAC peaks. RUNX3 is shown as a
+T/NK-associated example with 37,694 motif sites, and CEBPB is shown as a
+myeloid-associated example with 17,454 motif sites. The plotted value is direct
+CPM-normalized cut-site signal, not a derived protection score. Thin lines show
+all retained pseudobulk groups; thicker lines mark the expected pseudobulk groups
+for each lineage-associated TF. The source screen and natural motif-hit counts are
+reported in \texttt{figures/supp\_pseudobulk\_cutsite\_signal\_screen.tsv}. The
+figure demonstrates that the pseudobulk fragment workflow produces group-level
+signal tracks compatible with motif-centered aggregate visualization.
 \label{fig:pseudobulk_supp}}
 \end{figure}
 
@@ -716,11 +717,13 @@ and software publicly available.}
 
 %==================================================================
 \appendix
-\section{Supplementary Tables}
+\section*{Appendix}
+\renewcommand{\thetable}{S\arabic{table}}
+\setcounter{table}{0}
 %==================================================================
 
 \begin{table}[H]
-\caption{Supplementary Table 1. Primary analysis parameters used for the public ATAC and pseudobulk workflows. The complete tab-separated source table is stored as \texttt{analysis\_parameters.tsv}.\label{tab:supp_analysis_parameters}}
+\caption{Primary analysis parameters used for the public ATAC and pseudobulk workflows. The complete tab-separated source table is stored as \texttt{analysis\_parameters.tsv}.\label{tab:supp_analysis_parameters}}
 \scriptsize
 \begin{tabularx}{\textwidth}{lX}
 \toprule
@@ -738,7 +741,7 @@ Pseudobulk PBMC workflow & 10x PBMC Multiome fragments grouped by broad immune l
 \end{table}
 
 \begin{table}[H]
-\caption{Supplementary Table 2. Software and resource versions used for manuscript analyses. The complete source table is stored as \texttt{software\_versions.tsv}.\label{tab:supp_software_versions}}
+\caption{Software and resource versions used for manuscript analyses. The complete source table is stored as \texttt{software\_versions.tsv}.\label{tab:supp_software_versions}}
 \scriptsize
 \begin{tabularx}{\textwidth}{p{0.24\textwidth}p{0.17\textwidth}X}
 \toprule
