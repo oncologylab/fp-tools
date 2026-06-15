@@ -55,6 +55,13 @@ def _parse_chrom_list(values: str | None) -> set[str] | None:
     return {value.strip() for value in values.split(",") if value.strip()}
 
 
+
+def _truthy(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "t", "yes", "y"}
+
+
 def load_genome_sizes(path: str | Path) -> list[tuple[str, int]]:
     rows = []
     with _open_text(path) as handle:
@@ -174,6 +181,91 @@ def _write_group_bigwig(args: tuple[str, str, str, str, bool]) -> tuple[str, str
     return group, output
 
 
+def write_pseudo_paired_bam(
+    fragment_file: str | Path,
+    output: str | Path,
+    genome_sizes: str | Path,
+) -> Path:
+    """Write a sorted pseudo-paired BAM from 10x fragment intervals.
+
+    The emitted reads are one-base anchors at the fragment start and just before
+    the fragment end. With atac-correct --read_shift 0 0 these anchors place cuts
+    at the same zero-based start and end-1 positions used by write_cutsite_bigwig.
+    """
+
+    if pysam is None:
+        raise RuntimeError("pysam is required for --write-pseudo-bams")
+    genome = load_genome_sizes(genome_sizes)
+    chrom_sizes = dict(genome)
+    chrom_to_id = {chrom: index for index, (chrom, _size) in enumerate(genome)}
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    unsorted = output.with_suffix(output.suffix + ".unsorted")
+    header = {"HD": {"VN": "1.6", "SO": "unknown"}, "SQ": [{"SN": chrom, "LN": size} for chrom, size in genome]}
+
+    with pysam.AlignmentFile(str(unsorted), "wb", header=header) as bam, _open_text(fragment_file) as handle:
+        read_index = 0
+        for line in handle:
+            if not line.strip() or line.startswith("#"):
+                continue
+            fields = line.rstrip("\n").split("\t")
+            if len(fields) < 3:
+                continue
+            chrom = fields[0]
+            if chrom not in chrom_sizes:
+                continue
+            start = max(0, int(fields[1]))
+            end = min(chrom_sizes[chrom], int(fields[2]))
+            if end - start < 2:
+                continue
+            multiplicity = int(fields[4]) if len(fields) > 4 and fields[4].isdigit() else 1
+            tid = chrom_to_id[chrom]
+            reverse_start = max(start, end - 2)
+            template_length = end - start
+            for copy_index in range(multiplicity):
+                qname = f"{chrom}:{start}-{end}:{read_index}:{copy_index}"
+                read1 = pysam.AlignedSegment()
+                read1.query_name = qname
+                read1.query_sequence = "N"
+                read1.flag = 99
+                read1.reference_id = tid
+                read1.reference_start = start
+                read1.mapping_quality = 60
+                read1.cigar = ((0, 1),)
+                read1.next_reference_id = tid
+                read1.next_reference_start = reverse_start
+                read1.template_length = template_length
+                read1.query_qualities = pysam.qualitystring_to_array("I")
+
+                read2 = pysam.AlignedSegment()
+                read2.query_name = qname
+                read2.query_sequence = "N"
+                read2.flag = 147
+                read2.reference_id = tid
+                read2.reference_start = reverse_start
+                read2.mapping_quality = 60
+                read2.cigar = ((0, 1),)
+                read2.next_reference_id = tid
+                read2.next_reference_start = start
+                read2.template_length = -template_length
+                read2.query_qualities = pysam.qualitystring_to_array("I")
+
+                bam.write(read1)
+                bam.write(read2)
+            read_index += 1
+
+    pysam.sort("-o", str(output), str(unsorted))
+    pysam.index(str(output))
+    unsorted.unlink(missing_ok=True)
+    return output
+
+
+def _write_group_pseudo_bam(args: tuple[str, str, str, str]) -> tuple[str, str]:
+    group, fragment_file, output, genome_sizes = args
+    write_pseudo_paired_bam(fragment_file, output, genome_sizes)
+    return group, output
+
+
 def group_fragments(
     fragments: str | Path,
     annotations: str | Path,
@@ -189,6 +281,7 @@ def group_fragments(
     index_output: bool = False,
     genome_sizes: str | Path | None = None,
     write_cutsite_bigwigs: bool = False,
+    write_pseudo_bams: bool = False,
     cpm_normalize: bool = True,
     cores: int | None = None,
 ) -> pd.DataFrame:
@@ -200,6 +293,8 @@ def group_fragments(
         compress_output = True
     if write_cutsite_bigwigs and genome_sizes is None:
         raise ValueError("--genome-sizes is required with --write-cutsite-bigwigs")
+    if write_pseudo_bams and genome_sizes is None:
+        raise ValueError("--genome-sizes is required with --write-pseudo-bams")
     cores = multiprocessing.cpu_count() if cores is None else max(1, int(cores))
 
     barcode_to_group = load_annotations(annotations, barcode_column, group_by, strip_barcode_suffix=strip_barcode_suffix)
@@ -257,6 +352,7 @@ def group_fragments(
 
     keep_by_group: dict[str, bool] = {}
     bigwigs_by_group: dict[str, str] = defaultdict(str)
+    pseudo_bams_by_group: dict[str, str] = defaultdict(str)
     for group in sorted(paths_by_group):
         cells = len(cells_by_group[group])
         fragments_count = fragments_by_group[group]
@@ -283,6 +379,26 @@ def group_fragments(
                 group, bigwig = _write_group_bigwig(task)
                 bigwigs_by_group[group] = bigwig
 
+    if write_pseudo_bams:
+        tasks = [
+            (
+                group,
+                str(paths_by_group[group]),
+                str(outdir / f"{group}.pseudo_pairs.sorted.bam"),
+                str(genome_sizes),
+            )
+            for group in sorted(paths_by_group)
+            if keep_by_group[group]
+        ]
+        if cores > 1 and len(tasks) > 1:
+            with ProcessPoolExecutor(max_workers=min(cores, len(tasks))) as executor:
+                for group, bam in executor.map(_write_group_pseudo_bam, tasks):
+                    pseudo_bams_by_group[group] = bam
+        else:
+            for task in tasks:
+                group, bam = _write_group_pseudo_bam(task)
+                pseudo_bams_by_group[group] = bam
+
     rows = []
     for group in sorted(paths_by_group):
         rows.append(
@@ -292,6 +408,7 @@ def group_fragments(
                 "n_cells": len(cells_by_group[group]),
                 "n_fragments": fragments_by_group[group],
                 "cutsite_bigwig": bigwigs_by_group[group],
+                "pseudo_bam": pseudo_bams_by_group[group],
                 "passes_filters": keep_by_group[group],
             }
         )
@@ -330,12 +447,13 @@ def write_downstream_commands(
         "set -euo pipefail",
         "",
         "# Generated by pseudobulk-fragments. Review paths and install bedtools, samtools, and bedGraphToBigWig before running.",
+        "# For atac-correct, prefer --write-pseudo-bams and use the manifest pseudo_bam column with --read_shift 0 0.",
     ]
     if genome_sizes is None:
         lines.append("# Replace GENOME_SIZES.txt with a two-column chromosome sizes file before running bigWig/BAM steps.")
     lines.append("")
 
-    runnable = manifest[manifest["passes_filters"].astype(bool)] if "passes_filters" in manifest.columns else manifest
+    runnable = manifest[manifest["passes_filters"].map(_truthy)] if "passes_filters" in manifest.columns else manifest
     for _, row in runnable.iterrows():
         group = str(row["group"])
         fragment_file = Path(str(row["fragment_file"]))
@@ -377,6 +495,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--compress-output", action="store_true", help="Write grouped fragments as .tsv.gz files.")
     parser.add_argument("--index-output", action="store_true", help="BGZF-compress and tabix-index grouped fragments for random access.")
     parser.add_argument("--write-cutsite-bigwigs", action="store_true", help="Write one sparse cut-site bigWig per kept pseudobulk group.")
+    parser.add_argument("--write-pseudo-bams", action="store_true", help="Write sorted pseudo-paired BAMs for kept groups; use atac-correct --read_shift 0 0 on these BAMs.")
     parser.add_argument("--no-cpm-normalize", action="store_true", help="Write raw cut counts instead of CPM-normalized bigWig values.")
     parser.add_argument("--write-downstream-commands", action="store_true", help="Write a shell script for BED/BAM/bigWig generation from kept pseudobulk groups.")
     parser.add_argument("--genome-sizes", help="Two-column chromosome sizes file used by generated bedtools/UCSC commands and cut-site bigWigs.")
@@ -398,6 +517,7 @@ def main(argv: list[str] | None = None) -> int:
         index_output=args.index_output,
         genome_sizes=args.genome_sizes,
         write_cutsite_bigwigs=args.write_cutsite_bigwigs,
+        write_pseudo_bams=args.write_pseudo_bams,
         cpm_normalize=not args.no_cpm_normalize,
         cores=args.cores,
     )

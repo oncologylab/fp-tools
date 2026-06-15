@@ -546,32 +546,38 @@ As a qualitative validation, we aggregated pseudobulk cut-site signal around exa
 motif centers rather than around broad peak centers. JASPAR2026 vertebrate motifs
 were scanned in the 10x ATAC peak set, motif hits were grouped by TF family, and
 candidate immune regulators were screened using a predeclared B-cell, T/NK-cell,
-and myeloid marker list. The screen required at least 200 motif-centered sites and
-ranked TFs by center protection in the expected pseudobulk groups relative to other
-groups. This selected BACH2 as the B-cell-associated example, RORA as the strongest
-T/NK-associated example in this dataset, CEBPB as the myeloid-associated example,
-and CTCF as a ubiquitous architectural control. The fragment data and pseudobulk
-cut-site tracks were not modified; only the motif-centered site set used for
-aggregation changed. The resulting profiles show that single-cell fragments can be
-collapsed into group-level tracks and inspected with the same motif-centered
-aggregate workflow used for bulk ATAC data (Figure~\ref{fig:pseudobulk_supp}).
-This result is intended as a support and reproducibility demonstration, not as a
-full single-cell benchmark.
+and myeloid marker list. To avoid artificial fixed site counts in the figure, all
+motif hits were counted for each TF and only the top 500 scoring sites per TF
+were used for compact plotting. The source screen required at least 500 natural
+motif hits and 300 plotted sites, then ranked TFs by center protection in the
+expected pseudobulk groups relative to other groups. This selected SPIB as the
+B-cell-associated example, RUNX3 as the T/NK-associated example, and CEBPB and
+CEBPA as myeloid-associated examples. The fragment data and pseudobulk cut-site
+tracks were not modified; only the motif-centered site set used for aggregation
+changed. The resulting profiles show that single-cell fragments can be collapsed
+into group-level tracks and inspected with the same motif-centered aggregate
+workflow used for bulk ATAC data (Figure~\ref{fig:pseudobulk_supp}). The
+pseudobulk utility can also emit pseudo-paired BAMs for downstream bias correction
+with zero read shifting. This result is intended as a support and reproducibility
+demonstration, not as a full single-cell benchmark.
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/supp_pseudobulk_tf_aggregates.png}
-\caption{Motif-centered 10x PBMC pseudobulk TF aggregate profiles.
+\includegraphics[width=\textwidth]{figures/supp_pseudobulk_footprint_like.png}
+\caption{Motif-centered 10x PBMC pseudobulk protection-score aggregate profiles.
 Single-cell ATAC fragments from the public 10x PBMC Multiome dataset were grouped
 by broad immune-cell labels derived from official 10x gene-expression graph
 clusters, converted to CPM-normalized cut-site bigWigs, and aggregated around exact
-JASPAR2026 motif centers scanned inside 10x ATAC peaks. BACH2, RORA, and CEBPB
-were selected by a predeclared lineage screen as B-cell-associated, T/NK-associated,
-and myeloid-associated examples, respectively; CTCF is shown as a high-site-count
-ubiquitous control. Thick lines mark the expected pseudobulk groups for each
-lineage-associated TF, while other groups are shown faintly. The source screen is
-reported in \texttt{figures/supp\_pseudobulk\_tf\_screen.tsv}. The figure demonstrates
-that the pseudobulk fragment workflow produces group-level signal tracks compatible
-with motif-centered aggregate visualization.
+JASPAR2026 motif centers scanned inside 10x ATAC peaks. The plotted score is a
+flank-minus-center protection summary computed from the pseudobulk cut-site
+profile, so higher values indicate stronger local center depletion relative to the
+nearby flanks. SPIB, RUNX3, CEBPB, and CEBPA were selected by the predeclared
+lineage screen as B-cell-, T/NK-cell-, and myeloid-associated examples. Thin lines
+show all retained pseudobulk groups; thicker lines mark the expected pseudobulk
+groups for each lineage-associated TF. The source screen, natural motif-hit counts,
+and plotted-site counts are reported in
+\texttt{figures/supp\_pseudobulk\_tf\_screen.tsv}. The figure demonstrates that the
+pseudobulk fragment workflow produces group-level signal tracks compatible with
+motif-centered aggregate visualization.
 \label{fig:pseudobulk_supp}}
 \end{figure}
 

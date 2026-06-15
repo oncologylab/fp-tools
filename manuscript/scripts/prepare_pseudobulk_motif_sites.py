@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import defaultdict
+import heapq
 from pathlib import Path
 
 import pysam
@@ -72,16 +73,17 @@ def scan_sites(
     prefix_to_tf: dict[str, str],
     prefix_to_lineage: dict[str, str],
     outdir: Path,
-    max_sites_per_tf: int,
-) -> dict[str, dict[str, int | str]]:
+    plot_sites_per_tf: int,
+    site_selection: str,
+) -> dict[str, dict[str, int | float | str]]:
     outdir.mkdir(parents=True, exist_ok=True)
     motifs.setup_moods_scanner()
     fasta = pysam.FastaFile(str(genome))
-    handles = {}
-    counts: dict[str, int] = defaultdict(int)
+    total_counts: dict[str, int] = defaultdict(int)
     motif_counts: dict[str, int] = defaultdict(int)
-    seen: dict[str, set[tuple[str, int, int, str]]] = defaultdict(set)
-    metadata: dict[str, dict[str, int | str]] = {}
+    seen: dict[str, set[tuple[str, int, int, str, str]]] = defaultdict(set)
+    selected: dict[str, list[tuple[float, str, int, int, str, str]]] = defaultdict(list)
+    metadata: dict[str, dict[str, int | float | str]] = {}
     try:
         chrom_sizes = dict(zip(fasta.references, fasta.lengths))
         for region in peaks:
@@ -90,17 +92,24 @@ def scan_sites(
             seq = fasta.fetch(region.chrom, region.start, region.end)
             for site in motifs.scan_sequence(seq, region):
                 tf = prefix_to_tf.get(site.name)
-                if tf is None or counts[tf] >= max_sites_per_tf:
+                if tf is None:
                     continue
-                key = (site.chrom, int(site.start), int(site.end), str(site.strand))
+                key = (site.chrom, int(site.start), int(site.end), str(site.strand), site.name)
                 if key in seen[tf]:
                     continue
                 seen[tf].add(key)
-                if tf not in handles:
-                    handles[tf] = (outdir / f"{tf}.motif_hits.bed").open("w", encoding="utf-8")
-                handles[tf].write(f"{site.chrom}\t{site.start}\t{site.end}\t{site.name}\t{site.score}\t{site.strand}\n")
-                counts[tf] += 1
+                total_counts[tf] += 1
                 motif_counts[site.name] += 1
+                score = float(site.score)
+                item = (score, site.chrom, int(site.start), int(site.end), site.name, str(site.strand))
+                if site_selection == "all" or plot_sites_per_tf <= 0:
+                    selected[tf].append(item)
+                else:
+                    heap = selected[tf]
+                    if len(heap) < plot_sites_per_tf:
+                        heapq.heappush(heap, item)
+                    elif score > heap[0][0]:
+                        heapq.heapreplace(heap, item)
                 metadata[tf] = {
                     "tf": tf,
                     "lineage": prefix_to_lineage[site.name],
@@ -108,12 +117,22 @@ def scan_sites(
                 }
     finally:
         fasta.close()
-        for handle in handles.values():
-            handle.close()
+
+    for tf, items in selected.items():
+        items_sorted = sorted(items, key=lambda row: (-row[0], row[1], row[2], row[3], row[4], row[5]))
+        with (outdir / f"{tf}.motif_hits.bed").open("w", encoding="utf-8") as handle:
+            for score, chrom, start, end, motif_name, strand in items_sorted:
+                handle.write(f"{chrom}\t{start}\t{end}\t{motif_name}\t{score}\t{strand}\n")
 
     for tf, row in metadata.items():
-        row["n_sites"] = counts[tf]
-        row["motif_site_counts"] = ",".join(f"{prefix}:{motif_counts[prefix]}" for prefix in str(row["motif_prefixes"]).split(","))
+        plotted_sites = len(selected.get(tf, []))
+        scores = [item[0] for item in selected.get(tf, [])]
+        row['total_motif_hits'] = total_counts[tf]
+        row['plotted_sites'] = plotted_sites
+        row['n_sites'] = plotted_sites
+        row['selection_method'] = "all" if site_selection == "all" or plot_sites_per_tf <= 0 else f"top_score_{plot_sites_per_tf}"
+        row['score_min_selected'] = min(scores) if scores else float("nan")
+        row['motif_site_counts'] = ",".join(f"{prefix}:{motif_counts[prefix]}" for prefix in str(row['motif_prefixes']).split(","))
     return metadata
 
 
@@ -127,7 +146,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--candidates", default=None, help="Semicolon-delimited lineage:TF,TF specification.")
     parser.add_argument("--chroms", default="chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX")
     parser.add_argument("--max-peaks", type=int, default=None)
-    parser.add_argument("--max-sites-per-tf", type=int, default=5000)
+    parser.add_argument("--plot-sites-per-tf", type=int, default=2000, help="Number of top-scoring motif hits to write per TF for plotting (default: 2000; <=0 writes all hits).")
+    parser.add_argument("--site-selection", choices=["top-score", "all"], default="top-score", help="How to choose plotted motif hits after counting all hits (default: top-score).")
+    parser.add_argument("--max-sites-per-tf", type=int, default=None, help="Deprecated alias for --plot-sites-per-tf.")
     parser.add_argument("--motif-pvalue", type=float, default=1e-4)
     parser.add_argument("--naming", choices=["id", "name", "name_id", "id_name"], default="name_id")
     args = parser.parse_args(argv)
@@ -138,15 +159,24 @@ def main(argv: list[str] | None = None) -> int:
     motifs, prefix_to_tf, prefix_to_lineage = select_motifs(Path(args.motifs), candidates, args.motif_pvalue, args.naming)
     if not motifs:
         raise SystemExit("No requested motifs were found in the motif file.")
-    metadata = scan_sites(peaks, Path(args.genome), motifs, prefix_to_tf, prefix_to_lineage, Path(args.outdir), args.max_sites_per_tf)
+    plot_sites = args.max_sites_per_tf if args.max_sites_per_tf is not None else args.plot_sites_per_tf
+    selection = "top-score" if args.site_selection == "top-score" else "all"
+    metadata = scan_sites(peaks, Path(args.genome), motifs, prefix_to_tf, prefix_to_lineage, Path(args.outdir), plot_sites, selection)
 
     summary_path = Path(args.summary) if args.summary else Path(args.outdir) / "motif_centered_site_summary.tsv"
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     with summary_path.open("w", encoding="utf-8") as handle:
-        handle.write("tf\tlineage\tn_sites\tmotif_prefixes\tmotif_site_counts\n")
+        handle.write(
+            "tf\tlineage\ttotal_motif_hits\tplotted_sites\tn_sites\tselection_method\t"
+            "score_min_selected\tmotif_prefixes\tmotif_site_counts\n"
+        )
         for tf in sorted(metadata):
             row = metadata[tf]
-            handle.write(f"{tf}\t{row['lineage']}\t{row['n_sites']}\t{row['motif_prefixes']}\t{row['motif_site_counts']}\n")
+            handle.write(
+                f"{tf}\t{row['lineage']}\t{row['total_motif_hits']}\t{row['plotted_sites']}\t"
+                f"{row['n_sites']}\t{row['selection_method']}\t{row['score_min_selected']}\t"
+                f"{row['motif_prefixes']}\t{row['motif_site_counts']}\n"
+            )
     print(f"Wrote motif-centered sites for {len(metadata)} TFs to {args.outdir}")
     return 0
 

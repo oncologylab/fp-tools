@@ -9,7 +9,7 @@ import sys
 import pyBigWig
 import pysam
 
-from fp_tools.tools.pseudobulk import group_fragments, write_cutsite_bigwig, write_downstream_commands
+from fp_tools.tools.pseudobulk import group_fragments, write_cutsite_bigwig, write_downstream_commands, write_pseudo_paired_bam
 
 
 class PseudobulkTest(unittest.TestCase):
@@ -90,6 +90,69 @@ class PseudobulkTest(unittest.TestCase):
                 self.assertGreater(sum(0 if value != value else value for value in bw.values("chr1", 0, 10)), 0)
             finally:
                 bw.close()
+
+    def test_write_pseudo_paired_bam_preserves_cutsite_positions(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            fragments = tmp / "fragments.tsv"
+            genome_sizes = tmp / "genome.sizes"
+            output = tmp / "pseudo.sorted.bam"
+            fragments.write_text("chr1\t10\t20\tcellA\t2\n", encoding="utf-8")
+            genome_sizes.write_text("chr1\t100\n", encoding="utf-8")
+
+            write_pseudo_paired_bam(fragments, output, genome_sizes)
+
+            self.assertTrue(output.exists())
+            self.assertTrue(output.with_suffix(output.suffix + ".bai").exists())
+            with pysam.AlignmentFile(str(output), "rb") as bam:
+                reads = list(bam.fetch("chr1", 0, 30))
+                self.assertEqual(len(reads), 4)
+                self.assertEqual([read.reference_start for read in reads], [10, 10, 18, 18])
+                self.assertEqual([read.is_reverse for read in reads], [False, False, True, True])
+                cuts = []
+                for read in reads:
+                    if read.is_reverse:
+                        cuts.append(read.reference_end + 1)
+                    else:
+                        cuts.append(read.reference_start + 1)
+                self.assertEqual(cuts, [11, 11, 20, 20])
+
+    def test_group_fragments_writes_pseudo_bams_for_kept_groups(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            fragments = tmp / "fragments.tsv"
+            annotations = tmp / "annotations.tsv"
+            genome_sizes = tmp / "genome.sizes"
+            outdir = tmp / "out"
+            fragments.write_text(
+                "chr1\t10\t20\tcellA\t2\n"
+                "chr1\t30\t40\tcellB\t1\n"
+                "chr1\t50\t60\tcellC\t1\n",
+                encoding="utf-8",
+            )
+            annotations.write_text(
+                "barcode\tcell_type\ncellA\tB\ncellB\tB\ncellC\tT\n",
+                encoding="utf-8",
+            )
+            genome_sizes.write_text("chr1\t100\n", encoding="utf-8")
+
+            manifest = group_fragments(
+                fragments,
+                annotations,
+                outdir,
+                group_by=["cell_type"],
+                min_cells=2,
+                min_fragments=3,
+                genome_sizes=genome_sizes,
+                write_pseudo_bams=True,
+            )
+
+            kept = manifest.loc[manifest["group"] == "B"].iloc[0]
+            filtered = manifest.loc[manifest["group"] == "T"].iloc[0]
+            kept_bam = Path(kept["pseudo_bam"])
+            self.assertTrue(kept_bam.exists())
+            self.assertTrue(kept_bam.with_suffix(kept_bam.suffix + ".bai").exists())
+            self.assertEqual(filtered["pseudo_bam"], "")
 
     def test_write_cutsite_bigwig_raw_counts(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -279,6 +342,8 @@ class PseudobulkTest(unittest.TestCase):
                     "--flank",
                     "20",
                     "--auto-min-sites",
+                    "1",
+                    "--auto-min-total-sites",
                     "1",
                     "--protection-center-half-width",
                     "2",

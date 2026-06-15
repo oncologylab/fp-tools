@@ -173,23 +173,53 @@ def score_tf(tf: str, profiles: dict[tuple[str, str], list[float]], groups: list
     return row
 
 
-def select_tfs(screen: pd.DataFrame, min_sites: int, per_lineage: int, controls: list[str]) -> list[str]:
+def numeric_column(frame: pd.DataFrame, column: str, default: float = 0.0) -> pd.Series:
+    if column not in frame.columns:
+        return pd.Series(default, index=frame.index)
+    return pd.to_numeric(frame[column], errors="coerce").fillna(default)
+
+
+def select_tfs(screen: pd.DataFrame, min_total_sites: int, min_plotted_sites: int, per_lineage: int, controls: list[str], min_center_protection: float) -> list[str]:
     selected: list[str] = []
+    total_sites = numeric_column(screen, "total_motif_hits")
+    plotted_sites = numeric_column(screen, "plotted_sites", default=np.nan).fillna(numeric_column(screen, "n_sites"))
+    center = numeric_column(screen, "expected_mean_protection")
+    contrast = numeric_column(screen, "expected_contrast")
+    base = (total_sites >= min_total_sites) & (plotted_sites >= min_plotted_sites) & (center > min_center_protection)
     for lineage in ["B_cell", "T_NK", "Myeloid"]:
-        subset = screen[(screen["lineage"] == lineage) & (screen["n_sites"] >= min_sites) & (screen["expected_contrast"] > 0)].copy()
-        subset = subset.sort_values(["expected_contrast", "n_sites"], ascending=[False, False]).head(per_lineage)
+        subset = screen[(screen["lineage"] == lineage) & base & (contrast > 0)].copy()
+        subset = subset.sort_values(["expected_contrast", "expected_mean_protection", "plotted_sites"], ascending=[False, False, False]).head(per_lineage)
         selected.extend(subset["tf"].astype(str).tolist())
     for control in controls:
-        if control in set(screen["tf"].astype(str)) and control not in selected:
+        row = screen[screen["tf"].astype(str) == control]
+        if not row.empty and bool((base.loc[row.index] & (center.loc[row.index] > min_center_protection)).iloc[0]) and control not in selected:
             selected.append(control)
+    if controls and not any(control in selected for control in controls):
+        fill = screen[base & (contrast > 0) & ~screen["tf"].isin(selected)].copy()
+        fill = fill.sort_values(["expected_contrast", "expected_mean_protection", "plotted_sites"], ascending=[False, False, False]).head(1)
+        selected.extend(fill["tf"].astype(str).tolist())
     return selected
+
+
+def _summary_int(summary: dict[str, dict[str, str]], tf: str, key: str, fallback: int) -> int:
+    try:
+        value = summary.get(tf, {}).get(key, "")
+        return int(float(value)) if value not in ("", "nan") else fallback
+    except (TypeError, ValueError):
+        return fallback
 
 
 def tf_label(tf: str, lineage: str, n_sites: int, summary: dict[str, dict[str, str]]) -> str:
     role = LINEAGE_LABELS.get(lineage, lineage)
     prefixes = summary.get(tf, {}).get("motif_prefixes", "")
     motif_text = prefixes.replace(",", ", ") if prefixes else tf
-    return f"{tf} ({role})\n{motif_text}; n={n_sites:,} motif sites"
+    total = _summary_int(summary, tf, "total_motif_hits", n_sites)
+    plotted = _summary_int(summary, tf, "plotted_sites", n_sites)
+    if total != plotted:
+        count_text = f"{total:,} hits; top {plotted:,} plotted"
+    else:
+        count_text = f"{plotted:,} motif sites"
+    return f"{tf} ({role})\n{motif_text}; {count_text}"
 
 
 def plot_profiles(out_prefix: Path, tfs: list[str], groups: list[str], profiles: dict[tuple[str, str], list[float]], counts: dict[str, int], summary: dict[str, dict[str, str]], flank: int, ylabel: str, protection: bool, center_half_width: int, flank_inner: int, flank_outer: int) -> None:
@@ -233,11 +263,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tfs", default=",".join(DEFAULT_TFS), help="Comma-separated TF names, or 'auto'.")
     parser.add_argument("--flank", type=int, default=250)
     parser.add_argument("--screen-output", default=None)
+    parser.add_argument("--signal-column", default="cutsite_bigwig", help="Manifest column containing the bigWig signal to aggregate (default: cutsite_bigwig).")
     parser.add_argument("--footprint-like-output", default=None, help="Optional PNG/PDF prefix for flank-minus-center protection-score aggregate plots.")
     parser.add_argument("--protection-center-half-width", type=int, default=10)
     parser.add_argument("--protection-flank-inner", type=int, default=25)
     parser.add_argument("--protection-flank-outer", type=int, default=100)
-    parser.add_argument("--auto-min-sites", type=int, default=50)
+    parser.add_argument("--auto-min-sites", type=int, default=50, help="Backward-compatible minimum plotted sites for auto-selection.")
+    parser.add_argument("--auto-min-total-sites", type=int, default=500)
+    parser.add_argument("--auto-min-plotted-sites", type=int, default=None)
+    parser.add_argument("--auto-min-center-protection", type=float, default=0.0)
     parser.add_argument("--auto-per-lineage", type=int, default=1)
     parser.add_argument("--control-tfs", default="CTCF")
     parser.add_argument("--site-selection", choices=["all", "lineage-top"], default="all", help="Deprecated compatibility option; motif-centered paper figures use all selected motif hits.")
@@ -256,7 +290,9 @@ def main(argv: list[str] | None = None) -> int:
         rows = manifest[(manifest["group"] == group) & pass_mask]
         if rows.empty:
             continue
-        bigwig = Path(str(rows.iloc[0]["cutsite_bigwig"]))
+        if args.signal_column not in rows.columns:
+            raise SystemExit(f"Manifest does not contain signal column: {args.signal_column}")
+        bigwig = Path(str(rows.iloc[0][args.signal_column]))
         if bigwig.exists():
             group_bigwigs[group] = bigwig
 
@@ -271,15 +307,20 @@ def main(argv: list[str] | None = None) -> int:
             profile = mean_profile(bigwig, sites, args.flank)
             profiles[(tf, group)] = profile
             for offset, value in zip(range(-args.flank, args.flank), profile):
-                records.append({"tf": tf, "group": group, "offset_bp": offset, "cutsite_cpm": value, "n_sites": len(sites), "site_coordinate": "motif_center", "lineage": lineage_for_tf(tf, summary)})
+                records.append({"tf": tf, "group": group, "offset_bp": offset, "cutsite_cpm": value, "n_sites": len(sites), "total_motif_hits": _summary_int(summary, tf, "total_motif_hits", len(sites)), "signal_column": args.signal_column, "site_coordinate": "motif_center", "lineage": lineage_for_tf(tf, summary)})
         row = score_tf(tf, profiles, groups, lineage_for_tf(tf, summary), args.protection_center_half_width, args.protection_flank_inner, args.protection_flank_outer)
+        row["plotted_sites"] = len(sites)
         row["n_sites"] = len(sites)
+        row["total_motif_hits"] = _summary_int(summary, tf, "total_motif_hits", len(sites))
+        row["selection_method"] = summary.get(tf, {}).get("selection_method", "input_bed")
+        row["score_min_selected"] = summary.get(tf, {}).get("score_min_selected", "")
         row["motif_prefixes"] = summary.get(tf, {}).get("motif_prefixes", "")
         screen_rows.append(row)
 
     screen = pd.DataFrame(screen_rows)
     if args.tfs == "auto":
-        selected = select_tfs(screen, args.auto_min_sites, args.auto_per_lineage, [tf.strip() for tf in args.control_tfs.split(",") if tf.strip()])
+        min_plotted = args.auto_min_plotted_sites if args.auto_min_plotted_sites is not None else args.auto_min_sites
+        selected = select_tfs(screen, args.auto_min_total_sites, min_plotted, args.auto_per_lineage, [tf.strip() for tf in args.control_tfs.split(",") if tf.strip()], args.auto_min_center_protection)
     else:
         selected = requested_tfs
     screen["selected_for_figure"] = screen["tf"].isin(selected)
@@ -306,7 +347,7 @@ def main(argv: list[str] | None = None) -> int:
                     continue
                 protected = protection_profile(profile, args.protection_center_half_width, args.protection_flank_inner, args.protection_flank_outer)
                 for offset, value in zip(range(-args.flank, args.flank), protected):
-                    protection_records.append({"tf": tf, "group": group, "offset_bp": offset, "protection_score": value, "n_sites": counts.get(tf, 0), "site_coordinate": "motif_center", "lineage": lineage_for_tf(tf, summary)})
+                    protection_records.append({"tf": tf, "group": group, "offset_bp": offset, "protection_score": value, "n_sites": counts.get(tf, 0), "total_motif_hits": _summary_int(summary, tf, "total_motif_hits", counts.get(tf, 0)), "signal_column": args.signal_column, "site_coordinate": "motif_center", "lineage": lineage_for_tf(tf, summary)})
         pd.DataFrame(protection_records).to_csv(protection_prefix.with_suffix(".tsv"), sep="\t", index=False)
         plot_profiles(protection_prefix, selected, groups, profiles, counts, summary, args.flank, "Protection score (flank - center)", True, args.protection_center_half_width, args.protection_flank_inner, args.protection_flank_outer)
 
