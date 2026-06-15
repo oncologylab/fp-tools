@@ -211,6 +211,94 @@ class PseudobulkTest(unittest.TestCase):
             self.assertTrue(selected_prefix.with_suffix(".png").exists())
             self.assertTrue(selected_prefix.with_suffix(".tsv").exists())
 
+    def test_pseudobulk_aggregate_auto_selection_writes_screen(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            site_dir = tmp / "sites"
+            site_dir.mkdir()
+            manifest = tmp / "pseudobulk_manifest.tsv"
+            bcell_bw = tmp / "B_cell.cutsites.cpm.bw"
+            tcell_bw = tmp / "CD4_T.cutsites.cpm.bw"
+            out_prefix = tmp / "auto_aggregate"
+            screen = tmp / "screen.tsv"
+            summary = site_dir / "motif_centered_site_summary.tsv"
+
+            def write_bw(path: Path, values: dict[int, float]) -> None:
+                bw = pyBigWig.open(str(path), "w")
+                try:
+                    bw.addHeader([("chr1", 120)])
+                    starts = sorted(values)
+                    bw.addEntries(
+                        ["chr1"] * len(starts),
+                        starts,
+                        ends=[start + 1 for start in starts],
+                        values=[float(values[start]) for start in starts],
+                    )
+                finally:
+                    bw.close()
+
+            # Around the BACH2 motif center at chr1:50, B_cell has stronger flank
+            # signal than center signal, while CD4_T does not. This makes the
+            # expected-lineage protection contrast positive in auto mode.
+            write_bw(bcell_bw, {38: 10.0, 50: 1.0, 62: 10.0})
+            write_bw(tcell_bw, {38: 2.0, 50: 8.0, 62: 2.0})
+            manifest.write_text(
+                "group\tfragment_file\tn_cells\tn_fragments\tcutsite_bigwig\tpasses_filters\n"
+                f"B_cell\t-\t10\t100\t{bcell_bw}\tTrue\n"
+                f"CD4_T\t-\t10\t100\t{tcell_bw}\tFalse\n"
+                f"CD4_T\t-\t10\t100\t{tcell_bw}\tTrue\n",
+                encoding="utf-8",
+            )
+            (site_dir / "BACH2.motif_hits.bed").write_text("chr1\t49\t51\tBACH2\n", encoding="utf-8")
+            (site_dir / "CTCF.motif_hits.bed").write_text("chr1\t49\t51\tCTCF\n", encoding="utf-8")
+            summary.write_text(
+                "tf\tlineage\tn_sites\tmotif_prefixes\n"
+                "BACH2\tB_cell\t1\tBACH2_MA1101.3\n"
+                "CTCF\tControl\t1\tCTCF_MA0139.2\n",
+                encoding="utf-8",
+            )
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
+                    "--manifest",
+                    str(manifest),
+                    "--tf-site-dir",
+                    str(site_dir),
+                    "--site-summary",
+                    str(summary),
+                    "--out-prefix",
+                    str(out_prefix),
+                    "--screen-output",
+                    str(screen),
+                    "--groups",
+                    "B_cell,CD4_T",
+                    "--tfs",
+                    "auto",
+                    "--flank",
+                    "20",
+                    "--auto-min-sites",
+                    "1",
+                    "--protection-center-half-width",
+                    "2",
+                    "--protection-flank-inner",
+                    "5",
+                    "--protection-flank-outer",
+                    "15",
+                ],
+                cwd=Path(__file__).resolve().parents[1],
+                check=True,
+            )
+
+            self.assertTrue(out_prefix.with_suffix(".png").exists())
+            self.assertTrue(screen.exists())
+            text = screen.read_text(encoding="utf-8")
+            self.assertIn("BACH2", text)
+            self.assertIn("selected_for_figure", text)
+            self.assertIn("BACH2\tB_cell", text)
+            self.assertIn("True", text)
+
     def test_write_downstream_commands_for_kept_groups(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)

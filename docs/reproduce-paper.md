@@ -45,9 +45,25 @@ CPU, memory, and disk space.
 bash scripts/run_buenrostro_2x2_atac_replicate_demo.sh
 bash scripts/run_buenrostro_denovo_motif_validation.sh
 .venv/bin/python benchmarks/scripts/prepare_10x_pbmc_pseudobulk.py --write-example-archive
+.venv/bin/python manuscript/scripts/prepare_pseudobulk_motif_sites.py \
+  --peaks data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_peaks.bed \
+  --genome data/public/raw/genome/hg38.fa \
+  --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt \
+  --outdir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered \
+  --summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv
+.venv/bin/python manuscript/scripts/plot_pseudobulk_tf_aggregates.py \
+  --manifest data/public/processed/pseudobulk_pbmc/run/pseudobulk_manifest.tsv \
+  --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered \
+  --site-summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv \
+  --out-prefix manuscript/figures/supp_pseudobulk_tf_aggregates \
+  --screen-output manuscript/figures/supp_pseudobulk_tf_screen.tsv \
+  --footprint-like-output manuscript/figures/supp_pseudobulk_footprint_like \
+  --tfs auto \
+  --flank 250 \
+  --auto-min-sites 200
 ```
 
-After public-data outputs exist, regenerate manuscript figures with the scripts
+After public-data outputs exist, regenerate the remaining manuscript figures with the scripts
 under `manuscript/scripts/` and compile the paper:
 
 ```bash

@@ -166,15 +166,15 @@ motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.be
 
 ![Pseudobulk fragment workflow](docs/assets/fp-tools-pseudo-bulk.png)
 
-`pseudobulk-fragments` groups single-cell ATAC fragments by a metadata column such as cell type, treatment, donor, or cluster. Each group is written as a bulk-like fragment file and manifest entry for downstream footprinting.
+`pseudobulk-fragments` groups single-cell ATAC fragments by a metadata column such as cell type, treatment, donor, or cluster. Each group is written as a bulk-like fragment file and manifest entry for downstream footprinting. The example below uses public 10x PBMC fragments and then aggregates CPM-normalized pseudobulk cut-site tracks around exact JASPAR2026 motif centers scanned inside 10x peaks.
 
 ```bash
 pseudobulk-fragments   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz   --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --index-output   --write-cutsite-bigwigs   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes   --outdir data/public/processed/pseudobulk_pbmc/run
 ```
 
-![Pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk-example-output.png)
+![Motif-centered pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk-example-output.png)
 
-![Pseudobulk footprint-like protection score](docs/assets/fp-tools-pseudobulk-footprint-like.png)
+![Motif-centered pseudobulk protection score](docs/assets/fp-tools-pseudobulk-footprint-like.png)
 
 ## YAML Runner
 
