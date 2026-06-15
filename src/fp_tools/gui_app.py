@@ -41,11 +41,21 @@ def main() -> None:
     st.sidebar.caption(f"Version {__version__}")
     st.sidebar.caption(f"Run dir: {run_dir}")
     _render_sidebar_run_dir_controls()
-    page = st.sidebar.radio(
+    page_options = {
+        "Home": "Home",
+        "Run History": "Run History",
+        "atac-correct": "ATACorrect",
+        "call-footprints": "FootprintScores",
+        "diff-footprints": "BINDetect",
+        "plot-aggregate": "PlotAggregate",
+        "Config": "Config",
+    }
+    page_label = st.sidebar.radio(
         "Navigation",
-        ["Home", "Run History", "ATACorrect", "FootprintScores", "BINDetect", "PlotAggregate", "Config"],
+        list(page_options),
         label_visibility="collapsed",
     )
+    page = page_options[page_label]
 
     if page == "Home":
         _render_home(run_dir)
@@ -344,7 +354,7 @@ def _render_run_history(run_dir: Path) -> None:
 
 
 def _render_atacorrect_page(run_dir: Path) -> None:
-    st.title("ATACorrect")
+    st.title("atac-correct")
     _render_page_loader("ATACorrect")
     mode = st.radio("Mode", ["Single run", "Batch sample list"], horizontal=True, key="at_mode")
     single = _current_single_params("ATACorrect")
@@ -391,7 +401,7 @@ def _render_atacorrect_page(run_dir: Path) -> None:
 
 
 def _render_footprintscores_page(run_dir: Path) -> None:
-    st.title("FootprintScores")
+    st.title("call-footprints")
     _render_page_loader("FootprintScores")
     mode = st.radio("Mode", ["Single run", "Batch sample list"], horizontal=True, key="fs_mode")
     single = _current_single_params("FootprintScores")
@@ -439,7 +449,7 @@ def _render_footprintscores_page(run_dir: Path) -> None:
 
 
 def _render_bindetect_page(run_dir: Path) -> None:
-    st.title("BINDetect")
+    st.title("diff-footprints")
     _render_page_loader("BINDetect")
     mode = st.radio(
         "Mode",
@@ -558,7 +568,7 @@ def _render_bindetect_page(run_dir: Path) -> None:
 
 
 def _render_plotaggregate_page(run_dir: Path) -> None:
-    st.title("PlotAggregate")
+    st.title("plot-aggregate")
     _render_page_loader("PlotAggregate")
     mode = st.radio("Mode", ["Single run", "Batch sample list"], horizontal=True, key="pa_mode")
     single = _current_single_params("PlotAggregate")

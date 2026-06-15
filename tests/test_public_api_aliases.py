@@ -20,6 +20,7 @@ class PublicApiAliasesTest(unittest.TestCase):
             "plot-aggregate": "fp_tools.cli_plotaggregate:main",
             "plot-aggregate-batch": "fp_tools.tools.plot_aggregate_batch:main",
             "run-workflow": "fp_tools.cli_batch:main",
+            "fp-tools-gui": "fp_tools.cli_gui:main",
             "motif-discovery": "fp_tools.tools.motif_discovery:motif_discovery_plan_main",
             "motif-summary": "fp_tools.tools.motif_discovery:motif_report_main",
             "pseudobulk-fragments": "fp_tools.tools.pseudobulk:main",

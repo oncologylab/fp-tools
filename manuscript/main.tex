@@ -399,6 +399,30 @@ tables, differential-footprint HTML reports, aggregate profiles, pseudobulk
 manifests, de novo motif reports, and reproducibility metadata.\label{fig:workflow}}
 \end{figure}
 
+\subsection{Interactive Interfaces and Report Review}
+
+In addition to direct command-line execution, \texttt{fp-tools} provides two
+usability layers for reviewing results. The optional GUI installed with
+\texttt{fp-tools-bio[gui]} builds the same normalized YAML configurations used by
+\texttt{run-workflow}, so browser-based setup remains compatible with the command
+line. Separately, the differential-footprint and aggregate-batch commands write
+standalone HTML reports with embedded compressed data, searchable motif controls,
+editable group colors, synchronized aggregate profiles, and SVG export for
+publication-ready editing (Figure~\ref{fig:interfaces}).
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{figures/interface_usability_panels.png}
+\caption{Usability-oriented \texttt{fp-tools} interfaces. (A) Optional browser GUI
+for configuring command-line workflows and saving runnable YAML configurations.
+(B) Standalone \texttt{diff-footprints} HTML report from the Buenrostro B-cell
+versus T-cell replicate comparison, combining differential evidence, selected
+motif metadata, motif logo display, and aggregate footprint profiles. (C)
+\texttt{plot-aggregate-batch} HTML report generated from the same embedded
+aggregate payload, allowing multi-sample and multi-TF aggregate review with
+searchable motif selection, group color controls, configurable panel layouts, and
+editable SVG export.\label{fig:interfaces}}
+\end{figure}
+
 \subsection{Regression-tested Workflow Outputs}
 
 The classical workflow is covered by deterministic regression tests that pin

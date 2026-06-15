@@ -40,6 +40,7 @@ Use `match-motifs` when you want to inspect one sample, infer bound motif sites,
 - `plot-aggregate`: plot static aggregate signal around TFBS or region sets.
 - `plot-aggregate-batch`: create an interactive multi-sample, multi-TF aggregate HTML report.
 - `run-workflow`: run optional YAML batch configs.
+- `fp-tools-gui`: launch the optional browser GUI installed by `fp-tools-bio[gui]`.
 
 ### Optional utilities
 
@@ -57,6 +58,7 @@ diff-footprints --help
 plot-aggregate --help
 plot-aggregate-batch --help
 run-workflow --help
+fp-tools-gui --help
 motif-discovery --help
 motif-summary --help
 pseudobulk-fragments --help
@@ -171,7 +173,7 @@ motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.be
 
 ![Pseudobulk fragment workflow](docs/assets/fp-tools-pseudo-bulk.png)
 
-`pseudobulk-fragments` groups single-cell ATAC fragments by a metadata column such as cell type, treatment, donor, or cluster. Each group is written as a bulk-like fragment file and manifest entry for downstream footprinting. The example below uses public 10x PBMC fragments and aggregates CPM-normalized pseudobulk cut-site tracks around exact JASPAR2026 motif centers scanned inside 10x peaks. The motif-site summary reports the natural number of motif hits used for each aggregate.
+The schematic above is an example workflow using public 10x PBMC single-cell ATAC fragments and immune-cell annotations. `pseudobulk-fragments` groups fragments by a metadata column such as cell type, treatment, donor, or cluster; writes one bulk-like fragment file and manifest entry per retained group; and can generate CPM-normalized cut-site tracks for downstream footprinting. In this PBMC example, the validation aggregates are centered on exact JASPAR2026 motif sites scanned inside 10x peaks, and the motif-site summary reports the natural number of motif hits used for each aggregate.
 
 ```bash
 pseudobulk-fragments   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz   --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --index-output   --write-cutsite-bigwigs   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes   --outdir data/public/processed/pseudobulk_pbmc/run

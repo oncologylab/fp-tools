@@ -26,11 +26,15 @@ The main workflow is:
 
 ```text
 atac-correct -> call-footprints -> match-motifs / diff-footprints -> plot-aggregate
-                                      |                                                               |                          -> plot-aggregate-batch
+                                      |                 |         -> plot-aggregate-batch
                                       -> motif-discovery
 ```
 
 Use `match-motifs` when you want to inspect one sample, infer bound motif sites, or prepare reusable motif-site BED outputs. Use `diff-footprints` when comparing conditions: it scans motifs internally and does not require `match-motifs` to be run first.
+
+The package remains command-first, but also includes an optional browser GUI and standalone HTML reports for interactive review. The screenshot panel below shows the GUI, a `diff-footprints` report, and a `plot-aggregate-batch` aggregate browser generated from the Buenrostro B-cell versus T-cell replicate comparison.
+
+![fp-tools GUI and interactive HTML reports](manuscript/figures/interface_usability_panels.png)
 
 ## Commands
 
@@ -43,6 +47,7 @@ Use `match-motifs` when you want to inspect one sample, infer bound motif sites,
 - `plot-aggregate`: plot static aggregate signal around TFBS or region sets.
 - `plot-aggregate-batch`: create an interactive multi-sample, multi-TF aggregate HTML report.
 - `run-workflow`: run optional YAML batch configs.
+- `fp-tools-gui`: launch the optional browser GUI installed by `fp-tools-bio[gui]`.
 
 ### Optional utilities
 
@@ -60,6 +65,7 @@ diff-footprints --help
 plot-aggregate --help
 plot-aggregate-batch --help
 run-workflow --help
+fp-tools-gui --help
 motif-discovery --help
 motif-summary --help
 pseudobulk-fragments --help
