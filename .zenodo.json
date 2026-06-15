@@ -1,0 +1,22 @@
+{
+  "title": "fp-tools",
+  "description": "A reproducible command-line platform for classical ATAC-seq footprinting, motif-discovery preparation, pseudobulk aggregation, and replicate-aware reporting.",
+  "license": "MIT",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Li, Yaoxiang"
+    },
+    {
+      "name": "Yi, Chunling"
+    }
+  ],
+  "keywords": [
+    "ATAC-seq",
+    "footprinting",
+    "motif analysis",
+    "chromatin accessibility",
+    "bioinformatics"
+  ],
+  "access_right": "open"
+}

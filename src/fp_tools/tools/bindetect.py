@@ -59,6 +59,27 @@ from fp_tools.utils.plotting_style import PDF_FONT_SIZE, apply_pdf_style, apply_
 # tame some noisy warnings during curve fitting
 from scipy.optimize import OptimizeWarning
 
+
+def _benjamini_hochberg(pvalues):
+    """Return BH-adjusted q-values for a 1D array-like of p-values."""
+
+    pvals = np.asarray(pvalues, dtype=float)
+    qvals = np.full(pvals.shape, np.nan, dtype=float)
+    finite = np.isfinite(pvals)
+    if not finite.any():
+        return qvals
+    clipped = np.clip(pvals[finite], 0.0, 1.0)
+    order = np.argsort(clipped)
+    ranked = clipped[order]
+    n = float(len(ranked))
+    adjusted = ranked * n / np.arange(1, len(ranked) + 1, dtype=float)
+    adjusted = np.minimum.accumulate(adjusted[::-1])[::-1]
+    adjusted = np.clip(adjusted, 0.0, 1.0)
+    unsorted = np.empty_like(adjusted)
+    unsorted[order] = adjusted
+    qvals[finite] = unsorted
+    return qvals
+
 warnings.simplefilter("ignore", OptimizeWarning)
 warnings.simplefilter("ignore", RuntimeWarning)
 apply_pdf_style()
@@ -757,11 +778,15 @@ def run_bindetect(args):
     for (c1, c2) in comparisons:
         base = f"{c1}_{c2}"
         info_table[base + "_change"] = info_table[base + "_change"].astype(float).round(5)
-        info_table[base + "_pvalue"] = info_table[base + "_pvalue"].map("{:.5E}".format, na_action="ignore")
+        raw_pvals = pd.to_numeric(info_table[base + "_pvalue"], errors="coerce").fillna(1.0).astype(float)
+        qvals = _benjamini_hochberg(raw_pvals.to_numpy())
+        info_table[base + "_pvalue"] = raw_pvals.map("{:.5E}".format, na_action="ignore")
+        info_table[base + "_qvalue_bh"] = pd.Series(qvals, index=info_table.index).map("{:.5E}".format, na_action="ignore")
+        info_table[base + "_significant_fdr05"] = pd.Series(qvals <= 0.05, index=info_table.index).fillna(False).astype(bool)
 
         names_series = info_table["output_prefix"]
         changes = info_table[base + "_change"].astype(float)
-        pvals = info_table[base + "_pvalue"].astype(float)
+        pvals = raw_pvals
         filtered_p = pvals[pvals > 0]
         pval_min = np.percentile(filtered_p, 5) if len(filtered_p) >= 1 else 1.0
         change_min, change_max = np.percentile(changes, [5, 95])

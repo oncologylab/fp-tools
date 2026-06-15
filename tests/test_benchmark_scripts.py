@@ -38,6 +38,39 @@ footprint_occupancy_score = load_module("footprint_occupancy_score", ROOT / "ben
 build_tf_feature_table = load_module("build_tf_feature_table", ROOT / "benchmarks" / "scripts" / "build_tf_feature_table.py")
 evaluate_methods = load_module("evaluate_methods", ROOT / "benchmarks" / "scripts" / "evaluate_methods.py")
 plot_method_comparison = load_module("plot_method_comparison", ROOT / "manuscript" / "scripts" / "plot_method_comparison.py")
+validate_manifests = load_module("validate_manifests", ROOT / "benchmarks" / "scripts" / "validate_manifests.py")
+run_engineering_benchmark = load_module("run_engineering_benchmark", ROOT / "benchmarks" / "scripts" / "run_engineering_benchmark.py")
+
+
+class ManifestValidationTest(unittest.TestCase):
+    def test_committed_manifests_validate(self):
+        errors = validate_manifests.validate_manifests(ROOT / "benchmarks" / "manifests")
+        self.assertEqual(errors, [])
+
+    def test_full_manifest_reports_missing_columns(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = pathlib.Path(tmpdir) / "bad.tsv"
+            path.write_text("source\turl\nENCODE\thttps://example.org/file.bam\n", encoding="utf-8")
+            errors = validate_manifests.validate_manifest(path)
+            self.assertTrue(errors)
+            self.assertIn("missing full-manifest columns", errors[0])
+
+
+class EngineeringBenchmarkHelperTest(unittest.TestCase):
+    def test_records_command_runtime_metadata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = pathlib.Path(tmpdir) / "runtime.tsv"
+            row = run_engineering_benchmark.run_benchmark(
+                [sys.executable, "-c", "print('ok')"],
+                out,
+                "python-smoke",
+                cores=1,
+            )
+            self.assertEqual(row["exit_code"], 0)
+            table = pd.read_csv(out, sep="\t")
+            self.assertEqual(table.loc[0, "label"], "python-smoke")
+            self.assertIn("wall_seconds", table.columns)
+            self.assertIn("peak_rss_kb", table.columns)
 
 
 class FeatureTableAndMethodsTest(unittest.TestCase):

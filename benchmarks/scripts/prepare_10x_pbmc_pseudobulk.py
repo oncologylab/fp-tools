@@ -148,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     outdir.mkdir(parents=True, exist_ok=True)
     chroms = [chrom.strip() for chrom in args.chroms.split(",") if chrom.strip()]
 
-    write_manifest(Path("benchmarks/manifests/10x_pbmc_pseudobulk.tsv"))
+    write_manifest(Path("benchmarks/manifests/compact/10x_pbmc_pseudobulk.tsv"))
     annotations = write_annotations(raw_dir / "analysis/clustering/gex/graphclust/clusters.csv", outdir / "pbmc_10x_cell_annotations.tsv")
     write_chrom_sizes(outdir / "hg38.chrom.sizes", chroms)
     site_counts = write_tf_beds(raw_dir / "analysis/tf_analysis/peak_motif_mapping.bed", outdir / "tf_sites", set(chroms), args.max_sites_per_tf)

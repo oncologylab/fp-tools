@@ -306,10 +306,15 @@ standard errors are reported as
       \frac{s_2^2}{n_2(\mu_2+\epsilon)^2}}.
 \]
 The standard \texttt{change} and \texttt{pvalue} columns remain unchanged for
-compatibility. Additional columns include replicate counts,
-condition score SDs, mean $\Delta$, mean $L$, and standard-error summaries. A
-legacy replicate-report command remains available as a post-hoc helper for
-existing \texttt{*\_results.txt} files.
+compatibility. For each comparison, \texttt{fp-tools} also reports a
+Benjamini--Hochberg-adjusted \texttt{qvalue\_bh} column and a
+\texttt{significant\_fdr05} flag. The existing \texttt{highlighted} column is
+retained as a report-selection and visualization flag, not as a formal
+multiple-testing-corrected significance label. Additional replicate-oriented
+columns include replicate counts, condition score SDs, mean $\Delta$, mean $L$,
+and standard-error summaries. A legacy replicate-report command remains
+available as a post-hoc diagnostic helper for existing \texttt{*\_results.txt}
+files.
 
 \subsection{Public Data, Benchmark Tiers, and Metrics}
 
@@ -325,7 +330,7 @@ tiny fixtures, and figure code are tracked.
 The benchmark is deliberately \emph{tiered} rather than monolithic
 (Table~\ref{tab:tiers}): a fast CI-smoke tier on tiny fixtures; a bulk matched
 tier (ENCODE bulk ATAC vs. matched TF ChIP/CUT\&RUN) as the primary classical
-benchmark; a depth-robustness tier over downsampled ATAC; a de novo motif-preparation tier;
+benchmark scaffold; a depth-robustness tier over downsampled ATAC; a de novo motif-preparation tier;
 and a real-data pseudobulk demonstration tier. For binary TF-binding labels we compute AUROC and
 AUPRC globally and per TF-cell task, recall at 1\%, 5\%, and 10\% FDR, precision at
 fixed recall, calibration curves with expected and maximum calibration error,
@@ -363,10 +368,14 @@ The package ships a unit-test suite covering numerical helpers, CLI behavior, an
 deterministic golden CLI regressions for footprint calling, differential footprint analysis,
 and aggregate plotting, with an opt-in slow regression for bias correction. A
 continuous-integration workflow runs the suite on a clean checkout using only
-small fixtures. Every benchmark result is expected to store random seeds, tool
-versions, command lines, and the resolved manifest. Figures are saved as vector
-PDF/SVG plus 300-dpi PNG previews, with source plotting tables retained for
-auditability.
+small fixtures, builds source and wheel artifacts, and smoke-tests the current
+console scripts from an installed wheel. The repository includes
+\texttt{environment.yml}, a Dockerfile, release metadata, and Make targets for
+test, build, and manuscript-smoke workflows; detailed reviewer instructions are
+kept in \texttt{docs/reproduce-paper.md}. Every benchmark result is expected to
+store random seeds, tool versions, command lines, and the resolved manifest.
+Figures are saved as vector PDF/SVG plus 300-dpi PNG previews, with source
+plotting tables retained for auditability.
 
 %==================================================================
 \section{Results}
@@ -561,8 +570,9 @@ visualized by the same aggregate-profile workflow used for bulk ATAC data.
 \subsection{Benchmark and Figure Infrastructure}
 
 The tiered benchmark design (Table~\ref{tab:tiers}), metric scripts, manifest
-builders, and figure-generation scripts provide an executable path from public
-inputs to publication-ready outputs. In the first-version scope, these resources
+builders, schema validator, engineering-runtime recorder, and figure-generation
+scripts provide an executable path from public inputs to publication-ready
+outputs. In the first-version scope, these resources
 serve three purposes. First, they verify that the classical footprinting workflow
 continues to produce stable outputs on small fixtures and public-data subsets.
 Second, they provide matched-label scaffolds for bulk ATAC comparisons against
@@ -662,8 +672,8 @@ Limitations remain. The present benchmark evaluates discrimination within each
 cell--TF task under chromosome-held-out cross-validation; whole-genome
 cross-cell-line transfer (training on some cell lines and testing on others) and
 direct head-to-head runs of external tools such as TOBIAS, HINT-ATAC, and
-ChromBPNet on the identical locus sets are the next steps before broad,
-field-relative superiority claims. Larger public-benchmark inputs depend on external data acquisition, intentionally
+ChromBPNet on identical locus sets remain future full-benchmark work before any
+broad, field-relative superiority claims. Larger public-benchmark inputs depend on external data acquisition, intentionally
 kept outside version control for size and licensing reasons. Natural next steps
 include larger external-tool comparisons, stronger per-replicate statistical
 models, and additional public validation datasets.
@@ -704,10 +714,13 @@ input datasets are obtained from the ENCODE Project~\cite{encode2012}, the 10x
 Genomics PBMC Multiome example~\cite{tenxpbmc2021}, and motif databases (e.g.,
 JASPAR~\cite{jaspar2026}) via the included discovery and download scripts.
 Manifests, scripts, small result tables, source tables, and figures are stored in
-the main repository; large reusable example-data files are distributed separately
-through the public \texttt{oncologylab/fp-tools-data} repository release assets,
-and full raw public inputs are regenerated from committed manifests rather than
-stored in version control.}
+the main repository. Reviewer reproduction instructions are provided in
+\texttt{docs/reproduce-paper.md}, with Conda and Docker execution files in
+\texttt{environment.yml} and the repository Dockerfile. Large reusable
+example-data files are distributed separately through the public
+\texttt{oncologylab/fp-tools-data} repository release assets, and full raw public
+inputs are regenerated from committed manifests rather than stored in version
+control.}
 
 \acknowledgments{The author thanks the ENCODE Project Consortium and the
 maintainers of the open-source tools referenced in this work for making their data

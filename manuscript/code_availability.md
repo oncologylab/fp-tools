@@ -13,8 +13,10 @@ installable from source as `fp-tools-bio`. The repository includes:
 - the unit-test suite and the continuous-integration workflow used for the
   deterministic golden CLI regressions;
 - the benchmark scripts (`benchmarks/scripts/`) and paper figure generators
-  (`manuscript/scripts/`).
+  (`manuscript/scripts/`);
+- `environment.yml`, `Dockerfile`, `Makefile`, `LICENSE`, `CITATION.cff`, and
+  `.zenodo.json` for reproducible review and release preparation.
 
 The exact version used for this manuscript is recorded by the repository git tag
-and commit hash. No proprietary or closed-source components are required to run the
+and commit hash. Paper reproduction instructions are maintained in `docs/reproduce-paper.md`. No proprietary or closed-source components are required to run the
 described workflows.

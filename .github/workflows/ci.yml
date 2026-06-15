@@ -36,8 +36,23 @@ jobs:
       - name: Install package
         run: |
           python -m venv .venv
-          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install --upgrade pip build twine
           .venv/bin/python -m pip install -e .
+
+      - name: Build and check release artifacts
+        run: |
+          .venv/bin/python -m pip install build
+          (cd /tmp && $GITHUB_WORKSPACE/.venv/bin/python -m build $GITHUB_WORKSPACE --outdir $GITHUB_WORKSPACE/dist)
+          .venv/bin/python -m twine check dist/*
+
+      - name: Wheel install smoke test
+        run: |
+          python -m venv /tmp/fp-tools-wheel-smoke
+          /tmp/fp-tools-wheel-smoke/bin/python -m pip install --upgrade pip
+          /tmp/fp-tools-wheel-smoke/bin/python -m pip install dist/*.whl
+          for cmd in atac-correct call-footprints match-motifs diff-footprints plot-aggregate plot-aggregate-batch run-workflow motif-discovery motif-summary pseudobulk-fragments ATACorrect FootprintScores ScoreBigwig BINDetect PlotAggregate; do
+            /tmp/fp-tools-wheel-smoke/bin/$cmd --help >/dev/null
+          done
 
       - name: Run unit and regression tests
         env:

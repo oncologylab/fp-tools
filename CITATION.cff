@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+title: fp-tools
+message: "If you use fp-tools, please cite the software release and the accompanying manuscript."
+type: software
+authors:
+  - family-names: Li
+    given-names: Yaoxiang
+  - family-names: Yi
+    given-names: Chunling
+version: 0.1.7
+license: MIT
+repository-code: "https://github.com/oncologylab/fp-tools"
+url: "https://github.com/oncologylab/fp-tools"

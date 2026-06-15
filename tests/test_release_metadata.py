@@ -19,9 +19,10 @@ class ReleaseMetadataTest(unittest.TestCase):
         for phrase in [
             "pip check",
             "unittest discover",
+            "call-footprints --help",
+            "diff-footprints --help",
             "scripts/build_release.sh",
             "twine check",
-            "DEV_PLAN.md",
             "benchmarks/results/",
         ]:
             self.assertIn(phrase, checklist)
@@ -30,6 +31,15 @@ class ReleaseMetadataTest(unittest.TestCase):
         script = (ROOT / "scripts" / "build_release.sh").read_text(encoding="utf-8")
         self.assertIn("mkdir -p dist", script)
         self.assertIn("find dist -maxdepth 1 -type f -delete", script)
+        self.assertIn("-m build", script)
+
+
+    def test_release_metadata_files_exist(self):
+        for relative in ["LICENSE", "CITATION.cff", ".zenodo.json", "environment.yml", "Dockerfile", "Makefile"]:
+            self.assertTrue((ROOT / relative).exists(), f"Missing {relative}")
+        citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
+        self.assertIn('repository-code: "https://github.com/oncologylab/fp-tools"', citation)
+        self.assertIn("license: MIT", citation)
 
     def test_benchmark_manifest_schema_documentation_exists(self):
         manifest_doc = (ROOT / "benchmarks" / "manifests" / "README.md").read_text(encoding="utf-8")

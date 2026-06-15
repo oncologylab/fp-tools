@@ -17,10 +17,10 @@ RESULTS = (
     "name\tmotif_id\tcluster\t"
     "treated_mean_score\tcontrol_mean_score\t"
     "treated_bound\tcontrol_bound\t"
-    "treated_control_change\ttreated_control_pvalue\n"
-    "MA0001\tm1\tc1\t0.8\t0.2\t120\t40\t0.5\t0.0001\n"
-    "MA0002\tm2\tc1\t0.3\t0.4\t60\t70\t-0.2\t0.2\n"
-    "MA0003\tm3\tc2\t0.6\t0.6\t90\t90\t0.0\t0.6\n"
+    "treated_control_change\ttreated_control_pvalue\ttreated_control_qvalue_bh\ttreated_control_significant_fdr05\n"
+    "MA0001\tm1\tc1\t0.8\t0.2\t120\t40\t0.5\t0.0001\t0.0003\tTrue\n"
+    "MA0002\tm2\tc1\t0.3\t0.4\t60\t70\t-0.2\t0.2\t0.3\tFalse\n"
+    "MA0003\tm3\tc2\t0.6\t0.6\t90\t90\t0.0\t0.6\t0.6\tFalse\n"
 )
 
 
@@ -130,6 +130,8 @@ class ReportOutputTest(unittest.TestCase):
             self.assertTrue((report["replicate_support"] == "replicate-supported").all())
             sig = report.loc[report["name"] == "MA0001"].iloc[0]
             self.assertTrue(bool(sig["significant"]))
+            self.assertTrue(bool(sig["significant_fdr05"]))
+            self.assertAlmostEqual(float(sig["qvalue_bh"]), 0.0003)
             self.assertEqual(sig["direction"], "treated")
             nonsig = report.loc[report["name"] == "MA0002"].iloc[0]
             self.assertFalse(bool(nonsig["significant"]))
@@ -144,6 +146,7 @@ class ReportOutputTest(unittest.TestCase):
             row = summary.loc[summary["replicate_support"] == "replicate-supported"].iloc[0]
             self.assertEqual(int(row["n_motifs"]), 3)
             self.assertEqual(int(row["significant"]), 1)
+            self.assertEqual(int(row["significant_fdr05"]), 1)
 
     def test_single_replicate_fallback(self):
         with tempfile.TemporaryDirectory() as tmpdir:

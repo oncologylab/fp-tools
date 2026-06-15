@@ -151,6 +151,10 @@ def build_replicate_report(
             support = "replicate-supported" if min(n1, n2) >= 2 else "single-replicate"
             abs_change = abs(float(change)) if pd.notna(change) else np.nan
             neg_log10_pvalue = -np.log10(max(float(pvalue), 1e-308)) if pd.notna(pvalue) else np.nan
+            qvalue_col = f"{base}_qvalue_bh"
+            fdr_col = f"{base}_significant_fdr05"
+            qvalue = pd.to_numeric(pd.Series([row[qvalue_col]]), errors="coerce").iloc[0] if qvalue_col in frame.columns else np.nan
+            fdr_significant = bool(str(row[fdr_col]).strip().lower() in {"true", "1", "yes"}) if fdr_col in frame.columns else bool(pd.notna(qvalue) and float(qvalue) <= alpha)
             uncertainty = replicate_uncertainty(change, pvalue, min(n1, n2))
             rows.append(
                 {
@@ -170,8 +174,10 @@ def build_replicate_report(
                     "change": change,
                     "abs_change": abs_change,
                     "pvalue": pvalue,
+                    "qvalue_bh": qvalue,
                     "neg_log10_pvalue": neg_log10_pvalue,
                     "significant": bool(pd.notna(pvalue) and float(pvalue) <= alpha),
+                    "significant_fdr05": fdr_significant,
                     "direction": cond1 if pd.notna(change) and float(change) > 0 else cond2 if pd.notna(change) and float(change) < 0 else "none",
                     "effect_se": uncertainty["effect_se"],
                     "z_score": uncertainty["z_score"],
@@ -188,6 +194,7 @@ def build_replicate_report(
         .agg(
             n_motifs=("name", "count"),
             significant=("significant", "sum"),
+            significant_fdr05=("significant_fdr05", "sum"),
             median_abs_change=("abs_change", "median"),
             max_neg_log10_pvalue=("neg_log10_pvalue", "max"),
             median_effect_se=("effect_se", "median"),

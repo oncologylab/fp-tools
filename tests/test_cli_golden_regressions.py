@@ -180,6 +180,10 @@ class CliGoldenRegressionTest(unittest.TestCase):
         self.assertAlmostEqual(float(row["Bcell_mean_score"]), 10.68326, places=5)
         self.assertAlmostEqual(float(row["Tcell_mean_score"]), 7.58304, places=5)
         self.assertAlmostEqual(float(row["Bcell_Tcell_change"]), 0.34019, places=5)
+        self.assertIn("Bcell_Tcell_qvalue_bh", results.columns)
+        self.assertIn("Bcell_Tcell_significant_fdr05", results.columns)
+        self.assertGreaterEqual(float(row["Bcell_Tcell_qvalue_bh"]), 0.0)
+        self.assertLessEqual(float(row["Bcell_Tcell_qvalue_bh"]), 1.0)
 
     def test_bindetect_replicate_grouping_writes_diagnostics(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -232,6 +236,8 @@ class CliGoldenRegressionTest(unittest.TestCase):
             "Bcell_Tcell_mean_log2fc",
             "Bcell_Tcell_delta_fp_se",
             "Bcell_Tcell_log2fc_se",
+            "Bcell_Tcell_qvalue_bh",
+            "Bcell_Tcell_significant_fdr05",
         ):
             self.assertIn(column, results.columns)
         self.assertEqual(int(row["Bcell_n_replicates"]), 2)

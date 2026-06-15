@@ -1,6 +1,0 @@
-cell	tf	assay	experiment	file_accession	url
-A549	ATAC	ATAC	ENCSR032RGS	ENCFF899OMR	https://www.encodeproject.org/files/ENCFF899OMR/@@download/ENCFF899OMR.bed.gz
-A549	CTCF	ChIP	ENCSR432AXE	ENCFF627ZPL	https://www.encodeproject.org/files/ENCFF627ZPL/@@download/ENCFF627ZPL.bed.gz
-A549	MAX	ChIP	ENCSR000DYG	ENCFF495URV	https://www.encodeproject.org/files/ENCFF495URV/@@download/ENCFF495URV.bed.gz
-A549	JUND	ChIP	ENCSR000BRF	ENCFF658HLG	https://www.encodeproject.org/files/ENCFF658HLG/@@download/ENCFF658HLG.bed.gz
-A549	REST	ChIP	ENCSR892DRK	ENCFF814JWH	https://www.encodeproject.org/files/ENCFF814JWH/@@download/ENCFF814JWH.bed.gz

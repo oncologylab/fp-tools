@@ -23,3 +23,15 @@ Required columns:
 | `local_path` | Planned path after download |
 | `split` | train, validation, test, smoke, or not_applicable |
 | `notes` | Filtering or curation notes |
+
+
+## Manifest locations
+
+Top-level `*.tsv` files in this directory use the full schema above and are
+validated in CI. Compact source manifests used by helper scripts live in
+`benchmarks/manifests/compact/` and use explicitly registered compact schemas.
+Run validation with:
+
+```bash
+python benchmarks/scripts/validate_manifests.py --manifest-dir benchmarks/manifests
+```

@@ -94,6 +94,8 @@ diff-footprints   --motifs test_data/motifs.jaspar   --signals test_data/demo_Bc
 
 Repeated condition names define biological replicates. `diff-footprints` performs motif scanning internally, writes per-motif BEDs, differential tables, replicate-aware reports, volcano HTML, and aggregate profiles when `--aggregate-signals` is provided.
 
+Differential result tables include raw comparison p-values, BH-adjusted q-values (`<comparison>_qvalue_bh`), and an FDR 5% flag (`<comparison>_significant_fdr05`). The `<comparison>_highlighted` column is a visualization/ranking flag used for reports and should not be interpreted as formal FDR significance.
+
 #### Replicate-aware reports and aggregate embedding
 
 The older replicate-report wording is now covered by `diff-footprints`. There is no primary `fp-tools-replicate-bindetect` command in the current public API. Use `diff-footprints` directly for two-condition, replicate-aware, or ordered time-course differential footprint analysis. Repeated names in `--cond-names` define replicate groups, for example `Bcell Bcell Tcell Tcell`.

@@ -6,7 +6,7 @@ cd "$ROOT"
 
 mkdir -p dist
 find dist -maxdepth 1 -type f -delete
-"$ROOT/.venv/bin/python" setup.py sdist bdist_wheel
+(cd /tmp && "$ROOT/.venv/bin/python" -m build "$ROOT" --outdir "$ROOT/dist")
 
 echo
 echo "Built release artifacts:"

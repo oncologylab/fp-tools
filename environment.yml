@@ -1,0 +1,18 @@
+name: fp-tools
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12
+  - pip
+  - bedtools>=2.31
+  - samtools>=1.23
+  - bowtie2>=2.5
+  - fastp>=1.0
+  - macs3>=3.0
+  - meme>=5.5
+  - ucsc-bedgraphtobigwig
+  - pip:
+      - build
+      - twine
+      - -e .
