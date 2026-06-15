@@ -145,10 +145,16 @@ Bcell	examples/atacorrect/Bcell/Bcell_corrected.bw	examples/motif_matches/Bcell	
 Tcell	examples/atacorrect/Tcell/Tcell_corrected.bw	examples/motif_matches/Tcell	Tcell
 ```
 
-Then run:
+Then run from manifest inputs when profiles should be computed from corrected cut-site bigWigs and `match-motifs` outputs:
 
 ```bash
-plot-aggregate-batch   --manifest examples/reports/aggregate_manifest.tsv   --output examples/reports/aggregate_browser.html   --top-n 30
+plot-aggregate-batch   --manifest examples/reports/aggregate_manifest.tsv   --output examples/reports/aggregate_browser.html   --top-n 30   --default-layout 2x2
+```
+
+The generated standalone HTML uses a compressed embedded payload and supports searchable TF selection, editable group colors, 1x1/1x2/2x2/2x3 layouts, and per-panel choices for all condition means, all samples, one condition, or one sample. If aggregate profiles are already embedded in one or more `diff-footprints` reports, reuse them without recomputing bigWig profiles:
+
+```bash
+plot-aggregate-batch   --input-html examples/diff_footprints/Bcell_vs_Tcell/diff_footprints_Bcell_Tcell.html   --output examples/reports/aggregate_browser_from_html.html   --default-layout 2x3
 ```
 
 ## Optional de novo motif discovery
