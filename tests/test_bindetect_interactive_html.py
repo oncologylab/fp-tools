@@ -57,15 +57,23 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertIn("logoTitle.textContent", html)
         self.assertIn('id="aggregate-show-mean"', html)
         self.assertIn('id="aggregate-sample-styles"', html)
+        self.assertIn('data-sample-color=', html)
+        self.assertIn('data-sample-alpha=', html)
         self.assertIn('data-sample-width=', html)
         self.assertIn('data-sample-type=', html)
         self.assertIn('id="aggregate-mean-width"', html)
         self.assertIn('id="aggregate-mean-type"', html)
+        self.assertIn('function alphaValue', html)
         self.assertIn('stroke-width="${sampleLineWidth}"${sampleDash}', html)
+        self.assertIn('stroke-opacity="${sampleAlpha}"', html)
+        self.assertIn('stroke="${style.color}"', html)
         self.assertIn('stroke-width="${meanLineWidth}"${meanDash}', html)
         self.assertIn('viewBox="0 0 520 520"', html)
         self.assertIn("class=\"pt", html)
         self.assertIn("volcanoPoints.sort", html)
+        self.assertIn("payload.conditions[0]+" + chr(39) + "_up" + chr(39), html)
+        self.assertIn("payload.conditions[1]+" + chr(39) + "_up" + chr(39), html)
+        self.assertIn("motif-site set", html)
         self.assertIn("Distance from motif center (bp)", html)
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
         self.assertIsNotNone(match)
@@ -178,7 +186,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
     def test_aggregate_payload_for_row_keeps_replicate_profiles(self):
         row = {"output_prefix": "TF1_MA0001.1", "name": "TF1", "motif_id": "MA0001.1", "Bcell_Tcell_change": 1.0, "Bcell_Tcell_pvalue_numeric": 0.001}
         cond_groups = {"Bcell": [0, 1], "Tcell": [2, 3]}
-        task = (row, ("Bcell", "Tcell"), ".", ["B1.bw", "B2.bw", "T1.bw", "T2.bw"], cond_groups, 1, 2, "Bcell_Tcell", "none", {}, ["Bcell_rep1", "Bcell_rep2", "Tcell_rep1", "Tcell_rep2"])
+        task = (row, ("Bcell", "Tcell"), ".", ["B1.bw", "B2.bw", "T1.bw", "T2.bw"], cond_groups, 1, 2, "Bcell_Tcell", "none", {}, ["Bcell_rep1", "Bcell_rep2", "Tcell_rep1", "Tcell_rep2"], "all")
         profiles = {
             "B1.bw": [1.0, 3.0],
             "B2.bw": [3.0, 5.0],
