@@ -262,7 +262,8 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
                 if code != 0:
                     status = "atacorrect_failed"
                     exit_code = code
-            if status == "succeeded" and (args.force or not (args.resume and _existing_ok(footprint_bigwig))):
+            footprint_complete = _existing_ok(footprint_bigwig) and _existing_ok(candidate_bed)
+            if status == "succeeded" and (args.force or not (args.resume and footprint_complete)):
                 code = _run_command(footprint_command, fp_stdout, fp_stderr)
                 if code != 0:
                     status = "call_footprints_failed"
