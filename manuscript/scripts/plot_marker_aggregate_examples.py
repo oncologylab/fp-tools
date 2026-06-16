@@ -157,19 +157,19 @@ def plot_marker_aggregates(payload: dict, motifs: list[str], roles: dict[str, st
                     np.asarray(sample["profile"], dtype=float),
                     color=color,
                     linestyle=SAMPLE_STYLES.get(sample_name, "solid"),
-                    linewidth=0.85,
-                    alpha=0.52,
+                    linewidth=1.25,
+                    alpha=0.70,
                     label=sample_name,
-                    zorder=1,
+                    zorder=2,
                 )
             ax.plot(
                 xvals,
                 np.asarray(condition["profile"], dtype=float),
                 color=color,
-                linewidth=1.7,
+                linewidth=1.10,
                 alpha=0.98,
                 label=f"{condition_name} mean",
-                zorder=2,
+                zorder=3,
             )
         ax.axvline(0, color="0.35", linewidth=0.8, alpha=0.8)
         ax.set_title(f"{motif_label(motif)}\n{role}, n={int(motif.get('n_sites', 0)):,} sites", fontsize=8.5)
@@ -191,9 +191,9 @@ def plot_marker_aggregates(payload: dict, motifs: list[str], roles: dict[str, st
     fig.tight_layout(rect=(0, 0.035, 1, 0.98))
 
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_prefix.with_suffix(".png"), dpi=300, bbox_inches="tight")
-    fig.savefig(out_prefix.with_suffix(".pdf"), bbox_inches="tight")
-    fig.savefig(out_prefix.with_suffix(".svg"), bbox_inches="tight")
+    fig.savefig(out_prefix.with_suffix(".png"), dpi=600, bbox_inches="tight")
+    fig.savefig(out_prefix.with_suffix(".pdf"), bbox_inches="tight", dpi=600)
+    fig.savefig(out_prefix.with_suffix(".svg"), bbox_inches="tight", dpi=600)
     pd.DataFrame(summary_rows).to_csv(out_prefix.with_suffix(".tsv"), sep="\t", index=False)
 
 

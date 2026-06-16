@@ -33,23 +33,20 @@ T-cell candidates	7-CTTCCTCCAAAAGG	CTTCCTCCAAAAGG	86	7.9	MA2326.1	IKZF2	0.191451
 T-cell candidates	8-CACTGTTACTA	CACTGTTACTA	19	8.0				no confident match	False
 
 # displayed_discovery_rows
-direction	de_novo_motif	consensus	sites	e_value	target_id	target_name	tomtom_q_value	tomtom_label	confident_tomtom	priority
-B-cell candidates	5-GATGAGTCA	GATGAGTCA	153	0.97	MA1634.2	BATF	2.83156e-05	BATF (MA1634.2)	True	6
-B-cell candidates	1-AGGAASTGAAA	AGGAACTGAAA	167	4.3e-05	MA0050.4	Irf1	0.00758919	Irf1 (MA0050.4)	True	5
-T-cell candidates	6-AGGAAGTSACTGA	AGGAAGTGACTGA	28	6.1	MA2326.1	IKZF2	0.0109605	IKZF2 (MA2326.1)	True	4
-T-cell candidates	5-CAYKCTGGGAR	CATTCTGGGAA	257	4.4	MA0088.3	ZNF143	8.03095e-05	ZNF143 (MA0088.3)	True	3
-B-cell candidates	2-SCRGCCGGG	CCAGCCGGG	2114	0.29	MA2121.1	ZNF213	0.32969	no confident match	False	2
-B-cell candidates	4-CAGGCCGCGCCC	CAGGCCGCGCCC	908	0.79	MA0146.3	Zfx	0.0527081	no confident match	False	2
-B-cell candidates	7-CCCGGCGCC	CCCGGCGCC	789	3.9				no confident match	False	2
+direction	de_novo_motif	consensus	sites	e_value	target_id	target_name	tomtom_q_value	tomtom_label	confident_tomtom	prefix	priority
+B-cell candidates	1-AGGAASTGAAA	AGGAACTGAAA	167	4.3e-05	MA0050.4	Irf1	0.00758919	Irf1 (MA0050.4)	True	Bcell_denovo_1	15
+B-cell candidates	5-GATGAGTCA	GATGAGTCA	153	0.97	MA1634.2	BATF	2.83156e-05	BATF (MA1634.2)	True	Bcell_denovo_5	15
+T-cell candidates	5-CAYKCTGGGAR	CATTCTGGGAA	257	4.4	MA0088.3	ZNF143	8.03095e-05	ZNF143 (MA0088.3)	True	Tcell_denovo_5	13
+T-cell candidates	6-AGGAAGTSACTGA	AGGAAGTGACTGA	28	6.1	MA2326.1	IKZF2	0.0109605	IKZF2 (MA2326.1)	True	Tcell_denovo_6	13
 
 # highlighted_de_novo_in_restricted_plus_denovo
-output_prefix	name	motif_id	cluster	total_tfbs	Bcell_mean_score	Bcell_score_sd	Bcell_n_replicates	Bcell_bound	Tcell_mean_score	Tcell_score_sd	Tcell_n_replicates	Tcell_bound	Bcell_Tcell_change	Bcell_Tcell_pvalue	Bcell_Tcell_mean_delta_fp	Bcell_Tcell_mean_log2fc	Bcell_Tcell_delta_fp_se	Bcell_Tcell_log2fc_se	Bcell_Tcell_highlighted	highlighted	direction
-Bcell_denovo_8_Bcell_denovo_8_8-CCGCCCACCGCCCCG	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	C_Bcell_denovo_8	39218	1.90412	0.35593	2	24558	1.42376	0.44861	2	17948	-0.31469	3.63069e-180	0.48041	0.55871	0.5634	0.53845	True	True	T-cell higher
-Bcell_denovo_7_Bcell_denovo_7_7-CCCGGCGCC	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	C_Bcell_denovo_7	20209	1.8284	0.34948	2	12168	1.33945	0.43815	2	8765	-0.30302	9.21675e-169	0.48895	0.57133	0.54881	0.54877	True	True	T-cell higher
-Bcell_denovo_5_Bcell_denovo_5_5-GATGAGTCA	Bcell_denovo_5	Bcell_denovo_5_5-GATGAGTCA	C_Bcell_denovo_5	9974	1.46652	0.30663	2	4946	0.59976	0.29556	2	1564	0.46256	3.87469e-166	0.86676	1.40552	0.44322	0.6037	True	True	B-cell higher
-Bcell_denovo_4_Bcell_denovo_4_4-CAGGCCGCGCCC	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	C_Bcell_denovo_4	22731	1.9935	0.37101	2	14468	1.4441	0.44796	2	10467	-0.23557	6.521610000000001e-163	0.5494	0.62632	0.57532	0.53946	True	True	T-cell higher
-Bcell_denovo_1_Bcell_denovo_1_1-AGGAASTGAAA	Bcell_denovo_1	Bcell_denovo_1_1-AGGAASTGAAA	C_Bcell_denovo_1	28202	1.30768	0.27974	2	11923	0.6504	0.30396	2	4863	0.25004	1.52774e-162	0.65728	1.14634	0.43194	0.59979	True	True	B-cell higher
-Bcell_denovo_2_Bcell_denovo_2_2-SCRGCCGGG	Bcell_denovo_2	Bcell_denovo_2_2-SCRGCCGGG	C_Bcell_denovo_2	22569	1.81264	0.34364	2	13431	1.30381	0.43207	2	9386	-0.24677	2.92528e-160	0.50883	0.6172	0.54317	0.54825	True	True	T-cell higher
+output_prefix	name	motif_id	cluster	total_tfbs	Bcell_mean_score	Bcell_score_sd	Bcell_n_replicates	Bcell_bound	Tcell_mean_score	Tcell_score_sd	Tcell_n_replicates	Tcell_bound	Bcell_Tcell_change	Bcell_Tcell_pvalue	Bcell_Tcell_mean_delta_fp	Bcell_Tcell_mean_log2fc	Bcell_Tcell_delta_fp_se	Bcell_Tcell_log2fc_se	Bcell_Tcell_highlighted	highlighted	direction	consensus	streme_sites	tomtom_label	tomtom_q_value	confident_tomtom	candidate_direction	display_label
+Bcell_denovo_8_Bcell_denovo_8_8-CCGCCCACCGCCCCG	Bcell_denovo_8	Bcell_denovo_8_8-CCGCCCACCGCCCCG	C_Bcell_denovo_8	39218	1.90412	0.35593	2	24558	1.42376	0.44861	2	17948	-0.31469	3.63069e-180	0.48041	0.55871	0.5634	0.53845	True	True	T-cell higher	CCGCCCACCGCCCCG	49	no confident match	0.185492	False	B-cell candidates	B dn8: CCGCCCACCGCCCCG
+Bcell_denovo_7_Bcell_denovo_7_7-CCCGGCGCC	Bcell_denovo_7	Bcell_denovo_7_7-CCCGGCGCC	C_Bcell_denovo_7	20209	1.8284	0.34948	2	12168	1.33945	0.43815	2	8765	-0.30302	9.21675e-169	0.48895	0.57133	0.54881	0.54877	True	True	T-cell higher	CCCGGCGCC	789	no confident match		False	B-cell candidates	B dn7: CCCGGCGCC
+Bcell_denovo_2_Bcell_denovo_2_2-SCRGCCGGG	Bcell_denovo_2	Bcell_denovo_2_2-SCRGCCGGG	C_Bcell_denovo_2	22569	1.81264	0.34364	2	13431	1.30381	0.43207	2	9386	-0.24677	2.92528e-160	0.50883	0.6172	0.54317	0.54825	True	True	T-cell higher	CCAGCCGGG	2114	no confident match	0.32969	False	B-cell candidates	B dn2: CCAGCCGGG
+Bcell_denovo_4_Bcell_denovo_4_4-CAGGCCGCGCCC	Bcell_denovo_4	Bcell_denovo_4_4-CAGGCCGCGCCC	C_Bcell_denovo_4	22731	1.9935	0.37101	2	14468	1.4441	0.44796	2	10467	-0.23557	6.521610000000001e-163	0.5494	0.62632	0.57532	0.53946	True	True	T-cell higher	CAGGCCGCGCCC	908	no confident match	0.0527081	False	B-cell candidates	B dn4: CAGGCCGCGCCC
+Bcell_denovo_1_Bcell_denovo_1_1-AGGAASTGAAA	Bcell_denovo_1	Bcell_denovo_1_1-AGGAASTGAAA	C_Bcell_denovo_1	28202	1.30768	0.27974	2	11923	0.6504	0.30396	2	4863	0.25004	1.52774e-162	0.65728	1.14634	0.43194	0.59979	True	True	B-cell higher	AGGAACTGAAA	167	Irf1 (MA0050.4)	0.00758919	True	B-cell candidates	B dn1: Irf1-like
+Bcell_denovo_5_Bcell_denovo_5_5-GATGAGTCA	Bcell_denovo_5	Bcell_denovo_5_5-GATGAGTCA	C_Bcell_denovo_5	9974	1.46652	0.30663	2	4946	0.59976	0.29556	2	1564	0.46256	3.87469e-166	0.86676	1.40552	0.44322	0.6037	True	True	B-cell higher	GATGAGTCA	153	BATF (MA1634.2)	2.83156e-05	True	B-cell candidates	B dn5: BATF-like
 
 # aggregate_center_minus_flank
 panel	motif	motif_id	sample	condition	center_minus_flank	selection_role

@@ -81,10 +81,13 @@ footprint widths. Supervised TF-binding-site (TFBS) predictors such as
 maxATAC~\cite{cazares2023maxatac} and sequence-to-profile models such as
 ChromBPNet~\cite{chrombpnet2024} learn occupancy from labeled data or raw
 sequence, and downstream interpretation tools and variant scorers translate models
-into motif and allele-level effects. Each tool typically ships its own interface,
-input conventions, and assumptions, so assembling a coherent, reproducible
-pipeline and \emph{benchmarking} alternatives on common ground remains
-laborious and error-prone.
+into motif and allele-level effects. Motif-discovery and motif-comparison tools,
+including MEME/STREME~\cite{bailey2015meme,Bailey2021_STREME} and
+Tomtom~\cite{gupta2007tomtom}, are also widely used after peak or footprint
+selection, but commonly run as separate steps with separate input and output
+conventions. Each tool typically ships its own interface, input conventions, and
+assumptions, so assembling a coherent, reproducible pipeline and \emph{benchmarking}
+alternatives on common ground remains laborious and error-prone.
 
 Beyond this tooling friction, footprint interpretation has practical limitations
 that make reproducibility and careful signal handling important. ATAC-seq
@@ -119,7 +122,7 @@ these workflows together.
 
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/fp-tools-workflow.png}
+\includegraphics[width=\textwidth]{figures/fp-tools-workflow-hires.png}
 \caption{Overall \texttt{fp-tools} regulatory-footprinting framework. Bulk or
 single-cell ATAC-seq inputs enter an integrated core for Tn5 bias correction,
 footprint calling, motif matching, differential footprint analysis, and aggregate
@@ -148,9 +151,11 @@ passed through a complete analysis without format-specific glue code. YAML
 configuration files provide a reproducible way to save and rerun the same analysis
 without changing the underlying methods.
 
-For footprint calling, let $x_i$ denote corrected Tn5 cut-site signal
-around candidate position $p$. The default footprint score is a center-versus-flank
-contrast,
+Following the signal model popularized by TOBIAS~\cite{bentsen2020},
+\texttt{fp-tools} treats base-resolution, bias-corrected cut-site profiles as the
+primary footprinting signal. For footprint calling, let $x_i$ denote corrected Tn5
+cut-site signal around candidate position $p$. The default footprint score is a
+center-versus-flank contrast,
 \[
 F(p)=\frac{1}{|L|+|R|}\left(\sum_{i\in L}x_i+\sum_{i\in R}x_i\right)-
 \frac{1}{|C|}\sum_{i\in C}x_i,
@@ -201,7 +206,11 @@ used for bulk ATAC-seq data.
 \label{sec:replicate}
 
 Replicate-aware analysis is integrated directly into the differential footprint comparison workflow.
-Repeated condition names, for example \texttt{--cond-names Bcell Bcell Tcell Tcell},
+The differential comparison is a reporting-level generalization of the
+TOBIAS/BINDetect motif-associated footprint framework~\cite{bentsen2020}: the same
+motif-centered footprint-score logic is retained, while repeated condition labels,
+replicate-level summaries, and optional quantile normalization are added around the
+comparison. Repeated condition names, for example \texttt{--cond-names Bcell Bcell Tcell Tcell},
 define biological replicate groups while preserving the original differential-footprint
 output structure. Let $x_{c,r,i}$ be the footprint score at site or background
 position $i$ for replicate $r$ of condition $c$.
@@ -351,7 +360,7 @@ editable group colors, synchronized aggregate profiles, and SVG export for
 publication-ready editing (Figure~\ref{fig:interfaces}).
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{figures/interface_usability_panels.png}
+\includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{figures/interface_usability_panels-hires.png}
 \caption{Usability-oriented \texttt{fp-tools} interfaces. (A) Browser GUI
 for configuring footprinting workflows and saving runnable YAML configurations.
 (B) Self-contained differential-footprint HTML report from the Buenrostro B-cell
@@ -383,7 +392,7 @@ recurring patterns in candidate intervals, or after known-motif scanning to find
 additional motifs not represented in the selected database.
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/fp-tools-de-novo-motif.png}
+\includegraphics[width=\textwidth]{figures/fp-tools-de-novo-motif-hires.png}
 \caption{Generic de novo motif-discovery preparation workflow. Candidate
 footprint intervals are converted into candidate-centered FASTA sequences,
 external motif-discovery tools such as STREME or MEME are run with recorded
@@ -423,21 +432,20 @@ own and can also be carried forward into the same differential footprint report
 as database-supported motifs (Figure~\ref{fig:denovo_motif_validation}).
 
 \begin{figure}[H]
-\includegraphics[width=0.95\textwidth]{figures/denovo_motif_validation.png}
-\caption{De novo motif discovery used as de novo-only analysis and as a supplement
-to known-motif analysis. Candidate footprints from the Buenrostro B-cell versus T-cell replicate
-comparison were exported to FASTA and analyzed with STREME in B-cell-enriched and
-T-cell-enriched contrast directions. Displayed discovered examples include
-BATF-like and Irf1-like motifs from B-cell-enriched candidates and IKZF2-like and
-ZNF143-like motifs from T-cell-enriched candidates. In de novo-only mode, the
-candidate-derived motifs are tested as an independent motif set. In supplement
-mode, the discovered motifs are appended to a known database before
-\texttt{diff-footprints}; in the restricted-database sensitivity test, adding 16
-candidate-derived motifs increased the highlighted motif-family count from 97 to
-101, including 6 de novo-derived highlighted motifs. Tomtom labels indicate motif
-similarity to database entries. Thin
-aggregate lines show individual biological replicates and
-thick lines show condition means.\label{fig:denovo_motif_validation}}
+\includegraphics[width=0.95\textwidth]{figures/denovo_motif_validation.pdf}
+\caption{De novo motif validation in de novo-only and database-supplement modes.
+Candidate footprints from the Buenrostro B-cell versus T-cell replicate comparison
+were exported to FASTA and analyzed with STREME in B-cell-enriched and
+T-cell-enriched contrast directions. Panel A summarizes the restricted-database
+sensitivity test: adding 16 candidate-derived motifs increased the highlighted
+motif-family count from 97 to 101 and contributed 6 de novo-derived highlighted
+motifs. Panel B lists representative discovered motifs, including BATF-like and
+Irf1-like motifs from B-cell-enriched candidates and IKZF2-like and ZNF143-like
+motifs from T-cell-enriched candidates. Panels C--F show motif-centered
+aggregate profiles from the de novo-only analysis. Tomtom labels indicate motif
+similarity to database entries. Thin aggregate lines show individual biological
+replicates and thick lines show condition means; full displayed values are
+provided in the figure source table.\label{fig:denovo_motif_validation}}
 \end{figure}
 
 \subsection{Replicate-aware Differential Footprint Analysis and Normalization}
@@ -450,7 +458,7 @@ set, so no additional peak alignment step is performed at the reporting stage
 (Figure~\ref{fig:replicate_workflow}).
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/fp-tools-replicate-bindetect.png}
+\includegraphics[width=\textwidth]{figures/fp-tools-replicate-bindetect-hires.png}
 \caption{Example replicate-aware differential-footprint workflow for a B-cell
 versus T-cell comparison. Differential footprint results and a replicate map are
 combined to summarize effect size, replicate support, approximate uncertainty,
@@ -463,22 +471,31 @@ condition comparison: repeated condition names define biological replicate group
 condition means are reported alongside individual replicate profiles, and
 sample-level quantile normalization applies the same distribution-matching step
 before replicate group averages are compared. To show the effect on real data, we
-used the B-cell versus T-cell 2-vs-2 Buenrostro comparison and plotted aggregate
-corrected cut-site profiles for the same four motifs used in the biological
-consistency panel. The no-normalization and sample-quantile panels were extracted
-from the corresponding embedded \texttt{diff-footprints} HTML payloads, so the
-figure reflects the exact data used in the differential report. Thin lines show
-individual biological replicates and thick lines show condition means
+used the B-cell versus T-cell 2-vs-2 Buenrostro comparison and extracted both the
+volcano summaries and motif-centered aggregate profiles from the embedded
+\texttt{diff-footprints} HTML payloads. The no-normalization run represents the
+TOBIAS-style baseline without an additional sample-level quantile-normalization
+step, whereas the sample-quantile run applies distribution matching before
+condition-level comparison and aggregate plotting. In this example, normalization
+reduced the positive distributional offset of motif-level differential footprint
+scores while preserving the condition-level aggregate profiles
 (Figure~\ref{fig:normalization_effect}).
 
 \begin{figure}[H]
-\includegraphics[width=0.95\textwidth]{figures/normalization_effect.png}
-\caption{Effect of sample-level quantile normalization on real 2-vs-2
-corrected cut-site aggregate profiles. BACH2, JUNB, ATF7, and IRF4 aggregates
-were extracted from the no-normalization and sample-quantile \texttt{diff-footprints}
-HTML reports for the Buenrostro B-cell versus T-cell replicate comparison. Thin
-lines show individual biological replicates, thick lines show condition means,
-and a lower center relative to the local flanks indicates stronger TF protection.}
+\includegraphics[width=0.98\textwidth,height=0.80\textheight,keepaspectratio]{figures/normalization_effect.pdf}
+\caption{Effect of sample-level quantile normalization on the Buenrostro B-cell
+versus T-cell 2-vs-2 differential footprint report. (A) Volcano plots extracted
+from the no-normalization and sample-quantile \texttt{diff-footprints} HTML
+reports. The no-normalization comparison is the TOBIAS-style differential
+footprint baseline without additional quantile normalization. Sample-quantile
+normalization reduced the positive score offset (median differential footprint
+score 0.0998 to 0.0671) while retaining similar highlighted motif counts (55 to
+53 B-cell-up motifs and 63 to 61 T-cell-up motifs). (B) BACH2 and IRF4
+condition-mean aggregate profiles from the same report payloads. The aggregate
+y-axis is shown as signal in arbitrary units: corrected cut-site signal for no
+normalization and quantile-scaled corrected cut-site signal for sample-quantile
+normalization. A lower center relative to local flanks indicates stronger TF
+protection.}
 \label{fig:normalization_effect}
 \end{figure}
 
@@ -496,18 +513,20 @@ benchmark; a more negative center-versus-flank profile indicates stronger
 footprint-like protection at motif centers (Figure~\ref{fig:marker_aggregates}).
 
 \begin{figure}[H]
-\includegraphics[width=0.95\textwidth]{figures/marker_aggregate_examples.png}
+\includegraphics[width=0.95\textwidth]{figures/marker_aggregate_examples.pdf}
 \caption{B-cell-biased and T-cell activation-associated aggregate examples from
 the B-cell versus T-cell replicate comparison. Aggregate profiles were generated
 from the same sample-quantile-normalized corrected cut-site payload embedded in
-the \texttt{diff-footprints} HTML report. Thin lines show individual biological
-replicates and thick lines show condition means. BACH2 provides the B/GM12878-biased shared-regulator example; JUNB and ATF7 show stronger T-cell aggregate
-depletion; IRF4 is included as a biologically motivated TCR-response regulator
-with a modest aggregate effect in this dataset.}
+the \texttt{diff-footprints} HTML report. Individual biological replicates and
+condition means are shown with comparable line widths to emphasize replicate
+consistency. BACH2 provides the B/GM12878-biased shared-regulator example; JUNB
+and ATF7 show stronger T-cell aggregate depletion; IRF4 is included as a
+biologically motivated TCR-response regulator with a modest aggregate effect in
+this dataset.}
 \label{fig:marker_aggregates}
 \end{figure}
 
-\subsection{Single-cell ATAC Fragments Produce Interpretable Pseudobulk Footprints}
+\subsection{Single-cell ATAC Fragments Support Pseudobulk Footprint Workflows}
 
 We evaluated pseudobulk aggregation using the public
 10x Genomics PBMC granulocyte-sorted Multiome dataset~\cite{tenxpbmc2021}. The
@@ -517,11 +536,18 @@ least 300 cells and 50,000 fragments: B cells, CD4 T cells, NK/cytotoxic T cells
 CD14 monocytes, FCGR3A monocytes, dendritic cells, and a mixed myeloid group. The
 prepared figure inputs used chromosomes chr1--chr22 plus chrX. The kept
 pseudobulks contained 13.6 to 144.0 million counted fragments per group and were
-written as indexed fragment files plus CPM-normalized cut-site bigWigs. These
-outputs were readable by the same aggregate-plotting code used for bulk ATAC data. For single-cell chromatin context, pseudobulk grouping was considered relative to established ecosystems including ArchR and Signac, and motif-activity baselines such as chromVAR~\cite{Granja2021_ArchR,Stuart2021_Signac,Schep2017_chromVAR}.
+written as indexed fragment files plus CPM-normalized cut-site bigWigs. The full
+\texttt{pseudobulk-footprints} route uses the same grouped fragments to emit
+pseudo-paired BAMs, run \texttt{atac-correct} with zero read shifting, and score
+corrected footprint tracks; the aggregate shown below uses the raw CPM cut-site
+track as a QC and chromatin-context signal rather than as a corrected footprint
+score. These outputs were readable by the same aggregate-plotting code used for
+bulk ATAC data. For single-cell chromatin context, pseudobulk grouping was
+considered relative to established ecosystems including ArchR and Signac, and
+motif-activity baselines such as chromVAR~\cite{Granja2021_ArchR,Stuart2021_Signac,Schep2017_chromVAR}.
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/fp-tools-pseudo-bulk.png}
+\includegraphics[width=\textwidth]{figures/fp-tools-pseudo-bulk-hires.png}
 \caption{Example pseudobulk fragment workflow using public 10x PBMC single-cell
 ATAC data. Single-cell fragment records and cell annotations are grouped by broad
 immune-cell labels, converted into one pseudobulk fragment file per retained
@@ -532,7 +558,8 @@ not a separate generic benchmark.\label{fig:pseudobulk_workflow}}
 \end{figure}
 
 As a qualitative validation, we aggregated CPM-normalized pseudobulk cut-site
-signal around exact motif centers rather than around broad peak centers.
+signal in a $\pm$100 bp window around exact motif centers rather than around broad
+peak centers.
 JASPAR2026 vertebrate motifs were scanned in the 10x ATAC peak set, motif hits
 were grouped by TF family, and candidate immune regulators were screened using a
 predeclared B-cell, T/NK-cell, and myeloid marker list. To avoid artificial fixed
@@ -543,16 +570,19 @@ respectively. The fragment data and pseudobulk cut-site tracks were not modified
 only the motif-centered site set used for aggregation changed. The resulting
 profiles show that single-cell fragments can be collapsed into group-level tracks
 and inspected with the same motif-centered aggregate workflow used for bulk ATAC
-data (Figure~\ref{fig:pseudobulk_supp}). The pseudobulk module can also emit
-pseudo-paired BAMs for downstream bias correction with zero read shifting.
+data (Figure~\ref{fig:pseudobulk_supp}). For corrected footprint inference, the
+\texttt{pseudobulk-footprints} command carries the retained groups through
+pseudo-BAM generation, bias correction, and footprint scoring before aggregate
+plotting.
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/supp_pseudobulk_cutsite_signal.png}
+\includegraphics[width=\textwidth]{figures/supp_pseudobulk_cutsite_signal.pdf}
 \caption{Motif-centered 10x PBMC pseudobulk cut-site signal aggregate profiles.
 Single-cell ATAC fragments from the public 10x PBMC Multiome dataset were grouped
 by broad immune-cell labels derived from official 10x gene-expression graph
-clusters, converted to CPM-normalized cut-site bigWigs, and aggregated around exact
-JASPAR2026 motif centers scanned inside 10x ATAC peaks. RUNX3 is shown as a
+clusters, converted to CPM-normalized cut-site bigWigs, and aggregated in a
+$\pm$100 bp window around exact JASPAR2026 motif centers scanned inside 10x ATAC
+peaks. RUNX3 is shown as a
 T/NK-associated example with 37,694 motif sites, and CEBPB is shown as a
 myeloid-associated example with 17,454 motif sites. The plotted value is direct
 CPM-normalized cut-site signal, not a derived protection score. Thin lines show
@@ -603,7 +633,7 @@ important when the question is condition-specific occupancy rather than motif
 presence alone.
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/footprint_representation.png}
+\includegraphics[width=\textwidth]{figures/footprint_representation.pdf}
 \caption{Predictor comparison for K562 CTCF (chromosome~4). A footprint-occupancy
 score is informative only at Tn5 cut-site resolution (green, AUROC $0.68$); the same
 score on smoothed coverage is inverted and uninformative (red, $0.24$). Raw
@@ -647,9 +677,10 @@ YAML / batch execution & \checkmark & NA & NA & NA & NA & NA\\
 Deep sequence-to-profile models such as ChromBPNet provide powerful
 sequence-driven occupancy and variant-effect analyses~\cite{chrombpnet2024}. Differential TF activity was also considered relative to orthogonal accessibility-based frameworks such as diffTF~\cite{Berest2019_diffTF}.
 \texttt{fp-tools} addresses a complementary need: a lightweight, auditable
-ATAC-seq footprinting workflow that can be run from corrected ATAC-seq signal
-tracks, inspected at motif-centered loci, and extended to replicate and
-pseudobulk settings. The replicate-aware summaries reported here use
+ATAC-seq footprinting workflow that builds on the widely used TOBIAS-style
+footprinting model while integrating footprint calling, motif discovery,
+differential analysis, and reporting within one reproducible ecosystem. The
+replicate-aware summaries reported here use
 condition-level and replicate-level score variation to aid interpretation of
 differential footprint comparisons; they are designed for transparent reporting
 and visualization rather than as a replacement for specialized hierarchical

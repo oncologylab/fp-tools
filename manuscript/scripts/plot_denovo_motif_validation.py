@@ -14,7 +14,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
@@ -171,51 +170,12 @@ def motif_lookup(payload: dict) -> dict[str, dict]:
     return {motif["prefix"]: motif for motif in payload.get("aggregate", {}).get("motifs", [])}
 
 
-def draw_box(ax, xy, text, width=0.78, height=0.105, fc="#f8fbff", ec="#4c78a8"):
-    x, y = xy
-    box = FancyBboxPatch(
-        (x, y), width, height,
-        boxstyle="round,pad=0.016,rounding_size=0.018",
-        facecolor=fc,
-        edgecolor=ec,
-        linewidth=0.9,
-        transform=ax.transAxes,
-    )
-    ax.add_patch(box)
-    ax.text(x + width / 2, y + height / 2, text, ha="center", va="center", transform=ax.transAxes, fontsize=7.4, fontweight="bold")
-
-
-def draw_arrow(ax, start, end):
-    ax.add_patch(
-        FancyArrowPatch(
-            start,
-            end,
-            arrowstyle="-|>",
-            mutation_scale=10,
-            linewidth=0.9,
-            color="0.3",
-            transform=ax.transAxes,
-        )
-    )
-
-
-def plot_workflow(ax):
-    ax.axis("off")
-    ax.set_title("A. Two ways de novo motifs enter fp-tools", loc="left", pad=8)
-    draw_box(ax, (0.08, 0.78), "Corrected ATAC\ncut-site tracks", fc="#eef5ff")
-    draw_box(ax, (0.08, 0.60), "call-footprints\nrank local candidates", fc="#eefaf0", ec="#2f7d32")
-    draw_box(ax, (0.08, 0.42), "candidate FASTA\n+ STREME", fc="#f5f0ff", ec="#6a3d9a")
-    draw_box(ax, (0.08, 0.22), "Mode 1: de novo only\ndiff-footprints", fc="#fff7ec", ec="#f58518")
-    draw_box(ax, (0.08, 0.04), "Mode 2: database + de novo\nsupplement missing motifs", fc="#fff7ec", ec="#f58518")
-    for y1, y2 in [(0.78, 0.705), (0.60, 0.525), (0.42, 0.325), (0.22, 0.145)]:
-        draw_arrow(ax, (0.47, y1), (0.47, y2))
-
-
 def plot_discovery_table(ax, streme: pd.DataFrame, rescued: pd.DataFrame):
     ax.axis("off")
-    ax.set_title("B. De novo-only discovery produces testable motif families", loc="left", pad=8)
+    ax.set_title("B. Representative discovered motifs", loc="left", pad=7, fontsize=8.4)
     selected_names = set(rescued[rescued["highlighted"]]["name"].astype(str))
     rows = []
+    representative = {"Bcell_denovo_5", "Bcell_denovo_1", "Tcell_denovo_6", "Tcell_denovo_5"}
     for _, row in streme.iterrows():
         source_prefix = "Bcell" if row["direction"].startswith("B-cell") else "Tcell"
         short_id = str(row["de_novo_motif"]).split("-", 1)[0]
@@ -223,35 +183,36 @@ def plot_discovery_table(ax, streme: pd.DataFrame, rescued: pd.DataFrame):
         priority = 3 if row["confident_tomtom"] else 0
         if prefix in selected_names:
             priority += 2
-        if prefix in {"Bcell_denovo_5", "Tcell_denovo_4", "Tcell_denovo_6", "Tcell_denovo_1"}:
-            priority += 1
+        if prefix in representative:
+            priority += 10
         if priority > 0:
             item = row.copy()
+            item["prefix"] = prefix
             item["priority"] = priority
             rows.append(item)
     if not rows:
         rows = [row for _, row in streme.head(6).iterrows()]
-    display = pd.DataFrame(rows).sort_values(["priority", "confident_tomtom", "direction"], ascending=[False, False, True]).head(7)
-    y0 = 0.88
-    col_x = [0.00, 0.27, 0.50, 0.68]
-    headers = ["source", "consensus", "sites", "Tomtom annotation"]
+    display = pd.DataFrame(rows).sort_values(["priority", "confident_tomtom", "direction"], ascending=[False, False, True]).head(4)
+    y0 = 0.84
+    col_x = [0.00, 0.24, 0.49, 0.63]
+    headers = ["candidate set", "consensus", "sites", "Tomtom match"]
     for x, h in zip(col_x, headers):
-        ax.text(x, y0, h, transform=ax.transAxes, fontsize=7.2, fontweight="bold", va="top")
+        ax.text(x, y0, h, transform=ax.transAxes, fontsize=7.0, fontweight="bold", va="top")
     ax.plot([0, 1], [y0 - 0.035, y0 - 0.035], color="0.72", linewidth=0.7, transform=ax.transAxes)
-    y = y0 - 0.085
+    y = y0 - 0.115
     summary_rows = []
     for _, row in display.iterrows():
-        source = "B candidates" if row["direction"].startswith("B-cell") else "T candidates"
+        source = "B-cell enriched" if row["direction"].startswith("B-cell") else "T-cell enriched"
         q = row["tomtom_q_value"]
         tomtom = row["tomtom_label"]
         if pd.notna(q) and row["confident_tomtom"]:
-            tomtom = f"{tomtom}; q={q:.1e}"
-        ax.text(col_x[0], y, source, transform=ax.transAxes, fontsize=6.8, va="top")
-        ax.text(col_x[1], y, row["consensus"], transform=ax.transAxes, fontsize=6.8, va="top", family="monospace")
-        ax.text(col_x[2], y, f"{int(row['sites']):,}", transform=ax.transAxes, fontsize=6.8, va="top")
-        ax.text(col_x[3], y, tomtom, transform=ax.transAxes, fontsize=6.8, va="top")
+            tomtom = f"{tomtom.split('(', 1)[0].strip()}-like; q={q:.1e}"
+        ax.text(col_x[0], y, source, transform=ax.transAxes, fontsize=6.7, va="top")
+        ax.text(col_x[1], y, row["consensus"], transform=ax.transAxes, fontsize=6.7, va="top", family="monospace")
+        ax.text(col_x[2], y, f"{int(row['sites']):,}", transform=ax.transAxes, fontsize=6.7, va="top")
+        ax.text(col_x[3], y, tomtom, transform=ax.transAxes, fontsize=6.7, va="top")
         summary_rows.append(row.to_dict())
-        y -= 0.105
+        y -= 0.145
     ax.text(
         0.0,
         0.02,
@@ -263,40 +224,114 @@ def plot_discovery_table(ax, streme: pd.DataFrame, rescued: pd.DataFrame):
     )
     return summary_rows
 
+def add_rescued_annotations(rescued: pd.DataFrame, streme: pd.DataFrame) -> pd.DataFrame:
+    annotations = []
+    for _, row in streme.iterrows():
+        source_prefix = "Bcell" if row["direction"].startswith("B-cell") else "Tcell"
+        short_id = str(row["de_novo_motif"]).split("-", 1)[0]
+        annotations.append(
+            {
+                "name": f"{source_prefix}_denovo_{short_id}",
+                "consensus": row["consensus"],
+                "streme_sites": row["sites"],
+                "tomtom_label": row["tomtom_label"],
+                "tomtom_q_value": row["tomtom_q_value"],
+                "confident_tomtom": row["confident_tomtom"],
+                "candidate_direction": row["direction"],
+            }
+        )
+    annotated = rescued.merge(pd.DataFrame(annotations), on="name", how="left")
+    annotated["display_label"] = annotated.apply(rescued_display_label, axis=1)
+    return annotated
 
-def plot_rescue(ax, counts: pd.DataFrame, rescued: pd.DataFrame):
-    ax.set_title("C. Supplement mode rescues extra differential motif families", loc="left", pad=8)
+
+def rescued_display_label(row: pd.Series) -> str:
+    name = str(row.get("name", ""))
+    motif_number = name.replace("Bcell_denovo_", "B dn").replace("Tcell_denovo_", "T dn")
+    tomtom = str(row.get("tomtom_label", ""))
+    if tomtom and tomtom != "no confident match" and tomtom != "nan":
+        tomtom = tomtom.split("(", 1)[0].strip()
+        return f"{motif_number}: {tomtom}-like"
+    consensus = str(row.get("consensus", ""))
+    return f"{motif_number}: {consensus}"
+
+
+def plot_rescued_motifs(ax, counts: pd.DataFrame, rescued: pd.DataFrame, streme: pd.DataFrame) -> pd.DataFrame:
     count_plot = counts[counts["result_set"].isin(["restricted JASPAR", "restricted + de novo"])].copy()
-    x = np.arange(len(count_plot))
-    ax.bar(x, count_plot["n_highlighted"], color=["#9aa0a6", "#f58518"], edgecolor="0.25", linewidth=0.5)
-    ax.set_xticks(x, ["restricted\nJASPAR", "restricted\n+ de novo"])
-    ax.set_ylabel("Highlighted families")
-    ax.set_ylim(0, max(count_plot["n_highlighted"]) * 1.32)
-    for xi, value in zip(x, count_plot["n_highlighted"]):
-        ax.text(xi, value + 2.0, f"{int(value)}", ha="center", va="bottom", fontsize=8.5, fontweight="bold")
-    plus = count_plot[count_plot["result_set"].eq("restricted + de novo")].iloc[0]
     base = count_plot[count_plot["result_set"].eq("restricted JASPAR")].iloc[0]
-    ax.text(1.0, plus["n_highlighted"] + 9, f"+{int(plus['n_highlighted'] - base['n_highlighted'])} total\n{int(plus['n_highlighted_de_novo'])} de novo", ha="center", va="bottom", fontsize=7.0, color="#a45100", fontweight="bold")
-    ax.spines[["top", "right"]].set_visible(False)
-    ax.grid(axis="y", color="0.9", linewidth=0.5)
-    highlighted = rescued[rescued["highlighted"]].head(6)
-    text = "Highlighted de novo motifs:\n" + "\n".join(
-        f"{r['name'].replace('_denovo_', ' dn')}: change {float(r['Bcell_Tcell_change']):+.2f}"
-        for _, r in highlighted.iterrows()
-    )
-    ax.text(
-        0.47,
-        0.94,
-        text,
-        transform=ax.transAxes,
-        fontsize=6.25,
-        va="top",
-        bbox={"boxstyle": "round,pad=0.24", "facecolor": "white", "edgecolor": "0.82", "linewidth": 0.5},
-    )
+    plus = count_plot[count_plot["result_set"].eq("restricted + de novo")].iloc[0]
+    ax.set_title("A. Database supplement highlights additional motif families", loc="left", pad=7, fontsize=8.4)
+    annotated = add_rescued_annotations(rescued[rescued["highlighted"]].copy(), streme)
+    annotated = annotated.sort_values("Bcell_Tcell_change", ascending=True).reset_index(drop=True)
+    ax.axis("off")
+
+    tile_data = [
+        ("restricted JASPAR", int(base["n_highlighted"]), "#f2f5f9"),
+        ("restricted + de novo", int(plus["n_highlighted"]), "#edf7ef"),
+        ("de novo-derived", int(plus["n_highlighted_de_novo"]), "#eef4fb"),
+    ]
+    for idx, (label, value, color) in enumerate(tile_data):
+        x0 = 0.01 + idx * 0.325
+        ax.add_patch(
+            plt.Rectangle(
+                (x0, 0.66),
+                0.295,
+                0.22,
+                transform=ax.transAxes,
+                facecolor=color,
+                edgecolor="0.70",
+                linewidth=0.65,
+            )
+        )
+        ax.text(x0 + 0.018, 0.825, label, transform=ax.transAxes, fontsize=6.8, fontweight="bold", va="top")
+        ax.text(x0 + 0.018, 0.705, f"{value}", transform=ax.transAxes, fontsize=14.0, fontweight="bold", va="bottom")
+    ax.text(0.02, 0.58, "Highlighted de novo-derived motifs in the restricted-database sensitivity test", transform=ax.transAxes, fontsize=6.8, fontweight="bold")
+
+    x = annotated["Bcell_Tcell_change"].to_numpy(dtype=float)
+    max_abs = max(float(np.nanmax(np.abs(x))), 1e-6)
+    center_x = 0.50
+    scale = 0.34 / max_abs
+    y_positions = np.linspace(0.48, 0.08, len(annotated))
+    ax.plot([center_x, center_x], [0.045, 0.515], color="0.45", linewidth=0.7, transform=ax.transAxes, zorder=0)
+    ax.text(0.13, 0.525, "T-cell higher", color=CONDITION_COLORS["Tcell"], transform=ax.transAxes, fontsize=6.7, fontweight="bold")
+    ax.text(0.87, 0.525, "B-cell higher", color=CONDITION_COLORS["Bcell"], transform=ax.transAxes, fontsize=6.7, fontweight="bold", ha="right")
+    for ypos, (_, row) in zip(y_positions, annotated.iterrows()):
+        change = float(row["Bcell_Tcell_change"])
+        xpos = center_x + change * scale
+        color = CONDITION_COLORS["Bcell"] if change >= 0 else CONDITION_COLORS["Tcell"]
+        ax.plot([center_x, xpos], [ypos, ypos], color=color, linewidth=1.35, alpha=0.74, transform=ax.transAxes)
+        ax.scatter([xpos], [ypos], s=35, color=color, edgecolor="white", linewidth=0.5, transform=ax.transAxes, zorder=3)
+        label_x = 0.02 if xpos >= center_x else 0.60
+        ax.text(label_x, ypos, str(row["display_label"]), transform=ax.transAxes, fontsize=6.25, va="center")
+        ax.text(0.94, ypos, f"{change:+.2f}", transform=ax.transAxes, fontsize=6.1, va="center", ha="right", color=color)
     bold_all_text(ax)
+    return annotated
 
 
-def plot_aggregate_panel(ax, motif: dict, xvals: np.ndarray, panel_label: str, summary_rows: list[dict[str, object]]):
+def aggregate_title(motif: dict) -> tuple[str, str]:
+    prefix = str(motif.get("prefix", ""))
+    if prefix.startswith("Bcell_denovo_5"):
+        return "BATF-like", "B-cell candidates"
+    if prefix.startswith("Tcell_denovo_6"):
+        return "IKZF2-like", "T-cell candidates"
+    if prefix.startswith("Tcell_denovo_4"):
+        return "T-cell de novo 4", "T-cell candidates"
+    if prefix.startswith("Tcell_denovo_1"):
+        return "T-cell de novo 1", "T-cell candidates"
+    source = "T-cell candidates" if prefix.startswith("Tcell") else "B-cell candidates"
+    return str(motif.get("name", "de novo motif")).replace("_", " "), source
+
+
+def plot_aggregate_panel(
+    ax,
+    motif: dict,
+    xvals: np.ndarray,
+    panel_label: str,
+    summary_rows: list[dict[str, object]],
+    *,
+    show_xlabel: bool,
+    show_ylabel: bool,
+):
     condition_scores = {}
     for condition in motif.get("conditions", []):
         condition_name = str(condition["name"])
@@ -310,8 +345,8 @@ def plot_aggregate_panel(ax, motif: dict, xvals: np.ndarray, panel_label: str, s
                 profile,
                 color=color,
                 linestyle=SAMPLE_STYLES.get(sample_name, "solid"),
-                linewidth=0.72,
-                alpha=0.48,
+                linewidth=0.86,
+                alpha=0.55,
                 label=sample_name,
                 zorder=1,
             )
@@ -328,23 +363,21 @@ def plot_aggregate_panel(ax, motif: dict, xvals: np.ndarray, panel_label: str, s
             )
         profile = np.asarray(condition["profile"], dtype=float)
         condition_scores[condition_name] = center_flank_score(profile, xvals)
-        ax.plot(xvals, profile, color=color, linewidth=1.65, alpha=0.98, label=f"{condition_name} mean", zorder=2)
+        ax.plot(xvals, profile, color=color, linewidth=1.45, alpha=0.98, label=f"{condition_name} mean", zorder=2)
     stronger = min(condition_scores, key=condition_scores.get) if condition_scores else ""
-    score_text = "; ".join(f"{k} {v:.3f}" for k, v in condition_scores.items())
     ax.axvline(0, color="0.35", linewidth=0.75)
     ax.axhline(0, color="0.78", linewidth=0.55, zorder=0)
+    family, source = aggregate_title(motif)
     ax.set_title(
-        f"{panel_label}. {motif.get('name')} ({motif.get('motif_id')})\n"
-        f"{AGGREGATE_ROLES.get(motif.get('prefix', ''), '')}; n={int(motif.get('n_sites', 0)):,}; {stronger} deeper",
-        fontsize=7.3,
+        f"{panel_label}. {family} ({source})\n"
+        f"n={int(motif.get('n_sites', 0)):,}; deeper: {stronger}",
+        fontsize=7.0,
     )
-    ax.text(0.02, 0.04, f"center-flank: {score_text}", transform=ax.transAxes, fontsize=5.8, color="0.35", va="bottom")
-    ax.set_xlabel("Distance from motif center (bp)")
-    ax.set_ylabel("Normalized cut-site signal")
+    ax.set_xlabel("Distance from motif center (bp)" if show_xlabel else "")
+    ax.set_ylabel("Normalized cut-site signal" if show_ylabel else "")
     ax.spines[["top", "right"]].set_visible(False)
     ax.grid(axis="y", color="0.9", linewidth=0.5)
     bold_all_text(ax)
-
 
 def plot_validation(validation_dir: Path, jaspar: Path, out_prefix: Path) -> None:
     motif_sets = pd.read_csv(validation_dir / "motifs" / "motif_set_summary.tsv", sep="\t")
@@ -364,32 +397,37 @@ def plot_validation(validation_dir: Path, jaspar: Path, out_prefix: Path) -> Non
     if missing:
         raise ValueError(f"Selected aggregate motifs missing from payload: {', '.join(missing)}")
 
-    apply_style(base_size=8.2)
-    fig = plt.figure(figsize=(7.5, 8.9))
-    gs = fig.add_gridspec(4, 2, height_ratios=[1.15, 1.12, 1.35, 1.35], hspace=0.58, wspace=0.36)
+    apply_style(base_size=8.0)
+    fig = plt.figure(figsize=(7.6, 9.15))
+    gs = fig.add_gridspec(4, 2, height_ratios=[1.08, 0.70, 1.28, 1.28], hspace=0.58, wspace=0.34)
 
-    ax_workflow = fig.add_subplot(gs[0:2, 0])
-    plot_workflow(ax_workflow)
+    ax_rescue = fig.add_subplot(gs[0, :])
+    rescued_rows = plot_rescued_motifs(ax_rescue, counts, rescued, streme)
 
-    ax_table = fig.add_subplot(gs[0, 1])
+    ax_table = fig.add_subplot(gs[1, :])
     discovery_rows = plot_discovery_table(ax_table, streme, rescued)
 
-    ax_rescue = fig.add_subplot(gs[1, 1])
-    plot_rescue(ax_rescue, counts, rescued)
-
     summary_rows: list[dict[str, object]] = []
-    panel_labels = ["D", "E", "F", "G"]
+    panel_labels = ["C", "D", "E", "F"]
     for idx, prefix in enumerate(SELECTED_AGGREGATES):
         ax = fig.add_subplot(gs[2 + idx // 2, idx % 2])
-        plot_aggregate_panel(ax, motifs_by_prefix[prefix], xvals, panel_labels[idx], summary_rows)
+        plot_aggregate_panel(
+            ax,
+            motifs_by_prefix[prefix],
+            xvals,
+            panel_labels[idx],
+            summary_rows,
+            show_xlabel=idx >= 2,
+            show_ylabel=idx % 2 == 0,
+        )
 
     handles, labels = fig.axes[-1].get_legend_handles_labels()
     unique = {}
     for handle, label in zip(handles, labels):
         unique.setdefault(label, handle)
-    fig.legend(unique.values(), unique.keys(), loc="lower center", ncol=6, frameon=False, fontsize=6.6)
-    fig.suptitle("De novo motif discovery validates standalone and supplement modes", y=0.995)
-    fig.subplots_adjust(left=0.085, right=0.985, top=0.955, bottom=0.075, hspace=0.74, wspace=0.38)
+    fig.legend(unique.values(), unique.keys(), loc="lower center", ncol=6, frameon=False, fontsize=6.5)
+    fig.suptitle("De novo motifs add testable differential-footprint signal", y=0.992, fontsize=10.5)
+    fig.subplots_adjust(left=0.105, right=0.985, top=0.94, bottom=0.064, hspace=0.62, wspace=0.34)
 
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_prefix.with_suffix(".png"), dpi=300, bbox_inches="tight")
@@ -409,7 +447,7 @@ def plot_validation(validation_dir: Path, jaspar: Path, out_prefix: Path) -> Non
         handle.write("\n# displayed_discovery_rows\n")
         pd.DataFrame(discovery_rows).to_csv(handle, sep="\t", index=False)
         handle.write("\n# highlighted_de_novo_in_restricted_plus_denovo\n")
-        rescued[rescued["highlighted"]].to_csv(handle, sep="\t", index=False)
+        rescued_rows.to_csv(handle, sep="\t", index=False)
         handle.write("\n# aggregate_center_minus_flank\n")
         pd.DataFrame(summary_rows).to_csv(handle, sep="\t", index=False)
     print(f"Wrote {out_prefix.with_suffix('.png')}")

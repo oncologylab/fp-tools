@@ -55,20 +55,6 @@ Pampari, A.; Shcherbina, A.; Kvon, E.Z.; Kosicki, M.; Nair, S.; Kundu, S.;
 \newblock {\em bioRxiv} {\bf 2025}.
 \newblock Preprint, {\url{https://doi.org/10.1101/2024.12.25.630221}}.
 
-\bibitem[Sung et~al.(2014)Sung, Guertin, Baek, and Hager]{sung2014}
-Sung, M.H.; Guertin, M.J.; Baek, S.; Hager, G.L.
-\newblock {DNase} footprint signatures are dictated by factor dynamics and
-  {DNA} sequence.
-\newblock {\em Molecular Cell} {\bf 2014}, {\em 56},~275--285.
-\newblock {\url{https://doi.org/10.1016/j.molcel.2014.08.016}}.
-
-\bibitem[Hu et~al.(2022)Hu, Liu, Li, Ma, and Guertin]{Hu2022_SELMA}
-Hu, S.S.; Liu, L.; Li, Q.; Ma, W.; Guertin, M.J.
-\newblock Intrinsic bias estimation for improved analysis of bulk and
-  single-cell chromatin accessibility sequencing data using SELMA.
-\newblock {\em Nature Communications} {\bf 2022}, {\em 13},~6396.
-\newblock {\url{https://doi.org/10.1038/s41467-022-33194-z}}.
-
 \bibitem[Bailey et~al.(2015)Bailey, Johnson, Grant, and Noble]{bailey2015meme}
 Bailey, T.L.; Johnson, J.; Grant, C.E.; Noble, W.S.
 \newblock The {MEME} Suite.
@@ -87,6 +73,20 @@ Gupta, S.; Stamatoyannopoulos, J.A.; Bailey, T.L.; Noble, W.S.
 \newblock Quantifying similarity between motifs.
 \newblock {\em Genome Biology} {\bf 2007}, {\em 8},~R24.
 \newblock {\url{https://doi.org/10.1186/gb-2007-8-2-r24}}.
+
+\bibitem[Sung et~al.(2014)Sung, Guertin, Baek, and Hager]{sung2014}
+Sung, M.H.; Guertin, M.J.; Baek, S.; Hager, G.L.
+\newblock {DNase} footprint signatures are dictated by factor dynamics and
+  {DNA} sequence.
+\newblock {\em Molecular Cell} {\bf 2014}, {\em 56},~275--285.
+\newblock {\url{https://doi.org/10.1016/j.molcel.2014.08.016}}.
+
+\bibitem[Hu et~al.(2022)Hu, Liu, Li, Ma, and Guertin]{Hu2022_SELMA}
+Hu, S.S.; Liu, L.; Li, Q.; Ma, W.; Guertin, M.J.
+\newblock Intrinsic bias estimation for improved analysis of bulk and
+  single-cell chromatin accessibility sequencing data using SELMA.
+\newblock {\em Nature Communications} {\bf 2022}, {\em 13},~6396.
+\newblock {\url{https://doi.org/10.1038/s41467-022-33194-z}}.
 
 \bibitem[Chen et~al.(2018)Chen, Zhou, Chen, and Gu]{Chen2018_fastp}
 Chen, S.; Zhou, Y.; Chen, Y.; Gu, J.
