@@ -17,6 +17,7 @@ class PublicApiAliasesTest(unittest.TestCase):
             "call-footprints": "fp_tools.cli_scorebigwig:main",
             "match-motifs": "fp_tools.tools.bindetect:match_motifs_cli",
             "diff-footprints": "fp_tools.tools.bindetect:diff_footprints_cli",
+            "normalize-bigwig": "fp_tools.tools.normalize_bigwig:main",
             "plot-aggregate": "fp_tools.cli_plotaggregate:main",
             "plot-aggregate-batch": "fp_tools.tools.plot_aggregate_batch:main",
             "run-workflow": "fp_tools.cli_batch:main",
@@ -24,6 +25,7 @@ class PublicApiAliasesTest(unittest.TestCase):
             "motif-discovery": "fp_tools.tools.motif_discovery:motif_discovery_plan_main",
             "motif-summary": "fp_tools.tools.motif_discovery:motif_report_main",
             "pseudobulk-fragments": "fp_tools.tools.pseudobulk:main",
+            "pseudobulk-footprints": "fp_tools.tools.pseudobulk_footprints:main",
             "ATACorrect": "fp_tools.cli:main",
             "FootprintScores": "fp_tools.cli_scorebigwig:main",
             "ScoreBigwig": "fp_tools.cli_scorebigwig:main",
@@ -43,9 +45,12 @@ class PublicApiAliasesTest(unittest.TestCase):
             "ScoreBigwig": "call-footprints",
             "match-motifs": "match-motifs",
             "diff-footprints": "diff-footprints",
+            "normalize-bigwig": "normalize-bigwig",
             "BINDetect": "diff-footprints",
             "plot-aggregate": "plot-aggregate",
             "PlotAggregate": "plot-aggregate",
+            "pseudobulk-fragments": "pseudobulk-fragments",
+            "pseudobulk-footprints": "pseudobulk-footprints",
         }
 
         for alias, canonical in aliases.items():

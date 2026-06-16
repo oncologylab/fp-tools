@@ -9,7 +9,7 @@ import sys
 import pyBigWig
 import pysam
 
-from fp_tools.tools.pseudobulk import group_fragments, write_cutsite_bigwig, write_downstream_commands, write_pseudo_paired_bam
+from fp_tools.tools.pseudobulk import group_bam_by_tag, group_fragments, write_cutsite_bigwig, write_downstream_commands, write_pseudo_paired_bam
 
 
 class PseudobulkTest(unittest.TestCase):
@@ -152,6 +152,47 @@ class PseudobulkTest(unittest.TestCase):
             kept_bam = Path(kept["pseudo_bam"])
             self.assertTrue(kept_bam.exists())
             self.assertTrue(kept_bam.with_suffix(kept_bam.suffix + ".bai").exists())
+            self.assertEqual(filtered["pseudo_bam"], "")
+
+    def test_group_bam_by_tag_writes_real_pseudobulk_bams(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            bam_path = tmp / "all_cells.bam"
+            annotations = tmp / "annotations.tsv"
+            outdir = tmp / "bam_groups"
+            header = {"HD": {"VN": "1.6"}, "SQ": [{"SN": "chr1", "LN": 200}]}
+            with pysam.AlignmentFile(str(bam_path), "wb", header=header) as bam:
+                for idx, barcode in enumerate(["cellA-1", "cellB-1", "cellC-1", "missing-1"]):
+                    read = pysam.AlignedSegment()
+                    read.query_name = f"read{idx}"
+                    read.query_sequence = "A" * 20
+                    read.flag = 0
+                    read.reference_id = 0
+                    read.reference_start = 10 + idx * 10
+                    read.mapping_quality = 60
+                    read.cigar = ((0, 20),)
+                    read.query_qualities = pysam.qualitystring_to_array("I" * 20)
+                    read.set_tag("CB", barcode)
+                    bam.write(read)
+
+            annotations.write_text("barcode\tcell_type\ncellA\tB\ncellB\tB\ncellC\tT\n", encoding="utf-8")
+            manifest = group_bam_by_tag(
+                bam_path,
+                annotations,
+                outdir,
+                group_by=["cell_type"],
+                min_cells=2,
+                min_fragments=2,
+                cores=1,
+            )
+
+            kept = manifest.loc[manifest["group"] == "B"].iloc[0]
+            filtered = manifest.loc[manifest["group"] == "T"].iloc[0]
+            kept_bam = Path(kept["pseudo_bam"])
+            self.assertTrue(kept_bam.exists())
+            self.assertTrue(kept_bam.with_suffix(kept_bam.suffix + ".bai").exists())
+            self.assertEqual(kept["source_type"], "tagged_bam")
+            self.assertEqual(kept["read_shift"], "4 -5")
             self.assertEqual(filtered["pseudo_bam"], "")
 
     def test_write_cutsite_bigwig_raw_counts(self):
@@ -363,6 +404,187 @@ class PseudobulkTest(unittest.TestCase):
             self.assertIn("selected_for_figure", text)
             self.assertIn("BACH2\tB_cell", text)
             self.assertIn("True", text)
+
+
+    def test_pseudobulk_aggregate_supports_footprint_signal_column(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            site_dir = tmp / "sites"
+            site_dir.mkdir()
+            footprint_bw = tmp / "Group.footprints.bw"
+            manifest = tmp / "pseudobulk_footprint_manifest.tsv"
+            out_prefix = tmp / "footprint_aggregate"
+            bw = pyBigWig.open(str(footprint_bw), "w")
+            try:
+                bw.addHeader([("chr1", 120)])
+                starts = list(range(30, 70))
+                bw.addEntries(["chr1"] * len(starts), starts, ends=[start + 1 for start in starts], values=[float(start) for start in starts])
+            finally:
+                bw.close()
+            manifest.write_text(
+                "group\tfragment_file\tn_cells\tn_fragments\tfootprint_bigwig\tpasses_filters\n"
+                f"Group\t-\t2\t3\t{footprint_bw}\tTrue\n",
+                encoding="utf-8",
+            )
+            (site_dir / "TF1.motif_peaks.bed").write_text("chr1\t49\t51\tTF1\n", encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
+                    "--manifest",
+                    str(manifest),
+                    "--tf-site-dir",
+                    str(site_dir),
+                    "--out-prefix",
+                    str(out_prefix),
+                    "--groups",
+                    "Group",
+                    "--tfs",
+                    "TF1",
+                    "--flank",
+                    "20",
+                    "--signal-column",
+                    "footprint_bigwig",
+                    "--value-column",
+                    "footprint_score",
+                    "--ylabel",
+                    "Footprint score",
+                ],
+                cwd=Path(__file__).resolve().parents[1],
+                check=True,
+            )
+
+            self.assertTrue(out_prefix.with_suffix(".png").exists())
+            table = out_prefix.with_suffix(".tsv").read_text(encoding="utf-8")
+            self.assertIn("footprint_score", table)
+            self.assertIn("footprint_bigwig", table)
+
+    def test_pseudobulk_footprints_dry_run_writes_full_command_plan(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            fragments = tmp / "fragments.tsv"
+            annotations = tmp / "annotations.tsv"
+            genome_sizes = tmp / "genome.sizes"
+            genome = tmp / "genome.fa"
+            peaks = tmp / "peaks.bed"
+            outdir = tmp / "workflow"
+            fragments.write_text("chr1\t10\t20\tcellA\t2\nchr1\t30\t40\tcellB\t1\n", encoding="utf-8")
+            annotations.write_text("barcode\tcell_type\ncellA\tB\ncellB\tB\n", encoding="utf-8")
+            genome_sizes.write_text("chr1\t100\n", encoding="utf-8")
+            genome.write_text(">chr1\n" + "A" * 100 + "\n", encoding="utf-8")
+            peaks.write_text("chr1\t1\t80\n", encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "fp_tools.tools.pseudobulk_footprints",
+                    "--fragments",
+                    str(fragments),
+                    "--annotations",
+                    str(annotations),
+                    "--group-by",
+                    "cell_type",
+                    "--outdir",
+                    str(outdir),
+                    "--genome-sizes",
+                    str(genome_sizes),
+                    "--genome",
+                    str(genome),
+                    "--peaks",
+                    str(peaks),
+                    "--min-cells",
+                    "2",
+                    "--min-fragments",
+                    "3",
+                    "--cores",
+                    "1",
+                    "--dry-run",
+                ],
+                cwd=Path(__file__).resolve().parents[1],
+                check=True,
+            )
+
+            manifest = outdir / "pseudobulk_footprint_manifest.tsv"
+            commands = outdir / "pseudobulk_footprint_commands.sh"
+            self.assertTrue(manifest.exists())
+            self.assertTrue(commands.exists())
+            text = commands.read_text(encoding="utf-8")
+            self.assertIn("atac-correct", text)
+            self.assertIn("--read_shift 0 0", text)
+            self.assertIn("call-footprints", text)
+            table = manifest.read_text(encoding="utf-8")
+            self.assertIn("footprint_bigwig", table)
+            self.assertIn("candidate_bed", table)
+            self.assertIn("dry_run", table)
+
+    def test_pseudobulk_footprints_bam_dry_run_uses_default_shift_and_bindetect(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            bam_path = tmp / "all_cells.bam"
+            annotations = tmp / "annotations.tsv"
+            genome = tmp / "genome.fa"
+            peaks = tmp / "peaks.bed"
+            motifs = tmp / "motifs.jaspar"
+            outdir = tmp / "workflow"
+            header = {"HD": {"VN": "1.6"}, "SQ": [{"SN": "chr1", "LN": 200}]}
+            with pysam.AlignmentFile(str(bam_path), "wb", header=header) as bam:
+                for idx, barcode in enumerate(["cellA", "cellB"]):
+                    read = pysam.AlignedSegment()
+                    read.query_name = f"read{idx}"
+                    read.query_sequence = "A" * 20
+                    read.flag = 0
+                    read.reference_id = 0
+                    read.reference_start = 10 + idx * 20
+                    read.mapping_quality = 60
+                    read.cigar = ((0, 20),)
+                    read.query_qualities = pysam.qualitystring_to_array("I" * 20)
+                    read.set_tag("CB", barcode)
+                    bam.write(read)
+            annotations.write_text("barcode\tcell_type\ncellA\tB\ncellB\tB\n", encoding="utf-8")
+            genome.write_text(">chr1\n" + "A" * 200 + "\n", encoding="utf-8")
+            peaks.write_text("chr1\t1\t120\n", encoding="utf-8")
+            motifs.write_text(">TF1\nA [1 0 0 0]\nC [0 1 0 0]\nG [0 0 1 0]\nT [0 0 0 1]\n", encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "fp_tools.tools.pseudobulk_footprints",
+                    "--bam",
+                    str(bam_path),
+                    "--annotations",
+                    str(annotations),
+                    "--group-by",
+                    "cell_type",
+                    "--outdir",
+                    str(outdir),
+                    "--genome",
+                    str(genome),
+                    "--peaks",
+                    str(peaks),
+                    "--motifs",
+                    str(motifs),
+                    "--min-cells",
+                    "2",
+                    "--min-fragments",
+                    "2",
+                    "--cores",
+                    "1",
+                    "--dry-run",
+                ],
+                cwd=Path(__file__).resolve().parents[1],
+                check=True,
+            )
+
+            commands = (outdir / "pseudobulk_footprint_commands.sh").read_text(encoding="utf-8")
+            manifest = (outdir / "pseudobulk_footprint_manifest.tsv").read_text(encoding="utf-8")
+            self.assertIn("--read_shift 4 -5", commands)
+            self.assertIn("diff-footprints", commands)
+            self.assertIn("--aggregate-signals", commands)
+            self.assertIn("bindetect_results", manifest)
+            self.assertIn("tagged_bam", manifest)
 
     def test_write_downstream_commands_for_kept_groups(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -266,6 +266,115 @@ def _write_group_pseudo_bam(args: tuple[str, str, str, str]) -> tuple[str, str]:
     return group, output
 
 
+def group_bam_by_tag(
+    bam: str | Path,
+    annotations: str | Path,
+    outdir: str | Path,
+    group_by: list[str],
+    barcode_column: str = "barcode",
+    barcode_tag: str = "CB",
+    min_cells: int = 1,
+    min_fragments: int = 1,
+    strip_barcode_suffix: bool = True,
+    include_chroms: set[str] | None = None,
+    exclude_chroms: set[str] | None = None,
+    cores: int | None = None,
+) -> pd.DataFrame:
+    """Split a tagged all-cell BAM into sorted pseudobulk BAMs by annotation group."""
+
+    if pysam is None:
+        raise RuntimeError("pysam is required for BAM pseudobulk splitting")
+    outdir = Path(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    cores = multiprocessing.cpu_count() if cores is None else max(1, int(cores))
+
+    barcode_to_group = load_annotations(annotations, barcode_column, group_by, strip_barcode_suffix=strip_barcode_suffix)
+    handles = {}
+    temp_paths: dict[str, Path] = {}
+    cells_by_group: dict[str, set[str]] = defaultdict(set)
+    reads_by_group: dict[str, int] = defaultdict(int)
+    matched_reads = 0
+    skipped_unmatched = 0
+    skipped_missing_tag = 0
+    skipped_chrom = 0
+
+    try:
+        with pysam.AlignmentFile(str(bam), "rb") as source:
+            for read in source.fetch(until_eof=True):
+                if read.is_unmapped:
+                    continue
+                chrom = source.get_reference_name(read.reference_id)
+                if include_chroms is not None and chrom not in include_chroms:
+                    skipped_chrom += 1
+                    continue
+                if exclude_chroms is not None and chrom in exclude_chroms:
+                    skipped_chrom += 1
+                    continue
+                try:
+                    barcode = _normalize_barcode(read.get_tag(barcode_tag), strip_barcode_suffix)
+                except KeyError:
+                    skipped_missing_tag += 1
+                    continue
+                group = barcode_to_group.get(barcode)
+                if group is None:
+                    skipped_unmatched += 1
+                    continue
+                if group not in handles:
+                    temp_path = outdir / f"{group}.tagged.unsorted.bam"
+                    temp_paths[group] = temp_path
+                    handles[group] = pysam.AlignmentFile(str(temp_path), "wb", template=source)
+                handles[group].write(read)
+                cells_by_group[group].add(barcode)
+                reads_by_group[group] += 1
+                matched_reads += 1
+    finally:
+        for handle in handles.values():
+            handle.close()
+
+    rows = []
+    for group in sorted(temp_paths):
+        cells = len(cells_by_group[group])
+        reads = reads_by_group[group]
+        keep = cells >= min_cells and reads >= min_fragments
+        sorted_bam = outdir / f"{group}.tagged.sorted.bam"
+        if keep:
+            pysam.sort("-@", str(cores), "-o", str(sorted_bam), str(temp_paths[group]))
+            pysam.index(str(sorted_bam))
+        temp_paths[group].unlink(missing_ok=True)
+        rows.append(
+            {
+                "group": group,
+                "fragment_file": "",
+                "n_cells": cells,
+                "n_fragments": reads,
+                "n_reads": reads,
+                "cutsite_bigwig": "",
+                "pseudo_bam": str(sorted_bam) if keep else "",
+                "passes_filters": keep,
+                "source_type": "tagged_bam",
+                "read_shift": "4 -5",
+            }
+        )
+
+    manifest = pd.DataFrame(rows)
+    manifest_path = outdir / "pseudobulk_manifest.tsv"
+    manifest.to_csv(manifest_path, sep="	", index=False)
+    config = {
+        "version": 1,
+        "pseudobulk_manifest": str(manifest_path),
+        "group_by": group_by,
+        "barcode_tag": barcode_tag,
+        "matched_reads": matched_reads,
+        "skipped_unmatched_reads": skipped_unmatched,
+        "skipped_missing_tag_reads": skipped_missing_tag,
+        "skipped_chromosome_reads": skipped_chrom,
+        "samples": [row for row in manifest.to_dict(orient="records") if row["passes_filters"]],
+    }
+    with (outdir / "fp_tools_manifest.yml").open("w", encoding="utf-8") as handle:
+        yaml.safe_dump(config, handle, sort_keys=False)
+    return manifest
+
+
 def group_fragments(
     fragments: str | Path,
     annotations: str | Path,

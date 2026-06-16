@@ -43,6 +43,8 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertIn("Download volcano SVG", html)
         self.assertIn("Download aggregate SVG", html)
         self.assertIn("aggregate-search", html)
+        self.assertIn("Select current motif TF", html)
+        self.assertIn("volcano-combo", html)
         self.assertIn("combo-option", html)
         self.assertIn("function setSelectedMotif", html)
         self.assertIn("function setupAggregateSearch", html)
@@ -53,10 +55,17 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertIn("aggregate-full", html)
         self.assertIn('id="logo-title"', html)
         self.assertIn("logoTitle.textContent", html)
-        self.assertIn('stroke-width="0.9" stroke-opacity="0.30"', html)
-        self.assertIn('stroke-width="2.2"', html)
-        self.assertIn("mean</text>", html)
+        self.assertIn('id="aggregate-show-mean"', html)
+        self.assertIn('id="aggregate-sample-styles"', html)
+        self.assertIn('data-sample-width=', html)
+        self.assertIn('data-sample-type=', html)
+        self.assertIn('id="aggregate-mean-width"', html)
+        self.assertIn('id="aggregate-mean-type"', html)
+        self.assertIn('stroke-width="${sampleLineWidth}"${sampleDash}', html)
+        self.assertIn('stroke-width="${meanLineWidth}"${meanDash}', html)
+        self.assertIn('viewBox="0 0 520 520"', html)
         self.assertIn("class=\"pt", html)
+        self.assertIn("volcanoPoints.sort", html)
         self.assertIn("Distance from motif center (bp)", html)
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
         self.assertIsNotNone(match)
@@ -147,6 +156,24 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertLess(b[0], b[1])
         self.assertLess(b[1], b[2])
         self.assertAlmostEqual(float(pd.Series(a).median()), float(pd.Series(b).median()))
+
+    def test_aggregate_size_factor_normalizers_divide_by_sample_factor(self):
+        arrays = [pd.Series([1.0, 2.0, 3.0]).to_numpy(), pd.Series([10.0, 20.0, 30.0]).to_numpy()]
+        norms = bindetect_functions._size_factor_normalizers(arrays, ["low", "high"])
+        low = norms["low"].normalize(arrays[0])
+        high = norms["high"].normalize(arrays[1])
+        self.assertEqual(set(norms), {"low", "high"})
+        self.assertAlmostEqual(float(low.mean()), float(high.mean()))
+        self.assertAlmostEqual(float(low[1] / low[0]), 2.0)
+        self.assertAlmostEqual(float(high[1] / high[0]), 2.0)
+        self.assertGreater(norms["high"].size_factor, norms["low"].size_factor)
+
+    def test_bound_site_set_uses_condition_specific_bound_beds(self):
+        paths = bindetect_functions._aggregate_bed_paths("out", "TF1", ("Bcell", "Tcell"), "bound")
+        self.assertEqual(paths["Bcell"], "out/TF1/beds/TF1_Bcell_bound.bed")
+        self.assertEqual(paths["Tcell"], "out/TF1/beds/TF1_Tcell_bound.bed")
+        all_paths = bindetect_functions._aggregate_bed_paths("out", "TF1", ("Bcell", "Tcell"), "all")
+        self.assertEqual(set(all_paths.values()), {"out/TF1/beds/TF1_all.bed"})
 
     def test_aggregate_payload_for_row_keeps_replicate_profiles(self):
         row = {"output_prefix": "TF1_MA0001.1", "name": "TF1", "motif_id": "MA0001.1", "Bcell_Tcell_change": 1.0, "Bcell_Tcell_pvalue_numeric": 0.001}

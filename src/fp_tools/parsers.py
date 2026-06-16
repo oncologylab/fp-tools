@@ -159,6 +159,8 @@ def add_bindetect_arguments(parser):
 	optargs.add_argument('--plot-aggregate-top-n', metavar="<int>", type=int, default=20, help="Number of motifs to aggregate when --plot-aggregate top or fallback selection is used (default: 20)")
 	optargs.add_argument('--aggregate-pvalue-threshold', metavar="<float>", type=float, default=0.05, help="P-value threshold for --plot-aggregate sig (default: 0.05)")
 	optargs.add_argument('--aggregate-flank', metavar="<bp>", type=int, default=100, help="Flank around motif centers for embedded aggregate profiles (default: 100)")
+	optargs.add_argument('--aggregate-normalization', choices=["match", "none", "sample-quantile", "size-factor"], default="match", help="Normalization for embedded aggregate profiles (default: match --normalization)")
+	optargs.add_argument('--aggregate-site-set', choices=["all", "bound"], default="all", help="Motif-site BEDs used for embedded aggregate profiles: all motif hits or condition-specific bound sites (default: all)")
 	optargs.add_argument('--reuse-existing-results', action='store_true', help="Regenerate final diff-footprints reports from existing <prefix>_results.txt and per-motif BEDs without rescanning motifs")
 
 	runargs = parser.add_argument_group("Run arguments")

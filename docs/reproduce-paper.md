@@ -53,15 +53,32 @@ bash scripts/run_buenrostro_denovo_motif_validation.sh
   --summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv \
   --plot-sites-per-tf 0 \
   --site-selection all
-.venv/bin/python manuscript/scripts/plot_pseudobulk_tf_aggregates.py \
-  --manifest data/public/processed/pseudobulk_pbmc/run/pseudobulk_manifest.tsv \
+.venv/bin/pseudobulk-footprints \
+  --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz \
+  --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv \
+  --group-by cell_type \
+  --min-cells 300 \
+  --min-fragments 50000 \
+  --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes \
+  --genome data/public/raw/genome/hg38.fa \
+  --peaks data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_peaks.bed \
+  --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt \
   --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered \
   --site-summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv \
-  --out-prefix manuscript/figures/supp_pseudobulk_tf_aggregates \
-  --screen-output manuscript/figures/supp_pseudobulk_tf_screen.tsv \
-  --footprint-like-output manuscript/figures/supp_pseudobulk_footprint_like \
-  --tfs SPIB,RUNX3,CEBPB,CEBPA \
-  --flank 250
+  --tfs auto \
+  --outdir data/public/processed/pseudobulk_pbmc/footprints_full \
+  --cores 8
+.venv/bin/python manuscript/scripts/plot_pseudobulk_tf_aggregates.py \
+  --manifest data/public/processed/pseudobulk_pbmc/footprints_full/pseudobulk_footprint_manifest.tsv \
+  --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered \
+  --site-summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv \
+  --out-prefix manuscript/figures/supp_pseudobulk_corrected_footprints \
+  --signal-column footprint_bigwig \
+  --value-column footprint_score \
+  --ylabel "Footprint score" \
+  --groups B_cell,CD4_T,CD14_Monocyte \
+  --tfs SPIB,RUNX3,CEBPB \
+  --flank 100
 ```
 
 After public-data outputs exist, regenerate the remaining manuscript figures with the scripts

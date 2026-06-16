@@ -24,7 +24,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
                 self.assertGreaterEqual(len(jobs), 1)
                 for job in jobs:
                     self.assertTrue(job.job_id)
-                    self.assertIn(job.tool, {"atac-correct", "call-footprints", "diff-footprints", "plot-aggregate"})
+                    self.assertIn(job.tool, {"atac-correct", "call-footprints", "diff-footprints", "normalize-bigwig", "plot-aggregate", "pseudobulk-footprints"})
                     self.assertEqual(job.command[0], job.tool)
 
     def test_all_example_yaml_configs_support_dry_run(self):
@@ -42,6 +42,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
             "call-footprints",
             "match-motifs",
             "diff-footprints",
+            "normalize-bigwig",
             "plot-aggregate",
             "plot-aggregate-batch",
             "run-workflow",

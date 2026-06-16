@@ -29,12 +29,14 @@ TOOL_ALIASES = {
     "detect-tf-binding": "diff-footprints",
     "diff-footprints": "diff-footprints",
     "bindetect": "diff-footprints",
+    "normalize-bigwig": "normalize-bigwig",
     "plot-aggregate": "plot-aggregate",
     "plotaggregate": "plot-aggregate",
     "plot-aggregate-batch": "plot-aggregate-batch",
     "run-workflow": "run-workflow",
     "motif-discovery": "motif-discovery",
     "pseudobulk-fragments": "pseudobulk-fragments",
+    "pseudobulk-footprints": "pseudobulk-footprints",
 }
 
 RESERVED_KEYS = {
@@ -53,6 +55,8 @@ LIST_FLAGS = {
     "cond-names",
     "tfbs",
     "regions",
+    "bigwigs",
+    "motifs",
 }
 
 REQUIRED_FIELDS = {
@@ -60,10 +64,12 @@ REQUIRED_FIELDS = {
     "call-footprints": ("signal", "regions", "output"),
     "match-motifs": ("motifs", "signals", "genome", "peaks"),
     "diff-footprints": ("motifs", "signals", "genome", "peaks"),
+    "normalize-bigwig": ("bigwigs", "background", "outdir"),
     "plot-aggregate": ("TFBS", "signals", "output"),
     "plot-aggregate-batch": ("manifest", "output"),
     "motif-discovery": ("outdir",),
     "pseudobulk-fragments": ("fragments", "annotations", "group_by", "outdir"),
+    "pseudobulk-footprints": ("annotations", "group_by", "outdir", "genome", "peaks"),
 }
 
 FLAG_NAME_MAP = {

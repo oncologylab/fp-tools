@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Plot motif-centered pseudobulk TF aggregate cut-site profiles."""
+"""Plot motif-centered pseudobulk TF aggregate signal profiles."""
 
 from __future__ import annotations
 
@@ -223,9 +223,10 @@ def tf_label(tf: str, lineage: str, n_sites: int, summary: dict[str, dict[str, s
 def plot_profiles(out_prefix: Path, tfs: list[str], groups: list[str], profiles: dict[tuple[str, str], list[float]], counts: dict[str, int], summary: dict[str, dict[str, str]], flank: int, ylabel: str, protection: bool, center_half_width: int, flank_inner: int, flank_outer: int) -> None:
     ncols = 2
     nrows = math.ceil(len(tfs) / ncols)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(7.6, 2.85 * nrows), sharex=True)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(7.8, 2.75 * nrows), sharex=True)
     axes = list(axes.flat if hasattr(axes, "flat") else [axes])
     xvals = list(range(-flank, flank))
+    legend_handles = {}
     for ax, tf in zip(axes, tfs):
         lineage = lineage_for_tf(tf, summary)
         for group in groups:
@@ -233,21 +234,25 @@ def plot_profiles(out_prefix: Path, tfs: list[str], groups: list[str], profiles:
             if profile is None:
                 continue
             values = protection_profile(profile, center_half_width, flank_inner, flank_outer) if protection else smooth_profile(profile, 5)
-            ax.plot(xvals, values, label=group.replace("_", " "), color=GROUP_COLORS.get(group), **line_style(lineage, group))
+            line, = ax.plot(xvals, values, label=group.replace("_", " "), color=GROUP_COLORS.get(group), **line_style(lineage, group))
+            legend_handles.setdefault(group.replace("_", " "), line)
         ax.axvline(0, color="black", linewidth=0.7, alpha=0.5)
         if protection:
             ax.axhline(0, color="0.65", linewidth=0.7)
-        ax.set_title(tf_label(tf, lineage, counts.get(tf, 0), summary), fontsize=8.5, fontweight="bold")
-        ax.set_ylabel(ylabel, fontsize=8.5)
+        ax.set_xlim(-flank, flank)
+        ax.set_title(tf_label(tf, lineage, counts.get(tf, 0), summary), fontsize=8.2, fontweight="bold")
+        ax.set_ylabel(ylabel, fontsize=8.2)
         ax.tick_params(labelsize=8)
         ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", color="0.90", linewidth=0.45)
     for ax in axes[len(tfs):]:
         ax.axis("off")
-    axes[min(len(tfs), len(axes)) - 1].legend(frameon=False, fontsize=7, loc="upper right")
     for ax in axes[-ncols:]:
-        ax.set_xlabel("Distance from motif center (bp)", fontsize=8.5)
-    fig.tight_layout()
-    fig.savefig(out_prefix.with_suffix(".png"), dpi=300)
+        ax.set_xlabel("Distance from motif center (bp)", fontsize=8.2)
+    if legend_handles:
+        fig.legend(legend_handles.values(), legend_handles.keys(), frameon=False, fontsize=7.0, loc="lower center", ncol=min(4, len(legend_handles)))
+    fig.tight_layout(rect=(0, 0.14, 1, 1))
+    fig.savefig(out_prefix.with_suffix(".png"), dpi=450)
     fig.savefig(out_prefix.with_suffix(".pdf"))
 
 
@@ -259,9 +264,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out-prefix", required=True)
     parser.add_argument("--groups", default=",".join(DEFAULT_GROUPS))
     parser.add_argument("--tfs", default=",".join(DEFAULT_TFS), help="Comma-separated TF names, or 'auto'.")
-    parser.add_argument("--flank", type=int, default=250)
+    parser.add_argument("--flank", type=int, default=100)
     parser.add_argument("--screen-output", default=None)
     parser.add_argument("--signal-column", default="cutsite_bigwig", help="Manifest column containing the bigWig signal to aggregate (default: cutsite_bigwig).")
+    parser.add_argument("--value-column", default="cutsite_cpm", help="Output TSV value column for the aggregated profile (default: cutsite_cpm).")
+    parser.add_argument("--ylabel", default="Cut-site signal (CPM)", help="Y-axis label for the main aggregate plot.")
     parser.add_argument("--footprint-like-output", default=None, help="Optional PNG/PDF prefix for flank-minus-center protection-score aggregate plots.")
     parser.add_argument("--protection-center-half-width", type=int, default=10)
     parser.add_argument("--protection-flank-inner", type=int, default=25)
@@ -305,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
             profile = mean_profile(bigwig, sites, args.flank)
             profiles[(tf, group)] = profile
             for offset, value in zip(range(-args.flank, args.flank), profile):
-                records.append({"tf": tf, "group": group, "offset_bp": offset, "cutsite_cpm": value, "n_sites": len(sites), "total_motif_hits": _summary_int(summary, tf, "total_motif_hits", len(sites)), "signal_column": args.signal_column, "site_coordinate": "motif_center", "lineage": lineage_for_tf(tf, summary)})
+                records.append({"tf": tf, "group": group, "offset_bp": offset, args.value_column: value, "n_sites": len(sites), "total_motif_hits": _summary_int(summary, tf, "total_motif_hits", len(sites)), "signal_column": args.signal_column, "site_coordinate": "motif_center", "lineage": lineage_for_tf(tf, summary)})
         row = score_tf(tf, profiles, groups, lineage_for_tf(tf, summary), args.protection_center_half_width, args.protection_flank_inner, args.protection_flank_outer)
         row["plotted_sites"] = len(sites)
         row["n_sites"] = len(sites)
@@ -333,7 +340,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not selected:
         raise SystemExit("No TFs passed the auto-selection criteria; inspect the screen TSV or lower --auto-min-sites.")
-    plot_profiles(out_prefix, selected, groups, profiles, counts, summary, args.flank, "Cut-site signal (CPM)", False, args.protection_center_half_width, args.protection_flank_inner, args.protection_flank_outer)
+    plot_profiles(out_prefix, selected, groups, profiles, counts, summary, args.flank, args.ylabel, False, args.protection_center_half_width, args.protection_flank_inner, args.protection_flank_outer)
 
     if args.footprint_like_output:
         protection_prefix = Path(args.footprint_like_output)
