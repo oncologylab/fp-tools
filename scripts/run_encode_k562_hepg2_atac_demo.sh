@@ -33,6 +33,8 @@ ATAC_CORRECT="${FP_TOOLS_ENV}/bin/atac-correct"
 CALL_FOOTPRINTS="${FP_TOOLS_ENV}/bin/call-footprints"
 DIFF_FOOTPRINTS="${FP_TOOLS_ENV}/bin/diff-footprints"
 NORMALIZE_BIGWIG="${FP_TOOLS_ENV}/bin/normalize-bigwig"
+PYTHON="${FP_TOOLS_ENV}/bin/python"
+COMPARE_DIFF_FOOTPRINTS="${ROOT_DIR}/scripts/compare_diff_footprints_normalization.py"
 THREADS="${THREADS:-$(nproc)}"
 
 mkdir -p "${RAW_DIR}/bam" "${RAW_DIR}/peaks" "${FP_DIR}" "${REF_DIR}" "${LOG_DIR}" "${STATUS_DIR}" "${PEAK_DIR}"
@@ -181,6 +183,7 @@ write_metadata() {
     echo -e "call-footprints\t${CALL_FOOTPRINTS}"
     echo -e "normalize-bigwig\t${NORMALIZE_BIGWIG}"
     echo -e "diff-footprints\t${DIFF_FOOTPRINTS}"
+    echo -e "compare_diff_footprints_normalization.py\t${COMPARE_DIFF_FOOTPRINTS}"
     echo -e "JASPAR2026 vertebrates\t${JASPAR2026_MOTIFS}"
   } > "${OUT_DIR}/software_paths.tsv"
   {
@@ -192,6 +195,7 @@ write_metadata() {
     echo -e "normalize-bigwig\t--background merged_peaks.50bp_bins.bed --method background-scale --stat q95 --target median"
     echo -e "diff-footprints_sample_quantile\tJASPAR2026 CORE vertebrates non-redundant; --normalization sample-quantile --cond-names K562 K562 K562 HepG2 HepG2 HepG2 --aggregate-site-set bound --plot-aggregate sig --aggregate-flank 100"
     echo -e "diff-footprints_none\tSame inputs with --normalization none; aggregate tracks use unnormalized corrected bigWigs"
+    echo -e "diff-footprints_corrected_q95\tq95-scaled corrected bigWigs -> call-footprints; --normalization none; aggregate tracks use q95-scaled corrected bigWigs"
   } > "${OUT_DIR}/analysis_parameters.tsv"
 }
 
@@ -250,12 +254,34 @@ normalized_bw_for_sample() {
   find "${FP_DIR}/normalized_corrected_bigwigs/peak_q95" -maxdepth 1 -name "*${sample}*.background_scale_q95.bw" | sort | head -1
 }
 
+q95_footprint_bw_for_sample() {
+  local sample="$1"
+  echo "${FP_DIR}/footprints_corrected_q95/${sample}.footprints.bw"
+}
+
+run_q95_footprints_for_sample() {
+  local sample="$1"
+  local normalized_bw
+  normalized_bw="$(normalized_bw_for_sample "${sample}")"
+  require_file "${normalized_bw}"
+  mkdir -p "${FP_DIR}/footprints_corrected_q95"
+  run_step "${sample}.call_footprints.corrected_q95" "${CALL_FOOTPRINTS}" \
+    --signal "${normalized_bw}" \
+    --regions "${MERGED_PEAKS}" \
+    --output "$(q95_footprint_bw_for_sample "${sample}")" \
+    --score footprint
+}
+
 run_diff_footprints() {
-  local normalization="$1"
-  local outdir="${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_${normalization//-/_}"
+  local mode="$1"
+  local outdir="${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_${mode//-/_}"
+  local normalization="${mode}"
+  local report_label=""
   mkdir -p "${outdir}"
   local aggregate_args=()
-  if [[ "${normalization}" == "sample-quantile" ]]; then
+  local signal_args=()
+  if [[ "${mode}" == "sample-quantile" ]]; then
+    report_label="Method: raw corrected bigWigs -> footprint scores; differential normalization: sample-quantile; aggregate tracks: peak-q95 scaled corrected bigWigs"
     aggregate_args=(
       "$(normalized_bw_for_sample K562_rep1)"
       "$(normalized_bw_for_sample K562_rep2)"
@@ -264,7 +290,35 @@ run_diff_footprints() {
       "$(normalized_bw_for_sample HepG2_rep2)"
       "$(normalized_bw_for_sample HepG2_rep3)"
     )
+    signal_args=(
+      "${FP_DIR}/footprints/K562_rep1.footprints.bw"
+      "${FP_DIR}/footprints/K562_rep2.footprints.bw"
+      "${FP_DIR}/footprints/K562_rep3.footprints.bw"
+      "${FP_DIR}/footprints/HepG2_rep1.footprints.bw"
+      "${FP_DIR}/footprints/HepG2_rep2.footprints.bw"
+      "${FP_DIR}/footprints/HepG2_rep3.footprints.bw"
+    )
+  elif [[ "${mode}" == "corrected-q95" ]]; then
+    normalization="none"
+    report_label="Method: peak-q95 scaled corrected bigWigs -> footprint scores; differential normalization: none; aggregate tracks: peak-q95 scaled corrected bigWigs"
+    aggregate_args=(
+      "$(normalized_bw_for_sample K562_rep1)"
+      "$(normalized_bw_for_sample K562_rep2)"
+      "$(normalized_bw_for_sample K562_rep3)"
+      "$(normalized_bw_for_sample HepG2_rep1)"
+      "$(normalized_bw_for_sample HepG2_rep2)"
+      "$(normalized_bw_for_sample HepG2_rep3)"
+    )
+    signal_args=(
+      "$(q95_footprint_bw_for_sample K562_rep1)"
+      "$(q95_footprint_bw_for_sample K562_rep2)"
+      "$(q95_footprint_bw_for_sample K562_rep3)"
+      "$(q95_footprint_bw_for_sample HepG2_rep1)"
+      "$(q95_footprint_bw_for_sample HepG2_rep2)"
+      "$(q95_footprint_bw_for_sample HepG2_rep3)"
+    )
   else
+    report_label="Method: raw corrected bigWigs -> footprint scores; differential normalization: none; aggregate tracks: raw corrected bigWigs"
     aggregate_args=(
       "$(corrected_bw_for_sample K562_rep1)"
       "$(corrected_bw_for_sample K562_rep2)"
@@ -273,16 +327,18 @@ run_diff_footprints() {
       "$(corrected_bw_for_sample HepG2_rep2)"
       "$(corrected_bw_for_sample HepG2_rep3)"
     )
+    signal_args=(
+      "${FP_DIR}/footprints/K562_rep1.footprints.bw"
+      "${FP_DIR}/footprints/K562_rep2.footprints.bw"
+      "${FP_DIR}/footprints/K562_rep3.footprints.bw"
+      "${FP_DIR}/footprints/HepG2_rep1.footprints.bw"
+      "${FP_DIR}/footprints/HepG2_rep2.footprints.bw"
+      "${FP_DIR}/footprints/HepG2_rep3.footprints.bw"
+    )
   fi
-  run_step "diff_footprints.${normalization}" "${DIFF_FOOTPRINTS}" \
+  run_step "diff_footprints.${mode}.labeled_v1" "${DIFF_FOOTPRINTS}" \
     --motifs "${JASPAR2026_MOTIFS}" \
-    --signals \
-      "${FP_DIR}/footprints/K562_rep1.footprints.bw" \
-      "${FP_DIR}/footprints/K562_rep2.footprints.bw" \
-      "${FP_DIR}/footprints/K562_rep3.footprints.bw" \
-      "${FP_DIR}/footprints/HepG2_rep1.footprints.bw" \
-      "${FP_DIR}/footprints/HepG2_rep2.footprints.bw" \
-      "${FP_DIR}/footprints/HepG2_rep3.footprints.bw" \
+    --signals "${signal_args[@]}" \
     --genome "${GENOME}" \
     --peaks "${MERGED_PEAKS}" \
     --outdir "${outdir}" \
@@ -295,8 +351,19 @@ run_diff_footprints() {
     --aggregate-site-set bound \
     --plot-aggregate sig \
     --aggregate-flank 100 \
+    --report-label "${report_label}" \
     --skip-excel \
     --cores "${THREADS}"
+}
+
+compare_normalization_results() {
+  run_step "diff_footprints.corrected_q95_vs_none_csv_v1" "${PYTHON}" "${COMPARE_DIFF_FOOTPRINTS}" \
+    --method-a-name corrected_q95 \
+    --method-a-results "${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_corrected_q95/diff_footprints_results.txt" \
+    --method-b-name none \
+    --method-b-results "${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_none/diff_footprints_results.txt" \
+    --comparison K562_HepG2 \
+    --outdir "${FP_DIR}/normalization_comparison"
 }
 
 main() {
@@ -313,11 +380,19 @@ main() {
     run_fp_tools_for_sample "${sample}" "${accession}"
   done
   normalize_corrected_bigwigs
+  for entry in "${SAMPLES[@]}"; do
+    read -r sample condition experiment accession url <<< "${entry}"
+    run_q95_footprints_for_sample "${sample}"
+  done
   run_diff_footprints sample-quantile
   run_diff_footprints none
+  run_diff_footprints corrected-q95
+  compare_normalization_results
   log "ENCODE K562 vs HepG2 workflow finished"
   log "Primary report: ${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_sample_quantile/diff_footprints_K562_HepG2.html"
   log "Baseline report: ${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_none/diff_footprints_K562_HepG2.html"
+  log "Pre-score q95 report: ${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_corrected_q95/diff_footprints_K562_HepG2.html"
+  log "Normalization comparison CSVs: ${FP_DIR}/normalization_comparison"
 }
 
 main "$@"

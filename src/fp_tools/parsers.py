@@ -162,6 +162,7 @@ def add_bindetect_arguments(parser):
 	optargs.add_argument('--aggregate-normalization', choices=["match", "none", "sample-quantile", "size-factor"], default="match", help="Normalization for embedded aggregate profiles (default: match --normalization)")
 	optargs.add_argument('--aggregate-site-set', choices=["all", "bound"], default="all", help="Motif-site BEDs used for embedded aggregate profiles: all motif hits or condition-specific bound sites (default: all)")
 	optargs.add_argument('--reuse-existing-results', action='store_true', help="Regenerate final diff-footprints reports from existing <prefix>_results.txt and per-motif BEDs without rescanning motifs")
+	optargs.add_argument('--report-label', metavar="<text>", help="Optional method label shown under the comparison subtitle in interactive HTML reports")
 
 	runargs = parser.add_argument_group("Run arguments")
 	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory to place TFBS/plots in (default: bindetect_output)", default="bindetect_output")

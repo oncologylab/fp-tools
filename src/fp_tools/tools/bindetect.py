@@ -274,6 +274,7 @@ def run_bindetect_reuse_existing_results(args):
             html_out,
             aggregate_data=aggregate_data,
             title="Differential footprint report",
+            report_label=getattr(args, "report_label", None),
         )
         logger.info(f"Wrote {html_out}")
 
@@ -901,7 +902,14 @@ def run_bindetect(args):
                     aggregate_data = build_bindetect_aggregate_payload(motif_list, info_table, [c1, c2], args)
                 except Exception as exc:
                     logger.warning(f"Could not build aggregate payload for interactive HTML: {exc}")
-            plot_interactive_bindetect(motif_list, [c1, c2], html_out, aggregate_data=aggregate_data, title="Differential footprint report")
+            plot_interactive_bindetect(
+                motif_list,
+                [c1, c2],
+                html_out,
+                aggregate_data=aggregate_data,
+                title="Differential footprint report",
+                report_label=getattr(args, "report_label", None),
+            )
 
     if args.debug and len(args.cond_names) > 1:
         logger.info("Plotting heatmap across conditions (debug)")

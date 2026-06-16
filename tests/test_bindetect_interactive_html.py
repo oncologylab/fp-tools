@@ -36,12 +36,20 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "report.html"
-            plot_interactive_bindetect([motif], ["Bcell", "Tcell"], str(out), aggregate_data=aggregate_data)
+            plot_interactive_bindetect(
+                [motif],
+                ["Bcell", "Tcell"],
+                str(out),
+                aggregate_data=aggregate_data,
+                report_label="Method: test label",
+            )
             html = out.read_text()
         self.assertIn("const reportPayloadB64=", html)
         self.assertIn("DecompressionStream", html)
         self.assertIn("Download volcano SVG", html)
         self.assertIn("Download aggregate SVG", html)
+        self.assertIn('id="report-method"', html)
+        self.assertIn("Method: test label", html)
         self.assertIn("aggregate-search", html)
         self.assertIn("Select current motif TF", html)
         self.assertIn("volcano-combo", html)
@@ -92,6 +100,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
         self.assertIsNotNone(match)
         payload = json.loads(gzip.decompress(base64.b64decode(match.group(1))).decode("utf-8"))
+        self.assertEqual(payload["report_label"], "Method: test label")
         self.assertEqual(payload["aggregate"]["motifs"][0]["prefix"], "TF1_MA0001.1")
         self.assertEqual(payload["aggregate"]["motifs"][0]["motif_id"], "MA0001.1")
         self.assertEqual(payload["aggregate"]["motifs"][0]["conditions"][0]["samples"][0]["name"], "Bcell_rep1")
