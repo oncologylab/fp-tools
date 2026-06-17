@@ -108,6 +108,34 @@ def directional_marker_rows(
     return pd.DataFrame(labels)
 
 
+def annotate_marker_labels(ax: plt.Axes, labels: pd.DataFrame, fontsize: int) -> list[dict[str, object]]:
+    x_min, x_max = ax.get_xlim()
+    x_range = max(float(x_max - x_min), 1e-6)
+    source_rows = []
+    for _, row in labels.iterrows():
+        ax.scatter(row["change"], row["neg_log10_p"], s=52, color="#111827", edgecolor="white", linewidth=0.7, zorder=4)
+        if row["change"] < x_min + 0.14 * x_range:
+            x_offset, ha = 5, "left"
+        elif row["change"] > x_max - 0.14 * x_range:
+            x_offset, ha = -5, "right"
+        else:
+            x_offset = 5 if row["change"] >= 0 else -5
+            ha = "left" if row["change"] >= 0 else "right"
+        ax.annotate(
+            row["name"],
+            (row["change"], row["neg_log10_p"]),
+            xytext=(x_offset, 5),
+            textcoords="offset points",
+            fontsize=fontsize,
+            weight="bold",
+            ha=ha,
+            clip_on=False,
+            zorder=5,
+        )
+        source_rows.append(row.to_dict())
+    return source_rows
+
+
 def plot_celltype_umap(annotations: pd.DataFrame, output_prefix: Path) -> None:
     fig, ax = plt.subplots(figsize=(5.2, 4.4))
     for cell_type in ["B_cell", "Monocyte", "T_NK_cell"]:
@@ -186,7 +214,7 @@ def plot_marker_umap(annotations: pd.DataFrame, aggregate_screen: pd.DataFrame, 
 def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str, output_prefix: Path, markers: list[str]) -> None:
     plot_df = prepare_volcano_df(results, comparison)
 
-    fig, ax = plt.subplots(figsize=(5.2, 4.4))
+    fig, ax = plt.subplots(figsize=(4.8, 4.8))
     for status, color, size, alpha in [
         ("not significant", COLORS["background"], 12, 0.45),
         ("higher in second", COLORS["down"], 18, 0.75),
@@ -195,29 +223,22 @@ def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str
         subset = plot_df[plot_df["status"] == status]
         ax.scatter(subset["change"], subset["neg_log10_p"], s=size, color=color, alpha=alpha, linewidths=0, label=status)
 
-    for marker in markers:
-        marker_rows = plot_df[plot_df["name"].astype(str).str.upper() == marker.upper()]
-        for _, row in marker_rows.iterrows():
-            ax.scatter(row["change"], row["neg_log10_p"], s=60, color="#111827", edgecolor="white", linewidth=0.7, zorder=4)
-            ax.annotate(
-                row["name"],
-                (row["change"], row["neg_log10_p"]),
-                xytext=(5, 5),
-                textcoords="offset points",
-                fontsize=8,
-                weight="bold",
-            )
-
     ax.axvline(0, color="#374151", linewidth=0.8)
     ax.axhline(-np.log10(0.05), color="#6B7280", linewidth=0.8, linestyle="--")
-    ax.set_xlabel(f"BINDetect change ({first} vs {second})")
+    labels = directional_marker_rows(plot_df, first, second)
+    if markers:
+        requested = {marker.upper() for marker in markers}
+        labels = labels[labels["name"].astype(str).str.upper().isin(requested)]
+    annotate_marker_labels(ax, labels, fontsize=8)
+    ax.set_xlabel("Differential footprint score")
     ax.set_ylabel("-log10(p-value)")
     ax.set_title(f"{first} vs {second}")
     ax.legend(frameon=False, fontsize=7, loc="upper right")
     ax.spines[["top", "right"]].set_visible(False)
+    ax.set_box_aspect(1)
     fig.tight_layout()
-    fig.savefig(output_prefix.with_suffix(".png"), dpi=220)
-    fig.savefig(output_prefix.with_suffix(".pdf"))
+    fig.savefig(output_prefix.with_suffix(".png"), dpi=220, bbox_inches="tight")
+    fig.savefig(output_prefix.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(fig)
 
     plot_df[["output_prefix", "name", "total_tfbs", "change", "pvalue", "qvalue", "status"]].to_csv(
@@ -228,14 +249,11 @@ def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str
 
 
 def plot_directional_pairwise_volcano(results: pd.DataFrame, output_prefix: Path) -> None:
-    fig, axes = plt.subplots(1, len(PAIRWISE_COMPARISONS), figsize=(14.2, 4.2), sharey=True)
+    fig, axes = plt.subplots(1, len(PAIRWISE_COMPARISONS), figsize=(13.4, 4.8), sharey=True)
     source_rows = []
     for ax, (comparison, first, second) in zip(axes, PAIRWISE_COMPARISONS, strict=True):
         plot_df = prepare_volcano_df(results, comparison)
         labels = directional_marker_rows(plot_df, first, second)
-        x_min = float(plot_df["change"].min())
-        x_max = float(plot_df["change"].max())
-        x_range = max(x_max - x_min, 1e-6)
         for status, color, size, alpha in [
             ("not significant", COLORS["background"], 10, 0.42),
             ("higher in second", COLORS["down"], 14, 0.72),
@@ -244,26 +262,9 @@ def plot_directional_pairwise_volcano(results: pd.DataFrame, output_prefix: Path
             subset = plot_df[plot_df["status"] == status]
             ax.scatter(subset["change"], subset["neg_log10_p"], s=size, color=color, alpha=alpha, linewidths=0, label=status)
 
-        for _, row in labels.iterrows():
-            ax.scatter(row["change"], row["neg_log10_p"], s=52, color="#111827", edgecolor="white", linewidth=0.7, zorder=4)
-            if row["change"] < x_min + 0.14 * x_range:
-                x_offset, ha = 5, "left"
-            elif row["change"] > x_max - 0.14 * x_range:
-                x_offset, ha = -5, "right"
-            else:
-                x_offset = 5 if row["change"] >= 0 else -5
-                ha = "left" if row["change"] >= 0 else "right"
-            ax.annotate(
-                row["name"],
-                (row["change"], row["neg_log10_p"]),
-                xytext=(x_offset, 5),
-                textcoords="offset points",
-                fontsize=7,
-                weight="bold",
-                ha=ha,
-                clip_on=False,
-                zorder=5,
-            )
+        ax.axvline(0, color="#374151", linewidth=0.8)
+        ax.axhline(-np.log10(0.05), color="#6B7280", linewidth=0.8, linestyle="--")
+        for row in annotate_marker_labels(ax, labels, fontsize=7):
             source_rows.append(
                 {
                     "comparison": comparison,
@@ -280,12 +281,11 @@ def plot_directional_pairwise_volcano(results: pd.DataFrame, output_prefix: Path
                 }
             )
 
-        ax.axvline(0, color="#374151", linewidth=0.8)
-        ax.axhline(-np.log10(0.05), color="#6B7280", linewidth=0.8, linestyle="--")
-        ax.set_xlabel(f"BINDetect change\n({first} vs {second})")
+        ax.set_xlabel("Differential footprint score")
         ax.set_title(f"{first} vs {second}", fontsize=10)
         ax.spines[["top", "right"]].set_visible(False)
         ax.tick_params(labelsize=8)
+        ax.set_box_aspect(1)
     axes[0].set_ylabel("-log10(p-value)")
     handles, labels = axes[-1].get_legend_handles_labels()
     fig.legend(handles, labels, frameon=False, fontsize=8, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.02))
