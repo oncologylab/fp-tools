@@ -20,6 +20,11 @@ from sklearn.neighbors import NearestNeighbors
 
 MARKERS = ("PAX5", "CEBPB", "TCF7")
 CELL_TYPES = ("B_cell", "Monocyte", "T_NK_cell")
+MARKER_GROUPS = {
+    "PAX5": "B_cell",
+    "CEBPB": "Monocyte",
+    "TCF7": "T_NK_cell",
+}
 
 
 def open_text(path: Path):
@@ -230,6 +235,53 @@ def score_knn_profiles(
     return pd.DataFrame(rows)
 
 
+def parse_marker_groups(text: str) -> dict[str, str]:
+    groups = dict(MARKER_GROUPS)
+    if not text:
+        return groups
+    for item in text.split(","):
+        if not item.strip():
+            continue
+        if ":" not in item:
+            raise SystemExit("--marker-groups entries must be TF:cell_type pairs.")
+        tf, group = item.split(":", 1)
+        groups[tf.strip()] = group.strip()
+    return groups
+
+
+def add_oriented_knn_score(scores: pd.DataFrame, marker_groups: dict[str, str]) -> pd.DataFrame:
+    scores = scores.copy()
+    scores["knn_footprint_oriented_z"] = np.nan
+    rows = []
+    for tf, subset in scores.groupby("tf", sort=False):
+        expected_group = marker_groups.get(str(tf))
+        raw = pd.to_numeric(subset["knn_footprint_score"], errors="coerce")
+        sign = 1.0
+        if expected_group:
+            expected = raw[subset["cell_type"] == expected_group]
+            other = raw[subset["cell_type"] != expected_group]
+            if expected.notna().any() and other.notna().any() and float(expected.median()) < float(other.median()):
+                sign = -1.0
+        oriented = raw * sign
+        finite = oriented[np.isfinite(oriented)]
+        if finite.empty or float(finite.std(ddof=0)) == 0.0:
+            z = oriented * np.nan
+        else:
+            z = (oriented - float(finite.mean())) / float(finite.std(ddof=0))
+        scores.loc[subset.index, "knn_footprint_oriented_z"] = z
+        rows.append(
+            {
+                "tf": tf,
+                "expected_cell_type": expected_group or "",
+                "orientation_sign": sign,
+                "expected_median_raw": float(raw[subset["cell_type"] == expected_group].median()) if expected_group else np.nan,
+                "other_median_raw": float(raw[subset["cell_type"] != expected_group].median()) if expected_group else np.nan,
+            }
+        )
+    scores.attrs["orientation_summary"] = pd.DataFrame(rows)
+    return scores
+
+
 def bin_name_for_center(chrom: str, center: int, bin_size: int) -> str:
     start = (center // bin_size) * bin_size
     return f"{chrom}:{start}-{start + bin_size}"
@@ -361,6 +413,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--flank-inner", type=int, default=25)
     parser.add_argument("--flank-outer", type=int, default=100)
     parser.add_argument("--bin-size", type=int, default=500)
+    parser.add_argument(
+        "--marker-groups",
+        default="PAX5:B_cell,CEBPB:Monocyte,TCF7:T_NK_cell",
+        help="Comma-separated TF:cell_type pairs used to orient KNN marker scores for UMAP review.",
+    )
     parser.add_argument("--no-create-fragment-index", action="store_true", help="Do not create a tabix index for the fragment file when it is missing.")
     args = parser.parse_args(argv)
 
@@ -376,14 +433,17 @@ def main(argv: list[str] | None = None) -> int:
         score_knn_profiles(profiles, neighbors, markers, args.center_half_width, args.flank_inner, args.flank_outer),
         annotations,
     )
+    knn_scores = add_oriented_knn_score(knn_scores, parse_marker_groups(args.marker_groups))
     chromvar_scores = attach_annotations(chromvar_like_scores(Path(args.h5ad), annotations, sites, markers, args.bin_size), annotations)
 
     knn_scores.to_csv(outdir / "knn_footprint_signature_scores.tsv", sep="\t", index=False)
+    if "orientation_summary" in knn_scores.attrs:
+        knn_scores.attrs["orientation_summary"].to_csv(outdir / "knn_footprint_orientation_summary.tsv", sep="\t", index=False)
     chromvar_scores.to_csv(outdir / "chromvar_like_motif_activity_scores.tsv", sep="\t", index=False)
 
     plot_score_grid(
         annotations,
-        [("KNN footprint", knn_scores, "knn_footprint_score", "protection score")],
+        [("KNN footprint", knn_scores, "knn_footprint_oriented_z", "oriented z")],
         markers,
         outdir / "pbmc5k_knn_footprint_signature_umap",
     )
@@ -397,6 +457,7 @@ def main(argv: list[str] | None = None) -> int:
         annotations,
         [
             ("KNN footprint", knn_scores, "knn_footprint_score", "protection score"),
+            ("KNN oriented", knn_scores, "knn_footprint_oriented_z", "oriented z"),
             ("ChromVAR-like", chromvar_scores, "chromvar_like_activity_z", "activity z"),
         ],
         markers,
