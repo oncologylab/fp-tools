@@ -22,6 +22,7 @@ MARKERS = ("PAX5", "CEBPB", "TCF7")
 CELL_TYPES = ("B_cell", "Monocyte", "T_NK_cell")
 MARKER_GROUPS = {
     "PAX5": "B_cell",
+    "CEBPA": "Monocyte",
     "CEBPB": "Monocyte",
     "TCF7": "T_NK_cell",
 }
@@ -415,7 +416,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bin-size", type=int, default=500)
     parser.add_argument(
         "--marker-groups",
-        default="PAX5:B_cell,CEBPB:Monocyte,TCF7:T_NK_cell",
+        default="PAX5:B_cell,CEBPA:Monocyte,CEBPB:Monocyte,TCF7:T_NK_cell",
         help="Comma-separated TF:cell_type pairs used to orient KNN marker scores for UMAP review.",
     )
     parser.add_argument("--no-create-fragment-index", action="store_true", help="Do not create a tabix index for the fragment file when it is missing.")
