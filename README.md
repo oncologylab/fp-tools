@@ -273,6 +273,31 @@ Raw CPM cut-site aggregates are useful QC and context. Corrected footprint claim
 
 ![Motif-centered pseudobulk protection score](docs/assets/fp-tools-pseudobulk-footprint-like.png)
 
+The PBMC5k single-cell ATAC demonstration uses the original 10x Genomics
+`atac_pbmc_5k_nextgem` public dataset to prepare broad cell-type annotations,
+motif-centered marker sites, and a KNN-smoothed per-cell footprint-signature UMAP:
+
+```bash
+python benchmarks/scripts/prepare_10x_pbmc5k_scatac.py --chroms chr1,chr2
+python manuscript/scripts/prepare_pseudobulk_motif_sites.py \
+  --peaks data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_snatac2_selected_bins.demo.bed \
+  --genome data/public/raw/genome/hg38.fa \
+  --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt \
+  --outdir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
+  --summary data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered/motif_centered_site_summary.tsv \
+  --candidates 'B_cell:PAX5;T_NK:TCF7;Myeloid:CEBPB' \
+  --chroms chr1,chr2 \
+  --plot-sites-per-tf 1500 \
+  --motif-pvalue 1e-4
+python benchmarks/scripts/plot_pbmc5k_per_cell_signatures.py \
+  --annotations data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv \
+  --fragments data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz \
+  --h5ad data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_annotated.h5ad \
+  --tf-site-dir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
+  --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo \
+  --markers PAX5,CEBPB,TCF7
+```
+
 ## YAML Runner
 
 ```bash

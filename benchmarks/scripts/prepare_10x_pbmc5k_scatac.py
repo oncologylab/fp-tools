@@ -197,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
     plot_umap(annotations, "snap_cell_type", plot_dir / "pbmc5k_umap_snatac2_subtypes", "PBMC5k scATAC SnapATAC2 annotations")
 
     summary = {
-        "dataset": "10x PBMC5k scATAC, same fragment dataset used by the scPrinter PBMC scATAC tutorial",
+        "dataset": "10x PBMC5k scATAC public dataset (atac_pbmc_5k_nextgem), Cell Ranger ATAC 2.0.0",
         "fragment_file": str(fragment_dest),
         "annotated_h5ad": str(h5ad_dest),
         "annotation_file": str(outdir / "pbmc5k_scprinter_broad_annotations.tsv"),

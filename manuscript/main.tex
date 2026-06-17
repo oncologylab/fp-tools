@@ -202,6 +202,19 @@ where $c_{k,t}$ is the cut-site count for group $k$ at genomic position $t$. The
 tracks can be used directly by the same motif-centered aggregate plotting workflow
 used for bulk ATAC-seq data.
 
+For visualization of cell-level marker footprint signatures, \texttt{fp-tools}
+also supports a K-nearest-neighbor (KNN) smoothing layer over single-cell
+fragments. For each marker TF, exact motif centers are scanned inside the selected
+accessible-bin universe. Fragment cut sites are counted in a $\pm$100 bp window
+around those motif centers for each barcode. Each cell is then assigned a local
+neighborhood profile by summing its 75 nearest neighbors in the single-cell
+embedding, and the same flank-minus-center footprint-signature score is computed
+from that neighborhood profile. Scores are oriented so that the expected marker
+cell type has the positive direction and then standardized per TF for UMAP
+display. These KNN-smoothed signatures are used only as per-cell visualization
+scores; formal corrected footprint inference remains based on the grouped
+pseudobulk ATAC-correction and footprint-scoring workflow.
+
 \subsection{Replicate-aware Differential Footprint Analysis and Quantile Normalization}
 \label{sec:replicate}
 
@@ -403,49 +416,54 @@ differential footprint analysis.\label{fig:denovo_workflow}}
 \end{figure}
 
 We therefore evaluated whether candidate-derived motifs add information beyond a fixed
-database using the same 2-vs-2 Buenrostro B-cell versus
-T-cell ATAC-seq comparison used for replicate-aware reporting. Candidate
-footprints were called from bias-corrected cut-site tracks, B-cell-enriched and
-T-cell-enriched candidate FASTA files were exported with 75 bp flanks, and STREME
-5.5.9 was run in both contrast directions. The B-cell-enriched candidate set
-returned BATF-like and Irf1-like discovered motifs, whereas the T-cell-enriched
-candidate set returned IKZF2-like and ZNF143-like examples. These discovered
-motifs were then used in two modes. In de novo-only mode, the candidate-derived
-motifs were tested as their own motif set. In supplement mode, the same motifs
-were appended to a known motif database before running the sample-quantile-normalized
-differential-footprint analysis.
+database using a 3-vs-3 public ENCODE K562 versus HepG2 ATAC-seq comparison.
+Candidate footprints were called from bias-corrected cut-site tracks,
+condition-specific candidate FASTA files were exported with 75 bp flanks, and
+STREME was run reciprocally with K562 candidates against HepG2 controls and
+HepG2 candidates against K562 controls. These discovered motifs were then used
+in two modes. In de novo-only mode, the candidate-derived motifs were tested as
+their own motif set. In supplement mode, the same motifs were appended to a known
+motif database before running the sample-quantile-normalized differential-footprint
+analysis.
 
 The full JASPAR2026 vertebrate non-redundant set contained 1019 motifs, while
-the de novo procedure contributed 16 candidate-derived motifs. In de novo-only
-mode, several discovered motifs had footprint-like center depletion in the
-embedded aggregate profiles; these aggregate examples were selected by negative
-center-versus-flank scores rather than by database annotation. In supplement
-mode, the discovered motifs were appended to known motif sets before the same
-motif-aware differential footprint analysis. To create a sensitivity test, we
-also constructed a restricted JASPAR2026 set with 860 motifs and reran the
-comparison with and without the 16 de novo motifs. The restricted database
-yielded 97 highlighted differential motif families; adding the 16 de novo motifs
-increased this to 101 highlighted families, including 6 de novo-derived
-highlighted motifs. This sensitivity test illustrates the intended use case: when a chosen motif database is
-incomplete or conservative, candidate-derived motifs can be evaluated on their
-own and can also be carried forward into the same differential footprint report
-as database-supported motifs (Figure~\ref{fig:denovo_motif_validation}).
+the expanded reciprocal STREME runs contributed 500 candidate-derived motifs
+from both ENCODE cell lines. We therefore interpret this run as a site-recovery
+demonstration of how far de novo-only discovery can cover database-supported
+footprints, rather than as an exhaustive replacement for a curated motif
+database. In de novo-only mode, the discovered motifs recovered 84.0\% of merged
+JASPAR-supported bound-site-window base pairs across the K562/HepG2 comparison,
+while 16.0\% remained unique to the full JASPAR scan. The de novo-only scan also
+introduced additional candidate-derived bound-site windows, corresponding to
+6.0\% of the de novo-only merged window base pairs. In supplement mode,
+discovered motifs are appended to known motif sets before the same motif-aware
+differential footprint analysis. To create a sensitivity test, we also
+constructed a K562/HepG2-focused restricted JASPAR2026 set with 867 motifs by
+removing common erythroid/K562 and liver/HepG2 motif families, then reran the
+comparison with and without the de novo motifs. The restricted database yielded
+92 highlighted differential motif families; adding the 500 de novo motifs
+increased this to 153 highlighted families, including 24 de novo-derived
+highlighted motifs.
+This sensitivity test illustrates the intended use case: when a chosen motif
+database is incomplete or conservative, candidate-derived motifs can be evaluated
+on their own and can also be carried forward into the same differential footprint
+report as database-supported motifs (Figure~\ref{fig:denovo_motif_validation}).
 
 \begin{figure}[H]
 \includegraphics[width=0.95\textwidth]{figures/denovo_motif_validation.pdf}
 \caption{De novo motif validation in de novo-only and database-supplement modes.
-Candidate footprints from the Buenrostro B-cell versus T-cell replicate comparison
-were exported to FASTA and analyzed with STREME in B-cell-enriched and
-T-cell-enriched contrast directions. Panel A summarizes the restricted-database
-sensitivity test: adding 16 candidate-derived motifs increased the highlighted
-motif-family count from 97 to 101 and contributed 6 de novo-derived highlighted
-motifs. Panel B lists representative discovered motifs, including BATF-like and
-Irf1-like motifs from B-cell-enriched candidates and IKZF2-like and ZNF143-like
-motifs from T-cell-enriched candidates. Panels C--F show motif-centered
-aggregate profiles from the de novo-only analysis. Tomtom labels indicate motif
-similarity to database entries. Thin aggregate lines show individual biological
-replicates and thick lines show condition means; full displayed values are
-provided in the figure source table.\label{fig:denovo_motif_validation}}
+Candidate footprints from the ENCODE K562 versus HepG2 replicate comparison
+were exported to FASTA and analyzed with STREME in reciprocal contrast
+directions. Panel A shows a stacked site-window coverage summary comparing bound
+sites recovered by de novo-only motifs with bound sites from the full JASPAR2026
+scan; shared intervals are counted after merging \(\pm 10\) bp windows around motif
+centers. Panel B lists the representative discovered motifs used in Panels C--F
+and reports motif-quality flags for possible low-complexity, broad-site-set,
+Tn5-bias-like, weak Tomtom, or weak aggregate-depletion behavior. Panels C--F show motif-centered
+aggregate profiles from the de novo-only analysis using individual biological
+replicates only, without condition-mean curves. Tomtom labels indicate motif
+similarity to database entries; full displayed values are provided in the figure
+source table.\label{fig:denovo_motif_validation}}
 \end{figure}
 
 \subsection{Replicate-aware Differential Footprint Analysis and Normalization}
@@ -594,6 +612,30 @@ signal tracks compatible with motif-centered aggregate visualization.
 \label{fig:pseudobulk_supp}}
 \end{figure}
 
+We also applied the per-cell KNN visualization layer to the public 10x Genomics
+5k PBMC single-cell ATAC dataset~\cite{tenxpbmc5katac2021}. The demonstration
+used the Cell Ranger ATAC 2.0.0 fragment dataset, broad B-cell, monocyte, and
+T/NK annotations derived from the single-cell embedding, and motif-centered
+marker scores for PAX5, CEBPB, and TCF7. For each cell, the plotted value is a
+KNN-smoothed footprint-signature score, not an independently bias-corrected
+single-cell footprint call. This visualization preserves the expected marker
+direction while avoiding overinterpretation of sparse per-cell cut-site counts:
+PAX5 is highest in the B-cell region, CEBPB in monocytes, and TCF7 in the T/NK
+region (Figure~\ref{fig:pbmc5k_knn_footprint_signature}).
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{figures/pbmc5k_knn_footprint_signature_umap.pdf}
+\caption{Per-cell KNN-smoothed footprint-signature scores in public 10x PBMC5k
+single-cell ATAC data. The left panel shows the broad cell-type reference UMAP;
+labels are drawn as callouts to avoid covering dense point clouds. The remaining
+panels show per-cell KNN-smoothed footprint-signature z-scores for PAX5, CEBPB,
+and TCF7 motif-centered cut-site neighborhoods. Positive values indicate the
+marker-oriented footprint-signature direction after per-TF standardization. The
+scores are intended as a UMAP visualization of local single-cell neighborhoods;
+formal corrected footprint inference is performed at the pseudobulk level.
+\label{fig:pbmc5k_knn_footprint_signature}}
+\end{figure}
+
 \subsection{Benchmark and Figure Reproducibility}
 
 The tiered benchmark design (Table~\ref{tab:tiers}), metric scripts, manifest
@@ -728,7 +770,8 @@ de-identified datasets and did not involve new experiments on humans or animals.
 \url{https://github.com/oncologylab/fp-tools}. All benchmark manifests, schemas,
 analysis scripts, and figure generators are included in the repository. Public
 input datasets are obtained from the ENCODE Project~\cite{encode2012}, the 10x
-Genomics PBMC Multiome example~\cite{tenxpbmc2021}, and motif databases (e.g.,
+Genomics PBMC Multiome example~\cite{tenxpbmc2021}, the 10x Genomics PBMC5k
+single-cell ATAC example~\cite{tenxpbmc5katac2021}, and motif databases (e.g.,
 JASPAR~\cite{jaspar2026}) via the included discovery and download scripts.
 Manifests, scripts, small result tables, source tables, and figures are stored in
 the main repository. Reviewer reproduction instructions are provided in
@@ -765,7 +808,7 @@ Alignment and BAM filtering & \texttt{bowtie2 --very-sensitive -X 2000} against 
 Blacklist filtering & Exclude mitochondrial and nonstandard contigs and subtract hg38 blacklist v2 regions.\\
 Peak calling and union peaks & MACS3 paired-end peak calling with human genome size, duplicate retention, and q-value 0.01; replicate peaks are sorted and merged into one analysis peak set.\\
 Bias correction and footprint calling & \texttt{atac-correct} with merged peaks and blacklist using default Tn5-bias settings; \texttt{call-footprints --score footprint} with default footprint/flank windows.\\
-Differential footprint analysis & Four replicate footprint tracks analyzed with condition labels Bcell, Bcell, Tcell, Tcell; JASPAR2026 vertebrate non-redundant motifs; replicate report enabled; runs performed with no normalization and with sample-level quantile normalization.\\
+Differential footprint analysis & Buenrostro B-cell/T-cell and ENCODE K562/HepG2 replicate footprint tracks analyzed with repeated condition labels; JASPAR2026 vertebrate non-redundant motifs; replicate report enabled; runs performed with no normalization and with sample-level quantile normalization where indicated.\\
 Pseudobulk PBMC workflow & 10x PBMC Multiome fragments grouped by broad immune labels; groups retained with at least 300 cells and 50,000 fragments; CPM-normalized cut-site bigWigs generated for aggregate profiles.\\
 \bottomrule
 \end{tabularx}

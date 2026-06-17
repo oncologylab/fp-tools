@@ -216,6 +216,14 @@ Schep, A.N.; Wu, B.; Buenrostro, J.D.; Greenleaf, W.J.
 \newblock {\em Nature Methods} {\bf 2017}, {\em 14},~975--978.
 \newblock {\url{https://doi.org/10.1038/nmeth.4401}}.
 
+\bibitem[{10x Genomics}(2021)]{tenxpbmc5katac2021}
+{10x Genomics}.
+\newblock {5k Peripheral Blood Mononuclear Cells (PBMCs) from a Healthy Donor
+  (Next GEM v1.1)}.
+\newblock 10x Genomics public dataset, Cell Ranger ATAC 2.0.0,  2021.
+\newblock Single-cell ATAC fragments and Cell Ranger ATAC outputs for the
+  atac\_pbmc\_5k\_nextgem dataset.
+
 \bibitem[Berest et~al.(2019)Berest, Arnold, Reyes-Palomares, Palla, Rasmussen,
   Giles, Bruch, Binder, and Guenther]{Berest2019_diffTF}
 Berest, I.; Arnold, C.; Reyes-Palomares, A.; Palla, G.; Rasmussen, K.D.; Giles,

@@ -31,10 +31,10 @@ CELL_TYPE_COLORS = {
     "Monocyte": "#D97706",
     "T_NK_cell": "#059669",
 }
-REFERENCE_LABEL_OFFSETS = {
-    "B_cell": (-0.8, 0.65),
-    "Monocyte": (1.25, 0.75),
-    "T_NK_cell": (-2.0, 1.05),
+REFERENCE_LABEL_POSITIONS = {
+    "B_cell": (-9.2, 3.2),
+    "Monocyte": (12.8, 8.4),
+    "T_NK_cell": (0.2, 11.0),
 }
 
 
@@ -347,18 +347,38 @@ def label_groups(
     annotations: pd.DataFrame,
     fontsize: int = 7,
     offsets: dict[str, tuple[float, float]] | None = None,
+    positions: dict[str, tuple[float, float]] | None = None,
+    arrows: bool = False,
 ) -> None:
     for label, group in annotations.groupby("cell_type", sort=True):
-        dx, dy = (offsets or {}).get(str(label), (0.0, 0.0))
-        text = ax.text(
-            group["umap_1"].median() + dx,
-            group["umap_2"].median() + dy,
+        target = (float(group["umap_1"].median()), float(group["umap_2"].median()))
+        if positions and str(label) in positions:
+            xytext = positions[str(label)]
+        else:
+            dx, dy = (offsets or {}).get(str(label), (0.0, 0.0))
+            xytext = (target[0] + dx, target[1] + dy)
+        text = ax.annotate(
             str(label),
+            xy=target,
+            xytext=xytext,
             fontsize=fontsize,
             weight="bold",
             ha="center",
             va="center",
             color="#111827",
+            arrowprops=(
+                {
+                    "arrowstyle": "-",
+                    "color": "#4B5563",
+                    "linewidth": 0.6,
+                    "shrinkA": 2,
+                    "shrinkB": 2,
+                }
+                if arrows
+                else None
+            ),
+            bbox={"boxstyle": "round,pad=0.12", "facecolor": "white", "edgecolor": "none", "alpha": 0.78},
+            clip_on=False,
         )
         text.set_path_effects([patheffects.withStroke(linewidth=2.1, foreground="white")])
 
@@ -435,7 +455,7 @@ def plot_knn_with_reference(
             label=cell_type,
             rasterized=True,
         )
-    label_groups(reference_ax, annotations, fontsize=8, offsets=REFERENCE_LABEL_OFFSETS)
+    label_groups(reference_ax, annotations, fontsize=8, positions=REFERENCE_LABEL_POSITIONS, arrows=True)
     reference_ax.set_title("Broad cell types")
     reference_ax.set_xlabel("UMAP 1")
     reference_ax.set_ylabel("UMAP 2")

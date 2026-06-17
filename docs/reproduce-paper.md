@@ -4,8 +4,8 @@ This repository supports two reproducibility paths:
 
 - **Smoke path:** runs on committed fixtures and checks that the package, paper
   scripts, and LaTeX manuscript build correctly.
-- **Full public-data path:** reruns the Buenrostro bulk ATAC, 10x PBMC
-  pseudobulk, de novo motif validation, and benchmark scaffolds from downloaded
+- **Full public-data path:** reruns the Buenrostro bulk ATAC, ENCODE K562/HepG2
+  de novo motif validation, 10x PBMC pseudobulk, and benchmark scaffolds from downloaded
   public data under `data/public/`.
 
 Large public downloads and generated benchmark outputs are not stored in git.
@@ -43,7 +43,15 @@ CPU, memory, and disk space.
 
 ```bash
 bash scripts/run_buenrostro_2x2_atac_replicate_demo.sh
-bash scripts/run_buenrostro_denovo_motif_validation.sh
+bash scripts/run_encode_k562_hepg2_atac_demo.sh
+STREME_NMOTIFS=250 \
+THREADS=4 \
+DIFF_PLOT_AGGREGATE=off \
+OUT_DIR="$PWD/data/public/processed/encode_k562_hepg2_atac_replicates/fp_tools/denovo_motif_validation_maxcover_n250" \
+  bash scripts/run_encode_k562_hepg2_denovo_motif_validation.sh
+.venv/bin/python manuscript/scripts/plot_denovo_motif_validation.py \
+  --validation-dir data/public/processed/encode_k562_hepg2_atac_replicates/fp_tools/denovo_motif_validation_maxcover_n250 \
+  --out-prefix manuscript/figures/denovo_motif_validation
 .venv/bin/python benchmarks/scripts/prepare_10x_pbmc_pseudobulk.py --write-example-archive
 .venv/bin/python manuscript/scripts/prepare_pseudobulk_motif_sites.py \
   --peaks data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_peaks.bed \
@@ -79,6 +87,28 @@ bash scripts/run_buenrostro_denovo_motif_validation.sh
   --groups B_cell,CD4_T,CD14_Monocyte \
   --tfs SPIB,RUNX3,CEBPB \
   --flank 100
+.venv/bin/python benchmarks/scripts/prepare_10x_pbmc5k_scatac.py --chroms chr1,chr2
+.venv/bin/python manuscript/scripts/prepare_pseudobulk_motif_sites.py \
+  --peaks data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_snatac2_selected_bins.demo.bed \
+  --genome data/public/raw/genome/hg38.fa \
+  --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt \
+  --outdir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
+  --summary data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered/motif_centered_site_summary.tsv \
+  --candidates 'B_cell:PAX5;T_NK:TCF7;Myeloid:CEBPB' \
+  --chroms chr1,chr2 \
+  --plot-sites-per-tf 1500 \
+  --motif-pvalue 1e-4
+.venv/bin/python benchmarks/scripts/plot_pbmc5k_per_cell_signatures.py \
+  --annotations data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv \
+  --fragments data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz \
+  --h5ad data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_annotated.h5ad \
+  --tf-site-dir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
+  --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo \
+  --markers PAX5,CEBPB,TCF7
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_knn_footprint_signature_umap.pdf \
+  manuscript/figures/pbmc5k_knn_footprint_signature_umap.pdf
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_knn_footprint_signature_umap.png \
+  manuscript/figures/pbmc5k_knn_footprint_signature_umap.png
 ```
 
 After public-data outputs exist, regenerate the remaining manuscript figures with the scripts
