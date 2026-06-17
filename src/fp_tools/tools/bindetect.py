@@ -286,6 +286,10 @@ def run_bindetect_reuse_existing_results(args):
 # ----------------------------------------------------------------------------- #
 def run_bindetect(args):
     """Run the BINDetect pipeline from parsed CLI arguments."""
+    if getattr(args, "method", "bindetect") != "bindetect":
+        from fp_tools.tools.fixed_site_differential import run_fixed_site_differential
+        return run_fixed_site_differential(args)
+
     if getattr(args, "reuse_existing_results", False):
         return run_bindetect_reuse_existing_results(args)
 
@@ -976,6 +980,7 @@ def match_motifs_cli():
         parser.error("match-motifs expects exactly one --cond-names value when provided")
     if args.prefix == "bindetect":
         args.prefix = "motif_matches"
+    args.method = "bindetect"
     args.replicate_report = "off"
     run_bindetect(args)
 
@@ -987,8 +992,12 @@ def diff_footprints_cli():
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
-    if not args.signals or len(args.signals) < 2:
+    if args.method == "bindetect" and (not args.signals or len(args.signals) < 2):
         parser.error("diff-footprints expects at least two --signals bigWigs")
+    if args.method == "deseq2-cutcount" and (not args.count_bams or len(args.count_bams) < 2):
+        parser.error("diff-footprints --method deseq2-cutcount expects at least two --count-bams")
+    if args.method == "footprint-score" and not args.score_reference_dir and (not args.score_signals or len(args.score_signals) < 2):
+        parser.error("diff-footprints --method footprint-score expects at least two --score-signals or --score-reference-dir")
     if args.prefix == "bindetect":
         args.prefix = "diff_footprints"
     run_bindetect(args)

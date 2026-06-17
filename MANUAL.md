@@ -102,6 +102,17 @@ Repeated condition names define biological replicates. `diff-footprints` perform
 
 Differential result tables include raw comparison p-values, BH-adjusted q-values (`<comparison>_qvalue_bh`), and an FDR 5% flag (`<comparison>_significant_fdr05`). The `<comparison>_highlighted` column is a visualization/ranking flag used for reports and should not be interpreted as formal FDR significance.
 
+#### Fixed motif-site statistical backends
+
+The default `diff-footprints` backend scans motifs, scores motif-associated footprints, and compares conditions in one command. For method-development and sensitivity analyses, `diff-footprints` can also reuse an existing motif-site reference and quantify every sample over the same fixed sites:
+
+- `--method deseq2-cutcount`: counts raw shifted Tn5 insertions over fixed motif-site windows and analyzes the integer count matrix with PyDESeq2. Install the optional dependency with `pip install "fp-tools-bio[deseq2]"`.
+- `--method footprint-score`: quantifies footprint-score signal over the same fixed motif-site windows and applies an empirical-Bayes moderated test for continuous values.
+
+Use `--site-reference-dirs` to provide one or more previous `match-motifs` or `diff-footprints` output directories. `--reference-site-set bound-union` uses the union of bound-site BEDs, while `--reference-site-set all` uses all motif hits. The optional `--score-reference-dir` reuses existing per-site footprint-score columns from a previous `diff-footprints` run and avoids rereading bigWigs.
+
+For exploratory checks only, a footprint-score matrix can be converted outside the core command to integer pseudo-counts and analyzed with DESeq2. This is useful for sensitivity review, but raw shifted Tn5 counts are the statistically cleaner DESeq2 input.
+
 #### Replicate-aware reports and aggregate embedding
 
 The older replicate-report wording is now covered by `diff-footprints`. There is no primary `fp-tools-replicate-bindetect` command in the current public API. Use `diff-footprints` directly for two-condition, replicate-aware, or ordered time-course differential footprint analysis. Repeated names in `--cond-names` define replicate groups, for example `Bcell Bcell Tcell Tcell`.
