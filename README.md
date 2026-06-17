@@ -275,7 +275,8 @@ Raw CPM cut-site aggregates are useful QC and context. Corrected footprint claim
 
 The PBMC5k single-cell ATAC demonstration uses the original 10x Genomics
 `atac_pbmc_5k_nextgem` public dataset to prepare broad cell-type annotations,
-motif-centered marker sites, and a KNN-smoothed per-cell footprint-signature UMAP:
+motif-centered marker sites, a KNN-smoothed per-cell footprint-signature UMAP,
+and a three-panel directional marker volcano:
 
 ```bash
 python benchmarks/scripts/prepare_10x_pbmc5k_scatac.py --chroms chr1,chr2
@@ -296,6 +297,12 @@ python benchmarks/scripts/plot_pbmc5k_per_cell_signatures.py \
   --tf-site-dir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
   --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo \
   --markers PAX5,CEBPB,TCF7
+python benchmarks/scripts/plot_pbmc5k_pseudobulk_markers.py \
+  --annotations data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv \
+  --aggregate-screen data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/pseudobulk_footprint_aggregate_screen.tsv \
+  --bindetect-results data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/bindetect/pseudobulk_bindetect_results.txt \
+  --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo \
+  --markers PAX5,EBF1,POU2F2,POU2AF1,BCL6,SPIB,CEBPB,CEBPA,TCF7,LEF1,ZBTB7B,RUNX3,GATA3
 ```
 
 ## YAML Runner

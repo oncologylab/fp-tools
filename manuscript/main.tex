@@ -636,6 +636,26 @@ formal corrected footprint inference is performed at the pseudobulk level.
 \label{fig:pbmc5k_knn_footprint_signature}}
 \end{figure}
 
+Using the same pseudobulk footprint result table, we summarized the three
+pairwise broad-cell comparisons as volcano plots and labeled only predeclared
+marker TFs from the two cell types included in each comparison. Labels were drawn
+only when the differential footprint direction matched the expected lineage
+direction, so third-lineage markers and opposite-direction markers were not
+annotated (Figure~\ref{fig:pbmc5k_directional_volcano}).
+
+\begin{figure}[H]
+\includegraphics[width=\textwidth]{figures/pbmc5k_volcano_pairwise_directional_markers.pdf}
+\caption{Pairwise PBMC5k pseudobulk differential-footprint volcano plots with
+directional marker labels. Each panel shows BINDetect change for one binary
+comparison of broad cell types. Red points are higher in the first condition,
+blue points are higher in the second condition, and gray points are not
+significant at BH-adjusted \(q \le 0.05\). Black labels are restricted to known
+marker TFs assigned to the two compared cell types and are shown only when the
+change direction matches that marker assignment; markers assigned to the third
+cell type are omitted from that panel.
+\label{fig:pbmc5k_directional_volcano}}
+\end{figure}
+
 \subsection{Benchmark and Figure Reproducibility}
 
 The tiered benchmark design (Table~\ref{tab:tiers}), metric scripts, manifest

@@ -18,6 +18,16 @@ MARKERS = {
     "Monocyte": "CEBPB",
     "T_NK_cell": "TCF7",
 }
+PAIRWISE_COMPARISONS = [
+    ("B_cell_Monocyte", "B_cell", "Monocyte"),
+    ("B_cell_T_NK_cell", "B_cell", "T_NK_cell"),
+    ("Monocyte_T_NK_cell", "Monocyte", "T_NK_cell"),
+]
+MARKER_GROUPS = {
+    "B_cell": ("PAX5", "EBF1", "POU2F2", "POU2AF1", "BCL6", "SPIB"),
+    "Monocyte": ("CEBPB", "CEBPA"),
+    "T_NK_cell": ("TCF7", "LEF1", "ZBTB7B", "RUNX3", "GATA3"),
+}
 
 COLORS = {
     "B_cell": "#3B82F6",
@@ -50,6 +60,52 @@ def read_table(path: Path) -> pd.DataFrame:
 
 def coerce_numeric(series: pd.Series) -> pd.Series:
     return pd.to_numeric(series, errors="coerce")
+
+
+def marker_to_group(marker_groups: dict[str, tuple[str, ...]]) -> dict[str, str]:
+    return {marker.upper(): group for group, markers in marker_groups.items() for marker in markers}
+
+
+def prepare_volcano_df(results: pd.DataFrame, comparison: str) -> pd.DataFrame:
+    change_col = f"{comparison}_change"
+    p_col = f"{comparison}_pvalue"
+    q_col = f"{comparison}_qvalue_bh"
+    plot_df = results.copy()
+    plot_df["change"] = coerce_numeric(plot_df[change_col])
+    plot_df["pvalue"] = coerce_numeric(plot_df[p_col]).clip(lower=np.nextafter(0, 1))
+    plot_df["qvalue"] = coerce_numeric(plot_df[q_col])
+    plot_df["neg_log10_p"] = -np.log10(plot_df["pvalue"])
+    plot_df["status"] = "not significant"
+    plot_df.loc[(plot_df["qvalue"] <= 0.05) & (plot_df["change"] > 0), "status"] = "higher in first"
+    plot_df.loc[(plot_df["qvalue"] <= 0.05) & (plot_df["change"] < 0), "status"] = "higher in second"
+    return plot_df
+
+
+def directional_marker_rows(
+    plot_df: pd.DataFrame,
+    first: str,
+    second: str,
+    marker_groups: dict[str, tuple[str, ...]] = MARKER_GROUPS,
+    qvalue_threshold: float = 0.05,
+) -> pd.DataFrame:
+    group_by_marker = marker_to_group(marker_groups)
+    labels = []
+    for _, row in plot_df.iterrows():
+        marker = str(row["name"]).upper()
+        marker_group = group_by_marker.get(marker)
+        if marker_group not in {first, second}:
+            continue
+        change = float(row["change"])
+        qvalue = float(row["qvalue"])
+        if not np.isfinite(change) or not np.isfinite(qvalue) or qvalue > qvalue_threshold:
+            continue
+        if (marker_group == first and change > 0) or (marker_group == second and change < 0):
+            out = row.copy()
+            out["marker_group"] = marker_group
+            labels.append(out)
+    if not labels:
+        return plot_df.iloc[0:0].assign(marker_group=pd.Series(dtype=str))
+    return pd.DataFrame(labels)
 
 
 def plot_celltype_umap(annotations: pd.DataFrame, output_prefix: Path) -> None:
@@ -128,17 +184,7 @@ def plot_marker_umap(annotations: pd.DataFrame, aggregate_screen: pd.DataFrame, 
 
 
 def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str, output_prefix: Path, markers: list[str]) -> None:
-    change_col = f"{comparison}_change"
-    p_col = f"{comparison}_pvalue"
-    q_col = f"{comparison}_qvalue_bh"
-    plot_df = results.copy()
-    plot_df["change"] = coerce_numeric(plot_df[change_col])
-    plot_df["pvalue"] = coerce_numeric(plot_df[p_col]).clip(lower=np.nextafter(0, 1))
-    plot_df["qvalue"] = coerce_numeric(plot_df[q_col])
-    plot_df["neg_log10_p"] = -np.log10(plot_df["pvalue"])
-    plot_df["status"] = "not significant"
-    plot_df.loc[(plot_df["qvalue"] <= 0.05) & (plot_df["change"] > 0), "status"] = "higher in first"
-    plot_df.loc[(plot_df["qvalue"] <= 0.05) & (plot_df["change"] < 0), "status"] = "higher in second"
+    plot_df = prepare_volcano_df(results, comparison)
 
     fig, ax = plt.subplots(figsize=(5.2, 4.4))
     for status, color, size, alpha in [
@@ -181,6 +227,76 @@ def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str
     )
 
 
+def plot_directional_pairwise_volcano(results: pd.DataFrame, output_prefix: Path) -> None:
+    fig, axes = plt.subplots(1, len(PAIRWISE_COMPARISONS), figsize=(14.2, 4.2), sharey=True)
+    source_rows = []
+    for ax, (comparison, first, second) in zip(axes, PAIRWISE_COMPARISONS, strict=True):
+        plot_df = prepare_volcano_df(results, comparison)
+        labels = directional_marker_rows(plot_df, first, second)
+        x_min = float(plot_df["change"].min())
+        x_max = float(plot_df["change"].max())
+        x_range = max(x_max - x_min, 1e-6)
+        for status, color, size, alpha in [
+            ("not significant", COLORS["background"], 10, 0.42),
+            ("higher in second", COLORS["down"], 14, 0.72),
+            ("higher in first", COLORS["up"], 14, 0.72),
+        ]:
+            subset = plot_df[plot_df["status"] == status]
+            ax.scatter(subset["change"], subset["neg_log10_p"], s=size, color=color, alpha=alpha, linewidths=0, label=status)
+
+        for _, row in labels.iterrows():
+            ax.scatter(row["change"], row["neg_log10_p"], s=52, color="#111827", edgecolor="white", linewidth=0.7, zorder=4)
+            if row["change"] < x_min + 0.14 * x_range:
+                x_offset, ha = 5, "left"
+            elif row["change"] > x_max - 0.14 * x_range:
+                x_offset, ha = -5, "right"
+            else:
+                x_offset = 5 if row["change"] >= 0 else -5
+                ha = "left" if row["change"] >= 0 else "right"
+            ax.annotate(
+                row["name"],
+                (row["change"], row["neg_log10_p"]),
+                xytext=(x_offset, 5),
+                textcoords="offset points",
+                fontsize=7,
+                weight="bold",
+                ha=ha,
+                clip_on=False,
+                zorder=5,
+            )
+            source_rows.append(
+                {
+                    "comparison": comparison,
+                    "first": first,
+                    "second": second,
+                    "output_prefix": row["output_prefix"],
+                    "name": row["name"],
+                    "marker_group": row["marker_group"],
+                    "total_tfbs": row["total_tfbs"],
+                    "change": row["change"],
+                    "pvalue": row["pvalue"],
+                    "qvalue": row["qvalue"],
+                    "status": row["status"],
+                }
+            )
+
+        ax.axvline(0, color="#374151", linewidth=0.8)
+        ax.axhline(-np.log10(0.05), color="#6B7280", linewidth=0.8, linestyle="--")
+        ax.set_xlabel(f"BINDetect change\n({first} vs {second})")
+        ax.set_title(f"{first} vs {second}", fontsize=10)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.tick_params(labelsize=8)
+    axes[0].set_ylabel("-log10(p-value)")
+    handles, labels = axes[-1].get_legend_handles_labels()
+    fig.legend(handles, labels, frameon=False, fontsize=8, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.02))
+    fig.suptitle("PBMC5k pairwise differential footprint volcano plots", y=1.12, fontsize=13)
+    fig.tight_layout()
+    fig.savefig(output_prefix.with_suffix(".png"), dpi=260, bbox_inches="tight")
+    fig.savefig(output_prefix.with_suffix(".pdf"), bbox_inches="tight")
+    plt.close(fig)
+    pd.DataFrame(source_rows).to_csv(output_prefix.with_suffix(".tsv"), sep="\t", index=False)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--annotations", required=True)
@@ -199,12 +315,9 @@ def main(argv: list[str] | None = None) -> int:
 
     plot_celltype_umap(annotations, outdir / "pbmc5k_umap_broad_celltypes_scprinter_style")
     plot_marker_umap(annotations, aggregate_screen, outdir / "pbmc5k_marker_footprint_umap")
-    for comparison, first, second in [
-        ("B_cell_Monocyte", "B_cell", "Monocyte"),
-        ("B_cell_T_NK_cell", "B_cell", "T_NK_cell"),
-        ("Monocyte_T_NK_cell", "Monocyte", "T_NK_cell"),
-    ]:
+    for comparison, first, second in PAIRWISE_COMPARISONS:
         plot_volcano(results, comparison, first, second, outdir / f"pbmc5k_volcano_{comparison}", markers)
+    plot_directional_pairwise_volcano(results, outdir / "pbmc5k_volcano_pairwise_directional_markers")
     print(f"Wrote PBMC5k marker UMAP and volcano plots to {outdir}")
     return 0
 

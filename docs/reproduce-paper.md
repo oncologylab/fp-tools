@@ -105,10 +105,22 @@ OUT_DIR="$PWD/data/public/processed/encode_k562_hepg2_atac_replicates/fp_tools/d
   --tf-site-dir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
   --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo \
   --markers PAX5,CEBPB,TCF7
+.venv/bin/python benchmarks/scripts/plot_pbmc5k_pseudobulk_markers.py \
+  --annotations data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv \
+  --aggregate-screen data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/pseudobulk_footprint_aggregate_screen.tsv \
+  --bindetect-results data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/bindetect/pseudobulk_bindetect_results.txt \
+  --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo \
+  --markers PAX5,EBF1,POU2F2,POU2AF1,BCL6,SPIB,CEBPB,CEBPA,TCF7,LEF1,ZBTB7B,RUNX3,GATA3
 cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_knn_footprint_signature_umap.pdf \
   manuscript/figures/pbmc5k_knn_footprint_signature_umap.pdf
 cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_knn_footprint_signature_umap.png \
   manuscript/figures/pbmc5k_knn_footprint_signature_umap.png
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_volcano_pairwise_directional_markers.pdf \
+  manuscript/figures/pbmc5k_volcano_pairwise_directional_markers.pdf
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_volcano_pairwise_directional_markers.png \
+  manuscript/figures/pbmc5k_volcano_pairwise_directional_markers.png
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_volcano_pairwise_directional_markers.tsv \
+  manuscript/figures/pbmc5k_volcano_pairwise_directional_markers.tsv
 ```
 
 After public-data outputs exist, regenerate the remaining manuscript figures with the scripts
