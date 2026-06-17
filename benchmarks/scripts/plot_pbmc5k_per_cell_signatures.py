@@ -31,6 +31,11 @@ CELL_TYPE_COLORS = {
     "Monocyte": "#D97706",
     "T_NK_cell": "#059669",
 }
+REFERENCE_LABEL_OFFSETS = {
+    "B_cell": (-0.8, 0.65),
+    "Monocyte": (1.25, 0.75),
+    "T_NK_cell": (-2.0, 1.05),
+}
 
 
 def open_text(path: Path):
@@ -337,11 +342,17 @@ def attach_annotations(scores: pd.DataFrame, annotations: pd.DataFrame) -> pd.Da
     return scores.merge(annot[["cell_index", "barcode", "cell_type", "snap_cell_type", "umap_1", "umap_2"]], on="cell_index", how="left")
 
 
-def label_groups(ax: plt.Axes, annotations: pd.DataFrame, fontsize: int = 7) -> None:
+def label_groups(
+    ax: plt.Axes,
+    annotations: pd.DataFrame,
+    fontsize: int = 7,
+    offsets: dict[str, tuple[float, float]] | None = None,
+) -> None:
     for label, group in annotations.groupby("cell_type", sort=True):
+        dx, dy = (offsets or {}).get(str(label), (0.0, 0.0))
         text = ax.text(
-            group["umap_1"].median(),
-            group["umap_2"].median(),
+            group["umap_1"].median() + dx,
+            group["umap_2"].median() + dy,
             str(label),
             fontsize=fontsize,
             weight="bold",
@@ -424,8 +435,8 @@ def plot_knn_with_reference(
             label=cell_type,
             rasterized=True,
         )
-    label_groups(reference_ax, annotations, fontsize=8)
-    reference_ax.set_title("Cell types")
+    label_groups(reference_ax, annotations, fontsize=8, offsets=REFERENCE_LABEL_OFFSETS)
+    reference_ax.set_title("Broad cell types")
     reference_ax.set_xlabel("UMAP 1")
     reference_ax.set_ylabel("UMAP 2")
     reference_ax.legend(frameon=False, markerscale=3, fontsize=7, loc="center left", bbox_to_anchor=(1.02, 0.5))
@@ -449,14 +460,14 @@ def plot_knn_with_reference(
             linewidths=0,
             rasterized=True,
         )
-        ax.set_title(tf)
+        ax.set_title(f"{tf} footprint signature")
         ax.set_xlabel("UMAP 1")
         ax.spines[["top", "right"]].set_visible(False)
         cbar = fig.colorbar(sc, ax=ax, fraction=0.046, pad=0.02)
-        cbar.set_label("oriented z", fontsize=7)
+        cbar.set_label("footprint signature z-score", fontsize=7)
         cbar.ax.tick_params(labelsize=6)
 
-    fig.suptitle("PBMC5k per-cell marker signatures", y=1.03)
+    fig.suptitle("PBMC5k per-cell KNN footprint signature scores", y=1.03)
     fig.tight_layout()
     fig.savefig(output_prefix.with_suffix(".png"), dpi=240, bbox_inches="tight")
     fig.savefig(output_prefix.with_suffix(".pdf"), bbox_inches="tight")
