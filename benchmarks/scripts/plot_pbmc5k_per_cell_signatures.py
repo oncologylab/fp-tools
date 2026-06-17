@@ -26,6 +26,11 @@ MARKER_GROUPS = {
     "CEBPB": "Monocyte",
     "TCF7": "T_NK_cell",
 }
+CELL_TYPE_COLORS = {
+    "B_cell": "#3B82F6",
+    "Monocyte": "#D97706",
+    "T_NK_cell": "#059669",
+}
 
 
 def open_text(path: Path):
@@ -399,6 +404,65 @@ def plot_score_grid(
     plt.close(fig)
 
 
+def plot_knn_with_reference(
+    annotations: pd.DataFrame,
+    knn_scores: pd.DataFrame,
+    markers: list[str],
+    output_prefix: Path,
+) -> None:
+    fig, axes = plt.subplots(1, len(markers) + 1, figsize=(4.15 * (len(markers) + 1), 3.7), sharex=True, sharey=True)
+    reference_ax = axes[0]
+    for cell_type in CELL_TYPES:
+        subset = annotations[annotations["cell_type"] == cell_type]
+        reference_ax.scatter(
+            subset["umap_1"],
+            subset["umap_2"],
+            s=2.0,
+            alpha=0.9,
+            linewidths=0,
+            color=CELL_TYPE_COLORS.get(cell_type),
+            label=cell_type,
+            rasterized=True,
+        )
+    label_groups(reference_ax, annotations, fontsize=8)
+    reference_ax.set_title("Cell types")
+    reference_ax.set_xlabel("UMAP 1")
+    reference_ax.set_ylabel("UMAP 2")
+    reference_ax.legend(frameon=False, markerscale=3, fontsize=7, loc="center left", bbox_to_anchor=(1.02, 0.5))
+    reference_ax.spines[["top", "right"]].set_visible(False)
+
+    for ax, tf in zip(axes[1:], markers, strict=True):
+        subset = knn_scores[knn_scores["tf"] == tf].copy()
+        subset = annotations[["barcode", "cell_type", "umap_1", "umap_2"]].merge(
+            subset[["barcode", "knn_footprint_oriented_z"]],
+            on="barcode",
+            how="left",
+        )
+        sc = ax.scatter(
+            subset["umap_1"],
+            subset["umap_2"],
+            c=subset["knn_footprint_oriented_z"],
+            cmap="RdBu_r",
+            norm=robust_norm(subset["knn_footprint_oriented_z"]),
+            s=2.0,
+            alpha=0.92,
+            linewidths=0,
+            rasterized=True,
+        )
+        ax.set_title(tf)
+        ax.set_xlabel("UMAP 1")
+        ax.spines[["top", "right"]].set_visible(False)
+        cbar = fig.colorbar(sc, ax=ax, fraction=0.046, pad=0.02)
+        cbar.set_label("oriented z", fontsize=7)
+        cbar.ax.tick_params(labelsize=6)
+
+    fig.suptitle("PBMC5k per-cell marker signatures", y=1.03)
+    fig.tight_layout()
+    fig.savefig(output_prefix.with_suffix(".png"), dpi=240, bbox_inches="tight")
+    fig.savefig(output_prefix.with_suffix(".pdf"), bbox_inches="tight")
+    plt.close(fig)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--annotations", required=True)
@@ -442,12 +506,7 @@ def main(argv: list[str] | None = None) -> int:
         knn_scores.attrs["orientation_summary"].to_csv(outdir / "knn_footprint_orientation_summary.tsv", sep="\t", index=False)
     chromvar_scores.to_csv(outdir / "chromvar_like_motif_activity_scores.tsv", sep="\t", index=False)
 
-    plot_score_grid(
-        annotations,
-        [("KNN footprint", knn_scores, "knn_footprint_oriented_z", "oriented z")],
-        markers,
-        outdir / "pbmc5k_knn_footprint_signature_umap",
-    )
+    plot_knn_with_reference(annotations, knn_scores, markers, outdir / "pbmc5k_knn_footprint_signature_umap")
     plot_score_grid(
         annotations,
         [("ChromVAR-like", chromvar_scores, "chromvar_like_activity_z", "activity z")],
