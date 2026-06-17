@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from adjustText import adjust_text
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 import matplotlib.patheffects as patheffects
@@ -109,30 +110,41 @@ def directional_marker_rows(
 
 
 def annotate_marker_labels(ax: plt.Axes, labels: pd.DataFrame, fontsize: int) -> list[dict[str, object]]:
-    x_min, x_max = ax.get_xlim()
-    x_range = max(float(x_max - x_min), 1e-6)
     source_rows = []
+    texts = []
     for _, row in labels.iterrows():
         ax.scatter(row["change"], row["neg_log10_p"], s=52, color="#111827", edgecolor="white", linewidth=0.7, zorder=4)
-        if row["change"] < x_min + 0.14 * x_range:
-            x_offset, ha = 5, "left"
-        elif row["change"] > x_max - 0.14 * x_range:
-            x_offset, ha = -5, "right"
-        else:
-            x_offset = 5 if row["change"] >= 0 else -5
-            ha = "left" if row["change"] >= 0 else "right"
-        ax.annotate(
+        text = ax.text(
+            float(row["change"]),
+            float(row["neg_log10_p"]),
             row["name"],
-            (row["change"], row["neg_log10_p"]),
-            xytext=(x_offset, 5),
-            textcoords="offset points",
             fontsize=fontsize,
             weight="bold",
-            ha=ha,
+            ha="center",
+            va="bottom",
             clip_on=False,
             zorder=5,
         )
+        text.set_path_effects([patheffects.withStroke(linewidth=2.0, foreground="white")])
+        texts.append(text)
         source_rows.append(row.to_dict())
+    if texts:
+        adjust_text(
+            texts,
+            ax=ax,
+            x=labels["change"].to_numpy(dtype=float),
+            y=labels["neg_log10_p"].to_numpy(dtype=float),
+            only_move={"text": "xy", "static": "xy", "explode": "xy", "pull": "xy"},
+            force_text=(0.28, 0.42),
+            force_static=(0.12, 0.18),
+            force_pull=(0.03, 0.05),
+            expand=(1.12, 1.25),
+            max_move=(12, 12),
+            min_arrow_len=6,
+            ensure_inside_axes=True,
+            expand_axes=False,
+            arrowprops={"arrowstyle": "-", "color": "#4B5563", "linewidth": 0.45, "alpha": 0.7},
+        )
     return source_rows
 
 

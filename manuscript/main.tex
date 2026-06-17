@@ -575,41 +575,29 @@ workflow illustrate motif-centered validation profiles from the same PBMC exampl
 not a separate generic benchmark.\label{fig:pseudobulk_workflow}}
 \end{figure}
 
-As a qualitative validation, we aggregated CPM-normalized pseudobulk cut-site
-signal in a $\pm$100 bp window around exact motif centers rather than around broad
-peak centers.
-JASPAR2026 vertebrate motifs were scanned in the 10x ATAC peak set, motif hits
-were grouped by TF family, and candidate immune regulators were screened using a
-predeclared B-cell, T/NK-cell, and myeloid marker list. To avoid artificial fixed
-site counts in the figure, all motif hits were counted and used for each displayed
-TF. We show RUNX3 as the T/NK-associated example and CEBPB as the myeloid-associated
-example from this screen, using 37,694 and 17,454 motif-centered sites,
-respectively. The fragment data and pseudobulk cut-site tracks were not modified;
-only the motif-centered site set used for aggregation changed. The resulting
-profiles show that single-cell fragments can be collapsed into group-level tracks
-and inspected with the same motif-centered aggregate workflow used for bulk ATAC
-data (Figure~\ref{fig:pseudobulk_supp}). For corrected footprint inference, the
-\texttt{pseudobulk-footprints} command carries the retained groups through
-pseudo-BAM generation, bias correction, and footprint scoring before aggregate
+For corrected footprint inference, the \texttt{pseudobulk-footprints} command
+carries the retained groups through pseudo-BAM generation, bias correction, and
+footprint scoring before motif-aware differential analysis and aggregate
 plotting.
 
+Using the same pseudobulk footprint result table, we summarized the three
+pairwise broad-cell comparisons as volcano plots and labeled only predeclared
+marker TFs from the two cell types included in each comparison. Labels were drawn
+only when the differential footprint direction matched the expected lineage
+direction, so third-lineage markers and opposite-direction markers were not
+annotated (Figure~\ref{fig:pbmc5k_directional_volcano}).
+
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/supp_pseudobulk_cutsite_signal.pdf}
-\caption{Motif-centered 10x PBMC pseudobulk cut-site signal aggregate profiles.
-Single-cell ATAC fragments from the public 10x PBMC Multiome dataset were grouped
-by broad immune-cell labels derived from official 10x gene-expression graph
-clusters, converted to CPM-normalized cut-site bigWigs, and aggregated in a
-$\pm$100 bp window around exact JASPAR2026 motif centers scanned inside 10x ATAC
-peaks. RUNX3 is shown as a
-T/NK-associated example with 37,694 motif sites, and CEBPB is shown as a
-myeloid-associated example with 17,454 motif sites. The plotted value is direct
-CPM-normalized cut-site signal, not a derived protection score. Thin lines show
-all retained pseudobulk groups; thicker lines mark the expected pseudobulk groups
-for each lineage-associated TF. The source screen and natural motif-hit counts are
-reported in \texttt{figures/supp\_pseudobulk\_cutsite\_signal\_screen.tsv}. The
-figure demonstrates that the pseudobulk fragment workflow produces group-level
-signal tracks compatible with motif-centered aggregate visualization.
-\label{fig:pseudobulk_supp}}
+\includegraphics[width=\textwidth]{figures/pbmc5k_volcano_pairwise_directional_markers.pdf}
+\caption{Pairwise PBMC5k pseudobulk differential-footprint volcano plots with
+directional marker labels. Each panel shows the differential footprint score for
+one binary comparison of broad cell types. Red points are higher in the first condition,
+blue points are higher in the second condition, and gray points are not
+significant at BH-adjusted \(q \le 0.05\). Black labels are restricted to known
+marker TFs assigned to the two compared cell types and are shown only when the
+change direction matches that marker assignment; markers assigned to the third
+cell type are omitted from that panel.
+\label{fig:pbmc5k_directional_volcano}}
 \end{figure}
 
 We also applied the per-cell KNN visualization layer to the public 10x Genomics
@@ -639,26 +627,6 @@ marker-oriented footprint-signature direction after per-TF standardization. The
 scores are intended as a UMAP visualization of local single-cell neighborhoods;
 formal corrected footprint inference is performed at the pseudobulk level.
 \label{fig:pbmc5k_knn_footprint_signature}}
-\end{figure}
-
-Using the same pseudobulk footprint result table, we summarized the three
-pairwise broad-cell comparisons as volcano plots and labeled only predeclared
-marker TFs from the two cell types included in each comparison. Labels were drawn
-only when the differential footprint direction matched the expected lineage
-direction, so third-lineage markers and opposite-direction markers were not
-annotated (Figure~\ref{fig:pbmc5k_directional_volcano}).
-
-\begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/pbmc5k_volcano_pairwise_directional_markers.pdf}
-\caption{Pairwise PBMC5k pseudobulk differential-footprint volcano plots with
-directional marker labels. Each panel shows the differential footprint score for
-one binary comparison of broad cell types. Red points are higher in the first condition,
-blue points are higher in the second condition, and gray points are not
-significant at BH-adjusted \(q \le 0.05\). Black labels are restricted to known
-marker TFs assigned to the two compared cell types and are shown only when the
-change direction matches that marker assignment; markers assigned to the third
-cell type are omitted from that panel.
-\label{fig:pbmc5k_directional_volcano}}
 \end{figure}
 
 \subsection{Benchmark and Figure Reproducibility}
