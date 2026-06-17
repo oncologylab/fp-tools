@@ -32,7 +32,7 @@ CELL_TYPE_COLORS = {
     "T_NK_cell": "#059669",
 }
 REFERENCE_LABEL_POSITIONS = {
-    "B_cell": (-9.2, 3.2),
+    "B_cell": (-5.85, 4.55),
     "Monocyte": (12.8, 8.4),
     "T_NK_cell": (0.2, 11.0),
 }
@@ -455,7 +455,7 @@ def plot_knn_with_reference(
             label=cell_type,
             rasterized=True,
         )
-    label_groups(reference_ax, annotations, fontsize=8, positions=REFERENCE_LABEL_POSITIONS, arrows=True)
+    label_groups(reference_ax, annotations, fontsize=8, positions=REFERENCE_LABEL_POSITIONS)
     reference_ax.set_title("Broad cell types")
     reference_ax.set_xlabel("UMAP 1")
     reference_ax.set_ylabel("UMAP 2")
