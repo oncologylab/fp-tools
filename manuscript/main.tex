@@ -42,7 +42,7 @@ differential footprint analysis, and aggregate visualization within a consistent
 command-line workflow. The same framework supports de novo motif-discovery
 preparation, pseudobulk aggregation from single-cell ATAC fragments, and
 replicate-aware reporting for condition comparisons. Using public bulk ATAC-seq
-replicates and 10x Genomics PBMC Multiome data, we show that \texttt{fp-tools}
+replicates and public 10x Genomics PBMC single-cell datasets, we show that \texttt{fp-tools}
 recovers biologically interpretable motif-centered aggregate patterns while
 preserving a reproducible analysis trail through versioned inputs, source tables,
 and regression-tested command outputs. \texttt{fp-tools} provides an integrated
@@ -283,7 +283,7 @@ SRR891268 and SRR891269, and day-1 CD4 T-cell samples SRR891275 and SRR891276.
 Reads were trimmed with fastp~\cite{Chen2018_fastp}, aligned with Bowtie2~\cite{Langmead2012_Bowtie2}, processed with SAMtools~\cite{Li2009_SAMtools} and BEDTools~\cite{Quinlan2010_BEDTools}, and peaks were called with MACS3 using the MACS model-based peak-calling framework~\cite{Zhang2008_MACS}. Problematic genomic regions were filtered using the ENCODE blacklist~\cite{Amemiya2019_Blacklist}. Replicate peaks were merged into a common peak universe, bias-corrected, footprint-called,
 and analyzed by differential footprint comparison with and without sample-level
 quantile normalization. The analysis used JASPAR2026 CORE vertebrates
-non-redundant motifs for known-motif scanning. Exact command-line parameters and software versions are recorded in source TSV
+non-redundant motifs~\cite{jaspar2026} for known-motif scanning. Exact command-line parameters and software versions are recorded in source TSV
 files in the manuscript \texttt{tables} directory and summarized in
 Tables~\ref{tab:supp_analysis_parameters} and
 \ref{tab:supp_software_versions}.
@@ -329,7 +329,7 @@ Small reference & Installation and regression checks on compact inputs & command
 Bulk matched & Main ATAC-seq footprinting benchmark (ATAC vs. matched TF ChIP/CUT\&RUN) & TFBS labels, predictions, AUROC/AUPRC, reports\\
 Depth robustness & Shallow-depth sensitivity (50/25/10/5\%) & performance-vs-depth and calibration curves\\
 De novo motif prep & Candidate FASTA and motif-discovery validation & exported FASTA, command plans, motif summaries\\
-Pseudobulk & Single-cell extension and real-data demonstration & 10x PBMC cell-type pseudobulks, TF aggregate profiles\\
+Pseudobulk & Single-cell extension and real-data demonstration & 10x PBMC pseudobulk fragments, corrected footprint tracks, pairwise TF differential plots, KNN marker-signature UMAPs\\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -802,7 +802,7 @@ Blacklist filtering & Exclude mitochondrial and nonstandard contigs and subtract
 Peak calling and union peaks & MACS3 paired-end peak calling with human genome size, duplicate retention, and q-value 0.01; replicate peaks are sorted and merged into one analysis peak set.\\
 Bias correction and footprint calling & \texttt{atac-correct} with merged peaks and blacklist using default Tn5-bias settings; \texttt{call-footprints --score footprint} with default footprint/flank windows.\\
 Differential footprint analysis & Buenrostro B-cell/T-cell and ENCODE K562/HepG2 replicate footprint tracks analyzed with repeated condition labels; JASPAR2026 vertebrate non-redundant motifs; replicate report enabled; runs performed with no normalization and with sample-level quantile normalization where indicated.\\
-Pseudobulk PBMC workflow & 10x PBMC Multiome fragments grouped by broad immune labels; groups retained with at least 300 cells and 50,000 fragments; CPM-normalized cut-site bigWigs generated for aggregate profiles.\\
+Pseudobulk PBMC workflow & 10x PBMC Multiome fragments grouped by broad immune labels; groups retained with at least 300 cells and 50,000 fragments; raw CPM cut-site bigWigs used for QC, and the full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, bias-corrected tracks, footprint-score tracks, motif-aware differential results, and aggregate plots. The PBMC5k scATAC demonstration uses the original 10x fragment file, broad B-cell/monocyte/T--NK labels, motif-centered marker sites, pairwise pseudobulk differential-footprint volcano plots, and KNN-smoothed per-cell footprint-signature UMAPs.\\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -827,6 +827,7 @@ pysam/Biopython & 0.23.3/1.87 & BAM I/O and sequence utilities\\
 JASPAR CORE vertebrates & 2026 non-redundant & Known motif database\\
 MEME Suite/STREME/Tomtom & 5.5.9 & De novo motif discovery and discovered-motif matching\\
 Cell Ranger ARC & 2.0.0 & Source 10x PBMC Multiome processing\\
+Cell Ranger ATAC & 2.0.0 & Source 10x PBMC5k scATAC processing\\
 hg38 reference and blacklist & GRCh38/hg38; blacklist v2 & Alignment, sequence extraction, and artifact filtering\\
 \bottomrule
 \end{tabularx}

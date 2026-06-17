@@ -132,6 +132,14 @@ Amemiya, H.M.; Kundaje, A.; Boyle, A.P.
 \newblock {\em Scientific Reports} {\bf 2019}, {\em 9},~9354.
 \newblock {\url{https://doi.org/10.1038/s41598-019-45839-z}}.
 
+\bibitem[Baydar et~al.(2026)Baydar, Rauluseviciute, Aronsen,
+  et~al.]{jaspar2026}
+Baydar, D.O.; Rauluseviciute, I.; Aronsen, D.R.;  et~al.
+\newblock {JASPAR} 2026: expansion of transcription factor binding profiles and
+  integration of deep learning models.
+\newblock {\em Nucleic Acids Research} {\bf 2026}, {\em 54},~D184--D193.
+\newblock {\url{https://doi.org/10.1093/nar/gkaf1209}}.
+
 \bibitem[Weber et~al.(2019)Weber, Hare, Soneson, and
   Robinson]{Weber2019_Benchmarking}
 Weber, L.M.; Hare, E.H.; Soneson, C.; Robinson, M.D.
@@ -238,13 +246,5 @@ Berest, I.; Arnold, C.; Reyes-Palomares, A.; Palla, G.; Rasmussen, K.D.; Giles,
 \newblock An integrated encyclopedia of {DNA} elements in the human genome.
 \newblock {\em Nature} {\bf 2012}, {\em 489},~57--74.
 \newblock {\url{https://doi.org/10.1038/nature11247}}.
-
-\bibitem[Baydar et~al.(2026)Baydar, Rauluseviciute, Aronsen,
-  et~al.]{jaspar2026}
-Baydar, D.O.; Rauluseviciute, I.; Aronsen, D.R.;  et~al.
-\newblock {JASPAR} 2026: expansion of transcription factor binding profiles and
-  integration of deep learning models.
-\newblock {\em Nucleic Acids Research} {\bf 2026}, {\em 54},~D184--D193.
-\newblock {\url{https://doi.org/10.1093/nar/gkaf1209}}.
 
 \end{thebibliography}
