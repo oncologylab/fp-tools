@@ -286,7 +286,7 @@ python manuscript/scripts/prepare_pseudobulk_motif_sites.py \
   --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt \
   --outdir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
   --summary data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered/motif_centered_site_summary.tsv \
-  --candidates 'B_cell:PAX5;T_NK:TCF7;Myeloid:CEBPB' \
+  --candidates 'B_cell:PAX5,SPIB,POU2F2;T_NK:TCF7,ZBTB7B;Myeloid:CEBPB,CEBPA' \
   --chroms chr1,chr2 \
   --plot-sites-per-tf 1500 \
   --motif-pvalue 1e-4
@@ -296,7 +296,7 @@ python benchmarks/scripts/plot_pbmc5k_per_cell_signatures.py \
   --h5ad data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_annotated.h5ad \
   --tf-site-dir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
   --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo \
-  --markers PAX5,CEBPB,TCF7
+  --markers PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2
 python benchmarks/scripts/plot_pbmc5k_pseudobulk_markers.py \
   --annotations data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv \
   --aggregate-screen data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/pseudobulk_footprint_aggregate_screen.tsv \

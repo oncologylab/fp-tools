@@ -18,13 +18,16 @@ import pysam
 from sklearn.neighbors import NearestNeighbors
 
 
-MARKERS = ("PAX5", "CEBPB", "TCF7")
+MARKERS = ("PAX5", "CEBPB", "TCF7", "CEBPA", "SPIB", "ZBTB7B", "POU2F2")
 CELL_TYPES = ("B_cell", "Monocyte", "T_NK_cell")
 MARKER_GROUPS = {
     "PAX5": "B_cell",
     "CEBPA": "Monocyte",
     "CEBPB": "Monocyte",
+    "POU2F2": "B_cell",
+    "SPIB": "B_cell",
     "TCF7": "T_NK_cell",
+    "ZBTB7B": "T_NK_cell",
 }
 CELL_TYPE_COLORS = {
     "B_cell": "#3B82F6",
@@ -441,8 +444,12 @@ def plot_knn_with_reference(
     markers: list[str],
     output_prefix: Path,
 ) -> None:
-    fig, axes = plt.subplots(1, len(markers) + 1, figsize=(4.15 * (len(markers) + 1), 3.7), sharex=True, sharey=True)
-    reference_ax = axes[0]
+    ncols = 4 if len(markers) > 3 else len(markers) + 1
+    panels = [None] + markers
+    nrows = int(np.ceil(len(panels) / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4.15 * ncols, 3.7 * nrows), sharex=True, sharey=True)
+    axes_flat = np.asarray(axes).reshape(-1)
+    reference_ax = axes_flat[0]
     for cell_type in CELL_TYPES:
         subset = annotations[annotations["cell_type"] == cell_type]
         reference_ax.scatter(
@@ -462,7 +469,7 @@ def plot_knn_with_reference(
     reference_ax.legend(frameon=False, markerscale=3, fontsize=7, loc="center left", bbox_to_anchor=(1.02, 0.5))
     reference_ax.spines[["top", "right"]].set_visible(False)
 
-    for ax, tf in zip(axes[1:], markers, strict=True):
+    for panel_index, (ax, tf) in enumerate(zip(axes_flat[1:], markers, strict=True), start=1):
         subset = knn_scores[knn_scores["tf"] == tf].copy()
         subset = annotations[["barcode", "cell_type", "umap_1", "umap_2"]].merge(
             subset[["barcode", "knn_footprint_oriented_z"]],
@@ -482,11 +489,15 @@ def plot_knn_with_reference(
         )
         ax.set_title(f"{tf} footprint signature")
         ax.set_xlabel("UMAP 1")
+        if panel_index % ncols == 0:
+            ax.set_ylabel("UMAP 2")
         ax.spines[["top", "right"]].set_visible(False)
         cbar = fig.colorbar(sc, ax=ax, fraction=0.046, pad=0.02)
         cbar.set_label("footprint signature z-score", fontsize=7)
         cbar.ax.tick_params(labelsize=6)
 
+    for ax in axes_flat[len(panels) :]:
+        ax.set_visible(False)
     fig.suptitle("PBMC5k per-cell KNN footprint signature scores", y=1.03)
     fig.tight_layout()
     fig.savefig(output_prefix.with_suffix(".png"), dpi=240, bbox_inches="tight")
@@ -511,7 +522,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bin-size", type=int, default=500)
     parser.add_argument(
         "--marker-groups",
-        default="PAX5:B_cell,CEBPA:Monocyte,CEBPB:Monocyte,TCF7:T_NK_cell",
+        default="PAX5:B_cell,CEBPA:Monocyte,CEBPB:Monocyte,POU2F2:B_cell,SPIB:B_cell,TCF7:T_NK_cell,ZBTB7B:T_NK_cell",
         help="Comma-separated TF:cell_type pairs used to orient KNN marker scores for UMAP review.",
     )
     parser.add_argument("--no-create-fragment-index", action="store_true", help="Do not create a tabix index for the fragment file when it is missing.")

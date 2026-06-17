@@ -616,12 +616,15 @@ We also applied the per-cell KNN visualization layer to the public 10x Genomics
 5k PBMC single-cell ATAC dataset~\cite{tenxpbmc5katac2021}. The demonstration
 used the Cell Ranger ATAC 2.0.0 fragment dataset, broad B-cell, monocyte, and
 T/NK annotations derived from the single-cell embedding, and motif-centered
-marker scores for PAX5, CEBPB, and TCF7. For each cell, the plotted value is a
+marker scores for PAX5, CEBPB, TCF7, and four additional high-change marker TFs
+from the pairwise pseudobulk screen: CEBPA, SPIB, ZBTB7B, and POU2F2. For each cell, the plotted value is a
 KNN-smoothed footprint-signature score, not an independently bias-corrected
-single-cell footprint call. This visualization preserves the expected marker
-direction while avoiding overinterpretation of sparse per-cell cut-site counts:
-PAX5 is highest in the B-cell region, CEBPB in monocytes, and TCF7 in the T/NK
-region (Figure~\ref{fig:pbmc5k_knn_footprint_signature}).
+single-cell footprint call. This visualization highlights expected marker
+directions while avoiding overinterpretation of sparse per-cell cut-site counts:
+PAX5 and POU2F2 show B-cell-associated signal, CEBPB and CEBPA show monocyte-associated
+signal, and TCF7 and ZBTB7B show T/NK-associated signal; SPIB is included as an
+additional high-change B-cell marker from the pseudobulk screen
+(Figure~\ref{fig:pbmc5k_knn_footprint_signature}).
 
 \begin{figure}[H]
 \includegraphics[width=\textwidth]{figures/pbmc5k_knn_footprint_signature_umap.pdf}
@@ -629,7 +632,9 @@ region (Figure~\ref{fig:pbmc5k_knn_footprint_signature}).
 single-cell ATAC data. The left panel shows the broad cell-type reference UMAP;
 labels are drawn as callouts to avoid covering dense point clouds. The remaining
 panels show per-cell KNN-smoothed footprint-signature z-scores for PAX5, CEBPB,
-and TCF7 motif-centered cut-site neighborhoods. Positive values indicate the
+TCF7, CEBPA, SPIB, ZBTB7B, and POU2F2 motif-centered cut-site neighborhoods.
+The second row adds four marker TFs with large directional changes in the
+pseudobulk pairwise screen. Positive values indicate the
 marker-oriented footprint-signature direction after per-TF standardization. The
 scores are intended as a UMAP visualization of local single-cell neighborhoods;
 formal corrected footprint inference is performed at the pseudobulk level.
