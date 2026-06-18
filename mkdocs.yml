@@ -6,18 +6,37 @@ repo_name: oncologylab/fp-tools
 
 theme:
   name: material
-  logo: assets/fp-tools-workflow.png
-  favicon: assets/fp-tools-workflow.png
+  logo: assets/fp-tools-logo.svg
+  favicon: assets/fp-tools-logo.svg
   features:
+    - navigation.instant
+    - navigation.tracking
     - navigation.tabs
     - navigation.sections
+    - navigation.footer
+    - navigation.indexes
     - navigation.top
+    - search.suggest
+    - search.highlight
     - content.code.copy
+    - content.code.annotate
     - content.tabs.link
   palette:
     - scheme: default
-      primary: blue grey
+      primary: teal
       accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+extra_css:
+  - stylesheets/extra.css
 
 nav:
   - Home: index.md

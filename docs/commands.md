@@ -6,6 +6,21 @@ Install the package, then inspect any command with `--help`.
 pip install fp-tools-bio
 ```
 
+<div class="fp-grid">
+  <div class="fp-card">
+    <h3>Start with bulk ATAC</h3>
+    <p>atac-correct, call-footprints, and diff-footprints cover the core footprint workflow.</p>
+  </div>
+  <div class="fp-card">
+    <h3>Review reports</h3>
+    <p>plot-aggregate and plot-aggregate-batch generate static figures and standalone HTML browsers.</p>
+  </div>
+  <div class="fp-card">
+    <h3>Add optional routes</h3>
+    <p>Use pseudobulk and motif-discovery utilities when working with single-cell ATAC or candidate motifs.</p>
+  </div>
+</div>
+
 ## Core Commands
 
 | Command | Purpose |

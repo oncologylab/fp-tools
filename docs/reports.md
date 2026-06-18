@@ -4,17 +4,22 @@
 
 ## Demo Gallery
 
-Curated demo reports should be placed under:
+<div class="fp-grid">
+  <div class="fp-card">
+    <h3>Differential footprint report</h3>
+    <p>Volcano plot, motif logos, comparison table, and embedded aggregate profiles from a compact two-condition run.</p>
+  </div>
+  <div class="fp-card">
+    <h3>Aggregate browser</h3>
+    <p>Multi-sample and multi-TF aggregate profiles with searchable TF selection and configurable layouts.</p>
+  </div>
+  <div class="fp-card">
+    <h3>Pseudobulk marker review</h3>
+    <p>Marker-focused single-cell ATAC pseudobulk output built from toy or compact public example data.</p>
+  </div>
+</div>
 
-```text
-docs/demos/reports/
-```
-
-Recommended examples:
-
-- a small `diff-footprints` report with volcano plot, motif logos, and aggregate profiles;
-- a `plot-aggregate-batch` report showing multi-sample aggregate browsing;
-- a pseudobulk marker report generated from toy or compact public example data.
+Curated demo reports should be placed under `docs/demos/reports/`.
 
 !!! note
     Avoid committing very large full benchmark review outputs to the docs site. For large reports, publish them as GitHub Release assets or in the companion data repository, then link to them from this page.
@@ -38,3 +43,7 @@ Example link format:
 ## Why Static Reports Work
 
 The report HTML embeds the JavaScript and compressed JSON payload needed for review. GitHub Pages can serve it without a backend, database, or Python runtime.
+
+<div class="fp-wide-image">
+  <img src="../assets/interface_usability_panels.png" alt="fp-tools GUI and static report examples">
+</div>
