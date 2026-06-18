@@ -269,10 +269,6 @@ pseudobulk-fragments   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sor
 
 Raw CPM cut-site aggregates are useful QC and context. Corrected footprint claims should use the `pseudobulk-footprints` outputs after `atac-correct` and `call-footprints`.
 
-![Motif-centered pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk-example-output.png)
-
-![Motif-centered pseudobulk protection score](docs/assets/fp-tools-pseudobulk-footprint-like.png)
-
 The PBMC5k single-cell ATAC demonstration uses the original 10x Genomics
 `atac_pbmc_5k_nextgem` public dataset to prepare broad cell-type annotations,
 motif-centered marker sites, a KNN-smoothed per-cell footprint-signature UMAP,

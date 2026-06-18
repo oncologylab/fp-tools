@@ -50,19 +50,30 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertIn("Download aggregate SVG", html)
         self.assertIn('id="report-method"', html)
         self.assertIn("Method: test label", html)
-        self.assertIn("aggregate-search", html)
-        self.assertIn("Select current motif TF", html)
-        self.assertIn("volcano-combo", html)
-        self.assertIn("combo-option", html)
+        self.assertIn("Top differential motifs", html)
+        self.assertNotIn("Scale is differential score", html)
+        self.assertIn("Selected motifs", html)
+        self.assertIn('id="rank-chart"', html)
+        self.assertIn('id="rank-rows"', html)
+        self.assertIn('<option value="20" selected>20</option>', html)
+        self.assertIn('id="selected-grid"', html)
+        self.assertIn('id="aggregate-grid"', html)
+        self.assertIn("Panel ${idx+1}", html)
+        self.assertIn("Download SVG", html)
+        self.assertIn("data-panel-tf", html)
+        self.assertIn("data-panel-sample", html)
+        self.assertIn("data-download-panel", html)
+        self.assertIn("panelPrefixes", html)
+        self.assertIn("panelSamples", html)
+        self.assertIn("function drawTopMotifs", html)
+        self.assertIn("perDir", html)
+        self.assertIn("positive=points.filter(p=>p.change>0)", html)
+        self.assertIn("negative=points.filter(p=>p.change<0)", html)
+        self.assertIn("function drawAggregatePanel", html)
+        self.assertIn("function setPanelMotif", html)
         self.assertIn("function setSelectedMotif", html)
-        self.assertIn("function setupAggregateSearch", html)
         self.assertIn("function motifLabel", html)
-        self.assertIn("function setAggregateLayout", html)
         self.assertIn('id="aggregate-width"', html)
-        self.assertIn("aggregate-wide", html)
-        self.assertIn("aggregate-full", html)
-        self.assertIn('id="logo-title"', html)
-        self.assertIn("logoTitle.textContent", html)
         self.assertIn('id="aggregate-show-mean"', html)
         self.assertIn('id="aggregate-sample-styles"', html)
         self.assertIn('data-sample-color=', html)
@@ -77,35 +88,49 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertIn('sample-style-group-title', html)
         self.assertIn('data-sample-group=', html)
         self.assertIn('sample-style-head', html)
-        self.assertIn('${escText(cond.name)} samples', html)
-        self.assertIn('Adjust ${escText(cond.name)} sample ${escText(sample.name)}', html)
-        self.assertIn('Alpha for ${escText(cond.name)} sample ${escText(sample.name)}', html)
+        self.assertIn('${escText(cond)} samples', html)
+        self.assertIn('Adjust ${escText(cond)} sample ${escText(name)}', html)
+        self.assertIn('Alpha for ${escText(cond)} sample ${escText(name)}', html)
         self.assertIn('<span>Alpha</span>', html)
         self.assertIn('<span>Width</span>', html)
         self.assertIn('function alphaValue', html)
-        self.assertIn('stroke-width="${sampleLineWidth}"${sampleDash}', html)
-        self.assertIn('stroke-opacity="${sampleAlpha}"', html)
+        self.assertIn('stroke-width="${lineWidthValue(style.width,.7)}"${dash}', html)
+        self.assertIn('stroke-opacity="${alphaValue(style.alpha,.9)}"', html)
         self.assertIn('stroke="${style.color}"', html)
-        self.assertIn('stroke-width="${meanLineWidth}"${meanDash}', html)
-        self.assertIn('viewBox="0 0 520 520"', html)
+        self.assertIn('stroke-width="${lineWidthValue(aggregateMeanWidth,1.05)}"', html)
+        self.assertIn('viewBox="0 0 ${width} ${height}"', html)
         self.assertIn("class=\"pt", html)
-        self.assertIn("volcanoPoints.sort", html)
-        sq = chr(39)
-        left_label = 'x="${plotX0+18}" y="${plotY0+24}" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="900" fill="${colors[payload.conditions[1]+' + sq + '_up' + sq + ']}">${escText(payload.conditions[1]+' + sq + '_up' + sq + ')}'
-        right_label = 'x="${plotX1-18}" y="${plotY0+24}" text-anchor="end" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="900" fill="${colors[payload.conditions[0]+' + sq + '_up' + sq + ']}">${escText(payload.conditions[0]+' + sq + '_up' + sq + ')}'
-        self.assertIn(left_label, html)
-        self.assertIn(right_label, html)
+        self.assertIn("payload.conditions[1]+'_up'", html)
+        self.assertIn("payload.conditions[0]+'_up'", html)
         self.assertIn("motif-site set", html)
         self.assertIn("Distance from motif center (bp)", html)
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
         self.assertIsNotNone(match)
         payload = json.loads(gzip.decompress(base64.b64decode(match.group(1))).decode("utf-8"))
         self.assertEqual(payload["report_label"], "Method: test label")
+        self.assertEqual(payload["change_label"], "Differential footprint score")
         self.assertEqual(payload["aggregate"]["motifs"][0]["prefix"], "TF1_MA0001.1")
         self.assertEqual(payload["aggregate"]["motifs"][0]["motif_id"], "MA0001.1")
         self.assertEqual(payload["aggregate"]["motifs"][0]["conditions"][0]["samples"][0]["name"], "Bcell_rep1")
         self.assertNotIn("json.dumps", html)
 
+    def test_interactive_report_accepts_custom_change_label(self):
+        motif = SimpleNamespace(name="TF1", group="Bcell_up", change=0.25, pvalue=0.001, base="")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = Path(tmpdir) / "report.html"
+            plot_interactive_bindetect(
+                [motif],
+                ["Bcell", "Tcell"],
+                str(out),
+                change_label="Mean unique-footprint log2FC",
+            )
+            html = out.read_text()
+        match = re.search(r'const reportPayloadB64="([^"]+)"', html)
+        self.assertIsNotNone(match)
+        payload = json.loads(gzip.decompress(base64.b64decode(match.group(1))).decode("utf-8"))
+        self.assertEqual(payload["change_label"], "Mean unique-footprint log2FC")
+        self.assertIn("${escText(changeLabel)}", html)
+        self.assertIn("<strong>${escText(payload.change_label||'Differential footprint score')}:</strong>", html)
 
     def test_aggregate_payload_uses_parallel_executor_when_multiple_cores(self):
         class FakeExecutor:
@@ -205,6 +230,12 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertEqual(paths["Tcell"], "out/TF1/beds/TF1_Tcell_bound.bed")
         all_paths = bindetect_functions._aggregate_bed_paths("out", "TF1", ("Bcell", "Tcell"), "all")
         self.assertEqual(set(all_paths.values()), {"out/TF1/beds/TF1_all.bed"})
+
+    def test_aggregate_center_limit_is_deterministic(self):
+        centers = [("chr1", idx) for idx in range(10)]
+        limited = bindetect_functions._limit_aggregate_centers(centers, 4)
+        self.assertEqual(limited, [("chr1", 0), ("chr1", 3), ("chr1", 6), ("chr1", 9)])
+        self.assertEqual(bindetect_functions._limit_aggregate_centers(centers, None), centers)
 
     def test_aggregate_payload_for_row_keeps_replicate_profiles(self):
         row = {"output_prefix": "TF1_MA0001.1", "name": "TF1", "motif_id": "MA0001.1", "Bcell_Tcell_change": 1.0, "Bcell_Tcell_pvalue_numeric": 0.001}

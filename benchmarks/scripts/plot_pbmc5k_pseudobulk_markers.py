@@ -14,6 +14,19 @@ import numpy as np
 import pandas as pd
 
 
+plt.rcParams.update(
+    {
+        "font.size": 8,
+        "axes.titlesize": 8.8,
+        "axes.labelsize": 8.4,
+        "xtick.labelsize": 7.4,
+        "ytick.labelsize": 7.4,
+        "legend.fontsize": 7.2,
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+    }
+)
+
 MARKERS = {
     "B_cell": "PAX5",
     "Monocyte": "CEBPB",
@@ -226,7 +239,7 @@ def plot_marker_umap(annotations: pd.DataFrame, aggregate_screen: pd.DataFrame, 
 def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str, output_prefix: Path, markers: list[str]) -> None:
     plot_df = prepare_volcano_df(results, comparison)
 
-    fig, ax = plt.subplots(figsize=(4.8, 4.8))
+    fig, ax = plt.subplots(figsize=(3.15, 3.15))
     for status, color, size, alpha in [
         ("not significant", COLORS["background"], 12, 0.45),
         ("higher in second", COLORS["down"], 18, 0.75),
@@ -241,16 +254,16 @@ def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str
     if markers:
         requested = {marker.upper() for marker in markers}
         labels = labels[labels["name"].astype(str).str.upper().isin(requested)]
-    annotate_marker_labels(ax, labels, fontsize=8)
+    annotate_marker_labels(ax, labels, fontsize=7.6)
     ax.set_xlabel("Differential footprint score")
     ax.set_ylabel("-log10(p-value)")
-    ax.set_title(f"{first} vs {second}")
+    ax.set_title(f"{first} vs {second}", fontweight="bold")
     ax.legend(frameon=False, fontsize=7, loc="upper right")
     ax.spines[["top", "right"]].set_visible(False)
     ax.set_box_aspect(1)
     fig.tight_layout()
-    fig.savefig(output_prefix.with_suffix(".png"), dpi=220, bbox_inches="tight")
-    fig.savefig(output_prefix.with_suffix(".pdf"), bbox_inches="tight")
+    fig.savefig(output_prefix.with_suffix(".png"), dpi=450, bbox_inches="tight")
+    fig.savefig(output_prefix.with_suffix(".pdf"), dpi=450, bbox_inches="tight")
     plt.close(fig)
 
     plot_df[["output_prefix", "name", "total_tfbs", "change", "pvalue", "qvalue", "status"]].to_csv(
@@ -261,7 +274,13 @@ def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str
 
 
 def plot_directional_pairwise_volcano(results: pd.DataFrame, output_prefix: Path) -> None:
-    fig, axes = plt.subplots(1, len(PAIRWISE_COMPARISONS), figsize=(13.4, 4.8), sharey=True)
+    fig, axes = plt.subplots(
+        1,
+        len(PAIRWISE_COMPARISONS),
+        figsize=(7.7, 3.25),
+        sharey=True,
+        gridspec_kw={"wspace": 0.28},
+    )
     source_rows = []
     for ax, (comparison, first, second) in zip(axes, PAIRWISE_COMPARISONS, strict=True):
         plot_df = prepare_volcano_df(results, comparison)
@@ -276,7 +295,7 @@ def plot_directional_pairwise_volcano(results: pd.DataFrame, output_prefix: Path
 
         ax.axvline(0, color="#374151", linewidth=0.8)
         ax.axhline(-np.log10(0.05), color="#6B7280", linewidth=0.8, linestyle="--")
-        for row in annotate_marker_labels(ax, labels, fontsize=7):
+        for row in annotate_marker_labels(ax, labels, fontsize=7.5):
             source_rows.append(
                 {
                     "comparison": comparison,
@@ -294,17 +313,17 @@ def plot_directional_pairwise_volcano(results: pd.DataFrame, output_prefix: Path
             )
 
         ax.set_xlabel("Differential footprint score")
-        ax.set_title(f"{first} vs {second}", fontsize=10)
+        ax.set_title(f"{first} vs {second}", fontsize=8.8, fontweight="bold", pad=4)
         ax.spines[["top", "right"]].set_visible(False)
-        ax.tick_params(labelsize=8)
+        ax.tick_params(labelsize=7.3, length=2.5, width=0.7)
         ax.set_box_aspect(1)
     axes[0].set_ylabel("-log10(p-value)")
     handles, labels = axes[-1].get_legend_handles_labels()
-    fig.legend(handles, labels, frameon=False, fontsize=8, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.02))
-    fig.suptitle("PBMC5k pairwise differential footprint volcano plots", y=1.12, fontsize=13)
-    fig.tight_layout()
-    fig.savefig(output_prefix.with_suffix(".png"), dpi=260, bbox_inches="tight")
-    fig.savefig(output_prefix.with_suffix(".pdf"), bbox_inches="tight")
+    fig.legend(handles, labels, frameon=False, fontsize=7.2, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.03))
+    fig.suptitle("PBMC5k pseudobulk differential footprint scores", y=1.14, fontsize=9.8, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
+    fig.savefig(output_prefix.with_suffix(".png"), dpi=450, bbox_inches="tight")
+    fig.savefig(output_prefix.with_suffix(".pdf"), dpi=450, bbox_inches="tight")
     plt.close(fig)
     pd.DataFrame(source_rows).to_csv(output_prefix.with_suffix(".tsv"), sep="\t", index=False)
 

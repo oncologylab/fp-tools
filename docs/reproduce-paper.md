@@ -115,6 +115,10 @@ cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_
   manuscript/figures/pbmc5k_knn_footprint_signature_umap.pdf
 cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_knn_footprint_signature_umap.png \
   manuscript/figures/pbmc5k_knn_footprint_signature_umap.png
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_single_cell_footprinting_summary.pdf \
+  manuscript/figures/pbmc5k_single_cell_footprinting_summary.pdf
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_single_cell_footprinting_summary.png \
+  manuscript/figures/pbmc5k_single_cell_footprinting_summary.png
 cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_volcano_pairwise_directional_markers.pdf \
   manuscript/figures/pbmc5k_volcano_pairwise_directional_markers.pdf
 cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_volcano_pairwise_directional_markers.png \

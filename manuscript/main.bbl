@@ -88,6 +88,12 @@ Hu, S.S.; Liu, L.; Li, Q.; Ma, W.; Guertin, M.J.
 \newblock {\em Nature Communications} {\bf 2022}, {\em 13},~6396.
 \newblock {\url{https://doi.org/10.1038/s41467-022-33194-z}}.
 
+\bibitem[Bailey(2011)]{Bailey2011_DREME}
+Bailey, T.L.
+\newblock DREME: motif discovery in transcription factor ChIP-seq data.
+\newblock {\em Bioinformatics} {\bf 2011}, {\em 27},~1653--1659.
+\newblock {\url{https://doi.org/10.1093/bioinformatics/btr261}}.
+
 \bibitem[Chen et~al.(2018)Chen, Zhou, Chen, and Gu]{Chen2018_fastp}
 Chen, S.; Zhou, Y.; Chen, Y.; Gu, J.
 \newblock fastp: an ultra-fast all-in-one FASTQ preprocessor.

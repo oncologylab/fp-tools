@@ -1,0 +1,4 @@
+site_set	condition	jaspar_motif_files	jaspar_site_records	denovo_motif_files	denovo_site_records	jaspar_merged_windows	jaspar_bp	covered_by_denovo_all_windows	covered_by_denovo_all_bp	not_covered_by_denovo_all_windows	not_covered_by_denovo_all_bp	fraction_jaspar_bp_covered	window_half_width_bp
+All JASPAR-bound	either	2038	12856666	500	16556204	286939	29910895	522166	25793714	337472	4117181	0.8623517952237805	10
+K562 JASPAR-bound	K562	1019	6500666	500	16556204	193472	20034309	341611	17460259	214774	2574050	0.8715179046105359	10
+HepG2 JASPAR-bound	HepG2	1019	6356000	500	16556204	196944	20159462	345221	17764929	207606	2394533	0.8812203916949768	10

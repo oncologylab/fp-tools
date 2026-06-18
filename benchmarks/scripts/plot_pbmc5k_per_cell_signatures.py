@@ -18,7 +18,21 @@ import pysam
 from sklearn.neighbors import NearestNeighbors
 
 
+plt.rcParams.update(
+    {
+        "font.size": 8.5,
+        "axes.titlesize": 9.2,
+        "axes.labelsize": 8.8,
+        "xtick.labelsize": 7.6,
+        "ytick.labelsize": 7.6,
+        "legend.fontsize": 7.4,
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+    }
+)
+
 MARKERS = ("PAX5", "CEBPB", "TCF7", "CEBPA", "SPIB", "ZBTB7B", "POU2F2")
+SUMMARY_MARKER_ORDER = ("PAX5", "POU2F2", "SPIB", "CEBPB", "CEBPA", "TCF7", "ZBTB7B")
 CELL_TYPES = ("B_cell", "Monocyte", "T_NK_cell")
 MARKER_GROUPS = {
     "PAX5": "B_cell",
@@ -35,7 +49,7 @@ CELL_TYPE_COLORS = {
     "T_NK_cell": "#059669",
 }
 REFERENCE_LABEL_POSITIONS = {
-    "B_cell": (-5.85, 4.55),
+    "B_cell": (-5.15, 5.15),
     "Monocyte": (12.8, 8.4),
     "T_NK_cell": (0.2, 11.0),
 }
@@ -444,10 +458,10 @@ def plot_knn_with_reference(
     markers: list[str],
     output_prefix: Path,
 ) -> None:
-    ncols = 4 if len(markers) > 3 else len(markers) + 1
     panels = [None] + markers
+    ncols = 3 if len(panels) > 4 else len(panels)
     nrows = int(np.ceil(len(panels) / ncols))
-    fig, axes = plt.subplots(nrows, ncols, figsize=(4.15 * ncols, 3.7 * nrows), sharex=True, sharey=True)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(2.8 * ncols, 2.55 * nrows), sharex=True, sharey=True)
     axes_flat = np.asarray(axes).reshape(-1)
     reference_ax = axes_flat[0]
     for cell_type in CELL_TYPES:
@@ -455,21 +469,22 @@ def plot_knn_with_reference(
         reference_ax.scatter(
             subset["umap_1"],
             subset["umap_2"],
-            s=2.0,
+            s=2.8,
             alpha=0.9,
             linewidths=0,
             color=CELL_TYPE_COLORS.get(cell_type),
             label=cell_type,
             rasterized=True,
         )
-    label_groups(reference_ax, annotations, fontsize=8, positions=REFERENCE_LABEL_POSITIONS)
-    reference_ax.set_title("Broad cell types")
+    label_groups(reference_ax, annotations, fontsize=8.6, positions=REFERENCE_LABEL_POSITIONS)
+    reference_ax.set_title("Broad cell types", fontweight="bold", pad=4)
     reference_ax.set_xlabel("UMAP 1")
     reference_ax.set_ylabel("UMAP 2")
-    reference_ax.legend(frameon=False, markerscale=3, fontsize=7, loc="center left", bbox_to_anchor=(1.02, 0.5))
+    reference_ax.legend(frameon=False, markerscale=2.8, fontsize=7.0, loc="center left", bbox_to_anchor=(1.02, 0.5))
     reference_ax.spines[["top", "right"]].set_visible(False)
 
-    for panel_index, (ax, tf) in enumerate(zip(axes_flat[1:], markers, strict=True), start=1):
+    marker_axes = axes_flat[1 : 1 + len(markers)]
+    for panel_index, (ax, tf) in enumerate(zip(marker_axes, markers, strict=True), start=1):
         subset = knn_scores[knn_scores["tf"] == tf].copy()
         subset = annotations[["barcode", "cell_type", "umap_1", "umap_2"]].merge(
             subset[["barcode", "knn_footprint_oriented_z"]],
@@ -482,26 +497,153 @@ def plot_knn_with_reference(
             c=subset["knn_footprint_oriented_z"],
             cmap="RdBu_r",
             norm=robust_norm(subset["knn_footprint_oriented_z"]),
-            s=2.0,
+            s=2.8,
             alpha=0.92,
             linewidths=0,
             rasterized=True,
         )
-        ax.set_title(f"{tf} footprint signature")
+        ax.set_title(f"{tf} footprint signature", fontweight="bold", pad=4)
         ax.set_xlabel("UMAP 1")
         if panel_index % ncols == 0:
             ax.set_ylabel("UMAP 2")
         ax.spines[["top", "right"]].set_visible(False)
         cbar = fig.colorbar(sc, ax=ax, fraction=0.046, pad=0.02)
-        cbar.set_label("footprint signature z-score", fontsize=7)
-        cbar.ax.tick_params(labelsize=6)
+        cbar.set_label("footprint signature z-score", fontsize=7.2)
+        cbar.ax.tick_params(labelsize=6.8, length=2.2, width=0.6)
 
     for ax in axes_flat[len(panels) :]:
         ax.set_visible(False)
-    fig.suptitle("PBMC5k per-cell KNN footprint signature scores", y=1.03)
-    fig.tight_layout()
-    fig.savefig(output_prefix.with_suffix(".png"), dpi=240, bbox_inches="tight")
-    fig.savefig(output_prefix.with_suffix(".pdf"), bbox_inches="tight")
+    fig.suptitle("PBMC5k per-cell KNN footprint signature scores", y=1.02, fontsize=10.8, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.985))
+    fig.savefig(output_prefix.with_suffix(".png"), dpi=450, bbox_inches="tight")
+    fig.savefig(output_prefix.with_suffix(".pdf"), dpi=450, bbox_inches="tight")
+    plt.close(fig)
+
+
+def plot_single_cell_footprinting_summary(
+    annotations: pd.DataFrame,
+    knn_scores: pd.DataFrame,
+    markers: list[str],
+    representative_markers: list[str],
+    output_prefix: Path,
+) -> None:
+    marker_by_cell = (
+        knn_scores.groupby(["tf", "cell_type"], sort=False)["knn_footprint_oriented_z"]
+        .mean()
+        .unstack("cell_type")
+        .reindex(index=markers, columns=CELL_TYPES)
+    )
+    heatmap = marker_by_cell.T
+    fig = plt.figure(figsize=(10.8, 6.6))
+
+    heat_left = 0.22
+    heat_bottom = 0.55
+    heat_width = 0.52
+    heat_height = heat_width * fig.get_figwidth() * len(CELL_TYPES) / (len(markers) * fig.get_figheight())
+    heat_ax = fig.add_axes([heat_left, heat_bottom, heat_width, heat_height])
+    values = heatmap.to_numpy(dtype=float)
+    vmax = float(np.nanpercentile(np.abs(values[np.isfinite(values)]), 98)) if np.isfinite(values).any() else 1.0
+    vmax = max(vmax, 0.75)
+    im = heat_ax.imshow(values, cmap="RdBu_r", vmin=-vmax, vmax=vmax, aspect="equal")
+    heat_ax.set_xticks(range(len(markers)), labels=markers)
+    heat_ax.set_yticks(range(len(CELL_TYPES)), labels=CELL_TYPES)
+    heat_ax.tick_params(axis="x", labelrotation=28, labelsize=8.0, length=0, pad=3)
+    heat_ax.tick_params(axis="y", labelsize=8.2, length=0, pad=3)
+    heat_ax.set_title("Marker footprint signatures by broad cell type", fontsize=10.0, fontweight="bold", pad=7)
+    for label in heat_ax.get_xticklabels():
+        label.set_ha("right")
+        label.set_rotation_mode("anchor")
+    for row in range(values.shape[0]):
+        for col in range(values.shape[1]):
+            value = values[row, col]
+            if np.isfinite(value):
+                heat_ax.text(col, row, f"{value:.1f}", ha="center", va="center", fontsize=6.9, color="#111827")
+    heat_ax.set_xticks(np.arange(-0.5, len(markers), 1), minor=True)
+    heat_ax.set_yticks(np.arange(-0.5, len(CELL_TYPES), 1), minor=True)
+    heat_ax.grid(which="minor", color="white", linewidth=1.0)
+    heat_ax.tick_params(which="minor", bottom=False, left=False)
+    for spine in heat_ax.spines.values():
+        spine.set_visible(False)
+    cax = fig.add_axes([heat_left + heat_width + 0.012, heat_bottom, 0.010, heat_height])
+    cbar = fig.colorbar(im, cax=cax)
+    cbar.set_label("mean signature z-score", fontsize=7.2)
+    cbar.ax.tick_params(labelsize=6.8, length=2.2, width=0.6)
+    fig.text(heat_left - 0.03, heat_bottom + heat_height + 0.012, "A", fontsize=13, fontweight="bold", va="top")
+
+    umap_bottom = 0.08
+    umap_width = 0.17
+    umap_height = 0.34
+    umap_lefts = [0.06, 0.29, 0.52, 0.75]
+    umap_axes = [fig.add_axes([left, umap_bottom, umap_width, umap_height]) for left in umap_lefts]
+    x_padding = float((annotations["umap_1"].max() - annotations["umap_1"].min()) * 0.03)
+    y_padding = float((annotations["umap_2"].max() - annotations["umap_2"].min()) * 0.03)
+    xlim = (float(annotations["umap_1"].min() - x_padding), float(annotations["umap_1"].max() + x_padding))
+    ylim = (float(annotations["umap_2"].min() - y_padding), float(annotations["umap_2"].max() + y_padding))
+    reference_ax = umap_axes[0]
+    for cell_type in CELL_TYPES:
+        subset = annotations[annotations["cell_type"] == cell_type]
+        reference_ax.scatter(
+            subset["umap_1"],
+            subset["umap_2"],
+            s=2.8,
+            alpha=0.9,
+            linewidths=0,
+            color=CELL_TYPE_COLORS.get(cell_type),
+            rasterized=True,
+        )
+    label_groups(reference_ax, annotations, fontsize=8.4, positions=REFERENCE_LABEL_POSITIONS)
+    reference_ax.set_title("Cell type\nannotation", fontsize=9.0, fontweight="bold", pad=5)
+    reference_ax.set_xlabel("UMAP 1")
+    reference_ax.set_ylabel("UMAP 2")
+    reference_ax.set_xlim(xlim)
+    reference_ax.set_ylim(ylim)
+    reference_ax.spines[["top", "right"]].set_visible(False)
+    fig.text(0.032, umap_bottom + umap_height + 0.025, "B", fontsize=13, fontweight="bold", va="top")
+
+    marker_values = knn_scores[knn_scores["tf"].isin(representative_markers)]["knn_footprint_oriented_z"]
+    marker_arr = pd.to_numeric(marker_values, errors="coerce").to_numpy(dtype=float)
+    finite = marker_arr[np.isfinite(marker_arr)]
+    marker_vmax = float(np.nanpercentile(np.abs(finite), 98)) if finite.size else 2.0
+    marker_vmax = max(marker_vmax, 1.0)
+    norm = TwoSlopeNorm(vmin=-marker_vmax, vcenter=0.0, vmax=marker_vmax)
+    last_scatter = None
+    for ax, tf in zip(umap_axes[1:], representative_markers, strict=True):
+        subset = knn_scores[knn_scores["tf"] == tf].copy()
+        subset = annotations[["barcode", "cell_type", "umap_1", "umap_2"]].merge(
+            subset[["barcode", "knn_footprint_oriented_z"]],
+            on="barcode",
+            how="left",
+        )
+        last_scatter = ax.scatter(
+            subset["umap_1"],
+            subset["umap_2"],
+            c=subset["knn_footprint_oriented_z"],
+            cmap="RdBu_r",
+            norm=norm,
+            s=2.8,
+            alpha=0.92,
+            linewidths=0,
+            rasterized=True,
+        )
+        ax.set_title(f"{tf}\nfootprint signature", fontsize=9.0, fontweight="bold", pad=5)
+        ax.set_xlabel("UMAP 1")
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.tick_params(labelleft=False)
+
+    if last_scatter is not None:
+        cax = fig.add_axes([0.935, umap_bottom, 0.014, umap_height])
+        cbar = fig.colorbar(last_scatter, cax=cax)
+        cbar.set_label("footprint signature z-score", fontsize=7.2)
+        cbar.ax.tick_params(labelsize=6.8, length=2.2, width=0.6)
+
+    for ax in umap_axes:
+        ax.tick_params(axis="both", labelsize=8.0)
+
+    fig.suptitle("Single-cell footprinting", y=0.995, fontsize=13.2, fontweight="bold")
+    fig.savefig(output_prefix.with_suffix(".png"), dpi=450, bbox_inches="tight")
+    fig.savefig(output_prefix.with_suffix(".pdf"), dpi=450, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -549,6 +691,16 @@ def main(argv: list[str] | None = None) -> int:
     chromvar_scores.to_csv(outdir / "chromvar_like_motif_activity_scores.tsv", sep="\t", index=False)
 
     plot_knn_with_reference(annotations, knn_scores, markers, outdir / "pbmc5k_knn_footprint_signature_umap")
+    summary_markers = [marker for marker in SUMMARY_MARKER_ORDER if marker in markers]
+    summary_markers.extend(marker for marker in markers if marker not in summary_markers)
+    representative_markers = [marker for marker in ("PAX5", "CEBPB", "TCF7") if marker in markers]
+    plot_single_cell_footprinting_summary(
+        annotations,
+        knn_scores,
+        summary_markers,
+        representative_markers,
+        outdir / "pbmc5k_single_cell_footprinting_summary",
+    )
     plot_score_grid(
         annotations,
         [("ChromVAR-like", chromvar_scores, "chromvar_like_activity_z", "activity z")],

@@ -175,13 +175,15 @@ workflow exports a candidate-centered sequence
 S_j = G[p_j-h, p_j+h],
 \]
 reverse-complementing the sequence when strand information indicates the negative
-strand. The resulting FASTA file is accompanied by a reproducibility record that
-stores the input intervals, genome build, flank width, random seed, external tool
-versions, and the exact MEME/STREME~\cite{bailey2015meme,Bailey2021_STREME} and Tomtom~\cite{gupta2007tomtom} commands. STREME was designed for accurate and versatile motif discovery from enriched sequence sets~\cite{Bailey2021_STREME}. The same entry point can
-be used in two modes. In de novo-only mode, discovered motifs are reported as an
-independent motif set. In database-plus-de-novo mode, discovered motifs are matched
-to a known database such as JASPAR2026 and can be appended to the known motif set
-for downstream differential footprint analysis.
+strand. The resulting FASTA file is accompanied by a reproducible command plan
+that records the input intervals, genome build, flank width, external tool
+versions, and the exact MEME, DREME, STREME~\cite{bailey2015meme,Bailey2011_DREME,Bailey2021_STREME}
+and optional Tomtom~\cite{gupta2007tomtom} commands. STREME was designed for
+accurate and versatile motif discovery from enriched sequence sets~\cite{Bailey2021_STREME}.
+The same entry point can be used in two modes. In de novo-only mode, discovered
+motifs are reported as an independent motif set. In database-plus-de-novo mode,
+discovered motifs are matched to a known database such as JASPAR2026 and can be
+appended to the known motif set for downstream differential footprint analysis.
 
 \subsection{Pseudobulk Fragment Aggregation}
 
@@ -320,8 +322,11 @@ also emits PDF/SVG/PNG figure panels.
 \begin{table}[H]
 \caption{Tiered benchmark design. Large data and outputs are untracked; only
 manifests, scripts, and compact reference results are committed.\label{tab:tiers}}
+\begingroup
+\small
+\renewcommand{\arraystretch}{1.05}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
-\begin{tabularx}{\textwidth}{lYY}
+\begin{tabularx}{\textwidth}{>{\bfseries\raggedright\arraybackslash}p{0.23\textwidth}YY}
 \toprule
 \textbf{Tier} & \textbf{Purpose} & \textbf{Primary outputs}\\
 \midrule
@@ -332,6 +337,7 @@ De novo motif prep & Candidate FASTA and motif-discovery validation & exported F
 Pseudobulk & Single-cell extension and real-data demonstration & 10x PBMC pseudobulk fragments, corrected footprint tracks, pairwise TF differential plots, KNN marker-signature UMAPs\\
 \bottomrule
 \end{tabularx}
+\endgroup
 \end{table}
 
 \subsection{Reproducibility Engineering}
@@ -397,21 +403,22 @@ conventions.
 \subsection{De Novo Motif Discovery Complements Database-based Motif Analysis}
 
 The de novo motif-preparation path exports candidate-centered FASTA files,
-constructs reproducible MEME/DREME/STREME and Tomtom analysis records, and summarizes
-motif results into TSV/HTML reports with inline consensus logos. This keeps
-external motif discovery reproducible while relying on established motif-discovery
-algorithms. The workflow can be used alone to discover
-recurring patterns in candidate intervals, or after known-motif scanning to find
-additional motifs not represented in the selected database.
+constructs reproducible MEME, DREME, or STREME command plans, optionally adds a
+Tomtom comparison against a known motif database, and summarizes motif results
+into TSV/HTML reports with inline consensus logos. This keeps external motif
+discovery reproducible while relying on established motif-discovery algorithms.
+The workflow can be used alone to discover recurring patterns in candidate
+intervals, or after known-motif scanning to find additional motifs not represented
+in the selected database.
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/fp-tools-de-novo-motif-hires.png}
+\includegraphics[width=\textwidth]{figures/fp-tools-de-novo-motif-hires.pdf}
 \caption{Generic de novo motif-discovery preparation workflow. Candidate
 footprint intervals are converted into candidate-centered FASTA sequences,
-external motif-discovery tools such as STREME or MEME are run with recorded
-parameters and software versions, and discovered motifs are summarized alone or
-matched back to known motif databases such as JASPAR2026. The same output can be
-used as a de novo result or as a supplemental motif set for downstream
+external motif-discovery tools such as STREME, MEME, or DREME are run through
+recorded command plans, and discovered motifs are summarized alone or matched
+back to known motif databases such as JASPAR2026 with Tomtom. The same output can
+be used as a de novo result or as a supplemental motif set for downstream
 differential footprint analysis.\label{fig:denovo_workflow}}
 \end{figure}
 
@@ -450,20 +457,20 @@ on their own and can also be carried forward into the same differential footprin
 report as database-supported motifs (Figure~\ref{fig:denovo_motif_validation}).
 
 \begin{figure}[H]
-\includegraphics[width=0.95\textwidth]{figures/denovo_motif_validation.pdf}
+\includegraphics[width=\textwidth]{figures/denovo_motif_validation.pdf}
 \caption{De novo motif validation in de novo-only and database-supplement modes.
 Candidate footprints from the ENCODE K562 versus HepG2 replicate comparison
-were exported to FASTA and analyzed with STREME in reciprocal contrast
-directions. Panel A shows a stacked site-window coverage summary comparing bound
-sites recovered by de novo-only motifs with bound sites from the full JASPAR2026
-scan; shared intervals are counted after merging \(\pm 10\) bp windows around motif
-centers. Panel B lists the representative discovered motifs used in Panels C--F
-and reports motif-quality flags for possible low-complexity, broad-site-set,
-Tn5-bias-like, weak Tomtom, or weak aggregate-depletion behavior. Panels C--F show motif-centered
-aggregate profiles from the de novo-only analysis using individual biological
-replicates only, without condition-mean curves. Tomtom labels indicate motif
-similarity to database entries; full displayed values are provided in the figure
-source table.\label{fig:denovo_motif_validation}}
+were exported to FASTA and analyzed with reciprocal STREME contrasts followed by
+Tomtom comparison to JASPAR2026. Panel A shows shared and de novo-only
+site-window coverage after merging \(\pm 10\) bp windows around motif centers.
+Panel B lists the K562-derived motifs used for the K562 aggregate examples,
+including STREME-derived sequence logos, the K562-bound footprint-site count,
+and the K562 replicate-1 footprint-shape score. Panels C and D show the four highest-ranking
+K562-derived and HepG2-derived de novo motifs, respectively, ranked by
+condition-specific replicate-1 footprint-shape score after artifact filtering.
+Mini-panel titles show STREME sequence logos, subtitles report the
+condition-bound footprint-site count, and dotted vertical lines mark motif
+boundaries. Full displayed values are provided in the figure source table.\label{fig:denovo_motif_validation}}
 \end{figure}
 
 \subsection{Replicate-aware Differential Footprint Analysis and Normalization}
@@ -565,14 +572,13 @@ considered relative to established ecosystems including ArchR and Signac, and
 motif-activity baselines such as chromVAR~\cite{Granja2021_ArchR,Stuart2021_Signac,Schep2017_chromVAR}.
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/fp-tools-pseudo-bulk-hires.png}
+\makebox[\textwidth][c]{\includegraphics[width=1.10\textwidth]{figures/fp-tools-pseudo-bulk-hires.pdf}}
 \caption{Example pseudobulk fragment workflow using public 10x PBMC single-cell
 ATAC data. Single-cell fragment records and cell annotations are grouped by broad
 immune-cell labels, converted into one pseudobulk fragment file per retained
-group, and summarized with QC fields, indexed outputs, and CPM-normalized
-cut-site bigWigs for downstream footprinting. The mini aggregate panels in the
-workflow illustrate motif-centered validation profiles from the same PBMC example,
-not a separate generic benchmark.\label{fig:pseudobulk_workflow}}
+group, and summarized with QC fields, indexed outputs, pseudo-BAMs,
+bias-corrected tracks, footprint-score bigWigs, motif-aware differential results,
+and marker-signature visualizations for downstream footprinting.\label{fig:pseudobulk_workflow}}
 \end{figure}
 
 For corrected footprint inference, the \texttt{pseudobulk-footprints} command
@@ -607,23 +613,23 @@ T/NK annotations derived from the single-cell embedding, and motif-centered
 marker scores for PAX5, CEBPB, TCF7, and four additional high-change marker TFs
 from the pairwise pseudobulk screen: CEBPA, SPIB, ZBTB7B, and POU2F2. For each cell, the plotted value is a
 KNN-smoothed footprint-signature score, not an independently bias-corrected
-single-cell footprint call. This visualization highlights expected marker
-directions while avoiding overinterpretation of sparse per-cell cut-site counts:
-PAX5 and POU2F2 show B-cell-associated signal, CEBPB and CEBPA show monocyte-associated
-signal, and TCF7 and ZBTB7B show T/NK-associated signal; SPIB is included as an
-additional high-change B-cell marker from the pseudobulk screen
+single-cell footprint call. We summarize these scores as a marker-by-cell-type
+heatmap and as UMAP projections for one representative marker from each broad
+cell type. This visualization highlights expected marker directions while avoiding
+overinterpretation of sparse per-cell cut-site counts: PAX5 and POU2F2 show
+B-cell-associated signal, CEBPB and CEBPA show monocyte-associated signal, and
+TCF7 and ZBTB7B show T/NK-associated signal; SPIB is included as an additional
+high-change B-cell marker from the pseudobulk screen
 (Figure~\ref{fig:pbmc5k_knn_footprint_signature}).
 
 \begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/pbmc5k_knn_footprint_signature_umap.pdf}
-\caption{Per-cell KNN-smoothed footprint-signature scores in public 10x PBMC5k
-single-cell ATAC data. The left panel shows the broad cell-type reference UMAP;
-labels are drawn as callouts to avoid covering dense point clouds. The remaining
-panels show per-cell KNN-smoothed footprint-signature z-scores for PAX5, CEBPB,
-TCF7, CEBPA, SPIB, ZBTB7B, and POU2F2 motif-centered cut-site neighborhoods.
-The second row adds four marker TFs with large directional changes in the
-pseudobulk pairwise screen. Positive values indicate the
-marker-oriented footprint-signature direction after per-TF standardization. The
+\includegraphics[width=\textwidth]{figures/pbmc5k_single_cell_footprinting_summary.pdf}
+\caption{Single-cell footprinting summary in public 10x PBMC5k single-cell ATAC
+data. (A) Heatmap of mean KNN-smoothed marker footprint-signature z-scores by
+broad cell type for marker TFs selected from the pseudobulk screen. (B) UMAP of
+broad cell-type annotations and representative marker footprint-signature
+projections for PAX5, CEBPB, and TCF7. Positive values indicate the
+marker-oriented footprint-signature direction after per-TF standardization. These
 scores are intended as a UMAP visualization of local single-cell neighborhoods;
 formal corrected footprint inference is performed at the pseudobulk level.
 \label{fig:pbmc5k_knn_footprint_signature}}
@@ -639,42 +645,12 @@ ATAC-seq footprinting workflow produces stable outputs on small fixtures and
 public-data subsets. Second, they provide matched-label inputs for bulk ATAC
 comparisons against TF ChIP-seq or CUT\&RUN labels. Third, they support the
 manuscript demonstrations for de novo motif preparation, pseudobulk aggregation,
-replicate-aware normalization, and cut-site-resolution footprint calling.
+replicate-aware normalization, and method-comparison reporting.
 
 Each benchmark run is expected to write a resolved manifest, software versions,
 parameters, and plotting tables next to the generated figures. This makes the
 figures auditable: a reader can inspect which samples, motifs, regions, and signal
 tracks were used, and the same tier can be rerun after code changes.
-
-\subsection{Cut-site Resolution Determines Whether Footprint Scores Are Interpretable}
-
-A footprint score is meaningful only when the input signal preserves the local
-cut-site depletion expected at bound TF motifs. We tested this point on K562 CTCF
-chromosome~4 peaks by taking each peak's best CTCF motif match and computing a
-simple flank-minus-center score from two signal representations
-(Figure~\ref{fig:footprint}). The smoothed fold-change-over-control coverage track
-is a good accessibility summary, but it is the wrong representation for this
-footprint statistic: the score is inverted and uninformative (AUROC $=0.24$)
-because bound accessible sites often have high coverage at the motif region. In
-contrast, the same score computed from base-resolution Tn5 cut sites derived from
-the ATAC BAM recovers a footprint signal (AUROC $=0.68$, 95\% CI $0.65$ to
-$0.70$). This analysis clarifies the purpose of the upstream \texttt{fp-tools}
-correction and footprint-calling steps. The workflow is designed to operate on
-cut-site-resolution signal for footprint inference, while smoothed accessibility
-tracks are better treated as broader accessibility covariates or visualization
-tracks. For CTCF, the motif score remains the strongest single predictor; the
-cut-site footprint adds a distinct signal representation that becomes especially
-important when the question is condition-specific occupancy rather than motif
-presence alone.
-
-\begin{figure}[H]
-\includegraphics[width=\textwidth]{figures/footprint_representation.pdf}
-\caption{Predictor comparison for K562 CTCF (chromosome~4). A footprint-occupancy
-score is informative only at Tn5 cut-site resolution (green, AUROC $0.68$); the same
-score on smoothed coverage is inverted and uninformative (red, $0.24$). Raw
-accessibility (grey) is near chance and the CTCF motif (blue) is the single
-strongest predictor.\label{fig:footprint}}
-\end{figure}
 
 %==================================================================
 \section{Discussion}
@@ -691,22 +667,30 @@ handling of replicate-aware summaries; and integrated support for de novo motif 
 \caption{Feature comparison across widely used ATAC-seq regulatory-analysis tools.
 \checkmark, native first-class support; $\circ$, partial or indirect support;
 NA, not available. \texttt{fp-tools} is an integrated, reproducible platform that combines ATAC-seq footprinting with replicate-aware reporting, de novo motif-discovery preparation, and single-cell pseudobulk aggregation behind one command surface.\label{tab:features}}
+\begingroup
 \footnotesize
-\begin{tabularx}{\textwidth}{Xcccccc}
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.06}
+\newcommand{\featureyes}{\checkmark}
+\newcommand{\featurepartial}{$\circ$}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.30\textwidth}*{6}{>{\centering\arraybackslash}p{0.085\textwidth}}}
 \toprule
-\textbf{Feature} & \textbf{fp-tools} & \textbf{TOBIAS} & \textbf{HINT-ATAC} & \textbf{PRINT/ scPrinter} & \textbf{Chrom- BPNet} & \textbf{maxATAC}\\
+\textbf{Feature} & \textbf{fp-tools} & \textbf{TOBIAS} & \textbf{\shortstack{HINT-\\ATAC}} & \textbf{\shortstack{PRINT/\\scPrinter}} & \textbf{\shortstack{Chrom\\BPNet}} & \textbf{\shortstack{max\\ATAC}}\\
 \midrule
-Bulk ATAC footprinting & \checkmark & \checkmark & \checkmark & \checkmark & $\circ$ & NA\\
-Tn5 bias correction & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & NA\\
-Footprint calling & \checkmark & \checkmark & \checkmark & NA & NA & NA\\
-Motif-aware differential footprint analysis & \checkmark & \checkmark & $\circ$ & $\circ$ & NA & NA\\
-De novo motif-discovery preparation & \checkmark & NA & NA & \checkmark & \checkmark & NA\\
-scATAC / pseudobulk support & \checkmark & $\circ$ & $\circ$ & \checkmark & $\circ$ & $\circ$\\
-Replicate-aware reporting & \checkmark & $\circ$ & $\circ$ & $\circ$ & NA & NA\\
-Visualization / reporting & \checkmark & \checkmark & $\circ$ & \checkmark & \checkmark & $\circ$\\
-YAML / batch execution & \checkmark & NA & NA & NA & NA & NA\\
+Bulk ATAC footprinting & \featureyes & \featureyes & \featureyes & \featureyes & \featurepartial & NA\\
+Tn5 bias correction & \featureyes & \featureyes & \featureyes & \featureyes & \featureyes & NA\\
+Footprint calling & \featureyes & \featureyes & \featureyes & NA & NA & NA\\
+Motif-aware differential analysis & \featureyes & \featureyes & \featurepartial & \featurepartial & NA & NA\\
+De novo motif preparation & \featureyes & NA & NA & \featureyes & \featureyes & NA\\
+scATAC/pseudobulk support & \featureyes & \featurepartial & \featurepartial & \featureyes & \featurepartial & \featurepartial\\
+Replicate-aware reporting & \featureyes & \featurepartial & \featurepartial & \featurepartial & NA & NA\\
+Visualization/reporting & \featureyes & \featureyes & \featurepartial & \featureyes & \featureyes & \featurepartial\\
+YAML/batch execution & \featureyes & NA & NA & NA & NA & NA\\
 \bottomrule
 \end{tabularx}
+\let\featureyes\undefined
+\let\featurepartial\undefined
+\endgroup
 \end{table}
 
 Deep sequence-to-profile models such as ChromBPNet provide powerful
@@ -759,21 +743,22 @@ de-identified datasets and did not involve new experiments on humans or animals.
 
 \informedconsent{Not applicable.}
 
-\dataavailability{\texttt{fp-tools} is openly available at
-\url{https://github.com/oncologylab/fp-tools}. All benchmark manifests, schemas,
-analysis scripts, and figure generators are included in the repository. Public
-input datasets are obtained from the ENCODE Project~\cite{encode2012}, the 10x
-Genomics PBMC Multiome example~\cite{tenxpbmc2021}, the 10x Genomics PBMC5k
-single-cell ATAC example~\cite{tenxpbmc5katac2021}, and motif databases (e.g.,
-JASPAR~\cite{jaspar2026}) via the included discovery and download scripts.
-Manifests, scripts, small result tables, source tables, and figures are stored in
-the main repository. Reviewer reproduction instructions are provided in
-\texttt{docs/reproduce-paper.md}, with Conda and Docker execution files in
-\texttt{environment.yml} and the repository Dockerfile. Large reusable
-example-data files are distributed separately through the public
-\texttt{oncologylab/fp-tools-data} repository release assets, and full raw public
-inputs are regenerated from committed manifests rather than stored in version
-control.}
+\dataavailability{\texttt{fp-tools} is openly available in the public GitHub
+repository \href{https://github.com/oncologylab/fp-tools}{\mbox{\texttt{oncologylab/fp-tools}}}.
+The repository contains the
+benchmark manifests, schemas, analysis scripts, figure generators, source tables,
+and small result tables used in this manuscript. Public input data are obtained
+from the ENCODE Project~\cite{encode2012}, the 10x Genomics PBMC Multiome
+example~\cite{tenxpbmc2021}, the 10x Genomics PBMC5k single-cell ATAC
+example~\cite{tenxpbmc5katac2021}, and motif databases such as
+JASPAR~\cite{jaspar2026} using the included download and preparation scripts.
+Reviewer reproduction instructions are provided in
+\texttt{docs/reproduce-paper.md}; the computational environment is documented in
+\texttt{environment.yml} and the repository Dockerfile. Large reusable example
+data are distributed separately through the public
+\href{https://github.com/oncologylab/fp-tools-data}{\mbox{\texttt{oncologylab/fp-tools-data}}}
+release assets. Full raw public inputs are not stored in version control and are
+regenerated from committed manifests.}
 
 \acknowledgments{The author thanks the ENCODE Project Consortium and the
 maintainers of the open-source tools referenced in this work for making their data
@@ -790,47 +775,60 @@ and software publicly available.}
 %==================================================================
 
 \begin{table}[H]
-\caption{Primary analysis parameters used for the public ATAC and pseudobulk workflows. The complete tab-separated source table is stored as \texttt{analysis\_parameters.tsv}.\label{tab:supp_analysis_parameters}}
+\caption{Primary analysis parameters used for the public ATAC and pseudobulk workflows. The complete source table is provided in the Supplementary Materials as ``Primary analysis parameters''.\label{tab:supp_analysis_parameters}}
+\begingroup
 \scriptsize
-\begin{tabularx}{\textwidth}{lX}
+\renewcommand{\arraystretch}{1.04}
+\begin{tabularx}{\textwidth}{>{\bfseries\raggedright\arraybackslash}p{0.26\textwidth}>{\raggedright\arraybackslash}X}
 \toprule
-Step & Parameters\\
+\textbf{Step} & \textbf{Parameters}\\
 \midrule
-FASTQ preprocessing & Paired-end adapter detection with \texttt{fastp}; HTML and JSON QC reports written per sample.\\
-Alignment and BAM filtering & \texttt{bowtie2 --very-sensitive -X 2000} against hg38; retain proper pairs with \texttt{samtools view -f 2 -F 2828 -q 30}; sort, \texttt{fixmate -m}, coordinate sort, \texttt{markdup -r}, index, flagstat, and idxstats.\\
-Blacklist filtering & Exclude mitochondrial and nonstandard contigs and subtract hg38 blacklist v2 regions.\\
-Peak calling and union peaks & MACS3 paired-end peak calling with human genome size, duplicate retention, and q-value 0.01; replicate peaks are sorted and merged into one analysis peak set.\\
-Bias correction and footprint calling & \texttt{atac-correct} with merged peaks and blacklist using default Tn5-bias settings; \texttt{call-footprints --score footprint} with default footprint/flank windows.\\
-Differential footprint analysis & Buenrostro B-cell/T-cell and ENCODE K562/HepG2 replicate footprint tracks analyzed with repeated condition labels; JASPAR2026 vertebrate non-redundant motifs; replicate report enabled; runs performed with no normalization and with sample-level quantile normalization where indicated.\\
-Pseudobulk PBMC workflow & 10x PBMC Multiome fragments grouped by broad immune labels; groups retained with at least 300 cells and 50,000 fragments; raw CPM cut-site bigWigs used for QC, and the full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, bias-corrected tracks, footprint-score tracks, motif-aware differential results, and aggregate plots. The PBMC5k scATAC demonstration uses the original 10x fragment file, broad B-cell/monocyte/T--NK labels, motif-centered marker sites, pairwise pseudobulk differential-footprint volcano plots, and KNN-smoothed per-cell footprint-signature UMAPs.\\
+Public input data & Bulk ATAC analyses use Buenrostro B-cell/T-cell FASTQs and ENCODE K562/HepG2 replicate tracks. Pseudobulk examples use public 10x PBMC Multiome and PBMC5k scATAC fragment datasets. Motif analyses use JASPAR2026 CORE vertebrate non-redundant motifs.\\
+FASTQ preprocessing & Paired-end adapter detection and trimming with \texttt{fastp}; HTML and JSON QC reports written for each sample.\\
+Alignment and BAM processing & Reads aligned to hg38 with \texttt{bowtie2 --very-sensitive -X 2000}; proper pairs retained with \texttt{samtools view -f 2 -F 2828 -q 30}; BAMs sorted, fixed with \texttt{fixmate -m}, duplicate-marked with \texttt{markdup -r}, indexed, and summarized with flagstat/idxstats.\\
+Blacklist and peak set & Mitochondrial and nonstandard contigs excluded; hg38 blacklist v2 regions subtracted; MACS3 paired-end peaks called at q-value 0.01 and merged across replicates into one analysis peak set.\\
+Bias correction and footprint scores & \texttt{atac-correct} run on filtered BAMs with merged peaks and blacklist regions using default Tn5-bias settings; \texttt{call-footprints --score footprint} run on corrected cut-site bigWigs with default footprint and flank windows.\\
+Differential footprint analysis & Buenrostro and ENCODE replicate footprint tracks analyzed with repeated condition labels, JASPAR2026 motifs, and replicate reporting enabled. Runs include no-normalization and sample-quantile-normalized settings where indicated.\\
+De novo motif validation & ENCODE K562/HepG2 candidate footprints exported as condition-level FASTA files with \(\pm 75\) bp flanks; reciprocal STREME 5.5.9 runs used \texttt{--dna --nmotifs 250}; Tomtom 5.5.9 matched discovered motifs to JASPAR2026; de novo motifs were evaluated alone and as additions to known motif sets.\\
+Pseudobulk PBMC workflow & 10x PBMC fragments grouped by broad immune labels, retaining groups with at least 300 cells and 50,000 fragments. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, bias-corrected tracks, footprint-score tracks, motif-aware differential results, and aggregate plots. The PBMC5k demonstration uses broad B-cell/monocyte/T--NK labels, marker sites, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
 \bottomrule
 \end{tabularx}
+\endgroup
 \end{table}
 
 \begin{table}[H]
-\caption{Software and resource versions used for manuscript analyses. The complete source table is stored as \texttt{software\_versions.tsv}.\label{tab:supp_software_versions}}
-\scriptsize
-\begin{tabularx}{\textwidth}{p{0.24\textwidth}p{0.17\textwidth}X}
+\caption{Software and resource versions used for manuscript analyses. The complete source table is provided in the Supplementary Materials as ``Software and resource versions''.\label{tab:supp_software_versions}}
+\begingroup
+\footnotesize
+\renewcommand{\arraystretch}{1.04}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.28\textwidth}>{\raggedright\arraybackslash}p{0.14\textwidth}>{\raggedright\arraybackslash}X}
 \toprule
-Tool or resource & Version & Role\\
+\textbf{Tool or resource} & \textbf{Version} & \textbf{Role}\\
 \midrule
-\texttt{fp-tools} & 0.1.7 & Footprinting, motif analysis, pseudobulk, and plotting utilities\\
-Python & 3.12.3 & Runtime for analyses and figure builders\\
-\texttt{fastp} & 1.3.3 & FASTQ trimming and QC\\
-\texttt{bowtie2} & 2.5.5 & hg38 read alignment\\
-\texttt{samtools}/htslib & 1.23.1/1.23.1 & BAM filtering and QC\\
 \texttt{bedtools} & 2.31.1 & Region sorting, merging, and blacklist subtraction\\
-MACS3 & 3.0.4 & ATAC-seq peak calling\\
-NumPy/pandas/SciPy & 2.4.6/2.3.3/1.17.1 & Numerical and tabular analysis\\
-matplotlib/pyBigWig & 3.10.9/0.3.25 & Figures and bigWig signal I/O\\
-pysam/Biopython & 0.23.3/1.87 & BAM I/O and sequence utilities\\
-JASPAR CORE vertebrates & 2026 non-redundant & Known motif database\\
-MEME Suite/STREME/Tomtom & 5.5.9 & De novo motif discovery and discovered-motif matching\\
-Cell Ranger ARC & 2.0.0 & Source 10x PBMC Multiome processing\\
-Cell Ranger ATAC & 2.0.0 & Source 10x PBMC5k scATAC processing\\
-hg38 reference and blacklist & GRCh38/hg38; blacklist v2 & Alignment, sequence extraction, and artifact filtering\\
+Biopython & 1.87 & Sequence and motif-related utilities\\
+\texttt{bowtie2} & 2.5.5 & hg38 read alignment\\
+Cell Ranger ARC & 2.0.0 & Source processing for the public 10x PBMC Multiome dataset\\
+Cell Ranger ATAC & 2.0.0 & Source processing for the public 10x PBMC5k scATAC dataset\\
+\texttt{fastp} & 1.3.3 & Paired-end FASTQ adapter detection, trimming, and QC\\
+\texttt{fp-tools} & 0.1.7 & ATAC correction, footprint calling, motif matching, differential footprint analysis, pseudobulk utilities, and plotting helpers\\
+hg38 blacklist & v2 & Artifact-region filtering for processed bulk ATAC alignments\\
+hg38 reference genome & GRCh38/hg38 & Read alignment and sequence extraction\\
+htslib & 1.23.1 & SAM/BAM/VCF I/O backend used by \texttt{samtools}\\
+JASPAR CORE vertebrates & 2026 non-redundant & Known motif database for differential footprint analysis\\
+MACS3 & 3.0.4 & ATAC-seq peak calling in paired-end mode\\
+matplotlib & 3.10.9 & Manuscript figure rendering\\
+MEME Suite, STREME, and Tomtom & 5.5.9 & De novo motif discovery and discovered-motif matching\\
+NumPy & 2.4.6 & Numerical arrays and benchmark/figure calculations\\
+pandas & 2.3.3 & Tabular processing for benchmark, manifest, and figure builders\\
+pyBigWig & 0.3.25 & bigWig signal reading and writing\\
+pysam & 0.23.3 & BAM and genomic interval I/O\\
+Python & 3.12.3 & Runtime for analyses, figure builders, and provenance extraction\\
+\texttt{samtools} & 1.23.1 & BAM filtering, sorting, fixmate, duplicate marking, indexing, and QC summaries\\
+SciPy & 1.17.1 & Statistical and interpolation utilities\\
 \bottomrule
 \end{tabularx}
+\endgroup
 \end{table}
 
 %==================================================================
