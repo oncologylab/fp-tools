@@ -1,0 +1,62 @@
+site_name: fp-tools
+site_description: Command-first ATAC-seq footprinting, motif analysis, and pseudobulk utilities.
+site_url: https://oncologylab.github.io/fp-tools/
+repo_url: https://github.com/oncologylab/fp-tools
+repo_name: oncologylab/fp-tools
+
+theme:
+  name: material
+  logo: assets/fp-tools-workflow.png
+  favicon: assets/fp-tools-workflow.png
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.tabs.link
+  palette:
+    - scheme: default
+      primary: blue grey
+      accent: teal
+
+nav:
+  - Home: index.md
+  - Workflow: workflow.md
+  - Commands: commands.md
+  - Reports: reports.md
+  - GUI Demo: gui.md
+  - API Reference: api.md
+  - Paper & Reproducibility:
+      - paper.md
+      - Reproduce Paper: reproduce-paper.md
+      - Future Plans: FUTURE_PLANS.md
+      - Workflow Figure Notes: workflow_figure_revision_prompts.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+            show_signature_annotations: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/oncologylab/fp-tools

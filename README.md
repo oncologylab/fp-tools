@@ -4,6 +4,8 @@
 
 The PyPI distribution is named `fp-tools-bio`; the installed Python package is `fp_tools`.
 
+Documentation: <https://oncologylab.github.io/fp-tools/>
+
 ## Install
 
 ```bash
@@ -20,7 +22,7 @@ pip install "fp-tools-bio[gui]"
 
 The regulatory-footprinting framework below is a generic overview of the current command-first workflow.
 
-![fp-tools regulatory footprinting framework](manuscript/figures/fp-tools-workflow.png)
+![fp-tools regulatory footprinting framework](docs/assets/fp-tools-workflow.png)
 
 The main workflow is:
 
@@ -247,7 +249,7 @@ motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.be
 
 ![Pseudobulk fragment workflow](docs/assets/fp-tools-pseudo-bulk.png)
 
-The recommended single-cell route is the full corrected pseudobulk footprint workflow. `pseudobulk-footprints` accepts either 10x-style fragments or a real all-cell BAM with cell barcodes in a read tag. Fragment input writes indexed pseudobulk fragment files, raw cut-site bigWigs for QC, pseudo-paired BAMs, and runs `atac-correct --read_shift 0 0`. Tagged BAM input splits the real BAM by metadata group and uses the standard ATAC shift `--read_shift 4 -5` unless overridden. Both routes score corrected footprints, can run motif-aware `diff-footprints` when `--motifs` is supplied, and write a manifest with every intermediate and final output path.
+The recommended single-cell route is the full corrected pseudobulk footprint workflow. `pseudobulk-footprints` accepts either 10x-style fragments or a real all-cell BAM with cell barcodes in a read tag. Fragment input writes indexed pseudobulk fragment files, raw cut-site bigWigs for QC, pseudo-paired BAMs, and runs `atac-correct --read-shift 0 0`. Tagged BAM input splits the real BAM by metadata group and uses the standard ATAC shift `--read-shift 4 -5` unless overridden. Both routes score corrected footprints, can run motif-aware `diff-footprints` when `--motifs` is supplied, and write a manifest with every intermediate and final output path.
 
 ```bash
 pseudobulk-footprints   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz   --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes   --genome data/public/raw/genome/hg38.fa   --peaks data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_peaks.bed   --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt   --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered   --site-summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv   --tfs auto   --outdir data/public/processed/pseudobulk_pbmc/footprints_full   --cores 8
