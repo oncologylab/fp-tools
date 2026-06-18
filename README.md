@@ -1,5 +1,7 @@
 # fp-tools
 
+![fp-tools regulatory footprinting](docs/assets/fp_tools_logo_horizontal.svg)
+
 `fp-tools` is a standalone ATAC-seq footprinting package. It provides command-first tools for Tn5 bias correction, footprint calling, motif matching, differential footprint analysis, aggregate visualization, de novo motif-discovery preparation, and pseudobulk fragment generation.
 
 The PyPI distribution is named `fp-tools-bio`; the installed Python package is `fp_tools`.

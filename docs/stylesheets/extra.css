@@ -1,18 +1,20 @@
 :root {
-  --fp-teal: #0f766e;
-  --fp-teal-dark: #115e59;
-  --fp-teal-soft: #ccfbf1;
+  --fp-teal: #1f9d55;
+  --fp-blue: #103a5c;
+  --fp-teal-dark: #157a42;
+  --fp-teal-soft: #e8f6ee;
   --fp-ink: #102a2a;
   --fp-muted: #5b6f72;
   --fp-line: #d8e4e5;
-  --fp-amber: #f59e0b;
+  --fp-amber: #1967b3;
   --fp-panel: #ffffff;
 }
 
 [data-md-color-scheme="slate"] {
-  --fp-teal: #5eead4;
-  --fp-teal-dark: #99f6e4;
-  --fp-teal-soft: rgba(45, 212, 191, 0.14);
+  --fp-teal: #7ddf9f;
+  --fp-blue: #9ec5ee;
+  --fp-teal-dark: #9cf0b8;
+  --fp-teal-soft: rgba(31, 157, 85, 0.18);
   --fp-ink: #e5f4f3;
   --fp-muted: #b5c9ca;
   --fp-line: rgba(148, 163, 184, 0.24);
@@ -21,12 +23,34 @@
 
 .md-header,
 .md-tabs {
+  background: var(--fp-blue);
   box-shadow: none;
+}
+
+.md-header__button.md-logo {
+  align-items: center;
+  background: #ffffff;
+  border-radius: 6px;
+  display: inline-flex;
+  height: 1.9rem;
+  justify-content: center;
+  margin-right: 0.55rem;
+  padding: 0.16rem;
+  width: 1.9rem;
 }
 
 .md-header__button.md-logo img,
 .md-header__button.md-logo svg {
-  height: 1.7rem;
+  height: 1.55rem;
+  width: 1.55rem;
+}
+
+.fp-lockup {
+  display: block;
+  height: auto;
+  margin: 0 0 1rem;
+  max-width: 320px;
+  width: 72%;
 }
 
 .md-typeset h1,
@@ -44,7 +68,7 @@
 }
 
 .fp-eyebrow {
-  color: var(--fp-teal);
+  color: var(--fp-blue);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -76,15 +100,15 @@
 .fp-button {
   border: 1px solid var(--fp-line);
   border-radius: 7px;
-  color: var(--fp-teal-dark);
+  color: var(--fp-blue);
   display: inline-block;
   font-weight: 700;
   padding: 0.58rem 0.84rem;
 }
 
 .fp-button.primary {
-  background: var(--fp-teal);
-  border-color: var(--fp-teal);
+  background: var(--fp-blue);
+  border-color: var(--fp-blue);
   color: #ffffff;
 }
 

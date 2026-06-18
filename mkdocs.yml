@@ -6,8 +6,8 @@ repo_name: oncologylab/fp-tools
 
 theme:
   name: material
-  logo: assets/fp-tools-logo.svg
-  favicon: assets/fp-tools-logo.svg
+  logo: assets/fp_tools_logo_icon.svg
+  favicon: assets/fp_tools_logo_icon.svg
   features:
     - navigation.instant
     - navigation.tracking

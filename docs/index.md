@@ -1,5 +1,6 @@
 <section class="fp-hero">
   <div>
+    <img class="fp-lockup" src="assets/fp_tools_logo_horizontal.svg" alt="fp-tools regulatory footprinting">
     <p class="fp-eyebrow">Command-first ATAC-seq footprinting</p>
     <h1>Bias correction, footprint scoring, motif-aware comparisons, and reports.</h1>
     <p class="fp-lede">

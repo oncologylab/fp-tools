@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+     width="1400" height="360" viewBox="0 0 1400 360">
+  <rect width="1400" height="360" fill="none"/>
+  <g transform="translate(24,24) scale(0.61)">
+
+  <rect x="0" y="0" width="512" height="512" fill="none"/>
+  <rect x="48" y="48" width="416" height="416" rx="100"
+        fill="none" stroke="#103A5C" stroke-width="20"/>
+  <!-- Regulatory footprint profile -->
+  <path d="M104 210
+           C142 168, 178 162, 214 214
+           C231 238, 243 272, 256 294
+           C269 272, 281 238, 298 214
+           C334 162, 370 168, 408 210"
+        fill="none" stroke="#103A5C" stroke-width="18"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="116" y="286" width="16" height="92" rx="8" fill="#1967B3"/>
+<rect x="142" y="250" width="16" height="128" rx="8" fill="#1F9D55"/>
+<rect x="168" y="226" width="16" height="152" rx="8" fill="#1967B3"/>
+<rect x="194" y="260" width="16" height="118" rx="8" fill="#1F9D55"/>
+<rect x="220" y="308" width="16" height="70" rx="8" fill="#1967B3"/>
+<rect x="246" y="328" width="16" height="50" rx="8" fill="#1F9D55"/>
+<rect x="272" y="308" width="16" height="70" rx="8" fill="#1967B3"/>
+<rect x="298" y="260" width="16" height="118" rx="8" fill="#1F9D55"/>
+<rect x="324" y="226" width="16" height="152" rx="8" fill="#1967B3"/>
+<rect x="350" y="250" width="16" height="128" rx="8" fill="#1F9D55"/>
+<rect x="376" y="286" width="16" height="92" rx="8" fill="#1967B3"/>
+  <line x1="102" y1="396" x2="410" y2="396"
+        stroke="#103A5C" stroke-width="12" stroke-linecap="round"/>
+  <!-- central motif cue -->
+  <circle cx="232" cy="150" r="10" fill="#1967B3"/>
+  <circle cx="256" cy="138" r="10" fill="#1F9D55"/>
+  <circle cx="280" cy="150" r="10" fill="#1967B3"/>
+
+  </g>
+  <text x="390" y="178" font-family="Arial, Helvetica, sans-serif"
+        font-size="132" font-weight="700" letter-spacing="-4">
+    <tspan fill="#103A5C">fp-</tspan><tspan fill="#1F9D55">tools</tspan>
+  </text>
+  <text x="398" y="245" font-family="Arial, Helvetica, sans-serif"
+        font-size="39" font-weight="500" letter-spacing="4" fill="#5E6A73">
+    REGULATORY FOOTPRINTING
+  </text>
+  <line x1="398" y1="278" x2="1185" y2="278"
+        stroke="#E9F2F7" stroke-width="6" stroke-linecap="round"/>
+</svg>
