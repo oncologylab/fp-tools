@@ -497,26 +497,25 @@ ATAC-corrected footprint tracks are computed from grouped pseudobulk profiles.
 
 \subsection{Evaluation and Figure Reproducibility}
 
-Manifests, schema validation, engineering-runtime recording, and figure scripts
-provide an executable path from public inputs to publication-ready outputs.
-These resources verify stable outputs on compact fixtures and public-data
-subsets, support the bulk, de novo, pseudobulk, replicate-aware, and
-report examples, and keep sample, parameter, motif, region, and signal-track
-choices auditable.
+The manuscript analyses are linked to public inputs through manifests, schema
+checks, recorded command settings, and figure-generation scripts. Together, these
+files make the bulk, de novo, pseudobulk, replicate-aware, and report examples
+traceable from input data to final figures, while preserving the sample, motif,
+region, and signal-track choices used for each analysis.
 
-The evaluation pipeline writes resolved manifests, software versions, parameters,
-and plotting tables next to generated figures. Representative local engineering
-measurements summarize runtime and peak memory for one local comparison using
-the same input bundle and command-level outputs
-(Figure~\ref{fig:engineering}). The browser GUI keeps the same command-first
-structure while making example loading, YAML review, run history, and report
-inspection accessible to researchers who do not routinely work at the command line
+For each analysis, the workflow writes resolved manifests, software versions,
+parameters, and plotting tables beside the generated outputs. We also recorded
+runtime and peak memory for a single-machine comparison of TOBIAS and
+\texttt{fp-tools} using the same input bundle and command outputs
+(Figure~\ref{fig:engineering}). The browser GUI follows the same command
+structure and provides example loading, YAML review, run history, and report
+inspection for users who prefer a graphical workflow
 (Figure~\ref{fig:gui_interface}).
 
 \begin{figure}[!htb]
 \centering
 \includegraphics[width=0.50\textwidth]{figures/Fig5.pdf}
-\caption{Representative local engineering comparison.
+\caption{Single-machine runtime and memory check.
 (\textbf{A}) Runtime and (\textbf{B}) peak memory are summarized for one local
 analysis run comparing TOBIAS and \texttt{fp-tools} on the same analysis bundle.
 These measurements are included as an engineering check, not as an exhaustive
