@@ -185,21 +185,6 @@ Amemiya, H.M.; Kundaje, A.; Boyle, A.P.
 \newblock {\em Nature} {\bf 2012}, {\em 489},~57--74.
 \newblock {\url{https://doi.org/10.1038/nature11247}}.
 
-\bibitem[Weber et~al.(2019)Weber, Hare, Soneson, and
-  Robinson]{Weber2019_Benchmarking}
-Weber, L.M.; Hare, E.H.; Soneson, C.; Robinson, M.D.
-\newblock Essential guidelines for computational method benchmarking.
-\newblock {\em Genome Biology} {\bf 2019}, {\em 20},~125.
-\newblock {\url{https://doi.org/10.1186/s13059-019-1738-8}}.
-
-\bibitem[Mangul et~al.(2019)Mangul, Martin, Hill, Lam, Distler, Zelikovsky, and
-  Eskin]{Mangul2019_SystematicBenchmarking}
-Mangul, S.; Martin, L.S.; Hill, B.L.; Lam, A.K.M.; Distler, M.G.; Zelikovsky,
-  A.; Eskin, E.
-\newblock Systematic benchmarking of omics computational tools.
-\newblock {\em Nature Communications} {\bf 2019}, {\em 10},~1393.
-\newblock {\url{https://doi.org/10.1038/s41467-019-09406-4}}.
-
 \bibitem[Wilkinson et~al.(2016)Wilkinson, Dumontier, Aalbersberg,
   et~al.]{Wilkinson2016_FAIR}
 Wilkinson, M.D.; Dumontier, M.; Aalbersberg, I.J.;  et~al.

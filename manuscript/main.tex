@@ -141,6 +141,12 @@ Following the signal model popularized by TOBIAS~\cite{bentsen2020},
 primary footprinting signal. This design preserves the familiar bulk ATAC
 footprinting interpretation: the biological signal is a corrected
 center-versus-flank cut-site contrast at motif or candidate sites.
+After bias correction, \texttt{fp-tools} can additionally rescale corrected
+cut-site tracks before footprint scoring by matching the 95th percentile of
+signal over shared background regions to an across-sample target, usually the
+median. This robust q95 scaling reduces sample-to-sample signal-level variation
+before footprint scoring while being less sensitive to rare extreme bins than
+full quantile matching.
 The package keeps this signal definition while recording sample labels, input
 manifests, reusable configuration, replicate summaries, and report outputs.
 For footprint calling, let $x_i$ denote corrected Tn5 cut-site signal around
@@ -211,7 +217,7 @@ KNN-smoothed signatures summarize local, motif-centered cut-site patterns across
 neighboring cells, while full ATAC-corrected footprint tracks are computed from
 the grouped pseudobulk profiles.
 
-\subsection{Replicate-aware Differential Footprint Analysis and Quantile Normalization}
+\subsection{Replicate-aware Differential Footprint Analysis}
 \label{sec:replicate}
 
 The differential footprint module supports both single-sample contrasts and
@@ -223,144 +229,59 @@ Tcell}, define biological replicate groups while preserving the original
 differential-footprint output structure. Let $x_{c,r,i}$ be the footprint score
 at site or background position $i$ for replicate $r$ of condition $c$.
 
-For one-sample versus one-sample contrasts, \texttt{diff-footprints} uses a
-motif-site versus background-distribution comparison. Candidate sites are grouped
-by motif, motif-site changes are compared with matched background changes, and
-p-values are adjusted across motifs within each contrast. When multiple samples
-are available in a condition, \texttt{fp-tools} additionally aggregates motif
-scores per sample and applies empirical-Bayes variance moderation across motifs,
-following the moderated testing framework of Smyth~\cite{smyth2004}. The
-replicate-supported table reports condition means, replicate counts, condition
-SDs and SEs, moderated test statistics, and Benjamini--Hochberg-adjusted
-q-values. This separates single-sample distributional comparisons from
-replicate-supported inference while keeping both outputs in the same
-differential-footprint report.
+For one-sample versus one-sample contrasts, \texttt{diff-footprints} uses the
+motif-site versus background-distribution comparison of the standard
+TOBIAS-style report. Candidate sites are grouped by motif, site-level changes at
+motif sites are compared with matched background changes, and p-values are
+adjusted across motifs within each contrast.
 
-With \texttt{--normalization sample-quantile}, each replicate is normalized before
-condition averaging. The normalization fit uses finite positive scores only,
-because negative or zero footprint-score values do not define a stable
-multiplicative quantile ratio. For sample $s$, \texttt{fp-tools} computes
-empirical score quantiles $q_s(p)$ on a 0.05--0.99 quantile grid and the
-reference quantile $q_\ast(p)=S^{-1}\sum_s q_s(p)$ across the $S$ input samples.
-It then smooths the ratio $q_\ast(p)/q_s(p)$ and fits a sigmoid multiplicative
-factor $g_s(x)$; if the sample has too few positive values or the curve fit is
-ill-conditioned, a constant positive factor is used instead. During application,
-scores outside the fitted positive-score range use the nearest fitted range
-boundary for the normalization factor. Each score is transformed as
-\[
-\tilde{x}_{s,i}=\max\{0,\,x_{s,i}g_s(x_{s,i})\}.
-\]
-The final maximum operation clips transformed values at zero, preserving the
-interpretation that positive normalized values represent footprint-like
-center-versus-flank evidence.
-The \texttt{condition-quantile} mode first averages replicate background
-distributions within each condition, fits one factor $g_c(x)$ per condition, and
-applies that condition-level factor to all replicates in the condition.
-\texttt{none} disables quantile normalization. The same normalization helper is
-used by aggregate plotting, so differential comparison and motif-centered
-visualization are normalized consistently.
+For replicate-supported comparisons, \texttt{fp-tools} generalizes this
+comparison to multiple samples per condition. Footprint scores are computed for
+each replicate on the same peak and motif-site universe; motif-site and
+background distributions are then summarized at the condition level before
+reporting the same change, log-fold-change, p-value, and adjusted q-value
+columns. The report also includes replicate counts, condition means, SDs, and
+SE summaries, so the additional samples contribute to a more stable estimate
+rather than being collapsed outside the analysis.
 
-After normalization, condition-level scores are summarized as
-\[
-\bar{x}_{c,i}=\frac{1}{n_c}\sum_{r=1}^{n_c}\tilde{x}_{c,r,i},\qquad
-s_{c,i}=\sqrt{\frac{1}{n_c-1}\sum_{r=1}^{n_c}(\tilde{x}_{c,r,i}-\bar{x}_{c,i})^2}.
-\]
-For a comparison between conditions $c_1$ and $c_2$, \texttt{fp-tools} reports a
-footprint-score difference and a stabilized log fold change,
-\[
-\Delta_i=\bar{x}_{c_1,i}-\bar{x}_{c_2,i},\qquad
-L_i=\log_2\frac{\bar{x}_{c_1,i}+\epsilon}{\bar{x}_{c_2,i}+\epsilon},
-\]
-where $\epsilon$ is estimated from the background signal unless supplied explicitly.
-When both conditions have replicate support, approximate standard errors are
-reported as descriptive summaries. Here, $\mu_1$ and $\mu_2$ denote the
-condition-level mean scores for the two conditions at the included motif sites,
-$s_1$ and $s_2$ denote the corresponding empirical SD estimates across
-replicates, and $n_1$ and $n_2$ are replicate counts:
-\[
-\mathrm{SE}(\Delta)=\sqrt{\frac{s_1^2}{n_1}+\frac{s_2^2}{n_2}},
-\]
-\[
-\mathrm{SE}(L)\approx\frac{1}{\ln 2}
-\sqrt{\frac{s_1^2}{n_1(\mu_1+\epsilon)^2}+
-      \frac{s_2^2}{n_2(\mu_2+\epsilon)^2}}.
-\]
-In the distribution-comparison view, the reported \texttt{change} and
-\texttt{pvalue} columns are computed at the motif-reporting level. Candidate
-sites are included
-when either condition has a positive motif-site score, site-level log fold
-changes are averaged within peak intervals, and the observed motif statistic is
-defined as the difference between the fitted observed mean log fold change and
-the fitted background mean, scaled by the average of the observed and background
-SD estimates. \texttt{fp-tools} then simulates background change statistics from
-the fitted background distribution using the same number of observed intervals
-and applies a one-sample t-test comparing the simulated background changes with
-the observed motif statistic. P-values are adjusted across motifs within each
-contrast using Benjamini--Hochberg, yielding the \texttt{qvalue\_bh} column and
-\texttt{significant\_fdr05} flag. These p-values are screening statistics for the
-motif-centered report, especially at small replicate counts; the SE columns are
-reported separately as descriptive uncertainty summaries and are not themselves
-the hypothesis-test statistic. The \texttt{highlighted} column is retained only
-as a report-selection and visualization flag, not as a formal
-multiple-testing-corrected significance label. Additional replicate-oriented
-columns include replicate counts, condition score SDs, mean $\Delta$, mean $L$,
-and standard-error summaries.
+Quantile normalization remains an optional comparison-stage adjustment. In
+single-sample contrasts, sample-quantile normalization provides the conventional
+two-sample score-distribution matching. In replicate-supported comparisons,
+condition-quantile normalization averages background distributions within each
+condition, fits one normalization factor per condition, and applies that factor
+to the replicates before condition summaries are computed. This option is used
+as a sensitivity adjustment; the main replicate-aware extension is the explicit
+use of replicate-level motif scores.
 
-\subsection{Public ATAC Processing and Reproducibility Provenance}
+When per-sample motif-score matrices are available, \texttt{fp-tools} further
+applies empirical-Bayes variance moderation across motifs, following the
+moderated testing framework of Smyth~\cite{smyth2004}. This replicate-supported
+view estimates condition effects from the per-sample motif scores and moderates
+the per-motif variance across the motif set before computing adjusted
+differential-footprint statistics.
+
+\subsection{Public Data Processing and Evaluation}
 \label{sec:processing_provenance}
 
 The bulk replicate demonstration uses true biological replicates from the
 Buenrostro et al. ATAC-seq study~\cite{buenrostro2013}: GM12878/B-cell samples
 SRR891268 and SRR891269, and day-1 CD4 T-cell samples SRR891275 and SRR891276.
-Reads were trimmed with fastp~\cite{Chen2018_fastp}, aligned with Bowtie2~\cite{Langmead2012_Bowtie2}, processed with SAMtools~\cite{Li2009_SAMtools} and BEDTools~\cite{Quinlan2010_BEDTools}, and peaks were called with MACS3 using the MACS model-based peak-calling framework~\cite{Zhang2008_MACS}. Problematic genomic regions were filtered using the ENCODE blacklist~\cite{Amemiya2019_Blacklist}. Replicate peaks were merged into a common peak universe, bias-corrected, footprint-called,
-and analyzed by differential footprint comparison with and without sample-level
-quantile normalization. The analysis used JASPAR 2026 CORE vertebrates
+Reads were trimmed with fastp~\cite{Chen2018_fastp}, aligned with Bowtie2~\cite{Langmead2012_Bowtie2}, processed with SAMtools~\cite{Li2009_SAMtools} and BEDTools~\cite{Quinlan2010_BEDTools}, and peaks were called with MACS3 using the MACS model-based peak-calling framework~\cite{Zhang2008_MACS}. Problematic genomic regions were filtered using the ENCODE blacklist~\cite{Amemiya2019_Blacklist}. Replicate peaks were merged into a common peak universe, bias-corrected, q95-scaled over shared background regions, footprint-called,
+and analyzed by differential footprint comparison. The analysis used JASPAR 2026 CORE vertebrates
 non-redundant motifs~\cite{jaspar2026} for known-motif scanning. Exact command-line parameters and software versions are recorded in source TSV
 files in the manuscript \texttt{tables} directory and summarized in
 Tables~\ref{tab:supp_analysis_parameters} and
 \ref{tab:supp_software_versions}.
 
-\subsection{Public Data, Evaluation Tiers, and Metrics}
-
-Public inputs are organized as versioned TSV manifests recording source,
-analysis tier, cell type, donor, assay, accessions, assembly, output type,
-format, URL, checksum, status, local path, split, and notes. Discovery and
-download scripts query public repositories such as ENCODE~\cite{encode2012} for
-released human GRCh38 ATAC-seq records, write resumable download reports, and
-keep raw public data out of version control. The tracked repository contains the
-scripts, manifests, schemas, small reference inputs, source tables, and figure
-code needed to rerun the manuscript analyses.
-
-The evaluation follows published recommendations for transparent computational
-method assessment~\cite{Weber2019_Benchmarking,Mangul2019_SystematicBenchmarking},
-but it is designed as a tiered software evaluation rather than an exhaustive
-head-to-head benchmark of all ATAC footprinting methods. The tiers
-(Table~\ref{tab:tiers}) cover small-reference regression tests, bulk ATAC
-replicates, downsampled ATAC depth checks, de novo motif preparation, and a
-real-data pseudobulk example. Summary tables report command success, output
-integrity, runtime, memory, differential footprint summaries, motif-recovery
-summaries, and generated figures for the analyses included in this manuscript.
-
-\begin{table}[H]
-\caption{Tiered evaluation design. Large data and outputs are untracked; only
-manifests, scripts, and compact reference results are committed.\label{tab:tiers}}
-\begingroup
-\small
-\renewcommand{\arraystretch}{1.05}
-\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
-\begin{tabularx}{\textwidth}{>{\bfseries\raggedright\arraybackslash}p{0.23\textwidth}YY}
-\toprule
-\textbf{Tier} & \textbf{Purpose} & \textbf{Primary outputs}\\
-\midrule
-Small reference & Installation and regression checks on compact inputs & command success, output existence, stable summaries\\
-Bulk ATAC replicates & Public bulk ATAC replicate demonstrations for footprinting and differential reports & corrected tracks, footprint scores, motif reports, aggregate plots\\
-Depth robustness & Shallow-depth sensitivity (50/25/10/5\%) & downsampled workflow summaries and output checks\\
-De novo motif prep & Candidate FASTA and motif-discovery validation & exported FASTA files and motif summaries\\
-Pseudobulk & Single-cell extension and real-data demonstration & 10x PBMC pseudobulk fragments, corrected footprint tracks, pairwise TF differential plots, KNN marker-signature UMAPs\\
-\bottomrule
-\end{tabularx}
-\endgroup
-\end{table}
+Public inputs are organized as versioned TSV manifests that record source URLs,
+accessions, assemblies, checksums, local paths, and analysis labels. Discovery
+and download scripts query public repositories such as ENCODE~\cite{encode2012}
+for released human GRCh38 ATAC-seq records and write resumable download reports.
+The manuscript evaluation combines compact regression inputs, public bulk ATAC
+replicates, de novo motif-preparation examples, and public PBMC single-cell
+ATAC examples. For each analysis, command-line parameters, software versions,
+resolved input manifests, source tables, and generated figure inputs are kept
+with the manuscript resources so the reported examples can be rerun and audited.
 
 \subsection{Reproducibility Engineering}
 
@@ -373,10 +294,9 @@ The repository also includes \texttt{environment.yml}, a Dockerfile, release
 metadata, and Make targets for testing, building, and manuscript checks. These
 choices follow FAIR-oriented research-software principles and established
 bioinformatics environment practices~\cite{Wilkinson2016_FAIR,Gruning2018_Bioconda,Ewels2020_nfcore}.
-Reviewer instructions are kept in \texttt{docs/reproduce-paper.md}. Benchmark
-scripts record random seeds, tool versions, command lines, and resolved
+Analysis scripts record random seeds, tool versions, command lines, and resolved
 manifests alongside the corresponding outputs. Figure source tables and editable
-figure files are retained for auditability.
+figure files are retained with the manuscript resources for auditability.
 
 %==================================================================
 \section{Results}
@@ -496,16 +416,16 @@ footprint profiles in one browser-review view.
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=\textwidth,height=0.86\textheight,keepaspectratio]{figures/Fig3_fullpage.png}
+\includegraphics[height=0.88\textheight,keepaspectratio]{figures/Fig3.png}
 \caption{Interactive differential footprint report for K562 versus HepG2.
-The cropped browser report view summarizes selected differential motifs, motif
+The browser report view summarizes selected differential motifs, motif
 logos, top differential footprint-score bar plots, a volcano plot, and
 replicate-level motif-centered aggregate profiles. Blue indicates HepG2-biased
 footprint scores and red indicates K562-biased footprint scores.
 \label{fig:differential_report}}
 \end{figure}
 
-\subsection{Replicate-aware Differential Footprint Analysis and Normalization}
+\subsection{Replicate-aware Differential Footprint Analysis}
 
 The replicate-aware analysis reports differential footprint effect sizes,
 replicate support, and uncertainty summaries while keeping each comparison
@@ -598,12 +518,12 @@ ATAC-corrected footprint tracks are computed from grouped pseudobulk profiles.
 
 \subsection{Evaluation and Figure Reproducibility}
 
-The tiered design (Table~\ref{tab:tiers}), manifests, schema validator,
-engineering-runtime recorder, and figure scripts provide an executable path from
-public inputs to publication-ready outputs. These resources verify stable outputs
-on compact fixtures and public-data subsets, support the bulk, de novo,
-pseudobulk, replicate-normalization, and report examples, and keep sample,
-parameter, motif, region, and signal-track choices auditable.
+Manifests, schema validation, engineering-runtime recording, and figure scripts
+provide an executable path from public inputs to publication-ready outputs.
+These resources verify stable outputs on compact fixtures and public-data
+subsets, support the bulk, de novo, pseudobulk, replicate-aware, and
+report examples, and keep sample, parameter, motif, region, and signal-track
+choices auditable.
 
 The evaluation pipeline writes resolved manifests, software versions, parameters,
 and plotting tables next to generated figures. Representative local engineering
@@ -705,35 +625,6 @@ comparison, whereas replicate-supported contrasts use per-sample motif scores
 with empirical-Bayes variance moderation to estimate differential footprint
 statistics.
 
-\subsection{Threats to Validity and Scope}
-
-This manuscript emphasizes reproducible software examples, local engineering
-checks, and public-data case studies; it is not a comprehensive cross-tool
-benchmark. Larger whole-genome transfer studies and direct head-to-head runs of
-external tools such as TOBIAS, HINT-ATAC, PRINT/scPrinter, maxATAC, and
-ChromBPNet on identical locus sets will require controlled benchmark runs with
-repeated measurements, matched parameters, and explicit uncertainty. The runtime
-and memory measurements in Figure~\ref{fig:engineering} are representative local
-engineering checks, not general performance claims.
-
-Several biological panels are illustrative by design. The de novo recovery
-summary uses a merged-window overlap metric rather than an independent binding
-truth set, and the restricted-database sensitivity analysis depends on a
-specified motif-family removal list. The \texttt{highlighted} column is a report
-selection flag and should not be interpreted as statistical significance. The
-PBMC marker labels and aggregate examples emphasize expected-direction markers to
-show whether outputs are biologically plausible; full ranked tables are needed
-for formal marker-discovery claims. Finally, KNN-smoothed single-cell
-footprint-signature scores summarize neighboring-cell cut-site patterns, whereas
-full bias-corrected footprint tracks are estimated from grouped pseudobulk data.
-
-Large public inputs depend on external data acquisition and are therefore
-regenerated from committed manifests rather than stored directly in the
-repository. Natural next steps include larger external-tool comparisons,
-additional public validation datasets, expanded pseudobulk analyses across donors
-and tissues, and richer hierarchical models for experiments with larger
-replicate counts.
-
 %==================================================================
 \section{Conclusions}
 %==================================================================
@@ -764,20 +655,16 @@ de-identified datasets and did not involve new experiments on humans or animals.
 \informedconsent{Not applicable.}
 
 \dataavailability{\texttt{fp-tools} is openly available in the public GitHub
-repository \href{https://github.com/oncologylab/fp-tools}{\mbox{\texttt{oncologylab/fp-tools}}};
-the source state for this manuscript revision is identified by the Git tag
-\texttt{manuscript-revision-2026-06-22}.
-The repository contains the
-benchmark manifests, schemas, analysis scripts, figure generators, source tables,
-and small result tables used in this manuscript. Public input data are obtained
+repository \href{https://github.com/oncologylab/fp-tools}{\mbox{\texttt{oncologylab/fp-tools}}}.
+The repository contains the manifests, schemas, analysis scripts, figure
+generators, source tables, and small result tables used in this manuscript.
+Public input data are obtained
 from the ENCODE Project~\cite{encode2012}, the 10x Genomics PBMC Multiome
 example~\cite{tenxpbmc2021}, the 10x Genomics PBMC5k single-cell ATAC
 example~\cite{tenxpbmc5katac2021}, and motif databases such as
 JASPAR~\cite{jaspar2026} using the included download and preparation scripts.
-Reviewer reproduction instructions are provided in
-\texttt{docs/reproduce-paper.md}; the computational environment is documented in
-\texttt{environment.yml} and the repository Dockerfile. Full raw public inputs are not stored in version control and are
-regenerated from committed manifests.}
+The computational environment is documented in \texttt{environment.yml} and the
+repository Dockerfile.}
 
 \acknowledgments{The authors thank the ENCODE Project Consortium and the
 maintainers of the open-source tools referenced in this work for making their data
@@ -806,7 +693,7 @@ Public input data & Bulk ATAC analyses use Buenrostro B-cell/T-cell FASTQs and E
 FASTQ preprocessing & Paired-end adapter detection and trimming with \texttt{fastp}; HTML and JSON QC reports written for each sample.\\
 Alignment and BAM processing & Reads aligned to hg38 with \texttt{bowtie2 --very-sensitive -X 2000}; proper pairs retained with \texttt{samtools view -f 2 -F 2828 -q 30}; BAMs sorted, fixed with \texttt{fixmate -m}, duplicate-marked with \texttt{markdup -r}, indexed, and summarized with flagstat/idxstats.\\
 Blacklist and peak set & Mitochondrial and nonstandard contigs excluded; hg38 blacklist v2 regions subtracted; MACS3 paired-end peaks called at q-value 0.01 and merged across replicates into one analysis peak set.\\
-Bias correction and footprint scores & \texttt{atac-correct} run on filtered BAMs with merged peaks and blacklist regions using default Tn5-bias settings; \texttt{call-footprints --score footprint} run on corrected cut-site bigWigs with default footprint and flank windows.\\
+Bias correction and footprint scores & \texttt{atac-correct} run on filtered BAMs with merged peaks and blacklist regions using default Tn5-bias settings; corrected cut-site tracks q95-scaled over shared background regions for multi-sample analyses; \texttt{call-footprints --score footprint} run with default footprint and flank windows.\\
 Differential footprint analysis & Buenrostro and ENCODE replicate footprint tracks analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. One-sample contrasts use motif-site versus background-distribution comparison; replicate-supported analyses use empirical-Bayes variance moderation on per-sample aggregated motif scores.\\
 De novo motif validation & ENCODE K562/HepG2 candidate footprints exported as condition-level FASTA files with \(\pm 75\) bp flanks; reciprocal STREME 5.5.9 runs used \texttt{--dna --nmotifs 250}; Tomtom 5.5.9 matched discovered motifs to JASPAR 2026; de novo motifs were evaluated alone and as additions to known motif sets.\\
 Pseudobulk PBMC analysis & 10x PBMC fragments grouped by broad immune labels, retaining groups with at least 300 cells and 50,000 fragments. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, and aggregate plots. The PBMC5k example uses broad B-cell/monocyte/T--NK labels, marker sites, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
