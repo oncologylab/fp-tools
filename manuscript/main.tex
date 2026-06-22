@@ -36,16 +36,18 @@ $^{1}$ \quad Department of Oncology, Lombardi Comprehensive Cancer Center, Georg
 \abstract{Transcription-factor (TF) footprinting from ATAC-seq provides a
 base-resolution view of regulatory factor occupancy, yet complete analyses often
 require multiple tools with different interfaces, signal conventions, and
-reproducibility practices. We present \texttt{fp-tools}, a Python
-package that integrates Tn5 bias correction, footprint calling, motif matching,
-differential footprint analysis, and aggregate visualization within a consistent
-command-line workflow. The same framework supports de novo motif-discovery
-preparation, pseudobulk aggregation from single-cell ATAC fragments, and
-replicate-aware reporting for condition comparisons. Using public bulk ATAC-seq
-replicates and public 10x Genomics PBMC single-cell datasets, we demonstrate that
-\texttt{fp-tools} recovers biologically interpretable motif-centered aggregate
-patterns while preserving a reproducible analysis trail through versioned inputs,
-source tables, and regression-tested command outputs. \texttt{fp-tools} provides an integrated
+reproducibility practices. We present \texttt{fp-tools}, a Python package that
+builds on the established TOBIAS-style ATAC footprinting model while extending
+the surrounding workflow for reproducible analyses. \texttt{fp-tools} integrates
+Tn5 bias correction, footprint calling, motif matching, differential footprint
+analysis, and aggregate visualization within a consistent command-line workflow.
+The same framework supports de novo motif-discovery preparation, pseudobulk
+aggregation from single-cell ATAC fragments, and replicate-aware reporting for
+condition comparisons. Using public bulk ATAC-seq replicates and public 10x
+Genomics PBMC single-cell datasets, we demonstrate that \texttt{fp-tools}
+recovers biologically interpretable motif-centered aggregate patterns while
+preserving a reproducible analysis trail through versioned inputs, source tables,
+and regression-tested command outputs. \texttt{fp-tools} provides an integrated
 and auditable platform for ATAC-seq footprinting workflows and their
 motif-centered extensions.}
 
@@ -117,11 +119,14 @@ and single-cell pseudobulk analyses.
 We address these gaps with \texttt{fp-tools}, a reproducible ATAC-seq
 footprinting platform that connects bias correction, footprint calling, motif
 matching, differential footprint analysis, and aggregate visualization through a
-single command-line workflow. The same framework integrates de novo motif-discovery
-preparation, pseudobulk ATAC aggregation, replicate-aware comparison, quantile
-normalization, and interactive HTML reports. This paper describes the implemented
-methods, public-data validation examples, and reproducibility framework that tie
-these workflows together.
+single command-line workflow. The goal is not to replace TOBIAS as a core ATAC
+footprinting reference; instead, \texttt{fp-tools} keeps the same interpretable
+motif-centered signal logic while adding workflow features that are often built
+around TOBIAS by hand: command-compatible batch execution, saved YAML
+configurations, replicate-aware report summaries, de novo motif handoff,
+pseudobulk single-cell aggregation, browser-based review, and figure-ready
+exports. This paper describes the implemented methods, public-data validation
+examples, and reproducibility framework that tie these workflows together.
 
 
 %==================================================================
@@ -141,7 +146,12 @@ without changing the underlying methods.
 
 Following the signal model popularized by TOBIAS~\cite{bentsen2020},
 \texttt{fp-tools} treats base-resolution, bias-corrected cut-site profiles as the
-primary footprinting signal. For footprint calling, let $x_i$ denote corrected Tn5
+primary footprinting signal. This design deliberately preserves the familiar
+bulk ATAC footprinting interpretation: the biological unit is a corrected
+center-versus-flank cut-site contrast at motif or candidate sites, while the
+software layer adds consistent command names, manifests, reusable configuration,
+replicate summaries, and report generation around that signal. For footprint
+calling, let $x_i$ denote corrected Tn5
 cut-site signal around candidate position $p$. The default footprint score is a
 center-versus-flank contrast,
 \[
@@ -172,7 +182,10 @@ The same entry point can be used in two modes. In de novo-only mode, discovered
 motifs are reported as an independent motif set. In database-plus-de-novo mode,
 discovered motifs are matched to a known database such as JASPAR
 2026~\cite{jaspar2026} and can be appended to the known motif set for downstream
-differential footprint analysis.
+differential footprint analysis. This extends the standard TOBIAS-style motif
+analysis path, which relies on supplied motif collections, by making candidate
+FASTA export, motif discovery, motif comparison, and database augmentation a
+reproducible companion workflow rather than an external manual step.
 
 \subsection{Pseudobulk Fragment Aggregation}
 
@@ -193,6 +206,11 @@ y_{k,t}=10^6\frac{c_{k,t}}{\sum_u c_{k,u}},
 where $c_{k,t}$ is the cut-site count for group $k$ at genomic position $t$. These
 tracks can be used directly by the same motif-centered aggregate plotting workflow
 used for bulk ATAC-seq data.
+Thus, users can run a TOBIAS-like bulk footprinting analysis on single-cell data
+without first constructing each pseudobulk sample outside the footprinting
+workflow. When requested, the full route writes pseudo-paired BAMs from grouped
+fragments and then runs correction, scoring, motif-aware comparison, and plotting
+with the same conventions used for bulk ATAC-seq.
 
 For visualization of cell-level marker footprint signatures, \texttt{fp-tools}
 also supports a K-nearest-neighbor (KNN) smoothing layer over single-cell
@@ -235,6 +253,10 @@ motifs before computing a moderated t-statistic and Benjamini--Hochberg-adjusted
 q-values. This empirical-Bayes view is used as a replicate-aware audit and
 alternative reporting view for replicate-supported comparisons, while the native
 distribution-comparison columns are preserved for traceability.
+Relative to a conventional TOBIAS-style two-condition report, the added
+workflow-level contribution is explicit handling of repeated biological condition
+labels, side-by-side single-sample and replicate-supported comparison modes, and
+separate statistical and display-priority columns in the exported tables.
 
 With \texttt{--normalization sample-quantile}, each replicate is normalized before
 condition averaging. The normalization fit uses finite positive scores only,
@@ -435,7 +457,9 @@ inline consensus logos. This keeps motif discovery reproducible while relying
 on established motif-discovery algorithms.
 The workflow can be used alone to discover recurring patterns in candidate
 intervals, or after known-motif scanning to find additional motifs not represented
-in the selected database.
+in the selected database. In relation to TOBIAS, this section evaluates an added
+motif-discovery handoff around the footprinting workflow, not a new
+center-versus-flank footprint scoring model.
 
 We therefore evaluated whether candidate-derived motifs add information beyond a fixed
 database using a 3-vs-3 public ENCODE K562 versus HepG2 ATAC-seq comparison~\cite{encode2012}.
@@ -558,8 +582,12 @@ pseudo-paired BAMs, run \texttt{atac-correct} with zero read shifting, score
 corrected footprint tracks, and optionally run motif-aware \texttt{diff-footprints}
 and aggregate plotting. Raw CPM cut-site tracks provide QC and chromatin-context
 signal alongside corrected footprint scores. These outputs were readable by the
-same aggregate-plotting code used for bulk ATAC data. This pseudobulk route is
-complementary to established single-cell chromatin-accessibility ecosystems such
+same aggregate-plotting code used for bulk ATAC data. This is the main practical
+extension beyond using TOBIAS directly on a prepared pseudobulk BAM or fragment
+track: \texttt{fp-tools} keeps barcode grouping, pseudobulk QC, correction,
+footprint scoring, motif-aware comparison, and aggregate plotting in one
+reproducible route. This pseudobulk route is complementary to established
+single-cell chromatin-accessibility ecosystems such
 as ArchR and Signac and to motif-activity baselines such as
 chromVAR~\cite{Granja2021_ArchR,Stuart2021_Signac,Schep2017_chromVAR}.
 
@@ -624,7 +652,7 @@ command line (Figure~\ref{fig:gui_interface}).
 
 \begin{figure}[!htb]
 \centering
-\includegraphics[width=0.56\textwidth]{figures/Fig5.pdf}
+\includegraphics[width=0.50\textwidth]{figures/Fig5.pdf}
 \caption{Representative local engineering comparison.
 (\textbf{A}) Runtime and (\textbf{B}) peak memory are summarized for one local
 workflow run comparing TOBIAS and \texttt{fp-tools} on the same analysis bundle.
@@ -653,6 +681,15 @@ interface consistency across bias correction, footprint calling, differential
 footprint analysis, and aggregate visualization; deterministic regression coverage; explicit
 handling of replicate-aware summaries; and integrated support for de novo motif preparation and pseudobulk aggregation using the same region, motif, and signal conventions
 (Table~\ref{tab:features}). Together, these properties address the fragmentation that often separates footprint scoring, motif interpretation, and report generation.
+The closest comparison is TOBIAS, which established a widely used integrated
+ATAC footprinting workflow for bias correction, footprint scoring, motif-aware
+differential analysis, and aggregate visualization. \texttt{fp-tools} does not
+claim a new Tn5 bias-correction model or a fundamentally different
+center-versus-flank footprint statistic. The improvement is instead at the
+platform layer: consistent modern command names, reusable YAML execution, report
+and SVG export, explicit replicate-reporting modes, de novo motif-preparation
+handoff, pseudobulk single-cell aggregation, GUI access, and regression-tested
+example outputs.
 
 \begin{table}[H]
 \caption{Qualitative scope comparison across widely used ATAC-seq regulatory-analysis tools.
@@ -660,6 +697,9 @@ handling of replicate-aware summaries; and integrated support for de novo motif 
 support; NA, outside the tool's primary scope. The table summarizes workflow
 scope from public documentation and primary publications; it is not a performance
 benchmark and should be read with the different goals of these tools in mind.
+TOBIAS is the closest core footprinting comparator; the \texttt{fp-tools}
+columns emphasize workflow extensions around that motif-centered model rather
+than a claim of superior footprint biology.
 \label{tab:features}}
 \begingroup
 \footnotesize
@@ -689,10 +729,9 @@ YAML/batch execution & \featureyes & NA & NA & NA & NA & NA\\
 
 Deep sequence-to-profile models such as ChromBPNet provide powerful
 sequence-driven occupancy and variant-effect analyses~\cite{chrombpnet2024}. Differential TF activity was also considered relative to orthogonal accessibility-based frameworks such as diffTF~\cite{Berest2019_diffTF}.
-\texttt{fp-tools} addresses a complementary need: a lightweight, auditable
-ATAC-seq footprinting workflow that uses a conventional motif-centered
-footprinting model while integrating footprint calling, motif discovery,
-differential analysis, and reporting within one reproducible ecosystem. The
+In this broader landscape, \texttt{fp-tools} is best viewed as a practical
+extension of motif-centered ATAC footprinting rather than a replacement for
+specialized single-cell, deep-learning, or occupancy-prediction methods. The
 replicate-aware summaries reported here use
 condition-level and replicate-level score variation to aid interpretation of
 differential footprint comparisons. The default distribution-comparison report is
