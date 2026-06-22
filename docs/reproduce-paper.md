@@ -70,7 +70,7 @@ OUT_DIR="$PWD/data/public/processed/encode_k562_hepg2_atac_replicates/fp_tools/d
   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes \
   --genome data/public/raw/genome/hg38.fa \
   --peaks data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_peaks.bed \
-  --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt \
+  --motif-db jaspar2026_vertebrates \
   --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered \
   --site-summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv \
   --tfs auto \
@@ -104,33 +104,51 @@ OUT_DIR="$PWD/data/public/processed/encode_k562_hepg2_atac_replicates/fp_tools/d
   --h5ad data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_annotated.h5ad \
   --tf-site-dir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
   --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo \
-  --markers PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2
+  --markers PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2 \
+  --all-motif-bindetect-dir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/bindetect \
+  --all-motif-results data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/bindetect/pseudobulk_bindetect_results.txt \
+  --max-sites-per-motif 200
 .venv/bin/python benchmarks/scripts/plot_pbmc5k_pseudobulk_markers.py \
   --annotations data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv \
   --aggregate-screen data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/pseudobulk_footprint_aggregate_screen.tsv \
   --bindetect-results data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/bindetect/pseudobulk_bindetect_results.txt \
   --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo \
   --markers PAX5,EBF1,POU2F2,POU2AF1,BCL6,SPIB,CEBPB,CEBPA,TCF7,LEF1,ZBTB7B,RUNX3,GATA3
-cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_knn_footprint_signature_umap.pdf \
-  manuscript/figures/pbmc5k_knn_footprint_signature_umap.pdf
-cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_knn_footprint_signature_umap.png \
-  manuscript/figures/pbmc5k_knn_footprint_signature_umap.png
-cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_single_cell_footprinting_summary.pdf \
-  manuscript/figures/pbmc5k_single_cell_footprinting_summary.pdf
-cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_single_cell_footprinting_summary.png \
-  manuscript/figures/pbmc5k_single_cell_footprinting_summary.png
-cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_volcano_pairwise_directional_markers.pdf \
-  manuscript/figures/pbmc5k_volcano_pairwise_directional_markers.pdf
-cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_volcano_pairwise_directional_markers.png \
-  manuscript/figures/pbmc5k_volcano_pairwise_directional_markers.png
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_knn_footprint_signature_umap.svg \
+  manuscript/figures/pbmc5k_knn_footprint_signature_umap.svg
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_single_cell_footprinting_summary.svg \
+  manuscript/figures/pbmc5k_single_cell_footprinting_summary.svg
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_per_cell_footprint_signature_heatmap.svg \
+  manuscript/figures/pbmc5k_per_cell_footprint_signature_heatmap.svg
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_per_cell_footprint_signature_heatmap.tsv \
+  manuscript/figures/pbmc5k_per_cell_footprint_signature_heatmap.tsv
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_all_motif_per_cell_footprint_signature_heatmap.svg \
+  manuscript/figures/pbmc5k_all_motif_per_cell_footprint_signature_heatmap.svg
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_all_motif_per_cell_footprint_signature_heatmap.tsv \
+  manuscript/figures/pbmc5k_all_motif_per_cell_footprint_signature_heatmap.tsv
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_top_motif_per_cell_footprint_signature_heatmap.svg \
+  manuscript/figures/pbmc5k_top_motif_per_cell_footprint_signature_heatmap.svg
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/pbmc5k_top_motif_per_cell_footprint_signature_heatmap.tsv \
+  manuscript/figures/pbmc5k_top_motif_per_cell_footprint_signature_heatmap.tsv
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo/Fig4.svg \
+  manuscript/figures/Fig4.svg
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_volcano_pairwise_directional_markers.svg \
+  manuscript/figures/pbmc5k_volcano_pairwise_directional_markers.svg
 cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_volcano_pairwise_directional_markers.tsv \
   manuscript/figures/pbmc5k_volcano_pairwise_directional_markers.tsv
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_all_footprint_signature_heatmap.svg \
+  manuscript/figures/pbmc5k_all_footprint_signature_heatmap.svg
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_all_footprint_signature_heatmap.tsv \
+  manuscript/figures/pbmc5k_all_footprint_signature_heatmap.tsv
+cp data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo/pbmc5k_top_footprint_signature_heatmap.svg \
+  manuscript/figures/pbmc5k_top_footprint_signature_heatmap.svg
 ```
 
 After public-data outputs exist, regenerate the remaining manuscript figures with the scripts
 under `manuscript/scripts/` and compile the paper:
 
 ```bash
+.venv/bin/python manuscript/scripts/plot_fig5_engineering_gui.py
 make paper-pdf
 ```
 

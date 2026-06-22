@@ -2,7 +2,7 @@ version: 1
 run_mode: single
 samples:
   - sample_id: footprints_bcell
-    tool: FootprintScores
+    tool: call-footprints
     signal: test_data/Bcell_corrected.bw
     regions: test_data/merged_peaks.bed
     output: examples/gui_demo_outputs/footprintscores_single/Bcell_footprints.bw

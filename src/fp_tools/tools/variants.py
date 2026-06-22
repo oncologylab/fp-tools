@@ -7,6 +7,7 @@ import argparse
 import math
 import pickle
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -14,6 +15,7 @@ import pandas as pd
 
 from fp_tools.tools.motif_discovery import load_genome_fasta
 from fp_tools.tools.tfbs_model import MODEL_VERSION
+from fp_tools.utils.motif_databases import motif_db_table, resolve_motif_inputs
 
 
 @dataclass(frozen=True)
@@ -310,6 +312,7 @@ def score_variants(
     sequence_flank: int = 0,
     kmer_size: int = 3,
     motifs: list[str | Path] | None = None,
+    motif_db: str | None = None,
     motif_flank: int = 30,
     tfbs_model: str | Path | None = None,
 ) -> pd.DataFrame:
@@ -319,7 +322,7 @@ def score_variants(
     genome = load_genome_fasta(genome_fasta)
     intervals = read_score_intervals(candidate_scores)
     pwm_motifs: list[PwmMotif] = []
-    for motif_path in motifs or []:
+    for motif_path in resolve_motif_inputs(motifs, motif_db, use_default=False):
         pwm_motifs.extend(read_pwm_motifs(motif_path))
     model_bundle = None
     if tfbs_model is not None:
@@ -359,6 +362,10 @@ def score_variants(
 
 
 def main(argv: list[str] | None = None) -> int:
+    raw_args = sys.argv[1:] if argv is None else argv
+    if "--list-motif-dbs" in raw_args:
+        print(motif_db_table())
+        return 0
     parser = argparse.ArgumentParser(description="Annotate variants with genome allele checks and footprint/candidate overlaps.")
     parser.add_argument("--variants", required=True, help="BED-like variants: chrom start end name ref alt.")
     parser.add_argument("--genome", required=True, help="Genome FASTA, optionally gzipped.")
@@ -367,6 +374,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sequence-flank", type=int, default=0, help="Flanking bases on each side for ref/alt sequence-context delta features.")
     parser.add_argument("--kmer-size", type=int, default=3, help="K-mer size for exact ref/alt disruption features.")
     parser.add_argument("--motifs", nargs="*", default=[], help="Optional JASPAR/MEME motif files for best ref/alt PWM delta scoring.")
+    parser.add_argument("--motif-db", help="Optional built-in motif database for best ref/alt PWM delta scoring; can be combined with --motifs.")
+    parser.add_argument("--list-motif-dbs", action="store_true", help="List available built-in motif databases and exit.")
     parser.add_argument("--motif-flank", type=int, default=30, help="Flanking bases on each side for motif ref/alt delta scoring.")
     parser.add_argument("--tfbs-model", help="Optional fp-tools tabular TFBS model pickle for ref/alt probability deltas.")
     args = parser.parse_args(argv)
@@ -379,6 +388,7 @@ def main(argv: list[str] | None = None) -> int:
         sequence_flank=args.sequence_flank,
         kmer_size=args.kmer_size,
         motifs=args.motifs,
+        motif_db=args.motif_db,
         motif_flank=args.motif_flank,
         tfbs_model=args.tfbs_model,
     )

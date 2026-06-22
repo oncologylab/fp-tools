@@ -1,0 +1,3 @@
+panel	metric	task	baseline_label	current_label	baseline_value	current_value	unit	direction	note
+A	Runtime	workflow	TOBIAS	fp-tools	30.3	16.7	min	lower	Local workflow runtime summary
+B	Peak memory	workflow	TOBIAS	fp-tools	4.8	2.7	GB	lower	Local workflow peak RSS summary

@@ -6,6 +6,7 @@ from fp_tools.tools.motif_discovery import (
     discovery_motif_text,
     export_candidate_fasta,
     meme_command,
+    motif_discovery_plan_main,
     parse_meme_txt,
     parse_tomtom_tsv,
     read_candidate_sites,
@@ -72,6 +73,30 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
         self.assertIn("tomtom", text)
         self.assertIn("motif-summary", text)
         self.assertTrue(text.startswith("#!/usr/bin/env bash"))
+
+    def test_motif_discovery_plan_accepts_builtin_known_motif_db(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            fasta = tmp / "sites.fa"
+            outdir = tmp / "motifs"
+            fasta.write_text(">site1\nACGT\n", encoding="utf-8")
+
+            code = motif_discovery_plan_main(
+                [
+                    "--fasta",
+                    str(fasta),
+                    "--outdir",
+                    str(outdir),
+                    "--known-motif-db",
+                    "jaspar2026",
+                ]
+            )
+            script = outdir / "run_motif_discovery.sh"
+            text = script.read_text(encoding="utf-8")
+
+        self.assertEqual(code, 0)
+        self.assertIn("tomtom", text)
+        self.assertIn("JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt", text)
 
     def test_write_streme_plan_uses_streme_txt(self):
         with tempfile.TemporaryDirectory() as tmpdir:

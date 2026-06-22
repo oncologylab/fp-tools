@@ -35,6 +35,9 @@ TOOL_ALIASES = {
     "plot-aggregate-batch": "plot-aggregate-batch",
     "run-workflow": "run-workflow",
     "motif-discovery": "motif-discovery",
+    "motif-summary": "motif-summary",
+    "fp-tools-score-variants": "fp-tools-score-variants",
+    "score-variants": "fp-tools-score-variants",
     "pseudobulk-fragments": "pseudobulk-fragments",
     "pseudobulk-footprints": "pseudobulk-footprints",
 }
@@ -57,17 +60,22 @@ LIST_FLAGS = {
     "regions",
     "bigwigs",
     "motifs",
+    "input_html",
+    "known_motifs",
+    "read_shift",
 }
 
 REQUIRED_FIELDS = {
     "atac-correct": ("bam", "genome", "peaks"),
     "call-footprints": ("signal", "regions", "output"),
-    "match-motifs": ("motifs", "signals", "genome", "peaks"),
-    "diff-footprints": ("motifs", "signals", "genome", "peaks"),
+    "match-motifs": ("signals", "genome", "peaks"),
+    "diff-footprints": ("signals", "genome", "peaks"),
     "normalize-bigwig": ("bigwigs", "background", "outdir"),
     "plot-aggregate": ("TFBS", "signals", "output"),
     "plot-aggregate-batch": ("manifest", "output"),
     "motif-discovery": ("outdir",),
+    "motif-summary": ("out_tsv",),
+    "fp-tools-score-variants": ("variants", "genome", "out"),
     "pseudobulk-fragments": ("fragments", "annotations", "group_by", "outdir"),
     "pseudobulk-footprints": ("annotations", "group_by", "outdir", "genome", "peaks"),
 }
@@ -81,6 +89,34 @@ FLAG_NAME_MAP = {
     "output_aggregated_scores": "--output_aggregated_scores",
     "output_aggregated_stats": "--output_aggregated_stats",
     "normalization": "--normalization",
+    "motif_db": "--motif-db",
+    "known_motif_db": "--known-motif-db",
+    "meme_txt": "--meme-txt",
+    "tomtom_tsv": "--tomtom-tsv",
+    "out_tsv": "--out-tsv",
+    "out_html": "--out-html",
+    "candidate_scores": "--candidate-scores",
+    "sequence_flank": "--sequence-flank",
+    "kmer_size": "--kmer-size",
+    "motif_flank": "--motif-flank",
+    "tfbs_model": "--tfbs-model",
+    "input_html": "--input-html",
+    "default_layout": "--default-layout",
+    "chrom_sizes": "--chrom-sizes",
+    "genome_sizes": "--genome-sizes",
+    "group_by": "--group-by",
+    "barcode_column": "--barcode-column",
+    "include_chroms": "--include-chroms",
+    "exclude_chroms": "--exclude-chroms",
+    "min_cells": "--min-cells",
+    "min_fragments": "--min-fragments",
+    "write_cutsite_bigwigs": "--write-cutsite-bigwigs",
+    "write_pseudo_bams": "--write-pseudo-bams",
+    "index_output": "--index-output",
+    "compress_output": "--compress-output",
+    "write_downstream_commands": "--write-downstream-commands",
+    "bam_barcode_tag": "--bam-barcode-tag",
+    "read_shift": "--read-shift",
     "normalization_comparison_output": "--normalization-comparison-output",
     "replicate_report": "--replicate-report",
     "replicate_map": "--replicate-map",
@@ -274,6 +310,18 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
                         errors.append(f"{job_name}: missing required field '{field}'")
                 elif str(value or "").strip() == "":
                     errors.append(f"{job_name}: missing required field '{field}'")
+            if tool == "plot-aggregate-batch" and not str(item.get("manifest") or "").strip():
+                input_html = item.get("input_html") or item.get("input-html") or []
+                if not isinstance(input_html, list):
+                    input_html = [input_html]
+                if [value for value in input_html if str(value).strip()]:
+                    errors = [error for error in errors if error != f"{job_name}: missing required field 'manifest'"]
+            if tool == "motif-discovery":
+                if not str(item.get("fasta") or "").strip() and not str(item.get("candidates") or "").strip():
+                    errors.append(f"{job_name}: provide either 'fasta' or 'candidates'")
+            if tool == "pseudobulk-footprints":
+                if not str(item.get("fragments") or "").strip() and not str(item.get("bam") or "").strip():
+                    errors.append(f"{job_name}: provide either 'fragments' or 'bam'")
 
     return errors
 

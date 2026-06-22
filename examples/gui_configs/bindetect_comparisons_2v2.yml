@@ -3,7 +3,7 @@ run_mode: batch
 samples: []
 comparisons:
   - comparison_id: bcell_vs_tcell_demo
-    tool: BINDetect
+    tool: diff-footprints
     motifs: test_data/motifs.jaspar
     signals:
       - test_data/demo_Bcell_rep1_footprints.bw

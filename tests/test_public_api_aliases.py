@@ -24,6 +24,7 @@ class PublicApiAliasesTest(unittest.TestCase):
             "fp-tools-gui": "fp_tools.cli_gui:main",
             "motif-discovery": "fp_tools.tools.motif_discovery:motif_discovery_plan_main",
             "motif-summary": "fp_tools.tools.motif_discovery:motif_report_main",
+            "fp-tools-score-variants": "fp_tools.tools.variants:main",
             "pseudobulk-fragments": "fp_tools.tools.pseudobulk:main",
             "pseudobulk-footprints": "fp_tools.tools.pseudobulk_footprints:main",
             "ATACorrect": "fp_tools.cli:main",
@@ -49,6 +50,9 @@ class PublicApiAliasesTest(unittest.TestCase):
             "BINDetect": "diff-footprints",
             "plot-aggregate": "plot-aggregate",
             "PlotAggregate": "plot-aggregate",
+            "motif-summary": "motif-summary",
+            "fp-tools-score-variants": "fp-tools-score-variants",
+            "score-variants": "fp-tools-score-variants",
             "pseudobulk-fragments": "pseudobulk-fragments",
             "pseudobulk-footprints": "pseudobulk-footprints",
         }

@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 612 792">
+  <!-- Generator: Adobe Illustrator 30.1.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 136)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #e33d2f;
+      }
+
+      .st0, .st1, .st2, .st3, .st4, .st6, .st7, .st8 {
+        font-family: Arial-BoldMT, Arial;
+        font-size: 9px;
+        font-weight: 700;
+        isolation: isolate;
+      }
+
+      .st9 {
+        stroke-miterlimit: 2.48;
+        stroke-width: .54px;
+      }
+
+      .st9, .st10, .st11, .st12, .st13, .st14, .st15, .st16, .st17, .st18, .st19 {
+        stroke: #0b4fb3;
+      }
+
+      .st9, .st20, .st11, .st12, .st21, .st14, .st16, .st22, .st19 {
+        fill: none;
+      }
+
+      .st10, .st12 {
+        stroke-miterlimit: 3.4;
+        stroke-width: .81px;
+      }
+
+      .st10, .st23, .st4, .st13, .st17, .st18 {
+        fill: #0b4fb3;
+      }
+
+      .st1 {
+        fill: #231f20;
+      }
+
+      .st20, .st24, .st21, .st25, .st26 {
+        stroke: #0b6b1a;
+      }
+
+      .st20, .st25 {
+        stroke-width: .43px;
+      }
+
+      .st11, .st21, .st13, .st22 {
+        stroke-width: .43px;
+      }
+
+      .st24 {
+        stroke-width: .47px;
+      }
+
+      .st24, .st27, .st6, .st25, .st26 {
+        fill: #fff;
+      }
+
+      .st2 {
+        fill: #111;
+      }
+
+      .st3 {
+        fill: #f0a000;
+      }
+
+      .st27 {
+        stroke: #2a3b57;
+        stroke-width: .52px;
+      }
+
+      .st14 {
+        stroke-dasharray: 2.16 1.73;
+        stroke-width: .78px;
+      }
+
+      .st15 {
+        fill: #edf4ff;
+        stroke-width: 1px;
+      }
+
+      .st15, .st17 {
+        stroke-miterlimit: 4.2;
+      }
+
+      .st16 {
+        stroke-width: .86px;
+      }
+
+      .st17 {
+        stroke-width: .45px;
+      }
+
+      .st7 {
+        fill: #1a8e33;
+      }
+
+      .st22 {
+        stroke: #204fb8;
+        stroke-miterlimit: 10;
+      }
+
+      .st25 {
+        stroke-dasharray: 1.44 1.08;
+      }
+
+      .st26 {
+        stroke-width: .43px;
+      }
+
+      .st28 {
+        fill: #0b6b1a;
+      }
+
+      .st29 {
+        fill: #204fb8;
+      }
+
+      .st8 {
+        fill: #1f77b4;
+      }
+
+      .st30 {
+        fill: none;
+        stroke: #0b6b1a;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.1px;
+      }
+
+      .st31 {
+        fill: #0b6b1a;
+      }
+
+      .st32 {
+        fill: none;
+        stroke: #204fb8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.1px;
+      }
+
+      .st33 {
+        fill: #204fb8;
+      }
+
+      .st18, .st19 {
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.05px;
+      }
+    </style>
+  </defs>
+  <rect class="st27" x="49.38" y="56.11" width="137.38" height="55.3" rx="8" ry="8"/>
+  <text class="st6" transform="translate(58.14 68.64)"><tspan x="0" y="0">1</tspan></text>
+  <g>
+    <path class="st12" d="M76.01,67.35h12.12l5.14,5.14v19.83h-17.26v-24.97Z"/>
+    <path class="st12" d="M88.13,67.35v5.14h5.14"/>
+    <rect class="st10" x="74.17" y="79.83" width="16.89" height="9.91" rx="2.55" ry="2.55"/>
+  </g>
+  <text class="st6" transform="translate(76.35 86.81)"><tspan x="0" y="0">BAM</tspan></text>
+  <text class="st2" transform="translate(107.26 78.58)"><tspan x="0" y="0">Bulk ATAC-seq</tspan></text>
+  <text class="st2" transform="translate(107.26 93.27)"><tspan x="0" y="0">BAM / fragments</tspan></text>
+  <rect class="st27" x="215.7" y="56.11" width="162.43" height="55.3" rx="8" ry="8"/>
+  <g>
+    <circle class="st15" cx="247.75" cy="72.79" r="5.44"/>
+    <circle class="st17" cx="247.75" cy="72.79" r="2.99"/>
+    <circle class="st15" cx="241.4" cy="81.86" r="5.44"/>
+    <circle class="st17" cx="241.4" cy="81.86" r="2.99"/>
+    <circle class="st15" cx="254.1" cy="81.86" r="5.44"/>
+    <circle class="st17" cx="254.1" cy="81.86" r="2.99"/>
+    <circle class="st15" cx="247.75" cy="90.93" r="5.44"/>
+    <circle class="st17" cx="247.75" cy="90.93" r="2.99"/>
+    <circle class="st15" cx="247.75" cy="81.86" r="4.08"/>
+    <circle class="st17" cx="247.75" cy="81.86" r="2.25"/>
+  </g>
+  <text class="st2" transform="translate(271.43 78.58)"><tspan x="0" y="0">Single-cell ATAC</tspan></text>
+  <text class="st2" transform="translate(271.43 93.27)"><tspan x="0" y="0">fragments + annotations</tspan></text>
+  <rect class="st27" x="217.85" y="133.11" width="159.84" height="55.3" rx="8" ry="8"/>
+  <g>
+    <circle class="st18" cx="235.56" cy="142.53" r=".86"/>
+    <circle class="st18" cx="241.79" cy="142.53" r=".86"/>
+    <circle class="st18" cx="248.01" cy="142.53" r=".86"/>
+    <circle class="st18" cx="238.67" cy="147.97" r=".86"/>
+    <circle class="st18" cx="244.9" cy="147.97" r=".86"/>
+    <circle class="st18" cx="241.79" cy="152.64" r=".86"/>
+    <path class="st19" d="M232.45,157.3h19.44l-6.61,7v7.78h-6.22v-7.78l-6.61-7Z"/>
+  </g>
+  <text class="st2" transform="translate(267.1 150.39)"><tspan x="0" y="0">Pseudobulking by Cell</tspan><tspan x="0" y="10.8">Type </tspan></text>
+  <g>
+    <circle class="st7" cx="276.3" cy="173.74" r="2.75"/>
+    <circle class="st7" cx="282.1" cy="173.74" r="2.75"/>
+    <circle class="st7" cx="279.2" cy="168.82" r="2.75"/>
+    <text class="st2" transform="translate(270.6 183.08)"><tspan x="0" y="0">B cell</tspan></text>
+    <circle class="st8" cx="316.4" cy="173.74" r="2.75"/>
+    <circle class="st8" cx="322.2" cy="173.74" r="2.75"/>
+    <circle class="st8" cx="319.3" cy="168.82" r="2.75"/>
+    <text class="st2" transform="translate(309.9 183.08)"><tspan x="0" y="0">T/NK</tspan></text>
+    <circle class="st3" cx="354.7" cy="173.74" r="2.75"/>
+    <circle class="st3" cx="360.5" cy="173.74" r="2.75"/>
+    <circle class="st3" cx="357.6" cy="168.82" r="2.75"/>
+    <text class="st2" transform="translate(348.8 183.08)"><tspan x="0" y="0">Mono</tspan></text>
+  </g>
+  <g id="workflow-arrows">
+    <path class="st30" d="M118.07,111.41v14.09"/>
+    <path class="st31" d="M118.07,128.64l-3.2-5.3h6.4l-3.2,5.3Z"/>
+    <path class="st30" d="M296.92,111.41v18.52"/>
+    <path class="st31" d="M296.92,133.07l-3.2-5.3h6.4l-3.2,5.3Z"/>
+    <path class="st30" d="M217.85,160.76h-29.34"/>
+    <path class="st31" d="M185.37,160.76l5.3-3.2v6.4l-5.3-3.2Z"/>
+    <path class="st30" d="M377.69,160.76h31.5v225.78h-9.15"/>
+    <path class="st31" d="M396.9,386.54l5.3-3.2v6.4l-5.3-3.2Z"/>
+    <path class="st30" d="M121.82,188.64v3.04h19.77"/>
+    <path class="st31" d="M144.73,191.68l-5.3-3.2v6.4l5.3-3.2Z"/>
+    <path class="st30" d="M188.0,254.33v6.2h-68.67v1.66"/>
+    <path class="st31" d="M119.33,265.33l-3.2-5.3h6.4l-3.2,5.3Z"/>
+    <path class="st30" d="M234.0,254.33v9.15h39.97v4.96"/>
+    <path class="st31" d="M273.97,271.58l-3.2-5.3h6.4l-3.2,5.3Z"/>
+    <path class="st30" d="M119.33,325.34v17.08"/>
+    <path class="st31" d="M119.33,345.56l-3.2-5.3h6.4l-3.2,5.3Z"/>
+    <path class="st32" d="M283.12,318.26v17.2h-77.42v6.96"/>
+    <path class="st33" d="M205.7,345.56l-3.2-5.3h6.4l-3.2,5.3Z"/>
+    <path class="st30" d="M218.97,385.56h18.53"/>
+    <path class="st31" d="M240.64,385.56l-5.3-3.2v6.4l5.3-3.2Z"/>
+  </g>
+  <rect class="st26" x="61.82" y="128.64" width="120" height="60" rx="8" ry="8"/>
+  <circle class="st28" cx="75.3" cy="138.37" r="9.07"/>
+  <text class="st6" transform="translate(72.42 142.26)"><tspan x="0" y="0">1</tspan></text>
+  <rect class="st28" x="102.49" y="153.34" width="1.77" height="3.89"/>
+  <rect class="st28" x="105.55" y="146.86" width="1.77" height="10.37"/>
+  <rect class="st28" x="108.62" y="151.4" width="1.77" height="5.83"/>
+  <rect class="st28" x="111.69" y="139.43" width="1.77" height="17.8"/>
+  <rect class="st28" x="114.76" y="149.11" width="1.77" height="8.12"/>
+  <rect class="st28" x="117.82" y="137.14" width="1.77" height="20.09"/>
+  <rect class="st28" x="120.85" y="144.92" width="1.77" height="12.31"/>
+  <rect class="st28" x="123.91" y="134.55" width="1.77" height="22.68"/>
+  <rect class="st28" x="126.98" y="148.16" width="1.77" height="9.07"/>
+  <rect class="st28" x="130.05" y="141.03" width="1.77" height="16.2"/>
+  <rect class="st28" x="133.12" y="143.49" width="1.77" height="14.6"/>
+  <line class="st21" x1="102.49" y1="158.1" x2="136.18" y2="158.1"/>
+  <text class="st2" transform="translate(81.32 176.1)"><tspan x="0" y="0">Tn5 bias &amp; signal </tspan><tspan x="0" y="10.8">to noise correction</tspan></text>
+  <text class="st1" transform="translate(89.82 166.54)"><tspan x="0" y="0">atac-correct</tspan></text>
+  <rect class="st24" x="144.73" y="194.33" width="120" height="60" rx="8" ry="8"/>
+  <circle class="st28" cx="160.41" cy="209.47" r="9.07"/>
+  <text class="st6" transform="translate(157.53 213.36)"><tspan x="0" y="0">2</tspan></text>
+  <g>
+    <ellipse class="st28" cx="199.23" cy="217.56" rx="3.3" ry="6.61" transform="translate(-57.48 72.21) rotate(-18)"/>
+    <circle class="st28" cx="195.19" cy="208.75" r="1.1"/>
+    <circle class="st28" cx="198.12" cy="207.28" r="1.1"/>
+    <circle class="st28" cx="201.06" cy="207.65" r="1.1"/>
+    <circle class="st28" cx="203.63" cy="209.85" r="1.1"/>
+    <circle class="st28" cx="204.73" cy="213.16" r="1.1"/>
+    <ellipse class="st28" cx="212.81" cy="216.83" rx="6.61" ry="3.3" transform="translate(-67.95 332.92) rotate(-68)"/>
+    <circle class="st28" cx="208.41" cy="207.65" r="1.1"/>
+    <circle class="st28" cx="211.34" cy="206.55" r="1.1"/>
+    <circle class="st28" cx="214.65" cy="207.28" r="1.1"/>
+    <circle class="st28" cx="217.59" cy="209.48" r="1.1"/>
+    <circle class="st28" cx="218.32" cy="213.16" r="1.1"/>
+  </g>
+  <text class="st1" transform="translate(174.88 237.78)"><tspan x="0" y="0">call-footprints</tspan></text>
+  <rect class="st20" x="52.65" y="345.56" width="166.32" height="80" rx="8" ry="8"/>
+  <circle class="st28" cx="70.87" cy="362.24" r="6.05"/>
+  <text class="st6" transform="translate(68.95 364.83)"><tspan x="0" y="0">4</tspan></text>
+  <g>
+    <circle class="st28" cx="87.11" cy="365.28" r="2.97"/>
+    <circle class="st28" cx="93.06" cy="365.28" r="2.97"/>
+    <circle class="st28" cx="90.09" cy="360.08" r="2.97"/>
+    <rect class="st28" x="83.4" y="368.25" width="13.37" height="4.83" rx="1.68" ry="1.68"/>
+  </g>
+  <text class="st2" transform="translate(99.33 369.74)"><tspan x="0" y="0">vs.</tspan></text>
+  <g>
+    <circle class="st23" cx="116.84" cy="365.28" r="2.97"/>
+    <circle class="st23" cx="122.78" cy="365.28" r="2.97"/>
+    <circle class="st23" cx="119.81" cy="360.08" r="2.97"/>
+    <rect class="st23" x="113.12" y="368.25" width="13.37" height="4.83" rx="1.68" ry="1.68"/>
+  </g>
+  <text class="st1" transform="translate(72.92 392.91)"><tspan x="0" y="0">diff-footprints</tspan></text>
+  <rect class="st25" x="240.64" y="347.85" width="75.6" height="80" rx="8" ry="8"/>
+  <circle class="st28" cx="247.37" cy="350.1" r="6.05"/>
+  <text class="st6" transform="translate(245.45 352.69)"><tspan x="0" y="0">5</tspan></text>
+  <text class="st1" transform="translate(245.75 400.63)"><tspan x="0" y="0">plot-aggregate</tspan></text>
+  <rect class="st14" x="227.75" y="271.67" width="110.74" height="46.59" rx="8" ry="8"/>
+  <g>
+    <path class="st9" d="M235.18,281.37h9.11l3.48,3.48v14.2h-12.59v-17.68Z"/>
+    <path class="st9" d="M244.29,281.37v3.48h3.48"/>
+    <line class="st9" x1="237.86" y1="288.06" x2="245.36" y2="288.06"/>
+    <line class="st9" x1="237.86" y1="291.01" x2="245.36" y2="291.01"/>
+    <line class="st9" x1="237.86" y1="293.96" x2="245.36" y2="293.96"/>
+  </g>
+  <text class="st4" transform="translate(234.33 279.64)"><tspan x="0" y="0">FASTA</tspan></text>
+  <text class="st4" transform="translate(274.12 286.21)"><tspan x="0" y="0">De novo motif</tspan></text>
+  <text class="st4" transform="translate(270.4 293.98)"><tspan x="0" y="0">discovery prep.</tspan></text>
+  <text class="st2" transform="translate(174.9 248.35)"><tspan x="0" y="0">Identify &amp; score FPs</tspan></text>
+  <rect class="st24" x="59.33" y="265.34" width="120" height="60" rx="8" ry="8"/>
+  <circle class="st28" cx="73.82" cy="274.41" r="9.07"/>
+  <text class="st6" transform="translate(68.94 278.3)"><tspan x="0" y="0">3a</tspan></text>
+  <text class="st7" transform="translate(103.92 286.2)"><tspan x="0" y="0">A</tspan></text>
+  <text class="st8" transform="translate(112.14 286.2)"><tspan x="0" y="0">C</tspan></text>
+  <text class="st3" transform="translate(120.37 286.2)"><tspan x="0" y="0">G</tspan></text>
+  <text class="st0" transform="translate(128.59 286.2)"><tspan x="0" y="0">T</tspan></text>
+  <line class="st16" x1="103.92" y1="288.55" x2="135.64" y2="288.55"/>
+  <text class="st1" transform="translate(92.61 303.29)"><tspan x="0" y="0">match-motifs</tspan></text>
+  <text class="st2" transform="translate(67.09 316.35)"><tspan x="0" y="0">JASPAR / HOCOMOCO</tspan></text>
+  <text class="st2" transform="translate(262.8 307)"><tspan x="0" y="0">MEME / DREME</tspan><tspan x="12.4" y="9">STREME</tspan></text>
+  <text class="st2" transform="translate(67.04 408.89)"><tspan x="0" y="0">Replicate-aware</tspan><tspan x="-3.5" y="10.8">differential analysis</tspan></text>
+  <rect class="st25" x="150.4" y="357.9" width="56.2" height="42.6" rx="6" ry="6"/>
+  <rect class="st25" x="321.27" y="346.54" width="75.6" height="80" rx="8" ry="8"/>
+  <circle class="st28" cx="328" cy="348.78" r="6.05"/>
+  <text class="st6" transform="translate(326.07 351.38)"><tspan x="0" y="0">5</tspan></text>
+  <text class="st1" transform="translate(328.52 393.62)"><tspan x="0" y="0">pseudobulk</tspan><tspan x="0" y="10.8">footprints</tspan></text>
+  <text class="st2" transform="translate(268.69 358.45)"><tspan x="0" y="0">Bulk</tspan></text>
+  <text class="st2" transform="translate(280.63 390.14)"><tspan x="0" y="0">Bulk</tspan></text>
+  <text class="st2" transform="translate(336.06 356.53)"><tspan x="0" y="0">Single Cell</tspan></text>
+</svg>

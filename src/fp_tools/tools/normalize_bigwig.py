@@ -186,6 +186,20 @@ def _output_path(input_bigwig: str | Path, outdir: Path, method: str, stat: str)
     return outdir / f"{_safe_stem(input_bigwig)}.{suffix}.bw"
 
 
+def corrected_scaled_output_path(input_bigwig: str | Path, outdir: str | Path | None = None) -> Path:
+    """Return the standard q95-scaled corrected-track path for an input bigWig."""
+    path = Path(input_bigwig)
+    parent = Path(outdir).expanduser() if outdir is not None else path.parent
+    name = path.name
+    for suffix in (".bigWig", ".bigwig", ".bw"):
+        if name.endswith(suffix):
+            stem = name[: -len(suffix)]
+            break
+    else:
+        stem = path.stem
+    return parent / f"{stem}_scaled.bw"
+
+
 def _transform_values(values: np.ndarray, method: str, stats: dict[str, float]) -> np.ndarray:
     values = np.nan_to_num(values.astype(float, copy=False), nan=0.0, posinf=0.0, neginf=0.0)
     if method == "none":
@@ -241,18 +255,22 @@ def normalize_bigwigs(
     chrom_sizes: str | Path | None = None,
     warn_scale_low: float = 0.5,
     warn_scale_high: float = 2.0,
+    output_paths: list[str | Path] | None = None,
 ) -> list[BackgroundStats]:
     if not bigwigs:
         raise ValueError("--bigwigs requires at least one input bigWig")
     outdir_path = Path(outdir).expanduser()
     outdir_path.mkdir(parents=True, exist_ok=True)
+    if output_paths is not None and len(output_paths) != len(bigwigs):
+        raise ValueError("output_paths must have the same length as bigwigs")
     background_regions = _read_background(background)
     chrom_size_dict = _read_chrom_sizes(chrom_sizes) if chrom_sizes else None
     fitted = _fit_background_stats(bigwigs, background_regions, method, stat, target)
 
     rows: list[BackgroundStats] = []
     for bigwig, stats in zip(bigwigs, fitted):
-        output = _output_path(bigwig, outdir_path, method, stat)
+        output = Path(output_paths[len(rows)]).expanduser() if output_paths is not None else _output_path(bigwig, outdir_path, method, stat)
+        output.parent.mkdir(parents=True, exist_ok=True)
         _write_normalized_bigwig(bigwig, output, method, stats, chrom_size_dict)
         scale = stats["scale_factor"]
         if method == "background-scale" and (scale < warn_scale_low or scale > warn_scale_high):

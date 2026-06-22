@@ -14,6 +14,7 @@ from pathlib import Path
 import pandas as pd
 
 from fp_tools.tools.pseudobulk import _parse_chrom_list, _truthy, group_bam_by_tag, group_fragments
+from fp_tools.utils.motif_databases import motif_db_table, resolve_motif_inputs
 
 
 def _split_csv(value: str | None) -> list[str]:
@@ -288,15 +289,14 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
 
     output_manifest = pd.DataFrame(rows)
     runnable_mask = output_manifest["status"].isin(["succeeded", "dry_run"])
-    if args.motifs and runnable_mask.any():
+    motif_inputs = resolve_motif_inputs(args.motifs, args.motif_db, use_default=False)
+    if motif_inputs and runnable_mask.any():
         bindetect_results = bindetect_dir / f"{args.bindetect_prefix}_results.txt"
         output_manifest.loc[runnable_mask, "bindetect_outdir"] = str(bindetect_dir)
         output_manifest.loc[runnable_mask, "bindetect_results"] = str(bindetect_results)
         signal_rows = output_manifest.loc[runnable_mask]
         bindetect_command = [
             "diff-footprints",
-            "--motifs",
-            *[str(path) for path in args.motifs],
             "--signals",
             *signal_rows["footprint_bigwig"].astype(str).tolist(),
             "--aggregate-signals",
@@ -318,6 +318,10 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
             "--cores",
             str(args.cores),
         ]
+        if args.motif_db:
+            bindetect_command.extend(["--motif-db", str(args.motif_db)])
+        if args.motifs:
+            bindetect_command.extend(["--motifs", *[str(path) for path in args.motifs]])
         if args.peak_header:
             bindetect_command.extend(["--peak-header", str(args.peak_header)])
         if args.skip_excel:
@@ -398,9 +402,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--top-n", type=int, default=None, help="Optional top N candidate footprints per group.")
     parser.add_argument("--read-shift", nargs=2, type=int, metavar=("FWD", "REV"), help="Override ATACorrect read shift; default is 0 0 for fragment pseudo-BAMs and 4 -5 for tagged BAM input.")
     parser.add_argument("--motifs", nargs="*", help="Optional motif file(s); when provided, run motif-aware diff-footprints on pseudobulk footprint tracks.")
+    parser.add_argument("--motif-db", help="Optional built-in motif database for motif-aware diff-footprints; can be combined with --motifs.")
+    parser.add_argument("--list-motif-dbs", action="store_true", help="List available built-in motif databases and exit.")
     parser.add_argument("--peak-header", help="Optional peak-header file passed to diff-footprints.")
     parser.add_argument("--bindetect-prefix", default="pseudobulk_bindetect", help="Prefix for optional motif-aware diff-footprints outputs.")
-    parser.add_argument("--bindetect-normalization", choices=["condition-quantile", "sample-quantile", "none"], default="sample-quantile", help="Normalization mode for optional motif-aware diff-footprints outputs.")
+    parser.add_argument("--bindetect-normalization", choices=["condition-quantile", "sample-quantile", "none"], default="none", help="Normalization mode for optional motif-aware diff-footprints outputs (default: none).")
     parser.add_argument("--bindetect-plot-aggregate", choices=["sig", "all", "top", "off"], default="top", help="Aggregate plot selection for optional motif-aware diff-footprints HTML/PDF outputs.")
     parser.add_argument("--skip-excel", action=argparse.BooleanOptionalAction, default=True, help="Skip Excel files for optional diff-footprints outputs (default: on).")
     parser.add_argument("--tf-site-dir", help="Optional motif-centered BED directory to plot corrected footprint aggregates.")
@@ -417,6 +423,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    raw_args = sys.argv[1:] if argv is None else argv
+    if "--list-motif-dbs" in raw_args:
+        print(motif_db_table())
+        return 0
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.force and args.resume:

@@ -36,6 +36,11 @@ def add_atacorrect_arguments(parser):
 	optargs.add_argument('--split-strands', help="Write out tracks per strand", action="store_true")
 	optargs.add_argument('--norm-off', help="Switches off normalization based on number of reads", action='store_true')
 	optargs.add_argument('--track-off', metavar="<track>", help="Switch off writing of individual .bigwig-tracks (uncorrected/bias/expected/corrected)", nargs="*", choices=["uncorrected", "bias", "expected", "corrected"], default=[])
+	optargs.add_argument('--scale-corrected', choices=["auto", "none", "q95"], default="auto", help="Optionally q95-scale corrected bigWigs after correction. In auto mode this runs only when --scale-corrected-bigwigs has more than one track (default: auto)")
+	optargs.add_argument('--scale-background', metavar="<bed>", help="Shared BED regions used to estimate q95 scaling for --scale-corrected")
+	optargs.add_argument('--scale-corrected-bigwigs', metavar="<bigwig>", nargs="*", help="Corrected bigWigs to q95-scale together. Include the current sample's corrected bigWig or omit to scale only the current output")
+	optargs.add_argument('--scale-target', choices=["median", "mean"], default="median", help="Across-sample q95 target for --scale-corrected (default: median)")
+	optargs.add_argument('--scale-chrom-sizes', metavar="<chrom.sizes>", help="Optional chromosome sizes file for scaled bigWig output validation")
 	optargs.add_argument('--drop-chroms', metavar="<chrom>", help="Drop any chromosomes in the list from the correction. The default is to drop the mitochrondrial chromosome. Default: ['chrM', 'chrMT', 'M', 'MT', 'Mito']", nargs="*", default=['chrM', 'chrMT', 'M', "MT", "Mito"])
 
 	optargs = parser.add_argument_group('Advanced ATACorrect arguments (no need to touch)')
@@ -116,7 +121,7 @@ def add_bindetect_arguments(parser):
 	description = "diff-footprints takes motifs, footprint signals, and genome sequence as input to infer motif-associated bound sites and compare footprint evidence across conditions. "
 	description += "The underlying method is a modified motif enrichment test to see which motifs have the largest differences in signal across input conditions. "
 	description += "The output is an in-depth overview of global changes as well as the individual binding site signal-differences.\n\n"
-	description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --motifs <motifs.txt> --genome <genome.fasta> --peaks <peaks.bed>\n\n"
+	description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
 	description += "Output files:\n- <outdir>/<prefix>_figures.pdf\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n"
 	description += "- <outdir>/<TF>/<TF>_overview.{txt,xlsx} (per motif)\n- <outdir>/<TF>/beds/<TF>_all.bed (per motif)\n"
 	description += "- <outdir>/<TF>/beds/<TF>_<condition>_bound.bed (per motif-condition pair)\n- <outdir>/<TF>/beds/<TF>_<condition>_unbound.bed (per motif-condition pair)\n\n"
@@ -127,10 +132,12 @@ def add_bindetect_arguments(parser):
 	required = parser.add_argument_group('Required arguments')
 	required.add_argument('--signals', metavar="<bigwig>", help="Signal per condition (.bigwig format)", nargs="*")
 	required.add_argument('--peaks', metavar="<bed>", help="Peaks.bed containing open chromatin regions across all conditions")
-	required.add_argument('--motifs', metavar="<motifs>", help="Motif file(s) in pfm/jaspar/meme/transfac format", nargs="*")
 	required.add_argument('--genome', metavar="<fasta>", help="Genome .fasta file")
 
 	optargs = parser.add_argument_group('Optional arguments')
+	optargs.add_argument('--motifs', metavar="<motifs>", help="Motif file(s) in pfm/jaspar/meme/transfac format; if omitted, the built-in JASPAR 2026 vertebrates set is used", nargs="*")
+	optargs.add_argument('--motif-db', metavar="<name>", help="Built-in motif database to use or add to --motifs (default when --motifs is omitted: jaspar2026_vertebrates)")
+	optargs.add_argument('--list-motif-dbs', action='store_true', help="List available built-in motif databases and exit")
 	optargs.add_argument('--cond-names', metavar="<name>", nargs="*", help="Names of conditions fitting to --signals (default: prefix of --signals)")
 	optargs.add_argument('--peak-header', metavar="<file>", help="File containing the header of --peaks separated by whitespace or newlines (default: peak columns are named \"_additional_<count>\")")
 	optargs.add_argument('--naming', metavar="<string>", help="Naming convention for TF output files ('id', 'name', 'name_id', 'id_name') (default: 'name_id')", choices=["id", "name", "name_id", "id_name"], default="name_id")
@@ -148,16 +155,8 @@ def add_bindetect_arguments(parser):
 													 				This will limit all analysis to the regions in --output-peaks. 
 																	NOTE: --peaks must still be set to the full peak set!""")
 	optargs.add_argument('--norm-off', action='store_true', help="Turn off normalization of footprint scores across conditions")
-	optargs.add_argument('--normalization', choices=["condition-quantile", "sample-quantile", "none"], default="condition-quantile", help="Cross-sample normalization mode (default: condition-quantile; --norm-off maps to none)")
-	optargs.add_argument('--method', choices=["bindetect", "deseq2-cutcount", "footprint-score"], default="bindetect", help="Differential footprint backend: current BINDetect-style comparison, raw Tn5 cut-count DESeq2, or footprint-score empirical Bayes (default: bindetect)")
-	optargs.add_argument('--site-reference-dirs', metavar="<dir>", nargs="*", help="Existing match-motifs or diff-footprints output directories used as fixed motif-site reference for non-bindetect methods")
-	optargs.add_argument('--reference-site-set', choices=["bound-union", "all"], default="bound-union", help="Motif-site reference for non-bindetect methods: union of bound BEDs or all motif hits (default: bound-union)")
-	optargs.add_argument('--site-window', metavar="<bp>", type=int, default=100, help="Window size centered on motif-site midpoint for fixed-site quantification (default: 100)")
-	optargs.add_argument('--count-bams', metavar="<bam>", nargs="*", help="Raw coordinate-sorted ATAC BAMs for --method deseq2-cutcount")
-	optargs.add_argument('--score-signals', metavar="<bigwig>", nargs="*", help="Footprint-score bigWigs for --method footprint-score")
-	optargs.add_argument('--score-reference-dir', metavar="<dir>", help="Existing diff-footprints output directory whose *_all.bed sample score columns are used for fast --method footprint-score quantification")
-	optargs.add_argument('--read-shift', metavar="<int>", nargs=2, type=int, default=[4, -5], help="Forward and reverse Tn5 read shifts for raw cut counting (default: 4 -5)")
-	optargs.add_argument('--min-mapq', metavar="<int>", type=int, default=30, help="Minimum mapping quality for raw cut counting (default: 30)")
+	optargs.add_argument('--normalization', choices=["condition-quantile", "sample-quantile", "none"], default="none", help="Cross-sample normalization mode (default: none; --norm-off maps to none)")
+	optargs.add_argument('--method', choices=["bindetect"], default="bindetect", help="Differential footprint backend (default: bindetect)")
 	optargs.add_argument('--replicate-report', choices=["auto", "on", "off"], default="auto", help="Write replicate-aware BINDetect diagnostic report (default: auto for repeated condition names or --replicate-map)")
 	optargs.add_argument('--replicate-map', metavar="<tsv>", help="Optional TSV with condition/replicate or condition/n_replicates columns")
 	optargs.add_argument('--replicate-report-out', metavar="<tsv>", help="Output long-form replicate diagnostic TSV (default: <outdir>/<prefix>_replicate_report.tsv)")

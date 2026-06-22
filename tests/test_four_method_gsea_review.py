@@ -19,7 +19,7 @@ def load_review_module():
     return module
 
 
-class FourMethodNormalizationReviewTest(unittest.TestCase):
+class NormalizationReviewTest(unittest.TestCase):
     def test_method1_uses_bonferroni_delta_and_bound_gate(self):
         review = load_review_module()
         df = pd.DataFrame(
@@ -65,26 +65,6 @@ class FourMethodNormalizationReviewTest(unittest.TestCase):
         self.assertFalse(bool(out.loc["few_sites", "K562_HepG2_significant_fdr05"]))
         self.assertFalse(bool(out.loc["weak_fdr", "K562_HepG2_significant_fdr05"]))
 
-    def test_score_to_pseudocount_matrix_clips_and_rounds(self):
-        review = load_review_module()
-        matrix = pd.DataFrame(
-            [[0.1234, -0.5, np.nan, 1.2345]],
-            index=["M1"],
-            columns=["a", "b", "c", "d"],
-        )
-        counts = review.score_to_pseudocount_matrix(matrix)
-        self.assertEqual(counts.loc["M1"].tolist(), [123, 0, 0, 1234])
-
-    def test_summed_score_to_count_matrix_uses_summed_evidence_without_rescaling(self):
-        review = load_review_module()
-        summed = pd.DataFrame(
-            [[123.4, -5.0, np.nan, 1234.5]],
-            index=["M1"],
-            columns=["a", "b", "c", "d"],
-        )
-        counts = review.summed_score_to_count_matrix(summed)
-        self.assertEqual(counts.loc["M1"].tolist(), [123, 0, 0, 1234])
-
     def test_empirical_bayes_log_matrix_uses_log_score_effect_scale(self):
         review = load_review_module()
         matrix = pd.DataFrame(
@@ -113,42 +93,6 @@ class FourMethodNormalizationReviewTest(unittest.TestCase):
         self.assertAlmostEqual(float(native.loc["M1", "footprint_score_delta"]), expected)
         self.assertAlmostEqual(float(native.loc["M1", "raw_score_delta"]), raw_delta)
         self.assertGreater(abs(float(native.loc["M1", "footprint_score_delta"])), abs(raw_delta))
-
-    def test_deseq_to_diff_uses_deseq2_lfc_as_displayed_change(self):
-        review = load_review_module()
-        native = pd.DataFrame(
-            {
-                "output_prefix": ["M1", "M2"],
-                "log2FoldChange": [0.75, 0.05],
-                "pvalue": [1e-8, 1e-8],
-                "padj": [1e-5, 1e-5],
-            }
-        )
-        raw_matrix = pd.DataFrame(
-            [
-                [0.20, 0.20, 0.20, 0.10, 0.10, 0.10],
-                [0.40, 0.40, 0.40, 0.10, 0.10, 0.10],
-            ],
-            index=["M1", "M2"],
-            columns=review.SAMPLES,
-        )
-        metadata = pd.DataFrame(
-            {
-                "output_prefix": ["M1", "M2"],
-                "name": ["M1", "M2"],
-                "motif_id": ["motif1", "motif2"],
-                "cluster": ["C1", "C2"],
-                "total_tfbs": [1000, 1000],
-                "K562_bound": [700, 700],
-                "HepG2_bound": [700, 700],
-            }
-        )
-        with tempfile.TemporaryDirectory() as tmpdir:
-            out = review.deseq_to_diff(native, raw_matrix, metadata, Path(tmpdir) / "results.tsv", "DESeq2").set_index("output_prefix")
-        self.assertAlmostEqual(float(out.loc["M1", "K562_HepG2_change"]), 0.75)
-        self.assertAlmostEqual(float(out.loc["M1", "K562_HepG2_raw_score_delta"]), 0.10)
-        self.assertTrue(bool(out.loc["M1", "K562_HepG2_significant_fdr05"]))
-        self.assertFalse(bool(out.loc["M2", "K562_HepG2_significant_fdr05"]))
 
     def test_native_bindetect_to_diff_uses_native_change_and_keeps_matrix_audit(self):
         review = load_review_module()
@@ -185,6 +129,91 @@ class FourMethodNormalizationReviewTest(unittest.TestCase):
         self.assertAlmostEqual(float(out.loc["M1", "K562_HepG2_raw_score_delta"]), 0.09)
         self.assertTrue(bool(out.loc["M1", "K562_HepG2_significant_fdr05"]))
         self.assertFalse(bool(out.loc["M2", "K562_HepG2_significant_fdr05"]))
+
+    def test_method5_view_uses_limma_effect_and_preserves_native_audit(self):
+        review = load_review_module()
+        method4 = pd.DataFrame(
+            {
+                "output_prefix": ["M1", "M2"],
+                "name": ["M1", "M2"],
+                "motif_id": ["motif1", "motif2"],
+                "cluster": ["C1", "C2"],
+                "total_tfbs": [1000, 1000],
+                "K562_bound": [700, 700],
+                "HepG2_bound": [700, 700],
+                "K562_HepG2_change": [0.2, 0.2],
+                "K562_HepG2_pvalue": [0.5, 1e-8],
+                "K562_HepG2_qvalue_bh": [0.5, 1e-5],
+                "K562_HepG2_matrix_log_score_delta": [0.35, -0.05],
+                "K562_HepG2_matrix_log_score_pvalue": [1e-8, 0.5],
+                "K562_HepG2_matrix_log_score_qvalue_bh": [1e-5, 0.5],
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = review.method5_limma_ebayes_view(method4, Path(tmpdir) / "results.tsv").set_index("output_prefix")
+        self.assertAlmostEqual(float(out.loc["M1", "K562_HepG2_change"]), 0.35)
+        self.assertAlmostEqual(float(out.loc["M1", "K562_HepG2_limma_effect"]), 0.35)
+        self.assertAlmostEqual(float(out.loc["M1", "K562_HepG2_native_bindetect_change"]), 0.2)
+        self.assertAlmostEqual(float(out.loc["M1", "K562_HepG2_pvalue"]), 1e-8)
+        self.assertAlmostEqual(float(out.loc["M1", "K562_HepG2_native_bindetect_pvalue"]), 0.5)
+        self.assertAlmostEqual(float(out.loc["M1", "K562_HepG2_limma_pvalue"]), 1e-8)
+        self.assertAlmostEqual(float(out.loc["M2", "K562_HepG2_native_bindetect_pvalue"]), 1e-8)
+        self.assertAlmostEqual(float(out.loc["M2", "K562_HepG2_limma_pvalue"]), 0.5)
+        self.assertTrue(bool(out.loc["M1", "K562_HepG2_significant_fdr05"]))
+        self.assertFalse(bool(out.loc["M2", "K562_HepG2_significant_fdr05"]))
+
+    def test_append_method5_to_old_summary_preserves_existing_methods(self):
+        review = load_review_module()
+        old = pd.DataFrame(
+            {
+                "output_prefix": ["M1", "M2"],
+                "name": ["M1", "M2"],
+                "motif_id": ["motif1", "motif2"],
+                "cluster": ["C1", "C2"],
+                "total_tfbs": [1000, 1000],
+                "method1_tobias_qnorm_delta_score": [0.2, -0.2],
+                "method1_tobias_qnorm_significant": [True, False],
+                "method1_tobias_qnorm_direction": ["K562_up", "HepG2_up"],
+                "method2_qnorm_limma_delta_score": [0.1, -0.1],
+                "method2_qnorm_limma_significant": [False, True],
+                "method2_qnorm_limma_direction": ["K562_up", "HepG2_up"],
+                "n_methods_significant": [1, 1],
+                "methods_significant": ["method1_tobias_qnorm", "method2_qnorm_limma"],
+                "direction_agreement": [True, True],
+            }
+        )
+        method5 = pd.DataFrame(
+            {
+                "output_prefix": ["M1", "M2"],
+                "name": ["M1", "M2"],
+                "motif_id": ["motif1", "motif2"],
+                "cluster": ["C1", "C2"],
+                "total_tfbs": [1000, 1000],
+                "K562_bound": [800, 800],
+                "HepG2_bound": [700, 700],
+                "K562_HepG2_change": [0.3, -0.3],
+                "K562_HepG2_pvalue": [1e-6, 1e-6],
+                "K562_HepG2_qvalue_bh": [1e-5, 1e-5],
+                "K562_HepG2_significant_fdr05": [True, True],
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            old_path = Path(tmpdir) / "old.csv"
+            out_path = Path(tmpdir) / "combined.csv"
+            old.to_csv(old_path, index=False)
+            combined = review.append_method5_to_old_summary(old_path, method5, out_path).set_index("output_prefix")
+        self.assertIn("method2_qnorm_limma_significant", combined.columns)
+        self.assertIn("method5_q95_limma_ebayes_significant", combined.columns)
+        self.assertEqual(int(combined.loc["M1", "n_methods_significant"]), 2)
+        self.assertEqual(int(combined.loc["M2", "n_methods_significant"]), 2)
+        self.assertEqual(
+            combined.loc["M1", "methods_significant"],
+            "method1_tobias_qnorm;method5_q95_limma_ebayes",
+        )
+        self.assertEqual(
+            combined.loc["M2", "methods_significant"],
+            "method2_qnorm_limma;method5_q95_limma_ebayes",
+        )
 
     def test_aggregate_sig_mode_can_disable_fallback(self):
         review = load_review_module()
@@ -230,7 +259,7 @@ class FourMethodNormalizationReviewTest(unittest.TestCase):
                     empty = build_bindetect_aggregate_payload(motifs, rows, ("K562", "HepG2"), args)
             self.assertEqual(empty["motifs"], [])
 
-    def test_make_aggregate_args_is_significant_only_top500(self):
+    def test_make_aggregate_args_uses_all_significant_motifs_from_all_beds(self):
         review = load_review_module()
         args = review.make_aggregate_args(Path("."), ["a.bw", "b.bw"], cores=1)
         self.assertEqual(args.plot_aggregate, "sig")

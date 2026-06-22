@@ -2,7 +2,7 @@ version: 1
 run_mode: batch
 samples:
   - sample_id: bindetect_single_bcell
-    tool: BINDetect
+    tool: diff-footprints
     motifs: test_data/motifs.jaspar
     signals:
       - test_data/Bcell_footprints.bw
@@ -14,7 +14,7 @@ samples:
       - Bcell
     skip_excel: true
   - sample_id: bindetect_single_tcell
-    tool: BINDetect
+    tool: diff-footprints
     motifs: test_data/motifs.jaspar
     signals:
       - test_data/Tcell_day1_footprints.bw

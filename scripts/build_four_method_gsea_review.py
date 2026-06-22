@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Build a four-method ENCODE normalization-comparison review folder.
+"""Build the ENCODE normalization-comparison review folder.
 
-This supersedes the earlier GSEA-like review. Methods 2--4 now compare motif
-level score matrices directly, and all methods use the same strict significance
-gate for volcano coloring and aggregate-profile selection.
+The supported comparison keeps Method 1 as the legacy sample-quantile BINDetect
+reference and Method 4 as the q95-corrected default. Method 5 uses native Method
+4 BINDetect change on the volcano x-axis and limma-like empirical-Bayes
+replicate p-values on the y-axis. The default-q95 review table is built by
+appending Method 5 to the original four-method review table, leaving the
+original review folder unchanged.
 """
 
 from __future__ import annotations
@@ -34,6 +37,8 @@ SIG_DELTA_CUTOFF = 0.1
 SIG_BOUND_CUTOFF = 500
 AGGREGATE_TOP_N = 500
 PSEUDOCOUNT_SCALE = 1000.0
+METHOD5_NAME = "method5_q95_limma_ebayes"
+OLD_REVIEW_DIRNAME = "review_normalization_comparison_20260618"
 
 
 def bh(pvalues: np.ndarray) -> np.ndarray:
@@ -123,67 +128,6 @@ def build_matrix_from_beds(run_dir: Path, motifs: list[str], out_prefix: Path) -
     matrix.to_csv(out_prefix.with_suffix(".matrix.tsv"), sep="\t")
     pd.DataFrame(site_summary).to_csv(out_prefix.with_suffix(".site_counts.tsv"), sep="\t", index=False)
     return matrix
-
-
-def build_sum_matrix_from_beds(run_dir: Path, motifs: list[str], out_prefix: Path) -> pd.DataFrame:
-    rows = []
-    site_summary = []
-    for motif in motifs:
-        sums = np.zeros(len(SAMPLES), dtype=float)
-        count = 0
-        for chunk in iter_score_chunks(run_dir, motif):
-            vals = chunk.to_numpy(dtype=float)
-            finite = np.isfinite(vals).all(axis=1)
-            vals = vals[finite]
-            if vals.size:
-                sums += np.clip(vals, 0.0, None).sum(axis=0)
-                count += vals.shape[0]
-        rows.append(pd.Series(sums if count else np.nan, index=SAMPLES, name=motif))
-        site_summary.append({"output_prefix": motif, "n_sites": count})
-    matrix = pd.DataFrame(rows)
-    matrix.index.name = "output_prefix"
-    matrix.to_csv(out_prefix.with_suffix(".summed_scores.tsv"), sep="\t")
-    pd.DataFrame(site_summary).to_csv(out_prefix.with_suffix(".site_counts.tsv"), sep="\t", index=False)
-    return matrix
-
-
-def score_to_pseudocount_matrix(matrix: pd.DataFrame, scale: float = PSEUDOCOUNT_SCALE) -> pd.DataFrame:
-    values = np.nan_to_num(matrix.to_numpy(dtype=float), nan=0.0, posinf=0.0, neginf=0.0)
-    counts = np.rint(np.clip(values, 0.0, None) * float(scale)).astype(np.int64)
-    return pd.DataFrame(counts, index=matrix.index, columns=matrix.columns)
-
-
-def summed_score_to_count_matrix(sum_matrix: pd.DataFrame) -> pd.DataFrame:
-    values = np.nan_to_num(sum_matrix.to_numpy(dtype=float), nan=0.0, posinf=0.0, neginf=0.0)
-    counts = np.rint(np.clip(values, 0.0, None)).astype(np.int64)
-    return pd.DataFrame(counts, index=sum_matrix.index, columns=sum_matrix.columns)
-
-
-def run_pydeseq2(counts_by_motif: pd.DataFrame, out_native: Path, cores: int) -> pd.DataFrame:
-    try:
-        from pydeseq2.dds import DeseqDataSet
-        from pydeseq2.ds import DeseqStats
-    except Exception as exc:
-        raise ImportError('PyDESeq2 is required to rebuild Method 3. Install with: pip install "fp-tools-bio[deseq2]"') from exc
-
-    metadata = pd.DataFrame({"condition": ["K562", "K562", "K562", "HepG2", "HepG2", "HepG2"]}, index=SAMPLES)
-    dds = DeseqDataSet(
-        counts=counts_by_motif.T.loc[SAMPLES].astype(int),
-        metadata=metadata,
-        design="~condition",
-        ref_level=["condition", "HepG2"],
-        min_replicates=2,
-        n_cpus=max(1, int(cores)),
-        quiet=True,
-    )
-    dds.deseq2()
-    stats = DeseqStats(dds, contrast=["condition", "K562", "HepG2"], n_cpus=max(1, int(cores)), quiet=True)
-    stats.summary()
-    native = stats.results_df.copy()
-    native.index.name = "output_prefix"
-    native = native.reset_index()
-    native.to_csv(out_native, sep="\t", index=False)
-    return native
 
 
 def metadata_for(metadata: pd.DataFrame) -> pd.DataFrame:
@@ -280,7 +224,7 @@ def moderated_score_matrix(matrix: pd.DataFrame, metadata: pd.DataFrame, out_nat
 
 
 def empirical_bayes_log_matrix(matrix: pd.DataFrame, metadata: pd.DataFrame, out_native: Path) -> pd.DataFrame:
-    """Match the original Method 2 effect scale: moderated log2(score * 1000 + 1)."""
+    """Calculate diagnostic moderated log2(score * 1000 + 1) replicate effects."""
     values = np.nan_to_num(matrix.to_numpy(dtype=float), nan=0.0, posinf=0.0, neginf=0.0)
     raw_matrix = pd.DataFrame(values, index=matrix.index, columns=matrix.columns)
     log_matrix = pd.DataFrame(
@@ -316,35 +260,6 @@ def eb_to_diff(native: pd.DataFrame, out_path: Path, method_label: str) -> pd.Da
     return out
 
 
-def deseq_to_diff(native: pd.DataFrame, raw_matrix: pd.DataFrame, metadata: pd.DataFrame, out_path: Path, method_label: str) -> pd.DataFrame:
-    means = pd.DataFrame(
-        {
-            "output_prefix": raw_matrix.index,
-            "K562_mean_score": raw_matrix[GROUP1].mean(axis=1).to_numpy(dtype=float),
-            "HepG2_mean_score": raw_matrix[GROUP2].mean(axis=1).to_numpy(dtype=float),
-        }
-    )
-    means["score_delta"] = means["K562_mean_score"] - means["HepG2_mean_score"]
-    out = metadata_for(metadata).merge(native, on="output_prefix", how="right").merge(means, on="output_prefix", how="left")
-    out = out.rename(
-        columns={
-            "log2FoldChange": "deseq2_log2FoldChange",
-            "pvalue": "deseq2_pvalue",
-            "padj": "deseq2_padj",
-        }
-    )
-    out[f"{COMPARISON}_change"] = pd.to_numeric(out["deseq2_log2FoldChange"], errors="coerce").fillna(0.0)
-    out[f"{COMPARISON}_pvalue"] = pd.to_numeric(out["deseq2_pvalue"], errors="coerce").fillna(1.0).clip(lower=1e-308)
-    out[f"{COMPARISON}_qvalue_bh"] = pd.to_numeric(out["deseq2_padj"], errors="coerce").fillna(1.0)
-    out[f"{COMPARISON}_raw_score_delta"] = pd.to_numeric(out["score_delta"], errors="coerce").fillna(0.0)
-    out[f"{COMPARISON}_mean_delta_fp"] = out[f"{COMPARISON}_raw_score_delta"]
-    out[f"{COMPARISON}_mean_log2fc"] = out[f"{COMPARISON}_change"]
-    out["method_label"] = method_label
-    out = apply_fdr_significance(out)
-    out.to_csv(out_path, sep="\t", index=False)
-    return out
-
-
 def native_bindetect_to_diff(native: pd.DataFrame, audit_native: pd.DataFrame, out_path: Path, method_label: str) -> pd.DataFrame:
     out = metadata_for(native).copy()
     data = native.set_index("output_prefix")
@@ -372,25 +287,6 @@ def native_bindetect_to_diff(native: pd.DataFrame, audit_native: pd.DataFrame, o
     return out
 
 
-def read_or_build_method2(norm_sample: Path, motifs: list[str], metadata: pd.DataFrame, outdir: Path) -> pd.DataFrame:
-    native_path = outdir / "02_method2_sample_quantile_scores_limma_native.tsv"
-    result_path = outdir / "02_method2_sample_quantile_scores_limma_results.tsv"
-    matrix = build_matrix_from_beds(norm_sample, motifs, outdir / "02_method2_sample_quantile_scores")
-    native = empirical_bayes_log_matrix(matrix, metadata, native_path)
-    return eb_to_diff(native, result_path, "Sample-quantile motif footprint-score matrix, empirical-Bayes log-score test")
-
-
-def read_or_build_method3(norm_none: Path, motifs: list[str], metadata: pd.DataFrame, fp: Path, outdir: Path, cores: int) -> pd.DataFrame:
-    native_path = outdir / "03_method3_raw_score_pseudocount_deseq2_native.tsv"
-    result_path = outdir / "03_method3_raw_score_pseudocount_deseq2_results.tsv"
-    raw_matrix = build_matrix_from_beds(norm_none, motifs, outdir / "03_method3_raw_scores")
-    summed_scores = build_sum_matrix_from_beds(norm_none, motifs, outdir / "03_method3_raw_score_summed")
-    pseudo = summed_score_to_count_matrix(summed_scores)
-    pseudo.to_csv(outdir / "03_method3_raw_score_summed_count_matrix.tsv", sep="\t")
-    native = run_pydeseq2(pseudo, native_path, cores)
-    return deseq_to_diff(native, raw_matrix, metadata, result_path, "Raw summed motif footprint-score DESeq2")
-
-
 def read_or_build_method4(norm_q95: Path, motifs: list[str], metadata: pd.DataFrame, outdir: Path) -> pd.DataFrame:
     native_path = outdir / "04_method4_q95_scores_limma_native.tsv"
     result_path = outdir / "04_method4_q95_scores_limma_results.tsv"
@@ -399,29 +295,60 @@ def read_or_build_method4(norm_q95: Path, motifs: list[str], metadata: pd.DataFr
     return native_bindetect_to_diff(metadata, audit_native, result_path, "Q95 corrected BINDetect results, no internal normalization")
 
 
+def method5_limma_ebayes_view(method4: pd.DataFrame, out_path: Path) -> pd.DataFrame:
+    out = method4.copy()
+    effect_col = f"{COMPARISON}_matrix_log_score_delta"
+    p_col = f"{COMPARISON}_matrix_log_score_pvalue"
+    q_col = f"{COMPARISON}_matrix_log_score_qvalue_bh"
+    required = [effect_col, p_col, q_col]
+    missing = [col for col in required if col not in out.columns]
+    if missing:
+        raise ValueError(f"Method 4 table is missing empirical-Bayes audit columns: {', '.join(missing)}")
+    out[f"{COMPARISON}_native_bindetect_change"] = pd.to_numeric(out[f"{COMPARISON}_change"], errors="coerce").fillna(0.0)
+    out[f"{COMPARISON}_native_bindetect_pvalue"] = pd.to_numeric(out[f"{COMPARISON}_pvalue"], errors="coerce").fillna(1.0)
+    out[f"{COMPARISON}_native_bindetect_qvalue_bh"] = pd.to_numeric(out[f"{COMPARISON}_qvalue_bh"], errors="coerce").fillna(1.0)
+    out[f"{COMPARISON}_limma_effect"] = pd.to_numeric(out[effect_col], errors="coerce").fillna(0.0)
+    out[f"{COMPARISON}_limma_pvalue"] = pd.to_numeric(out[p_col], errors="coerce").fillna(1.0).clip(lower=1e-308)
+    out[f"{COMPARISON}_limma_qvalue_bh"] = pd.to_numeric(out[q_col], errors="coerce").fillna(1.0)
+    out[f"{COMPARISON}_change"] = out[f"{COMPARISON}_limma_effect"]
+    out[f"{COMPARISON}_pvalue"] = pd.to_numeric(out[p_col], errors="coerce").fillna(1.0).clip(lower=1e-308)
+    out[f"{COMPARISON}_qvalue_bh"] = pd.to_numeric(out[q_col], errors="coerce").fillna(1.0)
+    out[f"{COMPARISON}_mean_delta_fp"] = out[f"{COMPARISON}_change"]
+    out[f"{COMPARISON}_mean_log2fc"] = out[f"{COMPARISON}_change"]
+    out["method_label"] = "Method 5: Q95 motif-score matrix with limma/eBayes log-score effect and p-values"
+    out = apply_fdr_significance(out)
+    out.to_csv(out_path, sep="\t", index=False)
+    return out
+
+
+def summary_columns_for_method(method: str, df: pd.DataFrame) -> pd.DataFrame:
+    keys = ["output_prefix", "name", "motif_id", "cluster", "total_tfbs"]
+    extra = [f"{COMPARISON}_bonferroni_pvalue"] if f"{COMPARISON}_bonferroni_pvalue" in df.columns else []
+    keep = df[keys + [c for c in ["K562_bound", "HepG2_bound"] if c in df.columns] + [
+        f"{COMPARISON}_change",
+        f"{COMPARISON}_pvalue",
+        f"{COMPARISON}_qvalue_bh",
+        f"{COMPARISON}_significant_fdr05",
+        *extra,
+    ]].copy()
+    keep[f"{method}_direction"] = direction(keep[f"{COMPARISON}_change"])
+    rename = {
+        f"{COMPARISON}_change": f"{method}_delta_score",
+        f"{COMPARISON}_pvalue": f"{method}_pvalue",
+        f"{COMPARISON}_qvalue_bh": f"{method}_qvalue_bh",
+        f"{COMPARISON}_significant_fdr05": f"{method}_significant",
+        "K562_bound": f"{method}_K562_bound",
+        "HepG2_bound": f"{method}_HepG2_bound",
+        f"{COMPARISON}_bonferroni_pvalue": f"{method}_bonferroni_pvalue",
+    }
+    return keep.rename(columns=rename)
+
+
 def unified_summary(methods: dict[str, pd.DataFrame], out_path: Path) -> pd.DataFrame:
     keys = ["output_prefix", "name", "motif_id", "cluster", "total_tfbs"]
     merged = None
     for method, df in methods.items():
-        extra = [f"{COMPARISON}_bonferroni_pvalue"] if f"{COMPARISON}_bonferroni_pvalue" in df.columns else []
-        keep = df[keys + [c for c in ["K562_bound", "HepG2_bound"] if c in df.columns] + [
-            f"{COMPARISON}_change",
-            f"{COMPARISON}_pvalue",
-            f"{COMPARISON}_qvalue_bh",
-            f"{COMPARISON}_significant_fdr05",
-            *extra,
-        ]].copy()
-        keep[f"{method}_direction"] = direction(keep[f"{COMPARISON}_change"])
-        rename = {
-            f"{COMPARISON}_change": f"{method}_delta_score",
-            f"{COMPARISON}_pvalue": f"{method}_pvalue",
-            f"{COMPARISON}_qvalue_bh": f"{method}_qvalue_bh",
-            f"{COMPARISON}_significant_fdr05": f"{method}_significant",
-            "K562_bound": f"{method}_K562_bound",
-            "HepG2_bound": f"{method}_HepG2_bound",
-            f"{COMPARISON}_bonferroni_pvalue": f"{method}_bonferroni_pvalue",
-        }
-        keep = keep.rename(columns=rename)
+        keep = summary_columns_for_method(method, df)
         if merged is None:
             merged = keep
         else:
@@ -437,6 +364,45 @@ def unified_summary(methods: dict[str, pd.DataFrame], out_path: Path) -> pd.Data
         lambda r: len({r[c] for c in dir_cols if pd.notna(r.get(c)) and bool(r.get(c.replace("_direction", "_significant"), False))}) <= 1,
         axis=1,
     )
+    merged.to_csv(out_path, index=False)
+    return merged
+
+
+def recompute_summary_flags(summary: pd.DataFrame, method_order: list[str]) -> pd.DataFrame:
+    out = summary.copy()
+    sig_cols = [f"{method}_significant" for method in method_order if f"{method}_significant" in out.columns]
+    for col in sig_cols:
+        out[col] = out[col].fillna(False).astype(bool)
+    out["n_methods_significant"] = out[sig_cols].sum(axis=1)
+    out["methods_significant"] = out.apply(
+        lambda r: ";".join([method for method in method_order if bool(r.get(f"{method}_significant", False))]),
+        axis=1,
+    )
+    dir_cols = [f"{method}_direction" for method in method_order if f"{method}_direction" in out.columns]
+    out["direction_agreement"] = out.apply(
+        lambda r: len({r[c] for c in dir_cols if pd.notna(r.get(c)) and bool(r.get(c.replace("_direction", "_significant"), False))}) <= 1,
+        axis=1,
+    )
+    return out
+
+
+def append_method5_to_old_summary(old_summary_path: Path, method5: pd.DataFrame, out_path: Path) -> pd.DataFrame:
+    if not old_summary_path.exists():
+        raise FileNotFoundError(f"Old four-method summary table not found: {old_summary_path}")
+    old = pd.read_csv(old_summary_path)
+    old_methods = [
+        col[:-len("_significant")]
+        for col in old.columns
+        if col.endswith("_significant") and col not in {"n_methods_significant", "methods_significant"}
+    ]
+    method5_cols = summary_columns_for_method(METHOD5_NAME, method5)
+    old = old.drop(columns=[col for col in old.columns if col.startswith(f"{METHOD5_NAME}_")])
+    merged = old.merge(
+        method5_cols.drop(columns=[c for c in ["name", "motif_id", "cluster", "total_tfbs"] if c in method5_cols.columns]),
+        on="output_prefix",
+        how="outer",
+    )
+    merged = recompute_summary_flags(merged, [*old_methods, METHOD5_NAME])
     merged.to_csv(out_path, index=False)
     return merged
 
@@ -526,10 +492,20 @@ def organize_review_folder(outdir: Path) -> None:
     final_root = {
         "00_all_methods_motif_comparison.csv",
         "01_method1_tobias_sample_quantile.html",
-        "02_method2_qnorm_limma.html",
-        "03_method3_raw_score_deseq2.html",
         "04_method4_q95_limma.html",
+        "05_method5_q95_limma_ebayes.html",
     }
+    stale_patterns = [
+        "05_method5_q95_bindetect_change_limma_p*",
+        "method1_tobias_qnorm_vs_method5_q95_bindetect_change_limma_p*",
+        "method4_q95_limma_vs_method5_q95_bindetect_change_limma_p*",
+    ]
+    for folder in [outdir, csv_dir, plots_dir]:
+        if folder.exists():
+            for pattern in stale_patterns:
+                for path in folder.glob(pattern):
+                    if path.is_file():
+                        path.unlink()
     for path in sorted(outdir.iterdir()):
         if path.is_dir():
             continue
@@ -553,18 +529,18 @@ def main() -> None:
     args = ap.parse_args()
 
     fp = args.fp_dir
-    outdir = args.outdir or fp / "review_normalization_comparison_20260618"
+    outdir = args.outdir or fp / "review_normalization_comparison_20260618_default_q95"
     outdir.mkdir(parents=True, exist_ok=True)
 
     norm_sample = fp / "diff_footprints_jaspar2026_vertebrates_norm_sample_quantile"
-    norm_none = fp / "diff_footprints_jaspar2026_vertebrates_norm_none"
     norm_q95 = fp / "diff_footprints_jaspar2026_vertebrates_norm_corrected_q95"
     metadata_sample = read_results(norm_sample / "diff_footprints_results.txt")
-    metadata_none = read_results(norm_none / "diff_footprints_results.txt")
     metadata_q95 = read_results(norm_q95 / "diff_footprints_results.txt")
     motifs = metadata_sample["output_prefix"].astype(str).tolist()
-    raw_corrected_signals = find_signal_files(fp, "atac_correct", "_corrected.bw")
-    q95_corrected_signals = find_signal_files(fp, "normalized_corrected_bigwigs/peak_q95", "_corrected.background_scale_q95.bw")
+    try:
+        q95_corrected_signals = find_signal_files(fp, "atac_correct", "_corrected_scaled.bw")
+    except FileNotFoundError:
+        q95_corrected_signals = find_signal_files(fp, "normalized_corrected_bigwigs/peak_q95", "_corrected.background_scale_q95.bw")
 
     method1 = apply_method1_significance(metadata_sample.copy())
     method1.to_csv(outdir / "01_method1_tobias_sample_quantile_results.tsv", sep="\t", index=False)
@@ -575,31 +551,6 @@ def main() -> None:
         outdir / "01_method1_tobias_sample_quantile.html",
         "Method 1: TOBIAS/BINDetect sample-quantile results; significant = Bonferroni p < 0.001, |delta score| > 0.1, and max bound sites > 500.",
         args.html_cores,
-        aggregate_max_sites=AGGREGATE_TOP_N,
-    )
-
-    method2 = read_or_build_method2(norm_sample, motifs, metadata_sample, outdir)
-    write_full_html_report(
-        method2,
-        norm_sample,
-        q95_corrected_signals,
-        outdir / "02_method2_qnorm_limma.html",
-        "Method 2: sample-quantile motif footprint-score matrix with empirical-Bayes test on log2(score * 1000 + 1); significant = FDR < 0.001, |log-score effect| > 0.1, and max bound sites > 500.",
-        args.html_cores,
-        change_label="Mean log2 footprint-score difference (K562 - HepG2)",
-        aggregate_max_sites=AGGREGATE_TOP_N,
-    )
-
-    method3 = read_or_build_method3(norm_none, motifs, metadata_none, fp, outdir, args.html_cores)
-    write_full_html_report(
-        method3,
-        norm_none,
-        raw_corrected_signals,
-        outdir / "03_method3_raw_score_deseq2.html",
-        "Method 3: raw summed motif footprint-score counts with default DESeq2 size-factor normalization; significant = FDR < 0.001, |DESeq2 log2 fold change| > 0.1, and max bound sites > 500.",
-        args.html_cores,
-        change_label="DESeq2 log2 fold change (K562 / HepG2)",
-        aggregate_max_sites=AGGREGATE_TOP_N,
     )
 
     method4 = read_or_build_method4(norm_q95, motifs, metadata_q95, outdir)
@@ -611,19 +562,29 @@ def main() -> None:
         "Method 4: Q95-corrected BINDetect results with no internal normalization; significant = FDR < 0.001, |native BINDetect change| > 0.1, and max bound sites > 500.",
         args.html_cores,
         change_label="Q95 BINDetect differential footprint score",
-        aggregate_max_sites=AGGREGATE_TOP_N,
+    )
+    method5 = method5_limma_ebayes_view(method4, outdir / "05_method5_q95_limma_ebayes_results.tsv")
+    write_full_html_report(
+        method5,
+        norm_q95,
+        q95_corrected_signals,
+        outdir / "05_method5_q95_limma_ebayes.html",
+        "Method 5: Q95 motif-score matrix limma/eBayes result; x-axis is the limma/eBayes log-score effect and y-axis is the limma/eBayes p-value; significant = limma/eBayes FDR < 0.001, |limma/eBayes log-score effect| > 0.1, and max bound sites > 500.",
+        args.html_cores,
+        change_label="Q95 limma/eBayes log-score effect",
     )
 
-    methods = {
-        "method1_tobias_qnorm": method1,
-        "method2_qnorm_limma": method2,
-        "method3_raw_score_deseq2": method3,
-        "method4_q95_limma": method4,
-    }
-    summary = unified_summary(methods, outdir / "00_all_methods_motif_comparison.csv")
+    old_summary = fp / OLD_REVIEW_DIRNAME / "00_all_methods_motif_comparison.csv"
+    summary = append_method5_to_old_summary(old_summary, method5, outdir / "00_all_methods_motif_comparison.csv")
+    methods = {"method1_tobias_qnorm": method1, "method4_q95_limma": method4, METHOD5_NAME: method5}
     write_pairwise_summaries(summary, list(methods), outdir)
+    summary_methods = [
+        col[:-len("_significant")]
+        for col in summary.columns
+        if col.endswith("_significant") and col not in {"n_methods_significant", "methods_significant"}
+    ]
     pd.DataFrame(
-        [{"method": name, "significant": int(df[f"{COMPARISON}_significant_fdr05"].astype(bool).sum())} for name, df in methods.items()]
+        [{"method": name, "significant": int(summary[f"{name}_significant"].fillna(False).astype(bool).sum())} for name in summary_methods]
     ).to_csv(outdir / "00_significance_summary.csv", index=False)
     organize_review_folder(outdir)
     print(f"Wrote {outdir}")

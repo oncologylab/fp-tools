@@ -133,7 +133,8 @@ class MotifList(list):
 
         Supports "meme", "jaspar", "pfm" and "transfac" formats.
         """
-        content = open(path).read()
+        with open(path) as handle:
+            content = handle.read()
         file_format = get_motif_format(content)
 
         if file_format == "meme":

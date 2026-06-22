@@ -49,7 +49,6 @@ nav:
       - paper.md
       - Reproduce Paper: reproduce-paper.md
       - Future Plans: FUTURE_PLANS.md
-      - Workflow Figure Notes: workflow_figure_revision_prompts.md
 
 markdown_extensions:
   - admonition

@@ -1,0 +1,1 @@
+"""Bundled motif database files."""

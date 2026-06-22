@@ -191,11 +191,9 @@ write_metadata() {
     echo -e "encode_inputs\tK562 ENCSR868FGK vs HepG2 ENCSR291GJU; three released GRCh38 alignment BAM biological replicates per condition"
     echo -e "merged_peaks\tbedtools sort and merge across released ENCODE IDR thresholded peak BEDs; exclude '_' contigs and chrM/MT"
     echo -e "atac-correct\t--bam ENCODE alignment BAM --genome hg38.fa --peaks merged_peaks.bed --blacklist hg38-blacklist.v2.bed --outdir sample"
-    echo -e "call-footprints\t--signal sample_corrected.bw --regions merged_peaks.bed --score footprint"
+    echo -e "call-footprints\t--signal sample_corrected_scaled.bw --regions merged_peaks.bed --score footprint"
     echo -e "normalize-bigwig\t--background merged_peaks.50bp_bins.bed --method background-scale --stat q95 --target median"
-    echo -e "diff-footprints_sample_quantile\tJASPAR2026 CORE vertebrates non-redundant; --normalization sample-quantile --cond-names K562 K562 K562 HepG2 HepG2 HepG2 --aggregate-site-set bound --plot-aggregate sig --aggregate-flank 100"
-    echo -e "diff-footprints_none\tSame inputs with --normalization none; aggregate tracks use unnormalized corrected bigWigs"
-    echo -e "diff-footprints_corrected_q95\tq95-scaled corrected bigWigs -> call-footprints; --normalization none; aggregate tracks use q95-scaled corrected bigWigs"
+    echo -e "diff-footprints_default_q95\tq95-scaled corrected bigWigs -> call-footprints; --normalization none; aggregate tracks use q95-scaled corrected bigWigs"
   } > "${OUT_DIR}/analysis_parameters.tsv"
 }
 
@@ -384,15 +382,9 @@ main() {
     read -r sample condition experiment accession url <<< "${entry}"
     run_q95_footprints_for_sample "${sample}"
   done
-  run_diff_footprints sample-quantile
-  run_diff_footprints none
-  run_diff_footprints corrected-q95
-  compare_normalization_results
-  log "ENCODE K562 vs HepG2 workflow finished"
-  log "Primary report: ${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_sample_quantile/diff_footprints_K562_HepG2.html"
-  log "Baseline report: ${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_none/diff_footprints_K562_HepG2.html"
-  log "Pre-score q95 report: ${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_corrected_q95/diff_footprints_K562_HepG2.html"
-  log "Normalization comparison CSVs: ${FP_DIR}/normalization_comparison"
-}
+	  run_diff_footprints corrected-q95
+	  log "ENCODE K562 vs HepG2 workflow finished"
+	  log "Default q95 report: ${FP_DIR}/diff_footprints_jaspar2026_vertebrates_norm_corrected_q95/diff_footprints_K562_HepG2.html"
+	}
 
 main "$@"

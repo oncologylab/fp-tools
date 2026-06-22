@@ -2,7 +2,7 @@ version: 1
 run_mode: single
 samples:
   - sample_id: plotaggregate_single
-    tool: PlotAggregate
+    tool: plot-aggregate
     TFBS:
       - examples/plotaggregate_tfbs_dir/BATF_all.bed
       - examples/plotaggregate_tfbs_dir/IRF1_all.bed

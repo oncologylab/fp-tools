@@ -43,7 +43,3 @@ Example link format:
 ## Why Static Reports Work
 
 The report HTML embeds the JavaScript and compressed JSON payload needed for review. GitHub Pages can serve it without a backend, database, or Python runtime.
-
-<div class="fp-wide-image">
-  <img src="../assets/interface_usability_panels.png" alt="fp-tools GUI and static report examples">
-</div>

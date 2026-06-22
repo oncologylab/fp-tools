@@ -6,13 +6,13 @@ from __future__ import annotations
 import argparse
 import base64
 import gzip
-from io import StringIO
 import json
 import re
 import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
 from matplotlib.font_manager import FontProperties
 from matplotlib.patches import PathPatch
 from matplotlib.textpath import TextPath
@@ -59,6 +59,7 @@ MAX_RANKING_SITES_PER_MOTIF = 1000
 N_AGGREGATE_PER_CONDITION = 4
 LOGO_COLORS = {"A": "#2f9e44", "C": "#1971c2", "G": "#f08c00", "T": "#d6336c"}
 LOGO_FONT = FontProperties(family="DejaVu Sans", weight="bold")
+rcParams["svg.fonttype"] = "none"
 
 
 def load_report_payload(report_html: Path) -> dict:
@@ -175,36 +176,6 @@ def load_streme_probability_matrices(validation_dir: Path) -> dict[str, np.ndarr
             motif_number = motif_id.split("-", 1)[0]
             matrices[f"{source_prefix}_denovo_{motif_number}"] = matrix
     return matrices
-
-
-def load_result_counts(validation_dir: Path) -> pd.DataFrame:
-    rows = []
-    labels = {
-        "denovo_only": "de novo only",
-        "jaspar2026_plus_denovo": "JASPAR2026 + de novo",
-        "restricted_jaspar": "restricted JASPAR",
-        "restricted_jaspar_plus_denovo": "restricted + de novo",
-    }
-    comparison = f"{ACTIVE_CONDITIONS[0]}_{ACTIVE_CONDITIONS[1]}"
-    for key, label in labels.items():
-        path = validation_dir / "diff_footprints" / key / "diff_footprints_results.txt"
-        if not path.exists():
-            continue
-        df = pd.read_csv(path, sep="\t")
-        pvals = pd.to_numeric(df[f"{comparison}_pvalue"], errors="coerce")
-        highlighted = df[f"{comparison}_highlighted"].astype(str).eq("True")
-        denovo = df["name"].astype(str).str.contains("_denovo_", regex=False)
-        rows.append(
-            {
-                "result_set": label,
-                "n_tested": len(df),
-                "n_significant": int((pvals < 0.05).sum()),
-                "n_highlighted": int(highlighted.sum()),
-                "n_significant_de_novo": int(((pvals < 0.05) & denovo).sum()),
-                "n_highlighted_de_novo": int((highlighted & denovo).sum()),
-            }
-        )
-    return pd.DataFrame(rows)
 
 
 def center_minus_flank_score(profile: np.ndarray, xvals: np.ndarray, center_bp: int = 10, edge_bp: int = 20) -> float:
@@ -852,24 +823,6 @@ def compute_global_coverage(validation_dir: Path, half_width: int = SITE_WINDOW_
     return pd.DataFrame(rows)
 
 
-def read_existing_tsv_section(path: Path, section: str) -> pd.DataFrame:
-    if not path.exists():
-        return pd.DataFrame()
-    lines = path.read_text(encoding="utf-8").splitlines()
-    header = f"# {section}"
-    try:
-        start = lines.index(header) + 1
-    except ValueError:
-        return pd.DataFrame()
-    end = start
-    while end < len(lines) and not lines[end].startswith("# "):
-        end += 1
-    block = "\n".join(line for line in lines[start:end] if line.strip())
-    if not block:
-        return pd.DataFrame()
-    return pd.read_csv(StringIO(block), sep="\t")
-
-
 def plot_coverage_bar(ax, coverage: pd.DataFrame, motif_sets: pd.DataFrame) -> None:
     ax.set_title(
         "A. De novo-only site coverage of JASPAR-supported footprints",
@@ -878,8 +831,8 @@ def plot_coverage_bar(ax, coverage: pd.DataFrame, motif_sets: pd.DataFrame) -> N
         fontsize=9.6,
         fontweight="bold",
     )
-    plot_sets = ["all_bound", f"{ACTIVE_CONDITIONS[0]}_bound", f"{ACTIVE_CONDITIONS[1]}_bound"]
-    labels = ["All bound", f"{ACTIVE_CONDITIONS[0]} bound", f"{ACTIVE_CONDITIONS[1]} bound"]
+    plot_sets = [f"{ACTIVE_CONDITIONS[0]}_bound", f"{ACTIVE_CONDITIONS[1]}_bound"]
+    labels = list(ACTIVE_CONDITIONS)
     colors = {"shared": "#4b9b62", "de novo-only": "#4f8dcf"}
     classes = ["shared", "de novo-only"]
     y = np.arange(len(plot_sets))
@@ -924,9 +877,24 @@ def motif_short_label(name: object) -> str:
     return str(name).replace("_", " ")
 
 
-def draw_sequence_logo(ax, matrix: np.ndarray | None, consensus: str, bounds: tuple[float, float, float, float]) -> None:
+def draw_sequence_logo(
+    ax,
+    matrix: np.ndarray | None,
+    consensus: str,
+    bounds: tuple[float, float, float, float],
+    *,
+    border: bool = False,
+) -> None:
     logo_ax = ax.inset_axes(bounds)
-    logo_ax.set_axis_off()
+    if border:
+        logo_ax.set_facecolor("white")
+        logo_ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+        for spine in logo_ax.spines.values():
+            spine.set_visible(True)
+            spine.set_color("black")
+            spine.set_linewidth(1.15)
+    else:
+        logo_ax.set_axis_off()
     if matrix is None or matrix.size == 0:
         for idx, base in enumerate(str(consensus).upper()):
             logo_ax.text(
@@ -939,14 +907,23 @@ def draw_sequence_logo(ax, matrix: np.ndarray | None, consensus: str, bounds: tu
                 fontweight="bold",
                 color=LOGO_COLORS.get(base, "0.35"),
             )
-        logo_ax.set_xlim(0, max(len(str(consensus)), 1))
-        logo_ax.set_ylim(0, 1)
+        width = max(len(str(consensus)), 1)
+        if border:
+            logo_ax.set_xlim(-0.45, width + 0.45)
+            logo_ax.set_ylim(-0.12, 1.12)
+        else:
+            logo_ax.set_xlim(0, width)
+            logo_ax.set_ylim(0, 1)
         return
 
     bases = ["A", "C", "G", "T"]
     width = matrix.shape[0]
-    logo_ax.set_xlim(0, width)
-    logo_ax.set_ylim(0, 2.0)
+    if border:
+        logo_ax.set_xlim(-0.45, width + 0.45)
+        logo_ax.set_ylim(-0.15, 2.15)
+    else:
+        logo_ax.set_xlim(0, width)
+        logo_ax.set_ylim(0, 2.0)
     for pos, probs in enumerate(matrix):
         probs = np.asarray(probs, dtype=float)
         probs = probs / probs.sum() if probs.sum() > 0 else np.full(4, 0.25)
@@ -1034,7 +1011,7 @@ def plot_discovery_table(ax, selected: pd.DataFrame, logo_matrices: dict[str, np
             errors="coerce",
         ).iloc[0]
         ax.text(xs[0] + 0.008 * block_width, y, motif_short_label(row["name"]), transform=ax.transAxes, fontsize=7.0, va="top", fontweight="bold")
-        ax.text(xs[1] + 0.008 * block_width, y, f"{int(footprint_n):,}" if pd.notna(footprint_n) else "NA", transform=ax.transAxes, fontsize=6.8, va="top")
+        ax.text(xs[1] + 0.008 * block_width, y, f"{int(footprint_n)}" if pd.notna(footprint_n) else "NA", transform=ax.transAxes, fontsize=6.8, va="top")
         ax.text(xs[3] + 0.008 * block_width, y, f"{score:.2f}" if pd.notna(score) else "NA", transform=ax.transAxes, fontsize=6.8, va="top")
         draw_sequence_logo(
             ax,
@@ -1177,17 +1154,24 @@ def plot_condition_aggregate_mini(
         ax,
         matrix,
         str(selected_row.get("consensus", "")),
-        (0.06, 1.17, 0.88, 0.24),
+        (0.0, 1.06, 1.0, 0.23),
+        border=True,
     )
     ax.text(
-        0.5,
-        1.055,
-        f"N={int(bound_n):,}" if pd.notna(bound_n) else "N=NA",
+        0.04,
+        0.06,
+        f"{int(bound_n)}" if pd.notna(bound_n) else "NA",
         transform=ax.transAxes,
-        ha="center",
+        ha="left",
         va="bottom",
-        fontsize=6.7,
-        fontweight="bold",
+        fontsize=6.5,
+        fontweight="normal",
+        bbox={
+            "boxstyle": "round,pad=0.16",
+            "facecolor": "white",
+            "edgecolor": "none",
+            "alpha": 0.78,
+        },
     )
 
     shape_score = footprint_shape_score(profile, xvals)
@@ -1241,13 +1225,6 @@ def plot_condition_aggregate_group(
         )
 
 
-def read_analysis_parameters(validation_dir: Path) -> pd.DataFrame:
-    path = validation_dir / "analysis_parameters.tsv"
-    if not path.exists():
-        return pd.DataFrame(columns=["analysis_step", "parameters"])
-    return pd.read_csv(path, sep="\t")
-
-
 def plot_validation(validation_dir: Path, jaspar: Path, out_prefix: Path, conditions: tuple[str, str] = DEFAULT_CONDITIONS) -> None:
     global ACTIVE_CONDITIONS
     ACTIVE_CONDITIONS = conditions
@@ -1255,7 +1232,6 @@ def plot_validation(validation_dir: Path, jaspar: Path, out_prefix: Path, condit
     id_to_name = jaspar_name_map(jaspar)
     streme = load_streme_motifs(validation_dir, id_to_name)
     logo_matrices = load_streme_probability_matrices(validation_dir)
-    counts = load_result_counts(validation_dir)
     denovo_results = pd.read_csv(validation_dir / "diff_footprints" / "denovo_only" / "diff_footprints_results.txt", sep="\t")
     payload = load_report_payload(
         validation_dir
@@ -1339,10 +1315,7 @@ def plot_validation(validation_dir: Path, jaspar: Path, out_prefix: Path, condit
                 }
             )
             aggregate_group_rows.append(row)
-    coverage = read_existing_tsv_section(out_prefix.with_suffix(".tsv"), "jaspar_site_coverage")
-    if coverage.empty:
-        coverage = compute_global_coverage(validation_dir, half_width=SITE_WINDOW_BP)
-    analysis_parameters = read_analysis_parameters(validation_dir)
+    coverage = compute_global_coverage(validation_dir, half_width=SITE_WINDOW_BP)
 
     apply_style(base_size=8.8)
     fig = plt.figure(figsize=(6.45, 7.05))
@@ -1385,35 +1358,10 @@ def plot_validation(validation_dir: Path, jaspar: Path, out_prefix: Path, condit
     fig.subplots_adjust(left=0.09, right=0.99, top=0.965, bottom=0.08, hspace=0.66, wspace=0.46)
 
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_prefix.with_suffix(".png"), dpi=450, bbox_inches="tight")
-    fig.savefig(out_prefix.with_suffix(".pdf"), bbox_inches="tight")
     svg_path = out_prefix.with_suffix(".svg")
     fig.savefig(svg_path, bbox_inches="tight")
     svg_path.write_text("\n".join(line.rstrip() for line in svg_path.read_text().splitlines()) + "\n")
-
-    out_table = out_prefix.with_suffix(".tsv")
-    with out_table.open("w", encoding="utf-8") as handle:
-        handle.write("# analysis_parameters\n")
-        analysis_parameters.to_csv(handle, sep="\t", index=False)
-        handle.write("\n# motif_set_summary\n")
-        motif_sets.to_csv(handle, sep="\t", index=False)
-        handle.write("\n# differential_result_counts\n")
-        counts.to_csv(handle, sep="\t", index=False)
-        handle.write("\n# jaspar_site_coverage\n")
-        coverage.to_csv(handle, sep="\t", index=False)
-        handle.write("\n# discovered_motifs\n")
-        streme.to_csv(handle, sep="\t", index=False)
-        handle.write("\n# selected_denovo_motifs\n")
-        selected.to_csv(handle, sep="\t", index=False)
-        handle.write("\n# displayed_discovery_rows\n")
-        discovery_rows.to_csv(handle, sep="\t", index=False)
-        handle.write("\n# displayed_aggregate_groups\n")
-        pd.DataFrame(aggregate_group_rows).to_csv(handle, sep="\t", index=False)
-        handle.write("\n# motif_quality_flags\n")
-        selected[["name", "consensus", "quality_flags", "low_complexity", "very_broad", "tn5_bias_like", "confident_tomtom", "center_depleted"]].to_csv(handle, sep="\t", index=False)
-        handle.write("\n# aggregate_center_minus_flank\n")
-        pd.DataFrame(summary_rows).to_csv(handle, sep="\t", index=False)
-    print(f"Wrote {out_prefix.with_suffix('.png')}")
+    print(f"Wrote {svg_path}")
 
 
 def main(argv: list[str] | None = None) -> int:

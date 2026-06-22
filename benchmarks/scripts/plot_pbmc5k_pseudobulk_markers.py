@@ -10,6 +10,7 @@ from adjustText import adjust_text
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 import matplotlib.patheffects as patheffects
+import matplotlib.text as mtext
 import numpy as np
 import pandas as pd
 
@@ -22,8 +23,11 @@ plt.rcParams.update(
         "xtick.labelsize": 7.4,
         "ytick.labelsize": 7.4,
         "legend.fontsize": 7.2,
-        "pdf.fonttype": 42,
-        "ps.fonttype": 42,
+        "font.family": "Arial",
+        "font.weight": "bold",
+        "axes.titleweight": "bold",
+        "axes.labelweight": "bold",
+        "svg.fonttype": "none",
     }
 )
 
@@ -37,6 +41,11 @@ PAIRWISE_COMPARISONS = [
     ("B_cell_T_NK_cell", "B_cell", "T_NK_cell"),
     ("Monocyte_T_NK_cell", "Monocyte", "T_NK_cell"),
 ]
+CELL_TYPES = ("B_cell", "Monocyte", "T_NK_cell")
+PSEUDOBULK_HEATMAP_ROW_HEIGHT_IN = 0.065
+PSEUDOBULK_LABELED_HEATMAP_ROW_HEIGHT_IN = 0.14
+PSEUDOBULK_HEATMAP_MIN_BODY_HEIGHT_IN = 3.2
+PSEUDOBULK_HEATMAP_EXTRA_HEIGHT_IN = 1.7
 MARKER_GROUPS = {
     "B_cell": ("PAX5", "EBF1", "POU2F2", "POU2AF1", "BCL6", "SPIB"),
     "Monocyte": ("CEBPB", "CEBPA"),
@@ -51,6 +60,14 @@ COLORS = {
     "up": "#B91C1C",
     "down": "#1D4ED8",
 }
+
+
+def save_illustrator_svg(fig: plt.Figure, output_prefix: Path) -> None:
+    for text in fig.findobj(match=mtext.Text):
+        text.set_fontfamily("Arial")
+        text.set_fontsize(9)
+        text.set_fontweight("bold")
+    fig.savefig(output_prefix.with_suffix(".svg"), bbox_inches="tight")
 
 
 def label_groups(ax: plt.Axes, annotations: pd.DataFrame, column: str, fontsize: int = 8) -> None:
@@ -182,19 +199,17 @@ def plot_celltype_umap(annotations: pd.DataFrame, output_prefix: Path) -> None:
     ax.legend(frameon=False, markerscale=3, fontsize=8, loc="center left", bbox_to_anchor=(1.02, 0.5))
     ax.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
-    fig.savefig(output_prefix.with_suffix(".png"), dpi=260, bbox_inches="tight")
-    fig.savefig(output_prefix.with_suffix(".pdf"), bbox_inches="tight")
+    save_illustrator_svg(fig, output_prefix)
     plt.close(fig)
 
 
 def plot_marker_umap(annotations: pd.DataFrame, aggregate_screen: pd.DataFrame, output_prefix: Path) -> None:
     aggregate_screen = aggregate_screen.set_index("tf")
-    groups = ["B_cell", "Monocyte", "T_NK_cell"]
     values: dict[str, dict[str, float]] = {}
     for group, tf in MARKERS.items():
         row = aggregate_screen.loc[tf]
         values[tf] = {}
-        for cell_type in groups:
+        for cell_type in CELL_TYPES:
             col = f"{cell_type}_center_protection"
             # More negative center footprint score is easier to read as stronger protection.
             values[tf][cell_type] = -float(row[col])
@@ -225,8 +240,7 @@ def plot_marker_umap(annotations: pd.DataFrame, aggregate_screen: pd.DataFrame, 
     axes[0].set_ylabel("UMAP 2")
     fig.suptitle("PBMC5k marker footprint signatures projected onto broad-cell UMAP", y=1.03)
     fig.tight_layout()
-    fig.savefig(output_prefix.with_suffix(".png"), dpi=220, bbox_inches="tight")
-    fig.savefig(output_prefix.with_suffix(".pdf"), bbox_inches="tight")
+    save_illustrator_svg(fig, output_prefix)
     plt.close(fig)
 
     rows = []
@@ -234,6 +248,129 @@ def plot_marker_umap(annotations: pd.DataFrame, aggregate_screen: pd.DataFrame, 
         for group, value in group_values.items():
             rows.append({"tf": tf, "cell_type": group, "projected_signature": value})
     pd.DataFrame(rows).to_csv(output_prefix.with_suffix(".tsv"), sep="\t", index=False)
+
+
+def prepare_all_signature_heatmap(results: pd.DataFrame) -> pd.DataFrame:
+    score_cols = [f"{cell_type}_mean_score" for cell_type in CELL_TYPES]
+    change_cols = [f"{comparison}_change" for comparison, _, _ in PAIRWISE_COMPARISONS]
+    required = {"output_prefix", "name", "motif_id", "total_tfbs", *score_cols, *change_cols}
+    missing = required.difference(results.columns)
+    if missing:
+        raise SystemExit(f"BINDetect results table is missing required columns: {', '.join(sorted(missing))}")
+
+    table = results[["output_prefix", "name", "motif_id", "total_tfbs", *score_cols, *change_cols]].copy()
+    for col in ["total_tfbs", *score_cols, *change_cols]:
+        table[col] = coerce_numeric(table[col])
+    table = table.dropna(subset=change_cols).reset_index(drop=True)
+
+    # Convert pairwise differential footprint scores into relative cell-type scores.
+    # The fitted values have sum zero per motif and preserve the pairwise directions.
+    design = np.array(
+        [
+            [1.0, -1.0, 0.0],
+            [1.0, 0.0, -1.0],
+            [0.0, 1.0, -1.0],
+            [1.0, 1.0, 1.0],
+        ]
+    )
+    pairwise_values = np.column_stack([table[col].to_numpy(dtype=float) for col in change_cols])
+    fitted = []
+    for row in pairwise_values:
+        effect, *_ = np.linalg.lstsq(design, np.concatenate([row, [0.0]]), rcond=None)
+        fitted.append(effect)
+    raw_values = np.vstack(fitted)
+    row_mean = np.nanmean(raw_values, axis=1, keepdims=True)
+    row_sd = np.nanstd(raw_values, axis=1, keepdims=True)
+    z_values = np.divide(raw_values - row_mean, row_sd, out=np.zeros_like(raw_values), where=row_sd > 0)
+
+    table["mean_differential_score"] = row_mean[:, 0]
+    table["dynamic_range"] = np.nanmax(raw_values, axis=1) - np.nanmin(raw_values, axis=1)
+    table["dominant_cell_type"] = [CELL_TYPES[index] for index in np.nanargmax(z_values, axis=1)]
+    for index, cell_type in enumerate(CELL_TYPES):
+        table[f"{cell_type}_differential_score"] = raw_values[:, index]
+        table[f"{cell_type}_signature_z"] = z_values[:, index]
+
+    group_order = {cell_type: index for index, cell_type in enumerate(CELL_TYPES)}
+    table["_group_order"] = table["dominant_cell_type"].map(group_order)
+    table = table.sort_values(["_group_order", "dynamic_range", "name", "output_prefix"], ascending=[True, False, True, True])
+    table = table.drop(columns="_group_order").reset_index(drop=True)
+    table.insert(0, "rank", np.arange(1, len(table) + 1))
+    table.insert(1, "signature_id", table["output_prefix"].astype(str))
+    return table
+
+
+def plot_signature_heatmap(
+    table: pd.DataFrame,
+    output_prefix: Path,
+    title: str,
+    *,
+    top_n: int | None = None,
+    label_rows: bool = False,
+) -> None:
+    plot_table = table.head(top_n).copy() if top_n is not None else table.copy()
+    z_cols = [f"{cell_type}_signature_z" for cell_type in CELL_TYPES]
+    values = plot_table[z_cols].to_numpy(dtype=float)
+    finite = values[np.isfinite(values)]
+    vmax = float(np.nanpercentile(np.abs(finite), 99)) if finite.size else 1.0
+    vmax = max(vmax, 1.0)
+    norm = TwoSlopeNorm(vmin=-vmax, vcenter=0.0, vmax=vmax)
+
+    n_rows = len(plot_table)
+    row_height = PSEUDOBULK_LABELED_HEATMAP_ROW_HEIGHT_IN if label_rows else PSEUDOBULK_HEATMAP_ROW_HEIGHT_IN
+    height = max(PSEUDOBULK_HEATMAP_MIN_BODY_HEIGHT_IN, row_height * n_rows) + PSEUDOBULK_HEATMAP_EXTRA_HEIGHT_IN
+    width = 4.8 if not label_rows else 6.0
+    fig, ax = plt.subplots(figsize=(width, height))
+    im = ax.imshow(values, cmap="RdBu_r", norm=norm, aspect="auto", interpolation="nearest", rasterized=True)
+    ax.set_xticks(range(len(CELL_TYPES)), labels=CELL_TYPES)
+    ax.tick_params(axis="x", labelrotation=0, labelsize=8.2, length=0)
+    if label_rows:
+        labels = plot_table["name"].astype(str)
+        duplicate_names = labels.duplicated(keep=False)
+        row_labels = labels.where(~duplicate_names, plot_table["signature_id"].astype(str))
+        ax.set_yticks(range(n_rows), labels=row_labels)
+        ax.tick_params(axis="y", labelsize=6.2, length=0)
+    else:
+        ax.set_yticks([])
+        ax.set_ylabel(f"{n_rows:,} motif signatures")
+
+    boundaries = np.flatnonzero(plot_table["dominant_cell_type"].to_numpy()[1:] != plot_table["dominant_cell_type"].to_numpy()[:-1]) + 0.5
+    for boundary in boundaries:
+        ax.axhline(boundary, color="black", linewidth=0.45, alpha=0.55)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.set_title(title, fontsize=9.6, fontweight="bold", pad=8)
+    cbar = fig.colorbar(im, ax=ax, fraction=0.035, pad=0.025)
+    cbar.set_label("row-standardized differential score", fontsize=7.4)
+    cbar.ax.tick_params(labelsize=7.0, length=2.2, width=0.6)
+    fig.tight_layout()
+    save_illustrator_svg(fig, output_prefix)
+    plt.close(fig)
+
+
+def balanced_top_signatures(table: pd.DataFrame, top_n: int) -> pd.DataFrame:
+    per_group = max(1, int(np.ceil(top_n / len(CELL_TYPES))))
+    groups = []
+    for cell_type in CELL_TYPES:
+        groups.append(table[table["dominant_cell_type"] == cell_type].head(per_group))
+    top = pd.concat(groups, ignore_index=True).head(top_n)
+    return top
+
+
+def plot_all_signature_heatmaps(results: pd.DataFrame, output_prefix: Path, top_n: int) -> None:
+    table = prepare_all_signature_heatmap(results)
+    top_table = balanced_top_signatures(table, top_n)
+    table.to_csv(output_prefix.with_suffix(".tsv"), sep="\t", index=False)
+    plot_signature_heatmap(
+        table,
+        output_prefix,
+        "PBMC5k all pseudobulk footprint signatures",
+    )
+    plot_signature_heatmap(
+        top_table,
+        output_prefix.with_name(output_prefix.name.replace("_all_", "_top_")),
+        f"PBMC5k top pseudobulk footprint signatures ({len(top_table)} total)",
+        label_rows=True,
+    )
 
 
 def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str, output_prefix: Path, markers: list[str]) -> None:
@@ -262,8 +399,7 @@ def plot_volcano(results: pd.DataFrame, comparison: str, first: str, second: str
     ax.spines[["top", "right"]].set_visible(False)
     ax.set_box_aspect(1)
     fig.tight_layout()
-    fig.savefig(output_prefix.with_suffix(".png"), dpi=450, bbox_inches="tight")
-    fig.savefig(output_prefix.with_suffix(".pdf"), dpi=450, bbox_inches="tight")
+    save_illustrator_svg(fig, output_prefix)
     plt.close(fig)
 
     plot_df[["output_prefix", "name", "total_tfbs", "change", "pvalue", "qvalue", "status"]].to_csv(
@@ -322,8 +458,7 @@ def plot_directional_pairwise_volcano(results: pd.DataFrame, output_prefix: Path
     fig.legend(handles, labels, frameon=False, fontsize=7.2, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.03))
     fig.suptitle("PBMC5k pseudobulk differential footprint scores", y=1.14, fontsize=9.8, fontweight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.96))
-    fig.savefig(output_prefix.with_suffix(".png"), dpi=450, bbox_inches="tight")
-    fig.savefig(output_prefix.with_suffix(".pdf"), dpi=450, bbox_inches="tight")
+    save_illustrator_svg(fig, output_prefix)
     plt.close(fig)
     pd.DataFrame(source_rows).to_csv(output_prefix.with_suffix(".tsv"), sep="\t", index=False)
 
@@ -335,6 +470,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bindetect-results", required=True)
     parser.add_argument("--outdir", required=True)
     parser.add_argument("--markers", default="PAX5,CEBPB,TCF7")
+    parser.add_argument("--top-heatmap-n", type=int, default=60, help="Number of high-contrast signatures to label in the companion heatmap.")
     args = parser.parse_args(argv)
 
     outdir = Path(args.outdir)
@@ -349,6 +485,7 @@ def main(argv: list[str] | None = None) -> int:
     for comparison, first, second in PAIRWISE_COMPARISONS:
         plot_volcano(results, comparison, first, second, outdir / f"pbmc5k_volcano_{comparison}", markers)
     plot_directional_pairwise_volcano(results, outdir / "pbmc5k_volcano_pairwise_directional_markers")
+    plot_all_signature_heatmaps(results, outdir / "pbmc5k_all_footprint_signature_heatmap", args.top_heatmap_n)
     print(f"Wrote PBMC5k marker UMAP and volcano plots to {outdir}")
     return 0
 

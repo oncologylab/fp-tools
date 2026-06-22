@@ -53,6 +53,7 @@ from fp_tools.utils.utilities import (
 )
 from fp_tools.utils.regions import *
 from fp_tools.utils.motifs import *
+from fp_tools.utils.motif_databases import motif_db_table, resolve_motif_inputs
 from fp_tools.utils.logger import FpToolsLogger
 from fp_tools.utils.plotting_style import PDF_FONT_SIZE, apply_pdf_style, apply_ascii_minus_to_figure
 
@@ -83,6 +84,14 @@ def _benjamini_hochberg(pvalues):
 warnings.simplefilter("ignore", OptimizeWarning)
 warnings.simplefilter("ignore", RuntimeWarning)
 apply_pdf_style()
+
+
+def _resolve_motif_arguments(args):
+    try:
+        args.motifs = resolve_motif_inputs(getattr(args, "motifs", None), getattr(args, "motif_db", None))
+    except ValueError as exc:
+        sys.exit(f"ERROR: {exc}")
+    return args.motifs
 
 
 def norm_fit(x, mean, std, scale):
@@ -143,6 +152,11 @@ def _existing_result_motifs(info_table, comparison, args, motif_lookup=None):
     rows = info_table.copy()
     rows[base + "_change_numeric"] = pd.to_numeric(rows[base + "_change"], errors="coerce").fillna(0.0)
     rows[base + "_pvalue_numeric"] = pd.to_numeric(rows[base + "_pvalue"], errors="coerce").fillna(1.0)
+    qvalue_col = base + "_qvalue_bh"
+    if qvalue_col in rows.columns:
+        rows[base + "_qvalue_numeric"] = pd.to_numeric(rows[qvalue_col], errors="coerce").fillna(1.0)
+    else:
+        rows[base + "_qvalue_numeric"] = _benjamini_hochberg(rows[base + "_pvalue_numeric"].to_numpy())
     filtered_p = rows.loc[rows[base + "_pvalue_numeric"] > 0, base + "_pvalue_numeric"]
     pval_min = np.percentile(filtered_p, 5) if len(filtered_p) else 1.0
     change_min, change_max = np.percentile(rows[base + "_change_numeric"], [5, 95]) if len(rows) else (0.0, 0.0)
@@ -152,6 +166,7 @@ def _existing_result_motifs(info_table, comparison, args, motif_lookup=None):
         prefix = str(row["output_prefix"])
         change = float(row[base + "_change_numeric"])
         pvalue = float(row[base + "_pvalue_numeric"])
+        qvalue = float(row[base + "_qvalue_numeric"])
         highlighted_col = base + "_highlighted"
         if highlighted_col in row and not pd.isna(row[highlighted_col]):
             highlighted = str(row[highlighted_col]).strip().lower() in {"true", "1", "yes"}
@@ -174,6 +189,7 @@ def _existing_result_motifs(info_table, comparison, args, motif_lookup=None):
                 id=str(row.get("motif_id", "")),
                 change=change,
                 pvalue=pvalue,
+                qvalue=qvalue,
                 logpvalue=-np.log10(max(pvalue, 1e-308)),
                 highlighted=highlighted,
                 group=group,
@@ -215,6 +231,7 @@ def _load_reuse_motif_lookup(args, logger):
 def run_bindetect_reuse_existing_results(args):
     """Regenerate final diff-footprints reports from completed motif-level outputs."""
 
+    _resolve_motif_arguments(args)
     _prepare_condition_metadata(args)
     logger = FpToolsLogger("diff-footprints", args.verbosity)
     logger.begin()
@@ -286,14 +303,11 @@ def run_bindetect_reuse_existing_results(args):
 # ----------------------------------------------------------------------------- #
 def run_bindetect(args):
     """Run the BINDetect pipeline from parsed CLI arguments."""
-    if getattr(args, "method", "bindetect") != "bindetect":
-        from fp_tools.tools.fixed_site_differential import run_fixed_site_differential
-        return run_fixed_site_differential(args)
-
     if getattr(args, "reuse_existing_results", False):
         return run_bindetect_reuse_existing_results(args)
 
-    check_required(args, ["signals", "motifs", "genome", "peaks"])
+    _resolve_motif_arguments(args)
+    check_required(args, ["signals", "genome", "peaks"])
     _prepare_condition_metadata(args)
 
     # outputs we’ll create
@@ -441,7 +455,7 @@ def run_bindetect(args):
     logger.info(f"- GC content estimated at {gc_content*100:.2f}%")
 
     # ------------------------------ motifs ----------------------------------- #
-    logger.info("Reading motifs from file")
+    logger.info("Reading motifs")
     motif_list = MotifList()
     args.motifs = expand_dirs(args.motifs)
     for f in args.motifs:
@@ -886,6 +900,8 @@ def run_bindetect(args):
                 name = m.prefix
                 m.change = float(info_table.at[name, base + "_change"])
                 m.pvalue = float(info_table.at[name, base + "_pvalue"])
+                qvalue_col = base + "_qvalue_bh"
+                m.qvalue = float(info_table.at[name, qvalue_col]) if qvalue_col in info_table.columns else 1.0
                 m.logpvalue = -np.log10(m.pvalue) if m.pvalue > 0 else -np.log10(1e-308)
                 m.highlighted = info_table.at[name, base + "_highlighted"]
                 if m.highlighted:
@@ -961,6 +977,9 @@ def run_cli():
     parser = argparse.ArgumentParser()
     parser = add_bindetect_arguments(parser)
     args = parser.parse_args()
+    if getattr(args, "list_motif_dbs", False):
+        print(motif_db_table())
+        return
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
@@ -971,6 +990,9 @@ def match_motifs_cli():
     parser = argparse.ArgumentParser(prog="match-motifs")
     parser = add_bindetect_arguments(parser)
     args = parser.parse_args()
+    if getattr(args, "list_motif_dbs", False):
+        print(motif_db_table())
+        return
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
@@ -989,15 +1011,14 @@ def diff_footprints_cli():
     parser = argparse.ArgumentParser(prog="diff-footprints")
     parser = add_bindetect_arguments(parser)
     args = parser.parse_args()
+    if getattr(args, "list_motif_dbs", False):
+        print(motif_db_table())
+        return
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
     if args.method == "bindetect" and (not args.signals or len(args.signals) < 2):
         parser.error("diff-footprints expects at least two --signals bigWigs")
-    if args.method == "deseq2-cutcount" and (not args.count_bams or len(args.count_bams) < 2):
-        parser.error("diff-footprints --method deseq2-cutcount expects at least two --count-bams")
-    if args.method == "footprint-score" and not args.score_reference_dir and (not args.score_signals or len(args.score_signals) < 2):
-        parser.error("diff-footprints --method footprint-score expects at least two --score-signals or --score-reference-dir")
     if args.prefix == "bindetect":
         args.prefix = "diff_footprints"
     run_bindetect(args)

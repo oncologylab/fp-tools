@@ -125,6 +125,27 @@ class VariantScoringTest(unittest.TestCase):
         self.assertLess(float(row["model_delta_probability"]), 0.0)
         self.assertGreater(float(row["ref_model_probability"]), float(row["alt_model_probability"]))
 
+    def test_score_variants_accepts_builtin_motif_database(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            genome = tmp / "genome.fa"
+            variants = tmp / "variants.bed"
+            out = tmp / "scored.tsv"
+            genome.write_text(">chr1\n" + "ACGT" * 30 + "\n", encoding="utf-8")
+            variants.write_text("chr1\t10\t11\tvar1\tG\tA\n", encoding="utf-8")
+
+            frame = score_variants(
+                variants,
+                genome,
+                out,
+                sequence_flank=8,
+                motif_db="jaspar2026",
+                motif_flank=8,
+            )
+
+            self.assertTrue(out.exists())
+        self.assertIn("best_motif_id", frame.columns)
+
 
 if __name__ == "__main__":
     unittest.main()

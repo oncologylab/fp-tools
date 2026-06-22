@@ -1,0 +1,11 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: motif_discovery_demo
+    tool: motif-discovery
+    candidates: test_data/merged_peaks.bed
+    genome: test_data/genome.fa.gz
+    outdir: examples/gui_demo_outputs/motif_discovery
+    method: streme
+    known_motif_db: jaspar2026_vertebrates
+comparisons: []

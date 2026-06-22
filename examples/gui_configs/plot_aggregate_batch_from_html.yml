@@ -1,0 +1,10 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: plot_aggregate_batch_from_html
+    tool: plot-aggregate-batch
+    input_html:
+      - examples/gui_demo_outputs/bindetect_comparison_2v2/bindetect_Bcell_Tcell.html
+    output: examples/gui_demo_outputs/plotaggregate_batch_browser.html
+    default_layout: 2x2
+comparisons: []

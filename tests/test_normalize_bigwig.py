@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pyBigWig
 
-from fp_tools.tools.normalize_bigwig import normalize_bigwigs
+from fp_tools.tools.normalize_bigwig import corrected_scaled_output_path, normalize_bigwigs
 from fp_tools.tools.normalize_bigwig import _stat
 
 
@@ -88,6 +88,31 @@ class NormalizeBigwigTest(unittest.TestCase):
                 data = list(csv.DictReader(handle, delimiter="\t"))
             self.assertEqual(data[0]["background_q95"], "4.8")
             self.assertEqual(data[0]["scaling_stat"], "q95")
+
+    def test_corrected_scaled_output_paths_write_next_to_inputs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            bw1 = tmp / "sample1_corrected.bw"
+            bw2 = tmp / "sample2_corrected.bw"
+            self._write_bigwig(bw1, [1, 2, 3, 4, 5])
+            self._write_bigwig(bw2, [2, 4, 6, 8, 10])
+            background = tmp / "background.bed"
+            background.write_text("".join(f"chr1\t{i}\t{i + 1}\n" for i in range(5)), encoding="utf-8")
+            outputs = [corrected_scaled_output_path(bw1), corrected_scaled_output_path(bw2)]
+
+            rows = normalize_bigwigs(
+                [str(bw1), str(bw2)],
+                background,
+                tmp,
+                method="background-scale",
+                stat="q95",
+                output_paths=outputs,
+            )
+
+            self.assertEqual(Path(rows[0].output_bigwig).name, "sample1_corrected_scaled.bw")
+            self.assertEqual(Path(rows[1].output_bigwig).name, "sample2_corrected_scaled.bw")
+            self.assertTrue(outputs[0].exists())
+            self.assertTrue(outputs[1].exists())
 
     def test_quantile_stat_format_supports_decimal_filename(self):
         with tempfile.TemporaryDirectory() as tmpdir:

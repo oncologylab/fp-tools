@@ -10,10 +10,13 @@ import html
 import re
 import shlex
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from Bio import SeqIO
+
+from fp_tools.utils.motif_databases import motif_db_table, resolve_motif_inputs
 
 
 @dataclass(frozen=True)
@@ -121,7 +124,7 @@ def write_motif_discovery_plan(
     outdir: str | Path,
     script: str | Path,
     method: str = "meme",
-    known_motifs: str | Path | None = None,
+    known_motifs: str | Path | list[str | Path] | None = None,
     extra_args: list[str] | None = None,
 ) -> Path:
     """Write a reproducible shell script for MEME/DREME/STREME, Tomtom, and fp-tools summary."""
@@ -144,10 +147,24 @@ def write_motif_discovery_plan(
         " ".join(shlex.quote(part) for part in meme_command(fasta, discovery_dir, method=method, extra_args=extra_args or [])),
     ]
     tomtom_tsv = ""
+    known_motif_paths = []
     if known_motifs is not None:
+        if isinstance(known_motifs, (str, Path)):
+            known_motif_paths = [known_motifs]
+        else:
+            known_motif_paths = list(known_motifs)
+    if known_motif_paths:
         lines.extend(
             [
-                f"tomtom -oc {shlex.quote(str(tomtom_dir))} {shlex.quote(str(motif_txt))} {shlex.quote(str(known_motifs))}",
+                " ".join(
+                    [
+                        "tomtom",
+                        "-oc",
+                        shlex.quote(str(tomtom_dir)),
+                        shlex.quote(str(motif_txt)),
+                        *[shlex.quote(str(path)) for path in known_motif_paths],
+                    ]
+                ),
             ]
         )
         tomtom_tsv = f" --tomtom-tsv {shlex.quote(str(tomtom_dir / 'tomtom.tsv'))}"
@@ -369,6 +386,10 @@ def meme_command_main(argv: list[str] | None = None) -> int:
 
 
 def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
+    raw_args = sys.argv[1:] if argv is None else argv
+    if "--list-motif-dbs" in raw_args:
+        print(motif_db_table())
+        return 0
     parser = argparse.ArgumentParser(description="Prepare or run a de novo motif discovery command plan.")
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument("--fasta", help="Existing candidate FASTA.")
@@ -379,6 +400,8 @@ def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
     parser.add_argument("--script", help="Output shell script path. Defaults to <outdir>/run_motif_discovery.sh.")
     parser.add_argument("--method", choices=["meme", "dreme", "streme"], default="meme")
     parser.add_argument("--known-motifs", help="Optional known motif database for Tomtom comparison.")
+    parser.add_argument("--known-motif-db", help="Optional built-in motif database for Tomtom comparison.")
+    parser.add_argument("--list-motif-dbs", action="store_true", help="List available built-in motif databases and exit.")
     parser.add_argument("--extra-args", nargs=argparse.REMAINDER, default=[], help="Additional arguments appended to MEME/DREME/STREME.")
     parser.add_argument("--execute", action="store_true", help="Run the generated script immediately.")
     args = parser.parse_args(argv)
@@ -394,12 +417,20 @@ def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
     else:
         fasta = Path(args.fasta)
 
+    try:
+        known_motif_inputs = resolve_motif_inputs(
+            [args.known_motifs] if args.known_motifs else None,
+            args.known_motif_db,
+            use_default=False,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     script = write_motif_discovery_plan(
         fasta,
         outdir,
         args.script or str(outdir / "run_motif_discovery.sh"),
         method=args.method,
-        known_motifs=args.known_motifs,
+        known_motifs=known_motif_inputs,
         extra_args=args.extra_args,
     )
     print(script)

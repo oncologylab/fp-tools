@@ -146,6 +146,12 @@ Baydar, D.O.; Rauluseviciute, I.; Aronsen, D.R.;  et~al.
 \newblock {\em Nucleic Acids Research} {\bf 2026}, {\em 54},~D184--D193.
 \newblock {\url{https://doi.org/10.1093/nar/gkaf1209}}.
 
+\bibitem[{The ENCODE Project Consortium}(2012)]{encode2012}
+{The ENCODE Project Consortium}.
+\newblock An integrated encyclopedia of {DNA} elements in the human genome.
+\newblock {\em Nature} {\bf 2012}, {\em 489},~57--74.
+\newblock {\url{https://doi.org/10.1038/nature11247}}.
+
 \bibitem[Weber et~al.(2019)Weber, Hare, Soneson, and
   Robinson]{Weber2019_Benchmarking}
 Weber, L.M.; Hare, E.H.; Soneson, C.; Robinson, M.D.
@@ -186,24 +192,25 @@ Ewels, P.A.; Peltzer, A.; Fillinger, S.; Patel, H.; Alneberg, J.; Wilm, A.;
 \newblock {\em Nature Biotechnology} {\bf 2020}, {\em 38},~276--278.
 \newblock {\url{https://doi.org/10.1038/s41587-020-0439-x}}.
 
-\bibitem[Koizumi et~al.(2021)]{koizumi2021junb}
-Koizumi, S.;  et~al.
+\bibitem[Katagiri et~al.(2021)Katagiri, Kameda, Nakano, and
+  Yamazaki]{koizumi2021junb}
+Katagiri, T.; Kameda, H.; Nakano, H.; Yamazaki, S.
 \newblock Regulation of T cell differentiation by the AP-1 transcription factor
   JunB.
-\newblock {\em Immunological Medicine} {\bf 2021}.
-\newblock {\url{https://doi.org/10.1080/25785826.2021.1876050}}.
+\newblock {\em Immunological Medicine} {\bf 2021}, {\em 44},~197--203.
+\newblock {\url{https://doi.org/10.1080/25785826.2021.1872838}}.
 
-\bibitem[Andrews et~al.(2020)]{andrews2020itk}
-Andrews, L.P.;  et~al.
+\bibitem[Conley et~al.(2020)Conley, Gallagher, Rao, and Berg]{andrews2020itk}
+Conley, J.M.; Gallagher, M.P.; Rao, A.; Berg, L.J.
 \newblock Activation of the Tec Kinase ITK Controls Graded IRF4 Expression in
   Response to Variations in TCR Signal Strength.
-\newblock {\em Journal of Immunology} {\bf 2020}.
-\newblock {\url{https://doi.org/10.4049/jimmunol.1901095}}.
+\newblock {\em Journal of Immunology} {\bf 2020}, {\em 205},~335--345.
+\newblock {\url{https://doi.org/10.4049/jimmunol.1900853}}.
 
 \bibitem[{10x Genomics}(2021)]{tenxpbmc2021}
 {10x Genomics}.
-\newblock {PBMCs from a healthy donor (granulocyte sorted), single cell
-  multiome ATAC + gene expression}.
+\newblock {PBMC from a healthy donor, granulocytes removed through cell
+  sorting, single cell multiome ATAC + gene expression}.
 \newblock 10x Genomics public dataset, Cell Ranger ARC 2.0.0,  2021.
 \newblock ATAC fragments, peak calls, TF-analysis tables, and gene-expression
   clustering outputs downloaded from 10x Genomics sample files.
@@ -244,13 +251,7 @@ Berest, I.; Arnold, C.; Reyes-Palomares, A.; Palla, G.; Rasmussen, K.D.; Giles,
   H.; Bruch, P.M.; Binder, H.; Guenther, T.
 \newblock Quantification of differential transcription factor activity and
   multiomics-based classification into activators and repressors: diffTF.
-\newblock {\em Cell Reports} {\bf 2019}, {\em 29}.
-\newblock {\url{https://doi.org/10.1016/j.celrep.2019.11.045}}.
-
-\bibitem[{The ENCODE Project Consortium}(2012)]{encode2012}
-{The ENCODE Project Consortium}.
-\newblock An integrated encyclopedia of {DNA} elements in the human genome.
-\newblock {\em Nature} {\bf 2012}, {\em 489},~57--74.
-\newblock {\url{https://doi.org/10.1038/nature11247}}.
+\newblock {\em Cell Reports} {\bf 2019}, {\em 29},~3147--3159.e12.
+\newblock {\url{https://doi.org/10.1016/j.celrep.2019.10.106}}.
 
 \end{thebibliography}

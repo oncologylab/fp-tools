@@ -1,6 +1,6 @@
 # GUI Demo
 
-`fp-tools-gui` is a Streamlit application. It is useful for interactive local exploration, but it requires a Python runtime and cannot run directly on GitHub Pages.
+`fp-tools-gui` is a Streamlit application for local, command-compatible workflow configuration. It exposes the primary fp-tools command surface, writes reusable YAML, launches background jobs, and keeps direct CLI execution as the reproducible source of truth.
 
 <div class="fp-screenshot-grid">
   <figure class="fp-screenshot">
@@ -20,15 +20,31 @@ pip install "fp-tools-bio[gui]"
 fp-tools-gui
 ```
 
-## Recommended Live Demo Hosting
+To expose the GUI on a workstation or cloud VM, bind to all interfaces and open the printed URL from a browser that can reach that machine:
 
-Use one of these external app hosts and link to it from this page:
+```bash
+fp-tools-gui --host 0.0.0.0 --port 8891
+```
 
-- **Streamlit Community Cloud** for the simplest Streamlit deployment.
-- **Hugging Face Spaces** for a public app with pinned dependencies and example data.
-- **Binder** for a notebook-like temporary environment.
+The launcher prints local and network candidate URLs. Public access also requires the selected TCP port to be allowed by the host firewall or cloud security group.
 
-For the live demo, keep the dataset small and read-only. The demo should show how to configure a run, inspect existing example outputs, and open static HTML reports.
+## Guided Tutorial
+
+The home page includes a guided tutorial panel that walks new users through the sidebar, example YAML loading, config preview, run launch, and run-history inspection. Use the sidebar **Show guided tutorial** button to reopen it after hiding it.
+
+For a manuscript or documentation screenshot, launch the GUI with:
+
+```bash
+FP_TOOLS_GUI_TUTORIAL=1 fp-tools-gui --run-dir /tmp/fp-tools-gui-demo
+```
+
+## Example Data
+
+Bundled GUI configs live under `examples/gui_configs/` and use `test_data/` fixtures when possible. The same YAML can be loaded in the GUI or run from the command line:
+
+```bash
+run-workflow --config examples/gui_configs/footprintscores_single.yml
+```
 
 ## Static GitHub Pages Content
 
@@ -45,7 +61,3 @@ GitHub Pages should not run full `fp-tools-gui` or compute-heavy workflows.
   <img src="../assets/interface_plot_aggregate_batch_html.png" alt="plot-aggregate-batch HTML report">
   <figcaption>Interactive aggregate browser hosted as static HTML.</figcaption>
 </figure>
-
-<div class="fp-wide-image">
-  <img src="../assets/fp-tools-pseudo-bulk.png" alt="fp-tools pseudobulk workflow">
-</div>

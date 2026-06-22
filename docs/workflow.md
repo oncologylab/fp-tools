@@ -23,18 +23,17 @@ call-footprints \
 
 ```bash
 diff-footprints \
-  --motifs motifs.jaspar \
   --signals B_rep1_footprints.bw B_rep2_footprints.bw T_rep1_footprints.bw T_rep2_footprints.bw \
   --aggregate-signals B_rep1_corrected.bw B_rep2_corrected.bw T_rep1_corrected.bw T_rep2_corrected.bw \
   --genome hg38.fa.gz \
   --peaks peaks.bed \
   --cond-names Bcell Bcell Tcell Tcell \
-  --normalization sample-quantile \
+  --normalization none \
   --plot-aggregate sig \
   --outdir results/diff_footprints/Bcell_vs_Tcell
 ```
 
-Repeated condition names define biological replicates. When aggregate signals are supplied, `diff-footprints` writes a standalone interactive HTML report with volcano-style differential evidence, motif logos, and aggregate profiles.
+Repeated condition names define biological replicates. By default, motif-aware commands use the bundled `jaspar2026_vertebrates` database; use `--motif-db hocomoco14_core` or `--motifs motifs.jaspar` to change inputs. When aggregate signals are supplied, `diff-footprints` writes a standalone interactive HTML report with volcano-style differential evidence, motif logos, and aggregate profiles.
 
 ## Aggregate Visualization
 
@@ -68,3 +67,16 @@ pseudobulk-footprints --help
 ```
 
 See the paper reproduction page for public-data workflows.
+
+## Variant Scoring
+
+Use `fp-tools-score-variants` when candidate footprints or motif databases should be summarized at variant alleles:
+
+```bash
+fp-tools-score-variants \
+  --variants variants.bed \
+  --genome hg38.fa.gz \
+  --candidate-scores candidate_footprints.bed \
+  --motif-db jaspar2026_vertebrates \
+  --out variant_scores.tsv
+```

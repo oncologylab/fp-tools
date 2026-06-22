@@ -15,9 +15,6 @@
     </div>
     <div class="fp-install">pip install fp-tools-bio</div>
   </div>
-  <div class="fp-hero-visual">
-    <img src="assets/fp-tools-workflow.png" alt="fp-tools workflow overview">
-  </div>
 </section>
 
 The PyPI distribution is `fp-tools-bio`; the import package is `fp_tools`.
@@ -42,6 +39,10 @@ The PyPI distribution is `fp-tools-bio`; the import package is `fp_tools`.
     <p>Export footprint-centered candidate FASTA files and summarize MEME/STREME/Tomtom validation outputs.</p>
   </div>
   <div class="fp-card">
+    <h3>Score variants</h3>
+    <p>Annotate variants with allele checks, candidate overlaps, sequence deltas, and optional motif/model deltas.</p>
+  </div>
+  <div class="fp-card">
     <h3>Run pseudobulk workflows</h3>
     <p>Group single-cell fragments or tagged BAMs into pseudobulk tracks and marker-focused reports.</p>
   </div>
@@ -63,5 +64,4 @@ Optional extras:
 
 ```bash
 pip install "fp-tools-bio[gui]"
-pip install "fp-tools-bio[deseq2]"
 ```

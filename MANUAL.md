@@ -47,6 +47,7 @@ Use `match-motifs` when you want to inspect one sample, infer bound motif sites,
 
 - `motif-discovery`: prepare candidate-centered de novo motif-discovery runs from FASTA or candidate BED input.
 - `motif-summary`: summarize MEME/Tomtom outputs into TSV and HTML reports.
+- `fp-tools-score-variants`: annotate variants with reference checks, candidate overlaps, sequence deltas, and optional motif/model deltas.
 - `pseudobulk-footprints`: run the full pseudobulk fragment, ATAC correction, footprint scoring, and aggregate-output workflow.
 - `pseudobulk-fragments`: group single-cell ATAC fragments into pseudobulk fragment files and manifests.
 
@@ -64,6 +65,7 @@ run-workflow --help
 fp-tools-gui --help
 motif-discovery --help
 motif-summary --help
+fp-tools-score-variants --help
 pseudobulk-footprints --help
 pseudobulk-fragments --help
 ```
@@ -89,38 +91,29 @@ The optional BED contains ranked local footprint maxima and can be used as input
 ### 3a. Match motifs in one sample
 
 ```bash
-match-motifs   --motifs test_data/motifs.jaspar   --signals examples/footprints/Bcell_footprints.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/motif_matches/Bcell   --cond-names Bcell
+match-motifs   --signals examples/footprints/Bcell_footprints.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/motif_matches/Bcell   --cond-names Bcell
 ```
+
+By default, motif-aware commands use the bundled `jaspar2026_vertebrates` database. Use `--motif-db hocomoco14_core`, `--motif-db jaspar2026_plants`, or another listed set to switch built-in databases; run `diff-footprints --list-motif-dbs` to see all choices. Custom motif files remain supported with `--motifs`, and `--motifs` can be combined with `--motif-db` to scan both.
 
 ### 3b. Compare conditions directly
 
 ```bash
-diff-footprints   --motifs test_data/motifs.jaspar   --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw   --aggregate-signals test_data/demo_Bcell_rep1_corrected.bw test_data/demo_Bcell_rep2_corrected.bw test_data/demo_Tcell_rep1_corrected.bw test_data/demo_Tcell_rep2_corrected.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/diff_footprints/Bcell_vs_Tcell   --cond-names Bcell Bcell Tcell Tcell   --normalization sample-quantile   --plot-aggregate sig
+diff-footprints   --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw   --aggregate-signals test_data/demo_Bcell_rep1_corrected_scaled.bw test_data/demo_Bcell_rep2_corrected_scaled.bw test_data/demo_Tcell_rep1_corrected_scaled.bw test_data/demo_Tcell_rep2_corrected_scaled.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/diff_footprints/Bcell_vs_Tcell   --cond-names Bcell Bcell Tcell Tcell   --normalization none   --plot-aggregate sig
 ```
 
 Repeated condition names define biological replicates. `diff-footprints` performs motif scanning internally, writes per-motif BEDs, differential tables, replicate-aware reports, volcano HTML, and aggregate profiles when `--aggregate-signals` is provided.
 
 Differential result tables include raw comparison p-values, BH-adjusted q-values (`<comparison>_qvalue_bh`), and an FDR 5% flag (`<comparison>_significant_fdr05`). The `<comparison>_highlighted` column is a visualization/ranking flag used for reports and should not be interpreted as formal FDR significance.
 
-#### Fixed motif-site statistical backends
-
-The default `diff-footprints` backend scans motifs, scores motif-associated footprints, and compares conditions in one command. For method-development and sensitivity analyses, `diff-footprints` can also reuse an existing motif-site reference and quantify every sample over the same fixed sites:
-
-- `--method deseq2-cutcount`: counts raw shifted Tn5 insertions over fixed motif-site windows and analyzes the integer count matrix with PyDESeq2. Install the optional dependency with `pip install "fp-tools-bio[deseq2]"`.
-- `--method footprint-score`: quantifies footprint-score signal over the same fixed motif-site windows and applies an empirical-Bayes moderated test for continuous values.
-
-Use `--site-reference-dirs` to provide one or more previous `match-motifs` or `diff-footprints` output directories. `--reference-site-set bound-union` uses the union of bound-site BEDs, while `--reference-site-set all` uses all motif hits. The optional `--score-reference-dir` reuses existing per-site footprint-score columns from a previous `diff-footprints` run and avoids rereading bigWigs.
-
-For exploratory checks only, a footprint-score matrix can be converted outside the core command to integer pseudo-counts and analyzed with DESeq2. This is useful for sensitivity review, but raw shifted Tn5 counts are the statistically cleaner DESeq2 input.
-
 #### Replicate-aware reports and aggregate embedding
 
 The older replicate-report wording is now covered by `diff-footprints`. There is no primary `fp-tools-replicate-bindetect` command in the current public API. Use `diff-footprints` directly for two-condition, replicate-aware, or ordered time-course differential footprint analysis. Repeated names in `--cond-names` define replicate groups, for example `Bcell Bcell Tcell Tcell`.
 
-`diff-footprints` supports both normalization and no-normalization runs:
+`diff-footprints` runs without internal cross-sample normalization by default. Quantile normalization remains available for sensitivity checks:
 
 ```bash
-# no cross-sample normalization
+# default: no cross-sample normalization
 diff-footprints ... --normalization none --outdir examples/diff_footprints/Bcell_vs_Tcell_no_norm
 
 # sample-level quantile normalization
@@ -141,7 +134,7 @@ The replicate diagnostic tables and figure are controlled by `--replicate-report
 
 #### Normalize corrected bigWigs for aggregate plots
 
-For TOBIAS-style `*_corrected.bw` cut-site tracks, the recommended pre-aggregation normalization is robust high-tail scaling rather than full quantile normalization. Use `--stat q90` for broad background matching, and use shared peak-universe `--stat q95` for motif-centered aggregate visualization, where profiles are dominated by accessible peak and motif regions.
+For TOBIAS-style `*_corrected.bw` cut-site tracks, the recommended multi-sample workflow is robust q95 scaling before footprint scoring and aggregate visualization. `atac-correct --scale-corrected q95` writes scaled tracks beside the corrected bigWigs as `*_corrected_scaled.bw`; `normalize-bigwig --stat q95` remains available as a standalone equivalent.
 
 ```bash
 normalize-bigwig \
@@ -152,7 +145,7 @@ normalize-bigwig \
     examples/atacorrect/Tcell_rep2/Tcell_rep2_corrected.bw \
   --background examples/reference/background.50bp.bed \
   --method background-scale \
-  --stat q90 \
+  --stat q95 \
   --target median \
   --outdir examples/normalized_corrected_bigwigs
 ```
@@ -165,14 +158,14 @@ Use the normalized corrected bigWigs for aggregate visualization, and disable an
 diff-footprints \
   ... \
   --aggregate-signals \
-    examples/normalized_corrected_bigwigs/Bcell_rep1_corrected.background_scale_q95.bw \
-    examples/normalized_corrected_bigwigs/Bcell_rep2_corrected.background_scale_q95.bw \
-    examples/normalized_corrected_bigwigs/Tcell_rep1_corrected.background_scale_q95.bw \
-    examples/normalized_corrected_bigwigs/Tcell_rep2_corrected.background_scale_q95.bw \
+    examples/atacorrect/Bcell_rep1/Bcell_rep1_corrected_scaled.bw \
+    examples/atacorrect/Bcell_rep2/Bcell_rep2_corrected_scaled.bw \
+    examples/atacorrect/Tcell_rep1/Tcell_rep1_corrected_scaled.bw \
+    examples/atacorrect/Tcell_rep2/Tcell_rep2_corrected_scaled.bw \
   --aggregate-normalization none
 ```
 
-For corrected cut-site bigWigs, use `--method background-scale` with `--stat q90` by default for broad background matching. For motif aggregate figures, `--stat q95` is the recommended aggregate-friendly setting; `q97.5` and `q99` are available for sensitivity checks when the peak universe is clean. For footprint-score bigWigs, `--method background-zscore` is available when you want background-centered score tracks. Full quantile normalization is not the default recommendation for primary differential footprint interpretation.
+For corrected cut-site bigWigs, use q95 scaled tracks for footprint scoring and aggregate plots in multi-sample comparisons. Full quantile normalization is not the default recommendation for primary differential footprint interpretation.
 
 
 ### 4. Plot aggregate signal
@@ -231,23 +224,21 @@ plot-aggregate-batch   --input-html examples/diff_footprints/Bcell_vs_Tcell/diff
 `motif-discovery` can start from the candidate BED written by `call-footprints`, export candidate-centered sequences, and write a reproducible MEME/DREME/Tomtom command script.
 
 ```bash
-motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.bed   --genome test_data/genome.fa.gz   --outdir examples/motifs/Bcell_denovo   --method dreme   --known-motifs jaspar2026_vertebrates.meme
+motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.bed   --genome test_data/genome.fa.gz   --outdir examples/motifs/Bcell_denovo   --method dreme   --known-motif-db jaspar2026_vertebrates
 ```
 
 ## Optional pseudobulk footprints
 
-![Pseudobulk fragment workflow](docs/assets/fp-tools-pseudo-bulk.png)
-
-The recommended single-cell route is the full corrected pseudobulk footprint workflow. `pseudobulk-footprints` accepts either 10x-style fragments or a real all-cell BAM with cell barcodes in a read tag. Fragment input writes indexed pseudobulk fragment files, raw cut-site bigWigs for QC, pseudo-paired BAMs, and runs `atac-correct --read_shift 0 0`. Tagged BAM input splits the real BAM by metadata group and uses the standard ATAC shift `--read_shift 4 -5` unless overridden. Both routes score corrected footprints, can run motif-aware `diff-footprints` when `--motifs` is supplied, and write a manifest with every intermediate and final output path.
+The recommended single-cell route is the full corrected pseudobulk footprint workflow. `pseudobulk-footprints` accepts either 10x-style fragments or a real all-cell BAM with cell barcodes in a read tag. Fragment input writes indexed pseudobulk fragment files, raw cut-site bigWigs for QC, pseudo-paired BAMs, and runs `atac-correct --read-shift 0 0`. Tagged BAM input splits the real BAM by metadata group and uses the standard ATAC shift `--read-shift 4 -5` unless overridden. Both routes score corrected footprints, can run motif-aware `diff-footprints` when `--motif-db` or `--motifs` is supplied, and write a manifest with every intermediate and final output path.
 
 ```bash
-pseudobulk-footprints   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz   --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes   --genome data/public/raw/genome/hg38.fa   --peaks data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_peaks.bed   --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt   --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered   --site-summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv   --tfs auto   --outdir data/public/processed/pseudobulk_pbmc/footprints_full   --cores 8
+pseudobulk-footprints   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz   --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes   --genome data/public/raw/genome/hg38.fa   --peaks data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_peaks.bed   --motif-db jaspar2026_vertebrates   --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered   --site-summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv   --tfs auto   --outdir data/public/processed/pseudobulk_pbmc/footprints_full   --cores 8
 ```
 
 For datasets that already have a tagged BAM, use the TOBIAS-style BAM route instead:
 
 ```bash
-pseudobulk-footprints   --bam all_cells.bam   --bam-barcode-tag CB   --annotations cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --genome hg38.fa   --peaks peaks.bed   --blacklist hg38.blacklist.bed   --motifs JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt   --outdir pseudobulk_footprints   --cores 8
+pseudobulk-footprints   --bam all_cells.bam   --bam-barcode-tag CB   --annotations cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --genome hg38.fa   --peaks peaks.bed   --blacklist hg38.blacklist.bed   --motif-db jaspar2026_vertebrates   --outdir pseudobulk_footprints   --cores 8
 ```
 
 Key outputs include `pseudobulk_footprint_manifest.tsv`, `pseudobulk_footprint_commands.sh`, pseudobulk BAMs, fragment-route raw cut-site QC tracks, `atacorrect/<group>/<group>_corrected.bw`, `footprints/<group>.footprints.bw`, `footprints/<group>.candidate_footprints.bed`, optional motif-aware `bindetect/` outputs, and corrected footprint aggregate plots under `plots/`.
@@ -259,10 +250,6 @@ pseudobulk-fragments   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sor
 ```
 
 Raw CPM cut-site aggregates are useful QC and context. Corrected footprint claims should use the `pseudobulk-footprints` outputs after `atac-correct` and `call-footprints`.
-
-![Motif-centered pseudobulk aggregate profiles](docs/assets/fp-tools-pseudobulk-example-output.png)
-
-![Motif-centered pseudobulk protection score](docs/assets/fp-tools-pseudobulk-footprint-like.png)
 
 ## YAML Runner
 

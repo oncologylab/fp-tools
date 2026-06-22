@@ -23,6 +23,7 @@ __pycache__/
 # Packaging and build outputs
 build/
 dist/
+site/
 *.egg-info/
 
 # Test and coverage caches
@@ -61,28 +62,19 @@ test_data/*.bam.bai
 /manuscript/figures/*.svg
 !/manuscript/figures/footprint_representation.pdf
 !/manuscript/figures/footprint_representation.png
-!/manuscript/figures/fp-tools-de-novo-motif.png
-!/manuscript/figures/fp-tools-de-novo-motif-hires.png
-!/manuscript/figures/fp-tools-pseudo-bulk-hires.png
-!/manuscript/figures/fp-tools-replicate-bindetect-hires.png
-!/manuscript/figures/fp-tools-workflow.png
-!/manuscript/figures/fp-tools-workflow-hires.png
+!/manuscript/figures/fp-tools-de-novo-motif.svg
+!/manuscript/figures/denovo_motif_validation.svg
+!/manuscript/figures/Fig1. Overall Schematics emphasizing new features.svg
+!/manuscript/figures/Fig1.svg
+!/manuscript/figures/Fig2.svg
+!/manuscript/figures/Fig3.png
+!/manuscript/figures/Fig4.svg
+!/manuscript/figures/Fig5.svg
 !/manuscript/figures/figure_calibration_genome.png
-!/manuscript/figures/interface_usability_panels-hires.png
 !/manuscript/figures/k562_method_comparison_multitf.pdf
 !/manuscript/figures/k562_method_comparison_multitf.png
 !/manuscript/figures/method_comparison_multi.pdf
 !/manuscript/figures/method_comparison_multi.png
-!/manuscript/figures/normalization_effect.pdf
-!/manuscript/figures/normalization_effect.png
-!/manuscript/figures/normalization_effect.svg
-!/manuscript/figures/normalization_effect.tsv
-!/manuscript/figures/normalization_effect_volcano.tsv
-!/manuscript/figures/normalization_effect_candidates.png
-!/manuscript/figures/marker_aggregate_examples.pdf
-!/manuscript/figures/marker_aggregate_examples.png
-!/manuscript/figures/marker_aggregate_examples.svg
-!/manuscript/figures/marker_aggregate_examples.tsv
 !/manuscript/figures/supp_pseudobulk_footprint_like.pdf
 !/manuscript/figures/supp_pseudobulk_footprint_like.png
 !/manuscript/figures/supp_pseudobulk_footprint_like.tsv

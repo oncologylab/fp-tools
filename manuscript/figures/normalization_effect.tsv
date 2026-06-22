@@ -1,9 +1,0 @@
-normalization	motif	motif_id	output_prefix	profile_type	condition	sample	n_sites	center_minus_flank
-No normalization	BACH2	MA1101.3	BACH2_MA1101.3	condition_mean	Bcell	Bcell	6500	-0.08080745238095238
-No normalization	BACH2	MA1101.3	BACH2_MA1101.3	condition_mean	Tcell	Tcell	6500	-0.03232028571428572
-Sample-quantile	BACH2	MA1101.3	BACH2_MA1101.3	condition_mean	Bcell	Bcell	6500	-0.05252052380952381
-Sample-quantile	BACH2	MA1101.3	BACH2_MA1101.3	condition_mean	Tcell	Tcell	6500	-0.04373969047619048
-No normalization	IRF4	MA1419.2	IRF4_MA1419.2	condition_mean	Bcell	Bcell	10584	-0.030006595238095242
-No normalization	IRF4	MA1419.2	IRF4_MA1419.2	condition_mean	Tcell	Tcell	10584	-0.018902404761904763
-Sample-quantile	IRF4	MA1419.2	IRF4_MA1419.2	condition_mean	Bcell	Bcell	10584	-0.019563190476190474
-Sample-quantile	IRF4	MA1419.2	IRF4_MA1419.2	condition_mean	Tcell	Tcell	10584	-0.025875833333333334

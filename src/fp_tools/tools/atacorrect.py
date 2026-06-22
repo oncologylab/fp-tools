@@ -44,11 +44,53 @@ from fp_tools.utils.regions import OneRegion, RegionList
 from fp_tools.utils.ngs import OneRead, ReadList
 from fp_tools.utils.sequences import *
 from fp_tools.utils.logger import FpToolsLogger
+from fp_tools.tools.normalize_bigwig import corrected_scaled_output_path, normalize_bigwigs
 
 #np.seterr(divide='raise', invalid='raise')
 
+
+def _maybe_scale_corrected_bigwigs(args, corrected_bigwigs, logger):
+	"""Scale corrected bigWigs with q95 background matching when requested."""
+	mode = getattr(args, "scale_corrected", "auto")
+	if mode == "none":
+		return []
+	cohort = list(getattr(args, "scale_corrected_bigwigs", None) or [])
+	if not cohort:
+		cohort = list(corrected_bigwigs)
+	else:
+		seen = {os.path.abspath(path) for path in cohort}
+		for path in corrected_bigwigs:
+			abs_path = os.path.abspath(path)
+			if abs_path not in seen:
+				cohort.append(path)
+				seen.add(abs_path)
+	if mode == "auto" and len(cohort) < 2:
+		logger.info("Skipping q95 corrected-track scaling in auto mode because fewer than two corrected bigWigs were provided")
+		return []
+	if not getattr(args, "scale_background", None):
+		message = "--scale-background is required when q95 corrected-track scaling is requested"
+		if mode == "auto":
+			logger.warning(message + "; skipping scaling")
+			return []
+		raise ValueError(message)
+	logger.info("Q95-scaling corrected bigWigs")
+	output_paths = [corrected_scaled_output_path(path) for path in cohort]
+	rows = normalize_bigwigs(
+		cohort,
+		args.scale_background,
+		args.outdir,
+		method="background-scale",
+		stat="q95",
+		target=getattr(args, "scale_target", "median"),
+		chrom_sizes=getattr(args, "scale_chrom_sizes", None),
+		output_paths=output_paths,
+	)
+	for row in rows:
+		logger.stats("Q95_SCALE\t{0}\t{1:.5f}\t{2}".format(row.sample, row.scale_factor, row.output_bigwig))
+	return rows
+
 #--------------------------------------------------------------------------------------------------------#
-#-------------------------------------- Main pipeline function ------------------------------------------# 
+#-------------------------------------- Main pipeline function ------------------------------------------#
 #--------------------------------------------------------------------------------------------------------#
 
 def run_atacorrect(args):
@@ -483,9 +525,17 @@ def run_atacorrect(args):
 	# Finish up
 	#----------------------------------------------------------------------------------------------------#
 
-	plt.close('all')
-	figure_pdf.close()
-	logger.end()
+		plt.close('all')
+		figure_pdf.close()
+		corrected_bigwigs = []
+		if "corrected" in output_bws:
+			corrected_bigwigs = [output_bws["corrected"][strand]["fn"] for strand in output_bws["corrected"]]
+		try:
+			_maybe_scale_corrected_bigwigs(args, corrected_bigwigs, logger)
+		except Exception as exc:
+			logger.error("Corrected-track q95 scaling failed: {0}".format(exc))
+			raise
+		logger.end()
 
 #--------------------------------------------------------------------------------------------------------#
 if __name__ == '__main__':

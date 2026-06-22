@@ -19,7 +19,21 @@ from fp_tools.tools.bindetect_functions import plot_interactive_bindetect
 
 class InteractiveBindetectHtmlTest(unittest.TestCase):
     def test_aggregate_payload_is_serialized_as_compressed_json(self):
-        motif = SimpleNamespace(name="TF1", group="Bcell_up", change=1.2, pvalue=0.001, base="")
+        motif = SimpleNamespace(
+            name="TF1",
+            prefix="TF1_MA0001.1",
+            id="MA0001.1",
+            group="Bcell_up",
+            change=1.2,
+            pvalue=0.001,
+            base="old-png-should-not-be-embedded-when-counts-exist",
+            counts=[
+                [10.0, 0.0, 0.0],
+                [0.0, 10.0, 0.0],
+                [0.0, 0.0, 10.0],
+                [0.0, 0.0, 0.0],
+            ],
+        )
         aggregate_data = {
             "x": [-1, 0, 1],
             "motifs": [
@@ -46,25 +60,54 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
             html = out.read_text()
         self.assertIn("const reportPayloadB64=", html)
         self.assertIn("DecompressionStream", html)
-        self.assertIn("Download volcano SVG", html)
-        self.assertIn("Download aggregate SVG", html)
+        self.assertIn("Download motif logo panel", html)
+        self.assertNotIn("currently this is not working", html)
+        self.assertIn("Download bar plot panel", html)
+        self.assertIn("Download volcano plot", html)
+        self.assertIn("Download motif aggregate panel", html)
+        self.assertIn("Download combined panel", html)
+        self.assertIn("<summary>Show/Hide</summary>", html)
+        self.assertNotIn("Sort A-Z", html)
+        self.assertIn("function downloadMotifLogoPanel", html)
+        self.assertIn("function motifLogoPanelSvg", html)
+        self.assertIn("function motifLogoSvg", html)
+        self.assertIn("function motifLogoHtml", html)
+        self.assertIn("payload.motif_matrices", html)
+        self.assertIn("motifLogoHtml(prefix)", html)
+        self.assertIn("motifLogoSvg(prefix,", html)
+        self.assertIn("diff_footprints_motif_logo_panel.svg", html)
+        self.assertNotIn("function downloadSelectedMotifLogo", html)
+        self.assertIn('id="download-rank"', html)
         self.assertIn('id="report-method"', html)
         self.assertIn("Method: test label", html)
         self.assertIn("Top differential motifs", html)
         self.assertNotIn("Scale is differential score", html)
+        self.assertNotIn("Differential footprint evidence", html)
         self.assertIn("Selected motifs", html)
+        self.assertLess(html.index('class="option-col options-samples"'), html.index('class="selected-card option-col"'))
         self.assertIn('id="rank-chart"', html)
         self.assertIn('id="rank-rows"', html)
-        self.assertIn('<option value="20" selected>20</option>', html)
+        self.assertIn('id="rank-rows-slider"', html)
+        self.assertIn('type="range"', html)
+        self.assertIn('step="1"', html)
         self.assertIn('id="selected-grid"', html)
         self.assertIn('id="aggregate-grid"', html)
-        self.assertIn("Panel ${idx+1}", html)
-        self.assertIn("Download SVG", html)
+        self.assertIn('id="aggregate-legend"', html)
+        self.assertNotIn("Panel ${idx+1}", html)
+        self.assertIn("Motif for aggregate plot ${idx+1}", html)
         self.assertIn("data-panel-tf", html)
-        self.assertIn("data-panel-sample", html)
-        self.assertIn("data-download-panel", html)
+        self.assertIn("selected-head", html)
+        self.assertIn("data-sample-visible", html)
+        self.assertIn('class="sample-visible"', html)
+        self.assertNotIn("data-panel-sample", html)
+        self.assertNotIn("samplePickerHtml", html)
+        self.assertNotIn("panel-tools", html)
+        self.assertNotIn("data-download-panel", html)
+        self.assertNotIn(">Download SVG</button>", html)
+        self.assertNotIn("diff_footprints_panel_", html)
         self.assertIn("panelPrefixes", html)
-        self.assertIn("panelSamples", html)
+        self.assertIn("visibleSamples", html)
+        self.assertNotIn("panelSamples", html)
         self.assertIn("function drawTopMotifs", html)
         self.assertIn("perDir", html)
         self.assertIn("positive=points.filter(p=>p.change>0)", html)
@@ -73,8 +116,16 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertIn("function setPanelMotif", html)
         self.assertIn("function setSelectedMotif", html)
         self.assertIn("function motifLabel", html)
-        self.assertIn('id="aggregate-width"', html)
-        self.assertIn('id="aggregate-show-mean"', html)
+        self.assertIn("function reportSummary", html)
+        self.assertIn("payload.report_label", html)
+        self.assertIn("Aggregate normalization: ${norm}; input beds: ${bed}", html)
+        self.assertIn("function renderHeader", html)
+        self.assertIn("titleCond1.style.color", html)
+        self.assertIn("titleCond2.style.color", html)
+        self.assertNotIn('id="aggregate-width"', html)
+        self.assertNotIn('id="aggregate-show-mean"', html)
+        self.assertNotIn("Aggregate profile", html)
+        self.assertNotIn("Show mean", html)
         self.assertIn('id="aggregate-sample-styles"', html)
         self.assertIn('data-sample-color=', html)
         self.assertIn('data-sample-alpha=', html)
@@ -82,37 +133,140 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertIn('data-sample-width=', html)
         self.assertIn('aria-label="Line width for', html)
         self.assertIn('data-sample-type=', html)
-        self.assertIn('id="aggregate-mean-width"', html)
-        self.assertIn('id="aggregate-mean-type"', html)
+        self.assertNotIn('id="aggregate-mean-width"', html)
+        self.assertNotIn('id="aggregate-mean-type"', html)
         self.assertIn('sample-style-group', html)
         self.assertIn('sample-style-group-title', html)
         self.assertIn('data-sample-group=', html)
         self.assertIn('sample-style-head', html)
         self.assertIn('${escText(cond)} samples', html)
+        self.assertIn('<span>Show</span><span>Sample</span>', html)
         self.assertIn('Adjust ${escText(cond)} sample ${escText(name)}', html)
         self.assertIn('Alpha for ${escText(cond)} sample ${escText(name)}', html)
         self.assertIn('<span>Alpha</span>', html)
         self.assertIn('<span>Width</span>', html)
         self.assertIn('function alphaValue', html)
+        self.assertIn("aggregateDisplayBp=60", html)
+        self.assertIn("p.v>=-aggregateDisplayBp&&p.v<=aggregateDisplayBp", html)
+        self.assertIn("xTicks=[-aggregateDisplayBp,0,aggregateDisplayBp]", html)
+        self.assertIn("640px", html)
+        self.assertIn('grid-template-areas:"actions samples selected"', html)
+        self.assertIn('grid-template-areas:"actions samples" "selected selected"', html)
+        self.assertIn('grid-template-areas:"actions" "samples" "selected"', html)
+        self.assertIn("@media(max-width:700px)", html)
+        self.assertIn("grid-template-columns:300px 520px minmax(0,1fr)", html)
+        self.assertIn("grid-template-columns:500px 640px minmax(0,1fr)", html)
+        self.assertIn(".volcano-card #chart{max-width:628px}", html)
+        self.assertIn('viewBox="0 0 760 760"', html)
+        self.assertIn("tickStyle='font-size:15px;font-weight:900;font-family:Arial,Helvetica,sans-serif'", html)
+        self.assertIn("axisStyle='font-size:17px;font-weight:900;font-family:Arial,Helvetica,sans-serif'", html)
+        self.assertIn('style="${tickStyle}"', html)
+        self.assertIn('style="${axisStyle}"', html)
+        self.assertIn('x="16"', html)
+        self.assertIn("rotate(-90 16", html)
+        self.assertIn('font-size="14" font-weight="900"', html)
+        self.assertIn('font-size="24" font-weight="900"', html)
+        self.assertIn("margin={top:64,bottom:68,left:128,right:14}", html)
+        self.assertIn("axisY=height-60", html)
+        self.assertIn('y1="${margin.top-36}"', html)
+        self.assertIn('y="${margin.top-22}"', html)
+        self.assertIn('id="plot-count"', html)
+        self.assertIn('<option value="12">12</option>', html)
+        self.assertIn("function gridShape", html)
+        self.assertIn("--aggregate-cols", html)
+        self.assertIn("--aggregate-rows", html)
+        self.assertIn("plotSvgStyle", html)
+        self.assertIn("function styledSvgClone", html)
+        self.assertIn("svg,text{font-family:Arial,Helvetica,sans-serif}", html)
+        self.assertIn("clone.setAttribute('font-family','Arial,Helvetica,sans-serif')", html)
+        self.assertIn("function downloadStandalonePlot", html)
+        self.assertIn("downloadStandalonePlot(renderVolcano,chart,'diff_footprints_volcano.svg')", html)
+        self.assertIn("downloadStandalonePlot(drawTopMotifs,rankChart,'diff_footprints_barplot.svg')", html)
+        self.assertIn("drawFn(false);downloadBlob(svgBlob(node),filename);renderAll(false)", html)
+        self.assertNotIn("function downloadCurrentSvg", html)
+        self.assertNotIn("function downloadPlainPlot", html)
+        self.assertNotIn("function safeFilename", html)
+        self.assertIn("function downloadDashboardPanel", html)
+        self.assertIn("function renderAggregateLegend", html)
+        self.assertIn("function exportLegendSvg", html)
+        self.assertIn("aggregate-export-legend", html)
+        self.assertIn("gridW+gap", html)
+        self.assertIn("diff_footprints_aggregate_grid.svg", html)
+        self.assertIn("diff_footprints_panel.svg", html)
+        self.assertIn('function visibleSiteCount', html)
+        self.assertIn('function visibleConditionNames', html)
+        self.assertIn('cond.n_sites!==undefined', html)
+        self.assertIn('siteCount=visibleSiteCount(motif,samples)', html)
+        self.assertIn('${siteCount}</text>', html)
+        self.assertNotIn('${samples.length} sample', html)
+        self.assertIn('f<=2.5?2.5', html)
+        self.assertIn('Math.abs(value)/5', html)
         self.assertIn('stroke-width="${lineWidthValue(style.width,.7)}"${dash}', html)
         self.assertIn('stroke-opacity="${alphaValue(style.alpha,.9)}"', html)
         self.assertIn('stroke="${style.color}"', html)
-        self.assertIn('stroke-width="${lineWidthValue(aggregateMeanWidth,1.05)}"', html)
+        self.assertNotIn('aggregateMeanWidth', html)
+        self.assertIn('width=300,height=300', html)
         self.assertIn('viewBox="0 0 ${width} ${height}"', html)
+        self.assertLess(html.index('class="motif-logo"'), html.index('class="detail-grid"'))
         self.assertIn("class=\"pt", html)
         self.assertIn("payload.conditions[1]+'_up'", html)
         self.assertIn("payload.conditions[0]+'_up'", html)
-        self.assertIn("motif-site set", html)
+        self.assertIn("function allSelectableMotifs", html)
+        self.assertIn("localeCompare(motifLabel(b)", html)
+        self.assertIn("function defaultPanelPrefixes", html)
+        self.assertIn("function targetPlotCount", html)
+        self.assertIn("function visiblePanelPrefixes", html)
+        self.assertIn("hasAgg=new Set(allAggregateMotifs().map(m=>m.prefix))", html)
+        self.assertIn("negN=Math.floor(target/2)", html)
+        self.assertIn("posN=target-negN", html)
+        self.assertIn("panelPrefixes=panelPrefixes.filter(Boolean).slice(0,12)", html)
+        self.assertNotIn("panelPrefixes=panelPrefixes.filter(Boolean).slice(0,target)", html)
+        self.assertNotIn("panelPrefixes=allAggregateMotifs().slice(0,target)", html)
+        self.assertIn("No aggregate profile", html)
+        self.assertIn("Use --plot-aggregate all", html)
+        self.assertIn("or increase --plot-aggregate-top-n", html)
+        self.assertIn("no aggregate", html)
+        self.assertIn("groupColors", html)
+        self.assertIn("drawRows(negative)", html)
+        self.assertIn("drawRows(positive)", html)
+        self.assertNotIn("function drawSection", html)
+        self.assertNotIn("sites - ${bedLabel", html)
+        self.assertNotIn("motif-site set", html)
         self.assertIn("Distance from motif center (bp)", html)
+        self.assertIn("&#916;FP = ${fmtDelta(change)}", html)
+        self.assertIn("FDR = ${fmtSci(fdr)}", html)
+        self.assertNotIn("<strong>Group:</strong>", html)
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
         self.assertIsNotNone(match)
         payload = json.loads(gzip.decompress(base64.b64decode(match.group(1))).decode("utf-8"))
+        self.assertEqual(payload["title"], "Differential footprint report (Bcell vs Tcell)")
         self.assertEqual(payload["report_label"], "Method: test label")
         self.assertEqual(payload["change_label"], "Differential footprint score")
+        self.assertEqual(
+            payload["motif_matrices"]["TF1_MA0001.1"],
+            [[10.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 10.0], [0.0, 0.0, 0.0]],
+        )
+        self.assertNotIn("TF1_MA0001.1", payload["logos"])
+        self.assertNotIn("old-png-should-not-be-embedded-when-counts-exist", html)
+        self.assertIn("fdr", payload["points"][0])
+        self.assertEqual(payload["colors"]["Bcell_up"], "#dc2626")
+        self.assertEqual(payload["colors"]["Tcell_up"], "#2563eb")
         self.assertEqual(payload["aggregate"]["motifs"][0]["prefix"], "TF1_MA0001.1")
         self.assertEqual(payload["aggregate"]["motifs"][0]["motif_id"], "MA0001.1")
         self.assertEqual(payload["aggregate"]["motifs"][0]["conditions"][0]["samples"][0]["name"], "Bcell_rep1")
         self.assertNotIn("json.dumps", html)
+
+    def test_interactive_report_keeps_png_fallback_when_matrix_is_missing(self):
+        motif = SimpleNamespace(name="TF1", group="Bcell_up", change=1.2, pvalue=0.001, base="ZmFrZS1wbmc=")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = Path(tmpdir) / "report.html"
+            plot_interactive_bindetect([motif], ["Bcell", "Tcell"], str(out))
+            html = out.read_text()
+        match = re.search(r'const reportPayloadB64="([^"]+)"', html)
+        self.assertIsNotNone(match)
+        payload = json.loads(gzip.decompress(base64.b64decode(match.group(1))).decode("utf-8"))
+        self.assertEqual(payload["motif_matrices"], {})
+        self.assertEqual(payload["logos"]["TF1"]["png"], "data:image/png;base64,ZmFrZS1wbmc=")
 
     def test_interactive_report_accepts_custom_change_label(self):
         motif = SimpleNamespace(name="TF1", group="Bcell_up", change=0.25, pvalue=0.001, base="")
@@ -130,7 +284,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         payload = json.loads(gzip.decompress(base64.b64decode(match.group(1))).decode("utf-8"))
         self.assertEqual(payload["change_label"], "Mean unique-footprint log2FC")
         self.assertIn("${escText(changeLabel)}", html)
-        self.assertIn("<strong>${escText(payload.change_label||'Differential footprint score')}:</strong>", html)
+        self.assertIn("&#916;FP = ${fmtDelta(change)}", html)
 
     def test_aggregate_payload_uses_parallel_executor_when_multiple_cores(self):
         class FakeExecutor:
@@ -176,6 +330,35 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
                 payload = bindetect_functions.build_bindetect_aggregate_payload([], info_table, ["Bcell", "Tcell"], args)
         self.assertTrue(FakeExecutor.used)
         self.assertEqual([motif["prefix"] for motif in payload["motifs"]], ["TF1", "TF2"])
+
+    def test_sig_aggregate_mode_keeps_all_significant_rows(self):
+        info_table = pd.DataFrame(
+            [
+                {"output_prefix": "TF1", "name": "TF1", "motif_id": "M1", "Bcell_Tcell_change": 1.0, "Bcell_Tcell_pvalue": 0.001},
+                {"output_prefix": "TF2", "name": "TF2", "motif_id": "M2", "Bcell_Tcell_change": 0.8, "Bcell_Tcell_pvalue": 0.002},
+                {"output_prefix": "TF3", "name": "TF3", "motif_id": "M3", "Bcell_Tcell_change": -0.6, "Bcell_Tcell_pvalue": 0.003},
+                {"output_prefix": "TF4", "name": "TF4", "motif_id": "M4", "Bcell_Tcell_change": 0.1, "Bcell_Tcell_pvalue": 0.5},
+            ]
+        )
+        args = SimpleNamespace(
+            aggregate_signals=["B.bw", "T.bw"],
+            signals=["B.fp.bw", "T.fp.bw"],
+            plot_aggregate="sig",
+            plot_aggregate_top_n=2,
+            aggregate_pvalue_threshold=0.05,
+            aggregate_flank=1,
+            outdir=".",
+            cond_groups={"Bcell": [0], "Tcell": [1]},
+            cores=1,
+        )
+
+        def fake_row_worker(task):
+            row = task[0]
+            return {"prefix": row["output_prefix"], "name": row["name"], "conditions": []}
+
+        with patch.object(bindetect_functions, "_aggregate_payload_for_row", side_effect=fake_row_worker):
+            payload = bindetect_functions.build_bindetect_aggregate_payload([], info_table, ["Bcell", "Tcell"], args)
+        self.assertEqual([motif["prefix"] for motif in payload["motifs"]], ["TF1", "TF2", "TF3"])
 
 
 

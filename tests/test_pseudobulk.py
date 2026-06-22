@@ -526,7 +526,6 @@ class PseudobulkTest(unittest.TestCase):
             annotations = tmp / "annotations.tsv"
             genome = tmp / "genome.fa"
             peaks = tmp / "peaks.bed"
-            motifs = tmp / "motifs.jaspar"
             outdir = tmp / "workflow"
             header = {"HD": {"VN": "1.6"}, "SQ": [{"SN": "chr1", "LN": 200}]}
             with pysam.AlignmentFile(str(bam_path), "wb", header=header) as bam:
@@ -545,7 +544,6 @@ class PseudobulkTest(unittest.TestCase):
             annotations.write_text("barcode\tcell_type\ncellA\tB\ncellB\tB\n", encoding="utf-8")
             genome.write_text(">chr1\n" + "A" * 200 + "\n", encoding="utf-8")
             peaks.write_text("chr1\t1\t120\n", encoding="utf-8")
-            motifs.write_text(">TF1\nA [1 0 0 0]\nC [0 1 0 0]\nG [0 0 1 0]\nT [0 0 0 1]\n", encoding="utf-8")
 
             subprocess.run(
                 [
@@ -564,8 +562,8 @@ class PseudobulkTest(unittest.TestCase):
                     str(genome),
                     "--peaks",
                     str(peaks),
-                    "--motifs",
-                    str(motifs),
+                    "--motif-db",
+                    "hocomoco14_core",
                     "--min-cells",
                     "2",
                     "--min-fragments",
@@ -582,6 +580,7 @@ class PseudobulkTest(unittest.TestCase):
             manifest = (outdir / "pseudobulk_footprint_manifest.tsv").read_text(encoding="utf-8")
             self.assertIn("--read_shift 4 -5", commands)
             self.assertIn("diff-footprints", commands)
+            self.assertIn("--motif-db hocomoco14_core", commands)
             self.assertIn("--aggregate-signals", commands)
             self.assertIn("bindetect_results", manifest)
             self.assertIn("tagged_bam", manifest)
