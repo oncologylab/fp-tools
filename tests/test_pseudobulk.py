@@ -519,6 +519,75 @@ class PseudobulkTest(unittest.TestCase):
             self.assertIn("candidate_bed", table)
             self.assertIn("dry_run", table)
 
+    def test_pseudobulk_footprints_dry_run_can_plan_fig4_style_signature_plots(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            fragments = tmp / "fragments.tsv"
+            annotations = tmp / "annotations.tsv"
+            genome_sizes = tmp / "genome.sizes"
+            genome = tmp / "genome.fa"
+            peaks = tmp / "peaks.bed"
+            h5ad = tmp / "cells.h5ad"
+            tf_site_dir = tmp / "tf_sites"
+            outdir = tmp / "workflow"
+            tf_site_dir.mkdir()
+            fragments.write_text("chr1\t10\t20\tcellA\t2\nchr1\t30\t40\tcellB\t1\n", encoding="utf-8")
+            annotations.write_text("barcode\tcell_type\tumap_1\tumap_2\ncellA\tB_cell\t0\t0\ncellB\tB_cell\t1\t1\n", encoding="utf-8")
+            genome_sizes.write_text("chr1\t100\n", encoding="utf-8")
+            genome.write_text(">chr1\n" + "A" * 100 + "\n", encoding="utf-8")
+            peaks.write_text("chr1\t1\t80\n", encoding="utf-8")
+            h5ad.write_text("placeholder\n", encoding="utf-8")
+            (tf_site_dir / "PAX5.motif_hits.bed").write_text("chr1\t15\t17\tPAX5\n", encoding="utf-8")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "fp_tools.tools.pseudobulk_footprints",
+                    "--fragments",
+                    str(fragments),
+                    "--annotations",
+                    str(annotations),
+                    "--group-by",
+                    "cell_type",
+                    "--outdir",
+                    str(outdir),
+                    "--genome-sizes",
+                    str(genome_sizes),
+                    "--genome",
+                    str(genome),
+                    "--peaks",
+                    str(peaks),
+                    "--motif-db",
+                    "hocomoco14_core",
+                    "--tf-site-dir",
+                    str(tf_site_dir),
+                    "--single-cell-signature-h5ad",
+                    str(h5ad),
+                    "--single-cell-signature-markers",
+                    "PAX5",
+                    "--single-cell-signature-fig-prefix",
+                    "single_cell_footprinting",
+                    "--min-cells",
+                    "2",
+                    "--min-fragments",
+                    "3",
+                    "--cores",
+                    "1",
+                    "--dry-run",
+                ],
+                cwd=Path(__file__).resolve().parents[1],
+                check=True,
+            )
+
+            commands = (outdir / "pseudobulk_footprint_commands.sh").read_text(encoding="utf-8")
+            self.assertIn("diff-footprints", commands)
+            self.assertIn("plot_pbmc5k_per_cell_signatures.py", commands)
+            self.assertIn("--h5ad", commands)
+            self.assertIn("--all-motif-bindetect-dir", commands)
+            self.assertIn("--all-motif-results", commands)
+            self.assertIn("--fig4-output-prefix single_cell_footprinting", commands)
+
     def test_pseudobulk_footprints_bam_dry_run_uses_default_shift_and_bindetect(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)

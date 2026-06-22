@@ -19,7 +19,7 @@ The public interface of `fp-tools` is command-first. This page lists the full co
 | [`motif-summary`](#motif-summary) | Summarize MEME/Tomtom motif discovery outputs. |
 | [`fp-tools-score-variants`](#fp-tools-score-variants) | Annotate variants with footprint, sequence, and motif scores. |
 | [`pseudobulk-fragments`](#pseudobulk-fragments) | Group single-cell ATAC fragments into pseudobulk files. |
-| [`pseudobulk-footprints`](#pseudobulk-footprints) | Run grouping, ATAC correction, footprint scoring, and optional reports. |
+| [`pseudobulk-footprints`](#pseudobulk-footprints) | Run grouping, ATAC correction, footprint scoring, reports, and optional Fig4-style single-cell plots. |
 
 ## Command Manuals
 
@@ -842,7 +842,7 @@ options:
 
 ### `pseudobulk-footprints`
 
-Run grouping, ATAC correction, footprint scoring, and optional reports.
+Run grouping, ATAC correction, footprint scoring, reports, and optional Fig4-style single-cell plots.
 
 ```text
 usage: pseudobulk-footprints [-h] (--fragments FRAGMENTS | --bam BAM)
@@ -868,8 +868,21 @@ usage: pseudobulk-footprints [-h] (--fragments FRAGMENTS | --bam BAM)
                              [--tf-site-dir TF_SITE_DIR]
                              [--site-summary SITE_SUMMARY] [--tfs TFS]
                              [--plot-flank PLOT_FLANK]
-                             [--plot-script PLOT_SCRIPT] [--cores CORES]
-                             [--resume] [--force] [--dry-run] [--fail-fast]
+                             [--plot-script PLOT_SCRIPT]
+                             [--single-cell-signature-h5ad SINGLE_CELL_SIGNATURE_H5AD]
+                             [--single-cell-signature-outdir SINGLE_CELL_SIGNATURE_OUTDIR]
+                             [--single-cell-signature-markers SINGLE_CELL_SIGNATURE_MARKERS]
+                             [--single-cell-signature-fig-prefix SINGLE_CELL_SIGNATURE_FIG_PREFIX]
+                             [--single-cell-signature-script SINGLE_CELL_SIGNATURE_SCRIPT]
+                             [--single-cell-signature-all-motif-score-table SINGLE_CELL_SIGNATURE_ALL_MOTIF_SCORE_TABLE]
+                             [--single-cell-signature-marker-score-table SINGLE_CELL_SIGNATURE_MARKER_SCORE_TABLE]
+                             [--single-cell-signature-top-per-cell-type SINGLE_CELL_SIGNATURE_TOP_PER_CELL_TYPE]
+                             [--single-cell-signature-top-min-specificity SINGLE_CELL_SIGNATURE_TOP_MIN_SPECIFICITY]
+                             [--single-cell-signature-knn SINGLE_CELL_SIGNATURE_KNN]
+                             [--single-cell-signature-max-sites-per-motif SINGLE_CELL_SIGNATURE_MAX_SITES_PER_MOTIF]
+                             [--single-cell-signature-max-motifs SINGLE_CELL_SIGNATURE_MAX_MOTIFS]
+                             [--cores CORES] [--resume] [--force] [--dry-run]
+                             [--fail-fast]
 
 Run a full pseudobulk ATAC footprint workflow from single-cell fragments or
 tagged BAMs.
@@ -948,6 +961,46 @@ options:
                         Flank for optional aggregate plots (default: 100).
   --plot-script PLOT_SCRIPT
                         Plotting script path for optional aggregate plots.
+  --single-cell-signature-h5ad SINGLE_CELL_SIGNATURE_H5AD
+                        Optional h5ad with cell embeddings/counts; with
+                        --fragments and --tf-site-dir, write Fig4-style per-
+                        cell KNN footprint-signature plots.
+  --single-cell-signature-outdir SINGLE_CELL_SIGNATURE_OUTDIR
+                        Output directory for optional Fig4-style per-cell
+                        signature plots (default:
+                        <outdir>/plots/single_cell_footprinting).
+  --single-cell-signature-markers SINGLE_CELL_SIGNATURE_MARKERS
+                        Comma-separated marker TFs for optional per-cell
+                        signature UMAPs (default:
+                        PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2).
+  --single-cell-signature-fig-prefix SINGLE_CELL_SIGNATURE_FIG_PREFIX
+                        Output prefix for the combined Fig4-style single-cell
+                        footprinting SVG (default: single_cell_footprinting).
+  --single-cell-signature-script SINGLE_CELL_SIGNATURE_SCRIPT
+                        Plotting script path for optional per-cell signature
+                        plots.
+  --single-cell-signature-all-motif-score-table SINGLE_CELL_SIGNATURE_ALL_MOTIF_SCORE_TABLE
+                        Existing all-motif per-cell signature TSV; skips
+                        rescoring all motif sites for the Fig4-style heatmap.
+  --single-cell-signature-marker-score-table SINGLE_CELL_SIGNATURE_MARKER_SCORE_TABLE
+                        Existing KNN marker score TSV used for marker rows and
+                        UMAP plots.
+  --single-cell-signature-top-per-cell-type SINGLE_CELL_SIGNATURE_TOP_PER_CELL_TYPE
+                        Top all-motif signatures to keep per cell type in the
+                        Fig4-style heatmap (default: 40).
+  --single-cell-signature-top-min-specificity SINGLE_CELL_SIGNATURE_TOP_MIN_SPECIFICITY
+                        Minimum dominant-vs-next cell-type z-score difference
+                        for top heatmap rows (default: 0.5).
+  --single-cell-signature-knn SINGLE_CELL_SIGNATURE_KNN
+                        KNN size for optional per-cell footprint-signature
+                        smoothing (default: 75).
+  --single-cell-signature-max-sites-per-motif SINGLE_CELL_SIGNATURE_MAX_SITES_PER_MOTIF
+                        Maximum motif instances per motif for optional all-
+                        motif per-cell heatmap scoring; use 0 for all sites
+                        (default: 200).
+  --single-cell-signature-max-motifs SINGLE_CELL_SIGNATURE_MAX_MOTIFS
+                        Optional smoke-test limit for all-motif per-cell
+                        heatmap scoring.
   --cores CORES         Cores for grouping, atac-correct, and footprint
                         scoring (default: 1).
   --resume              Skip atac-correct/call-footprints steps whose expected

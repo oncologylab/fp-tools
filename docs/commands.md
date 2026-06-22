@@ -9,7 +9,7 @@ pip install fp-tools-bio
 <div class="fp-grid">
   <div class="fp-card">
     <h3>Start with bulk ATAC</h3>
-    <p>atac-correct, call-footprints, and diff-footprints cover the core footprint workflow.</p>
+    <p>atac-correct, call-footprints, match-motifs, and diff-footprints cover the core footprint workflow.</p>
   </div>
   <div class="fp-card">
     <h3>Review reports</h3>
@@ -43,8 +43,40 @@ pip install fp-tools-bio
 | `motif-summary` | Summarize MEME/Tomtom outputs into TSV and HTML reports. |
 | `fp-tools-score-variants` | Score variants with allele checks, candidate overlaps, sequence deltas, and optional motif/model deltas. |
 | `pseudobulk-fragments` | Group single-cell ATAC fragments into pseudobulk fragment files. |
-| `pseudobulk-footprints` | Run the full pseudobulk fragment, correction, footprint, and report workflow. |
+| `pseudobulk-footprints` | Run the full pseudobulk fragment, correction, footprint, report, and optional Fig4-style plotting workflow. |
 
 ## Differential Footprint Defaults
 
 For multi-sample analyses, score footprints from q95-scaled corrected bigWigs and keep `--normalization none` unless you are running an explicit sensitivity check.
+
+## Standard Bulk Workflow
+
+```text
+atac-correct -> call-footprints -> match-motifs -> diff-footprints -> plot-aggregate-batch
+```
+
+`match-motifs` is the single-sample motif-site review step. `diff-footprints` repeats motif scanning for multi-condition comparisons and writes the differential report.
+
+## Pseudobulk Workflow
+
+```text
+pseudobulk-footprints
+  -> pseudobulk fragments and pseudo-BAMs
+  -> atac-correct per group
+  -> call-footprints per group
+  -> diff-footprints across groups
+  -> aggregate and Fig4-style single-cell footprinting plots
+```
+
+Provide `--motif-db` for motif-aware reports. Provide `--tf-site-dir` and `--single-cell-signature-h5ad` to write the standard Fig4-style marker heatmap and UMAP outputs.
+
+## De Novo Motif Workflow
+
+```text
+call-footprints --output-bed
+  -> motif-discovery
+  -> motif-summary
+  -> diff-footprints with --motifs alone, or --motif-db plus --motifs
+```
+
+Use de novo-only mode to test discovered motifs by themselves. Use database-plus-de-novo mode when discovered motifs should supplement a standard JASPAR or HOCOMOCO scan.

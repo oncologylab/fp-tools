@@ -18,7 +18,7 @@ fp-tools-gui
 ## Standard Workflow
 
 <div class="fp-command-chain">
-  atac-correct -> call-footprints -> diff-footprints -> plot-aggregate-batch
+  atac-correct -> call-footprints -> match-motifs -> diff-footprints -> plot-aggregate-batch
 </div>
 
 ### 1. Correct ATAC Signal
@@ -45,7 +45,20 @@ call-footprints \
 
 Output: a footprint score bigWig. Add `--output-bed` to write ranked candidate intervals.
 
-### 3. Compare Conditions
+### 3. Match Motifs
+
+```bash
+match-motifs \
+  --signals results/footprints/sample_footprints.bw \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --motif-db jaspar2026_vertebrates \
+  --outdir results/motif_matches/sample
+```
+
+Output: motif-site tables, bound/unbound motif calls, and files that can be reviewed before multi-condition comparisons.
+
+### 4. Compare Conditions
 
 ```bash
 diff-footprints \
@@ -66,7 +79,7 @@ diff-footprints \
 
 Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and a standalone HTML report.
 
-### 4. Review Aggregate Plots
+### 5. Review Aggregate Plots
 
 ```bash
 plot-aggregate-batch \
@@ -91,14 +104,59 @@ match-motifs \
 
 ## Pseudobulk Single-Cell ATAC
 
-Use these commands when starting from single-cell fragments and cell annotations:
+Use `pseudobulk-footprints` when starting from single-cell fragments and cell annotations.
 
 ```bash
-pseudobulk-fragments --help
-pseudobulk-footprints --help
+pseudobulk-footprints \
+  --fragments pbmc_fragments.tsv.gz \
+  --annotations cell_annotations.tsv \
+  --group-by cell_type \
+  --genome-sizes hg38.chrom.sizes \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --motif-db jaspar2026_vertebrates \
+  --tf-site-dir marker_motif_sites \
+  --single-cell-signature-h5ad pbmc_embedding.h5ad \
+  --outdir results/pseudobulk
 ```
 
-`pseudobulk-footprints` groups fragments, runs ATAC correction, scores footprints, and can produce motif-aware reports.
+Standard outputs include pseudobulk fragments, pseudo-BAMs, corrected cut-site bigWigs, footprint-score bigWigs, motif-aware differential reports, aggregate plots, and Fig4-style single-cell footprinting plots. The combined plot is written as `plots/single_cell_footprinting/single_cell_footprinting.svg` when `--single-cell-signature-h5ad` and `--tf-site-dir` are supplied.
+
+For a lighter first step, use `pseudobulk-fragments` to only group fragments and write cut-site tracks.
+
+## De Novo Motif Discovery
+
+Use de novo motif discovery when you want to start from candidate footprint intervals rather than only a curated database.
+
+```bash
+call-footprints \
+  --signal results/atac_correct/sample/sample_corrected.bw \
+  --regions peaks.bed \
+  --output results/footprints/sample_footprints.bw \
+  --output-bed results/footprints/sample_candidates.bed
+
+motif-discovery \
+  --candidates results/footprints/sample_candidates.bed \
+  --genome hg38.fa.gz \
+  --flank 75 \
+  --method streme \
+  --known-motif-db jaspar2026_vertebrates \
+  --outdir results/de_novo/sample
+```
+
+This writes candidate FASTA, a runnable MEME/STREME/DREME shell script, and optional Tomtom comparison against the selected known motif database.
+
+Use the discovered motifs in either mode:
+
+```bash
+# De novo-only
+diff-footprints ... --motifs results/de_novo/sample/streme/streme.txt
+
+# Database plus de novo supplement
+diff-footprints ... \
+  --motif-db jaspar2026_vertebrates \
+  --motifs results/de_novo/sample/streme/streme.txt
+```
 
 ## Where To Go Next
 

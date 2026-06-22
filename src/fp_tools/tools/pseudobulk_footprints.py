@@ -82,6 +82,16 @@ def _write_commands(commands: list[tuple[str, list[str]]], output: Path) -> Path
     return output
 
 
+def _resolve_script_path(script: str | Path) -> Path:
+    path = Path(script)
+    if path.exists():
+        return path
+    repo_relative = Path.cwd() / path
+    if repo_relative.exists():
+        return repo_relative
+    return path
+
+
 def _run_command(command: list[str], stdout_path: Path, stderr_path: Path) -> int:
     stdout_path.parent.mkdir(parents=True, exist_ok=True)
     resolved = list(command)
@@ -109,6 +119,81 @@ def _read_shift_from_row(args: argparse.Namespace, source: pd.Series) -> list[in
     if len(fields) != 2:
         return [0, 0]
     return [int(fields[0]), int(fields[1])]
+
+
+def _add_single_cell_signature_command(
+    args: argparse.Namespace,
+    commands: list[tuple[str, list[str]]],
+    *,
+    plot_dir: Path,
+    diff_dir: Path,
+    bindetect_results: Path | None,
+    log_dir: Path,
+    motif_report_available: bool,
+    exit_code: int,
+) -> int:
+    if not args.single_cell_signature_h5ad:
+        return exit_code
+    if not args.fragments:
+        raise ValueError("--single-cell-signature-h5ad is currently supported only with --fragments input.")
+    if not args.tf_site_dir:
+        raise ValueError("--single-cell-signature-h5ad requires --tf-site-dir with marker motif-site BED files.")
+
+    signature_dir = Path(args.single_cell_signature_outdir) if args.single_cell_signature_outdir else plot_dir / "single_cell_footprinting"
+    signature_dir.mkdir(parents=True, exist_ok=True)
+    signature_script = _resolve_script_path(args.single_cell_signature_script)
+    signature_command = [
+        sys.executable,
+        str(signature_script),
+        "--annotations",
+        str(args.annotations),
+        "--fragments",
+        str(args.fragments),
+        "--h5ad",
+        str(args.single_cell_signature_h5ad),
+        "--tf-site-dir",
+        str(args.tf_site_dir),
+        "--outdir",
+        str(signature_dir),
+        "--markers",
+        str(args.single_cell_signature_markers),
+        "--fig4-output-prefix",
+        str(args.single_cell_signature_fig_prefix),
+    ]
+    if args.single_cell_signature_all_motif_score_table:
+        signature_command.extend(["--all-motif-score-table", str(args.single_cell_signature_all_motif_score_table)])
+    elif motif_report_available and bindetect_results is not None:
+        signature_command.extend(
+            [
+                "--all-motif-bindetect-dir",
+                str(diff_dir),
+                "--all-motif-results",
+                str(bindetect_results),
+            ]
+        )
+    if args.single_cell_signature_marker_score_table:
+        signature_command.extend(["--marker-score-table", str(args.single_cell_signature_marker_score_table)])
+    if args.single_cell_signature_top_per_cell_type:
+        signature_command.extend(["--top-motif-signatures-per-cell-type", str(args.single_cell_signature_top_per_cell_type)])
+    if args.single_cell_signature_top_min_specificity is not None:
+        signature_command.extend(["--top-motif-min-specificity", str(args.single_cell_signature_top_min_specificity)])
+    if args.single_cell_signature_knn:
+        signature_command.extend(["--knn", str(args.single_cell_signature_knn)])
+    if args.single_cell_signature_max_sites_per_motif is not None:
+        signature_command.extend(["--max-sites-per-motif", str(args.single_cell_signature_max_sites_per_motif)])
+    if args.single_cell_signature_max_motifs is not None:
+        signature_command.extend(["--max-motifs", str(args.single_cell_signature_max_motifs)])
+
+    commands.append(("Fig4-style single-cell footprinting plots", signature_command))
+    if not args.dry_run and exit_code == 0:
+        code = _run_command(
+            signature_command,
+            log_dir / "single_cell_footprinting.stdout.log",
+            log_dir / "single_cell_footprinting.stderr.log",
+        )
+        if code != 0:
+            return code
+    return exit_code
 
 
 def _group_inputs(args: argparse.Namespace, grouping_dir: Path, include_chroms: set[str] | None, exclude_chroms: set[str] | None) -> pd.DataFrame:
@@ -290,6 +375,8 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
     output_manifest = pd.DataFrame(rows)
     runnable_mask = output_manifest["status"].isin(["succeeded", "dry_run"])
     motif_inputs = resolve_motif_inputs(args.motifs, args.motif_db, use_default=False)
+    bindetect_results: Path | None = None
+    motif_report_available = bool(motif_inputs and runnable_mask.any())
     if motif_inputs and runnable_mask.any():
         bindetect_results = diff_dir / f"{args.diff_prefix}_results.txt"
         output_manifest.loc[runnable_mask, "bindetect_outdir"] = str(diff_dir)
@@ -336,9 +423,7 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
     output_manifest.to_csv(manifest_path, sep="\t", index=False)
 
     if args.tf_site_dir:
-        plot_script = Path(args.plot_script)
-        if not plot_script.exists():
-            plot_script = Path.cwd() / args.plot_script
+        plot_script = _resolve_script_path(args.plot_script)
         plot_command = [
             sys.executable,
             str(plot_script),
@@ -368,6 +453,17 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
             code = _run_command(plot_command, log_dir / "plot_footprints.stdout.log", log_dir / "plot_footprints.stderr.log")
             if code != 0:
                 exit_code = code
+
+    exit_code = _add_single_cell_signature_command(
+        args,
+        commands,
+        plot_dir=plot_dir,
+        diff_dir=diff_dir,
+        bindetect_results=bindetect_results,
+        log_dir=log_dir,
+        motif_report_available=motif_report_available,
+        exit_code=exit_code,
+    )
 
     command_path = _write_commands(commands, outdir / "pseudobulk_footprint_commands.sh")
     print(f"Wrote workflow manifest to {manifest_path}")
@@ -417,6 +513,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--tfs", default="auto", help="Comma-separated TFs or 'auto' for plotting (default: auto).")
     parser.add_argument("--plot-flank", type=int, default=100, help="Flank for optional aggregate plots (default: 100).")
     parser.add_argument("--plot-script", default="manuscript/scripts/plot_pseudobulk_tf_aggregates.py", help="Plotting script path for optional aggregate plots.")
+    parser.add_argument("--single-cell-signature-h5ad", help="Optional h5ad with cell embeddings/counts; with --fragments and --tf-site-dir, write Fig4-style per-cell KNN footprint-signature plots.")
+    parser.add_argument("--single-cell-signature-outdir", help="Output directory for optional Fig4-style per-cell signature plots (default: <outdir>/plots/single_cell_footprinting).")
+    parser.add_argument("--single-cell-signature-markers", default="PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2", help="Comma-separated marker TFs for optional per-cell signature UMAPs (default: PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2).")
+    parser.add_argument("--single-cell-signature-fig-prefix", default="single_cell_footprinting", help="Output prefix for the combined Fig4-style single-cell footprinting SVG (default: single_cell_footprinting).")
+    parser.add_argument("--single-cell-signature-script", default="benchmarks/scripts/plot_pbmc5k_per_cell_signatures.py", help="Plotting script path for optional per-cell signature plots.")
+    parser.add_argument("--single-cell-signature-all-motif-score-table", help="Existing all-motif per-cell signature TSV; skips rescoring all motif sites for the Fig4-style heatmap.")
+    parser.add_argument("--single-cell-signature-marker-score-table", help="Existing KNN marker score TSV used for marker rows and UMAP plots.")
+    parser.add_argument("--single-cell-signature-top-per-cell-type", type=int, default=40, help="Top all-motif signatures to keep per cell type in the Fig4-style heatmap (default: 40).")
+    parser.add_argument("--single-cell-signature-top-min-specificity", type=float, default=0.5, help="Minimum dominant-vs-next cell-type z-score difference for top heatmap rows (default: 0.5).")
+    parser.add_argument("--single-cell-signature-knn", type=int, default=75, help="KNN size for optional per-cell footprint-signature smoothing (default: 75).")
+    parser.add_argument("--single-cell-signature-max-sites-per-motif", type=int, default=200, help="Maximum motif instances per motif for optional all-motif per-cell heatmap scoring; use 0 for all sites (default: 200).")
+    parser.add_argument("--single-cell-signature-max-motifs", type=int, help="Optional smoke-test limit for all-motif per-cell heatmap scoring.")
     parser.add_argument("--cores", type=int, default=1, help="Cores for grouping, atac-correct, and footprint scoring (default: 1).")
     parser.add_argument("--resume", action="store_true", help="Skip atac-correct/call-footprints steps whose expected outputs already exist.")
     parser.add_argument("--force", action="store_true", help="Run atac-correct/call-footprints even if outputs already exist.")
@@ -436,6 +544,10 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--force and --resume are mutually exclusive")
     if args.fragments and not args.genome_sizes:
         parser.error("--genome-sizes is required with --fragments")
+    if args.single_cell_signature_h5ad and args.bam:
+        parser.error("--single-cell-signature-h5ad is currently supported only with --fragments")
+    if args.single_cell_signature_h5ad and not args.tf_site_dir:
+        parser.error("--single-cell-signature-h5ad requires --tf-site-dir")
     return run_pseudobulk_footprints(args)
 
 

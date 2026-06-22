@@ -34,11 +34,12 @@ The GUI opens in a browser and writes the same YAML configs that can be run from
 ```text
 atac-correct
   -> call-footprints
+  -> match-motifs
   -> diff-footprints
   -> plot-aggregate or plot-aggregate-batch
 ```
 
-For one sample, use `match-motifs` to inspect motif sites. For two or more conditions, use `diff-footprints`; it can scan motifs, compare conditions, and write an interactive HTML report.
+Use `match-motifs` to inspect motif sites and bound/unbound calls for a single footprint track. For two or more conditions, use `diff-footprints`; it can scan the same motif database, compare conditions, and write an interactive HTML report.
 
 ## Minimal Example
 
@@ -54,6 +55,13 @@ call-footprints \
   --signal results/atac_correct/sample/sample_corrected.bw \
   --regions peaks.bed \
   --output results/footprints/sample_footprints.bw
+
+match-motifs \
+  --signals results/footprints/sample_footprints.bw \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --motif-db jaspar2026_vertebrates \
+  --outdir results/motif_matches/sample
 
 diff-footprints \
   --signals \
@@ -73,6 +81,53 @@ diff-footprints \
 
 Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
 
+## Pseudobulk Workflow
+
+Use `pseudobulk-footprints` when starting from single-cell ATAC fragments and cell annotations. With a motif database, marker motif-site BEDs, and an h5ad file containing the cell embedding, the standard pseudobulk route also writes Fig4-style single-cell footprinting plots.
+
+```bash
+pseudobulk-footprints \
+  --fragments pbmc_fragments.tsv.gz \
+  --annotations cell_annotations.tsv \
+  --group-by cell_type \
+  --genome-sizes hg38.chrom.sizes \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --motif-db jaspar2026_vertebrates \
+  --tf-site-dir marker_motif_sites \
+  --single-cell-signature-h5ad pbmc_embedding.h5ad \
+  --outdir results/pseudobulk
+```
+
+Key outputs include pseudobulk fragments, pseudo-BAMs, corrected bigWigs, footprint-score bigWigs, differential footprint reports, aggregate plots, and `plots/single_cell_footprinting/single_cell_footprinting.svg`.
+
+## De Novo Motif Workflow
+
+Use candidate footprints from `call-footprints --output-bed` to prepare de novo motif discovery. This route writes a reproducible MEME/STREME/DREME script and can compare discovered motifs to a built-in motif database.
+
+```bash
+motif-discovery \
+  --candidates results/footprints/sample_candidates.bed \
+  --genome hg38.fa.gz \
+  --flank 75 \
+  --method streme \
+  --known-motif-db jaspar2026_vertebrates \
+  --outdir results/de_novo/sample
+```
+
+Use discovered motifs alone for a de novo-only run, or add them to a standard database run:
+
+```bash
+diff-footprints \
+  --signals conditionA_footprints.bw conditionB_footprints.bw \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --cond-names conditionA conditionB \
+  --motif-db jaspar2026_vertebrates \
+  --motifs results/de_novo/sample/streme/streme.txt \
+  --outdir results/diff_footprints/database_plus_de_novo
+```
+
 ## Main Commands
 
 | Command | Use |
@@ -88,7 +143,7 @@ Repeated names in `--cond-names` define biological replicates. The main report w
 | `motif-summary` | Summarize motif discovery outputs. |
 | `fp-tools-score-variants` | Score variants against candidate footprints and motifs. |
 | `pseudobulk-fragments` | Group single-cell fragments by annotation. |
-| `pseudobulk-footprints` | Run the full pseudobulk footprint workflow. |
+| `pseudobulk-footprints` | Run the full pseudobulk footprint workflow, including optional Fig4-style single-cell plots. |
 | `run-workflow` | Run a saved YAML config. |
 | `fp-tools-gui` | Open the optional browser GUI. |
 

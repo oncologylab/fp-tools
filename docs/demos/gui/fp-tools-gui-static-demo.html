@@ -456,14 +456,15 @@ plot_aggregate: sig</pre>
         title: "pseudobulk-footprints",
         description: "Run full pseudobulk ATAC correction, footprint scoring, motif analysis, and marker plots.",
         fields: [
-          ["Pseudobulk manifest", "pseudobulk_manifest.tsv"],
+          ["Fragments", "pbmc_fragments.tsv.gz"],
           ["Genome FASTA", "hg38.fa"],
           ["Peaks BED", "pbmc_peaks.bed"],
           ["Motif database", "jaspar2026_vertebrates"],
           ["Marker TFs", "PAX5, CEBPB, TCF7"],
+          ["Cell embedding", "pbmc_embedding.h5ad"],
           ["Output folder", "results/pseudobulk_footprints"]
         ],
-        yaml: "tool: pseudobulk-footprints\nmanifest: pseudobulk_manifest.tsv\nmotif_db: jaspar2026_vertebrates\nmarker_tfs: PAX5,CEBPB,TCF7",
+        yaml: "tool: pseudobulk-footprints\nfragments: pbmc_fragments.tsv.gz\nannotations: cell_annotations.tsv\ngroup_by: cell_type\nmotif_db: jaspar2026_vertebrates\ntf_site_dir: marker_motif_sites\nsingle_cell_signature_h5ad: pbmc_embedding.h5ad",
         metrics: [["Tool", "scATAC"], ["Steps", "Full"], ["Plots", "UMAP"]]
       }
     };
