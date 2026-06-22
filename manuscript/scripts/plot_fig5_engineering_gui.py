@@ -167,162 +167,172 @@ def _workflow_card(ax: plt.Axes, x: float, y: float, width: float, title: str, b
 
 
 def plot_vector_gui_panel(ax: plt.Axes) -> None:
-    """Draw a vector equivalent of the GUI home page for editable manuscript output."""
+    """Draw a vector equivalent of the current GUI home page."""
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.set_axis_off()
 
-    _rounded_box(ax, 0.0, 0.0, 1.0, 1.0, face="#F8FAFC", edge="#CBD5E1", lw=0.9, radius=0.0)
+    _rounded_box(ax, 0.0, 0.0, 1.0, 1.0, face="#F3F6FA", edge="#CBD5E1", lw=0.9, radius=0.0)
 
-    sidebar_w = 0.275
+    sidebar_w = 0.255
     ax.add_patch(
         mpatches.Rectangle(
             (0.0, 0.0),
             sidebar_w,
             1.0,
             transform=ax.transAxes,
-            facecolor="#F1F5F9",
-            edgecolor="#CBD5E1",
-            linewidth=0.8,
+            facecolor="#0F172A",
+            edgecolor="#0F172A",
+            linewidth=0,
         )
     )
+    _rounded_box(ax, 0.022, 0.900, sidebar_w - 0.044, 0.072, face="#101D33", edge="#2B3A55", radius=0.010)
+    _gui_text(ax, 0.040, 0.952, "fp-tools", size=10.6, color="#FFFFFF")
+    _gui_text(ax, 0.040, 0.922, "Command-ready workflows", size=6.6, color="#AEBBD0")
 
-    _rounded_box(ax, 0.023, 0.926, sidebar_w - 0.046, 0.056, face="#0F172A", edge="#0F172A", radius=0.01)
-    _gui_text(ax, 0.040, 0.962, "fp-tools", size=8.6, color="#FFFFFF")
-    _gui_text(ax, 0.040, 0.939, "GUI + CLI", size=5.8, color="#CBD5E1")
+    def nav_item(y: float, label: str, *, active: bool = False) -> None:
+        face = "#1D4ED8" if active else "#0F172A"
+        edge = "#1D4ED8" if active else "#0F172A"
+        _rounded_box(ax, 0.022, y, sidebar_w - 0.044, 0.040, face=face, edge=edge, lw=0.5, radius=0.008)
+        if active:
+            ax.add_patch(
+                mpatches.Rectangle(
+                    (0.026, y + 0.006),
+                    0.004,
+                    0.028,
+                    transform=ax.transAxes,
+                    facecolor="#72E0B2",
+                    edgecolor="#72E0B2",
+                    linewidth=0,
+                )
+            )
+        _gui_text(ax, 0.040, y + 0.027, label, size=6.6, color="#E5EDF6")
 
-    _gui_text(ax, 0.025, 0.902, "Workspace", size=6.3, color="#334155")
-    _rounded_box(ax, 0.023, 0.853, sidebar_w - 0.046, 0.044, face="#FFFFFF", edge="#D1D5DB", radius=0.008)
-    _gui_text(ax, 0.039, 0.881, "Example run", size=5.8, color="#111827")
-    _gui_text(ax, 0.039, 0.864, "inputs ready", size=5.2, color="#16A34A")
+    y = 0.848
+    for group, labels in [
+        ("Overview", ["Home", "Run History"]),
+        ("Core Workflow", ["atac-correct", "call-footprints", "match-motifs", "diff-footprints"]),
+        ("Reports", ["normalize-bigwig", "plot-aggregate", "plot-aggregate-batch"]),
+        ("Single-cell ATAC", ["pseudobulk-fragments", "pseudobulk-footprints"]),
+    ]:
+        _gui_text(ax, 0.030, y + 0.017, group.upper(), size=5.3, color="#93A4B8")
+        y -= 0.040
+        for label in labels:
+            nav_item(y, label, active=label == "Home")
+            y -= 0.043
+        y -= 0.010
 
-    _gui_text(ax, 0.025, 0.823, "Commands", size=6.3, color="#334155")
-    nav = [
-        ("Home", True),
-        ("ATACorrect", False),
-        ("FootprintScores", False),
-        ("BINDetect", False),
-        ("PlotAggregate", False),
-        ("Pseudobulk", False),
-        ("Normalize bigWig", False),
-        ("Variants", False),
-        ("Motif discovery", False),
-        ("History", False),
-    ]
-    y = 0.756
-    for label, active in nav:
-        _sidebar_button(ax, 0.023, y, sidebar_w - 0.046, label, active=active)
-        y -= 0.044
+    main_x = sidebar_w + 0.030
+    main_w = 1.0 - main_x - 0.030
 
-    _gui_text(ax, 0.025, 0.326, "Shared options", size=6.3, color="#334155")
-    options = [
-        ("Genome", "genome.fa.gz"),
-        ("Motifs", "JASPAR / HOCOMOCO"),
-        ("Cores", "1 demo; scale up"),
-        ("Output", "examples/gui_outputs"),
-    ]
-    y = 0.268
-    for title, value in options:
-        _rounded_box(ax, 0.023, y, sidebar_w - 0.046, 0.043, face="#FFFFFF", edge="#E5E7EB", lw=0.7, radius=0.007)
-        _gui_text(ax, 0.037, y + 0.030, title, size=5.2, color="#475569")
-        _gui_text(ax, 0.037, y + 0.014, value, size=5.0, color="#111827")
-        y -= 0.048
-
-    main_x = sidebar_w + 0.026
-    main_w = 1.0 - main_x - 0.025
-    _gui_text(ax, main_x, 0.976, "GUI home", size=8.4, color="#111827")
+    _rounded_box(ax, main_x, 0.855, main_w, 0.120, face="#FFFFFF", edge="#DBE3EC", lw=0.8, radius=0.010)
+    _gui_text(ax, main_x + 0.020, 0.944, "Run footprint workflows", size=11.6, color="#111827")
     _gui_text(
         ax,
-        main_x,
-        0.952,
-        "Save configs, run commands, and review outputs.",
-        size=5.8,
-        color="#475569",
+        main_x + 0.020,
+        0.910,
+        "Choose a command, load an example, review YAML, then launch.",
+        size=7.1,
+        color="#5B6778",
     )
 
-    _small_status(ax, main_x, 0.899, "Inputs", "ready", "#16A34A")
-    _small_status(ax, main_x + 0.108, 0.899, "Config", "saved", "#2563EB")
-    _small_status(ax, main_x + 0.216, 0.899, "Logs", "live", "#7C3AED")
-    _small_status(ax, main_x + 0.324, 0.899, "Plots", "SVG", "#EA580C")
+    step_y = 0.735
+    step_gap = 0.012
+    step_w = (main_w - 3 * step_gap) / 4
+    for idx, (title, body) in enumerate(
+        [
+            ("1. Choose", "sidebar command"),
+            ("2. Load", "example YAML"),
+            ("3. Review", "editable config"),
+            ("4. Inspect", "logs and reports"),
+        ]
+    ):
+        x = main_x + idx * (step_w + step_gap)
+        _rounded_box(ax, x, step_y, step_w, 0.092, face="#FFFFFF", edge="#DBE3EC", lw=0.8, radius=0.010)
+        _gui_text(ax, x + 0.012, step_y + 0.064, title, size=6.9, color="#111827")
+        _gui_text(ax, x + 0.012, step_y + 0.037, body, size=5.7, color="#5B6778")
 
-    _rounded_box(ax, main_x, 0.742, main_w, 0.137, face="#EFF6FF", edge="#BFDBFE", lw=0.8, radius=0.012)
-    _gui_text(ax, main_x + 0.018, 0.854, "Guided tour", size=7.2, color="#1E3A8A")
-    _gui_text(
-        ax,
-        main_x + 0.018,
-        0.826,
-        "1  Select command    2  Load example    3  Preview command    4  Run",
-        size=5.8,
-        color="#1E40AF",
-    )
-    _gui_text(
-        ax,
-        main_x + 0.018,
-        0.799,
-        "Same config for GUI and CLI.",
-        size=5.8,
-        color="#1E40AF",
-    )
-    _rounded_box(ax, main_x + main_w - 0.165, 0.764, 0.136, 0.041, face="#2563EB", edge="#2563EB", radius=0.009)
-    _gui_text(ax, main_x + main_w - 0.097, 0.791, "Start tour", size=6.0, color="#FFFFFF", ha="center")
+    left_w = main_w * 0.615
+    right_x = main_x + left_w + 0.018
+    right_w = main_w - left_w - 0.018
 
-    _rounded_box(ax, main_x, 0.548, main_w, 0.168, face="#FFFFFF", edge="#D1D5DB", lw=0.8, radius=0.012)
-    _gui_text(ax, main_x + 0.018, 0.690, "CLI-ready config", size=7.0, color="#111827")
-    command_lines = [
-        "fp-tools-run examples/gui_configs/pseudobulk_footprints_dry_run.yml",
-        "ATACorrect -> FootprintScores -> BINDetect",
-        "paths, samples, motifs, and outputs are saved once",
+    _rounded_box(ax, main_x, 0.220, left_w, 0.480, face="#FFFFFF", edge="#DBE3EC", lw=0.8, radius=0.010)
+    _gui_text(ax, main_x + 0.018, 0.668, "diff-footprints", size=9.0, color="#111827")
+
+    def field_box(x: float, y: float, width: float, label: str, value: str) -> None:
+        _gui_text(ax, x, y + 0.052, label, size=5.6, color="#344054")
+        _rounded_box(ax, x, y, width, 0.042, face="#F8FAFC", edge="#DBE3EC", lw=0.65, radius=0.007)
+        _gui_text(ax, x + 0.009, y + 0.027, value, size=5.4, color="#334155")
+
+    col_gap = 0.016
+    col_w = (left_w - 0.052 - col_gap) / 2
+    x1 = main_x + 0.020
+    x2 = x1 + col_w + col_gap
+    fields = [
+        ("Footprint bigWigs", "K562_rep1.bw, HepG2_rep1.bw"),
+        ("Condition names", "K562 K562 HepG2 HepG2"),
+        ("Genome FASTA", "hg38.fa"),
+        ("Motif database", "jaspar2026_vertebrates"),
+        ("Peaks BED", "merged_peaks.bed"),
+        ("Output folder", "results/diff_footprints"),
     ]
-    y = 0.656
-    for line in command_lines:
-        _rounded_box(ax, main_x + 0.018, y - 0.025, main_w - 0.036, 0.034, face="#F8FAFC", edge="#E5E7EB", lw=0.55, radius=0.006)
-        _gui_text(ax, main_x + 0.032, y - 0.002, line, size=5.3, color="#0F172A")
-        y -= 0.043
+    for idx, (label, value) in enumerate(fields):
+        row = idx // 2
+        col_x = x1 if idx % 2 == 0 else x2
+        field_box(col_x, 0.578 - row * 0.112, col_w, label, value)
 
-    _gui_text(ax, main_x, 0.517, "Core actions", size=7.1, color="#111827")
-    card_gap = 0.014
-    card_w = (main_w - 3 * card_gap) / 4
-    cards = [
-        ("Correct", "Tn5 bias", "#2563EB"),
-        ("Score", "footprints", "#7C3AED"),
-        ("Detect", "TF activity", "#EA580C"),
-        ("Report", "plots + tables", "#16A34A"),
-    ]
-    for idx, (title, body, color) in enumerate(cards):
-        _workflow_card(ax, main_x + idx * (card_w + card_gap), 0.380, card_w, title, body, color)
+    _rounded_box(ax, main_x + 0.020, 0.265, left_w - 0.040, 0.090, face="#EAF2FF", edge="#BDD7FF", lw=0.8, radius=0.009)
+    _gui_text(ax, main_x + 0.038, 0.328, "Guided workflow", size=7.3, color="#173B73")
+    _gui_text(ax, main_x + 0.038, 0.300, "Load example, edit paths, check YAML, run.", size=5.9, color="#173B73")
 
-    _rounded_box(ax, main_x, 0.200, main_w, 0.148, face="#FFFFFF", edge="#D1D5DB", lw=0.8, radius=0.012)
-    _gui_text(ax, main_x + 0.018, 0.322, "Templates", size=7.0, color="#111827")
-    examples = [
-        ("atacorrect.yml", "correction"),
-        ("footprints.yml", "scores"),
-        ("bindetect.yml", "TF activity"),
-        ("aggregate.yml", "profiles"),
-        ("pseudobulk.yml", "single-cell"),
-        ("variants.yml", "variants"),
-    ]
-    for idx, (name, label) in enumerate(examples):
-        row = idx // 3
-        col = idx % 3
-        box_w = (main_w - 0.054) / 3
-        x = main_x + 0.018 + col * (box_w + 0.018)
-        yy = 0.268 - row * 0.051
-        _rounded_box(ax, x, yy, box_w, 0.041, face="#F8FAFC", edge="#E5E7EB", lw=0.6, radius=0.007)
-        _gui_text(ax, x + 0.010, yy + 0.028, name, size=5.0, color="#111827")
-        _gui_text(ax, x + 0.010, yy + 0.012, label, size=4.8, color="#64748B")
+    _rounded_box(ax, right_x, 0.470, right_w, 0.230, face="#FFFFFF", edge="#DBE3EC", lw=0.8, radius=0.010)
+    _gui_text(ax, right_x + 0.016, 0.668, "Run", size=9.0, color="#111827")
+    metric_w = (right_w - 0.048) / 3
+    for idx, (label, value) in enumerate([("Tool", "Diff"), ("Samples", "6"), ("Report", "HTML")]):
+        x = right_x + 0.016 + idx * (metric_w + 0.008)
+        _rounded_box(ax, x, 0.603, metric_w, 0.048, face="#F8FAFC", edge="#DBE3EC", lw=0.65, radius=0.007)
+        _gui_text(ax, x + 0.008, 0.635, label.upper(), size=4.7, color="#5B6778")
+        _gui_text(ax, x + 0.008, 0.616, value, size=5.7, color="#111827")
+    _rounded_box(ax, right_x + 0.016, 0.515, right_w - 0.032, 0.065, face="#0F172A", edge="#0F172A", lw=0.8, radius=0.008)
+    for idx, line in enumerate(
+        [
+            "tool: diff-footprints",
+            "motif_db: jaspar2026_vertebrates",
+            "plot_aggregate: sig",
+        ]
+    ):
+        _gui_text(ax, right_x + 0.030, 0.563 - idx * 0.019, line, size=4.9, color="#DBEAFE")
+    _rounded_box(ax, right_x + 0.016, 0.485, right_w - 0.032, 0.030, face="#173B73", edge="#173B73", radius=0.007)
+    _gui_text(ax, right_x + right_w / 2, 0.505, "Start run", size=5.8, color="#FFFFFF", ha="center")
 
-    _rounded_box(ax, main_x, 0.050, main_w, 0.118, face="#F8FAFC", edge="#D1D5DB", lw=0.8, radius=0.012)
-    _gui_text(ax, main_x + 0.018, 0.142, "Outputs", size=7.0, color="#111827")
-    statuses = [
-        ("config", "#16A34A"),
-        ("logs", "#2563EB"),
-        ("tables", "#7C3AED"),
-        ("SVG figures", "#EA580C"),
-    ]
-    for idx, (label, color) in enumerate(statuses):
-        x = main_x + 0.020 + idx * ((main_w - 0.050) / 4)
-        ax.add_patch(mpatches.Circle((x, 0.091), 0.0085, transform=ax.transAxes, facecolor=color, edgecolor=color, linewidth=0.5))
-        _gui_text(ax, x + 0.014, 0.103, label, size=5.5, color="#111827")
+    _rounded_box(ax, right_x, 0.220, right_w, 0.220, face="#FFFFFF", edge="#DBE3EC", lw=0.8, radius=0.010)
+    _gui_text(ax, right_x + 0.016, 0.408, "Run History", size=8.2, color="#111827")
+    for idx, (label, value, color) in enumerate(
+        [
+            ("Status", "Complete", "#15956B"),
+            ("Config", "saved YAML", "#1D4ED8"),
+            ("Outputs", "tables + SVG", "#EA580C"),
+        ]
+    ):
+        y0 = 0.360 - idx * 0.050
+        ax.add_patch(mpatches.Circle((right_x + 0.030, y0 + 0.012), 0.007, transform=ax.transAxes, facecolor=color, edgecolor=color))
+        _gui_text(ax, right_x + 0.045, y0 + 0.025, label, size=5.4, color="#5B6778")
+        _gui_text(ax, right_x + 0.045, y0 + 0.009, value, size=5.7, color="#111827")
+
+    _rounded_box(ax, main_x, 0.055, main_w, 0.125, face="#FFFFFF", edge="#DBE3EC", lw=0.8, radius=0.010)
+    _gui_text(ax, main_x + 0.018, 0.148, "Outputs stay CLI-compatible", size=8.0, color="#111827")
+    for idx, (label, color) in enumerate(
+        [
+            ("config.yml", "#15956B"),
+            ("run.log", "#1D4ED8"),
+            ("results.tsv", "#7C3AED"),
+            ("report.html", "#EA580C"),
+            ("figure.svg", "#334155"),
+        ]
+    ):
+        x = main_x + 0.020 + idx * ((main_w - 0.048) / 5)
+        ax.add_patch(mpatches.Circle((x, 0.095), 0.008, transform=ax.transAxes, facecolor=color, edgecolor=color))
+        _gui_text(ax, x + 0.014, 0.107, label, size=5.7, color="#111827")
 
 
 def plot_usability_strip(ax: plt.Axes) -> None:
@@ -370,14 +380,14 @@ def plot_fig5(source: Path, output: Path) -> None:
     table = load_source(source)
     fig = plt.figure(figsize=(8.5, 11))
     outer = fig.add_gridspec(
-        3,
+        2,
         1,
-        height_ratios=[0.18, 0.675, 0.145],
+        height_ratios=[0.19, 0.81],
         left=0.065,
         right=0.985,
         top=0.945,
-        bottom=0.022,
-        hspace=0.10,
+        bottom=0.026,
+        hspace=0.085,
     )
     top_grid = outer[0].subgridspec(
         1,
@@ -392,8 +402,6 @@ def plot_fig5(source: Path, output: Path) -> None:
     plot_vector_gui_panel(gui_ax)
 
     gui_ax.text(-0.025, 0.995, "C", transform=gui_ax.transAxes, ha="left", va="top")
-    strip_ax = fig.add_subplot(outer[2])
-    plot_usability_strip(strip_ax)
     fig.suptitle("Fig5. Improved performance and GUI support", y=0.982)
     force_arial_bold(fig)
     output.parent.mkdir(parents=True, exist_ok=True)

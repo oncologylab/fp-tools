@@ -94,6 +94,20 @@ Bailey, T.L.
 \newblock {\em Bioinformatics} {\bf 2011}, {\em 27},~1653--1659.
 \newblock {\url{https://doi.org/10.1093/bioinformatics/btr261}}.
 
+\bibitem[Ovek~Baydar et~al.(2026)Ovek~Baydar, Rauluseviciute, Aronsen,
+  Blanc-Mathieu, Bonthuis, de~Beukelaer, Ferenc, Jegou, Kumar, Lemma, Lucas,
+  Pochon, Yun, Ramalingam, Deshpande, Patel, Marinov, Wang, Aguirre,
+  Castro-Mondragon, Baranasic, Ch{\`e}neby, Gundersen, Johansen, Khan, Kuijjer,
+  Hovig, Lenhard, Sandelin, Vandepoele, Wasserman, Parcy, Kundaje, and
+  Mathelier]{jaspar2026}
+Ovek~Baydar, D.; Rauluseviciute, I.; Aronsen, D.R.; Blanc-Mathieu, R.;
+  Bonthuis, I.; de~Beukelaer, H.; Ferenc, K.; Jegou, A.; Kumar, V.; Lemma,
+  R.B.;  et~al.
+\newblock {JASPAR} 2026: expansion of transcription factor binding profiles and
+  integration of deep learning models.
+\newblock {\em Nucleic Acids Research} {\bf 2026}, {\em 54},~D184--D193.
+\newblock {\url{https://doi.org/10.1093/nar/gkaf1209}}.
+
 \bibitem[Chen et~al.(2018)Chen, Zhou, Chen, and Gu]{Chen2018_fastp}
 Chen, S.; Zhou, Y.; Chen, Y.; Gu, J.
 \newblock fastp: an ultra-fast all-in-one FASTQ preprocessor.
@@ -137,14 +151,6 @@ Amemiya, H.M.; Kundaje, A.; Boyle, A.P.
   Genome.
 \newblock {\em Scientific Reports} {\bf 2019}, {\em 9},~9354.
 \newblock {\url{https://doi.org/10.1038/s41598-019-45839-z}}.
-
-\bibitem[Baydar et~al.(2026)Baydar, Rauluseviciute, Aronsen,
-  et~al.]{jaspar2026}
-Baydar, D.O.; Rauluseviciute, I.; Aronsen, D.R.;  et~al.
-\newblock {JASPAR} 2026: expansion of transcription factor binding profiles and
-  integration of deep learning models.
-\newblock {\em Nucleic Acids Research} {\bf 2026}, {\em 54},~D184--D193.
-\newblock {\url{https://doi.org/10.1093/nar/gkaf1209}}.
 
 \bibitem[{The ENCODE Project Consortium}(2012)]{encode2012}
 {The ENCODE Project Consortium}.
