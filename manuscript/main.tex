@@ -263,12 +263,16 @@ differential-footprint statistics.
 \subsection{Public Data Processing and Evaluation}
 \label{sec:processing_provenance}
 
-The bulk replicate demonstration uses true biological replicates from the
-Buenrostro et al. ATAC-seq study~\cite{buenrostro2013}: GM12878/B-cell samples
-SRR891268 and SRR891269, and day-1 CD4 T-cell samples SRR891275 and SRR891276.
-Reads were trimmed with fastp~\cite{Chen2018_fastp}, aligned with Bowtie2~\cite{Langmead2012_Bowtie2}, processed with SAMtools~\cite{Li2009_SAMtools} and BEDTools~\cite{Quinlan2010_BEDTools}, and peaks were called with MACS3 using the MACS model-based peak-calling framework~\cite{Zhang2008_MACS}. Problematic genomic regions were filtered using the ENCODE blacklist~\cite{Amemiya2019_Blacklist}. Replicate peaks were merged into a common peak universe, bias-corrected, q95-scaled over shared background regions, footprint-called,
-and analyzed by differential footprint comparison. The analysis used JASPAR 2026 CORE vertebrates
-non-redundant motifs~\cite{jaspar2026} for known-motif scanning. Exact command-line parameters and software versions are recorded in source TSV
+The bulk replicate demonstration uses a 3-vs-3 public ENCODE ATAC-seq
+comparison between K562 and HepG2. We used released GRCh38 alignment BAMs from
+K562 ENCSR868FGK (ENCFF077FBI, ENCFF128WZG, and ENCFF534DCE) and HepG2
+ENCSR291GJU (ENCFF624SON, ENCFF926KFU, and ENCFF990VCP). Problematic genomic
+regions were filtered using the ENCODE blacklist~\cite{Amemiya2019_Blacklist}.
+Replicate peak intervals were merged into a common peak universe, bias-corrected,
+q95-scaled over shared background regions, footprint-called, and analyzed by
+replicate-aware differential footprint comparison. The analysis used JASPAR 2026
+CORE vertebrates non-redundant motifs~\cite{jaspar2026} for known-motif
+scanning. Exact command-line parameters and software versions are recorded in source TSV
 files in the manuscript \texttt{tables} directory and summarized in
 Tables~\ref{tab:supp_analysis_parameters} and
 \ref{tab:supp_software_versions}.
@@ -430,32 +434,19 @@ footprint scores and red indicates K562-biased footprint scores.
 
 The replicate-aware analysis reports differential footprint effect sizes,
 replicate support, and uncertainty summaries while keeping each comparison
-anchored to a common peak and motif-site universe. In the Buenrostro example,
-B-cell and T-cell replicates were scanned on the merged peak set before
-comparison, so no additional peak alignment step was needed at the reporting
-stage.
+anchored to a common peak and motif-site universe. In the K562 versus HepG2
+3-vs-3 analysis, all six replicates were scanned on the merged ENCODE peak set
+before comparison, so no additional peak alignment step was needed at the
+reporting stage.
 
 Repeated condition names define biological replicate groups. In one-sample
 contrasts, the report uses the motif-site versus background-distribution
 comparison. When multiple samples are available, motif scores are first
 aggregated per sample and then analyzed with empirical-Bayes variance moderation
-across motifs~\cite{smyth2004}. The replicate-supported output reports condition
-means, replicate counts, SD and SE summaries, moderated statistics, and adjusted
-q-values alongside the original motif-background comparison.
-
-As a biological consistency check for the same 2-vs-2 Buenrostro comparison, we
-inspected aggregate corrected cut-site profiles for a small illustrative set
-selected for visible center depletion and known or plausible immune relevance.
-BACH2 showed a B/GM12878-biased aggregate pattern in this dataset, although it is
-not B-cell exclusive because it is also reused in T-cell states. JUNB and ATF7
-showed stronger T-cell center depletion; JUNB is an AP-1 family regulator of
-T-cell differentiation~\cite{koizumi2021junb}, and ATF7 is included as a strong
-aggregate example in this dataset rather than as a lineage-specific marker. IRF4
-is included because TCR signaling can drive graded IRF4 expression in T
-cells~\cite{andrews2020itk}, although its aggregate depletion is modest here. We
-treat these panels as a biological sanity check rather than a
-marker-classification benchmark; a more negative center-versus-flank profile
-indicates stronger footprint-like protection at motif centers.
+across motifs~\cite{smyth2004}. The K562/HepG2 replicate-supported output
+reports condition means, replicate counts, SD and SE summaries, moderated
+statistics, and adjusted q-values alongside the original motif-background
+comparison.
 
 \subsection{Single-cell ATAC Fragments Support Pseudobulk Footprinting}
 
@@ -691,12 +682,11 @@ and software publicly available.}
 \toprule
 \textbf{Step} & \textbf{Parameters}\\
 \midrule
-Public input data & Bulk ATAC analyses use Buenrostro B-cell/T-cell FASTQs and ENCODE K562/HepG2 replicate tracks. Pseudobulk examples use public granulocyte-depleted 10x PBMC Multiome and PBMC5k scATAC fragment datasets. Motif analyses use JASPAR 2026 CORE vertebrate non-redundant motifs.\\
-FASTQ preprocessing & Paired-end adapter detection and trimming with \texttt{fastp}; HTML and JSON QC reports written for each sample.\\
-Alignment and BAM processing & Reads aligned to hg38 with \texttt{bowtie2 --very-sensitive -X 2000}; proper pairs retained with \texttt{samtools view -f 2 -F 2828 -q 30}; BAMs sorted, fixed with \texttt{fixmate -m}, duplicate-marked with \texttt{markdup -r}, indexed, and summarized with flagstat/idxstats.\\
-Blacklist and peak set & Mitochondrial and nonstandard contigs excluded; hg38 blacklist v2 regions subtracted; MACS3 paired-end peaks called at q-value 0.01 and merged across replicates into one analysis peak set.\\
+Public input data & Bulk ATAC analyses use public ENCODE K562/HepG2 replicate BAMs and tracks. Pseudobulk examples use public granulocyte-depleted 10x PBMC Multiome and PBMC5k scATAC fragment datasets. Motif analyses use JASPAR 2026 CORE vertebrate non-redundant motifs.\\
+ENCODE BAM processing & Released GRCh38 alignment BAMs for K562 ENCSR868FGK and HepG2 ENCSR291GJU were filtered to standard chromosomes, indexed, and summarized before footprint analysis.\\
+Blacklist and peak set & Mitochondrial and nonstandard contigs excluded; hg38 blacklist v2 regions subtracted; released ENCODE peak intervals sorted and merged across replicates into one analysis peak set.\\
 Bias correction and footprint scores & \texttt{atac-correct} run on filtered BAMs with merged peaks and blacklist regions using default Tn5-bias settings; corrected cut-site tracks q95-scaled over shared background regions for multi-sample analyses; \texttt{call-footprints --score footprint} run with default footprint and flank windows.\\
-Differential footprint analysis & Buenrostro and ENCODE replicate footprint tracks analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. One-sample contrasts use motif-site versus background-distribution comparison; replicate-supported analyses use empirical-Bayes variance moderation on per-sample aggregated motif scores.\\
+Differential footprint analysis & The 3-vs-3 ENCODE K562/HepG2 replicate footprint tracks were analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. One-sample contrasts use motif-site versus background-distribution comparison; replicate-supported analyses use empirical-Bayes variance moderation on per-sample aggregated motif scores.\\
 De novo motif validation & ENCODE K562/HepG2 candidate footprints exported as condition-level FASTA files with \(\pm 75\) bp flanks; reciprocal STREME 5.5.9 runs used \texttt{--dna --nmotifs 250}; Tomtom 5.5.9 matched discovered motifs to JASPAR 2026; de novo motifs were evaluated alone and as additions to known motif sets.\\
 Pseudobulk PBMC analysis & 10x PBMC fragments grouped by broad immune labels, retaining groups with at least 300 cells and 50,000 fragments. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, and aggregate plots. The PBMC5k example uses broad B-cell/monocyte/T--NK labels, marker sites, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
 \bottomrule
@@ -715,16 +705,13 @@ Pseudobulk PBMC analysis & 10x PBMC fragments grouped by broad immune labels, re
 \midrule
 \texttt{bedtools} & 2.31.1 & Region sorting, merging, and blacklist subtraction\\
 Biopython & 1.87 & Sequence and motif-related utilities\\
-\texttt{bowtie2} & 2.5.5 & hg38 read alignment\\
 Cell Ranger ARC & 2.0.0 & Source processing for the public 10x PBMC Multiome dataset\\
 Cell Ranger ATAC & 2.0.0 & Source processing for the public 10x PBMC5k scATAC dataset\\
-\texttt{fastp} & 1.3.3 & Paired-end FASTQ adapter detection, trimming, and QC\\
 \texttt{fp-tools} & 0.1.7 & ATAC correction, footprint calling, motif matching, differential footprint analysis, pseudobulk utilities, and plotting helpers\\
 hg38 blacklist & v2 & Artifact-region filtering for processed bulk ATAC alignments\\
-hg38 reference genome & GRCh38/hg38 & Read alignment and sequence extraction\\
+hg38 reference genome & GRCh38/hg38 & Sequence extraction and ATAC bias correction\\
 htslib & 1.23.1 & SAM/BAM/VCF I/O backend used by \texttt{samtools}\\
 JASPAR CORE vertebrates & 2026 non-redundant & Known motif database for differential footprint analysis\\
-MACS3 & 3.0.4 & ATAC-seq peak calling in paired-end mode\\
 matplotlib & 3.10.9 & Manuscript figure rendering\\
 MEME Suite, STREME, and Tomtom & 5.5.9 & De novo motif discovery and discovered-motif matching\\
 NumPy & 2.4.6 & Numerical arrays and benchmark/figure calculations\\
@@ -732,7 +719,7 @@ pandas & 2.3.3 & Tabular processing for benchmark, manifest, and figure builders
 pyBigWig & 0.3.25 & bigWig signal reading and writing\\
 pysam & 0.23.3 & BAM and genomic interval I/O\\
 Python & 3.12.3 & Runtime for analyses, figure builders, and provenance extraction\\
-\texttt{samtools} & 1.23.1 & BAM filtering, sorting, fixmate, duplicate marking, indexing, and QC summaries\\
+\texttt{samtools} & 1.23.1 & Released ENCODE BAM filtering, indexing, and QC summaries\\
 SciPy & 1.17.1 & Statistical and interpolation utilities\\
 \bottomrule
 \end{tabularx}

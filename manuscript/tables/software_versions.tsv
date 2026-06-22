@@ -1,16 +1,13 @@
 tool_or_resource	version	role
 bedtools	2.31.1	Region sorting, merging, and blacklist subtraction
 Biopython	1.87	Sequence and motif-related utilities
-bowtie2	2.5.5	Read alignment to hg38
 Cell Ranger ARC	2.0.0	Source processing for the public 10x PBMC Multiome dataset
 Cell Ranger ATAC	2.0.0	Source processing for the public 10x PBMC5k scATAC dataset
-fastp	1.3.3	Paired-end FASTQ adapter detection, trimming, and QC
 fp-tools	0.1.7	ATAC correction, footprint calling, motif matching, differential footprint analysis, pseudobulk utilities, and plotting helpers
 hg38 blacklist	v2	Artifact-region filtering for processed bulk ATAC alignments
-hg38 reference genome	GRCh38/hg38	Read alignment and sequence extraction
+hg38 reference genome	GRCh38/hg38	Sequence extraction and ATAC bias correction
 htslib	1.23.1	SAM/BAM/VCF I/O backend used by samtools
 JASPAR CORE vertebrates	2026 non-redundant	Known motif database for differential footprint analysis
-MACS3	3.0.4	ATAC-seq peak calling in paired-end mode
 matplotlib	3.10.9	Manuscript figure rendering
 MEME Suite, STREME, and Tomtom	5.5.9	External motif discovery and motif-to-database comparison backend
 NumPy	2.4.6	Numerical arrays and benchmark/figure calculations
@@ -18,5 +15,5 @@ pandas	2.3.3	Tabular processing for benchmark, manifest, and figure builders
 pyBigWig	0.3.25	bigWig signal reading and writing
 pysam	0.23.3	BAM and genomic interval I/O
 Python	3.12.3	Runtime for analyses, figure builders, and provenance extraction
-samtools	1.23.1	BAM filtering, sorting, fixmate, duplicate marking, indexing, and QC summaries
+samtools	1.23.1	Released ENCODE BAM filtering, indexing, and QC summaries
 SciPy	1.17.1	Statistical and interpolation utilities

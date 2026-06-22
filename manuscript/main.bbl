@@ -135,42 +135,6 @@ Smyth, G.K.
   2004}, {\em 3},~Article 3.
 \newblock {\url{https://doi.org/10.2202/1544-6115.1027}}.
 
-\bibitem[Chen et~al.(2018)Chen, Zhou, Chen, and Gu]{Chen2018_fastp}
-Chen, S.; Zhou, Y.; Chen, Y.; Gu, J.
-\newblock fastp: an ultra-fast all-in-one FASTQ preprocessor.
-\newblock {\em Bioinformatics} {\bf 2018}, {\em 34},~i884--i890.
-\newblock {\url{https://doi.org/10.1093/bioinformatics/bty560}}.
-
-\bibitem[Langmead and Salzberg(2012)]{Langmead2012_Bowtie2}
-Langmead, B.; Salzberg, S.L.
-\newblock Fast gapped-read alignment with Bowtie 2.
-\newblock {\em Nature Methods} {\bf 2012}, {\em 9},~357--359.
-\newblock {\url{https://doi.org/10.1038/nmeth.1923}}.
-
-\bibitem[Li et~al.(2009)Li, Handsaker, Wysoker, Fennell, Ruan, Homer, Marth,
-  Abecasis, Durbin, and {1000 Genome Project Data Processing
-  Subgroup}]{Li2009_SAMtools}
-Li, H.; Handsaker, B.; Wysoker, A.; Fennell, T.; Ruan, J.; Homer, N.; Marth,
-  G.; Abecasis, G.; Durbin, R.; {1000 Genome Project Data Processing Subgroup}.
-\newblock The Sequence Alignment/Map format and SAMtools.
-\newblock {\em Bioinformatics} {\bf 2009}, {\em 25},~2078--2079.
-\newblock {\url{https://doi.org/10.1093/bioinformatics/btp352}}.
-
-\bibitem[Quinlan and Hall(2010)]{Quinlan2010_BEDTools}
-Quinlan, A.R.; Hall, I.M.
-\newblock BEDTools: a flexible suite of utilities for comparing genomic
-  features.
-\newblock {\em Bioinformatics} {\bf 2010}, {\em 26},~841--842.
-\newblock {\url{https://doi.org/10.1093/bioinformatics/btq033}}.
-
-\bibitem[Zhang et~al.(2008)Zhang, Liu, Meyer, Eeckhoute, Johnson, Bernstein,
-  Nussbaum, Myers, Brown, Li, and Liu]{Zhang2008_MACS}
-Zhang, Y.; Liu, T.; Meyer, C.A.; Eeckhoute, J.; Johnson, D.S.; Bernstein, B.E.;
-  Nussbaum, C.; Myers, R.M.; Brown, M.; Li, W.;  et~al.
-\newblock Model-based Analysis of ChIP-Seq (MACS).
-\newblock {\em Genome Biology} {\bf 2008}, {\em 9},~R137.
-\newblock {\url{https://doi.org/10.1186/gb-2008-9-9-r137}}.
-
 \bibitem[Amemiya et~al.(2019)Amemiya, Kundaje, and
   Boyle]{Amemiya2019_Blacklist}
 Amemiya, H.M.; Kundaje, A.; Boyle, A.P.
@@ -209,21 +173,6 @@ Ewels, P.A.; Peltzer, A.; Fillinger, S.; Patel, H.; Alneberg, J.; Wilm, A.;
 \newblock The nf-core framework for community-curated bioinformatics pipelines.
 \newblock {\em Nature Biotechnology} {\bf 2020}, {\em 38},~276--278.
 \newblock {\url{https://doi.org/10.1038/s41587-020-0439-x}}.
-
-\bibitem[Katagiri et~al.(2021)Katagiri, Kameda, Nakano, and
-  Yamazaki]{koizumi2021junb}
-Katagiri, T.; Kameda, H.; Nakano, H.; Yamazaki, S.
-\newblock Regulation of T cell differentiation by the AP-1 transcription factor
-  JunB.
-\newblock {\em Immunological Medicine} {\bf 2021}, {\em 44},~197--203.
-\newblock {\url{https://doi.org/10.1080/25785826.2021.1872838}}.
-
-\bibitem[Conley et~al.(2020)Conley, Gallagher, Rao, and Berg]{andrews2020itk}
-Conley, J.M.; Gallagher, M.P.; Rao, A.; Berg, L.J.
-\newblock Activation of the Tec Kinase ITK Controls Graded IRF4 Expression in
-  Response to Variations in TCR Signal Strength.
-\newblock {\em Journal of Immunology} {\bf 2020}, {\em 205},~335--345.
-\newblock {\url{https://doi.org/10.4049/jimmunol.1900853}}.
 
 \bibitem[{10x Genomics}(2021)]{tenxpbmc2021}
 {10x Genomics}.
