@@ -45,18 +45,6 @@ pip install fp-tools-bio
 | `pseudobulk-fragments` | Group single-cell ATAC fragments into pseudobulk fragment files. |
 | `pseudobulk-footprints` | Run the full pseudobulk fragment, correction, footprint, and report workflow. |
 
-## Compatibility Aliases
-
-Legacy aliases remain available:
-
-```bash
-ATACorrect --help
-FootprintScores --help
-ScoreBigwig --help
-BINDetect --help
-PlotAggregate --help
-```
-
 ## Differential Footprint Defaults
 
-`diff-footprints` uses the native BINDetect-style motif-aware comparison. For multi-sample analyses, score footprints from q95-scaled corrected bigWigs and keep `--normalization none` unless you are running an explicit sensitivity check.
+For multi-sample analyses, score footprints from q95-scaled corrected bigWigs and keep `--normalization none` unless you are running an explicit sensitivity check.

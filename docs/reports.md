@@ -7,15 +7,7 @@
 <div class="fp-demo-callout">
   <h3>K562 vs HepG2 differential footprint report</h3>
   <p>Example output from a motif-aware condition comparison with volcano results, motif tables, logos, and aggregate footprint profiles.</p>
-  <a class="fp-button primary" href="../demos/reports/diff_footprints_K562_HepG2.html">Open static report</a>
-</div>
-
-## GUI Preview
-
-<div class="fp-demo-callout">
-  <h3>Static GUI walkthrough</h3>
-  <p>A browser-only preview of the fp-tools GUI layout, sidebar, tutorial card, YAML preview, and run panel.</p>
-  <a class="fp-button" href="../demos/gui/fp-tools-gui-static-demo.html">Open GUI preview</a>
+  <a class="fp-button primary" href="../demos/reports/diff_footprints_K562_HepG2.html">Open report demo</a>
 </div>
 
 ## Typical Report Contents

@@ -28,74 +28,13 @@
 }
 
 .md-header__button.md-logo {
-  align-items: center;
-  background: #ffffff;
-  border-radius: 6px;
-  display: inline-flex;
-  height: 1.9rem;
-  justify-content: center;
-  margin-right: 0.55rem;
-  padding: 0.16rem;
-  width: 1.9rem;
-}
-
-.md-header__button.md-logo img,
-.md-header__button.md-logo svg {
-  height: 1.55rem;
-  width: 1.55rem;
-}
-
-.fp-lockup {
-  display: block;
-  height: auto;
-  margin: 0 0 1rem;
-  max-width: 320px;
-  width: 72%;
+  display: none;
 }
 
 .md-typeset h1,
 .md-typeset h2,
 .md-typeset h3 {
   letter-spacing: 0;
-}
-
-.fp-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
-  align-items: center;
-  max-width: 920px;
-  padding: 2.1rem 0 1.2rem;
-}
-
-.fp-eyebrow {
-  color: var(--fp-blue);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.45rem;
-  text-transform: uppercase;
-}
-
-.fp-hero h1 {
-  color: var(--fp-ink);
-  font-size: 2.15rem;
-  line-height: 1.1;
-  margin: 0 0 0.7rem;
-}
-
-.fp-lede {
-  color: var(--fp-muted);
-  font-size: 1.02rem;
-  line-height: 1.65;
-  margin: 0 0 1rem;
-}
-
-.fp-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  margin: 1.1rem 0;
 }
 
 .fp-button {
@@ -113,22 +52,6 @@
   color: #ffffff;
 }
 
-.fp-install {
-  background: #0f172a;
-  border-radius: 8px;
-  color: #e2e8f0;
-  font-size: 0.78rem;
-  margin-top: 1rem;
-  padding: 0.72rem 0.9rem;
-}
-
-.fp-hero-visual {
-  border: 1px solid var(--fp-line);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.fp-hero-visual img,
 .fp-screenshot img,
 .fp-wide-image img {
   display: block;
@@ -224,13 +147,8 @@
 }
 
 @media screen and (max-width: 900px) {
-  .fp-hero,
   .fp-grid,
   .fp-screenshot-grid {
     grid-template-columns: 1fr;
-  }
-
-  .fp-hero h1 {
-    font-size: 1.95rem;
   }
 }

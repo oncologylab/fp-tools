@@ -38,6 +38,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.project_scripts = self.data["project"]["scripts"]
         self.readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.manual = (ROOT / "MANUAL.md").read_text(encoding="utf-8")
+        self.api_reference = (ROOT / "docs" / "api.md").read_text(encoding="utf-8")
 
     def test_setuptools_and_poetry_scripts_match(self):
         poetry_scripts = self.data["tool"]["poetry"]["scripts"]
@@ -88,6 +89,36 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "streamlit should be an optional extra, not a core dependency.",
         )
         self.assertIn('fp-tools-bio[gui]', self.readme)
+
+    def test_api_reference_is_command_manual(self):
+        primary = set(self.project_scripts) - LEGACY_ALIASES
+        for command in primary:
+            self.assertIn(f"### `{command}`", self.api_reference)
+            self.assertIn(f"usage: {command}", self.api_reference)
+        self.assertNotIn("::: fp_tools", self.api_reference)
+
+    def test_public_site_docs_use_current_wording(self):
+        public_docs = "\n".join(
+            (ROOT / path).read_text(encoding="utf-8")
+            for path in [
+                "README.md",
+                "docs/index.md",
+                "docs/commands.md",
+                "docs/reports.md",
+                "docs/api.md",
+            ]
+        )
+        for stale in [
+            "BINDetect",
+            "BINDetect-style",
+            "Compatibility Aliases",
+            "Open static report",
+            "GUI Preview",
+            "The PyPI package is",
+            "The Python import name is",
+            "ATACCorrect",
+        ]:
+            self.assertNotIn(stale, public_docs)
 
 
 if __name__ == "__main__":

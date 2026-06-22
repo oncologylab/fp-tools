@@ -43,13 +43,13 @@ def add_atacorrect_arguments(parser):
 	optargs.add_argument('--scale-chrom-sizes', metavar="<chrom.sizes>", help="Optional chromosome sizes file for scaled bigWig output validation")
 	optargs.add_argument('--drop-chroms', metavar="<chrom>", help="Drop any chromosomes in the list from the correction. The default is to drop the mitochrondrial chromosome. Default: ['chrM', 'chrMT', 'M', 'MT', 'Mito']", nargs="*", default=['chrM', 'chrMT', 'M', "MT", "Mito"])
 
-	optargs = parser.add_argument_group('Advanced ATACorrect arguments (no need to touch)')
+	optargs = parser.add_argument_group('Advanced atac-correct arguments (no need to touch)')
 	optargs.add_argument('--k_flank', metavar="<int>", help="Flank +/- of cutsite to estimate bias from (default: 12)", type=int, default=12)
 	optargs.add_argument('--read_shift', metavar="<int>", help="Read shift for forward and reverse reads (default: 4 -5)", nargs=2, type=int, default=[4,-5])
 	optargs.add_argument('--bg_shift', metavar="<int>", type=int, help="Read shift for estimation of background frequencies (default: 100)", default=100)
 	optargs.add_argument('--window', metavar="<int>", help="Window size for calculating expected signal (default: 100)", type=int, default=100)
 	optargs.add_argument('--score_mat', metavar="<mat>", help="Type of matrix to use for bias estimation (PWM/DWM) (default: DWM)", choices=["PWM", "DWM"], default="DWM")
-	optargs.add_argument('--bias-pkl', metavar="<obj>", help="Path to a pre-calculated AtacBias.pkl-object, as output from a previous ATACorrect run (default: None). Can be used to bypass the internal bias estimation.", default=None)
+	optargs.add_argument('--bias-pkl', metavar="<obj>", help="Path to a pre-calculated AtacBias.pkl-object, as output from a previous atac-correct run (default: None). Can be used to bypass the internal bias estimation.", default=None)
 
 	runargs = parser.add_argument_group('Run arguments')
 	runargs.add_argument('--prefix', metavar="<prefix>", help="Prefix for output files (default: same as .bam file)")
@@ -115,30 +115,37 @@ def add_scorebigwig_arguments(parser):
 	return(parser)
 
 #--------------------------------------------------------------------------------------------------------#
-def add_bindetect_arguments(parser):
+def add_bindetect_arguments(parser, command_name="diff-footprints"):
 
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=35, width=90)
-	description = "diff-footprints takes motifs, footprint signals, and genome sequence as input to infer motif-associated bound sites and compare footprint evidence across conditions. "
-	description += "The underlying method is a modified motif enrichment test to see which motifs have the largest differences in signal across input conditions. "
-	description += "The output is an in-depth overview of global changes as well as the individual binding site signal-differences.\n\n"
-	description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
+	is_match_motifs = command_name == "match-motifs"
+	if is_match_motifs:
+		description = "match-motifs scans motifs in open chromatin regions for one sample and infers motif-associated bound and unbound sites from a footprint signal.\n\n"
+		description += "Usage:\nmatch-motifs --signals <footprints.bw> --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
+	else:
+		description = "diff-footprints takes motifs, footprint signals, and genome sequence as input to infer motif-associated bound sites and compare footprint evidence across conditions. "
+		description += "The method ranks motifs by signal differences across input conditions and reports motif-level and site-level results.\n\n"
+		description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
 	description += "Output files:\n- <outdir>/<prefix>_figures.pdf\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n"
 	description += "- <outdir>/<TF>/<TF>_overview.{txt,xlsx} (per motif)\n- <outdir>/<TF>/beds/<TF>_all.bed (per motif)\n"
-	description += "- <outdir>/<TF>/beds/<TF>_<condition>_bound.bed (per motif-condition pair)\n- <outdir>/<TF>/beds/<TF>_<condition>_unbound.bed (per motif-condition pair)\n\n"
-	parser.description = format_help_description("diff-footprints", description)
+	if is_match_motifs:
+		description += "- <outdir>/<TF>/beds/<TF>_<sample>_bound.bed (per motif)\n- <outdir>/<TF>/beds/<TF>_<sample>_unbound.bed (per motif)\n\n"
+	else:
+		description += "- <outdir>/<TF>/beds/<TF>_<condition>_bound.bed (per motif-condition pair)\n- <outdir>/<TF>/beds/<TF>_<condition>_unbound.bed (per motif-condition pair)\n\n"
+	parser.description = format_help_description(command_name, description)
 
 	parser._action_groups.pop()	#pop -h
 	
 	required = parser.add_argument_group('Required arguments')
-	required.add_argument('--signals', metavar="<bigwig>", help="Signal per condition (.bigwig format)", nargs="*")
-	required.add_argument('--peaks', metavar="<bed>", help="Peaks.bed containing open chromatin regions across all conditions")
+	required.add_argument('--signals', metavar="<bigwig>", help="Single footprint score bigWig (.bigwig format)" if is_match_motifs else "Signal per condition (.bigwig format)", nargs="*")
+	required.add_argument('--peaks', metavar="<bed>", help="Peaks.bed containing open chromatin regions" if is_match_motifs else "Peaks.bed containing open chromatin regions across all conditions")
 	required.add_argument('--genome', metavar="<fasta>", help="Genome .fasta file")
 
 	optargs = parser.add_argument_group('Optional arguments')
 	optargs.add_argument('--motifs', metavar="<motifs>", help="Motif file(s) in pfm/jaspar/meme/transfac format; if omitted, the built-in JASPAR 2026 vertebrates set is used", nargs="*")
 	optargs.add_argument('--motif-db', metavar="<name>", help="Built-in motif database to use or add to --motifs (default when --motifs is omitted: jaspar2026_vertebrates)")
 	optargs.add_argument('--list-motif-dbs', action='store_true', help="List available built-in motif databases and exit")
-	optargs.add_argument('--cond-names', metavar="<name>", nargs="*", help="Names of conditions fitting to --signals (default: prefix of --signals)")
+	optargs.add_argument('--cond-names', metavar="<name>", nargs="*", help="Optional sample name for --signals (default: prefix of --signals)" if is_match_motifs else "Names of conditions fitting to --signals (default: prefix of --signals)")
 	optargs.add_argument('--peak-header', metavar="<file>", help="File containing the header of --peaks separated by whitespace or newlines (default: peak columns are named \"_additional_<count>\")")
 	optargs.add_argument('--naming', metavar="<string>", help="Naming convention for TF output files ('id', 'name', 'name_id', 'id_name') (default: 'name_id')", choices=["id", "name", "name_id", "id_name"], default="name_id")
 	optargs.add_argument('--motif-pvalue', metavar="<float>", type=lambda x: restricted_float(x, 0, 1), help="Set p-value threshold for motif scanning (default: 1e-4)", default=0.0001)
@@ -148,33 +155,35 @@ def add_bindetect_arguments(parser):
 	#optargs.add_argument('--volcano-p-thresh', metavar="<float>", help="", default=0.05)	#not yet implemented
 
 	optargs.add_argument('--pseudo', type=float, metavar="<float>", help="Pseudocount for calculating log2fcs (default: estimated from data)", default=None)
-	optargs.add_argument('--time-series', action='store_true', help="Will only compare signals1<->signals2<->signals3 (...) in order of input, and skip all-against-all comparison.")
-	optargs.add_argument('--time-course', dest='time_series', action='store_true', help="Alias for --time-series; compare adjacent ordered conditions only.")
-	optargs.add_argument('--skip-excel', action='store_true', help="Skip creation of excel files - for large datasets, this will speed up BINDetect considerably")
+	optargs.add_argument('--time-series', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Will only compare signals1<->signals2<->signals3 (...) in order of input, and skip all-against-all comparison.")
+	optargs.add_argument('--time-course', dest='time_series', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Alias for --time-series; compare adjacent ordered conditions only.")
+	optargs.add_argument('--skip-excel', action='store_true', help="Skip creation of Excel files to speed up large motif analyses")
 	optargs.add_argument('--output-peaks', metavar="<bed>", help="""Gives the possibility to set the output peak set differently than the input --peaks.
 													 				This will limit all analysis to the regions in --output-peaks. 
 																	NOTE: --peaks must still be set to the full peak set!""")
-	optargs.add_argument('--norm-off', action='store_true', help="Turn off normalization of footprint scores across conditions")
-	optargs.add_argument('--normalization', choices=["condition-quantile", "sample-quantile", "none"], default="none", help="Cross-sample normalization mode (default: none; --norm-off maps to none)")
-	optargs.add_argument('--method', choices=["bindetect"], default="bindetect", help="Differential footprint backend (default: bindetect)")
-	optargs.add_argument('--replicate-report', choices=["auto", "on", "off"], default="auto", help="Write replicate-aware BINDetect diagnostic report (default: auto for repeated condition names or --replicate-map)")
-	optargs.add_argument('--replicate-map', metavar="<tsv>", help="Optional TSV with condition/replicate or condition/n_replicates columns")
-	optargs.add_argument('--replicate-report-out', metavar="<tsv>", help="Output long-form replicate diagnostic TSV (default: <outdir>/<prefix>_replicate_report.tsv)")
-	optargs.add_argument('--replicate-summary-out', metavar="<tsv>", help="Output replicate diagnostic summary TSV (default: <outdir>/<prefix>_replicate_summary.tsv)")
-	optargs.add_argument('--replicate-figure-out', metavar="<figure>", help="Output replicate diagnostic figure (default: <outdir>/<prefix>_replicate_report.png)")
-	optargs.add_argument('--aggregate-signals', metavar="<bigwig>", nargs="*", help="Corrected cut-site bigWigs used for aggregate profiles embedded in comparison HTML")
-	optargs.add_argument('--plot-aggregate', choices=["sig", "all", "top", "off"], default="sig", help="Embed aggregate profiles in comparison HTML for significant, all, top-N, or no motifs (default: sig)")
+	optargs.add_argument('--norm-off', action='store_true', help="Turn off normalization of footprint scores" if is_match_motifs else "Turn off normalization of footprint scores across conditions")
+	optargs.add_argument('--normalization', choices=["condition-quantile", "sample-quantile", "none"], default="none", help="Signal normalization mode (default: none; --norm-off maps to none)" if is_match_motifs else "Cross-sample normalization mode (default: none; --norm-off maps to none)")
+	optargs.add_argument('--method', choices=["bindetect"], default="bindetect", help=argparse.SUPPRESS)
+	optargs.add_argument('--replicate-report', choices=["auto", "on", "off"], default="auto", help=argparse.SUPPRESS if is_match_motifs else "Write replicate-aware differential-footprint diagnostics (default: auto for repeated condition names or --replicate-map)")
+	optargs.add_argument('--replicate-map', metavar="<tsv>", help=argparse.SUPPRESS if is_match_motifs else "Optional TSV with condition/replicate or condition/n_replicates columns")
+	optargs.add_argument('--replicate-report-out', metavar="<tsv>", help=argparse.SUPPRESS if is_match_motifs else "Output long-form replicate diagnostic TSV (default: <outdir>/<prefix>_replicate_report.tsv)")
+	optargs.add_argument('--replicate-summary-out', metavar="<tsv>", help=argparse.SUPPRESS if is_match_motifs else "Output replicate diagnostic summary TSV (default: <outdir>/<prefix>_replicate_summary.tsv)")
+	optargs.add_argument('--replicate-figure-out', metavar="<figure>", help=argparse.SUPPRESS if is_match_motifs else "Output replicate diagnostic figure (default: <outdir>/<prefix>_replicate_report.png)")
+	optargs.add_argument('--aggregate-signals', metavar="<bigwig>", nargs="*", help="Corrected cut-site bigWigs used for embedded aggregate profiles")
+	optargs.add_argument('--plot-aggregate', choices=["sig", "all", "top", "off"], default="sig", help="Embed aggregate profiles in HTML reports for significant, all, top-N, or no motifs (default: sig)")
 	optargs.add_argument('--plot-aggregate-top-n', metavar="<int>", type=int, default=20, help="Number of motifs to aggregate when --plot-aggregate top or fallback selection is used (default: 20)")
 	optargs.add_argument('--aggregate-pvalue-threshold', metavar="<float>", type=float, default=0.05, help="P-value threshold for --plot-aggregate sig (default: 0.05)")
 	optargs.add_argument('--aggregate-flank', metavar="<bp>", type=int, default=100, help="Flank around motif centers for embedded aggregate profiles (default: 100)")
 	optargs.add_argument('--aggregate-normalization', choices=["match", "none", "sample-quantile", "size-factor"], default="match", help="Normalization for embedded aggregate profiles (default: match --normalization)")
-	optargs.add_argument('--aggregate-site-set', choices=["all", "bound"], default="all", help="Motif-site BEDs used for embedded aggregate profiles: all motif hits or condition-specific bound sites (default: all)")
-	optargs.add_argument('--reuse-existing-results', action='store_true', help="Regenerate final diff-footprints reports from existing <prefix>_results.txt and per-motif BEDs without rescanning motifs")
-	optargs.add_argument('--report-label', metavar="<text>", help="Optional method label shown under the comparison subtitle in interactive HTML reports")
+	optargs.add_argument('--aggregate-site-set', choices=["all", "bound"], default="all", help="Motif-site BEDs used for embedded aggregate profiles: all motif hits or sample-specific bound sites (default: all)" if is_match_motifs else "Motif-site BEDs used for embedded aggregate profiles: all motif hits or condition-specific bound sites (default: all)")
+	optargs.add_argument('--reuse-existing-results', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Regenerate final diff-footprints reports from existing <prefix>_results.txt and per-motif BEDs without rescanning motifs")
+	optargs.add_argument('--report-label', metavar="<text>", help="Optional method label shown under the report subtitle in interactive HTML reports")
 
 	runargs = parser.add_argument_group("Run arguments")
-	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory to place TFBS/plots in (default: bindetect_output)", default="bindetect_output")
-	optargs.add_argument('--prefix', metavar="<prefix>", help="Prefix for overview files in --outdir folder (default: bindetect)", default="bindetect")
+	outdir_default = "motif_matches_output" if is_match_motifs else "diff_footprints_output"
+	prefix_default = "motif_matches" if is_match_motifs else "diff_footprints"
+	runargs.add_argument('--outdir', metavar="<directory>", help=f"Output directory to place motif tables, BED files, and plots in (default: {outdir_default})", default=outdir_default)
+	optargs.add_argument('--prefix', metavar="<prefix>", help=f"Prefix for overview files in --outdir folder (default: {prefix_default})", default=prefix_default)
 	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: all available cores)", default=None)
 	runargs.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)
 	runargs.add_argument('--debug', action='store_true', help="Creates an additional '_debug.pdf'-file with debug plots")	#creates extra output for debugging
@@ -303,7 +312,7 @@ def add_aggregate_arguments(parser):
 	
 	#Signals / regions
 	PLOT.add_argument('--normalize', action='store_true', help="Normalize the aggregate signal(s) to be between 0-1 (default: the true range of values is shown)")
-	PLOT.add_argument('--normalization', choices=["none", "condition-quantile", "sample-quantile"], default="none", help="BINDetect-compatible quantile normalization before aggregate plotting (default: none)")
+	PLOT.add_argument('--normalization', choices=["none", "condition-quantile", "sample-quantile"], default="none", help="diff-footprints-compatible quantile normalization before aggregate plotting (default: none)")
 	PLOT.add_argument('--normalization-comparison-output', metavar="", help="Optional paired raw-vs-normalized aggregate figure")
 	PLOT.add_argument('--output_aggregated_stats', metavar="", default=None, help="Path to CSV file for aggregate mean/SD/stat summaries (default: None)")
 	PLOT.add_argument('--show-replicate-sd', action="store_true", help="Draw replicate SD ribbons when --cond-names contains repeated condition names")

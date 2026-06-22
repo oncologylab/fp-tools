@@ -2,8 +2,6 @@
 
 `fp-tools` is a Python package for ATAC-seq footprint analysis. It helps users turn ATAC-seq data into bias-corrected cut-site tracks, footprint scores, motif-centered comparisons, aggregate plots, and static HTML reports.
 
-The PyPI package is `fp-tools-bio`. The Python import name is `fp_tools`.
-
 Documentation: <https://oncologylab.github.io/fp-tools/>
 
 ## Install
@@ -58,8 +56,12 @@ call-footprints \
   --output results/footprints/sample_footprints.bw
 
 diff-footprints \
-  --signals conditionA_rep1_footprints.bw conditionA_rep2_footprints.bw conditionB_rep1_footprints.bw conditionB_rep2_footprints.bw \
-  --aggregate-signals conditionA_rep1_corrected.bw conditionA_rep2_corrected.bw conditionB_rep1_corrected.bw conditionB_rep2_corrected.bw \
+  --signals \
+    conditionA_rep1_footprints.bw conditionA_rep2_footprints.bw \
+    conditionB_rep1_footprints.bw conditionB_rep2_footprints.bw \
+  --aggregate-signals \
+    conditionA_rep1_corrected.bw conditionA_rep2_corrected.bw \
+    conditionB_rep1_corrected.bw conditionB_rep2_corrected.bw \
   --genome hg38.fa.gz \
   --peaks peaks.bed \
   --cond-names conditionA conditionA conditionB conditionB \

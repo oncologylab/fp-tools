@@ -1,60 +1,8 @@
-<section class="fp-hero">
-  <div>
-    <img class="fp-lockup" src="assets/fp_tools_logo_horizontal.svg" alt="fp-tools regulatory footprinting">
-    <p class="fp-eyebrow">ATAC-seq footprinting without custom scripting</p>
-    <h1>Correct ATAC signal, call footprints, compare TF activity, and review interactive reports.</h1>
-    <p class="fp-lede">
-      fp-tools is a command-line and browser-guided toolkit for ATAC-seq footprint analysis.
-      It supports bulk ATAC, motif-centered differential footprinting, aggregate plots, and
-      pseudobulk single-cell ATAC workflows.
-    </p>
-    <div class="fp-actions">
-      <a class="fp-button primary" href="workflow/">Start workflow</a>
-      <a class="fp-button" href="reports/">View report demos</a>
-      <a class="fp-button" href="gui/">Open GUI guide</a>
-    </div>
-    <div class="fp-install">pip install fp-tools-bio</div>
-  </div>
-</section>
+# Get Started
 
-## What fp-tools Does
+`fp-tools` runs ATAC-seq footprint workflows from the command line or the optional browser GUI. The same YAML configuration can be saved from the GUI and rerun with `run-workflow`.
 
-<div class="fp-grid">
-  <div class="fp-card">
-    <h3>Correct ATAC signal</h3>
-    <p>Convert BAM input into bias-corrected cut-site bigWigs.</p>
-  </div>
-  <div class="fp-card">
-    <h3>Score footprints</h3>
-    <p>Create footprint score tracks over peaks or candidate regions.</p>
-  </div>
-  <div class="fp-card">
-    <h3>Compare conditions</h3>
-    <p>Use motif-aware differential reports for replicates or time courses.</p>
-  </div>
-  <div class="fp-card">
-    <h3>Review reports</h3>
-    <p>Open standalone HTML reports in any browser.</p>
-  </div>
-  <div class="fp-card">
-    <h3>Use the GUI</h3>
-    <p>Load examples, edit paths, preview YAML, and launch runs.</p>
-  </div>
-  <div class="fp-card">
-    <h3>Run pseudobulk ATAC</h3>
-    <p>Group single-cell fragments into cell-type footprint profiles.</p>
-  </div>
-</div>
-
-## Core Workflow
-
-<div class="fp-command-chain">
-  atac-correct -> call-footprints -> diff-footprints -> plot-aggregate-batch
-</div>
-
-For most condition comparisons, start with `diff-footprints`. It scans motifs, compares footprint scores, and writes a browser-ready HTML report.
-
-## Quick Install
+## Install
 
 ```bash
 pip install fp-tools-bio
@@ -66,3 +14,113 @@ For the browser GUI:
 pip install "fp-tools-bio[gui]"
 fp-tools-gui
 ```
+
+## Standard Workflow
+
+<div class="fp-command-chain">
+  atac-correct -> call-footprints -> diff-footprints -> plot-aggregate-batch
+</div>
+
+### 1. Correct ATAC Signal
+
+```bash
+atac-correct \
+  --bam sample.bam \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --blacklist hg38.blacklist.bed \
+  --outdir results/atac_correct/sample
+```
+
+Output: corrected cut-site bigWigs and QC files.
+
+### 2. Call Footprints
+
+```bash
+call-footprints \
+  --signal results/atac_correct/sample/sample_corrected.bw \
+  --regions peaks.bed \
+  --output results/footprints/sample_footprints.bw
+```
+
+Output: a footprint score bigWig. Add `--output-bed` to write ranked candidate intervals.
+
+### 3. Compare Conditions
+
+```bash
+diff-footprints \
+  --signals \
+    A_rep1_footprints.bw A_rep2_footprints.bw \
+    B_rep1_footprints.bw B_rep2_footprints.bw \
+  --aggregate-signals \
+    A_rep1_corrected.bw A_rep2_corrected.bw \
+    B_rep1_corrected.bw B_rep2_corrected.bw \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --cond-names A A B B \
+  --motif-db jaspar2026_vertebrates \
+  --normalization none \
+  --plot-aggregate sig \
+  --outdir results/diff_footprints/A_vs_B
+```
+
+Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and a standalone HTML report.
+
+### 4. Review Aggregate Plots
+
+```bash
+plot-aggregate-batch \
+  --input-html results/diff_footprints/A_vs_B/diff_footprints_A_B.html \
+  --output results/reports/aggregate_browser.html
+```
+
+Output: an interactive HTML browser for motif-centered aggregate profiles.
+
+## Single-Sample Motif Matching
+
+Use `match-motifs` when you have one footprint score track and want motif-site tables and bound/unbound motif calls.
+
+```bash
+match-motifs \
+  --signals sample_footprints.bw \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --motif-db jaspar2026_vertebrates \
+  --outdir results/motif_matches/sample
+```
+
+## Pseudobulk Single-Cell ATAC
+
+Use these commands when starting from single-cell fragments and cell annotations:
+
+```bash
+pseudobulk-fragments --help
+pseudobulk-footprints --help
+```
+
+`pseudobulk-footprints` groups fragments, runs ATAC correction, scores footprints, and can produce motif-aware reports.
+
+## Where To Go Next
+
+<div class="fp-grid">
+  <div class="fp-card">
+    <h3>Command List</h3>
+    <p>See all primary commands and what each one does.</p>
+    <p><a href="commands/">Open Commands</a></p>
+  </div>
+  <div class="fp-card">
+    <h3>Command Manuals</h3>
+    <p>Read full command help for options, inputs, and outputs.</p>
+    <p><a href="api/">Open API Reference</a></p>
+  </div>
+  <div class="fp-card">
+    <h3>Report Demo</h3>
+    <p>Open a static differential-footprint report in the browser.</p>
+    <p><a href="reports/">Open Reports</a></p>
+  </div>
+  <div class="fp-card">
+    <h3>GUI Demo</h3>
+    <p>Preview the browser interface and tutorial layout.</p>
+    <p><a href="gui/">Open GUI Demo</a></p>
+  </div>
+</div>

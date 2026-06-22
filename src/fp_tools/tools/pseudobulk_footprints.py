@@ -159,9 +159,9 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
     atac_dir = outdir / "atacorrect"
     footprint_dir = outdir / "footprints"
     plot_dir = outdir / "plots"
-    bindetect_dir = outdir / "bindetect"
+    diff_dir = outdir / "diff_footprints"
     log_dir = outdir / "logs"
-    for path in (atac_dir, footprint_dir, plot_dir, bindetect_dir, log_dir):
+    for path in (atac_dir, footprint_dir, plot_dir, diff_dir, log_dir):
         path.mkdir(parents=True, exist_ok=True)
 
     include_chroms = _parse_chrom_list(args.include_chroms)
@@ -252,7 +252,7 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
         if args.top_n:
             footprint_command.extend(["--top-n", str(args.top_n)])
 
-        commands.append((f"{group}: ATACorrect", atac_command))
+        commands.append((f"{group}: atac-correct", atac_command))
         commands.append((f"{group}: call-footprints", footprint_command))
 
         status = "dry_run"
@@ -291,8 +291,8 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
     runnable_mask = output_manifest["status"].isin(["succeeded", "dry_run"])
     motif_inputs = resolve_motif_inputs(args.motifs, args.motif_db, use_default=False)
     if motif_inputs and runnable_mask.any():
-        bindetect_results = bindetect_dir / f"{args.bindetect_prefix}_results.txt"
-        output_manifest.loc[runnable_mask, "bindetect_outdir"] = str(bindetect_dir)
+        bindetect_results = diff_dir / f"{args.diff_prefix}_results.txt"
+        output_manifest.loc[runnable_mask, "bindetect_outdir"] = str(diff_dir)
         output_manifest.loc[runnable_mask, "bindetect_results"] = str(bindetect_results)
         signal_rows = output_manifest.loc[runnable_mask]
         bindetect_command = [
@@ -308,13 +308,13 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
             "--peaks",
             str(peaks_for_run),
             "--outdir",
-            str(bindetect_dir),
+            str(diff_dir),
             "--prefix",
-            args.bindetect_prefix,
+            args.diff_prefix,
             "--normalization",
-            args.bindetect_normalization,
+            args.diff_normalization,
             "--plot-aggregate",
-            args.bindetect_plot_aggregate,
+            args.diff_plot_aggregate,
             "--cores",
             str(args.cores),
         ]
@@ -326,9 +326,9 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
             bindetect_command.extend(["--peak-header", str(args.peak_header)])
         if args.skip_excel:
             bindetect_command.append("--skip-excel")
-        commands.append(("motif-aware pseudobulk binding detection", bindetect_command))
+        commands.append(("motif-aware pseudobulk diff-footprints report", bindetect_command))
         if not args.dry_run and exit_code == 0:
-            code = _run_command(bindetect_command, log_dir / "bindetect.stdout.log", log_dir / "bindetect.stderr.log")
+            code = _run_command(bindetect_command, log_dir / "diff_footprints.stdout.log", log_dir / "diff_footprints.stderr.log")
             if code != 0:
                 exit_code = code
 
@@ -388,7 +388,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--outdir", required=True, help="Output directory for the full pseudobulk footprint workflow.")
     parser.add_argument("--genome-sizes", help="Two-column chromosome sizes file; required for fragment input cut-site bigWigs and pseudo-BAMs.")
     parser.add_argument("--genome", required=True, help="Genome FASTA for atac-correct.")
-    parser.add_argument("--peaks", required=True, help="Peak BED used for ATACCorrect and footprint scoring.")
+    parser.add_argument("--peaks", required=True, help="Peak BED used for atac-correct and footprint scoring.")
     parser.add_argument("--blacklist", help="Optional blacklist BED for atac-correct.")
     parser.add_argument("--barcode-column", default="barcode", help="Annotation barcode column (default: barcode).")
     parser.add_argument("--bam-barcode-tag", default="CB", help="BAM read tag containing cell barcodes for --bam input (default: CB).")
@@ -400,24 +400,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-fragments", type=int, default=1, help="Minimum fragments/reads for passes_filters (default: 1).")
     parser.add_argument("--no-cpm-normalize", action="store_true", help="Write raw cut counts instead of CPM-normalized cut-site bigWigs for fragment input.")
     parser.add_argument("--top-n", type=int, default=None, help="Optional top N candidate footprints per group.")
-    parser.add_argument("--read-shift", nargs=2, type=int, metavar=("FWD", "REV"), help="Override ATACorrect read shift; default is 0 0 for fragment pseudo-BAMs and 4 -5 for tagged BAM input.")
+    parser.add_argument("--read-shift", nargs=2, type=int, metavar=("FWD", "REV"), help="Override atac-correct read shift; default is 0 0 for fragment pseudo-BAMs and 4 -5 for tagged BAM input.")
     parser.add_argument("--motifs", nargs="*", help="Optional motif file(s); when provided, run motif-aware diff-footprints on pseudobulk footprint tracks.")
     parser.add_argument("--motif-db", help="Optional built-in motif database for motif-aware diff-footprints; can be combined with --motifs.")
     parser.add_argument("--list-motif-dbs", action="store_true", help="List available built-in motif databases and exit.")
     parser.add_argument("--peak-header", help="Optional peak-header file passed to diff-footprints.")
-    parser.add_argument("--bindetect-prefix", default="pseudobulk_bindetect", help="Prefix for optional motif-aware diff-footprints outputs.")
-    parser.add_argument("--bindetect-normalization", choices=["condition-quantile", "sample-quantile", "none"], default="none", help="Normalization mode for optional motif-aware diff-footprints outputs (default: none).")
-    parser.add_argument("--bindetect-plot-aggregate", choices=["sig", "all", "top", "off"], default="top", help="Aggregate plot selection for optional motif-aware diff-footprints HTML/PDF outputs.")
+    parser.add_argument("--bindetect-prefix", dest="diff_prefix", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+    parser.add_argument("--bindetect-normalization", dest="diff_normalization", choices=["condition-quantile", "sample-quantile", "none"], default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+    parser.add_argument("--bindetect-plot-aggregate", dest="diff_plot_aggregate", choices=["sig", "all", "top", "off"], default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+    parser.add_argument("--diff-prefix", dest="diff_prefix", default="pseudobulk_diff_footprints", help="Prefix for optional motif-aware diff-footprints outputs.")
+    parser.add_argument("--diff-normalization", dest="diff_normalization", choices=["condition-quantile", "sample-quantile", "none"], default="none", help="Normalization mode for optional motif-aware diff-footprints outputs (default: none).")
+    parser.add_argument("--diff-plot-aggregate", dest="diff_plot_aggregate", choices=["sig", "all", "top", "off"], default="top", help="Aggregate plot selection for optional motif-aware diff-footprints HTML/PDF outputs.")
     parser.add_argument("--skip-excel", action=argparse.BooleanOptionalAction, default=True, help="Skip Excel files for optional diff-footprints outputs (default: on).")
     parser.add_argument("--tf-site-dir", help="Optional motif-centered BED directory to plot corrected footprint aggregates.")
     parser.add_argument("--site-summary", help="Optional motif-centered site summary TSV for plotting.")
     parser.add_argument("--tfs", default="auto", help="Comma-separated TFs or 'auto' for plotting (default: auto).")
     parser.add_argument("--plot-flank", type=int, default=100, help="Flank for optional aggregate plots (default: 100).")
     parser.add_argument("--plot-script", default="manuscript/scripts/plot_pseudobulk_tf_aggregates.py", help="Plotting script path for optional aggregate plots.")
-    parser.add_argument("--cores", type=int, default=1, help="Cores for grouping, ATACorrect, and footprint scoring (default: 1).")
-    parser.add_argument("--resume", action="store_true", help="Skip ATACCorrect/call-footprints steps whose expected outputs already exist.")
-    parser.add_argument("--force", action="store_true", help="Run ATACCorrect/call-footprints even if outputs already exist.")
-    parser.add_argument("--dry-run", action="store_true", help="Write manifests and commands without running ATACCorrect, call-footprints, motif detection, or plots.")
+    parser.add_argument("--cores", type=int, default=1, help="Cores for grouping, atac-correct, and footprint scoring (default: 1).")
+    parser.add_argument("--resume", action="store_true", help="Skip atac-correct/call-footprints steps whose expected outputs already exist.")
+    parser.add_argument("--force", action="store_true", help="Run atac-correct/call-footprints even if outputs already exist.")
+    parser.add_argument("--dry-run", action="store_true", help="Write manifests and commands without running atac-correct, call-footprints, motif detection, or plots.")
     parser.add_argument("--fail-fast", action="store_true", help="Stop after the first failed group command.")
     return parser
 

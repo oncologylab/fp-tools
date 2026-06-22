@@ -3,7 +3,7 @@
 Direct CLI usage remains primary. This module adds an extra path for:
 - replaying GUI-saved configs
 - running batch sample lists
-- running batch BINDetect comparison lists
+- running batch differential-footprint comparison lists
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run fp-tools jobs from a YAML config file.")
     parser.add_argument("--config", required=True, help="Path to YAML config.")
     parser.add_argument("--run-root", default=None, help="Optional directory for run metadata/logs.")
-    parser.add_argument("--only", nargs="*", default=None, help="Optional tool filter, e.g. BINDetect.")
+    parser.add_argument("--only", nargs="*", default=None, help="Optional tool filter, e.g. diff-footprints.")
     parser.add_argument("--dry-run", action="store_true", help="Print expanded commands without running.")
     parser.add_argument("--list-jobs", action="store_true", help="List expanded jobs and exit.")
     parser.add_argument("--fail-fast", action="store_true", help="Stop at first failed job.")

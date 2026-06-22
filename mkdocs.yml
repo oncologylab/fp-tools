@@ -6,7 +6,6 @@ repo_name: oncologylab/fp-tools
 
 theme:
   name: material
-  logo: assets/fp_tools_logo_icon.svg
   favicon: assets/fp_tools_logo_icon.svg
   features:
     - navigation.instant
@@ -39,8 +38,7 @@ extra_css:
   - stylesheets/extra.css
 
 nav:
-  - Home: index.md
-  - Workflow: workflow.md
+  - Get Started: index.md
   - Commands: commands.md
   - Reports: reports.md
   - GUI Demo: gui.md
@@ -60,15 +58,6 @@ markdown_extensions:
 
 plugins:
   - search
-  - mkdocstrings:
-      handlers:
-        python:
-          paths: [src]
-          options:
-            docstring_style: google
-            show_source: false
-            show_root_heading: true
-            show_signature_annotations: true
 
 extra:
   social:

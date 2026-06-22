@@ -988,7 +988,7 @@ def run_cli():
 
 def match_motifs_cli():
     parser = argparse.ArgumentParser(prog="match-motifs")
-    parser = add_bindetect_arguments(parser)
+    parser = add_bindetect_arguments(parser, command_name="match-motifs")
     args = parser.parse_args()
     if getattr(args, "list_motif_dbs", False):
         print(motif_db_table())
@@ -1000,7 +1000,7 @@ def match_motifs_cli():
         parser.error("match-motifs expects exactly one --signals bigWig for single-sample motif matching")
     if args.cond_names is not None and len(args.cond_names) != 1:
         parser.error("match-motifs expects exactly one --cond-names value when provided")
-    if args.prefix == "bindetect":
+    if args.prefix in {"bindetect", "diff_footprints"}:
         args.prefix = "motif_matches"
     args.method = "bindetect"
     args.replicate_report = "off"
@@ -1009,7 +1009,7 @@ def match_motifs_cli():
 
 def diff_footprints_cli():
     parser = argparse.ArgumentParser(prog="diff-footprints")
-    parser = add_bindetect_arguments(parser)
+    parser = add_bindetect_arguments(parser, command_name="diff-footprints")
     args = parser.parse_args()
     if getattr(args, "list_motif_dbs", False):
         print(motif_db_table())
