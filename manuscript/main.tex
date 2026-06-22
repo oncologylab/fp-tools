@@ -285,11 +285,11 @@ with the manuscript resources so the reported examples can be rerun and audited.
 
 \subsection{Reproducibility Engineering}
 
-The package includes unit tests for numerical helpers, CLI behavior, and
-deterministic regression outputs for footprint calling, differential footprint
-analysis, and aggregate plotting, with an opt-in slow regression for bias
-correction. Continuous integration runs the suite on compact reference inputs,
-builds source and wheel artifacts, and verifies the installed console scripts.
+The package includes unit tests for numerical helpers and CLI behavior, plus
+automated output checks for footprint calling, differential footprint analysis,
+and aggregate plotting, with an opt-in slow check for bias correction.
+Continuous integration runs the suite on compact reference inputs, builds source
+and wheel artifacts, and verifies the installed console scripts.
 The repository also includes \texttt{environment.yml}, a Dockerfile, release
 metadata, and Make targets for testing, building, and manuscript checks. These
 choices follow FAIR-oriented research-software principles and established
@@ -339,13 +339,14 @@ aggregate-batch runs also produce self-contained HTML reports with embedded
 compressed data, searchable motif controls, editable group colors, synchronized
 aggregate profiles, and SVG export for publication-ready editing.
 
-\subsection{Regression-tested Outputs}
+\subsection{Tested Output Stability}
 
-Deterministic regression tests pin summary outputs for footprint calling,
-differential footprint analysis, and aggregate plotting. Public entry-point
-checks and YAML dry-runs verify that the command surface remains stable. These
-tests provide a compact contract for core analyses while allowing integrated
-modules to share the same input and output conventions.
+The package includes automated checks that run core commands on compact
+reference inputs and compare key summary outputs for footprint calling,
+differential footprint analysis, and aggregate plotting. Additional checks
+exercise public command-line entry points and saved YAML configurations.
+Together, these tests help ensure that updates preserve the expected behavior of
+the main workflows and shared input/output conventions.
 
 \subsection{De Novo Motif Discovery Complements Database-based Motif Analysis}
 
@@ -562,7 +563,7 @@ while preserving CLI-compatible configuration files.
 \texttt{fp-tools} is a practical extension of motif-centered ATAC-seq
 footprinting and regulatory motif analysis. Its strengths are consistent
 interfaces across bias correction, footprint calling, differential footprint
-analysis, and aggregate visualization; deterministic regression coverage;
+analysis, and aggregate visualization; automated output checks;
 explicit replicate-aware summaries; and integrated de novo motif preparation and
 pseudobulk aggregation using the same region, motif, and signal conventions
 (Table~\ref{tab:features}). These features address a common practical problem:
@@ -576,7 +577,7 @@ same interpretable bias-corrected center-versus-flank signal model and improves
 the surrounding analysis layer: faster core operations, consistent modern command
 names, reusable YAML execution, report and SVG export, explicit
 replicate-reporting modes, de novo motif-preparation handoff, pseudobulk
-single-cell aggregation, GUI access, and regression-tested example outputs.
+single-cell aggregation, GUI access, and tested example outputs.
 
 \begin{table}[H]
 \caption{Qualitative scope comparison across widely used ATAC-seq regulatory-analysis tools.
@@ -614,16 +615,17 @@ YAML/batch execution & \featureyes & NA & NA & NA & NA & NA\\
 \endgroup
 \end{table}
 
-Deep sequence-to-profile models such as ChromBPNet provide powerful
-sequence-driven occupancy and variant-effect analyses~\cite{chrombpnet2024}.
-Differential TF activity can also be studied with orthogonal accessibility-based
-frameworks such as diffTF~\cite{Berest2019_diffTF}. In this broader landscape,
-\texttt{fp-tools} extends motif-centered ATAC footprinting by connecting corrected
-cut-site profiles, motif interpretation, replicate-aware summaries, and
-publication-ready reports. One-sample contrasts use the background-distribution
-comparison, whereas replicate-supported contrasts use per-sample motif scores
-with empirical-Bayes variance moderation to estimate differential footprint
-statistics.
+Other regulatory-analysis tools address adjacent but distinct questions. Deep
+sequence-to-profile models such as ChromBPNet learn sequence determinants of
+chromatin profiles and are well suited for occupancy and variant-effect
+analyses~\cite{chrombpnet2024}, while accessibility-based frameworks such as
+diffTF estimate differential TF activity from changes in open
+chromatin~\cite{Berest2019_diffTF}. These approaches are complementary to
+motif-centered footprinting. The role of \texttt{fp-tools} is to make
+interpretable ATAC-seq footprint analysis easier to run end to end: corrected
+cut-site signals, motif matching, de novo motif preparation, pseudobulk
+single-cell analysis, replicate-aware reporting, GUI execution, and
+publication-ready reports are kept within one reproducible workflow.
 
 %==================================================================
 \section{Conclusions}
