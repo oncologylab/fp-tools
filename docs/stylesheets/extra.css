@@ -27,6 +27,10 @@
   box-shadow: none;
 }
 
+.md-footer {
+  display: none;
+}
+
 .md-header__button.md-logo {
   display: none;
 }

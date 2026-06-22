@@ -12,7 +12,6 @@ theme:
     - navigation.tracking
     - navigation.tabs
     - navigation.sections
-    - navigation.footer
     - navigation.indexes
     - navigation.top
     - search.suggest
@@ -61,6 +60,3 @@ plugins:
 
 extra:
   generator: false
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/oncologylab/fp-tools
