@@ -33,23 +33,26 @@ $^{1}$ \quad Department of Oncology, Lombardi Comprehensive Cancer Center, Georg
 
 \corres{Correspondence: cy232@georgetown.edu (C.Y.)}
 
-\abstract{Transcription-factor (TF) footprinting from ATAC-seq provides a
-base-resolution view of regulatory factor occupancy, yet complete analyses often
-require multiple tools with different interfaces, signal conventions, and
-reproducibility practices. We present \texttt{fp-tools}, a Python package that
-builds on the established TOBIAS-style ATAC footprinting model while extending
-the surrounding workflow for reproducible analyses. \texttt{fp-tools} integrates
-Tn5 bias correction, footprint calling, motif matching, differential footprint
-analysis, and aggregate visualization within a consistent command-line workflow.
-The same framework supports de novo motif-discovery preparation, pseudobulk
-aggregation from single-cell ATAC fragments, and replicate-aware reporting for
-condition comparisons. Using public bulk ATAC-seq replicates and public 10x
-Genomics PBMC single-cell datasets, we demonstrate that \texttt{fp-tools}
-recovers biologically interpretable motif-centered aggregate patterns while
-preserving a reproducible analysis trail through versioned inputs, source tables,
-and regression-tested command outputs. \texttt{fp-tools} provides an integrated
-and auditable platform for ATAC-seq footprinting workflows and their
-motif-centered extensions.}
+\abstract{ATAC-seq footprinting enables near-base-resolution inference of
+transcription-factor (TF) occupancy across the genome. However, the field lacks a
+computationally efficient, user-friendly, and integrated platform that accepts
+both bulk and single-cell ATAC-seq data, supports both de novo motif discovery
+and matching to public motif databases, and generates interactive and
+publication-ready visual outputs. Here, we present \texttt{fp-tools}, a Python
+package that builds on the widely used ATAC-seq footprinting framework TOBIAS.
+We substantially improve computational efficiency across key steps, including Tn5
+bias correction, footprint calling, and motif matching. In addition,
+\texttt{fp-tools} introduces de novo motif discovery, replicate-aware
+differential footprinting, and aggregation analysis, features not provided as
+native TOBIAS workflows. We further streamline a single-cell ATAC-seq
+footprinting workflow, provide interactive visualization of analysis results, and
+implement a graphical user interface (GUI) that enables code-free execution of
+all package commands. Using public bulk ATAC-seq replicates and single-cell
+datasets, we demonstrate that \texttt{fp-tools} quantitatively recovers
+cell-type-specific TF-binding patterns and identifies de novo binding motifs that
+are not captured by existing public motif databases. Together, \texttt{fp-tools}
+provides an efficient, accessible, and comprehensive platform for TF footprint
+analysis across bulk and single-cell ATAC-seq studies.}
 
 \keyword{ATAC-seq; transcription factor footprinting; chromatin accessibility;
 motif analysis; pseudobulk ATAC-seq;
@@ -65,68 +68,67 @@ replicate-aware reporting; reproducibility; command-line bioinformatics}
 %==================================================================
 
 Chromatin accessibility profiling by the assay for transposase-accessible
-chromatin using sequencing (ATAC-seq) has become a standard readout of the active
-regulatory landscape of a cell~\cite{buenrostro2013}. Within accessible regions,
-sequence-specific transcription factors (TFs) protect the DNA they occupy from
-transposition. This creates local cut-site depletions, often called
-``footprints,'' with higher accessibility in the nearby flanks. Detecting and interpreting these footprints supports
-inference of TF occupancy, differential regulation between conditions, and the
-functional consequences of non-coding variation. Earlier footprinting and
-occupancy models, including CENTIPEDE, Wellington, PIQ, and DeFCoM, established
-the value of combining sequence information with chromatin-accessibility profile
-shape for TFBS inference~\cite{pique2011centipede,piper2013wellington,sherwood2014piq,quach2017defcom}.
+chromatin using sequencing (ATAC-seq) has become a standard readout of active
+regulatory DNA~\cite{buenrostro2013}. Within accessible regions,
+sequence-specific transcription factors (TFs) can protect bound DNA from
+transposition, producing local cut-site depletions, or ``footprints,'' with
+increased accessibility in nearby flanks. Detecting these motif-centered cut-site
+patterns supports inference of TF occupancy, differential regulatory activity
+between conditions, and interpretation of non-coding regulatory variants. Earlier
+footprinting and occupancy models, including CENTIPEDE, Wellington, PIQ, and
+DeFCoM, established the value of combining sequence information with chromatin
+accessibility profile shape for TF-binding-site inference~\cite{pique2011centipede,piper2013wellington,sherwood2014piq,quach2017defcom}.
 
-A mature but \emph{fragmented} ecosystem of methods addresses pieces of this
-problem. ATAC-seq footprinting and differential-binding frameworks such as
-TOBIAS~\cite{bentsen2020} and HINT-ATAC~\cite{li2019hint} correct enzymatic
-sequence bias and score footprints at a single TF-relevant scale. Multiscale and
-nucleosome-aware approaches, exemplified by the PRINT/scPrinter
-family~\cite{hu2024print}, model accessibility structure across a range of
-footprint widths. Supervised TF-binding-site (TFBS) predictors such as
+Despite this progress, practical ATAC-seq footprinting remains difficult to run
+as a complete and reproducible analysis. Widely used tools such as
+TOBIAS~\cite{bentsen2020} and HINT-ATAC~\cite{li2019hint} provide enzymatic bias
+correction and footprint scoring for bulk ATAC-seq data. Multiscale and
+nucleosome-aware approaches, including the PRINT/scPrinter
+family~\cite{hu2024print}, extend footprint modeling across different scales of
+chromatin protection. Supervised TF-binding-site predictors such as
 maxATAC~\cite{cazares2023maxatac} and sequence-to-profile models such as
-ChromBPNet~\cite{chrombpnet2024} learn occupancy from labeled data or raw
-sequence, and downstream interpretation tools and variant scorers translate models
-into motif and allele-level effects. Motif-discovery and motif-comparison tools,
-including MEME/STREME~\cite{bailey2015meme,Bailey2021_STREME} and
-Tomtom~\cite{gupta2007tomtom}, are also widely used after peak or footprint
-selection, but commonly run as separate steps with separate input and output
-conventions. Each tool typically ships its own interface, input conventions, and
-assumptions, so assembling a coherent, reproducible pipeline and rerunning
-analyses on common inputs remains laborious and error-prone.
+ChromBPNet~\cite{chrombpnet2024} provide complementary prediction frameworks.
+Motif-discovery and motif-comparison tools, including MEME/STREME~\cite{bailey2015meme,Bailey2021_STREME}
+and Tomtom~\cite{gupta2007tomtom}, are commonly used after peak or footprint
+selection, and curated databases such as JASPAR~\cite{jaspar2026} remain central
+for known-motif matching. These tools are valuable, but they are typically
+assembled through separate command interfaces, file conventions, report formats,
+and visualization steps.
 
-Beyond this tooling friction, footprint interpretation has practical limitations
-that make reproducibility and careful signal handling important. ATAC-seq
-footprinting depends on base-resolution cut-site depletion and can be confounded
-by enzyme sequence bias, local accessibility, motif strength, and factor-specific
-binding kinetics~\cite{sung2014}. Intrinsic cleavage bias remains a major
-confounder in accessibility-based footprinting, motivating explicit bias
-correction and careful interpretation~\cite{Hu2022_SELMA}. Deep sequence-to-profile models and multiscale
-methods can improve sensitivity for some questions, but they often require
-substantial compute and specialized training workflows. For many applied ATAC-seq
-projects, the immediate need is therefore a transparent, repeatable workflow that
-keeps footprint interpretation traceable while producing biologically informative reports within one software ecosystem.
+This fragmentation creates a gap for applied users. A complete analysis often
+requires bulk or single-cell ATAC-seq input handling, Tn5 sequence-bias
+correction, footprint calling, motif matching against public databases, optional
+de novo motif discovery, differential footprint analysis, aggregate
+visualization, and publication-ready reporting. Single-cell ATAC-seq adds another
+layer of complexity because sparse per-cell fragments must usually be aggregated
+into interpretable cell-type or neighborhood-level signals before conventional
+footprinting can be applied. For many biology laboratories, the limiting step is
+not the absence of any individual algorithm, but the lack of a single efficient
+and accessible platform that connects these steps while preserving the analysis
+record.
 
-Three practical gaps motivate this work. First, \textbf{signal clarity}: users need to know
-which signal representation is appropriate for footprint calling and how
-normalization changes motif-centered interpretation. Second, \textbf{interface fragmentation}:
-moving from bias correction to footprint calling, motif matching, differential
-footprint analysis, and visualization commonly spans several packages with
-incompatible I/O. Third, \textbf{reproducible biological reporting}: many workflows
-produce intermediate tracks and tables but do not provide a consistent path to
-replicate-aware summaries, motif-centered aggregate views, de novo motif follow-up,
-and single-cell pseudobulk analyses.
+We developed \texttt{fp-tools} to fill this workflow gap. \texttt{fp-tools}
+builds on the widely used TOBIAS ATAC-seq footprinting framework while improving
+the surrounding platform for speed, accessibility, and end-to-end analysis. The
+package keeps the interpretable motif-centered footprint model familiar to TOBIAS
+users, but implements faster core operations for Tn5 bias correction, footprint
+calling, and motif matching, and adds workflow components that are not provided
+as native TOBIAS workflows. These include de novo motif-discovery preparation and
+matching, replicate-aware differential footprint reports, motif-centered
+aggregation plots, pseudobulk single-cell ATAC-seq support, interactive HTML
+reports, and a graphical user interface for code-free execution of the same
+command-compatible workflows.
 
-We address these gaps with \texttt{fp-tools}, a reproducible ATAC-seq
-footprinting platform that connects bias correction, footprint calling, motif
-matching, differential footprint analysis, and aggregate visualization through a
-single command-line workflow. The goal is not to replace TOBIAS as a core ATAC
-footprinting reference; instead, \texttt{fp-tools} keeps the same interpretable
-motif-centered signal logic while adding workflow features that are often built
-around TOBIAS by hand: command-compatible batch execution, saved YAML
-configurations, replicate-aware report summaries, de novo motif handoff,
-pseudobulk single-cell aggregation, browser-based review, and figure-ready
-exports. This paper describes the implemented methods, public-data validation
-examples, and reproducibility framework that tie these workflows together.
+Here, we describe the \texttt{fp-tools} implementation and evaluate it using
+public bulk ATAC-seq replicates and public single-cell ATAC-seq datasets. The
+examples test whether the platform produces reproducible corrected signals,
+footprint scores, differential motif reports, de novo motif summaries, and
+cell-type-specific pseudobulk footprint signatures. We position \texttt{fp-tools}
+as an integrated and user-accessible extension of established ATAC-seq
+footprinting practice: it does not replace specialized single-cell, deep-learning,
+or motif-discovery tools, but connects common TF-footprinting tasks into a single
+auditable workflow that can be run from the command line, batch YAML files, or
+the GUI.
 
 
 %==================================================================
