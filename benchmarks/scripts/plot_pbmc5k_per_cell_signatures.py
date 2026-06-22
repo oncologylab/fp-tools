@@ -11,6 +11,7 @@ from pathlib import Path
 import anndata as ad
 import matplotlib.patches as mpatches
 import matplotlib.patheffects as patheffects
+from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import matplotlib.text as mtext
 import matplotlib.transforms as mtransforms
@@ -1188,6 +1189,7 @@ def draw_knn_umap_panel(
     annotations: pd.DataFrame,
     knn_scores: pd.DataFrame,
     markers: list[str],
+    cax: plt.Axes | None = None,
 ) -> None:
     x_padding = float((annotations["umap_1"].max() - annotations["umap_1"].min()) * 0.03)
     y_padding = float((annotations["umap_2"].max() - annotations["umap_2"].min()) * 0.03)
@@ -1209,13 +1211,19 @@ def draw_knn_umap_panel(
         )
     label_groups(reference_ax, annotations, fontsize=9, positions=REFERENCE_LABEL_POSITIONS)
     reference_ax.set_title("Broad cell types", fontweight="bold", pad=4)
-    reference_ax.set_xlabel("UMAP 1")
-    reference_ax.set_ylabel("UMAP 2")
-    reference_ax.legend(frameon=False, markerscale=2.5, fontsize=9, loc="center left", bbox_to_anchor=(1.02, 0.5))
     reference_ax.set_xlim(xlim)
     reference_ax.set_ylim(ylim)
+    reference_ax.set_xticks([])
+    reference_ax.set_yticks([])
     reference_ax.spines[["top", "right"]].set_visible(False)
 
+    marker_values = knn_scores[knn_scores["tf"].isin(markers)]["knn_footprint_oriented_z"]
+    marker_arr = pd.to_numeric(marker_values, errors="coerce").to_numpy(dtype=float)
+    finite = marker_arr[np.isfinite(marker_arr)]
+    marker_vmax = float(np.nanpercentile(np.abs(finite), 98)) if finite.size else 2.0
+    marker_vmax = max(marker_vmax, 1.0)
+    norm = TwoSlopeNorm(vmin=-marker_vmax, vcenter=0.0, vmax=marker_vmax)
+    last_scatter = None
     for ax, tf in zip(axes[1:], markers, strict=True):
         subset = knn_scores[knn_scores["tf"] == tf].copy()
         subset = annotations[["barcode", "cell_type", "umap_1", "umap_2"]].merge(
@@ -1228,20 +1236,116 @@ def draw_knn_umap_panel(
             subset["umap_2"],
             c=subset["knn_footprint_oriented_z"],
             cmap="RdBu_r",
-            norm=robust_norm(subset["knn_footprint_oriented_z"]),
+            norm=norm,
             s=1.8,
             alpha=0.92,
             linewidths=0,
             rasterized=True,
         )
-        ax.set_title(f"{tf} footprint signature", fontweight="bold", pad=4)
-        ax.set_xlabel("UMAP 1")
+        last_scatter = sc
+        ax.set_title(tf, fontweight="bold", pad=4)
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
+        ax.set_xticks([])
+        ax.set_yticks([])
         ax.spines[["top", "right"]].set_visible(False)
-        cbar = fig.colorbar(sc, ax=ax, fraction=0.046, pad=0.02)
-        cbar.set_label("footprint signature z-score", fontsize=9)
+
+    if last_scatter is not None:
+        if cax is not None:
+            cbar = fig.colorbar(last_scatter, cax=cax)
+        else:
+            cbar = fig.colorbar(last_scatter, ax=axes[1 : 1 + len(markers)], fraction=0.022, pad=0.018)
+        cbar.ax.set_title("Footprint\nsignature", fontsize=8.5, fontweight="bold", pad=5)
         cbar.ax.tick_params(labelsize=9, length=2.2, width=0.6)
+
+
+def plot_all_tf_signature_review_pdfs(
+    annotations: pd.DataFrame,
+    matrix: pd.DataFrame,
+    metadata: pd.DataFrame,
+    output_prefix: Path,
+    *,
+    panels_per_page: int = 12,
+) -> None:
+    ordered_meta = add_motif_specificity(metadata).copy()
+    ordered_meta["_tf_sort"] = ordered_meta["tf_name"].astype(str)
+    ordered_meta = ordered_meta.sort_values(
+        ["dominant_cell_type", "cell_type_specificity", "dynamic_range", "_tf_sort", "motif_id"],
+        ascending=[True, False, False, True, True],
+    ).drop(columns="_tf_sort")
+
+    x_padding = float((annotations["umap_1"].max() - annotations["umap_1"].min()) * 0.03)
+    y_padding = float((annotations["umap_2"].max() - annotations["umap_2"].min()) * 0.03)
+    xlim = (float(annotations["umap_1"].min() - x_padding), float(annotations["umap_1"].max() + x_padding))
+    ylim = (float(annotations["umap_2"].min() - y_padding), float(annotations["umap_2"].max() + y_padding))
+
+    all_values = matrix.to_numpy(dtype=float)
+    finite = all_values[np.isfinite(all_values)]
+    vmax = float(np.nanpercentile(np.abs(finite), 98)) if finite.size else 2.0
+    vmax = max(vmax, 1.0)
+    norm = TwoSlopeNorm(vmin=-vmax, vcenter=0.0, vmax=vmax)
+
+    for cell_type in CELL_TYPES:
+        subset_meta = ordered_meta[ordered_meta["dominant_cell_type"] == cell_type].reset_index(drop=True)
+        output_pdf = output_prefix.with_name(f"{output_prefix.name}_{cell_type}.pdf")
+        with PdfPages(output_pdf) as pdf:
+            for page_start in range(0, subset_meta.shape[0], panels_per_page):
+                page_meta = subset_meta.iloc[page_start : page_start + panels_per_page]
+                fig, axes = plt.subplots(3, 4, figsize=(11.0, 8.5), sharex=True, sharey=True)
+                fig.subplots_adjust(left=0.035, right=0.86, bottom=0.055, top=0.90, wspace=0.06, hspace=0.14)
+                axes_flat = axes.reshape(-1)
+                last_scatter = None
+                for ax_index, ax in enumerate(axes_flat):
+                    if ax_index >= page_meta.shape[0]:
+                        ax.set_visible(False)
+                        continue
+                    row = page_meta.iloc[ax_index]
+                    motif_id = str(row["motif_id"])
+                    values = pd.to_numeric(matrix.loc[motif_id], errors="coerce")
+                    value_table = values.rename("signature_z").reset_index()
+                    value_table.columns = ["barcode", "signature_z"]
+                    plot_df = annotations[["barcode", "umap_1", "umap_2"]].merge(
+                        value_table,
+                        on="barcode",
+                        how="left",
+                    )
+                    last_scatter = ax.scatter(
+                        plot_df["umap_1"],
+                        plot_df["umap_2"],
+                        c=plot_df["signature_z"],
+                        cmap="RdBu_r",
+                        norm=norm,
+                        s=1.8,
+                        alpha=0.92,
+                        linewidths=0,
+                        rasterized=True,
+                    )
+                    title = f"{row['tf_name']} ({motif_id})"
+                    if len(title) > 42:
+                        title = title[:39] + "..."
+                    ax.set_title(title, fontsize=8.6, fontweight="bold", pad=3)
+                    ax.set_xlim(xlim)
+                    ax.set_ylim(ylim)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    ax.spines[["top", "right"]].set_visible(False)
+                    ax.spines[["left", "bottom"]].set_linewidth(0.5)
+                if last_scatter is not None:
+                    cax = fig.add_axes([0.895, 0.25, 0.018, 0.48])
+                    cbar = fig.colorbar(last_scatter, cax=cax)
+                    cbar.set_label("footprint signature z-score", fontsize=9)
+                    cbar.ax.tick_params(labelsize=8, length=2.2, width=0.6)
+                page_number = page_start // panels_per_page + 1
+                total_pages = int(np.ceil(subset_meta.shape[0] / panels_per_page))
+                fig.suptitle(
+                    f"PBMC5k {cell_type} dominant footprint signatures ({page_number}/{total_pages})",
+                    fontsize=11.0,
+                    fontweight="bold",
+                    y=0.98,
+                )
+                pdf.savefig(fig)
+                plt.close(fig)
+        print(f"Wrote {output_pdf}")
 
 
 def plot_fig4_single_cell_footprinting(
@@ -1278,9 +1382,10 @@ def plot_fig4_single_cell_footprinting(
     strip_ax.set_title("Top marker and cell-type-specific footprint signatures", fontsize=9, fontweight="bold", pad=4)
     fig.text(0.035, 0.965, "A", fontsize=9, fontweight="bold", fontfamily="Arial", va="top")
 
-    bottom_grid = outer[1].subgridspec(3, 3, hspace=0.38, wspace=0.34)
+    bottom_grid = outer[1].subgridspec(3, 4, hspace=0.38, wspace=0.28, width_ratios=[1.0, 1.0, 1.0, 0.07])
     axes = [fig.add_subplot(bottom_grid[row, col]) for row in range(3) for col in range(3)]
-    draw_knn_umap_panel(fig, axes[: 1 + len(markers)], annotations, knn_scores, markers)
+    cax = fig.add_subplot(bottom_grid[:, 3])
+    draw_knn_umap_panel(fig, axes[: 1 + len(markers)], annotations, knn_scores, markers, cax=cax)
     for ax in axes[1 + len(markers) :]:
         ax.set_visible(False)
     fig.text(0.035, 0.61, "B", fontsize=9, fontweight="bold", fontfamily="Arial", va="top")
@@ -1309,6 +1414,8 @@ def score_all_motif_per_cell_heatmap(
     marker_scores: pd.DataFrame | None,
     fig4_output_prefix: Path | None,
     fig4_markers: list[str],
+    all_tf_review_prefix: Path | None = None,
+    all_tf_review_panels_per_page: int = 12,
 ) -> None:
     ordered = ordered_cell_annotations(annotations)
     cell_order = ordered["barcode"].astype(str).tolist()
@@ -1384,6 +1491,14 @@ def score_all_motif_per_cell_heatmap(
     )
     if fig4_output_prefix is not None and marker_scores is not None:
         plot_fig4_single_cell_footprinting(annotations, marker_scores, top_matrix, top_metadata, fig4_output_prefix, fig4_markers)
+    if all_tf_review_prefix is not None:
+        plot_all_tf_signature_review_pdfs(
+            annotations,
+            matrix,
+            metadata,
+            all_tf_review_prefix,
+            panels_per_page=all_tf_review_panels_per_page,
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1416,6 +1531,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--top-motif-signatures-per-cell-type", type=int, default=40, help="Top cell-type-specific all-motif signatures to keep per broad cell type (default: 40).")
     parser.add_argument("--top-motif-min-specificity", type=float, default=0.5, help="Minimum dominant-vs-next cell-type mean z-score difference for top all-motif heatmap rows (default: 0.5).")
     parser.add_argument("--fig4-output-prefix", default="Fig4", help="Output prefix for the combined letter-size Figure 4 SVG when all-motif heatmap data are available.")
+    parser.add_argument("--all-tf-review-prefix", default="pbmc5k_all_tf_footprint_signature_umaps", help="Output prefix for three multi-page all-TF signature review PDFs grouped by dominant broad cell type.")
+    parser.add_argument("--all-tf-review-panels-per-page", type=int, default=12, help="Number of TF signature UMAP panels per all-TF review PDF page (default: 12).")
+    parser.add_argument("--skip-all-tf-review-pdfs", action="store_true", help="Do not write the three all-TF signature review PDFs.")
     parser.add_argument("--no-create-fragment-index", action="store_true", help="Do not create a tabix index for the fragment file when it is missing.")
     args = parser.parse_args(argv)
 
@@ -1501,6 +1619,14 @@ def main(argv: list[str] | None = None) -> int:
             outdir / args.fig4_output_prefix,
             markers,
         )
+        if not args.skip_all_tf_review_pdfs:
+            plot_all_tf_signature_review_pdfs(
+                annotations,
+                matrix,
+                metadata,
+                outdir / args.all_tf_review_prefix,
+                panels_per_page=args.all_tf_review_panels_per_page,
+            )
     if args.all_motif_bindetect_dir or args.all_motif_results:
         if not args.all_motif_bindetect_dir or not args.all_motif_results:
             raise SystemExit("--all-motif-bindetect-dir and --all-motif-results must be provided together.")
@@ -1529,6 +1655,8 @@ def main(argv: list[str] | None = None) -> int:
             marker_scores=marker_scores_for_figures,
             fig4_output_prefix=outdir / args.fig4_output_prefix,
             fig4_markers=markers,
+            all_tf_review_prefix=None if args.skip_all_tf_review_pdfs else outdir / args.all_tf_review_prefix,
+            all_tf_review_panels_per_page=args.all_tf_review_panels_per_page,
         )
     print(f"Wrote per-cell PBMC5k signature plots and score tables to {outdir}")
     return 0
