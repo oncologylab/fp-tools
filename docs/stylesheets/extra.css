@@ -61,10 +61,11 @@
 
 .fp-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
-  gap: 2rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
   align-items: center;
-  padding: 2.4rem 0 1.3rem;
+  max-width: 920px;
+  padding: 2.1rem 0 1.2rem;
 }
 
 .fp-eyebrow {
@@ -180,6 +181,27 @@
   gap: 1rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 1.1rem 0;
+}
+
+.fp-demo-callout {
+  background: var(--fp-panel);
+  border: 1px solid var(--fp-line);
+  border-radius: 8px;
+  margin: 1rem 0 1.2rem;
+  padding: 1rem;
+}
+
+.fp-demo-callout h3 {
+  color: var(--fp-ink);
+  font-size: 1rem;
+  margin: 0 0 0.35rem;
+}
+
+.fp-demo-callout p {
+  color: var(--fp-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 0 0 0.85rem;
 }
 
 .fp-screenshot {

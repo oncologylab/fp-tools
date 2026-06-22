@@ -187,21 +187,21 @@ def _apply_page_style() -> None:
         <style>
         :root {
             color-scheme: light;
-            --fp-bg: #f7f8fb;
+            --fp-bg: #f3f6fa;
             --fp-surface: #ffffff;
             --fp-surface-soft: #f9fafb;
-            --fp-border: #d2d6dc;
-            --fp-border-soft: #e5e7eb;
+            --fp-border: #cfd8e3;
+            --fp-border-soft: #dbe3ec;
             --fp-text: #111827;
             --fp-text-muted: #4b5563;
-            --fp-accent: #1d4ed8;
-            --fp-accent-ink: #172554;
-            --fp-accent-soft: #dbeafe;
-            --fp-accent-hover: #1e40af;
-            --fp-hover: #eef2ff;
+            --fp-accent: #173b73;
+            --fp-accent-ink: #102a5c;
+            --fp-accent-soft: #eaf2ff;
+            --fp-accent-hover: #102f61;
+            --fp-hover: #1e293b;
             --fp-radius-control: 8px;
             --fp-radius-card: 8px;
-            --fp-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+            --fp-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
         }
         html, body, [class*="css"], [data-testid="stAppViewContainer"] {
             font-family: Arial, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
@@ -222,22 +222,22 @@ def _apply_page_style() -> None:
             display: none !important;
         }
         [data-testid="stSidebar"] {
-            background: #f8fafc;
-            border-right: 1px solid var(--fp-border-soft);
-            min-width: 340px !important;
-            max-width: 340px !important;
+            background: #0f172a;
+            border-right: 1px solid #1e293b;
+            min-width: 314px !important;
+            max-width: 314px !important;
         }
         [data-testid="stSidebarHeader"],
         [data-testid="stSidebarCollapseButton"] {
             display: none !important;
         }
         [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
-            padding-top: 0.8rem;
-            padding-left: 1rem;
-            padding-right: 1rem;
+            padding-top: 0.85rem;
+            padding-left: 0.92rem;
+            padding-right: 0.92rem;
         }
         [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-            gap: 0.36rem;
+            gap: 0.3rem;
         }
         [data-testid="stSidebar"] .stMarkdown,
         [data-testid="stSidebar"] label,
@@ -245,10 +245,10 @@ def _apply_page_style() -> None:
         [data-testid="stSidebar"] span,
         [data-testid="stSidebar"] .stCaption,
         [data-testid="stSidebar"] .stRadio label p {
-            color: var(--fp-text) !important;
+            color: #e5edf6 !important;
         }
         [data-testid="stSidebar"] .stCaption {
-            color: var(--fp-text-muted) !important;
+            color: #aebbd0 !important;
         }
         [data-testid="stSidebar"] input,
         [data-testid="stSidebar"] textarea,
@@ -259,46 +259,53 @@ def _apply_page_style() -> None:
         }
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button {
             background: transparent !important;
-            color: var(--fp-text) !important;
+            color: #e5edf6 !important;
             border: 1px solid transparent !important;
             font-weight: 800 !important;
             border-radius: var(--fp-radius-control) !important;
-            min-height: 1.55rem !important;
+            min-height: 2.08rem !important;
             box-shadow: none !important;
             justify-content: flex-start !important;
             text-align: left !important;
-            padding: 0.16rem 0.64rem !important;
+            padding: 0.34rem 0.66rem !important;
         }
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button:hover {
             background: var(--fp-hover) !important;
-            color: var(--fp-text) !important;
-            border-color: #c7d2fe !important;
+            color: #ffffff !important;
+            border-color: #334155 !important;
         }
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button:disabled,
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button:disabled:hover {
-            background: #dbeafe !important;
-            border-color: #bfdbfe !important;
-            color: #172554 !important;
+            background: #1d4ed8 !important;
+            border-color: #2563eb !important;
+            color: #ffffff !important;
             opacity: 1 !important;
             cursor: default !important;
-            box-shadow: inset 3px 0 0 #2563eb !important;
+            box-shadow: inset 4px 0 0 #72e0b2 !important;
         }
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button p,
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button span,
         [data-testid="stSidebar"] [data-baseweb="input"] > div,
         [data-testid="stSidebar"] [data-testid="stTextInputRootElement"] > div {
-            color: var(--fp-text) !important;
+            color: #e5edf6 !important;
             background: transparent !important;
         }
+        [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button *,
+        [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button [data-testid="stMarkdownContainer"],
+        [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button [data-testid="stMarkdownContainer"] * {
+            color: #e5edf6 !important;
+            opacity: 1 !important;
+        }
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button:disabled p,
-        [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button:disabled span {
-            color: #172554 !important;
+        [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button:disabled span,
+        [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button:disabled * {
+            color: #ffffff !important;
         }
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button p {
             width: 100% !important;
             text-align: left !important;
-            font-size: 0.93rem !important;
-            line-height: 1.16 !important;
+            font-size: 0.98rem !important;
+            line-height: 1.18 !important;
         }
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button > div,
         [data-testid="stSidebar"] [class*="st-key-nav_"] .stButton > button > div > span,
@@ -310,6 +317,17 @@ def _apply_page_style() -> None:
         }
         [data-testid="stSidebar"] [data-baseweb="input"] {
             background: var(--fp-surface) !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stExpander"] {
+            background: #101d33 !important;
+            border: 1px solid #2b3a55 !important;
+            box-shadow: none !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary,
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary *,
+        [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stMarkdownContainer"] *,
+        [data-testid="stSidebar"] [data-testid="stExpander"] label {
+            color: #e5edf6 !important;
         }
         [data-testid="stTextInputRootElement"] > div,
         [data-baseweb="base-input"],
@@ -391,37 +409,37 @@ def _apply_page_style() -> None:
         }
         .block-container {
             width: 100% !important;
-            max-width: 3400px !important;
-            padding-top: 0.85rem;
-            padding-bottom: 1.4rem;
-            padding-left: clamp(1.2rem, 2.1vw, 3.2rem);
-            padding-right: clamp(1.2rem, 2.1vw, 3.2rem);
+            max-width: 1840px !important;
+            padding-top: 0.75rem;
+            padding-bottom: 1.15rem;
+            padding-left: clamp(1rem, 1.7vw, 2.2rem);
+            padding-right: clamp(1rem, 1.7vw, 2.2rem);
         }
         .fp-sidebar-brand {
-            background: #0f172a;
+            background: #101d33;
             color: #ffffff;
             border-radius: 8px;
-            padding: 0.56rem 0.7rem;
-            margin: 0.03rem 0 0.28rem;
-            border: 1px solid #1e293b;
+            padding: 0.76rem 0.82rem;
+            margin: 0.03rem 0 0.42rem;
+            border: 1px solid #2b3a55;
         }
         .fp-sidebar-brand-title {
-            font-size: 1.08rem;
+            font-size: 1.28rem;
             font-weight: 800;
             letter-spacing: 0;
             line-height: 1.1;
         }
         .fp-sidebar-brand-subtitle {
             margin-top: 0.18rem;
-            color: #cbd5e1;
-            font-size: 0.74rem;
-            line-height: 1.16;
+            color: #aebbd0;
+            font-size: 0.78rem;
+            line-height: 1.28;
         }
         .fp-nav-group {
-            margin: 0.58rem 0 0.24rem;
+            margin: 0.72rem 0 0.28rem;
             display: block;
             padding-bottom: 0.18rem;
-            color: #64748b;
+            color: #93a4b8;
             font-size: 0.72rem;
             font-weight: 800;
             letter-spacing: 0.06em;
@@ -430,24 +448,24 @@ def _apply_page_style() -> None:
         }
         .fp-run-dir-pill {
             display: block;
-            color: #64748b;
+            color: #aebbd0;
             font-size: 0.76rem;
             line-height: 1.35;
-            margin: -0.1rem 0 0.25rem;
+            margin: -0.08rem 0 0.32rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .fp-hero {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 58%, #eef6ff 100%);
+            background: #ffffff;
             border: 1px solid var(--fp-border-soft);
             border-radius: 8px;
-            padding: 0.95rem 1.1rem;
+            padding: 0.95rem 1.05rem;
             box-shadow: var(--fp-shadow);
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.68rem;
         }
         .fp-kicker {
-            color: #1d4ed8;
+            color: #173b73;
             font-size: 0.72rem;
             font-weight: 800;
             letter-spacing: 0.08em;
@@ -455,29 +473,29 @@ def _apply_page_style() -> None:
             margin-bottom: 0.35rem;
         }
         .fp-hero h1 {
-            font-size: clamp(1.75rem, 1.65vw, 2.45rem);
+            font-size: clamp(1.58rem, 1.45vw, 2.05rem);
             margin: 0 0 0.25rem;
             letter-spacing: 0;
-            max-width: 1280px;
+            max-width: 1080px;
         }
         .fp-hero p {
             color: var(--fp-text-muted);
-            font-size: clamp(0.98rem, 0.72vw, 1.18rem);
-            line-height: 1.45;
-            max-width: 1180px;
+            font-size: clamp(0.95rem, 0.7vw, 1.08rem);
+            line-height: 1.38;
+            max-width: 980px;
             margin: 0;
         }
         .fp-pill-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.45rem;
-            margin-top: 0.9rem;
+            gap: 0.38rem;
+            margin-top: 0.72rem;
         }
         .fp-pill {
             border: 1px solid #dbe3ef;
             background: #ffffff;
             border-radius: 999px;
-            padding: 0.25rem 0.55rem;
+            padding: 0.22rem 0.5rem;
             font-size: 0.76rem;
             font-weight: 800;
             color: #334155;
@@ -485,32 +503,32 @@ def _apply_page_style() -> None:
         .fp-card-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.62rem;
-            margin: 0.65rem 0 0.85rem;
+            gap: 0.55rem;
+            margin: 0.55rem 0 0.68rem;
         }
         .fp-gui-card {
             background: var(--fp-surface);
             border: 1px solid var(--fp-border-soft);
             border-radius: 8px;
-            padding: 0.72rem 0.82rem;
+            padding: 0.66rem 0.72rem;
             box-shadow: var(--fp-shadow);
         }
         .fp-gui-card h3 {
-            margin: 0 0 0.35rem;
-            font-size: 1rem;
+            margin: 0 0 0.28rem;
+            font-size: 0.98rem;
             letter-spacing: 0;
         }
         .fp-gui-card p {
             margin: 0;
             color: var(--fp-text-muted);
-            font-size: 0.91rem;
-            line-height: 1.35;
+            font-size: 0.86rem;
+            line-height: 1.3;
         }
         .fp-section-title {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin: 0.8rem 0 0.35rem;
+            margin: 0.64rem 0 0.3rem;
             font-size: 0.98rem;
             font-weight: 800;
             color: var(--fp-text);
@@ -561,7 +579,7 @@ def _apply_page_style() -> None:
         }
         .fp-tool-shell {
             display: grid;
-            grid-template-columns: minmax(0, 1.65fr) minmax(340px, 0.72fr);
+            grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.78fr);
             gap: clamp(0.8rem, 1.2vw, 1.4rem);
             align-items: start;
         }
@@ -569,8 +587,14 @@ def _apply_page_style() -> None:
             margin: 0 0 0.55rem;
         }
         .fp-page-heading h1 {
-            font-size: clamp(1.55rem, 1.25vw, 2rem);
+            font-size: clamp(1.42rem, 1.14vw, 1.84rem);
             margin: 0;
+        }
+        .fp-page-heading p {
+            color: var(--fp-text-muted);
+            font-size: 0.92rem;
+            line-height: 1.35;
+            margin: 0.18rem 0 0;
         }
         .fp-run-card {
             background: #ffffff;
@@ -612,27 +636,27 @@ def _apply_page_style() -> None:
             word-break: break-word;
         }
         .fp-tutorial-panel {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
+            background: #eaf2ff;
+            border: 1px solid #bdd7ff;
             border-radius: 8px;
-            color: #172554;
-            padding: 0.72rem 0.85rem;
-            margin: 0 0 0.75rem;
+            color: #173b73;
+            padding: 0.68rem 0.78rem;
+            margin: 0 0 0.68rem;
         }
         .fp-tutorial-panel h2 {
-            margin: 0 0 0.28rem;
+            margin: 0 0 0.22rem;
             font-size: 1rem;
         }
         .fp-tutorial-panel p,
         .fp-tutorial-panel li {
-            font-size: 0.9rem;
-            line-height: 1.32;
+            font-size: 0.86rem;
+            line-height: 1.28;
         }
         .fp-tutorial-panel ol {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.7rem;
-            margin: 0.5rem 0 0;
+            gap: 0.55rem;
+            margin: 0.42rem 0 0;
             padding-left: 1.2rem;
         }
         @media (max-width: 900px) {
@@ -760,9 +784,9 @@ def _render_home(run_dir: Path) -> None:
     st.markdown(
         f"""
         <section class="fp-hero">
-          <div class="fp-kicker">fp-tools workflow console</div>
-          <h1>Run reproducible footprinting workflows from one clean control surface</h1>
-          <p>Configure command-line compatible YAML, launch background jobs, monitor outputs, and hand the same config back to the CLI for reproducible reruns.</p>
+          <div class="fp-kicker">fp-tools GUI</div>
+          <h1>Run footprint workflows from one clean control surface</h1>
+          <p>Choose a command, load an example, review the YAML, and launch the same reproducible workflow used by the command line.</p>
           <div class="fp-pill-row">
             <span class="fp-pill">Public bind ready</span>
             <span class="fp-pill">YAML-first</span>
@@ -772,10 +796,10 @@ def _render_home(run_dir: Path) -> None:
         </section>
         <div class="fp-section-title">Typical workflow</div>
         <div class="fp-card-grid">
-          <div class="fp-gui-card"><h3>1. Pick a command</h3><p>Use the sidebar to open bulk ATAC, motif, aggregate, variant, or pseudobulk tools.</p></div>
-          <div class="fp-gui-card"><h3>2. Load example data</h3><p>Every command page can load YAML examples or accept paths pasted into the form.</p></div>
-          <div class="fp-gui-card"><h3>3. Launch jobs</h3><p>Start single runs or batch lists from the same normalized configuration model.</p></div>
-          <div class="fp-gui-card"><h3>4. Review outputs</h3><p>Inspect logs and detected outputs in Run History, then rerun the YAML from the CLI.</p></div>
+          <div class="fp-gui-card"><h3>1. Choose command</h3><p>Open bulk ATAC, motif, report, variant, or pseudobulk tools.</p></div>
+          <div class="fp-gui-card"><h3>2. Load example</h3><p>Start from bundled YAML or paste your own paths.</p></div>
+          <div class="fp-gui-card"><h3>3. Review YAML</h3><p>Check the exact config before running.</p></div>
+          <div class="fp-gui-card"><h3>4. Inspect outputs</h3><p>Open logs, tables, bigWigs, and HTML reports.</p></div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -819,13 +843,13 @@ def _render_tutorial_panel() -> None:
     st.markdown(
         """
         <section class="fp-tutorial-panel">
-          <h2>Guided fp-tools workflow</h2>
-          <p>Use the sidebar to choose a command, load or edit paths, review the generated YAML, then launch the same CLI-compatible workflow.</p>
+          <h2>Guided workflow</h2>
+          <p>Use the sidebar, load an example, check the YAML, then launch.</p>
           <ol>
-            <li><b>Choose a command.</b> Bulk ATAC, motif, aggregate, variant, and pseudobulk tools are grouped in the sidebar.</li>
-            <li><b>Load examples.</b> Use bundled YAML examples or paste paths into each form.</li>
-            <li><b>Check YAML.</b> The run panel previews the exact config used by the CLI.</li>
-            <li><b>Monitor runs.</b> Background logs and outputs are available in Run History.</li>
+            <li><b>Choose command.</b> Pick a tool from the sidebar.</li>
+            <li><b>Load example.</b> Use bundled YAML or paste paths.</li>
+            <li><b>Review YAML.</b> Confirm the config in the run panel.</li>
+            <li><b>Inspect outputs.</b> Use Run History for logs and files.</li>
           </ol>
         </section>
         """,
@@ -928,7 +952,7 @@ def _render_run_history(run_dir: Path) -> None:
 
 def _render_atacorrect_page(run_dir: Path) -> None:
     _render_page_heading("atac-correct", "Bias-correct ATAC-seq cut-site signal from BAM, genome, peaks, and blacklist inputs.")
-    form_col, run_col = st.columns([0.68, 0.32], gap="large")
+    form_col, run_col = st.columns([0.64, 0.36], gap="large")
     with form_col:
         _render_page_loader("atac-correct")
         mode = st.radio("Mode", ["Single run", "Batch sample list"], horizontal=True, key="at_mode")
@@ -982,7 +1006,7 @@ def _render_atacorrect_page(run_dir: Path) -> None:
 
 def _render_footprintscores_page(run_dir: Path) -> None:
     _render_page_heading("call-footprints", "Score footprint signal over genomic regions from corrected signal tracks.")
-    form_col, run_col = st.columns([0.68, 0.32], gap="large")
+    form_col, run_col = st.columns([0.64, 0.36], gap="large")
     with form_col:
         _render_page_loader("call-footprints")
         mode = st.radio("Mode", ["Single run", "Batch sample list"], horizontal=True, key="fs_mode")
@@ -1036,7 +1060,7 @@ def _render_footprintscores_page(run_dir: Path) -> None:
 
 def _render_bindetect_page(run_dir: Path) -> None:
     _render_page_heading("diff-footprints", "Run motif-aware differential footprint detection across conditions or comparisons.")
-    form_col, run_col = st.columns([0.68, 0.32], gap="large")
+    form_col, run_col = st.columns([0.64, 0.36], gap="large")
     with form_col:
         _render_page_loader("diff-footprints")
         mode = st.radio(
@@ -1165,7 +1189,7 @@ def _render_bindetect_page(run_dir: Path) -> None:
 
 def _render_plotaggregate_page(run_dir: Path) -> None:
     _render_page_heading("plot-aggregate", "Create aggregate footprint plots and optional aggregate score tables.")
-    form_col, run_col = st.columns([0.68, 0.32], gap="large")
+    form_col, run_col = st.columns([0.64, 0.36], gap="large")
     with form_col:
         _render_page_loader("plot-aggregate")
         mode = st.radio("Mode", ["Single run", "Batch sample list"], horizontal=True, key="pa_mode")
@@ -1236,7 +1260,7 @@ def _render_plotaggregate_page(run_dir: Path) -> None:
 def _render_generic_tool_page(run_dir: Path, tool: str) -> None:
     tool = canonical_tool_name(tool)
     _render_page_heading(tool, "Configure this command as YAML, then run it here or from the CLI.")
-    form_col, run_col = st.columns([0.68, 0.32], gap="large")
+    form_col, run_col = st.columns([0.64, 0.36], gap="large")
     with form_col:
         _render_page_loader(tool)
         defaults = GENERIC_TOOL_DEFAULTS.get(tool, {"sample_id": f"{tool.replace('-', '_')}_run"})
@@ -1275,7 +1299,7 @@ def _render_generic_tool_page(run_dir: Path, tool: str) -> None:
 
 def _render_config_page(run_dir: Path) -> None:
     _render_page_heading("Config", "Download, load, edit, save, and run YAML workflow configs.")
-    form_col, run_col = st.columns([0.68, 0.32], gap="large")
+    form_col, run_col = st.columns([0.64, 0.36], gap="large")
     with form_col:
         st.download_button(
             "Download current YAML",

@@ -1,10 +1,8 @@
 # fp-tools
 
-![fp-tools regulatory footprinting](docs/assets/fp_tools_logo_horizontal.svg)
+`fp-tools` is a Python package for ATAC-seq footprint analysis. It helps users turn ATAC-seq data into bias-corrected cut-site tracks, footprint scores, motif-centered comparisons, aggregate plots, and static HTML reports.
 
-`fp-tools` is a standalone ATAC-seq footprinting package. It provides command-first tools for Tn5 bias correction, footprint calling, motif matching, differential footprint analysis, aggregate visualization, de novo motif-discovery preparation, and pseudobulk fragment generation.
-
-The PyPI distribution is named `fp-tools-bio`; the installed Python package is `fp_tools`.
+The PyPI package is `fp-tools-bio`. The Python import name is `fp_tools`.
 
 Documentation: <https://oncologylab.github.io/fp-tools/>
 
@@ -14,49 +12,85 @@ Documentation: <https://oncologylab.github.io/fp-tools/>
 pip install fp-tools-bio
 ```
 
-Optional GUI dependencies can be installed with:
+To use the browser interface:
 
 ```bash
 pip install "fp-tools-bio[gui]"
+fp-tools-gui
 ```
 
-## Workflow
+The GUI opens in a browser and writes the same YAML configs that can be run from the command line.
 
-The main workflow is:
+## What You Can Do
+
+- Correct ATAC-seq cut-site signal for Tn5 sequence bias.
+- Call footprint scores from corrected bigWig tracks.
+- Scan known motif databases, including bundled JASPAR 2026 and HOCOMOCO files.
+- Compare footprint scores across conditions or replicates.
+- Generate volcano-style differential footprint HTML reports.
+- Plot motif-centered aggregate footprints.
+- Group single-cell ATAC fragments into pseudobulk cell-type profiles.
+
+## Typical Workflow
 
 ```text
-atac-correct -> call-footprints -> match-motifs / diff-footprints -> normalize-bigwig -> plot-aggregate
-                                      |                 |         -> plot-aggregate-batch
-                                      -> motif-discovery
+atac-correct
+  -> call-footprints
+  -> diff-footprints
+  -> plot-aggregate or plot-aggregate-batch
 ```
 
-Use `match-motifs` when you want to inspect one sample, infer bound motif sites, or prepare reusable motif-site BED outputs. Use `diff-footprints` when comparing conditions: it scans motifs internally and does not require `match-motifs` to be run first.
+For one sample, use `match-motifs` to inspect motif sites. For two or more conditions, use `diff-footprints`; it can scan motifs, compare conditions, and write an interactive HTML report.
 
-The package remains command-first, but also includes an optional browser GUI and standalone HTML reports for interactive review. The GUI builds the same YAML configs accepted by `run-workflow`, and static reports can be hosted on the documentation site.
+## Minimal Example
 
-## Commands
+```bash
+atac-correct \
+  --bam sample.bam \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --blacklist hg38.blacklist.bed \
+  --outdir results/atac_correct/sample
 
-### Core workflow
+call-footprints \
+  --signal results/atac_correct/sample/sample_corrected.bw \
+  --regions peaks.bed \
+  --output results/footprints/sample_footprints.bw
 
-- `atac-correct`: correct ATAC-seq cut-site signal for Tn5 sequence bias.
-- `call-footprints`: calculate footprint scores and optionally call ranked footprint candidate BED intervals.
-- `match-motifs`: scan motifs in one sample and infer bound/unbound motif sites.
-- `diff-footprints`: compare motif-associated footprint scores across conditions, replicates, or time courses.
-- `normalize-bigwig`: background-match corrected or footprint-score bigWigs before aggregate visualization.
-- `plot-aggregate`: plot static aggregate signal around TFBS or region sets.
-- `plot-aggregate-batch`: create an interactive multi-sample, multi-TF aggregate HTML report.
-- `run-workflow`: run optional YAML batch configs.
-- `fp-tools-gui`: launch the optional browser GUI installed by `fp-tools-bio[gui]`.
+diff-footprints \
+  --signals conditionA_rep1_footprints.bw conditionA_rep2_footprints.bw conditionB_rep1_footprints.bw conditionB_rep2_footprints.bw \
+  --aggregate-signals conditionA_rep1_corrected.bw conditionA_rep2_corrected.bw conditionB_rep1_corrected.bw conditionB_rep2_corrected.bw \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --cond-names conditionA conditionA conditionB conditionB \
+  --motif-db jaspar2026_vertebrates \
+  --normalization none \
+  --plot-aggregate sig \
+  --outdir results/diff_footprints/conditionA_vs_conditionB
+```
 
-### Optional utilities
+Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
 
-- `motif-discovery`: prepare candidate-centered de novo motif-discovery runs from FASTA or candidate BED input.
-- `motif-summary`: summarize MEME/Tomtom outputs into TSV and HTML reports.
-- `fp-tools-score-variants`: annotate variants with reference checks, candidate overlaps, sequence deltas, and optional motif/model deltas.
-- `pseudobulk-footprints`: run the full pseudobulk fragment, ATAC correction, footprint scoring, and aggregate-output workflow.
-- `pseudobulk-fragments`: group single-cell ATAC fragments into pseudobulk fragment files and manifests.
+## Main Commands
 
-## Verify
+| Command | Use |
+| --- | --- |
+| `atac-correct` | Bias-correct ATAC-seq cut-site signal. |
+| `call-footprints` | Create footprint score tracks. |
+| `match-motifs` | Scan motifs for one sample. |
+| `diff-footprints` | Compare motif footprints across conditions. |
+| `normalize-bigwig` | Scale bigWigs before aggregate plotting. |
+| `plot-aggregate` | Make static aggregate footprint plots. |
+| `plot-aggregate-batch` | Make interactive aggregate HTML reports. |
+| `motif-discovery` | Prepare candidate-centered de novo motif discovery. |
+| `motif-summary` | Summarize motif discovery outputs. |
+| `fp-tools-score-variants` | Score variants against candidate footprints and motifs. |
+| `pseudobulk-fragments` | Group single-cell fragments by annotation. |
+| `pseudobulk-footprints` | Run the full pseudobulk footprint workflow. |
+| `run-workflow` | Run a saved YAML config. |
+| `fp-tools-gui` | Open the optional browser GUI. |
+
+Check any command with `--help`:
 
 ```bash
 atac-correct --help
@@ -71,229 +105,24 @@ fp-tools-gui --help
 motif-discovery --help
 motif-summary --help
 fp-tools-score-variants --help
-pseudobulk-footprints --help
 pseudobulk-fragments --help
+pseudobulk-footprints --help
 ```
 
-## Minimal Workflow
-
-Examples omit `--cores`; by default, compute-heavy commands use all available local CPU cores. Set `--cores <n>` only when you want to cap a run.
-
-### 1. Bias-correct cut-site signal
+## GUI
 
 ```bash
-atac-correct   --bam test_data/Bcell.bam   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks.bed   --blacklist test_data/blacklist.bed   --outdir examples/atacorrect/Bcell
+fp-tools-gui --host 0.0.0.0 --port 8891
 ```
 
-### 2. Call footprints
+Open the printed URL in a browser. If running on a server or cloud VM, make sure the selected port is allowed by the firewall or security group.
+
+## More Examples
+
+Example YAML configs are in `examples/gui_configs/`. They can be loaded in the GUI or run directly:
 
 ```bash
-call-footprints   --signal examples/atacorrect/Bcell/Bcell_corrected.bw   --regions test_data/merged_peaks.bed   --output examples/footprints/Bcell_footprints.bw   --output-bed examples/footprints/Bcell_candidate_footprints.bed   --top-n 5000
+run-workflow --config examples/gui_configs/footprintscores_single.yml
 ```
 
-The optional BED contains ranked local footprint maxima and can be used as input for de novo motif-discovery preparation.
-
-### 3a. Match motifs in one sample
-
-```bash
-match-motifs   --signals examples/footprints/Bcell_footprints.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/motif_matches/Bcell   --cond-names Bcell
-```
-
-By default, motif-aware commands use the bundled `jaspar2026_vertebrates` database. Use `--motif-db hocomoco14_core`, `--motif-db jaspar2026_plants`, or another listed set to switch built-in databases; run `diff-footprints --list-motif-dbs` to see all choices. Custom motif files remain supported with `--motifs`, and `--motifs` can be combined with `--motif-db` to scan both.
-
-### 3b. Compare conditions directly
-
-```bash
-diff-footprints   --signals test_data/demo_Bcell_rep1_footprints.bw test_data/demo_Bcell_rep2_footprints.bw test_data/demo_Tcell_rep1_footprints.bw test_data/demo_Tcell_rep2_footprints.bw   --aggregate-signals test_data/demo_Bcell_rep1_corrected_scaled.bw test_data/demo_Bcell_rep2_corrected_scaled.bw test_data/demo_Tcell_rep1_corrected_scaled.bw test_data/demo_Tcell_rep2_corrected_scaled.bw   --genome test_data/genome.fa.gz   --peaks test_data/merged_peaks_annotated.bed   --peak-header test_data/merged_peaks_annotated_header.txt   --outdir examples/diff_footprints/Bcell_vs_Tcell   --cond-names Bcell Bcell Tcell Tcell   --normalization none   --plot-aggregate sig
-```
-
-Repeated condition names define biological replicates. `diff-footprints` performs motif scanning internally, writes per-motif BEDs, differential tables, replicate-aware reports, volcano HTML, and aggregate profiles when `--aggregate-signals` is provided.
-
-Differential result tables include raw comparison p-values, BH-adjusted q-values (`<comparison>_qvalue_bh`), and an FDR 5% flag (`<comparison>_significant_fdr05`). The `<comparison>_highlighted` column is a visualization/ranking flag used for reports and should not be interpreted as formal FDR significance.
-
-#### Replicate-aware reports and aggregate embedding
-
-The older replicate-report wording is now covered by `diff-footprints`. There is no primary `fp-tools-replicate-bindetect` command in the current public API. Use `diff-footprints` directly for two-condition, replicate-aware, or ordered time-course differential footprint analysis. Repeated names in `--cond-names` define replicate groups, for example `Bcell Bcell Tcell Tcell`.
-
-`diff-footprints` runs without internal cross-sample normalization by default. Quantile normalization remains available for sensitivity checks:
-
-```bash
-# default: no cross-sample normalization
-diff-footprints ... --normalization none --outdir examples/diff_footprints/Bcell_vs_Tcell_no_norm
-
-# sample-level quantile normalization
-diff-footprints ... --normalization sample-quantile --outdir examples/diff_footprints/Bcell_vs_Tcell_sample_quantile
-```
-
-When `--aggregate-signals` is supplied, use corrected cut-site bigWigs in the same order as `--signals`. The `--plot-aggregate` option controls aggregate profiles embedded in the comparison HTML:
-
-- `--plot-aggregate sig`: embed significant motifs using `--aggregate-pvalue-threshold` (default).
-- `--plot-aggregate top --plot-aggregate-top-n 20`: embed the top N changed motifs.
-- `--plot-aggregate all`: embed all motifs.
-- `--plot-aggregate off`: write the volcano-style comparison HTML without aggregate profiles.
-
-
-Embedded aggregate profiles are TOBIAS-style motif-centered profiles: `diff-footprints` plots corrected cut-site bigWigs over per-motif BED outputs scanned within the supplied peak set. Use `--aggregate-site-set all` for `<motif>_all.bed`, or `--aggregate-site-set bound` for condition-specific `<motif>_<condition>_bound.bed` subsets. If you pass raw corrected bigWigs directly, `--aggregate-normalization size-factor` remains available as plot-only multiplicative scaling, but saved `normalize-bigwig` outputs are the recommended path for reproducible figures.
-
-The replicate diagnostic tables and figure are controlled by `--replicate-report auto|on|off`; `auto` writes them when repeated condition names or `--replicate-map` indicate replicate structure.
-
-#### Normalize corrected bigWigs for aggregate plots
-
-For TOBIAS-style `*_corrected.bw` cut-site tracks, the recommended multi-sample workflow is robust q95 scaling before footprint scoring and aggregate visualization. `atac-correct --scale-corrected q95` writes scaled tracks beside the corrected bigWigs as `*_corrected_scaled.bw`; `normalize-bigwig --stat q95` remains available as a standalone equivalent.
-
-```bash
-normalize-bigwig \
-  --bigwigs \
-    examples/atacorrect/Bcell_rep1/Bcell_rep1_corrected.bw \
-    examples/atacorrect/Bcell_rep2/Bcell_rep2_corrected.bw \
-    examples/atacorrect/Tcell_rep1/Tcell_rep1_corrected.bw \
-    examples/atacorrect/Tcell_rep2/Tcell_rep2_corrected.bw \
-  --background examples/reference/background.50bp.bed \
-  --method background-scale \
-  --stat q95 \
-  --target median \
-  --outdir examples/normalized_corrected_bigwigs
-```
-
-The command writes normalized bigWigs plus `normalize_bigwig_qc.tsv`, which records each sample's background median, q90, q95, q97.5, q99, MAD, IQR, selected scaling statistic, target statistic, and scale factor. If a scale factor is very large or small, inspect library quality and the background BED before using the plot.
-
-Use the normalized corrected bigWigs for aggregate visualization, and disable any second aggregate-level normalization:
-
-```bash
-diff-footprints \
-  ... \
-  --aggregate-signals \
-    examples/atacorrect/Bcell_rep1/Bcell_rep1_corrected_scaled.bw \
-    examples/atacorrect/Bcell_rep2/Bcell_rep2_corrected_scaled.bw \
-    examples/atacorrect/Tcell_rep1/Tcell_rep1_corrected_scaled.bw \
-    examples/atacorrect/Tcell_rep2/Tcell_rep2_corrected_scaled.bw \
-  --aggregate-normalization none
-```
-
-For corrected cut-site bigWigs, use q95 scaled tracks for footprint scoring and aggregate plots in multi-sample comparisons. Full quantile normalization is not the default recommendation for primary differential footprint interpretation.
-
-
-If motif-level outputs are already complete, `--reuse-existing-results` can regenerate the final `diff_footprints_<comparison>.html` report from the existing `<prefix>_results.txt` table and per-motif BED files. This is report-only reuse: it avoids motif rescanning, but it does not convert one normalization mode into another.
-
-### 4. Plot aggregate signal
-
-`plot-aggregate` remains supported for standalone static aggregate plots. It can plot one or more TFBS BED files against one or more corrected cut-site or footprint-score bigWigs, optionally restrict sites with `--regions`, `--whitelist`, or `--blacklist`, and write PDF/PNG plus aggregated signal tables. For footprint-shape figures, corrected cut-site bigWigs are usually the clearest input.
-
-```bash
-plot-aggregate   --TFBS examples/motif_matches/Bcell/IRF1_MA0050.2/beds/IRF1_MA0050.2_all.bed   --signals examples/atacorrect/Bcell/Bcell_corrected.bw   --output examples/reports/IRF1_aggregate.pdf   --output_aggregated_scores examples/reports/IRF1_aggregate_scores.csv
-```
-
-For replicate-aware aggregate visualization, pass repeated condition names. If the corrected bigWigs were already processed by `normalize-bigwig`, keep `--normalization none` here:
-
-```bash
-plot-aggregate \
-  --TFBS examples/motif_matches/Bcell/IRF1_MA0050.2/beds/IRF1_MA0050.2_all.bed \
-  --signals \
-    examples/normalized_corrected_bigwigs/Bcell_rep1_corrected.background_scale_q95.bw \
-    examples/normalized_corrected_bigwigs/Bcell_rep2_corrected.background_scale_q95.bw \
-    examples/normalized_corrected_bigwigs/Tcell_rep1_corrected.background_scale_q95.bw \
-    examples/normalized_corrected_bigwigs/Tcell_rep2_corrected.background_scale_q95.bw \
-  --cond-names Bcell Bcell Tcell Tcell \
-  --normalization none \
-  --show-replicate-sd \
-  --output examples/reports/IRF1_replicate_aggregate.pdf \
-  --output_aggregated_stats examples/reports/IRF1_replicate_aggregate_stats.csv
-```
-
-Supported `plot-aggregate` in-memory normalization modes are `none`, `sample-quantile`, and `condition-quantile`. For publication-style corrected cut-site aggregate plots, prefer `normalize-bigwig --method background-scale` first and then plot with `--normalization none`. `--normalization-comparison-output` remains available for exploratory raw-vs-normalized figures.
-
-### 5. Review many samples and TFs interactively
-
-Create a manifest:
-
-```text
-sample	signal	match_dir	condition
-Bcell	examples/atacorrect/Bcell/Bcell_corrected.bw	examples/motif_matches/Bcell	Bcell
-Tcell	examples/atacorrect/Tcell/Tcell_corrected.bw	examples/motif_matches/Tcell	Tcell
-```
-
-Then run from manifest inputs when profiles should be computed from corrected cut-site bigWigs and `match-motifs` outputs:
-
-```bash
-plot-aggregate-batch   --manifest examples/reports/aggregate_manifest.tsv   --output examples/reports/aggregate_browser.html   --top-n 30   --default-layout 2x2
-```
-
-The generated standalone HTML uses a compressed embedded payload and supports searchable TF selection, editable group colors, 1x1/1x2/2x2/2x3 layouts, and per-panel choices for all condition means, all samples, one condition, or one sample. If aggregate profiles are already embedded in one or more `diff-footprints` reports, reuse them without recomputing bigWig profiles:
-
-```bash
-plot-aggregate-batch   --input-html examples/diff_footprints/Bcell_vs_Tcell/diff_footprints_Bcell_Tcell.html   --output examples/reports/aggregate_browser_from_html.html   --default-layout 2x3
-```
-
-## Optional de novo motif discovery
-
-![De novo motif discovery preparation workflow](docs/assets/fp-tools-de-novo-motif.png)
-
-The schematic above is a generic method workflow: it starts from footprint-derived candidate intervals, exports candidate-centered FASTA, records external MEME/STREME/Tomtom execution settings, and returns motif summaries that can be used downstream. `motif-discovery` can be run as de novo-only discovery, or with a known database such as JASPAR2026 so discovered motifs can supplement database-supported motif analysis.
-
-```bash
-motif-discovery   --candidates examples/footprints/Bcell_candidate_footprints.bed   --genome test_data/genome.fa.gz   --outdir examples/motifs/Bcell_denovo   --method streme   --known-motif-db jaspar2026_vertebrates
-```
-
-## Optional pseudobulk footprints
-
-The recommended single-cell route is the full corrected pseudobulk footprint workflow. `pseudobulk-footprints` accepts either 10x-style fragments or a real all-cell BAM with cell barcodes in a read tag. Fragment input writes indexed pseudobulk fragment files, raw cut-site bigWigs for QC, pseudo-paired BAMs, and runs `atac-correct --read-shift 0 0`. Tagged BAM input splits the real BAM by metadata group and uses the standard ATAC shift `--read-shift 4 -5` unless overridden. Both routes score corrected footprints, can run motif-aware `diff-footprints` when `--motif-db` or `--motifs` is supplied, and write a manifest with every intermediate and final output path.
-
-```bash
-pseudobulk-footprints   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz   --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes   --genome data/public/raw/genome/hg38.fa   --peaks data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_peaks.bed   --motif-db jaspar2026_vertebrates   --tf-site-dir data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered   --site-summary data/public/processed/pseudobulk_pbmc/tf_sites_motif_centered/motif_centered_site_summary.tsv   --tfs auto   --outdir data/public/processed/pseudobulk_pbmc/footprints_full   --cores 8
-```
-
-For datasets that already have a tagged BAM, use the TOBIAS-style BAM route instead:
-
-```bash
-pseudobulk-footprints   --bam all_cells.bam   --bam-barcode-tag CB   --annotations cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --genome hg38.fa   --peaks peaks.bed   --blacklist hg38.blacklist.bed   --motif-db jaspar2026_vertebrates   --outdir pseudobulk_footprints   --cores 8
-```
-
-Key outputs include `pseudobulk_footprint_manifest.tsv`, `pseudobulk_footprint_commands.sh`, pseudobulk BAMs, fragment-route raw cut-site QC tracks, `atacorrect/<group>/<group>_corrected.bw`, `footprints/<group>.footprints.bw`, `footprints/<group>.candidate_footprints.bed`, optional motif-aware `bindetect/` outputs, and corrected footprint aggregate plots under `plots/`.
-
-Use `pseudobulk-fragments` when you only need grouping, fragment files, raw cut-site tracks, or pseudo-BAMs for a custom downstream workflow:
-
-```bash
-pseudobulk-fragments   --fragments data/public/raw/10x_pbmc/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz   --annotations data/public/processed/pseudobulk_pbmc/pbmc_10x_cell_annotations.tsv   --group-by cell_type   --min-cells 300   --min-fragments 50000   --index-output   --write-cutsite-bigwigs   --write-pseudo-bams   --genome-sizes data/public/processed/pseudobulk_pbmc/hg38.chrom.sizes   --outdir data/public/processed/pseudobulk_pbmc/run
-```
-
-Raw CPM cut-site aggregates are useful QC and context. Corrected footprint claims should use the `pseudobulk-footprints` outputs after `atac-correct` and `call-footprints`.
-
-The PBMC5k single-cell ATAC demonstration uses the original 10x Genomics
-`atac_pbmc_5k_nextgem` public dataset to prepare broad cell-type annotations,
-motif-centered marker sites, a KNN-smoothed per-cell footprint-signature UMAP,
-and a three-panel directional marker volcano:
-
-```bash
-python benchmarks/scripts/prepare_10x_pbmc5k_scatac.py --chroms chr1,chr2
-python manuscript/scripts/prepare_pseudobulk_motif_sites.py \
-  --peaks data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_snatac2_selected_bins.demo.bed \
-  --genome data/public/raw/genome/hg38.fa \
-  --motifs data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt \
-  --outdir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
-  --summary data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered/motif_centered_site_summary.tsv \
-  --candidates 'B_cell:PAX5,SPIB,POU2F2;T_NK:TCF7,ZBTB7B;Myeloid:CEBPB,CEBPA' \
-  --chroms chr1,chr2 \
-  --plot-sites-per-tf 1500 \
-  --motif-pvalue 1e-4
-python benchmarks/scripts/plot_pbmc5k_per_cell_signatures.py \
-  --annotations data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv \
-  --fragments data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz \
-  --h5ad data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_annotated.h5ad \
-  --tf-site-dir data/public/processed/pseudobulk_pbmc5k_scatac/tf_sites_motif_centered \
-  --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/per_cell_signature_demo \
-  --markers PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2
-python benchmarks/scripts/plot_pbmc5k_pseudobulk_markers.py \
-  --annotations data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv \
-  --aggregate-screen data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/pseudobulk_footprint_aggregate_screen.tsv \
-  --bindetect-results data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/bindetect/pseudobulk_bindetect_results.txt \
-  --outdir data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/plots/marker_demo \
-  --markers PAX5,EBF1,POU2F2,POU2AF1,BCL6,SPIB,CEBPB,CEBPA,TCF7,LEF1,ZBTB7B,RUNX3,GATA3
-```
-
-## YAML Runner
-
-```bash
-run-workflow --config examples/gui_configs/plotaggregate_single.yml
-```
-
-YAML is optional for normal command-line use.
+Static report demos and GUI screenshots are available in the documentation site.

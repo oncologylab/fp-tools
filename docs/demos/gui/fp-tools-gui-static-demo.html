@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>fp-tools GUI static preview</title>
+  <style>
+    :root {
+      --bg: #f3f6fa;
+      --panel: #ffffff;
+      --ink: #111827;
+      --muted: #5b6778;
+      --line: #dbe3ec;
+      --nav: #0f172a;
+      --nav-soft: #172033;
+      --blue: #173b73;
+      --green: #15956b;
+      --soft-blue: #eaf2ff;
+      --shadow: 0 14px 34px rgba(15, 23, 42, 0.09);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 700;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 304px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    aside {
+      background: var(--nav);
+      color: #e5edf6;
+      padding: 18px 16px;
+    }
+    .brand {
+      background: #101d33;
+      border: 1px solid #2b3a55;
+      border-radius: 8px;
+      padding: 13px 14px;
+      margin-bottom: 14px;
+    }
+    .brand h1 {
+      font-size: 20px;
+      line-height: 1.05;
+      margin: 0;
+    }
+    .brand p {
+      color: #aebbd0;
+      font-size: 12px;
+      line-height: 1.35;
+      margin: 5px 0 0;
+    }
+    .nav-group {
+      color: #93a4b8;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      margin: 18px 0 8px;
+      text-transform: uppercase;
+    }
+    .nav-item {
+      border-radius: 8px;
+      color: #e5edf6;
+      display: block;
+      font-size: 15px;
+      padding: 9px 11px;
+      text-decoration: none;
+    }
+    .nav-item.active {
+      background: #1d4ed8;
+      box-shadow: inset 4px 0 0 #72e0b2;
+    }
+    .nav-item:not(.active) {
+      background: transparent;
+    }
+    main {
+      padding: 22px 28px 28px;
+    }
+    .hero {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 20px 22px;
+      margin-bottom: 14px;
+    }
+    .kicker {
+      color: var(--blue);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    h2 {
+      font-size: 28px;
+      line-height: 1.12;
+      margin: 0 0 8px;
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+      margin: 0;
+      max-width: 980px;
+    }
+    .steps {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 14px 0;
+    }
+    .step {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+    }
+    .step strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 5px;
+    }
+    .step span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .workspace {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: minmax(0, 1.3fr) minmax(340px, 0.72fr);
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+      padding: 16px;
+    }
+    .panel h3 {
+      font-size: 18px;
+      margin: 0 0 10px;
+    }
+    .form-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    label {
+      color: #344054;
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .input {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: #334155;
+      font-size: 13px;
+      min-height: 38px;
+      padding: 10px;
+    }
+    .tutorial {
+      background: var(--soft-blue);
+      border: 1px solid #bdd7ff;
+      border-radius: 8px;
+      color: #173b73;
+      margin-bottom: 12px;
+      padding: 13px 14px;
+    }
+    .tutorial strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+    .tutorial span {
+      display: block;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .run-summary {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 10px;
+    }
+    .metric {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+    }
+    .metric span {
+      color: var(--muted);
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .metric strong {
+      display: block;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    pre {
+      background: #0f172a;
+      border-radius: 8px;
+      color: #dbeafe;
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 10px 0;
+      overflow: auto;
+      padding: 12px;
+    }
+    .button {
+      background: var(--blue);
+      border-radius: 8px;
+      color: #ffffff;
+      display: inline-block;
+      font-size: 14px;
+      padding: 11px 14px;
+      text-decoration: none;
+      width: 100%;
+      text-align: center;
+    }
+    .status {
+      color: var(--green);
+      font-size: 13px;
+      margin: 10px 0 0;
+    }
+    @media (max-width: 980px) {
+      .app, .workspace, .steps, .form-grid {
+        grid-template-columns: 1fr;
+      }
+      aside {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <h1>fp-tools</h1>
+        <p>Command-ready footprint workflows</p>
+      </div>
+      <div class="nav-group">Overview</div>
+      <a class="nav-item active" href="#">Home</a>
+      <a class="nav-item" href="#">Run History</a>
+      <div class="nav-group">Core Workflow</div>
+      <a class="nav-item" href="#">atac-correct</a>
+      <a class="nav-item" href="#">call-footprints</a>
+      <a class="nav-item" href="#">match-motifs</a>
+      <a class="nav-item" href="#">diff-footprints</a>
+      <div class="nav-group">Reports</div>
+      <a class="nav-item" href="#">normalize-bigwig</a>
+      <a class="nav-item" href="#">plot-aggregate</a>
+      <a class="nav-item" href="#">plot-aggregate-batch</a>
+      <div class="nav-group">Single-cell ATAC</div>
+      <a class="nav-item" href="#">pseudobulk-fragments</a>
+      <a class="nav-item" href="#">pseudobulk-footprints</a>
+    </aside>
+    <main>
+      <section class="hero">
+        <div class="kicker">Static GUI preview</div>
+        <h2>Run footprint workflows from one clean control surface</h2>
+        <p>Choose a command, load an example, review the YAML, and launch the same reproducible workflow used by the command line.</p>
+      </section>
+
+      <section class="steps">
+        <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, variants, or pseudobulk.</span></div>
+        <div class="step"><strong>2. Load example</strong><span>Start from bundled YAML or paste your own paths.</span></div>
+        <div class="step"><strong>3. Review YAML</strong><span>See the exact config before running.</span></div>
+        <div class="step"><strong>4. Inspect outputs</strong><span>Open logs, tables, bigWigs, and HTML reports.</span></div>
+      </section>
+
+      <section class="workspace">
+        <div class="panel">
+          <h3>diff-footprints</h3>
+          <div class="form-grid">
+            <div>
+              <label>Footprint bigWigs</label>
+              <div class="input">K562_rep1.bw, K562_rep2.bw, HepG2_rep1.bw...</div>
+            </div>
+            <div>
+              <label>Condition names</label>
+              <div class="input">K562 K562 K562 HepG2 HepG2 HepG2</div>
+            </div>
+            <div>
+              <label>Genome FASTA</label>
+              <div class="input">hg38.fa</div>
+            </div>
+            <div>
+              <label>Motif database</label>
+              <div class="input">jaspar2026_vertebrates</div>
+            </div>
+            <div>
+              <label>Peaks BED</label>
+              <div class="input">merged_peaks.bed</div>
+            </div>
+            <div>
+              <label>Output folder</label>
+              <div class="input">results/diff_footprints/K562_vs_HepG2</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="tutorial">
+            <strong>Guided workflow</strong>
+            <span>The GUI keeps the run simple: choose the command, load an example, check the YAML, then launch.</span>
+          </div>
+          <div class="panel">
+            <h3>Run</h3>
+            <div class="run-summary">
+              <div class="metric"><span>Tool</span><strong>diff-footprints</strong></div>
+              <div class="metric"><span>Samples</span><strong>6</strong></div>
+              <div class="metric"><span>Report</span><strong>HTML</strong></div>
+            </div>
+            <pre>tool: diff-footprints
+motif_db: jaspar2026_vertebrates
+normalization: none
+plot_aggregate: sig</pre>
+            <a class="button" href="#">Start run</a>
+            <div class="status">Config is ready. Outputs will appear in Run History.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

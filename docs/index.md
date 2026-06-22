@@ -1,67 +1,68 @@
 <section class="fp-hero">
   <div>
     <img class="fp-lockup" src="assets/fp_tools_logo_horizontal.svg" alt="fp-tools regulatory footprinting">
-    <p class="fp-eyebrow">Command-first ATAC-seq footprinting</p>
-    <h1>Bias correction, footprint scoring, motif-aware comparisons, and reports.</h1>
+    <p class="fp-eyebrow">ATAC-seq footprinting without custom scripting</p>
+    <h1>Correct ATAC signal, call footprints, compare TF activity, and review interactive reports.</h1>
     <p class="fp-lede">
-      fp-tools is a Python package for reproducible ATAC-seq footprint workflows,
-      from corrected cut-site tracks to differential motif reports, aggregate browsers,
-      de novo motif preparation, and pseudobulk single-cell ATAC analysis.
+      fp-tools is a command-line and browser-guided toolkit for ATAC-seq footprint analysis.
+      It supports bulk ATAC, motif-centered differential footprinting, aggregate plots, and
+      pseudobulk single-cell ATAC workflows.
     </p>
     <div class="fp-actions">
       <a class="fp-button primary" href="workflow/">Start workflow</a>
-      <a class="fp-button" href="commands/">Command reference</a>
-      <a class="fp-button" href="reports/">Report demos</a>
+      <a class="fp-button" href="reports/">View report demos</a>
+      <a class="fp-button" href="gui/">Open GUI guide</a>
     </div>
     <div class="fp-install">pip install fp-tools-bio</div>
   </div>
 </section>
 
-The PyPI distribution is `fp-tools-bio`; the import package is `fp_tools`.
-
-## Core Capabilities
+## What fp-tools Does
 
 <div class="fp-grid">
   <div class="fp-card">
-    <h3>Correct cut-site tracks</h3>
-    <p>Run Tn5 bias correction and footprint scoring from BAM, FASTA, peak, and blacklist inputs.</p>
+    <h3>Correct ATAC signal</h3>
+    <p>Convert BAM input into bias-corrected cut-site bigWigs.</p>
   </div>
   <div class="fp-card">
-    <h3>Compare motif footprints</h3>
-    <p>Use diff-footprints for motif scanning, bound-site inference, replicate-aware tables, and volcano reports.</p>
+    <h3>Score footprints</h3>
+    <p>Create footprint score tracks over peaks or candidate regions.</p>
   </div>
   <div class="fp-card">
-    <h3>Review aggregate signal</h3>
-    <p>Create static aggregate plots or standalone interactive HTML browsers for many samples and TFs.</p>
+    <h3>Compare conditions</h3>
+    <p>Use motif-aware differential reports for replicates or time courses.</p>
   </div>
   <div class="fp-card">
-    <h3>Prepare de novo motifs</h3>
-    <p>Export footprint-centered candidate FASTA files and summarize MEME/STREME/Tomtom validation outputs.</p>
+    <h3>Review reports</h3>
+    <p>Open standalone HTML reports in any browser.</p>
   </div>
   <div class="fp-card">
-    <h3>Score variants</h3>
-    <p>Annotate variants with allele checks, candidate overlaps, sequence deltas, and optional motif/model deltas.</p>
+    <h3>Use the GUI</h3>
+    <p>Load examples, edit paths, preview YAML, and launch runs.</p>
   </div>
   <div class="fp-card">
-    <h3>Run pseudobulk workflows</h3>
-    <p>Group single-cell fragments or tagged BAMs into pseudobulk tracks and marker-focused reports.</p>
-  </div>
-  <div class="fp-card">
-    <h3>Use optional interfaces</h3>
-    <p>Keep CLI-first reproducibility while using YAML configs, Streamlit GUI screens, and static HTML reports.</p>
+    <h3>Run pseudobulk ATAC</h3>
+    <p>Group single-cell fragments into cell-type footprint profiles.</p>
   </div>
 </div>
 
-## Quick Command Chain
+## Core Workflow
 
 <div class="fp-command-chain">
-  atac-correct -> call-footprints -> match-motifs / diff-footprints -> normalize-bigwig -> plot-aggregate / plot-aggregate-batch
+  atac-correct -> call-footprints -> diff-footprints -> plot-aggregate-batch
 </div>
 
-For most two-condition analyses, start with `diff-footprints`; it scans motifs internally, handles repeated condition names as replicates, writes differential tables, and can embed aggregate profiles into standalone HTML reports.
+For most condition comparisons, start with `diff-footprints`. It scans motifs, compares footprint scores, and writes a browser-ready HTML report.
 
-Optional extras:
+## Quick Install
+
+```bash
+pip install fp-tools-bio
+```
+
+For the browser GUI:
 
 ```bash
 pip install "fp-tools-bio[gui]"
+fp-tools-gui
 ```
