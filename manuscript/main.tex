@@ -212,12 +212,29 @@ pseudobulk ATAC-correction and footprint-scoring workflow.
 
 Replicate-aware analysis is integrated directly into the differential footprint comparison workflow.
 The differential comparison retains conventional motif-centered footprint-score
-logic while adding repeated condition labels,
-replicate-level summaries, and optional quantile normalization are added around the
-comparison. Repeated condition names, for example \texttt{--cond-names Bcell Bcell Tcell Tcell},
-define biological replicate groups while preserving the original differential-footprint
+logic while adding repeated condition labels, replicate-level summaries, optional
+quantile normalization, and two complementary testing views. Repeated condition
+names, for example \texttt{--cond-names Bcell Bcell Tcell Tcell}, define
+biological replicate groups while preserving the original differential-footprint
 output structure. Let $x_{c,r,i}$ be the footprint score at site or background
 position $i$ for replicate $r$ of condition $c$.
+
+The default distribution-comparison view is used directly by
+\texttt{diff-footprints}. It supports either one sample per group or multiple
+samples per group. When repeated condition names are supplied, replicate scores
+are summarized into condition-level means and SDs before motif-level comparisons
+are reported; when only one sample is present per group, the same motif and
+background-distribution comparison is still available, but replicate-derived SD
+and SE summaries are not interpreted as replicate uncertainty. A second
+empirical-Bayes replicate-matrix view is available when per-replicate motif-score
+matrices are built for a comparison. This view is limma-like rather than a direct
+dependency on the R \texttt{limma} package: motif scores are transformed as
+\(\log_2(1000x+1)\), condition effects are estimated from replicate groups, and
+the per-motif pooled variance is moderated toward the median variance across
+motifs before computing a moderated t-statistic and Benjamini--Hochberg-adjusted
+q-values. This empirical-Bayes view is used as a replicate-aware audit and
+alternative reporting view for replicate-supported comparisons, while the native
+distribution-comparison columns are preserved for traceability.
 
 With \texttt{--normalization sample-quantile}, each replicate is normalized before
 condition averaging. The normalization fit uses finite positive scores only,
@@ -268,8 +285,9 @@ replicates, and $n_1$ and $n_2$ are replicate counts:
 \sqrt{\frac{s_1^2}{n_1(\mu_1+\epsilon)^2}+
       \frac{s_2^2}{n_2(\mu_2+\epsilon)^2}}.
 \]
-For each motif and comparison, the reported \texttt{change} and \texttt{pvalue}
-columns are computed at the motif-reporting level. Candidate sites are included
+In the distribution-comparison view, the reported \texttt{change} and
+\texttt{pvalue} columns are computed at the motif-reporting level. Candidate
+sites are included
 when either condition has a positive motif-site score, site-level log fold
 changes are averaged within peak intervals, and the observed motif statistic is
 defined as the difference between the fitted observed mean log fold change and
@@ -498,10 +516,16 @@ Replicate-aware differential footprint analysis adds an interpretable layer to
 condition comparison: repeated condition names define biological replicate groups,
 condition means are reported alongside individual replicate profiles, and
 sample-level quantile normalization applies the same distribution-matching step
-before replicate group averages are compared. The no-normalization mode retains
-the baseline comparison without an additional sample-level distribution match,
-whereas the sample-quantile mode applies distribution matching before
-condition-level comparison and aggregate plotting.
+before replicate group averages are compared. The native distribution-comparison
+view supports both single-sample contrasts and multi-sample groups; replicate
+groups add condition SD, SE, and replicate-count summaries around the same
+motif-background comparison. For replicate-supported matrix analyses, the
+limma-like empirical-Bayes view provides a second report in which per-motif
+replicate variation is moderated across the motif set before p-values and
+q-values are assigned. The no-normalization mode retains the baseline comparison
+without an additional sample-level distribution match, whereas the
+sample-quantile mode applies distribution matching before condition-level
+comparison and aggregate plotting.
 
 As a biological consistency check for the same 2-vs-2 Buenrostro replicate
 comparison, we inspected aggregate corrected cut-site profiles for a small
@@ -671,9 +695,10 @@ footprinting model while integrating footprint calling, motif discovery,
 differential analysis, and reporting within one reproducible ecosystem. The
 replicate-aware summaries reported here use
 condition-level and replicate-level score variation to aid interpretation of
-differential footprint comparisons; they are designed for transparent reporting
-and visualization rather than as a replacement for specialized hierarchical
-models.
+differential footprint comparisons. The default distribution-comparison report is
+available for single-sample or multi-sample condition groups, and the
+empirical-Bayes matrix view provides a limma-like moderated replicate analysis
+when a per-replicate motif-score matrix is available.
 
 \subsection{Threats to Validity and Scope}
 
@@ -701,9 +726,10 @@ pseudobulk data.
 
 Large public-benchmark inputs depend on external data acquisition and are
 therefore regenerated from committed manifests rather than stored directly in the
-repository. Natural next steps include larger external-tool comparisons, stronger
-per-replicate statistical models, additional public validation datasets, and
-expanded pseudobulk analyses across donors and tissues.
+repository. Natural next steps include larger external-tool comparisons,
+additional public validation datasets, expanded pseudobulk analyses across donors
+and tissues, and richer hierarchical models for experiments with larger
+replicate counts.
 
 %==================================================================
 \section{Conclusions}
@@ -777,7 +803,7 @@ FASTQ preprocessing & Paired-end adapter detection and trimming with \texttt{fas
 Alignment and BAM processing & Reads aligned to hg38 with \texttt{bowtie2 --very-sensitive -X 2000}; proper pairs retained with \texttt{samtools view -f 2 -F 2828 -q 30}; BAMs sorted, fixed with \texttt{fixmate -m}, duplicate-marked with \texttt{markdup -r}, indexed, and summarized with flagstat/idxstats.\\
 Blacklist and peak set & Mitochondrial and nonstandard contigs excluded; hg38 blacklist v2 regions subtracted; MACS3 paired-end peaks called at q-value 0.01 and merged across replicates into one analysis peak set.\\
 Bias correction and footprint scores & \texttt{atac-correct} run on filtered BAMs with merged peaks and blacklist regions using default Tn5-bias settings; \texttt{call-footprints --score footprint} run on corrected cut-site bigWigs with default footprint and flank windows.\\
-Differential footprint analysis & Buenrostro and ENCODE replicate footprint tracks analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. Runs include no-normalization and sample-quantile-normalized settings where indicated.\\
+Differential footprint analysis & Buenrostro and ENCODE replicate footprint tracks analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. Runs include no-normalization and sample-quantile-normalized distribution-comparison settings where indicated; replicate-supported motif-score matrix reviews additionally use the limma-like empirical-Bayes view.\\
 De novo motif validation & ENCODE K562/HepG2 candidate footprints exported as condition-level FASTA files with \(\pm 75\) bp flanks; reciprocal STREME 5.5.9 runs used \texttt{--dna --nmotifs 250}; Tomtom 5.5.9 matched discovered motifs to JASPAR 2026; de novo motifs were evaluated alone and as additions to known motif sets.\\
 Pseudobulk PBMC workflow & 10x PBMC fragments grouped by broad immune labels, retaining groups with at least 300 cells and 50,000 fragments. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, and aggregate plots. The PBMC5k demonstration uses broad B-cell/monocyte/T--NK labels, marker sites, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
 \bottomrule
