@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Plot Fig5 engineering-performance and GUI-support panels."""
+"""Plot compact Fig5 engineering-performance panels."""
 
 from __future__ import annotations
 
@@ -76,7 +76,7 @@ def plot_metric_bars(ax: plt.Axes, table: pd.DataFrame, panel: str, title: str) 
     x = np.arange(len(values), dtype=float)
     ymax = max(float(values.max()), 1.0) * 1.22
 
-    ax.bar(x, values, width=0.52, color=[COLORS["baseline"], COLORS["current"]])
+    ax.bar(x, values, width=0.30, color=[COLORS["baseline"], COLORS["current"]])
     for xpos, value in zip(x, values, strict=True):
         ax.text(xpos, value + ymax * 0.025, f"{value:.1f}", ha="center", va="bottom")
 
@@ -378,31 +378,15 @@ def plot_usability_strip(ax: plt.Axes) -> None:
 def plot_fig5(source: Path, output: Path) -> None:
     apply_svg_style()
     table = load_source(source)
-    fig = plt.figure(figsize=(8.5, 11))
-    outer = fig.add_gridspec(
-        2,
-        1,
-        height_ratios=[0.19, 0.81],
-        left=0.065,
-        right=0.985,
-        top=0.945,
-        bottom=0.026,
-        hspace=0.085,
-    )
-    top_grid = outer[0].subgridspec(
+    fig, axes = plt.subplots(
         1,
         2,
-        wspace=0.28,
+        figsize=(4.9, 2.25),
+        gridspec_kw={"wspace": 0.42},
     )
-    axes = [fig.add_subplot(top_grid[0, 0]), fig.add_subplot(top_grid[0, 1])]
     plot_metric_bars(axes[0], table, "A", "Runtime")
     plot_metric_bars(axes[1], table, "B", "Peak memory")
-
-    gui_ax = fig.add_subplot(outer[1])
-    plot_vector_gui_panel(gui_ax)
-
-    gui_ax.text(-0.025, 0.995, "C", transform=gui_ax.transAxes, ha="left", va="top")
-    fig.suptitle("Fig5. Improved performance and GUI support", y=0.982)
+    fig.subplots_adjust(left=0.14, right=0.99, top=0.83, bottom=0.28)
     force_arial_bold(fig)
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, format="svg")

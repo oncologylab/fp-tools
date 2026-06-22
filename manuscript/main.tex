@@ -5,7 +5,6 @@
 % manuscript/templates/MDPI_template_ACS.zip by manuscript/scripts/prepare_biomedinformatics_template.py)
 %=================================================================
 \documentclass[biomedinformatics,article,submit,pdftex,moreauthors]{Definitions/mdpi}
-\usepackage{svg}
 
 % MDPI internal commands - do not modify
 \firstpage{1}
@@ -70,7 +69,10 @@ sequence-specific transcription factors (TFs) protect the DNA they occupy from
 transposition. This creates local cut-site depletions, often called
 ``footprints,'' with higher accessibility in the nearby flanks. Detecting and interpreting these footprints supports
 inference of TF occupancy, differential regulation between conditions, and the
-functional consequences of non-coding variation.
+functional consequences of non-coding variation. Earlier footprinting and
+occupancy models, including CENTIPEDE, Wellington, PIQ, and DeFCoM, established
+the value of combining sequence information with chromatin-accessibility profile
+shape for TFBS inference~\cite{pique2011centipede,piper2013wellington,sherwood2014piq,quach2017defcom}.
 
 A mature but \emph{fragmented} ecosystem of methods addresses pieces of this
 problem. ATAC-seq footprinting and differential-binding frameworks such as
@@ -87,8 +89,8 @@ including MEME/STREME~\cite{bailey2015meme,Bailey2021_STREME} and
 Tomtom~\cite{gupta2007tomtom}, are also widely used after peak or footprint
 selection, but commonly run as separate steps with separate input and output
 conventions. Each tool typically ships its own interface, input conventions, and
-assumptions, so assembling a coherent, reproducible pipeline and \emph{benchmarking}
-alternatives on common ground remains laborious and error-prone.
+assumptions, so assembling a coherent, reproducible pipeline and rerunning
+analyses on common inputs remains laborious and error-prone.
 
 Beyond this tooling friction, footprint interpretation has practical limitations
 that make reproducibility and careful signal handling important. ATAC-seq
@@ -175,12 +177,13 @@ differential footprint analysis.
 \subsection{Pseudobulk Fragment Aggregation}
 
 The pseudobulk workflow groups single-cell ATAC fragments by a metadata column,
-such as cell type, cluster, donor, or treatment. Let $F_b$ be the set of fragments
-assigned to barcode $b$, and let $g(b)$ be its group label. The fragment set for a
-pseudobulk group $k$ is
+such as cell type, cluster, donor, or treatment. Let $F_b$ be the multiset of
+fragments assigned to barcode $b$, and let $g(b)$ be its group label. The
+pseudobulk fragment collection for group $k$ is the concatenated multiset
 \[
-F_k = \bigcup_{b:g(b)=k} F_b.
+F_k = \mathrm{concat}_{b:g(b)=k}(F_b),
 \]
+so repeated fragments and fragment multiplicity are preserved.
 Groups that pass user-defined cell-count and fragment-count filters are written as
 bulk-like fragment files with manifest records. When genome sizes are supplied,
 \texttt{fp-tools} can also emit CPM-normalized cut-site bigWigs,
@@ -208,9 +211,8 @@ pseudobulk ATAC-correction and footprint-scoring workflow.
 \label{sec:replicate}
 
 Replicate-aware analysis is integrated directly into the differential footprint comparison workflow.
-The differential comparison is a reporting-level generalization of the
-TOBIAS motif-associated footprinting framework~\cite{bentsen2020}: the same
-motif-centered footprint-score logic is retained, while repeated condition labels,
+The differential comparison retains conventional motif-centered footprint-score
+logic while adding repeated condition labels,
 replicate-level summaries, and optional quantile normalization are added around the
 comparison. Repeated condition names, for example \texttt{--cond-names Bcell Bcell Tcell Tcell},
 define biological replicate groups while preserving the original differential-footprint
@@ -218,14 +220,22 @@ output structure. Let $x_{c,r,i}$ be the footprint score at site or background
 position $i$ for replicate $r$ of condition $c$.
 
 With \texttt{--normalization sample-quantile}, each replicate is normalized before
-condition averaging. For sample $s$, \texttt{fp-tools} computes empirical positive
-score quantiles $q_s(p)$ and the reference quantile
-$q_\ast(p)=S^{-1}\sum_s q_s(p)$ across the $S$ input samples, then fits a smooth
-multiplicative factor $g_s(x)$ to the ratio $q_\ast(p)/q_s(p)$. Each score is
-transformed as
+condition averaging. The normalization fit uses finite positive scores only,
+because negative or zero footprint-score values do not define a stable
+multiplicative quantile ratio. For sample $s$, \texttt{fp-tools} computes
+empirical score quantiles $q_s(p)$ on a 0.05--0.99 quantile grid and the
+reference quantile $q_\ast(p)=S^{-1}\sum_s q_s(p)$ across the $S$ input samples.
+It then smooths the ratio $q_\ast(p)/q_s(p)$ and fits a sigmoid multiplicative
+factor $g_s(x)$; if the sample has too few positive values or the curve fit is
+ill-conditioned, a constant positive factor is used instead. During application,
+scores outside the fitted positive-score range use the nearest fitted range
+boundary for the normalization factor. Each score is transformed as
 \[
 \tilde{x}_{s,i}=\max\{0,\,x_{s,i}g_s(x_{s,i})\}.
 \]
+The final maximum operation clips transformed values at zero, preserving the
+interpretation that positive normalized values represent footprint-like
+center-versus-flank evidence.
 The \texttt{condition-quantile} mode first averages replicate background
 distributions within each condition, fits one factor $g_c(x)$ per condition, and
 applies that condition-level factor to all replicates in the condition.
@@ -246,7 +256,10 @@ L_i=\log_2\frac{\bar{x}_{c_1,i}+\epsilon}{\bar{x}_{c_2,i}+\epsilon},
 \]
 where $\epsilon$ is estimated from the background signal unless supplied explicitly.
 When both conditions have replicate support, approximate standard errors are
-reported as
+reported as descriptive summaries. Here, $\mu_1$ and $\mu_2$ denote the
+condition-level mean scores for the two conditions at the included motif sites,
+$s_1$ and $s_2$ denote the corresponding empirical SD estimates across
+replicates, and $n_1$ and $n_2$ are replicate counts:
 \[
 \mathrm{SE}(\Delta)=\sqrt{\frac{s_1^2}{n_1}+\frac{s_2^2}{n_2}},
 \]
@@ -255,13 +268,25 @@ reported as
 \sqrt{\frac{s_1^2}{n_1(\mu_1+\epsilon)^2}+
       \frac{s_2^2}{n_2(\mu_2+\epsilon)^2}}.
 \]
-For each comparison, \texttt{fp-tools} reports the standard \texttt{change} and
-\texttt{pvalue} columns together with a Benjamini-Hochberg-adjusted
-\texttt{qvalue\_bh} column and a \texttt{significant\_fdr05} flag. The
-\texttt{highlighted} column is retained as a report-selection and visualization
-flag, not as a formal multiple-testing-corrected significance label. Additional
-replicate-oriented columns include replicate counts, condition score SDs, mean
-$\Delta$, mean $L$, and standard-error summaries.
+For each motif and comparison, the reported \texttt{change} and \texttt{pvalue}
+columns are computed at the motif-reporting level. Candidate sites are included
+when either condition has a positive motif-site score, site-level log fold
+changes are averaged within peak intervals, and the observed motif statistic is
+defined as the difference between the fitted observed mean log fold change and
+the fitted background mean, scaled by the average of the observed and background
+SD estimates. \texttt{fp-tools} then simulates background change statistics from
+the fitted background distribution using the same number of observed intervals
+and applies a one-sample t-test comparing the simulated background changes with
+the observed motif statistic. P-values are adjusted across motifs within each
+contrast using Benjamini--Hochberg, yielding the \texttt{qvalue\_bh} column and
+\texttt{significant\_fdr05} flag. These p-values are screening statistics for the
+motif-centered report, especially at small replicate counts; the SE columns are
+reported separately as descriptive uncertainty summaries and are not themselves
+the hypothesis-test statistic. The \texttt{highlighted} column is retained only
+as a report-selection and visualization flag, not as a formal
+multiple-testing-corrected significance label. Additional replicate-oriented
+columns include replicate counts, condition score SDs, mean $\Delta$, mean $L$,
+and standard-error summaries.
 
 \subsection{Public ATAC Processing and Reproducibility Provenance}
 \label{sec:processing_provenance}
@@ -289,13 +314,15 @@ scripts, manifests, schemas, small reference inputs, source tables, and figure
 code needed to rerun the manuscript analyses.
 
 The demonstration design follows published recommendations for transparent and
-reproducible computational method evaluation~\cite{Weber2019_Benchmarking,Mangul2019_SystematicBenchmarking}.
-It is organized as a tiered design (Table~\ref{tab:tiers}): a small-reference
-regression tier; a bulk ATAC replicate tier; a depth-robustness tier over
-downsampled ATAC; a de novo motif-preparation tier; and a real-data pseudobulk
-tier. Summary tables report command success, output integrity, runtime, memory,
-differential footprint summaries, motif-recovery summaries, and generated
-figures for the analyses included in this manuscript.
+reproducible computational method evaluation~\cite{Weber2019_Benchmarking,Mangul2019_SystematicBenchmarking},
+but it is not intended as an exhaustive head-to-head benchmark of all ATAC
+footprinting methods. Instead, it is organized as a tiered software-evaluation
+design (Table~\ref{tab:tiers}): a small-reference regression tier; a bulk ATAC
+replicate tier; a depth-robustness tier over downsampled ATAC; a de novo
+motif-preparation tier; and a real-data pseudobulk tier. Summary tables report
+command success, output integrity, runtime, memory, differential footprint
+summaries, motif-recovery summaries, and generated figures for the analyses
+included in this manuscript.
 
 \begin{table}[H]
 \caption{Tiered benchmark design. Large data and outputs are untracked; only
@@ -338,6 +365,11 @@ Figure source tables and editable figure files are retained for auditability.
 \section{Results}
 %==================================================================
 
+We evaluate \texttt{fp-tools} as a software and reproducibility platform along
+three axes: workflow integration and command stability, controlled local
+engineering measurements, and biological plausibility in public bulk and
+single-cell ATAC-seq demonstrations.
+
 \subsection{A Unified, Reproducible Footprinting Platform}
 
 \texttt{fp-tools} consolidates the core ATAC-seq footprinting steps into a
@@ -349,7 +381,7 @@ machine-readable form for reruns and batch processing
 (Figure~\ref{fig:workflow_overview}).
 
 \begin{figure}[!htb]
-\includesvg[width=\textwidth,inkscapearea=drawing]{figures/Fig1}
+\includegraphics[width=\textwidth]{figures/Fig1.pdf}
 \caption{Overview of the \texttt{fp-tools} ATAC-seq footprinting platform.
 Bulk ATAC-seq BAM/fragments and single-cell ATAC fragments with annotations enter
 a shared command-oriented workflow. The workflow supports Tn5 bias correction,
@@ -362,7 +394,7 @@ visualization, and pseudobulk single-cell footprint analysis.
 
 \subsection{Interactive Interfaces and Report Review}
 
-In addition to direct command-line execution, \texttt{fp-tools} provides browser-based interfaces for configuring analyses and reviewing results. The GUI writes reusable YAML configurations that remain compatible with command-line execution. Differential-footprint and aggregate-batch workflows also produce
+In addition to direct command-line execution, \texttt{fp-tools} provides browser-based interfaces for configuring analyses and reviewing results. The GUI writes reusable YAML configurations that remain compatible with command-line execution and provides guided panels for the same core commands shown in the command-line documentation (Figure~\ref{fig:gui_interface}). Differential-footprint and aggregate-batch workflows also produce
 self-contained HTML reports with embedded compressed data, searchable motif controls,
 editable group colors, synchronized aggregate profiles, and SVG export for
 publication-ready editing.
@@ -403,26 +435,32 @@ the expanded reciprocal STREME runs contributed 500 candidate-derived motifs
 from both ENCODE cell lines. We therefore interpret this run as a site-recovery
 demonstration of how far de novo-only discovery can cover database-supported
 footprints, rather than as an exhaustive replacement for a curated motif
-database. In de novo-only mode, the discovered motifs recovered 84.0\% of merged
-JASPAR-supported bound-site-window base pairs across the K562/HepG2 comparison,
-while 16.0\% remained unique to the full JASPAR scan. The de novo-only scan also
-introduced additional candidate-derived bound-site windows, corresponding to
-6.0\% of the de novo-only merged window base pairs. In supplement mode,
+database. In de novo-only mode, recovery was measured as base-pair overlap after
+merging the bound-site windows produced by the de novo scan and the corresponding
+JASPAR-supported scan. By this operational overlap metric, the discovered motifs
+recovered 84.0\% of merged JASPAR-supported bound-site-window base pairs across
+the K562/HepG2 comparison, while 16.0\% remained unique to the full JASPAR scan.
+The de novo-only scan also introduced additional candidate-derived bound-site
+windows, corresponding to 6.0\% of the de novo-only merged window base pairs.
+In supplement mode,
 discovered motifs are appended to known motif sets before the same motif-aware
 differential footprint analysis. To create a sensitivity test, we also
 constructed a K562/HepG2-focused restricted JASPAR 2026 set with 867 motifs by
 removing common erythroid/K562 and liver/HepG2 motif families, then reran the
-comparison with and without the de novo motifs. The restricted database yielded
-92 highlighted differential motif families; adding the 500 de novo motifs
-increased this to 153 highlighted families, including 24 de novo-derived
-highlighted motifs.
+comparison with and without the de novo motifs. In the interactive report, the
+restricted database yielded 92 display-priority motif families according to the
+\texttt{highlighted} report-selection flag; adding the 500 de novo motifs
+increased this browsing set to 153 families, including 24 de novo-derived motifs.
+Because \texttt{highlighted} is not a multiple-testing-corrected significance
+label, these counts are interpreted only as report-prioritization output, not as
+formal evidence for additional significant motif families.
 This sensitivity test illustrates the intended use case: when a chosen motif
 database is incomplete or conservative, candidate-derived motifs can be evaluated
 on their own and can also be carried forward into the same differential footprint
 report as database-supported motifs (Figure~\ref{fig:denovo_validation}).
 
 \begin{figure}[!htb]
-\includesvg[width=\textwidth,inkscapearea=drawing]{figures/Fig2}
+\includegraphics[width=\textwidth]{figures/Fig2.pdf}
 \caption{De novo motif discovery and validation workflow.
 (\textbf{A}) Candidate footprint or BED intervals are converted into centered
 FASTA sequences, analyzed with MEME/DREME/STREME, and summarized as motif tables
@@ -461,13 +499,14 @@ condition comparison: repeated condition names define biological replicate group
 condition means are reported alongside individual replicate profiles, and
 sample-level quantile normalization applies the same distribution-matching step
 before replicate group averages are compared. The no-normalization mode retains
-the TOBIAS-style baseline without an additional sample-level distribution match,
+the baseline comparison without an additional sample-level distribution match,
 whereas the sample-quantile mode applies distribution matching before
 condition-level comparison and aggregate plotting.
 
 As a biological consistency check for the same 2-vs-2 Buenrostro replicate
-comparison, we inspected aggregate corrected cut-site profiles for selected
-motifs with visible footprint-like center depletion. BACH2 showed a B/GM12878-biased pattern in this dataset while remaining biologically non-exclusive because
+comparison, we inspected aggregate corrected cut-site profiles for a small
+illustrative set selected to show visible center depletion and known or plausible
+immune-cell relevance. BACH2 showed a B/GM12878-biased pattern in this dataset while remaining biologically non-exclusive because
 it is also reused in T-cell states. Conversely, JUNB and ATF7 showed stronger
 T-cell aggregate depletion; JUNB is an AP-1 family regulator of T-cell
 differentiation~\cite{koizumi2021junb}, and ATF7 is included here as a strong
@@ -524,7 +563,7 @@ high-change B-cell marker from the pseudobulk screen
 (Figure~\ref{fig:single_cell_footprinting}).
 
 \begin{figure}[!htb]
-\includesvg[width=\textwidth,inkscapearea=drawing]{figures/Fig4}
+\includegraphics[width=\textwidth]{figures/Fig4.pdf}
 \caption{Single-cell footprinting summary in public PBMC5k single-cell ATAC data.
 (\textbf{A}) KNN-smoothed per-cell footprint-signature heatmap for selected
 marker TFs and top cell-type-specific motif signatures across B cells, monocytes,
@@ -552,20 +591,32 @@ The benchmark pipeline writes resolved manifests, software versions,
 parameters, and plotting tables next to generated figures. This makes the
 figures auditable: a reader can inspect which samples, motifs, regions, and signal
 tracks were used, and the same tier can be rerun after code changes.
-Representative local engineering measurements summarize runtime and peak memory,
-together with the GUI instruction panel that
-emphasizes CLI-compatible YAML workflow generation
-(Figure~\ref{fig:engineering_gui}).
+Representative local engineering measurements summarize runtime and peak memory
+for one local workflow comparison using the same input bundle and command-level
+outputs (Figure~\ref{fig:engineering}). The browser GUI emphasizes the same
+command-first workflow while making example loading, YAML review, run history,
+and report inspection accessible to users who do not routinely work at the
+command line (Figure~\ref{fig:gui_interface}).
 
 \begin{figure}[!htb]
-\includesvg[width=\textwidth,inkscapearea=drawing]{figures/Fig5}
-\caption{Improved performance and GUI support.
-(\textbf{A,B}) Representative local engineering comparisons of runtime and peak
-memory between TOBIAS and \texttt{fp-tools}. (\textbf{C}) The browser GUI
-provides a command-first interface for configuring inputs, saving reusable
-configs, running core footprinting steps, and reviewing logs, tables, and
-SVG-ready outputs while preserving CLI compatibility.
-\label{fig:engineering_gui}}
+\centering
+\includegraphics[width=0.56\textwidth]{figures/Fig5.pdf}
+\caption{Representative local engineering comparison.
+(\textbf{A}) Runtime and (\textbf{B}) peak memory are summarized for one local
+workflow run comparing TOBIAS and \texttt{fp-tools} on the same analysis bundle.
+These measurements are included as an engineering check, not as an exhaustive
+cross-tool benchmark.
+\label{fig:engineering}}
+\end{figure}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\textwidth,height=0.72\textheight,keepaspectratio]{figures/Fig6.png}
+\caption{Browser GUI for command-compatible footprinting workflows.
+The GUI provides sidebar access to core commands, guided configuration panels,
+example loading, YAML preview, run-history review, and report/output inspection
+while preserving CLI-compatible configuration files.
+\label{fig:gui_interface}}
 \end{figure}
 
 %==================================================================
@@ -580,9 +631,12 @@ handling of replicate-aware summaries; and integrated support for de novo motif 
 (Table~\ref{tab:features}). Together, these properties address the fragmentation that often separates footprint scoring, motif interpretation, and report generation.
 
 \begin{table}[H]
-\caption{Feature comparison across widely used ATAC-seq regulatory-analysis tools.
-\checkmark, native first-class support; $\circ$, partial or indirect support;
-NA, not available. \texttt{fp-tools} is an integrated, reproducible platform that combines ATAC-seq footprinting with replicate-aware reporting, de novo motif-discovery preparation, and single-cell pseudobulk aggregation behind one command surface.\label{tab:features}}
+\caption{Qualitative scope comparison across widely used ATAC-seq regulatory-analysis tools.
+\checkmark, documented native support; $\circ$, partial, indirect, or adjacent
+support; NA, outside the tool's primary scope. The table summarizes workflow
+scope from public documentation and primary publications; it is not a performance
+benchmark and should be read with the different goals of these tools in mind.
+\label{tab:features}}
 \begingroup
 \footnotesize
 \setlength{\tabcolsep}{2pt}
@@ -612,7 +666,7 @@ YAML/batch execution & \featureyes & NA & NA & NA & NA & NA\\
 Deep sequence-to-profile models such as ChromBPNet provide powerful
 sequence-driven occupancy and variant-effect analyses~\cite{chrombpnet2024}. Differential TF activity was also considered relative to orthogonal accessibility-based frameworks such as diffTF~\cite{Berest2019_diffTF}.
 \texttt{fp-tools} addresses a complementary need: a lightweight, auditable
-ATAC-seq footprinting workflow that builds on the widely used TOBIAS-style
+ATAC-seq footprinting workflow that uses a conventional motif-centered
 footprinting model while integrating footprint calling, motif discovery,
 differential analysis, and reporting within one reproducible ecosystem. The
 replicate-aware summaries reported here use
@@ -621,15 +675,35 @@ differential footprint comparisons; they are designed for transparent reporting
 and visualization rather than as a replacement for specialized hierarchical
 models.
 
-Limitations remain. The present manuscript emphasizes reproducible workflow
-demonstrations, local engineering checks, and public-data examples. Larger
-whole-genome transfer studies, including training on some cell lines and testing
-on others, and direct head-to-head runs of external tools such as TOBIAS,
-HINT-ATAC, and ChromBPNet on identical locus sets will require larger
-external-tool benchmark runs. Large public-benchmark inputs depend on external data acquisition and are
+\subsection{Threats to Validity and Scope}
+
+The present manuscript emphasizes reproducible workflow demonstrations, local
+engineering checks, and public-data examples; it is not a comprehensive
+cross-tool benchmark. Larger whole-genome transfer studies, including training on
+some cell lines and testing on others, and direct head-to-head runs of external
+tools such as TOBIAS, HINT-ATAC, PRINT/scPrinter, maxATAC, and ChromBPNet on
+identical locus sets will require larger controlled benchmark runs with repeated
+measurements, matched parameters, and explicit uncertainty. The runtime and
+memory measurements in Figure~\ref{fig:engineering} are representative local
+engineering checks, not general performance claims.
+
+Several biological panels are illustrative by design. The de novo recovery
+summary uses a merged-window overlap metric rather than an independent binding
+truth set, and the restricted-database sensitivity analysis depends on a
+specified motif-family removal list. The \texttt{highlighted} column is a report
+selection flag and should not be interpreted as statistical significance. The
+PBMC marker labels and aggregate examples emphasize expected-direction markers to
+show whether outputs are biologically plausible; full ranked tables are needed
+for formal marker-discovery claims. Finally, KNN-smoothed single-cell
+footprint-signature scores are visualization summaries over neighboring cells,
+whereas formal bias-corrected footprint inference is performed on grouped
+pseudobulk data.
+
+Large public-benchmark inputs depend on external data acquisition and are
 therefore regenerated from committed manifests rather than stored directly in the
 repository. Natural next steps include larger external-tool comparisons, stronger
-per-replicate statistical models, and additional public validation datasets.
+per-replicate statistical models, additional public validation datasets, and
+expanded pseudobulk analyses across donors and tissues.
 
 %==================================================================
 \section{Conclusions}
@@ -639,7 +713,7 @@ We presented \texttt{fp-tools}, a reproducible platform
 that unifies ATAC-seq footprinting with motif-discovery preparation, pseudobulk aggregation, and replicate-aware reporting.
 By pairing test-covered workflows with public-data manifests, source
 tables, and reproducible figure generation, the package supports standardized and
-benchmarkable regulatory-genomics analysis. Future work will add larger whole-genome transfer studies, direct external-tool
+auditable regulatory-genomics analysis. Future work will add larger whole-genome transfer studies, direct external-tool
 comparisons, multiscale and nucleosome-aware validation, and stronger hierarchical
 differential-binding validation.
 
@@ -660,7 +734,9 @@ de-identified datasets and did not involve new experiments on humans or animals.
 \informedconsent{Not applicable.}
 
 \dataavailability{\texttt{fp-tools} is openly available in the public GitHub
-repository \href{https://github.com/oncologylab/fp-tools}{\mbox{\texttt{oncologylab/fp-tools}}}.
+repository \href{https://github.com/oncologylab/fp-tools}{\mbox{\texttt{oncologylab/fp-tools}}};
+the source state for this manuscript revision is identified by the Git tag
+\texttt{manuscript-revision-2026-06-22}.
 The repository contains the
 benchmark manifests, schemas, analysis scripts, figure generators, source tables,
 and small result tables used in this manuscript. Public input data are obtained
