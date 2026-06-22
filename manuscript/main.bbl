@@ -127,6 +127,14 @@ Bailey, T.L.
 \newblock {\em Bioinformatics} {\bf 2011}, {\em 27},~1653--1659.
 \newblock {\url{https://doi.org/10.1093/bioinformatics/btr261}}.
 
+\bibitem[Smyth(2004)]{smyth2004}
+Smyth, G.K.
+\newblock Linear models and empirical {Bayes} methods for assessing
+  differential expression in microarray experiments.
+\newblock {\em Statistical Applications in Genetics and Molecular Biology} {\bf
+  2004}, {\em 3},~Article 3.
+\newblock {\url{https://doi.org/10.2202/1544-6115.1027}}.
+
 \bibitem[Chen et~al.(2018)Chen, Zhou, Chen, and Gu]{Chen2018_fastp}
 Chen, S.; Zhou, Y.; Chen, Y.; Gu, J.
 \newblock fastp: an ultra-fast all-in-one FASTQ preprocessor.

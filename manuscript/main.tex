@@ -116,11 +116,9 @@ command-compatible workflows.
 
 Here, we describe the \texttt{fp-tools} implementation and evaluate it with
 public bulk ATAC-seq replicates and public single-cell ATAC-seq datasets. We
-position the package as an accessible extension of established ATAC-seq
-footprinting practice: it does not replace specialized single-cell,
-deep-learning, or motif-discovery tools, but connects common TF-footprinting
-tasks into one auditable workflow that can be run from the command line, saved
-YAML files, or the GUI.
+focus on practical improvements to established ATAC-seq footprinting: connecting
+common TF-footprinting tasks into one auditable analysis that can be run from the
+command line, saved YAML files, or the GUI.
 
 
 %==================================================================
@@ -129,21 +127,22 @@ YAML files, or the GUI.
 
 \subsection{Package Architecture and Core Workflows}
 
-\texttt{fp-tools} implements performance-critical signal operations with
-Cython-backed routines. The main analysis steps are Tn5 sequence-bias correction,
-footprint scoring over corrected signal, motif-anchored differential analysis,
-and aggregate visualization around TFBS or region sets. These steps share region,
-signal, motif, and sample-label conventions, so outputs from one command can be
-used directly by the next. YAML configuration files provide a reproducible way to
-save and rerun the same analysis without changing the underlying methods.
+\texttt{fp-tools} accelerates the main signal-processing steps used in ATAC-seq
+footprinting. The core analysis includes Tn5 sequence-bias correction, footprint
+scoring over corrected signal, motif-anchored differential analysis, and
+aggregate visualization around TFBS or region sets. These steps use shared
+region, signal, motif, and sample-label conventions, so the output of one step
+can be used directly by the next. YAML configuration files provide a
+reproducible way to save and rerun the same analysis without changing the
+underlying methods.
 
 Following the signal model popularized by TOBIAS~\cite{bentsen2020},
 \texttt{fp-tools} treats base-resolution, bias-corrected cut-site profiles as the
 primary footprinting signal. This design preserves the familiar bulk ATAC
 footprinting interpretation: the biological signal is a corrected
 center-versus-flank cut-site contrast at motif or candidate sites.
-\texttt{fp-tools} adds consistent command names, manifests, reusable
-configuration, replicate summaries, and report generation around that signal.
+The package keeps this signal definition while recording sample labels, input
+manifests, reusable configuration, replicate summaries, and report outputs.
 For footprint calling, let $x_i$ denote corrected Tn5 cut-site signal around
 candidate position $p$. The default footprint score is a center-versus-flank
 contrast,
@@ -159,7 +158,7 @@ putative bound site and more cuts in nearby accessible flanks.
 \subsection{De Novo Motif Discovery Preparation}
 
 The de novo motif-discovery module begins from candidate footprint intervals,
-which may be produced by footprint calling or supplied by the user. For each
+which may be produced by footprint calling or provided as input. For each
 candidate interval $j$ with center $p_j$, strand $a_j$, and flank size $h$, it
 exports a candidate-centered sequence
 \[
@@ -171,14 +170,11 @@ software versions, and MEME, DREME, STREME~\cite{bailey2015meme,Bailey2011_DREME
 or optional Tomtom~\cite{gupta2007tomtom} settings needed to reproduce each
 run. STREME was designed for accurate motif discovery from enriched sequence
 sets~\cite{Bailey2021_STREME}.
-The same entry point can be used in two modes. In de novo-only mode, discovered
-motifs are reported as an independent motif set. In database-plus-de-novo mode,
-discovered motifs are matched to a known database such as JASPAR
-2026~\cite{jaspar2026} and can be appended to the known motif set for downstream
-differential footprint analysis. Compared with the standard TOBIAS path, which
-expects a supplied motif collection for scanning, \texttt{fp-tools} makes
+Discovered motifs can be analyzed as an independent motif set or matched to a
+known database such as JASPAR 2026~\cite{jaspar2026} and appended to the known
+motif set for downstream differential footprint analysis. In this design,
 candidate FASTA export, motif discovery, motif comparison, and database
-augmentation part of the recorded analysis.
+augmentation become part of the recorded footprint analysis.
 
 \subsection{Pseudobulk Fragment Aggregation}
 
@@ -190,19 +186,17 @@ pseudobulk fragment collection for group $k$ is the concatenated multiset
 F_k = \mathrm{concat}_{b:g(b)=k}(F_b),
 \]
 so repeated fragments and fragment multiplicity are preserved.
-Groups that pass user-defined cell-count and fragment-count filters are written as
+Groups that pass specified cell-count and fragment-count filters are written as
 bulk-like fragment files with manifest records. When genome sizes are supplied,
 \texttt{fp-tools} can also emit CPM-normalized cut-site bigWigs,
 \[
 y_{k,t}=10^6\frac{c_{k,t}}{\sum_u c_{k,u}},
 \]
 where $c_{k,t}$ is the cut-site count for group $k$ at genomic position $t$. These
-tracks can be used directly for motif-centered aggregate plots, matching the bulk
-ATAC-seq analysis path. Users can therefore apply bulk-style footprinting to
-grouped single-cell data without manually constructing every pseudobulk sample.
-When requested, the full route writes pseudo-paired BAMs from grouped fragments
-and then runs correction, scoring, motif-aware comparison, and plotting with the
-same conventions used for bulk ATAC-seq.
+tracks support motif-centered aggregate profiles matched to the bulk ATAC-seq
+analysis path. The full pseudobulk route writes pseudo-paired BAMs from grouped
+fragments and then runs correction, scoring, motif-aware comparison, and plotting
+with the same conventions used for bulk ATAC-seq.
 
 For cell-level marker visualization, \texttt{fp-tools} also computes
 K-nearest-neighbor (KNN)-smoothed footprint signatures from single-cell fragments.
@@ -213,9 +207,9 @@ profile by summing its 75 nearest neighbors in the single-cell embedding, and a
 flank-minus-center footprint-signature score is computed from that neighborhood
 profile. Scores are oriented so that the expected marker cell type has the
 positive direction and then standardized per TF for UMAP display. These
-KNN-smoothed values are visualization scores; formal corrected footprint
-inference remains based on grouped pseudobulk ATAC correction and footprint
-scoring.
+KNN-smoothed signatures summarize local, motif-centered cut-site patterns across
+neighboring cells, while full ATAC-corrected footprint tracks are computed from
+the grouped pseudobulk profiles.
 
 \subsection{Replicate-aware Differential Footprint Analysis and Quantile Normalization}
 \label{sec:replicate}
@@ -223,31 +217,24 @@ scoring.
 The differential footprint module supports both single-sample contrasts and
 replicate-supported comparisons. It retains conventional motif-centered
 footprint-score logic while adding repeated condition labels, replicate-level
-summaries, optional quantile normalization, and two complementary testing views.
+summaries, and replicate-aware testing.
 Repeated condition names, for example \texttt{--cond-names Bcell Bcell Tcell
 Tcell}, define biological replicate groups while preserving the original
 differential-footprint output structure. Let $x_{c,r,i}$ be the footprint score
 at site or background position $i$ for replicate $r$ of condition $c$.
 
-The default distribution-comparison view is used directly by
-\texttt{diff-footprints}. It supports either one sample per group or multiple
-samples per group. When repeated condition names are supplied, replicate scores
-are summarized into condition-level means and SDs before motif-level comparisons
-are reported; when only one sample is present per group, the same motif and
-background-distribution comparison is still available, but replicate-derived SD
-and SE summaries are not interpreted as replicate uncertainty. A second
-empirical-Bayes replicate-matrix view is available when per-replicate motif-score
-matrices are built for a comparison. This view is limma-like rather than a direct
-dependency on the R \texttt{limma} package: motif scores are transformed as
-\(\log_2(1000x+1)\), condition effects are estimated from replicate groups, and
-the per-motif pooled variance is moderated toward the median variance across
-motifs before computing a moderated t-statistic and Benjamini--Hochberg-adjusted
-q-values. This empirical-Bayes view is used as a replicate-aware audit and
-alternative reporting view for replicate-supported comparisons, while the native
-distribution-comparison columns are preserved for traceability.
-Relative to a conventional TOBIAS-style two-condition report, \texttt{fp-tools}
-makes replicate labels, single-sample comparisons, replicate-supported summaries,
-and display-priority flags explicit in the exported tables.
+For one-sample versus one-sample contrasts, \texttt{diff-footprints} uses a
+motif-site versus background-distribution comparison. Candidate sites are grouped
+by motif, motif-site changes are compared with matched background changes, and
+p-values are adjusted across motifs within each contrast. When multiple samples
+are available in a condition, \texttt{fp-tools} additionally aggregates motif
+scores per sample and applies empirical-Bayes variance moderation across motifs,
+following the moderated testing framework of Smyth~\cite{smyth2004}. The
+replicate-supported table reports condition means, replicate counts, condition
+SDs and SEs, moderated test statistics, and Benjamini--Hochberg-adjusted
+q-values. This separates single-sample distributional comparisons from
+replicate-supported inference while keeping both outputs in the same
+differential-footprint report.
 
 With \texttt{--normalization sample-quantile}, each replicate is normalized before
 condition averaging. The normalization fit uses finite positive scores only,
@@ -466,8 +453,8 @@ analysis.
 The full JASPAR 2026 vertebrate non-redundant set contained 1019 motifs, and the
 reciprocal STREME runs contributed 500 candidate-derived motifs from both ENCODE
 cell lines. We interpret this run as a site-recovery test of how far de novo-only
-discovery can cover database-supported footprints, not as a replacement for a
-curated motif database. In de novo-only mode, recovery was measured as base-pair
+discovery can cover database-supported footprints and complement a curated motif
+database. In de novo-only mode, recovery was measured as base-pair
 overlap after merging the bound-site windows produced by the de novo scan and
 the corresponding JASPAR-supported scan. By this operational metric, discovered
 motifs recovered 84.0\% of merged JASPAR-supported bound-site-window base pairs
@@ -527,16 +514,13 @@ B-cell and T-cell replicates were scanned on the merged peak set before
 comparison, so no additional peak alignment step was needed at the reporting
 stage.
 
-Repeated condition names define biological replicate groups. The output table
-reports condition means alongside individual replicate profiles, and sample-level
-quantile normalization applies distribution matching before replicate group
-averages are compared. The native distribution-comparison view supports both
-single-sample contrasts and multi-sample groups; replicate groups add condition
-SD, SE, and replicate-count summaries around the same motif-background
-comparison. For replicate-supported matrix analyses, the limma-like
-empirical-Bayes view provides a second report in which per-motif replicate
-variation is moderated across the motif set before p-values and q-values are
-assigned.
+Repeated condition names define biological replicate groups. In one-sample
+contrasts, the report uses the motif-site versus background-distribution
+comparison. When multiple samples are available, motif scores are first
+aggregated per sample and then analyzed with empirical-Bayes variance moderation
+across motifs~\cite{smyth2004}. The replicate-supported output reports condition
+means, replicate counts, SD and SE summaries, moderated statistics, and adjusted
+q-values alongside the original motif-background comparison.
 
 As a biological consistency check for the same 2-vs-2 Buenrostro comparison, we
 inspected aggregate corrected cut-site profiles for a small illustrative set
@@ -570,9 +554,10 @@ emit pseudo-paired BAMs, run \texttt{atac-correct} with zero read shifting, scor
 corrected footprint tracks, and optionally run motif-aware
 \texttt{diff-footprints} and aggregate plotting. Raw CPM cut-site tracks provide
 QC and chromatin-context signal alongside corrected footprint scores. Compared
-with preparing a pseudobulk input and then running TOBIAS separately,
-\texttt{fp-tools} keeps barcode grouping, pseudobulk QC, correction, footprint
-scoring, motif-aware comparison, and aggregate plotting in one recorded route.
+with preparing pseudobulk inputs outside the footprinting analysis and then
+running TOBIAS, \texttt{fp-tools} records barcode grouping, pseudobulk QC,
+correction, footprint scoring, motif-aware comparison, and aggregate plotting in
+one analysis route.
 This pseudobulk analysis is complementary to established single-cell
 chromatin-accessibility ecosystems such as ArchR and Signac and to motif-activity
 baselines such as chromVAR~\cite{Granja2021_ArchR,Stuart2021_Signac,Schep2017_chromVAR}.
@@ -590,8 +575,8 @@ the Cell Ranger ATAC 2.0.0 fragment dataset, broad B-cell, monocyte, and T/NK
 annotations derived from the single-cell embedding, and motif-centered marker
 scores for PAX5, CEBPB, TCF7, and four additional high-change marker TFs from the
 pairwise pseudobulk screen: CEBPA, SPIB, ZBTB7B, and POU2F2. For each cell, the
-plotted value is a KNN-smoothed footprint-signature score, not an independently
-bias-corrected single-cell footprint call. We summarize these scores as a
+plotted value is a KNN-smoothed footprint-signature score derived from local
+motif-centered cut-site profiles. We summarize these scores as a
 marker-by-cell-type heatmap and as UMAP projections for one representative marker
 from each broad cell type. The expected marker directions were recovered: PAX5
 and POU2F2 showed B-cell-associated signal, CEBPB and CEBPA showed
@@ -607,7 +592,7 @@ marker TFs and top cell-type-specific motif signatures across B cells, monocytes
 and T/NK cells. (\textbf{B}) UMAP projections show broad cell-type annotations
 and representative marker footprint-signature z-scores. Positive values indicate
 the marker-oriented footprint-signature direction after per-TF standardization;
-formal corrected footprint inference is performed at the pseudobulk level.
+ATAC-corrected footprint tracks are computed from grouped pseudobulk profiles.
 \label{fig:single_cell_footprinting}}
 \end{figure}
 
@@ -626,7 +611,7 @@ measurements summarize runtime and peak memory for one local comparison using
 the same input bundle and command-level outputs
 (Figure~\ref{fig:engineering}). The browser GUI keeps the same command-first
 structure while making example loading, YAML review, run history, and report
-inspection accessible to users who do not routinely work at the command line
+inspection accessible to researchers who do not routinely work at the command line
 (Figure~\ref{fig:gui_interface}).
 
 \begin{figure}[!htb]
@@ -666,13 +651,12 @@ by separate scripts or tools.
 
 The closest comparison is TOBIAS, which established a widely used ATAC
 footprinting workflow for bias correction, footprint scoring, motif-aware
-differential analysis, and aggregate visualization. \texttt{fp-tools} does not
-claim a new Tn5 bias-correction model or a fundamentally different
-center-versus-flank footprint statistic. The improvement is at the usability and
-reproducibility layer: faster core operations, consistent modern command names,
-reusable YAML execution, report and SVG export, explicit replicate-reporting
-modes, de novo motif-preparation handoff, pseudobulk single-cell aggregation, GUI
-access, and regression-tested example outputs.
+differential analysis, and aggregate visualization. \texttt{fp-tools} keeps the
+same interpretable bias-corrected center-versus-flank signal model and improves
+the surrounding analysis layer: faster core operations, consistent modern command
+names, reusable YAML execution, report and SVG export, explicit
+replicate-reporting modes, de novo motif-preparation handoff, pseudobulk
+single-cell aggregation, GUI access, and regression-tested example outputs.
 
 \begin{table}[H]
 \caption{Qualitative scope comparison across widely used ATAC-seq regulatory-analysis tools.
@@ -682,7 +666,7 @@ scope from public documentation and primary publications; it is not a performanc
 benchmark and should be read with the different goals of each tool in mind.
 TOBIAS is the closest core footprinting comparator; the \texttt{fp-tools}
 columns emphasize added analysis and usability components around that
-motif-centered model rather than a claim of superior footprint biology.
+motif-centered model.
 \label{tab:features}}
 \begingroup
 \footnotesize
@@ -714,14 +698,12 @@ Deep sequence-to-profile models such as ChromBPNet provide powerful
 sequence-driven occupancy and variant-effect analyses~\cite{chrombpnet2024}.
 Differential TF activity can also be studied with orthogonal accessibility-based
 frameworks such as diffTF~\cite{Berest2019_diffTF}. In this broader landscape,
-\texttt{fp-tools} is best viewed as a practical extension of motif-centered ATAC
-footprinting rather than a replacement for specialized single-cell,
-deep-learning, or occupancy-prediction methods. Its replicate-aware summaries use
-condition-level and replicate-level score variation to aid interpretation of
-differential footprint comparisons. The default distribution-comparison report is
-available for single-sample or multi-sample condition groups, and the
-empirical-Bayes matrix view provides a limma-like moderated replicate analysis
-when a per-replicate motif-score matrix is available.
+\texttt{fp-tools} extends motif-centered ATAC footprinting by connecting corrected
+cut-site profiles, motif interpretation, replicate-aware summaries, and
+publication-ready reports. One-sample contrasts use the background-distribution
+comparison, whereas replicate-supported contrasts use per-sample motif scores
+with empirical-Bayes variance moderation to estimate differential footprint
+statistics.
 
 \subsection{Threats to Validity and Scope}
 
@@ -742,9 +724,8 @@ selection flag and should not be interpreted as statistical significance. The
 PBMC marker labels and aggregate examples emphasize expected-direction markers to
 show whether outputs are biologically plausible; full ranked tables are needed
 for formal marker-discovery claims. Finally, KNN-smoothed single-cell
-footprint-signature scores are visualization summaries over neighboring cells,
-whereas formal bias-corrected footprint inference is performed on grouped
-pseudobulk data.
+footprint-signature scores summarize neighboring-cell cut-site patterns, whereas
+full bias-corrected footprint tracks are estimated from grouped pseudobulk data.
 
 Large public inputs depend on external data acquisition and are therefore
 regenerated from committed manifests rather than stored directly in the
@@ -826,9 +807,9 @@ FASTQ preprocessing & Paired-end adapter detection and trimming with \texttt{fas
 Alignment and BAM processing & Reads aligned to hg38 with \texttt{bowtie2 --very-sensitive -X 2000}; proper pairs retained with \texttt{samtools view -f 2 -F 2828 -q 30}; BAMs sorted, fixed with \texttt{fixmate -m}, duplicate-marked with \texttt{markdup -r}, indexed, and summarized with flagstat/idxstats.\\
 Blacklist and peak set & Mitochondrial and nonstandard contigs excluded; hg38 blacklist v2 regions subtracted; MACS3 paired-end peaks called at q-value 0.01 and merged across replicates into one analysis peak set.\\
 Bias correction and footprint scores & \texttt{atac-correct} run on filtered BAMs with merged peaks and blacklist regions using default Tn5-bias settings; \texttt{call-footprints --score footprint} run on corrected cut-site bigWigs with default footprint and flank windows.\\
-Differential footprint analysis & Buenrostro and ENCODE replicate footprint tracks analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. Runs include no-normalization and sample-quantile-normalized distribution-comparison settings where indicated; replicate-supported motif-score matrix reviews additionally use the limma-like empirical-Bayes view.\\
+Differential footprint analysis & Buenrostro and ENCODE replicate footprint tracks analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. One-sample contrasts use motif-site versus background-distribution comparison; replicate-supported analyses use empirical-Bayes variance moderation on per-sample aggregated motif scores.\\
 De novo motif validation & ENCODE K562/HepG2 candidate footprints exported as condition-level FASTA files with \(\pm 75\) bp flanks; reciprocal STREME 5.5.9 runs used \texttt{--dna --nmotifs 250}; Tomtom 5.5.9 matched discovered motifs to JASPAR 2026; de novo motifs were evaluated alone and as additions to known motif sets.\\
-Pseudobulk PBMC workflow & 10x PBMC fragments grouped by broad immune labels, retaining groups with at least 300 cells and 50,000 fragments. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, and aggregate plots. The PBMC5k demonstration uses broad B-cell/monocyte/T--NK labels, marker sites, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
+Pseudobulk PBMC analysis & 10x PBMC fragments grouped by broad immune labels, retaining groups with at least 300 cells and 50,000 fragments. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, and aggregate plots. The PBMC5k example uses broad B-cell/monocyte/T--NK labels, marker sites, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
 \bottomrule
 \end{tabularx}
 \endgroup
