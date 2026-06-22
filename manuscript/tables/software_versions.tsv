@@ -1,7 +1,6 @@
 tool_or_resource	version	role
 bedtools	2.31.1	Region sorting, merging, and blacklist subtraction
 Biopython	1.87	Sequence and motif-related utilities
-Cell Ranger ARC	2.0.0	Source processing for the public 10x PBMC Multiome dataset
 Cell Ranger ATAC	2.0.0	Source processing for the public 10x PBMC5k scATAC dataset
 fp-tools	0.1.7	ATAC correction, footprint calling, motif matching, differential footprint analysis, pseudobulk utilities, and plotting helpers
 hg38 blacklist	v2	Artifact-region filtering for processed bulk ATAC alignments

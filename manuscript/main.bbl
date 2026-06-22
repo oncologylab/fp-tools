@@ -174,15 +174,14 @@ Ewels, P.A.; Peltzer, A.; Fillinger, S.; Patel, H.; Alneberg, J.; Wilm, A.;
 \newblock {\em Nature Biotechnology} {\bf 2020}, {\em 38},~276--278.
 \newblock {\url{https://doi.org/10.1038/s41587-020-0439-x}}.
 
-\bibitem[{10x Genomics}(2021)]{tenxpbmc2021}
+\bibitem[{10x Genomics}(2021)]{tenxpbmc5katac2021}
 {10x Genomics}.
-\newblock {PBMC from a healthy donor, granulocytes removed through cell
-  sorting, single cell multiome ATAC + gene expression}.
-\newblock 10x Genomics public dataset, Cell Ranger ARC 2.0.0,  2021.
-\newblock ATAC fragments, peak calls, TF-analysis tables, and gene-expression
-  clustering outputs downloaded from 10x Genomics sample files. Available
-  online:
-  \url{https://www.10xgenomics.com/datasets/pbmc-from-a-healthy-donor-granulocytes-removed-through-cell-sorting-10-k-1-standard-2-0-0}
+\newblock {5k Peripheral Blood Mononuclear Cells (PBMCs) from a Healthy Donor
+  (Next GEM v1.1)}.
+\newblock 10x Genomics public dataset, Cell Ranger ATAC 2.0.0,  2021.
+\newblock Single-cell ATAC fragments and Cell Ranger ATAC outputs for the
+  atac\_pbmc\_5k\_nextgem dataset. Available online:
+  \url{https://www.10xgenomics.com/datasets/5-k-peripheral-blood-mononuclear-cells-pbm-cs-from-a-healthy-donor-next-gem-v-1-1-1-1-standard-2-0-0}
   (accessed on 22 June 2026).
 
 \bibitem[Granja et~al.(2021)Granja, Corces, Pierce, et~al.]{Granja2021_ArchR}
@@ -206,16 +205,6 @@ Schep, A.N.; Wu, B.; Buenrostro, J.D.; Greenleaf, W.J.
   from single-cell epigenomic data.
 \newblock {\em Nature Methods} {\bf 2017}, {\em 14},~975--978.
 \newblock {\url{https://doi.org/10.1038/nmeth.4401}}.
-
-\bibitem[{10x Genomics}(2021)]{tenxpbmc5katac2021}
-{10x Genomics}.
-\newblock {5k Peripheral Blood Mononuclear Cells (PBMCs) from a Healthy Donor
-  (Next GEM v1.1)}.
-\newblock 10x Genomics public dataset, Cell Ranger ATAC 2.0.0,  2021.
-\newblock Single-cell ATAC fragments and Cell Ranger ATAC outputs for the
-  atac\_pbmc\_5k\_nextgem dataset. Available online:
-  \url{https://www.10xgenomics.com/datasets/5-k-peripheral-blood-mononuclear-cells-pbm-cs-from-a-healthy-donor-next-gem-v-1-1-1-1-standard-2-0-0}
-  (accessed on 22 June 2026).
 
 \bibitem[Berest et~al.(2019)Berest, Arnold, Reyes-Palomares, Palla, Rasmussen,
   Giles, Bruch, Binder, and Guenther]{Berest2019_diffTF}

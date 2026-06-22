@@ -34,13 +34,13 @@ These checks verify the installed command surface and compact regression suite.
 
 Large public inputs are not stored in Git. The repository tracks manifests,
 schemas, and preparation scripts used to recreate them. The main public data
-sources are ENCODE bulk ATAC-seq, 10x Genomics PBMC Multiome, 10x Genomics
-PBMC5k scATAC, hg38 resources, and JASPAR 2026 CORE vertebrate motifs.
+sources are ENCODE bulk ATAC-seq, 10x Genomics PBMC5k scATAC, hg38 resources,
+and JASPAR 2026 CORE vertebrate motifs.
 
 Representative entry points:
 
 ```bash
-.venv/bin/python benchmarks/scripts/prepare_10x_pbmc_pseudobulk.py --write-example-archive
+.venv/bin/python benchmarks/scripts/prepare_10x_pbmc5k_scatac.py --help
 .venv/bin/python benchmarks/scripts/build_encode_manifest.py --help
 .venv/bin/python benchmarks/scripts/download_manifest.py --help
 ```

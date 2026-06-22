@@ -450,18 +450,16 @@ comparison.
 
 \subsection{Single-cell ATAC Fragments Support Pseudobulk Footprinting}
 
-We evaluated pseudobulk aggregation using the public 10x Genomics PBMC
-granulocyte-depleted Multiome dataset~\cite{tenxpbmc2021}. Using the official
-10x ATAC fragments and GEX graph clusters, we assigned 11,898 annotated cells to
-broad immune groups and retained seven groups comprising 11,611 cells after
-requiring at least 300 cells and 50,000 fragments: B cells, CD4 T cells,
-NK/cytotoxic T cells, CD14 monocytes, FCGR3A monocytes, dendritic cells, and a
-mixed myeloid group. The prepared figure inputs used chromosomes chr1--chr22 plus
-chrX. The retained pseudobulks contained 13.6 to 144.0 million counted fragments
-per group and were written as indexed fragment files plus CPM-normalized cut-site
-bigWigs.
+We evaluated pseudobulk aggregation using the public 10x Genomics 5k PBMC
+single-cell ATAC dataset~\cite{tenxpbmc5katac2021}. The demonstration used the
+Cell Ranger ATAC 2.0.0 fragment file for \texttt{atac\_pbmc\_5k\_nextgem} and
+broad cell annotations from the PBMC5k single-cell embedding. After filtering,
+4,437 annotated cells were grouped into B cells (422 cells), monocytes (1,702
+cells), and T/NK cells (2,313 cells). All three groups passed the pseudobulk
+filters and contained 2.1, 10.8, and 13.3 million counted fragments,
+respectively.
 
-The full \texttt{pseudobulk-footprints} route uses the same grouped fragments to
+The full \texttt{pseudobulk-footprints} route uses the grouped PBMC5k fragments to
 emit pseudo-paired BAMs, run \texttt{atac-correct} with zero read shifting, score
 corrected footprint tracks, and optionally run motif-aware
 \texttt{diff-footprints} and aggregate plotting. Raw CPM cut-site tracks provide
@@ -474,27 +472,16 @@ This pseudobulk analysis is complementary to established single-cell
 chromatin-accessibility ecosystems such as ArchR and Signac and to motif-activity
 baselines such as chromVAR~\cite{Granja2021_ArchR,Stuart2021_Signac,Schep2017_chromVAR}.
 
-The pseudobulk footprint result table was also used to prioritize marker TFs for
+The same PBMC5k pseudobulk footprint table was used to prioritize marker TFs for
 cell-level visualization. We summarized the three broad-cell pairwise comparisons
-as volcano plots and labeled only predeclared marker TFs from the two cell types
-included in each comparison when the differential-footprint direction matched the
-expected lineage direction. Third-lineage markers and opposite-direction markers
-were not annotated.
-
-We also applied the per-cell KNN visualization layer to the public 10x Genomics
-5k PBMC single-cell ATAC dataset~\cite{tenxpbmc5katac2021}. This example used
-the Cell Ranger ATAC 2.0.0 fragment dataset, broad B-cell, monocyte, and T/NK
-annotations derived from the single-cell embedding, and motif-centered marker
-scores for PAX5, CEBPB, TCF7, and four additional high-change marker TFs from the
-pairwise pseudobulk screen: CEBPA, SPIB, ZBTB7B, and POU2F2. For each cell, the
-plotted value is a KNN-smoothed footprint-signature score derived from local
-motif-centered cut-site profiles. We summarize these scores as a
-marker-by-cell-type heatmap and as UMAP projections for one representative marker
-from each broad cell type. The expected marker directions were recovered: PAX5
-and POU2F2 showed B-cell-associated signal, CEBPB and CEBPA showed
-monocyte-associated signal, and TCF7 and ZBTB7B showed T/NK-associated signal;
-SPIB is included as an additional high-change B-cell marker from the pseudobulk
-screen (Figure~\ref{fig:single_cell_footprinting}).
+as volcano plots and labeled predeclared marker TFs from the two cell types in
+each comparison only when the differential-footprint direction matched the
+expected lineage direction. We then projected KNN-smoothed footprint-signature
+scores onto the PBMC5k UMAP. For each cell, the displayed value summarizes local
+motif-centered cut-site profiles in neighboring cells. The final figure combines
+a marker-by-cell heatmap with UMAP panels for broad cell-type labels and
+representative B-cell-, monocyte-, and T/NK-associated motif signatures
+(Figure~\ref{fig:single_cell_footprinting}).
 
 \begin{figure}[!htb]
 \includegraphics[width=\textwidth]{figures/Fig4.pdf}
@@ -652,9 +639,8 @@ repository \href{https://github.com/oncologylab/fp-tools}{\mbox{\texttt{oncology
 The repository contains the manifests, schemas, analysis scripts, figure
 generators, source tables, and small result tables used in this manuscript.
 Public input data are obtained
-from the ENCODE Project~\cite{encode2012}, the 10x Genomics PBMC Multiome
-example~\cite{tenxpbmc2021}, the 10x Genomics PBMC5k single-cell ATAC
-example~\cite{tenxpbmc5katac2021}, and motif databases such as
+from the ENCODE Project~\cite{encode2012}, the 10x Genomics PBMC5k single-cell
+ATAC example~\cite{tenxpbmc5katac2021}, and motif databases such as
 JASPAR~\cite{jaspar2026} using the included download and preparation scripts.
 The computational environment is documented in \texttt{environment.yml} and the
 repository Dockerfile.}
@@ -682,13 +668,13 @@ and software publicly available.}
 \toprule
 \textbf{Step} & \textbf{Parameters}\\
 \midrule
-Public input data & Bulk ATAC analyses use public ENCODE K562/HepG2 replicate BAMs and tracks. Pseudobulk examples use public granulocyte-depleted 10x PBMC Multiome and PBMC5k scATAC fragment datasets. Motif analyses use JASPAR 2026 CORE vertebrate non-redundant motifs.\\
+Public input data & Bulk ATAC analyses use public ENCODE K562/HepG2 replicate BAMs and tracks. The pseudobulk single-cell demonstration uses the public 10x Genomics 5k PBMC scATAC fragment dataset. Motif analyses use JASPAR 2026 CORE vertebrate non-redundant motifs.\\
 ENCODE BAM processing & Released GRCh38 alignment BAMs for K562 ENCSR868FGK and HepG2 ENCSR291GJU were filtered to standard chromosomes, indexed, and summarized before footprint analysis.\\
 Blacklist and peak set & Mitochondrial and nonstandard contigs excluded; hg38 blacklist v2 regions subtracted; released ENCODE peak intervals sorted and merged across replicates into one analysis peak set.\\
 Bias correction and footprint scores & \texttt{atac-correct} run on filtered BAMs with merged peaks and blacklist regions using default Tn5-bias settings; corrected cut-site tracks q95-scaled over shared background regions for multi-sample analyses; \texttt{call-footprints --score footprint} run with default footprint and flank windows.\\
 Differential footprint analysis & The 3-vs-3 ENCODE K562/HepG2 replicate footprint tracks were analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. One-sample contrasts use motif-site versus background-distribution comparison; replicate-supported analyses use empirical-Bayes variance moderation on per-sample aggregated motif scores.\\
 De novo motif validation & ENCODE K562/HepG2 candidate footprints exported as condition-level FASTA files with \(\pm 75\) bp flanks; reciprocal STREME 5.5.9 runs used \texttt{--dna --nmotifs 250}; Tomtom 5.5.9 matched discovered motifs to JASPAR 2026; de novo motifs were evaluated alone and as additions to known motif sets.\\
-Pseudobulk PBMC analysis & 10x PBMC fragments grouped by broad immune labels, retaining groups with at least 300 cells and 50,000 fragments. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, and aggregate plots. The PBMC5k example uses broad B-cell/monocyte/T--NK labels, marker sites, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
+Pseudobulk PBMC analysis & Public 10x PBMC5k scATAC fragments grouped into broad B-cell, monocyte, and T--NK labels, retaining 4,437 annotated cells and requiring at least 300 cells and 50,000 fragments per group. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
 \bottomrule
 \end{tabularx}
 \endgroup
@@ -705,7 +691,6 @@ Pseudobulk PBMC analysis & 10x PBMC fragments grouped by broad immune labels, re
 \midrule
 \texttt{bedtools} & 2.31.1 & Region sorting, merging, and blacklist subtraction\\
 Biopython & 1.87 & Sequence and motif-related utilities\\
-Cell Ranger ARC & 2.0.0 & Source processing for the public 10x PBMC Multiome dataset\\
 Cell Ranger ATAC & 2.0.0 & Source processing for the public 10x PBMC5k scATAC dataset\\
 \texttt{fp-tools} & 0.1.7 & ATAC correction, footprint calling, motif matching, differential footprint analysis, pseudobulk utilities, and plotting helpers\\
 hg38 blacklist & v2 & Artifact-region filtering for processed bulk ATAC alignments\\
