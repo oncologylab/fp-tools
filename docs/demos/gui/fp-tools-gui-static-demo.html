@@ -69,6 +69,11 @@
       padding: 9px 11px;
       text-decoration: none;
     }
+    .nav-item:hover,
+    .nav-item:focus {
+      background: #18253d;
+      outline: none;
+    }
     .nav-item.active {
       background: #1d4ed8;
       box-shadow: inset 4px 0 0 #72e0b2;
@@ -251,22 +256,22 @@
         <p>Command-ready footprint workflows</p>
       </div>
       <div class="nav-group">Overview</div>
-      <a class="nav-item active" href="#">Home</a>
-      <a class="nav-item" href="#">Run History</a>
+      <a class="nav-item active" href="#home" data-page="home">Home</a>
+      <a class="nav-item" href="#run-history" data-page="run-history">Run History</a>
       <div class="nav-group">Core Workflow</div>
-      <a class="nav-item" href="#">atac-correct</a>
-      <a class="nav-item" href="#">call-footprints</a>
-      <a class="nav-item" href="#">match-motifs</a>
-      <a class="nav-item" href="#">diff-footprints</a>
+      <a class="nav-item" href="#atac-correct" data-page="atac-correct">atac-correct</a>
+      <a class="nav-item" href="#call-footprints" data-page="call-footprints">call-footprints</a>
+      <a class="nav-item" href="#match-motifs" data-page="match-motifs">match-motifs</a>
+      <a class="nav-item" href="#diff-footprints" data-page="diff-footprints">diff-footprints</a>
       <div class="nav-group">Reports</div>
-      <a class="nav-item" href="#">normalize-bigwig</a>
-      <a class="nav-item" href="#">plot-aggregate</a>
-      <a class="nav-item" href="#">plot-aggregate-batch</a>
+      <a class="nav-item" href="#normalize-bigwig" data-page="normalize-bigwig">normalize-bigwig</a>
+      <a class="nav-item" href="#plot-aggregate" data-page="plot-aggregate">plot-aggregate</a>
+      <a class="nav-item" href="#plot-aggregate-batch" data-page="plot-aggregate-batch">plot-aggregate-batch</a>
       <div class="nav-group">Single-cell ATAC</div>
-      <a class="nav-item" href="#">pseudobulk-fragments</a>
-      <a class="nav-item" href="#">pseudobulk-footprints</a>
+      <a class="nav-item" href="#pseudobulk-fragments" data-page="pseudobulk-fragments">pseudobulk-fragments</a>
+      <a class="nav-item" href="#pseudobulk-footprints" data-page="pseudobulk-footprints">pseudobulk-footprints</a>
     </aside>
-    <main>
+    <main id="main-content">
       <section class="hero">
         <div class="kicker">Static GUI preview</div>
         <h2>Run footprint workflows from one clean control surface</h2>
@@ -326,12 +331,282 @@
 motif_db: jaspar2026_vertebrates
 normalization: none
 plot_aggregate: sig</pre>
-            <a class="button" href="#">Start run</a>
+            <a class="button" href="#run-history" data-go-page="run-history">Start run</a>
             <div class="status">Config is ready. Outputs will appear in Run History.</div>
           </div>
         </div>
       </section>
     </main>
   </div>
+  <script>
+    const commandPages = {
+      "atac-correct": {
+        title: "atac-correct",
+        description: "Bias-correct ATAC-seq cut-site signal from BAM, genome, peaks, and blacklist inputs.",
+        fields: [
+          ["BAM", "Bcell.bam"],
+          ["Genome FASTA", "hg38.fa"],
+          ["Peaks BED", "merged_peaks.bed"],
+          ["Blacklist BED", "hg38.blacklist.bed"],
+          ["Output folder", "results/atac_correct/Bcell"],
+          ["Cores", "8"]
+        ],
+        yaml: "tool: atac-correct\nbam: Bcell.bam\ngenome: hg38.fa\npeaks: merged_peaks.bed\nblacklist: hg38.blacklist.bed",
+        metrics: [["Tool", "ATAC"], ["Input", "BAM"], ["Output", "bigWig"]]
+      },
+      "call-footprints": {
+        title: "call-footprints",
+        description: "Score footprint depth from corrected cut-site signal over peak regions.",
+        fields: [
+          ["Corrected bigWig", "Bcell_corrected.bw"],
+          ["Regions BED", "merged_peaks.bed"],
+          ["Score", "footprint"],
+          ["Output bigWig", "Bcell_footprints.bw"],
+          ["Cores", "8"],
+          ["Optional scales", "8, 16, 32, 64"]
+        ],
+        yaml: "tool: call-footprints\nsignal: Bcell_corrected.bw\nregions: merged_peaks.bed\nscore: footprint\noutput: Bcell_footprints.bw",
+        metrics: [["Tool", "Score"], ["Input", "bigWig"], ["Output", "bigWig"]]
+      },
+      "match-motifs": {
+        title: "match-motifs",
+        description: "Scan motif databases against peak regions and prepare motif-site tables for footprint analysis.",
+        fields: [
+          ["Motif database", "jaspar2026_vertebrates"],
+          ["Genome FASTA", "hg38.fa"],
+          ["Peaks BED", "merged_peaks.bed"],
+          ["Output folder", "results/motif_sites"],
+          ["P-value", "1e-4"],
+          ["Cores", "8"]
+        ],
+        yaml: "tool: match-motifs\nmotif_db: jaspar2026_vertebrates\ngenome: hg38.fa\npeaks: merged_peaks.bed\noutdir: results/motif_sites",
+        metrics: [["Tool", "Motifs"], ["Database", "JASPAR"], ["Output", "BED"]]
+      },
+      "diff-footprints": {
+        title: "diff-footprints",
+        description: "Compare motif-associated footprint scores across conditions and generate interactive reports.",
+        fields: [
+          ["Footprint bigWigs", "K562_rep1.bw, K562_rep2.bw, HepG2_rep1.bw..."],
+          ["Condition names", "K562 K562 K562 HepG2 HepG2 HepG2"],
+          ["Genome FASTA", "hg38.fa"],
+          ["Motif database", "jaspar2026_vertebrates"],
+          ["Peaks BED", "merged_peaks.bed"],
+          ["Output folder", "results/diff_footprints/K562_vs_HepG2"]
+        ],
+        yaml: "tool: diff-footprints\nmotif_db: jaspar2026_vertebrates\nnormalization: none\nplot_aggregate: sig",
+        metrics: [["Tool", "Diff"], ["Samples", "6"], ["Report", "HTML"]]
+      },
+      "normalize-bigwig": {
+        title: "normalize-bigwig",
+        description: "Normalize signal tracks for comparable downstream aggregate plots and reports.",
+        fields: [
+          ["Input bigWig", "Bcell_corrected.bw"],
+          ["Output bigWig", "Bcell_corrected.q95.bw"],
+          ["Method", "q95"],
+          ["Regions BED", "merged_peaks.bed"],
+          ["Output folder", "results/normalized"],
+          ["Cores", "4"]
+        ],
+        yaml: "tool: normalize-bigwig\nsignal: Bcell_corrected.bw\nmethod: q95\noutput: Bcell_corrected.q95.bw",
+        metrics: [["Tool", "Normalize"], ["Input", "bigWig"], ["Output", "bigWig"]]
+      },
+      "plot-aggregate": {
+        title: "plot-aggregate",
+        description: "Plot motif-centered aggregate footprint profiles for one or more signal tracks.",
+        fields: [
+          ["TFBS BED", "SPIB_sites.bed"],
+          ["Signal bigWig", "Bcell_footprints.bw"],
+          ["Signal label", "B cell"],
+          ["Window", "100 bp"],
+          ["Output file", "SPIB_aggregate.svg"],
+          ["Format", "SVG"]
+        ],
+        yaml: "tool: plot-aggregate\ntfbs: SPIB_sites.bed\nsignals: Bcell_footprints.bw\nsignal_labels: B_cell\noutput: SPIB_aggregate.svg",
+        metrics: [["Tool", "Plot"], ["Panel", "1"], ["Output", "SVG"]]
+      },
+      "plot-aggregate-batch": {
+        title: "plot-aggregate-batch",
+        description: "Create a standalone HTML report for many transcription factors and sample tracks.",
+        fields: [
+          ["Manifest", "aggregate_panels.tsv"],
+          ["TF site folder", "results/motif_sites"],
+          ["Signal table", "signals.tsv"],
+          ["Output report", "aggregate_report.html"],
+          ["Default panels", "4"],
+          ["Export", "SVG panels"]
+        ],
+        yaml: "tool: plot-aggregate-batch\nmanifest: aggregate_panels.tsv\nsignals: signals.tsv\noutput: aggregate_report.html",
+        metrics: [["Tool", "Report"], ["Panels", "Many"], ["Output", "HTML"]]
+      },
+      "pseudobulk-fragments": {
+        title: "pseudobulk-fragments",
+        description: "Group single-cell ATAC fragments by annotation and write bulk-like fragment files.",
+        fields: [
+          ["Fragments", "pbmc5k_fragments.tsv.gz"],
+          ["Annotations", "pbmc5k_celltypes.tsv"],
+          ["Group by", "broad_cell_type"],
+          ["Minimum cells", "300"],
+          ["Minimum fragments", "50000"],
+          ["Output folder", "results/pseudobulk"]
+        ],
+        yaml: "tool: pseudobulk-fragments\nfragments: pbmc5k_fragments.tsv.gz\nannotations: pbmc5k_celltypes.tsv\ngroup_by: broad_cell_type",
+        metrics: [["Tool", "scATAC"], ["Groups", "3"], ["Output", "fragments"]]
+      },
+      "pseudobulk-footprints": {
+        title: "pseudobulk-footprints",
+        description: "Run full pseudobulk ATAC correction, footprint scoring, motif analysis, and marker plots.",
+        fields: [
+          ["Pseudobulk manifest", "pseudobulk_manifest.tsv"],
+          ["Genome FASTA", "hg38.fa"],
+          ["Peaks BED", "pbmc_peaks.bed"],
+          ["Motif database", "jaspar2026_vertebrates"],
+          ["Marker TFs", "PAX5, CEBPB, TCF7"],
+          ["Output folder", "results/pseudobulk_footprints"]
+        ],
+        yaml: "tool: pseudobulk-footprints\nmanifest: pseudobulk_manifest.tsv\nmotif_db: jaspar2026_vertebrates\nmarker_tfs: PAX5,CEBPB,TCF7",
+        metrics: [["Tool", "scATAC"], ["Steps", "Full"], ["Plots", "UMAP"]]
+      }
+    };
+
+    const pages = {
+      home: {
+        kicker: "Static GUI preview",
+        heading: "Run footprint workflows from one clean control surface",
+        intro: "Choose a command, load an example, review the YAML, and launch the same reproducible workflow used by the command line.",
+        body: `
+          <section class="steps">
+            <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, variants, or pseudobulk.</span></div>
+            <div class="step"><strong>2. Load example</strong><span>Start from bundled YAML or paste your own paths.</span></div>
+            <div class="step"><strong>3. Review YAML</strong><span>See the exact config before running.</span></div>
+            <div class="step"><strong>4. Inspect outputs</strong><span>Open logs, tables, bigWigs, and HTML reports.</span></div>
+          </section>
+          ${commandPageHtml(commandPages["diff-footprints"])}
+        `
+      },
+      "run-history": {
+        kicker: "Run history",
+        heading: "Inspect commands, logs, and outputs",
+        intro: "The GUI records background jobs and points users to the generated files without hiding the command-line workflow.",
+        body: `
+          <section class="workspace">
+            <div class="panel">
+              <h3>Recent runs</h3>
+              <div class="form-grid">
+                <div><label>Status</label><div class="input">Complete: diff-footprints</div></div>
+                <div><label>Command</label><div class="input">fp-tools-run results/config.yml</div></div>
+                <div><label>Log</label><div class="input">results/diff_footprints/run.log</div></div>
+                <div><label>Report</label><div class="input">diff_footprints_K562_HepG2.html</div></div>
+              </div>
+            </div>
+            <div>
+              <div class="tutorial"><strong>Output review</strong><span>Open the run folder, inspect logs, and copy the command for reproducibility.</span></div>
+              <div class="panel">
+                <h3>Run</h3>
+                <div class="run-summary">
+                  <div class="metric"><span>Status</span><strong>Done</strong></div>
+                  <div class="metric"><span>Runtime</span><strong>16.7 min</strong></div>
+                  <div class="metric"><span>Files</span><strong>HTML + TSV</strong></div>
+                </div>
+                <pre>results/diff_footprints/
+  run.log
+  config.yml
+  diff_footprints_K562_HepG2.html</pre>
+              </div>
+            </div>
+          </section>
+        `
+      }
+    };
+
+    for (const [key, page] of Object.entries(commandPages)) {
+      pages[key] = {
+        kicker: "Command page",
+        heading: page.title,
+        intro: page.description,
+        body: commandPageHtml(page)
+      };
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    function commandPageHtml(page) {
+      const fields = page.fields.map(([label, value]) => `
+        <div>
+          <label>${escapeHtml(label)}</label>
+          <div class="input">${escapeHtml(value)}</div>
+        </div>
+      `).join("");
+      const metrics = page.metrics.map(([label, value]) => `
+        <div class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
+      `).join("");
+      return `
+        <section class="workspace">
+          <div class="panel">
+            <h3>${escapeHtml(page.title)}</h3>
+            <div class="form-grid">${fields}</div>
+          </div>
+          <div>
+            <div class="tutorial">
+              <strong>Guided workflow</strong>
+              <span>Load an example, edit paths, review YAML, then start the run.</span>
+            </div>
+            <div class="panel">
+              <h3>Run</h3>
+              <div class="run-summary">${metrics}</div>
+              <pre>${escapeHtml(page.yaml)}</pre>
+              <a class="button" href="#run-history" data-go-page="run-history">Start run</a>
+              <div class="status">Config is ready. Outputs will appear in Run History.</div>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderPage(pageKey, pushHash = true) {
+      const page = pages[pageKey] || pages.home;
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.classList.toggle("active", item.dataset.page === pageKey);
+      });
+      document.getElementById("main-content").innerHTML = `
+        <section class="hero">
+          <div class="kicker">${escapeHtml(page.kicker)}</div>
+          <h2>${escapeHtml(page.heading)}</h2>
+          <p>${escapeHtml(page.intro)}</p>
+        </section>
+        ${page.body}
+      `;
+      if (pushHash && window.location.hash !== `#${pageKey}`) {
+        history.pushState(null, "", `#${pageKey}`);
+      }
+    }
+
+    document.querySelectorAll("[data-page]").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        renderPage(link.dataset.page);
+      });
+    });
+
+    document.addEventListener("click", (event) => {
+      const link = event.target.closest("[data-go-page]");
+      if (!link) return;
+      event.preventDefault();
+      renderPage(link.dataset.goPage);
+    });
+
+    window.addEventListener("popstate", () => {
+      renderPage((window.location.hash || "#home").slice(1), false);
+    });
+
+    renderPage((window.location.hash || "#home").slice(1), false);
+  </script>
 </body>
 </html>
