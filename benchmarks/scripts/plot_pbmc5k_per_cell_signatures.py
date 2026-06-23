@@ -38,23 +38,24 @@ plt.rcParams.update(
     }
 )
 
-MARKERS = ("PAX5", "CEBPB", "TCF7", "CEBPA", "SPIB", "ZBTB7B", "POU2F2")
-SUMMARY_MARKER_ORDER = ("PAX5", "POU2F2", "SPIB", "CEBPB", "CEBPA", "TCF7", "ZBTB7B")
-UMAP_MARKER_LABELS = ("PAX5", "POU2F2", "SPIB", "CEBPB", "CEBPA", "TCF7", "ZBTB7B")
+MARKERS = ("IKZF1", "FOXO1", "CEBPA", "CEBPB", "IRF8", "KLF2", "KLF13", "ZNF683")
+SUMMARY_MARKER_ORDER = MARKERS
+UMAP_MARKER_LABELS = MARKERS
 CELL_TYPES = ("B_cell", "Monocyte", "T_NK_cell")
 MARKER_GROUPS = {
-    "PAX5": "B_cell",
+    "IKZF1": "B_cell",
+    "FOXO1": "B_cell",
     "CEBPA": "Monocyte",
     "CEBPB": "Monocyte",
-    "POU2F2": "B_cell",
-    "SPIB": "B_cell",
-    "TCF7": "T_NK_cell",
-    "ZBTB7B": "T_NK_cell",
+    "IRF8": "Monocyte",
+    "KLF2": "T_NK_cell",
+    "KLF13": "T_NK_cell",
+    "ZNF683": "T_NK_cell",
 }
 EXPECTED_MARKER_GROUPS = {
-    "B_cell": ("PAX5", "POU2F2", "SPIB"),
-    "Monocyte": ("CEBPB", "CEBPA"),
-    "T_NK_cell": ("TCF7", "ZBTB7B"),
+    "B_cell": ("IKZF1", "FOXO1"),
+    "Monocyte": ("CEBPA", "CEBPB", "IRF8"),
+    "T_NK_cell": ("KLF2", "KLF13", "ZNF683"),
 }
 CELL_TYPE_COLORS = {
     "B_cell": "#3B82F6",
@@ -809,11 +810,12 @@ def add_repelled_row_labels(
     metadata: pd.DataFrame,
     label_tfs: list[str] | tuple[str, ...],
     *,
-    min_gap_rows: float = 4.0,
+    min_gap_rows: float = 6.0,
 ) -> None:
-    label_set = {str(tf).upper() for tf in label_tfs}
+    label_lookup = {str(tf).upper(): str(tf) for tf in label_tfs}
+    label_set = set(label_lookup)
     label_rows = [
-        (row_index, str(row["tf_name"]))
+        (row_index, label_lookup[str(row.get("tf_name", "")).upper()])
         for row_index, row in metadata.reset_index(drop=True).iterrows()
         if str(row.get("tf_name", "")).upper() in label_set
     ]
@@ -1061,6 +1063,11 @@ def marker_signature_rows(
     return matrix, pd.DataFrame(metadata_rows)
 
 
+def available_marker_tfs(marker_scores: pd.DataFrame, marker_tfs: list[str] | tuple[str, ...]) -> list[str]:
+    score_tfs = {str(tf).upper() for tf in marker_scores["tf"].dropna().unique()}
+    return [str(tf) for tf in marker_tfs if str(tf).upper() in score_tfs]
+
+
 def replace_selected_marker_rows(
     matrix: pd.DataFrame,
     metadata: pd.DataFrame,
@@ -1070,14 +1077,60 @@ def replace_selected_marker_rows(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     if marker_scores is None:
         return matrix, metadata
-    marker_set = {str(tf).upper() for tf in marker_tfs}
+    available_markers = available_marker_tfs(marker_scores, marker_tfs)
+    if not available_markers:
+        return matrix, metadata
+    marker_set = {str(tf).upper() for tf in available_markers}
     keep_mask = ~metadata["tf_name"].astype(str).str.upper().isin(marker_set)
     base_metadata = metadata.loc[keep_mask].copy()
     base_matrix = matrix.loc[base_metadata["motif_id"].astype(str)]
-    marker_matrix, marker_metadata = marker_signature_rows(marker_scores, ordered, marker_tfs)
+    marker_matrix, marker_metadata = marker_signature_rows(marker_scores, ordered, available_markers)
     merged_matrix = pd.concat([base_matrix, marker_matrix], axis=0)
     merged_metadata = pd.concat([base_metadata, marker_metadata], axis=0, ignore_index=True)
     return merged_matrix, merged_metadata
+
+
+def signature_scores_from_matrix(
+    matrix: pd.DataFrame,
+    metadata: pd.DataFrame,
+    ordered: pd.DataFrame,
+    marker_tfs: list[str] | tuple[str, ...],
+) -> pd.DataFrame:
+    records = []
+    ordered_barcodes = ordered["barcode"].astype(str).tolist()
+    ordered = ordered.set_index("barcode", drop=False).loc[ordered_barcodes].reset_index(drop=True)
+    meta = add_motif_specificity(metadata).copy()
+    meta["_tf_upper"] = meta["tf_name"].astype(str).str.upper()
+    meta = meta.sort_values(["cell_type_specificity", "dynamic_range", "motif_id"], ascending=[False, False, True])
+
+    for tf in marker_tfs:
+        tf_upper = str(tf).upper()
+        hits = meta[meta["_tf_upper"] == tf_upper]
+        if hits.empty:
+            raise SystemExit(f"Could not find selected Fig4 marker TF {tf} in the all-motif heatmap rows.")
+        row = hits.iloc[0]
+        values = pd.to_numeric(matrix.loc[str(row["motif_id"]), ordered_barcodes], errors="coerce").to_numpy(dtype=float)
+        expected_group = expected_group_for_marker(tf)
+        group_means = {
+            cell_type: float(np.nanmean(values[ordered["cell_type"].to_numpy() == cell_type]))
+            for cell_type in CELL_TYPES
+        }
+        other_means = [value for cell_type, value in group_means.items() if cell_type != expected_group]
+        if other_means and group_means[expected_group] < max(other_means):
+            values = -values
+        records.append(
+            pd.DataFrame(
+                {
+                    "barcode": ordered["barcode"].to_numpy(),
+                    "cell_type": ordered["cell_type"].to_numpy(),
+                    "umap_1": ordered["umap_1"].to_numpy(),
+                    "umap_2": ordered["umap_2"].to_numpy(),
+                    "tf": str(tf),
+                    "knn_footprint_oriented_z": values,
+                }
+            )
+        )
+    return pd.concat(records, axis=0, ignore_index=True)
 
 
 def top_motif_signature_table(
@@ -1500,8 +1553,15 @@ def score_all_motif_per_cell_heatmap(
         min_specificity=top_min_specificity,
         marker_scores=marker_scores,
     )
-    if fig4_output_prefix is not None and marker_scores is not None:
-        plot_fig4_single_cell_footprinting(annotations, marker_scores, top_matrix, top_metadata, fig4_output_prefix, fig4_markers)
+    if fig4_output_prefix is not None:
+        plot_fig4_single_cell_footprinting(
+            annotations,
+            signature_scores_from_matrix(top_matrix, top_metadata, ordered, fig4_markers),
+            top_matrix,
+            top_metadata,
+            fig4_output_prefix,
+            fig4_markers,
+        )
     if all_tf_review_prefix is not None:
         plot_all_tf_signature_review_pdfs(
             annotations,
@@ -1529,7 +1589,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bin-size", type=int, default=500)
     parser.add_argument(
         "--marker-groups",
-        default="PAX5:B_cell,CEBPA:Monocyte,CEBPB:Monocyte,POU2F2:B_cell,SPIB:B_cell,TCF7:T_NK_cell,ZBTB7B:T_NK_cell",
+        default="IKZF1:B_cell,FOXO1:B_cell,CEBPA:Monocyte,CEBPB:Monocyte,IRF8:Monocyte,KLF2:T_NK_cell,KLF13:T_NK_cell,ZNF683:T_NK_cell",
         help="Comma-separated TF:cell_type pairs used to orient KNN marker scores for UMAP review.",
     )
     parser.add_argument("--all-motif-bindetect-dir", help="Optional BINDetect output directory containing */beds/*_all.bed files for all-motif per-cell heatmap scoring.")
@@ -1624,7 +1684,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         plot_fig4_single_cell_footprinting(
             annotations,
-            marker_scores_for_figures,
+            signature_scores_from_matrix(top_matrix, top_metadata, ordered, markers),
             top_matrix,
             top_metadata,
             outdir / args.fig4_output_prefix,

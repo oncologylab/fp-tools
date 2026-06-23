@@ -486,12 +486,14 @@ representative B-cell-, monocyte-, and T/NK-associated motif signatures
 \begin{figure}[!htb]
 \includegraphics[width=\textwidth]{figures/Fig4.pdf}
 \caption{Single-cell footprinting summary in public PBMC5k single-cell ATAC data.
-(\textbf{A}) KNN-smoothed per-cell footprint-signature heatmap for selected
-marker TFs and top cell-type-specific motif signatures across B cells, monocytes,
-and T/NK cells. (\textbf{B}) UMAP projections show broad cell-type annotations
-and representative marker footprint-signature z-scores. Positive values indicate
-the marker-oriented footprint-signature direction after per-TF standardization;
-ATAC-corrected footprint tracks are computed from grouped pseudobulk profiles.
+(\textbf{A}) KNN-smoothed per-cell footprint-signature heatmap for top
+cell-type-specific motif signatures across B cells, monocytes, and T/NK cells;
+the TF rows used for Panel B are labelled on the left. (\textbf{B}) UMAP
+projections show broad cell-type annotations and representative B-cell
+(IKZF1, FOXO1), monocyte (CEBPA, CEBPB, IRF8), and T/NK (KLF2, KLF13, ZNF683)
+footprint-signature z-scores. Positive values indicate the marker-oriented
+footprint-signature direction after per-TF standardization; ATAC-corrected
+footprint tracks are computed from grouped pseudobulk profiles.
 \label{fig:single_cell_footprinting}}
 \end{figure}
 
@@ -537,26 +539,22 @@ and saves reusable YAML configurations that can also be run from the command lin
 \section{Discussion}
 %==================================================================
 
-\texttt{fp-tools} is a practical extension of motif-centered ATAC-seq
-footprinting and regulatory motif analysis. Its strengths are consistent
-interfaces across bias correction, footprint calling, differential footprint
-analysis, and aggregate visualization; automated output checks;
-explicit replicate-aware summaries; and integrated de novo motif preparation and
-pseudobulk aggregation (Table~\ref{tab:features}). The same workflow structure
-is used for bulk samples and grouped single-cell fragments, so motif databases,
-peak sets, and signal tracks are recorded and processed consistently. These
-features address a common practical problem:
-footprint scoring, motif interpretation, and report generation are often handled
-by separate scripts or tools.
+\texttt{fp-tools} extends motif-centered ATAC-seq footprinting by focusing on
+the analysis steps that often determine whether a footprinting result is easy to
+reproduce and interpret. The package keeps bias correction, footprint scoring,
+differential footprint analysis, aggregate visualization, de novo motif
+preparation, pseudobulk aggregation, and report generation under one command
+structure (Table~\ref{tab:features}). This is useful in practice because these
+steps are commonly split across custom scripts, separate motif tools, and manual
+plotting notebooks.
 
 The closest comparison is TOBIAS, which established a widely used ATAC
 footprinting workflow for bias correction, footprint scoring, motif-aware
-differential analysis, and aggregate visualization. \texttt{fp-tools} keeps the
-same interpretable bias-corrected center-versus-flank signal model and improves
-the surrounding analysis layer: faster core operations, consistent modern command
-names, reusable YAML execution, report and SVG export, explicit
-replicate-reporting modes, de novo motif-preparation handoff, pseudobulk
-single-cell aggregation, GUI access, and tested example outputs.
+differential analysis, and aggregate visualization. \texttt{fp-tools} builds on
+that interpretable bias-corrected center-versus-flank signal model while adding
+faster core operations, clearer command names, reusable YAML runs, SVG and HTML
+reports, explicit replicate-aware reporting, de novo motif-preparation support,
+pseudobulk single-cell analysis, a browser GUI, and tested public-data examples.
 
 \begin{table}[H]
 \caption{Qualitative scope comparison across widely used ATAC-seq regulatory-analysis tools.
@@ -565,7 +563,7 @@ support; NA, outside the tool's primary scope. The table summarizes analysis
 scope from public documentation and primary publications; it is not a performance
 benchmark and should be read with the different goals of each tool in mind.
 TOBIAS is the closest core footprinting comparator; the \texttt{fp-tools}
-columns emphasize added analysis and usability components around that
+column emphasizes added analysis and usability components around that
 motif-centered model.
 \label{tab:features}}
 \begingroup
@@ -594,30 +592,28 @@ YAML/batch execution & \featureyes & NA & NA & NA & NA & NA\\
 \endgroup
 \end{table}
 
-Other regulatory-analysis tools address adjacent but distinct questions. Deep
+Other regulatory-analysis tools address related but distinct questions. Deep
 sequence-to-profile models such as ChromBPNet learn sequence determinants of
 chromatin profiles and are well suited for occupancy and variant-effect
-analyses~\cite{chrombpnet2024}, while accessibility-based frameworks such as
-diffTF estimate differential TF activity from changes in open
+analyses~\cite{chrombpnet2024}. Accessibility-based frameworks such as diffTF
+estimate differential TF activity from changes in open
 chromatin~\cite{Berest2019_diffTF}. These approaches are complementary to
-motif-centered footprinting. The role of \texttt{fp-tools} is to make
-interpretable ATAC-seq footprint analysis easier to run end to end: corrected
-cut-site signals, motif matching, de novo motif preparation, pseudobulk
-single-cell analysis, replicate-aware reporting, GUI execution, and
-publication-ready reports are kept within one reproducible workflow.
+motif-centered footprinting rather than direct replacements. In this landscape,
+\texttt{fp-tools} is intended as an accessible, reproducible route from
+ATAC-seq cut-site signal to motif-level footprint interpretation.
 
 %==================================================================
 \section{Conclusions}
 %==================================================================
 
-We presented \texttt{fp-tools}, a Python platform that unifies ATAC-seq
-footprinting with motif-discovery preparation, pseudobulk aggregation, and
-replicate-aware reporting. By pairing tested commands with public-data manifests,
-source tables, and reproducible figure generation, the package supports
-standardized and auditable regulatory-genomics analysis. Future work will add
-larger whole-genome transfer studies, direct external-tool comparisons,
-multiscale and nucleosome-aware validation, and stronger hierarchical
-differential-binding models.
+We presented \texttt{fp-tools} as a Python platform for efficient,
+user-accessible ATAC-seq footprint analysis across bulk and single-cell-derived
+pseudobulk data. The examples show that an integrated command line, GUI, report
+system, and reproducible figure workflow can make TF footprint analysis more
+transparent without changing the core biological interpretation of
+motif-centered ATAC-seq footprints. Future work will focus on larger controlled
+cross-tool benchmarks and expanded validation across additional tissues,
+conditions, and replicate designs.
 
 \vspace{6pt}
 
