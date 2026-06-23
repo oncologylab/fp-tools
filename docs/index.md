@@ -115,7 +115,7 @@ diff-footprints \
 
 Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html).
 
-### 5. Review Aggregate Plots
+### 5. Plot Aggregate
 
 ```bash
 plot-aggregate \
