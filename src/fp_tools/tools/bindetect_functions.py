@@ -162,7 +162,12 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
         files = [args.signals[i] for i in rep_idxs]
         logger.debug(f"[scan_and_score] Condition '{condition}' -> opening {files}")
         for rep_no, signal_idx in enumerate(rep_idxs, start=1):
-            sample_name = f"{condition}_rep{rep_no}"
+            signal_sample_names = getattr(args, "signal_sample_names", None)
+            sample_name = (
+                signal_sample_names[signal_idx]
+                if signal_sample_names and signal_idx < len(signal_sample_names)
+                else f"{condition}_rep{rep_no}"
+            )
             sample_bigwigs[sample_name] = pyBigWig.open(args.signals[signal_idx], "rb")
             signal_to_sample[signal_idx] = sample_name
 

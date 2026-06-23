@@ -7,7 +7,8 @@ import unittest
 
 from fp_tools.cli_batch import run_config_file
 from fp_tools.gui_config import expand_jobs, load_yaml_config, normalize_config
-from fp_tools.parsers import add_aggregate_arguments, add_scorebigwig_arguments
+from fp_tools.parsers import add_aggregate_arguments, add_bindetect_arguments, add_scorebigwig_arguments
+from fp_tools.tools.bindetect import _prepare_condition_metadata
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -133,6 +134,60 @@ class CliAndConfigSmokeTest(unittest.TestCase):
         self.assertEqual(args.match_dir, ["results/motif_matches/sample"])
         self.assertEqual(args.motifs, ["SPIB", "CEBPB"])
         self.assertEqual(args.format, "html")
+
+    def test_diff_footprints_accepts_sample_names_separate_from_conditions(self):
+        parser = add_bindetect_arguments(argparse.ArgumentParser(prog="diff-footprints"))
+        args = parser.parse_args(
+            [
+                "--signals",
+                "K562_rep1_footprints.bw",
+                "K562_rep2_footprints.bw",
+                "HepG2_rep1_footprints.bw",
+                "HepG2_rep2_footprints.bw",
+                "--sample-names",
+                "K562_R1",
+                "K562_R2",
+                "HepG2_R1",
+                "HepG2_R2",
+                "--cond-names",
+                "K562",
+                "K562",
+                "HepG2",
+                "HepG2",
+                "--genome",
+                "hg38.fa.gz",
+                "--peaks",
+                "peaks.bed",
+            ]
+        )
+        prepared = _prepare_condition_metadata(args)
+        self.assertEqual(prepared.cond_names, ["K562", "HepG2"])
+        self.assertEqual(prepared.sample_names, ["K562_R1", "K562_R2", "HepG2_R1", "HepG2_R2"])
+        self.assertEqual(prepared.condition_samples["K562"], ["K562_R1", "K562_R2"])
+        self.assertEqual(prepared.condition_samples["HepG2"], ["HepG2_R1", "HepG2_R2"])
+        self.assertEqual(prepared.sample_to_condition["K562_R2"], "K562")
+
+    def test_match_motifs_sample_names_label_match_only_outputs(self):
+        parser = add_bindetect_arguments(argparse.ArgumentParser(prog="match-motifs"), command_name="match-motifs")
+        args = parser.parse_args(
+            [
+                "--signals",
+                "file_stem_A.bw",
+                "file_stem_B.bw",
+                "--sample-names",
+                "SampleA",
+                "SampleB",
+                "--genome",
+                "hg38.fa.gz",
+                "--peaks",
+                "peaks.bed",
+            ]
+        )
+        args.match_only = True
+        prepared = _prepare_condition_metadata(args)
+        self.assertEqual(prepared.cond_names, ["SampleA", "SampleB"])
+        self.assertEqual(prepared.sample_names, ["SampleA", "SampleB"])
+        self.assertEqual(prepared.condition_samples["SampleA"], ["SampleA"])
 
 
 if __name__ == "__main__":

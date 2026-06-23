@@ -86,6 +86,31 @@ warnings.simplefilter("ignore", RuntimeWarning)
 apply_pdf_style()
 
 
+def _signal_sample_stems(signals):
+    """Return file-stem labels for signal paths, with duplicate stems disambiguated."""
+
+    raw_names = [os.path.basename(os.path.splitext(str(bw))[0]) for bw in signals]
+    counts = Counter()
+    names = []
+    for name in raw_names:
+        counts[name] += 1
+        names.append(name if counts[name] == 1 else f"{name}_{counts[name]}")
+    return names
+
+
+def _resolve_sample_names(args, default_names):
+    provided = getattr(args, "sample_names", None)
+    if provided is None:
+        return list(default_names)
+    sample_names = list(provided)
+    if len(sample_names) != len(args.signals):
+        raise ValueError("--sample-names must have the same length as --signals")
+    duplicates = sorted(name for name, count in Counter(sample_names).items() if count > 1)
+    if duplicates:
+        raise ValueError("--sample-names must be unique; duplicate labels: " + ", ".join(duplicates))
+    return sample_names
+
+
 def _resolve_motif_arguments(args):
     try:
         args.motifs = resolve_motif_inputs(getattr(args, "motifs", None), getattr(args, "motif_db", None))
@@ -101,8 +126,13 @@ def norm_fit(x, mean, std, scale):
 def _prepare_condition_metadata(args):
     """Derive condition, replicate, and comparison metadata from CLI arguments."""
 
+    default_sample_names = _signal_sample_stems(args.signals)
+    sample_names = _resolve_sample_names(args, default_sample_names)
+    default_condition_names = default_sample_names
+    if getattr(args, "match_only", False) and getattr(args, "sample_names", None) is not None:
+        default_condition_names = sample_names
     args.cond_names = (
-        [os.path.basename(os.path.splitext(bw)[0]) for bw in args.signals]
+        list(default_condition_names)
         if args.cond_names is None else args.cond_names
     )
     args.outdir = os.path.abspath(args.outdir)
@@ -119,13 +149,13 @@ def _prepare_condition_metadata(args):
     args.cond_groups = idxs
     args.cond_names = list(idxs.keys())
     args.condition_replicates = {cond: len(indices) for cond, indices in idxs.items()}
-    args.sample_names = []
+    args.signal_sample_names = list(sample_names)
+    args.sample_names = list(sample_names)
     args.sample_to_condition = {}
     args.condition_samples = {cond: [] for cond in args.cond_names}
     for cond, indices in idxs.items():
-        for rep_no, signal_idx in enumerate(indices, start=1):
-            sample_name = f"{cond}_rep{rep_no}"
-            args.sample_names.append(sample_name)
+        for signal_idx in indices:
+            sample_name = sample_names[signal_idx]
             args.sample_to_condition[sample_name] = cond
             args.condition_samples[cond].append(sample_name)
 
@@ -1002,6 +1032,8 @@ def match_motifs_cli():
         sys.exit()
     if not args.signals:
         parser.error("match-motifs expects at least one --signals bigWig")
+    if args.sample_names is not None and len(args.sample_names) != len(args.signals):
+        parser.error("match-motifs expects one --sample-names value per --signals bigWig when provided")
     if args.cond_names is not None and len(args.cond_names) != len(args.signals):
         parser.error("match-motifs expects one --cond-names value per --signals bigWig when provided")
     if args.prefix in {"bindetect", "diff_footprints"}:
@@ -1024,6 +1056,10 @@ def diff_footprints_cli():
         sys.exit()
     if args.method == "bindetect" and (not args.signals or len(args.signals) < 2):
         parser.error("diff-footprints expects at least two --signals bigWigs")
+    if args.sample_names is not None and len(args.sample_names) != len(args.signals):
+        parser.error("diff-footprints expects one --sample-names value per --signals bigWig when provided")
+    if args.cond_names is not None and len(args.cond_names) != len(args.signals):
+        parser.error("diff-footprints expects one --cond-names value per --signals bigWig when provided")
     if args.prefix == "bindetect":
         args.prefix = "diff_footprints"
     run_bindetect(args)

@@ -55,6 +55,8 @@ RESERVED_KEYS = {
 
 LIST_FLAGS = {
     "signals",
+    "sample_names",
+    "sample-names",
     "cond_names",
     "cond-names",
     "tfbs",
@@ -84,6 +86,7 @@ REQUIRED_FIELDS = {
 
 FLAG_NAME_MAP = {
     "peak_header": "--peak-header",
+    "sample_names": "--sample-names",
     "cond_names": "--cond-names",
     "output_txt": "--output-txt",
     "output_csv": "--output-csv",

@@ -112,6 +112,32 @@
   text-decoration: underline;
 }
 
+.fp-api-card {
+  border: 1px solid var(--fp-line);
+  border-radius: 8px;
+  margin: 0.75rem 0 2rem;
+  padding: 1rem 1.1rem;
+  background: var(--fp-panel);
+}
+
+.fp-api-card h4 {
+  color: var(--fp-blue);
+  font-size: 0.92rem;
+  margin-top: 1rem;
+}
+
+.fp-api-card ul {
+  margin-bottom: 0.75rem;
+}
+
+.fp-api-card li {
+  margin-bottom: 0.18rem;
+}
+
+.fp-api-card pre {
+  border: 1px solid var(--fp-line);
+}
+
 .fp-screenshot-grid {
   display: grid;
   gap: 1rem;

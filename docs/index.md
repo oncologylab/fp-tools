@@ -63,7 +63,7 @@ match-motifs \
   --signals \
     results/footprints/A_footprints.bw \
     results/footprints/B_footprints.bw \
-  --cond-names A B \
+  --sample-names A B \
   --genome hg38.fa.gz \
   --peaks peaks.bed \
   --motif-db jaspar2026_vertebrates \
@@ -101,6 +101,7 @@ diff-footprints \
   --signals \
     A_rep1_footprints.bw A_rep2_footprints.bw \
     B_rep1_footprints.bw B_rep2_footprints.bw \
+  --sample-names A_R1 A_R2 B_R1 B_R2 \
   --aggregate-signals \
     A_rep1_corrected.bw A_rep2_corrected.bw \
     B_rep1_corrected.bw B_rep2_corrected.bw \

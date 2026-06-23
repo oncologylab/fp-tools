@@ -66,6 +66,7 @@ diff-footprints \
   --signals \
     conditionA_rep1_footprints.bw conditionA_rep2_footprints.bw \
     conditionB_rep1_footprints.bw conditionB_rep2_footprints.bw \
+  --sample-names conditionA_R1 conditionA_R2 conditionB_R1 conditionB_R2 \
   --aggregate-signals \
     conditionA_rep1_corrected.bw conditionA_rep2_corrected.bw \
     conditionB_rep1_corrected.bw conditionB_rep2_corrected.bw \
@@ -78,7 +79,7 @@ diff-footprints \
   --outdir results/diff_footprints/conditionA_vs_conditionB
 ```
 
-Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
+Use `--sample-names` for readable per-sample labels. Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
 
 ## Pseudobulk Workflow
 
@@ -132,6 +133,7 @@ Use discovered motifs alone for a de novo-only run, or add them to a standard da
 ```bash
 diff-footprints \
   --signals conditionA_footprints.bw conditionB_footprints.bw \
+  --sample-names conditionA conditionB \
   --genome hg38.fa.gz \
   --peaks peaks.bed \
   --cond-names conditionA conditionB \
