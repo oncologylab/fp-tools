@@ -84,7 +84,17 @@ def plot_metric_bars(ax: plt.Axes, table: pd.DataFrame, panel: str, title: str) 
         label_color = "#111827" if idx == 0 else "#FFFFFF"
         ax.text(value - ymax * 0.035, ypos, f"{value:.1f}", ha="right", va="center", color=label_color)
 
-    ax.text(-0.16, 1.06, panel, transform=ax.transAxes, ha="left", va="bottom")
+    ax.text(
+        -0.22,
+        1.03,
+        panel,
+        transform=ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=18,
+        fontweight="bold",
+        clip_on=False,
+    )
     ax.set_title(title, pad=7)
     ax.set_yticks(y, labels=labels)
     ax.set_xlabel(unit)

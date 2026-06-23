@@ -485,14 +485,13 @@ This pseudobulk analysis is complementary to established single-cell
 chromatin-accessibility ecosystems such as ArchR and Signac and to motif-activity
 baselines such as chromVAR~\cite{Granja2021_ArchR,Stuart2021_Signac,Schep2017_chromVAR}.
 
-The same PBMC5k pseudobulk footprint table was used to prioritize marker TFs for
-cell-level visualization. We summarized the three broad-cell pairwise comparisons
-as volcano plots and labeled predeclared marker TFs from the two cell types in
-each comparison only when the differential-footprint direction matched the
-expected lineage direction. We then projected KNN-smoothed footprint-signature
-scores onto the PBMC5k UMAP. For each cell, the displayed value summarizes local
-motif-centered cut-site profiles in neighboring cells. The final figure combines
-a marker-by-cell heatmap with UMAP panels for broad cell-type labels and
+The same PBMC5k footprint-signature table was used to prioritize cell-type
+associated motif signatures for visualization. We selected top signatures with
+clear broad-cell enrichment and included the representative TF rows used in the
+UMAP panel. KNN-smoothed footprint-signature scores were then projected onto the
+PBMC5k UMAP. For each cell, the displayed value summarizes local motif-centered
+cut-site profiles in neighboring cells. The final figure combines a
+marker-by-cell heatmap with UMAP panels for broad cell-type labels and
 representative regulatory programs: B-cell-associated cytokine-response and AP-1
 activation signatures, monocyte myeloid/interferon/inflammatory signatures, and
 T/NK-associated cytotoxic, tolerance-like, and TGF-\(\beta\) regulatory-state
@@ -580,14 +579,10 @@ reports, explicit replicate-aware reporting, de novo motif-preparation support,
 pseudobulk single-cell analysis, a browser GUI, and tested public-data examples.
 
 \begin{table}[H]
-\caption{Qualitative scope comparison across widely used ATAC-seq regulatory-analysis tools.
-\checkmark, documented native support; $\circ$, partial, indirect, or adjacent
-support; NA, outside the tool's primary scope. The table summarizes analysis
-scope from public documentation and primary publications; it is not a performance
-benchmark and should be read with the different goals of each tool in mind.
-TOBIAS is the closest core footprinting comparator; the \texttt{fp-tools}
-column emphasizes added analysis and usability components around that
-motif-centered model.
+\caption{Qualitative scope comparison of ATAC-seq regulatory-analysis tools.
+\checkmark, native support; $\circ$, partial or adjacent support; NA, outside
+the tool's main scope. This table summarizes documented features, not benchmark
+performance.
 \label{tab:features}}
 \begingroup
 \footnotesize
@@ -694,7 +689,7 @@ Blacklist and peak set & Mitochondrial and nonstandard contigs excluded; hg38 bl
 Bias correction and footprint scores & \texttt{atac-correct} run on filtered BAMs with merged peaks and blacklist regions using default Tn5-bias settings; corrected cut-site tracks q95-scaled over shared background regions for multi-sample analyses; \texttt{call-footprints --score footprint} run with default footprint and flank windows.\\
 Differential footprint analysis & The 3-vs-3 ENCODE K562/HepG2 replicate footprint tracks were analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. One-sample contrasts use motif-site versus background-distribution comparison; replicate-supported analyses use empirical-Bayes variance moderation on per-sample aggregated motif scores.\\
 De novo motif validation & ENCODE K562/HepG2 candidate footprints exported as cell-line-level FASTA files with \(\pm 75\) bp flanks; reciprocal STREME 5.5.9 runs used \texttt{--dna --nmotifs 250}; Tomtom 5.5.9 matched discovered motifs to JASPAR 2026; discovered motifs were scanned back into candidate intervals for motif-window overlap summaries and aggregate footprint review.\\
-Pseudobulk PBMC analysis & Public 10x PBMC5k scATAC fragments grouped into broad B-cell, monocyte, and T--NK labels, retaining 4,437 annotated cells and requiring at least 300 cells and 50,000 fragments per group. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
+Pseudobulk PBMC analysis & Public 10x PBMC5k scATAC fragments grouped into broad B-cell, monocyte, and T--NK labels, retaining 4,437 annotated cells and requiring at least 300 cells and 50,000 fragments per group. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, marker heatmaps, and KNN-smoothed footprint-signature UMAPs.\\
 \bottomrule
 \end{tabularx}
 \endgroup
