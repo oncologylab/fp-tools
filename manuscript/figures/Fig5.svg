@@ -1,1131 +1,260 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 612 792">
-  <!-- Generator: Adobe Illustrator 30.1.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 136)  -->
-  <defs>
-    <style>
-      .st0, .st1, .st2, .st3, .st4, .st5, .st6, .st7, .st8, .st9, .st10, .st11, .st12, .st13, .st14, .st15, .st16, .st17, .st18, .st19, .st20, .st21, .st22, .st23, .st24, .st25 {
-        isolation: isolate;
-      }
-
-      .st0, .st1, .st2, .st3, .st4, .st5, .st6, .st7, .st8, .st9, .st10, .st11, .st12, .st14, .st15, .st16, .st17, .st18, .st19, .st20, .st21, .st22, .st23, .st24, .st25 {
-        font-family: Arial-BoldMT, Arial;
-        font-weight: 700;
-      }
-
-      .st0, .st26, .st27, .st28, .st21 {
-        fill: #fff;
-      }
-
-      .st0, .st9 {
-        font-size: 6px;
-      }
-
-      .st29 {
-        clip-path: url(#clippath-6);
-      }
-
-      .st30 {
-        clip-path: url(#clippath-7);
-      }
-
-      .st1 {
-        font-size: 5px;
-      }
-
-      .st1, .st4, .st9, .st10, .st12, .st16, .st18, .st23, .st24 {
-        fill: #111827;
-      }
-
-      .st2 {
-        font-size: 5.1px;
-      }
-
-      .st2, .st3, .st11, .st22 {
-        fill: #475569;
-      }
-
-      .st31 {
-        fill: #eff6ff;
-        stroke: #bfdbfe;
-      }
-
-      .st31, .st32, .st33, .st34, .st35, .st28, .st36, .st37 {
-        stroke-width: .8px;
-      }
-
-      .st38 {
-        clip-path: url(#clippath-4);
-      }
-
-      .st3, .st19 {
-        font-size: 5.2px;
-      }
-
-      .st4 {
-        font-size: 5.5px;
-      }
-
-      .st39 {
-        fill: #dbeafe;
-        stroke: #93c5fd;
-      }
-
-      .st39, .st26, .st40 {
-        stroke-width: .7px;
-      }
-
-      .st41 {
-        stroke-width: .55px;
-      }
-
-      .st41, .st26, .st40, .st42 {
-        stroke: #e5e7eb;
-      }
-
-      .st41, .st33, .st42 {
-        fill: #f8fafc;
-      }
-
-      .st5 {
-        fill: #1e40af;
-      }
-
-      .st5, .st20, .st22, .st24 {
-        font-size: 5.8px;
-      }
-
-      .st32 {
-        stroke: #0f172a;
-      }
-
-      .st32, .st14 {
-        fill: #0f172a;
-      }
-
-      .st43 {
-        clip-path: url(#clippath-9);
-      }
-
-      .st44 {
-        clip-path: url(#clippath-10);
-      }
-
-      .st33, .st28 {
-        stroke: #d1d5db;
-      }
-
-      .st6 {
-        fill: #1e3a8a;
-        font-size: 7.2px;
-      }
-
-      .st45 {
-        clip-path: url(#clippath-11);
-      }
-
-      .st46, .st35, .st40 {
-        fill: none;
-      }
-
-      .st34 {
-        fill: #f1f5f9;
-        stroke: #cbd5e1;
-      }
-
-      .st7 {
-        fill: #334155;
-        font-size: 6.3px;
-      }
-
-      .st8 {
-        fill: #64748b;
-        font-size: 4.8px;
-      }
-
-      .st47, .st48 {
-        fill: #ea580c;
-      }
-
-      .st49, .st50, .st36 {
-        fill: #2563eb;
-      }
-
-      .st49, .st51, .st48, .st52 {
-        stroke-width: .5px;
-      }
-
-      .st49, .st36 {
-        stroke: #2563eb;
-      }
-
-      .st10 {
-        font-size: 6.2px;
-      }
-
-      .st53 {
-        clip-path: url(#clippath-1);
-      }
-
-      .st11 {
-        font-size: 5.4px;
-      }
-
-      .st12 {
-        font-size: 8.4px;
-      }
-
-      .st14 {
-        font-size: 5.3px;
-      }
-
-      .st54, .st51, .st19 {
-        fill: #16a34a;
-      }
-
-      .st55 {
-        clip-path: url(#clippath-5);
-      }
-
-      .st56 {
-        clip-path: url(#clippath-8);
-      }
-
-      .st35, .st40 {
-        stroke-linecap: square;
-      }
-
-      .st35, .st37 {
-        stroke: #000;
-      }
-
-      .st40, .st37 {
-        stroke-linejoin: round;
-      }
-
-      .st57 {
-        clip-path: url(#clippath-3);
-      }
-
-      .st15 {
-        font-size: 9px;
-      }
-
-      .st16, .st17 {
-        font-size: 6.1px;
-      }
-
-      .st58 {
-        clip-path: url(#clippath-12);
-      }
-
-      .st17 {
-        fill: #1d4ed8;
-      }
-
-      .st51 {
-        stroke: #16a34a;
-      }
-
-      .st18 {
-        font-size: 7.1px;
-      }
-
-      .st42 {
-        stroke-width: .6px;
-      }
-
-      .st59, .st52 {
-        fill: #7c3aed;
-      }
-
-      .st20 {
-        fill: #cbd5e1;
-      }
-
-      .st48 {
-        stroke: #ea580c;
-      }
-
-      .st52 {
-        stroke: #7c3aed;
-      }
-
-      .st60 {
-        fill: #9ca3af;
-      }
-
-      .st21 {
-        font-size: 8.6px;
-      }
-
-      .st61 {
-        clip-path: url(#clippath-2);
-      }
-
-      .st23 {
-        font-size: 7px;
-      }
-
-      .st62 {
-        clip-path: url(#clippath-13);
-      }
-
-      .st63 {
-        clip-path: url(#clippath);
-      }
-
-      .st25 {
-        font-size: 10.8px;
-      }
-    </style>
-    <clipPath id="clippath">
-      <rect class="st46" x="39.78" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-1">
-      <rect class="st46" x="39.78" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-2">
-      <rect class="st46" x="39.78" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-3">
-      <rect class="st46" x="39.78" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-4">
-      <rect class="st46" x="39.78" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-5">
-      <rect class="st46" x="39.78" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-6">
-      <rect class="st46" x="355.87" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-7">
-      <rect class="st46" x="355.87" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-8">
-      <rect class="st46" x="355.87" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-9">
-      <rect class="st46" x="355.87" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-10">
-      <rect class="st46" x="355.87" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-11">
-      <rect class="st46" x="355.87" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-12">
-      <rect class="st46" x="355.87" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-    <clipPath id="clippath-13">
-      <rect class="st46" x="355.87" y="43.56" width="246.95" height="123.36"/>
-    </clipPath>
-  </defs>
-  <g id="figure_1">
-    <g id="axes_1">
-      <g id="patch_2">
-        <path class="st27" d="M39.78,166.92h246.95V43.56H39.78v123.36Z"/>
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="241.2pt" height="118.8pt" viewBox="0 0 241.2 118.8" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-06-22T21:18:35.449600</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.9, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 118.8
+L 241.2 118.8
+L 241.2 0
+L 0 0
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 43.416 85.536
+L 117.631385 85.536
+L 117.631385 26.136
+L 43.416 26.136
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <path d="M 43.416 85.536
+L 43.416 26.136
+" clip-path="url(#pe3ab33135f)" style="fill: none; stroke: #e5e7eb; stroke-width: 0.65; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_2">
+      <defs>
+       <path id="m3776b181a3" d="M 0 0
+L 0 3.5
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m3776b181a3" x="43.416" y="85.536" style="stroke: #000000; stroke-width: 0.8"/>
       </g>
-      <g id="matplotlib.axis_1">
-        <g id="xtick_1">
-          <g id="line2d_1">
-            <path id="madc33c76a6" class="st37" d="M89.41,166.92v3.5"/>
-          </g>
-          <g id="text_1">
-            <g class="st13">
-              <text class="st15" transform="translate(72.49 180.76)"><tspan x="0" y="0">TOBIAS</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="xtick_2">
-          <g id="line2d_2">
-            <path id="madc33c76a61" class="st37" d="M237.1,166.92v3.5"/>
-          </g>
-          <g id="text_2">
-            <g class="st13">
-              <text class="st15" transform="translate(220.61 180.76)"><tspan x="0" y="0">fp-tools</tspan></text>
-            </g>
-          </g>
-        </g>
-      </g>
-      <g id="matplotlib.axis_2">
-        <g id="ytick_1">
-          <g id="line2d_3">
-            <g class="st63">
-              <path class="st40" d="M39.78,166.92h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_4">
-            <path id="m52de1ee437" class="st37" d="M39.78,166.92h-3.5"/>
-          </g>
-          <g id="text_3">
-            <g class="st13">
-              <text class="st15" transform="translate(27.77 170.34)"><tspan x="0" y="0">0</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="ytick_2">
-          <g id="line2d_5">
-            <g class="st53">
-              <path class="st40" d="M39.78,133.55h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_6">
-            <path id="m52de1ee4371" class="st37" d="M39.78,133.55h-3.5"/>
-          </g>
-          <g id="text_4">
-            <g class="st13">
-              <text class="st15" transform="translate(22.77 136.97)"><tspan x="0" y="0">10</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="ytick_3">
-          <g id="line2d_7">
-            <g class="st61">
-              <path class="st40" d="M39.78,100.18h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_8">
-            <path id="m52de1ee4372" class="st37" d="M39.78,100.18h-3.5"/>
-          </g>
-          <g id="text_5">
-            <g class="st13">
-              <text class="st15" transform="translate(22.77 103.6)"><tspan x="0" y="0">20</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="ytick_4">
-          <g id="line2d_9">
-            <g class="st57">
-              <path class="st40" d="M39.78,66.81h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_10">
-            <path id="m52de1ee4373" class="st37" d="M39.78,66.81h-3.5"/>
-          </g>
-          <g id="text_6">
-            <g class="st13">
-              <text class="st15" transform="translate(22.77 70.23)"><tspan x="0" y="0">30</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="text_7">
-          <g class="st13">
-            <text class="st15" transform="translate(14.38 113.24) rotate(-90)"><tspan x="0" y="0">min</tspan></text>
-          </g>
-        </g>
-      </g>
-      <g id="patch_3">
-        <g class="st38">
-          <path class="st60" d="M51,166.92h76.8v-101.11H51v101.11Z"/>
-        </g>
-      </g>
-      <g id="patch_4">
-        <g class="st55">
-          <path class="st50" d="M198.7,166.92h76.8v-55.73h-76.8v55.73Z"/>
-        </g>
-      </g>
-      <g id="patch_5">
-        <path class="st35" d="M39.78,166.92V43.56"/>
-      </g>
-      <g id="patch_6">
-        <path class="st35" d="M39.78,166.92h246.95"/>
-      </g>
-      <g id="text_8">
-        <g class="st13">
-          <text class="st15" transform="translate(80.65 60.85)"><tspan x="0" y="0">30.3</tspan></text>
-        </g>
-      </g>
-      <g id="text_9">
-        <g class="st13">
-          <text class="st15" transform="translate(228.34 106.23)"><tspan x="0" y="0">16.7</tspan></text>
-        </g>
-      </g>
-      <g id="text_10">
-        <g class="st13">
-          <text class="st15" transform="translate(139.5 38.56)"><tspan x="0" y="0">Runtime</tspan></text>
-        </g>
-      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: middle" x="43.416" y="99.374594" transform="rotate(-0 43.416 99.374594)">0</text>
+     </g>
     </g>
-    <g id="axes_2">
-      <g id="patch_7">
-        <path class="st27" d="M355.87,166.92h246.95V43.56h-246.95v123.36Z"/>
+    <g id="xtick_2">
+     <g id="line2d_3">
+      <path d="M 83.569322 85.536
+L 83.569322 26.136
+" clip-path="url(#pe3ab33135f)" style="fill: none; stroke: #e5e7eb; stroke-width: 0.65; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m3776b181a3" x="83.569322" y="85.536" style="stroke: #000000; stroke-width: 0.8"/>
       </g>
-      <g id="matplotlib.axis_3">
-        <g id="xtick_3">
-          <g id="line2d_11">
-            <path id="madc33c76a62" class="st37" d="M405.5,166.92v3.5"/>
-          </g>
-          <g id="text_11">
-            <g class="st13">
-              <text class="st15" transform="translate(388.58 180.76)"><tspan x="0" y="0">TOBIAS</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="xtick_4">
-          <g id="line2d_12">
-            <path id="madc33c76a63" class="st37" d="M553.19,166.92v3.5"/>
-          </g>
-          <g id="text_12">
-            <g class="st13">
-              <text class="st15" transform="translate(536.7 180.76)"><tspan x="0" y="0">fp-tools</tspan></text>
-            </g>
-          </g>
-        </g>
-      </g>
-      <g id="matplotlib.axis_4">
-        <g id="ytick_5">
-          <g id="line2d_13">
-            <g class="st29">
-              <path class="st40" d="M355.87,166.92h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_14">
-            <path id="m52de1ee4374" class="st37" d="M355.87,166.92h-3.5"/>
-          </g>
-          <g id="text_13">
-            <g class="st13">
-              <text class="st15" transform="translate(343.87 170.34)"><tspan x="0" y="0">0</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="ytick_6">
-          <g id="line2d_15">
-            <g class="st30">
-              <path class="st40" d="M355.87,145.85h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_16">
-            <path id="m52de1ee4375" class="st37" d="M355.87,145.85h-3.5"/>
-          </g>
-          <g id="text_14">
-            <g class="st13">
-              <text class="st15" transform="translate(343.87 149.27)"><tspan x="0" y="0">1</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="ytick_7">
-          <g id="line2d_17">
-            <g class="st56">
-              <path class="st40" d="M355.87,124.79h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_18">
-            <path id="m52de1ee4376" class="st37" d="M355.87,124.79h-3.5"/>
-          </g>
-          <g id="text_15">
-            <g class="st13">
-              <text class="st15" transform="translate(343.87 128.21)"><tspan x="0" y="0">2</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="ytick_8">
-          <g id="line2d_19">
-            <g class="st43">
-              <path class="st40" d="M355.87,103.72h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_20">
-            <path id="m52de1ee4377" class="st37" d="M355.87,103.72h-3.5"/>
-          </g>
-          <g id="text_16">
-            <g class="st13">
-              <text class="st15" transform="translate(343.87 107.14)"><tspan x="0" y="0">3</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="ytick_9">
-          <g id="line2d_21">
-            <g class="st44">
-              <path class="st40" d="M355.87,82.66h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_22">
-            <path id="m52de1ee4378" class="st37" d="M355.87,82.66h-3.5"/>
-          </g>
-          <g id="text_17">
-            <g class="st13">
-              <text class="st15" transform="translate(343.87 86.08)"><tspan x="0" y="0">4</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="ytick_10">
-          <g id="line2d_23">
-            <g class="st45">
-              <path class="st40" d="M355.87,61.59h246.95"/>
-            </g>
-          </g>
-          <g id="line2d_24">
-            <path id="m52de1ee4379" class="st37" d="M355.87,61.59h-3.5"/>
-          </g>
-          <g id="text_18">
-            <g class="st13">
-              <text class="st15" transform="translate(343.87 65.01)"><tspan x="0" y="0">5</tspan></text>
-            </g>
-          </g>
-        </g>
-        <g id="text_19">
-          <g class="st13">
-            <text class="st15" transform="translate(336.74 111.99) rotate(-90)"><tspan x="0" y="0">GB</tspan></text>
-          </g>
-        </g>
-      </g>
-      <g id="patch_8">
-        <g class="st58">
-          <path class="st60" d="M367.1,166.92h76.8v-101.11h-76.8v101.11h0Z"/>
-        </g>
-      </g>
-      <g id="patch_9">
-        <g class="st62">
-          <path class="st50" d="M514.79,166.92h76.8v-56.88h-76.8v56.88Z"/>
-        </g>
-      </g>
-      <g id="patch_10">
-        <path class="st35" d="M355.87,166.92V43.56"/>
-      </g>
-      <g id="patch_11">
-        <path class="st35" d="M355.87,166.92h246.95"/>
-      </g>
-      <g id="text_20">
-        <g class="st13">
-          <text class="st15" transform="translate(399.24 60.85)"><tspan x="0" y="0">4.8</tspan></text>
-        </g>
-      </g>
-      <g id="text_21">
-        <g class="st13">
-          <text class="st15" transform="translate(546.94 105.09)"><tspan x="0" y="0">2.7</tspan></text>
-        </g>
-      </g>
-      <g id="text_22">
-        <g class="st13">
-          <text class="st15" transform="translate(444.33 38.56)"><tspan x="0" y="0">Peak memory</tspan></text>
-        </g>
-      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: middle" x="83.569322" y="99.374594" transform="rotate(-0 83.569322 99.374594)">20</text>
+     </g>
     </g>
-    <g id="axes_3">
-      <g id="patch_13">
-        <path class="st34" d="M39.78,608.96h154.84V189.76H39.78v419.2Z"/>
-      </g>
-      <g id="patch_14">
-        <path class="st32" d="M54.98,226.77h124.43c3.75,0,5.63-1.54,5.63-4.63v-22.2c0-3.08-1.88-4.63-5.63-4.63H54.98c-3.75,0-5.63,1.54-5.63,4.63v22.2c0,3.08,1.88,4.63,5.63,4.63Z"/>
-      </g>
-      <g id="patch_15">
-        <path class="st28" d="M53.86,260.54h126.68c3,0,4.5-1.23,4.5-3.7v-18.5c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v18.5c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_16">
-        <path class="st39" d="M53.86,305.41h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_17">
-        <path class="st26" d="M53.86,325.77h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_18">
-        <path class="st26" d="M53.86,346.12h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_19">
-        <path class="st26" d="M53.86,366.47h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_20">
-        <path class="st26" d="M53.86,386.83h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_21">
-        <path class="st26" d="M53.86,407.18h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_22">
-        <path class="st26" d="M53.86,427.54h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_23">
-        <path class="st26" d="M53.86,447.89h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_24">
-        <path class="st26" d="M53.86,468.25h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_25">
-        <path class="st26" d="M53.86,488.6h126.68c3,0,4.5-1.23,4.5-3.7v-16.19c0-2.47-1.5-3.7-4.5-3.7H53.86c-3,0-4.5,1.23-4.5,3.7v16.19c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_26">
-        <path class="st26" d="M53.29,531.16h127.81c2.63,0,3.94-1.08,3.94-3.24v-18.97c0-2.16-1.31-3.24-3.94-3.24H53.29c-2.63,0-3.94,1.08-3.94,3.24v18.97c0,2.16,1.31,3.24,3.94,3.24Z"/>
-      </g>
-      <g id="patch_27">
-        <path class="st26" d="M53.29,553.36h127.81c2.63,0,3.94-1.08,3.94-3.24v-18.97c0-2.16-1.31-3.24-3.94-3.24H53.29c-2.63,0-3.94,1.08-3.94,3.24v18.97c0,2.16,1.31,3.24,3.94,3.24Z"/>
-      </g>
-      <g id="patch_28">
-        <path class="st26" d="M53.29,575.57h127.81c2.63,0,3.94-1.08,3.94-3.24v-18.97c0-2.16-1.31-3.24-3.94-3.24H53.29c-2.63,0-3.94,1.08-3.94,3.24v18.97c0,2.16,1.31,3.24,3.94,3.24Z"/>
-      </g>
-      <g id="patch_29">
-        <path class="st26" d="M53.29,597.77h127.81c2.63,0,3.94-1.08,3.94-3.24v-18.97c0-2.16-1.31-3.24-3.94-3.24H53.29c-2.63,0-3.94,1.08-3.94,3.24v18.97c0,2.16,1.31,3.24,3.94,3.24Z"/>
-      </g>
-      <g id="patch_30">
-        <path class="st26" d="M210.38,239.26h55.74c3,0,4.5-1.23,4.5-3.7v-18.5c0-2.47-1.5-3.7-4.5-3.7h-55.74c-3,0-4.5,1.23-4.5,3.7v18.5c0,2.47,1.5,3.7,4.5,3.7h0Z"/>
-      </g>
-      <g id="patch_31">
-        <path class="st51" d="M218.83,230.01c1.19,0,2.34-.39,3.19-1.08.84-.69,1.32-1.64,1.32-2.62s-.47-1.92-1.32-2.62c-.84-.69-1.99-1.08-3.19-1.08s-2.34.39-3.19,1.08c-.84.69-1.32,1.64-1.32,2.62s.47,1.92,1.32,2.62c.84.69,1.99,1.08,3.19,1.08Z"/>
-      </g>
-      <g id="patch_32">
-        <path class="st26" d="M271.19,239.26h55.74c3,0,4.5-1.23,4.5-3.7v-18.5c0-2.47-1.5-3.7-4.5-3.7h-55.74c-3,0-4.5,1.23-4.5,3.7v18.5c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_33">
-        <path class="st49" d="M279.64,230.01c1.19,0,2.34-.39,3.19-1.08.84-.69,1.32-1.64,1.32-2.62s-.47-1.92-1.32-2.62c-.84-.69-1.99-1.08-3.19-1.08s-2.34.39-3.19,1.08c-.84.69-1.32,1.64-1.32,2.62s.47,1.92,1.32,2.62c.84.69,1.99,1.08,3.19,1.08Z"/>
-      </g>
-      <g id="patch_34">
-        <path class="st26" d="M332,239.26h55.74c3,0,4.5-1.23,4.5-3.7v-18.5c0-2.47-1.5-3.7-4.5-3.7h-55.74c-3,0-4.5,1.23-4.5,3.7v18.5c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_35">
-        <path class="st52" d="M340.44,230.01c1.19,0,2.34-.39,3.19-1.08.84-.69,1.32-1.64,1.32-2.62s-.47-1.92-1.32-2.62c-.84-.69-1.99-1.08-3.19-1.08s-2.34.39-3.19,1.08c-.84.69-1.32,1.64-1.32,2.62s.47,1.92,1.32,2.62c.84.69,1.99,1.08,3.19,1.08Z"/>
-      </g>
-      <g id="patch_36">
-        <path class="st26" d="M392.81,239.26h55.74c3,0,4.5-1.23,4.5-3.7v-18.5c0-2.47-1.5-3.7-4.5-3.7h-55.74c-3,0-4.5,1.23-4.5,3.7v18.5c0,2.47,1.5,3.7,4.5,3.7Z"/>
-      </g>
-      <g id="patch_37">
-        <path class="st48" d="M401.25,230.01c1.19,0,2.34-.39,3.19-1.08.84-.69,1.32-1.64,1.32-2.62s-.47-1.92-1.32-2.62c-.84-.69-1.99-1.08-3.19-1.08s-2.34.39-3.19,1.08c-.84.69-1.32,1.64-1.32,2.62s.47,1.92,1.32,2.62c.84.69,1.99,1.08,3.19,1.08Z"/>
-      </g>
-      <g id="patch_38">
-        <path class="st31" d="M212.63,311.89h372.73c4.5,0,6.76-1.85,6.76-5.55v-57.82c0-3.7-2.25-5.55-6.76-5.55H212.63c-4.5,0-6.76,1.85-6.76,5.55v57.82c0,3.7,2.25,5.55,6.76,5.55Z"/>
-      </g>
-      <g id="patch_39">
-        <path class="st36" d="M497.53,301.71h73.2c3.38,0,5.07-1.39,5.07-4.16v-16.19c0-2.78-1.69-4.16-5.07-4.16h-73.2c-3.38,0-5.07,1.39-5.07,4.16v16.19c0,2.78,1.69,4.16,5.07,4.16h0Z"/>
-      </g>
-      <g id="patch_40">
-        <path class="st28" d="M212.63,401.63h372.73c4.5,0,6.76-1.85,6.76-5.55v-72.17c0-3.7-2.25-5.55-6.76-5.55H212.63c-4.5,0-6.76,1.85-6.76,5.55v72.17c0,3.7,2.25,5.55,6.76,5.55Z"/>
-      </g>
-      <g id="patch_41">
-        <path class="st41" d="M219.39,358.24h359.22c2.25,0,3.38-.93,3.38-2.78v-15.73c0-1.85-1.13-2.78-3.38-2.78H219.39c-2.25,0-3.38.93-3.38,2.78v15.73c0,1.85,1.13,2.78,3.38,2.78Z"/>
-      </g>
-      <g id="patch_42">
-        <path class="st41" d="M219.39,378.13h359.22c2.25,0,3.38-.93,3.38-2.78v-15.73c0-1.85-1.13-2.78-3.38-2.78H219.39c-2.25,0-3.38.93-3.38,2.78v15.73c0,1.85,1.13,2.78,3.38,2.78Z"/>
-      </g>
-      <g id="patch_43">
-        <path class="st41" d="M219.39,398.02h359.22c2.25,0,3.38-.93,3.38-2.78v-15.73c0-1.85-1.13-2.78-3.38-2.78H219.39c-2.25,0-3.38.93-3.38,2.78v15.73c0,1.85,1.13,2.78,3.38,2.78Z"/>
-      </g>
-      <g id="patch_44">
-        <path class="st28" d="M211.51,479.35h84.46c3.75,0,5.63-1.54,5.63-4.63v-50.89c0-3.08-1.88-4.63-5.63-4.63h-84.46c-3.75,0-5.63,1.54-5.63,4.63v50.89c0,3.08,1.88,4.63,5.63,4.63h0Z"/>
-      </g>
-      <g id="patch_45">
-        <path class="st50" d="M209.26,434.01h88.96v-12.03h-88.96v12.03h0Z"/>
-      </g>
-      <g id="patch_46">
-        <path class="st28" d="M308.35,479.35h84.46c3.75,0,5.63-1.54,5.63-4.63v-50.89c0-3.08-1.88-4.63-5.63-4.63h-84.46c-3.75,0-5.63,1.54-5.63,4.63v50.89c0,3.08,1.88,4.63,5.63,4.63h0Z"/>
-      </g>
-      <g id="patch_47">
-        <path class="st59" d="M306.1,434.01h88.96v-12.03h-88.96v12.03Z"/>
-      </g>
-      <g id="patch_48">
-        <path class="st28" d="M405.19,479.35h84.46c3.75,0,5.63-1.54,5.63-4.63v-50.89c0-3.08-1.88-4.63-5.63-4.63h-84.46c-3.75,0-5.63,1.54-5.63,4.63v50.89c0,3.08,1.88,4.63,5.63,4.63h0Z"/>
-      </g>
-      <g id="patch_49">
-        <path class="st47" d="M402.94,434.01h88.96v-12.03h-88.96v12.03Z"/>
-      </g>
-      <g id="patch_50">
-        <path class="st28" d="M502.04,479.35h84.46c3.75,0,5.63-1.54,5.63-4.63v-50.89c0-3.08-1.88-4.63-5.63-4.63h-84.46c-3.75,0-5.63,1.54-5.63,4.63v50.89c0,3.08,1.88,4.63,5.63,4.63h0Z"/>
-      </g>
-      <g id="patch_51">
-        <path class="st54" d="M499.78,434.01h88.96v-12.03h-88.96v12.03Z"/>
-      </g>
-      <g id="patch_52">
-        <path class="st28" d="M212.63,562.62h372.73c4.5,0,6.76-1.85,6.76-5.55v-62.91c0-3.7-2.25-5.55-6.76-5.55H212.63c-4.5,0-6.76,1.85-6.76,5.55v62.91c0,3.7,2.25,5.55,6.76,5.55Z"/>
-      </g>
-      <g id="patch_53">
-        <path class="st42" d="M219.95,531.16h115.24c2.63,0,3.94-1.08,3.94-3.24v-18.04c0-2.16-1.31-3.24-3.94-3.24h-115.24c-2.63,0-3.94,1.08-3.94,3.24v18.04c0,2.16,1.31,3.24,3.94,3.24h0Z"/>
-      </g>
-      <g id="patch_54">
-        <path class="st42" d="M346.45,531.16h115.24c2.63,0,3.94-1.08,3.94-3.24v-18.04c0-2.16-1.31-3.24-3.94-3.24h-115.24c-2.63,0-3.94,1.08-3.94,3.24v18.04c0,2.16,1.31,3.24,3.94,3.24Z"/>
-      </g>
-      <g id="patch_55">
-        <path class="st42" d="M472.95,531.16h115.24c2.63,0,3.94-1.08,3.94-3.24v-18.04c0-2.16-1.31-3.24-3.94-3.24h-115.24c-2.63,0-3.94,1.08-3.94,3.24v18.04c0,2.16,1.31,3.24,3.94,3.24Z"/>
-      </g>
-      <g id="patch_56">
-        <path class="st42" d="M219.95,554.75h115.24c2.63,0,3.94-1.08,3.94-3.24v-18.04c0-2.16-1.31-3.24-3.94-3.24h-115.24c-2.63,0-3.94,1.08-3.94,3.24v18.04c0,2.16,1.31,3.24,3.94,3.24h0Z"/>
-      </g>
-      <g id="patch_57">
-        <path class="st42" d="M346.45,554.75h115.24c2.63,0,3.94-1.08,3.94-3.24v-18.04c0-2.16-1.31-3.24-3.94-3.24h-115.24c-2.63,0-3.94,1.08-3.94,3.24v18.04c0,2.16,1.31,3.24,3.94,3.24Z"/>
-      </g>
-      <g id="patch_58">
-        <path class="st42" d="M472.95,554.75h115.24c2.63,0,3.94-1.08,3.94-3.24v-18.04c0-2.16-1.31-3.24-3.94-3.24h-115.24c-2.63,0-3.94,1.08-3.94,3.24v18.04c0,2.16,1.31,3.24,3.94,3.24Z"/>
-      </g>
-      <g id="text_23">
-        <g class="st13">
-          <text class="st21" transform="translate(62.3 213.88)"><tspan x="0" y="0">fp-tools</tspan></text>
-        </g>
-      </g>
-      <g id="text_24">
-        <g class="st13">
-          <text class="st20" transform="translate(62.3 222.39)"><tspan x="0" y="0">GUI + CLI</tspan></text>
-        </g>
-      </g>
-      <g id="text_25">
-        <g class="st13">
-          <text class="st7" transform="translate(53.86 239.88)"><tspan x="0" y="0">Workspace</tspan></text>
-        </g>
-      </g>
-      <g id="text_26">
-        <g class="st13">
-          <text class="st24" transform="translate(61.74 249.22)"><tspan x="0" y="0">Example run</tspan></text>
-        </g>
-      </g>
-      <g id="text_27">
-        <g class="st13">
-          <text class="st19" transform="translate(61.74 256.63)"><tspan x="0" y="0">inputs ready</tspan></text>
-        </g>
-      </g>
-      <g id="text_28">
-        <g class="st13">
-          <text class="st7" transform="translate(53.86 276.43)"><tspan x="0" y="0">Commands</tspan></text>
-        </g>
-      </g>
-      <g id="text_29">
-        <g class="st13">
-          <text class="st17" transform="translate(60.61 294.78)"><tspan x="0" y="0">Home</tspan></text>
-        </g>
-      </g>
-      <g id="text_30">
-        <g class="st13">
-          <text class="st16" transform="translate(60.61 315.14)"><tspan x="0" y="0">ATACorrect</tspan></text>
-        </g>
-      </g>
-      <g id="text_31">
-        <g class="st13">
-          <text class="st16" transform="translate(60.61 335.49)"><tspan x="0" y="0">FootprintScores</tspan></text>
-        </g>
-      </g>
-      <g id="text_32">
-        <g class="st13">
-          <text class="st16" transform="translate(60.61 355.84)"><tspan x="0" y="0">BINDetect</tspan></text>
-        </g>
-      </g>
-      <g id="text_33">
-        <g class="st13">
-          <text class="st16" transform="translate(60.61 376.2)"><tspan x="0" y="0">PlotAggregate</tspan></text>
-        </g>
-      </g>
-      <g id="text_34">
-        <g class="st13">
-          <text class="st16" transform="translate(60.61 396.55)"><tspan x="0" y="0">Pseudobulk</tspan></text>
-        </g>
-      </g>
-      <g id="text_35">
-        <g class="st13">
-          <text class="st16" transform="translate(60.61 416.91)"><tspan x="0" y="0">Normalize bigWig</tspan></text>
-        </g>
-      </g>
-      <g id="text_36">
-        <g class="st13">
-          <text class="st16" transform="translate(60.61 437.26)"><tspan x="0" y="0">Variants</tspan></text>
-        </g>
-      </g>
-      <g id="text_37">
-        <g class="st13">
-          <text class="st16" transform="translate(60.61 457.62)"><tspan x="0" y="0">Motif discovery</tspan></text>
-        </g>
-      </g>
-      <g id="text_38">
-        <g class="st13">
-          <text class="st16" transform="translate(60.61 477.97)"><tspan x="0" y="0">History</tspan></text>
-        </g>
-      </g>
-      <g id="text_39">
-        <g class="st13">
-          <text class="st7" transform="translate(53.86 506.34)"><tspan x="0" y="0">Shared options</tspan></text>
-        </g>
-      </g>
-      <g id="text_40">
-        <g class="st13">
-          <text class="st3" transform="translate(60.61 518.46)"><tspan x="0" y="0">Genome</tspan></text>
-        </g>
-      </g>
-      <g id="text_41">
-        <g class="st13">
-          <text class="st1" transform="translate(60.61 525.71)"><tspan x="0" y="0">genome.fa.gz</tspan></text>
-        </g>
-      </g>
-      <g id="text_42">
-        <g class="st13">
-          <text class="st3" transform="translate(60.61 540.66)"><tspan x="0" y="0">Motifs</tspan></text>
-        </g>
-      </g>
-      <g id="text_43">
-        <g class="st13">
-          <text class="st1" transform="translate(60.61 547.91)"><tspan x="0" y="0">JASPAR / HOCOMOCO</tspan></text>
-        </g>
-      </g>
-      <g id="text_44">
-        <g class="st13">
-          <text class="st3" transform="translate(60.61 562.87)"><tspan x="0" y="0">Cores</tspan></text>
-        </g>
-      </g>
-      <g id="text_45">
-        <g class="st13">
-          <text class="st1" transform="translate(60.61 570.12)"><tspan x="0" y="0">1 demo; scale up</tspan></text>
-        </g>
-      </g>
-      <g id="text_46">
-        <g class="st13">
-          <text class="st3" transform="translate(60.61 585.07)"><tspan x="0" y="0">Output</tspan></text>
-        </g>
-      </g>
-      <g id="text_47">
-        <g class="st13">
-          <text class="st1" transform="translate(60.61 592.32)"><tspan x="0" y="0">examples/gui_outputs</tspan></text>
-        </g>
-      </g>
-      <g id="text_48">
-        <g class="st13">
-          <text class="st12" transform="translate(209.26 207.25)"><tspan x="0" y="0">GUI home</tspan></text>
-        </g>
-      </g>
-      <g id="text_49">
-        <g class="st13">
-          <text class="st22" transform="translate(256.7 207.25)"><tspan x="0" y="0">Save configs, run commands, and review outputs.</tspan></text>
-        </g>
-      </g>
-      <g id="text_50">
-        <g class="st13">
-          <text class="st2" transform="translate(227.27 225.56)"><tspan x="0" y="0">Inputs</tspan></text>
-        </g>
-      </g>
-      <g id="text_51">
-        <g class="st13">
-          <text class="st9" transform="translate(227.27 233.18)"><tspan x="0" y="0">ready</tspan></text>
-        </g>
-      </g>
-      <g id="text_52">
-        <g class="st13">
-          <text class="st2" transform="translate(288.08 225.56)"><tspan x="0" y="0">Config</tspan></text>
-        </g>
-      </g>
-      <g id="text_53">
-        <g class="st13">
-          <text class="st9" transform="translate(288.08 233.18)"><tspan x="0" y="0">saved</tspan></text>
-        </g>
-      </g>
-      <g id="text_54">
-        <g class="st13">
-          <text class="st2" transform="translate(348.89 225.52)"><tspan x="0" y="0">Logs</tspan></text>
-        </g>
-      </g>
-      <g id="text_55">
-        <g class="st13">
-          <text class="st9" transform="translate(348.89 233.18)"><tspan x="0" y="0">live</tspan></text>
-        </g>
-      </g>
-      <g id="text_56">
-        <g class="st13">
-          <text class="st2" transform="translate(409.7 225.56)"><tspan x="0" y="0">Plots</tspan></text>
-        </g>
-      </g>
-      <g id="text_57">
-        <g class="st13">
-          <text class="st9" transform="translate(409.7 233.18)"><tspan x="0" y="0">SVG</tspan></text>
-        </g>
-      </g>
-      <g id="text_58">
-        <g class="st13">
-          <text class="st6" transform="translate(219.39 262.77)"><tspan x="0" y="0">Guided tour</tspan></text>
-        </g>
-      </g>
-      <g id="text_59">
-        <g class="st13">
-          <text class="st5" transform="translate(219.39 274.66)"><tspan x="0" y="0">1 Select command 2 Load example 3 Preview command 4 Run</tspan></text>
-        </g>
-      </g>
-      <g id="text_60">
-        <g class="st13">
-          <text class="st5" transform="translate(219.39 287.15)"><tspan x="0" y="0">Same config for GUI and CLI.</tspan></text>
-        </g>
-      </g>
-      <g id="text_61">
-        <g class="st13">
-          <text class="st0" transform="translate(520.63 291)"><tspan x="0" y="0">Start tour</tspan></text>
-        </g>
-      </g>
-      <g id="text_62">
-        <g class="st13">
-          <text class="st23" transform="translate(219.39 333.49)"><tspan x="0" y="0">CLI-ready config</tspan></text>
-        </g>
-      </g>
-      <g id="text_63">
-        <g class="st13">
-          <text class="st14" transform="translate(227.27 348.85)"><tspan x="0" y="0">fp-tools-run examples/gui_configs/pseudobulk_footprints_dry_run.yml</tspan></text>
-        </g>
-      </g>
-      <g id="text_64">
-        <g class="st13">
-          <text class="st14" transform="translate(227.27 368.74)"><tspan x="0" y="0">ATACorrect -&gt; FootprintScores -&gt; BINDetect</tspan></text>
-        </g>
-      </g>
-      <g id="text_65">
-        <g class="st13">
-          <text class="st14" transform="translate(227.27 388.63)"><tspan x="0" y="0">paths, samples, motifs, and outputs are saved once</tspan></text>
-        </g>
-      </g>
-      <g id="text_66">
-        <g class="st13">
-          <text class="st18" transform="translate(209.26 418.59)"><tspan x="0" y="0">Core actions</tspan></text>
-        </g>
-      </g>
-      <g id="text_67">
-        <g class="st13">
-          <text class="st10" transform="translate(216.01 445.2)"><tspan x="0" y="0">Correct</tspan></text>
-        </g>
-      </g>
-      <g id="text_68">
-        <g class="st13">
-          <text class="st11" transform="translate(216.01 456.62)"><tspan x="0" y="0">Tn5 bias</tspan></text>
-        </g>
-      </g>
-      <g id="text_69">
-        <g class="st13">
-          <text class="st10" transform="translate(312.85 445.2)"><tspan x="0" y="0">Score</tspan></text>
-        </g>
-      </g>
-      <g id="text_70">
-        <g class="st13">
-          <text class="st11" transform="translate(312.85 456.62)"><tspan x="0" y="0">footprints</tspan></text>
-        </g>
-      </g>
-      <g id="text_71">
-        <g class="st13">
-          <text class="st10" transform="translate(409.7 445.2)"><tspan x="0" y="0">Detect</tspan></text>
-        </g>
-      </g>
-      <g id="text_72">
-        <g class="st13">
-          <text class="st11" transform="translate(409.7 456.62)"><tspan x="0" y="0">TF activity</tspan></text>
-        </g>
-      </g>
-      <g id="text_73">
-        <g class="st13">
-          <text class="st10" transform="translate(506.54 445.2)"><tspan x="0" y="0">Report</tspan></text>
-        </g>
-      </g>
-      <g id="text_74">
-        <g class="st13">
-          <text class="st11" transform="translate(506.54 456.62)"><tspan x="0" y="0">plots + tables</tspan></text>
-        </g>
-      </g>
-      <g id="text_75">
-        <g class="st13">
-          <text class="st23" transform="translate(219.39 508.72)"><tspan x="0" y="0">Templates</tspan></text>
-        </g>
-      </g>
-      <g id="text_76">
-        <g class="st13">
-          <text class="st1" transform="translate(225.02 519.23)"><tspan x="0" y="0">atacorrect.yml</tspan></text>
-        </g>
-      </g>
-      <g id="text_77">
-        <g class="st13">
-          <text class="st8" transform="translate(225.02 526.48)"><tspan x="0" y="0">correction</tspan></text>
-        </g>
-      </g>
-      <g id="text_78">
-        <g class="st13">
-          <text class="st1" transform="translate(351.52 519.23)"><tspan x="0" y="0">footprints.yml</tspan></text>
-        </g>
-      </g>
-      <g id="text_79">
-        <g class="st13">
-          <text class="st8" transform="translate(351.52 526.48)"><tspan x="0" y="0">scores</tspan></text>
-        </g>
-      </g>
-      <g id="text_80">
-        <g class="st13">
-          <text class="st1" transform="translate(478.01 519.23)"><tspan x="0" y="0">bindetect.yml</tspan></text>
-        </g>
-      </g>
-      <g id="text_81">
-        <g class="st13">
-          <text class="st8" transform="translate(478.01 526.48)"><tspan x="0" y="0">TF activity</tspan></text>
-        </g>
-      </g>
-      <g id="text_82">
-        <g class="st13">
-          <text class="st1" transform="translate(225.02 542.82)"><tspan x="0" y="0">aggregate.yml</tspan></text>
-        </g>
-      </g>
-      <g id="text_83">
-        <g class="st13">
-          <text class="st8" transform="translate(225.02 550.07)"><tspan x="0" y="0">profiles</tspan></text>
-        </g>
-      </g>
-      <g id="text_84">
-        <g class="st13">
-          <text class="st1" transform="translate(351.52 542.82)"><tspan x="0" y="0">pseudobulk.yml</tspan></text>
-        </g>
-      </g>
-      <g id="text_85">
-        <g class="st13">
-          <text class="st8" transform="translate(351.52 550.07)"><tspan x="0" y="0">single-cell</tspan></text>
-        </g>
-      </g>
-      <g id="text_86">
-        <g class="st13">
-          <text class="st1" transform="translate(478.01 542.82)"><tspan x="0" y="0">variants.yml</tspan></text>
-        </g>
-      </g>
-      <g id="text_87">
-        <g class="st13">
-          <text class="st8" transform="translate(478.01 550.07)"><tspan x="0" y="0">variants</tspan></text>
-        </g>
-      </g>
-      <g id="text_93">
-        <g class="st13">
-          <text class="st15" transform="translate(25.7 198.91)"><tspan x="0" y="0">C</tspan></text>
-        </g>
-      </g>
+    <g id="text_3">
+     <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: middle" x="80.523692" y="112.084906" transform="rotate(-0 80.523692 112.084906)">min</text>
     </g>
-    <g id="text_107">
-      <g class="st13">
-        <text class="st25" transform="translate(189.58 22.46)"><tspan x="0" y="0">Improved performance and GUI support</tspan></text>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_5">
+      <defs>
+       <path id="m574eec688f" d="M 0 0
+L -3.5 0
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m574eec688f" x="43.416" y="41.693143" style="stroke: #000000; stroke-width: 0.8"/>
       </g>
+     </g>
+     <g id="text_4">
+      <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: end" x="36.416" y="45.11244" transform="rotate(-0 36.416 45.11244)">TOBIAS</text>
+     </g>
     </g>
-  </g>
-  <g id="text_101">
-    <g class="st13">
-      <text class="st15" transform="translate(26.13 38.68)"><tspan x="0" y="0">A</tspan></text>
+    <g id="ytick_2">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m574eec688f" x="43.416" y="69.978857" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: end" x="36.416" y="73.398154" transform="rotate(-0 36.416 73.398154)">fp-tools</text>
+     </g>
     </g>
+   </g>
+   <g id="patch_3">
+    <path d="M 43.416 37.167429
+L 104.248282 37.167429
+L 104.248282 46.218857
+L 43.416 46.218857
+z
+" clip-path="url(#pe3ab33135f)" style="fill: #9ca3af"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 43.416 65.453143
+L 76.944024 65.453143
+L 76.944024 74.504571
+L 43.416 74.504571
+z
+" clip-path="url(#pe3ab33135f)" style="fill: #2563eb"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 43.416 85.536
+L 43.416 26.136
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 43.416 85.536
+L 117.631385 85.536
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: end; fill: #111827" x="101.650744" y="44.17658" transform="rotate(-0 101.650744 44.17658)">30.3</text>
+   </g>
+   <g id="text_7">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: end; fill: #ffffff" x="74.346485" y="72.462295" transform="rotate(-0 74.346485 72.462295)">16.7</text>
+   </g>
+   <g id="text_8">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: start" x="31.541538" y="20.700281" transform="rotate(-0 31.541538 20.700281)">A</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: middle" x="80.523692" y="19.136" transform="rotate(-0 80.523692 19.136)">Runtime</text>
+   </g>
   </g>
-  <g id="text_221">
-    <g class="st13">
-      <text class="st15" transform="translate(340.49 38.68)"><tspan x="0" y="0">B</tspan></text>
+  <g id="axes_2">
+   <g id="patch_7">
+    <path d="M 162.160615 85.536
+L 236.376 85.536
+L 236.376 26.136
+L 162.160615 26.136
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_3">
+    <g id="xtick_3">
+     <g id="line2d_7">
+      <path d="M 162.160615 85.536
+L 162.160615 26.136
+" clip-path="url(#p599f0cf85f)" style="fill: none; stroke: #e5e7eb; stroke-width: 0.65; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m3776b181a3" x="162.160615" y="85.536" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: middle" x="162.160615" y="99.374594" transform="rotate(-0 162.160615 99.374594)">0</text>
+     </g>
     </g>
-  </g>
-  <g id="patch_59">
-    <path class="st33" d="M212.57,609.39h372.73c4.5,0,6.76-1.21,6.76-3.63v-32.08c0-2.42-2.25-3.63-6.76-3.63H212.57c-4.5,0-6.76,1.21-6.76,3.63v32.08c0,2.42,2.25,3.63,6.76,3.63Z"/>
-  </g>
-  <g id="patch_60">
-    <path class="st51" d="M220.45,601.88c1.27,0,2.49-.41,3.38-1.15.9-.74,1.4-1.74,1.4-2.78s-.5-2.04-1.4-2.78c-.9-.74-2.11-1.15-3.38-1.15s-2.49.41-3.38,1.15-1.4,1.74-1.4,2.78.5,2.04,1.4,2.78,2.11,1.15,3.38,1.15Z"/>
-  </g>
-  <g id="patch_61">
-    <path class="st49" d="M308.28,601.88c1.27,0,2.49-.41,3.38-1.15.9-.74,1.4-1.74,1.4-2.78s-.5-2.04-1.4-2.78c-.9-.74-2.11-1.15-3.38-1.15s-2.49.41-3.38,1.15c-.9.74-1.4,1.74-1.4,2.78s.5,2.04,1.4,2.78c.9.74,2.11,1.15,3.38,1.15Z"/>
-  </g>
-  <g id="patch_62">
-    <path class="st52" d="M396.12,601.88c1.27,0,2.49-.41,3.38-1.15s1.4-1.74,1.4-2.78-.5-2.04-1.4-2.78-2.11-1.15-3.38-1.15-2.49.41-3.38,1.15c-.9.74-1.4,1.74-1.4,2.78s.5,2.04,1.4,2.78c.9.74,2.11,1.15,3.38,1.15Z"/>
-  </g>
-  <g id="patch_63">
-    <path class="st48" d="M483.95,601.88c1.27,0,2.49-.41,3.38-1.15.9-.74,1.4-1.74,1.4-2.78s-.5-2.04-1.4-2.78c-.9-.74-2.11-1.15-3.38-1.15s-2.49.41-3.38,1.15-1.4,1.74-1.4,2.78.5,2.04,1.4,2.78,2.11,1.15,3.38,1.15Z"/>
-  </g>
-  <g id="text_88">
-    <g class="st13">
-      <text class="st23" transform="translate(219.32 584.67)"><tspan x="0" y="0">Outputs</tspan></text>
+    <g id="xtick_4">
+     <g id="line2d_9">
+      <path d="M 225.527576 85.536
+L 225.527576 26.136
+" clip-path="url(#p599f0cf85f)" style="fill: none; stroke: #e5e7eb; stroke-width: 0.65; stroke-linecap: square"/>
+     </g>
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m3776b181a3" x="225.527576" y="85.536" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: middle" x="225.527576" y="99.374594" transform="rotate(-0 225.527576 99.374594)">5</text>
+     </g>
     </g>
-  </g>
-  <g id="text_89">
-    <g class="st13">
-      <text class="st4" transform="translate(228.33 596.58)"><tspan x="0" y="0">config</tspan></text>
+    <g id="text_12">
+     <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: middle" x="199.268308" y="112.084906" transform="rotate(-0 199.268308 112.084906)">GB</text>
     </g>
-  </g>
-  <g id="text_90">
-    <g class="st13">
-      <text class="st4" transform="translate(316.16 596.58)"><tspan x="0" y="0">logs</tspan></text>
+   </g>
+   <g id="matplotlib.axis_4">
+    <g id="ytick_3">
+     <g id="line2d_11">
+      <g>
+       <use xlink:href="#m574eec688f" x="162.160615" y="41.693143" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_13">
+      <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: end" x="155.160615" y="45.11244" transform="rotate(-0 155.160615 45.11244)">TOBIAS</text>
+     </g>
     </g>
-  </g>
-  <g id="text_91">
-    <g class="st13">
-      <text class="st4" transform="translate(404 596.58)"><tspan x="0" y="0">tables</tspan></text>
+    <g id="ytick_4">
+     <g id="line2d_12">
+      <g>
+       <use xlink:href="#m574eec688f" x="162.160615" y="69.978857" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_14">
+      <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: end" x="155.160615" y="73.398154" transform="rotate(-0 155.160615 73.398154)">fp-tools</text>
+     </g>
     </g>
+   </g>
+   <g id="patch_8">
+    <path d="M 162.160615 37.167429
+L 222.992898 37.167429
+L 222.992898 46.218857
+L 162.160615 46.218857
+z
+" clip-path="url(#p599f0cf85f)" style="fill: #9ca3af"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 162.160615 65.453143
+L 196.378774 65.453143
+L 196.378774 74.504571
+L 162.160615 74.504571
+z
+" clip-path="url(#p599f0cf85f)" style="fill: #2563eb"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 162.160615 85.536
+L 162.160615 26.136
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 162.160615 85.536
+L 236.376 85.536
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_15">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: end; fill: #111827" x="220.395359" y="44.17658" transform="rotate(-0 220.395359 44.17658)">4.8</text>
+   </g>
+   <g id="text_16">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: end; fill: #ffffff" x="193.781236" y="72.462295" transform="rotate(-0 193.781236 72.462295)">2.7</text>
+   </g>
+   <g id="text_17">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: start" x="150.286154" y="20.700281" transform="rotate(-0 150.286154 20.700281)">B</text>
+   </g>
+   <g id="text_18">
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Arial'; text-anchor: middle" x="199.268308" y="19.136" transform="rotate(-0 199.268308 19.136)">Peak memory</text>
+   </g>
   </g>
-  <g id="text_92">
-    <g class="st13">
-      <text class="st4" transform="translate(491.83 596.58)"><tspan x="0" y="0">SVG figures</tspan></text>
-    </g>
-  </g>
+ </g>
+ <defs>
+  <clipPath id="pe3ab33135f">
+   <rect x="43.416" y="26.136" width="74.215385" height="59.4"/>
+  </clipPath>
+  <clipPath id="p599f0cf85f">
+   <rect x="162.160615" y="26.136" width="74.215385" height="59.4"/>
+  </clipPath>
+ </defs>
 </svg>

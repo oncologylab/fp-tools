@@ -237,12 +237,24 @@ adjusted across motifs within each contrast.
 
 For replicate-supported comparisons, \texttt{fp-tools} generalizes this
 comparison to multiple samples per condition. Footprint scores are computed for
-each replicate on the same peak and motif-site universe; motif-site and
-background distributions are then summarized at the condition level before
-reporting the same change, log-fold-change, p-value, and adjusted q-value
-columns. The report also includes replicate counts, condition means, SDs, and
-SE summaries, so the additional samples contribute to a more stable estimate
-rather than being collapsed outside the analysis.
+each replicate on the same peak and motif-site universe. Replicate scores are
+then summarized within each condition,
+\[
+\bar{x}_{c,i}=\frac{1}{n_c}\sum_{r=1}^{n_c}x_{c,r,i},
+\qquad
+s^2_{c,i}=\frac{1}{n_c-1}\sum_{r=1}^{n_c}(x_{c,r,i}-\bar{x}_{c,i})^2 .
+\]
+For motif $m$, let $S_m$ denote its candidate motif sites and $B_m$ the matched
+background sites. The replicate-aware motif-background effect is reported as
+\[
+\Delta_m =
+\frac{1}{|S_m|}\sum_{i\in S_m}(\bar{x}_{c_1,i}-\bar{x}_{c_2,i})
+-
+\frac{1}{|B_m|}\sum_{i\in B_m}(\bar{x}_{c_1,i}-\bar{x}_{c_2,i}) .
+\]
+The report also includes replicate counts, condition means, SDs, and SE
+summaries, so the additional samples contribute to a more stable estimate rather
+than being collapsed outside the analysis.
 
 Quantile normalization remains an optional comparison-stage adjustment. In
 single-sample contrasts, sample-quantile normalization provides the conventional
@@ -256,18 +268,28 @@ use of replicate-level motif scores.
 When per-sample motif-score matrices are available, \texttt{fp-tools} further
 applies empirical-Bayes variance moderation across motifs, following the
 moderated testing framework of Smyth~\cite{smyth2004}. This replicate-supported
-view estimates condition effects from the per-sample motif scores and moderates
-the per-motif variance across the motif set before computing adjusted
-differential-footprint statistics.
+view estimates condition effects from the per-sample motif scores. If
+$z_{c,r,m}=|S_m|^{-1}\sum_{i\in S_m}x_{c,r,i}$ is the per-sample motif score,
+the contrast is
+\[
+\hat{\beta}_m=\frac{1}{n_{c_1}}\sum_r z_{c_1,r,m}
+-
+\frac{1}{n_{c_2}}\sum_r z_{c_2,r,m},
+\qquad
+t^{EB}_m=\frac{\hat{\beta}_m}
+{\sqrt{s^2_{m,EB}\left(n_{c_1}^{-1}+n_{c_2}^{-1}\right)}} ,
+\]
+where $s^2_{m,EB}$ is the variance moderated across motifs. Adjusted
+differential-footprint statistics from this view are reported alongside the
+native motif-background columns.
 
 \subsection{Public Data Processing and Evaluation}
 \label{sec:processing_provenance}
 
 The bulk replicate demonstration uses a 3-vs-3 public ENCODE ATAC-seq
-comparison between K562 and HepG2. We used released GRCh38 alignment BAMs from
-K562 ENCSR868FGK (ENCFF077FBI, ENCFF128WZG, and ENCFF534DCE) and HepG2
-ENCSR291GJU (ENCFF624SON, ENCFF926KFU, and ENCFF990VCP). Problematic genomic
-regions were filtered using the ENCODE blacklist~\cite{Amemiya2019_Blacklist}.
+comparison between K562 and HepG2, with three released GRCh38 alignment BAMs per
+cell line. Problematic genomic regions were filtered using the ENCODE
+blacklist~\cite{Amemiya2019_Blacklist}.
 Replicate peak intervals were merged into a common peak universe, bias-corrected,
 q95-scaled over shared background regions, footprint-called, and analyzed by
 replicate-aware differential footprint comparison. The analysis used JASPAR 2026
@@ -364,44 +386,34 @@ change the center-versus-flank footprint scoring model. The module can be run
 alone to discover recurring patterns in candidate intervals, or after known-motif
 scanning to find motifs that are absent from the selected database.
 
-We tested whether candidate-derived motifs add information beyond a fixed
-database using a 3-vs-3 public ENCODE K562 versus HepG2 ATAC-seq
-comparison~\cite{encode2012}.
-Candidate footprints were called from bias-corrected cut-site tracks,
-condition-specific candidate FASTA files were exported with 75 bp flanks, and
-STREME was run reciprocally with K562 candidates against HepG2 controls and
-HepG2 candidates against K562 controls. These discovered motifs were then used
-in two modes. In de novo-only mode, the candidate-derived motifs were tested as
-their own motif set. In supplement mode, the same motifs were appended to a known
-motif database before running the sample-quantile-normalized differential-footprint
-analysis.
+We used public ENCODE K562 and HepG2 ATAC-seq data as two examples to ask
+whether candidate footprint intervals contain recurring sequence motifs beyond a
+curated database. This analysis was not used as a formal condition-comparison
+test. Candidate footprints were called from bias-corrected cut-site tracks,
+candidate FASTA files were exported with 75 bp flanks, and STREME was run on
+candidate intervals from each cell line with the other cell line used as a
+sequence-control set. Discovered motifs were then summarized, compared with
+JASPAR by Tomtom, and scanned back into candidate intervals for aggregate
+footprint review.
 
 The full JASPAR 2026 vertebrate non-redundant set contained 1019 motifs, and the
-reciprocal STREME runs contributed 500 candidate-derived motifs from both ENCODE
-cell lines. We interpret this run as a site-recovery test of how far de novo-only
-discovery can cover database-supported footprints and complement a curated motif
-database. In de novo-only mode, recovery was measured as base-pair
-overlap after merging the bound-site windows produced by the de novo scan and
-the corresponding JASPAR-supported scan. By this operational metric, discovered
-motifs recovered 84.0\% of merged JASPAR-supported bound-site-window base pairs
-across the K562/HepG2 comparison, while 16.0\% remained unique to the full JASPAR
-scan. The de novo-only scan also introduced candidate-derived bound-site windows
-corresponding to 6.0\% of the de novo-only merged window base pairs.
+reciprocal STREME runs contributed 500 candidate-derived motifs from the two
+ENCODE cell lines. We evaluated de novo discovery as a motif-window coverage
+test rather than as a differential-footprint significance test. After merging
+bound-site windows from the de novo scan and the corresponding JASPAR-supported
+scan, candidate-derived motifs recovered 84.0\% of merged
+JASPAR-supported bound-site-window base pairs, while 16.0\% remained unique to
+the full JASPAR scan. The de novo-only scan also introduced candidate-derived
+bound-site windows corresponding to 6.0\% of the de novo-only merged window base
+pairs. These values are operational recovery summaries, not multiple-testing
+significance calls.
 
-In supplement mode, discovered motifs are appended to known motifs before the
-same motif-aware differential footprint analysis. As a sensitivity test, we
-constructed a K562/HepG2-focused restricted JASPAR 2026 set with 867 motifs by
-removing common erythroid/K562 and liver/HepG2 motif families, then reran the
-comparison with and without the de novo motifs. In the interactive report, the
-restricted database yielded 92 display-priority motif families according to the
-\texttt{highlighted} report-selection flag; adding the 500 de novo motifs
-increased this browsing set to 153 families, including 24 de novo-derived motifs.
-Because \texttt{highlighted} is not a multiple-testing-corrected significance
-label, these counts are treated only as report-prioritization output. This
-sensitivity test illustrates the intended use case: when a chosen motif database
-is incomplete or conservative, candidate-derived motifs can be evaluated alone
-and can also be carried into the same differential footprint report as
-database-supported motifs (Figure~\ref{fig:denovo_validation}).
+Representative discovered motifs showed clear motif-centered aggregate
+footprint profiles in K562 and HepG2, indicating that the de novo sequence
+patterns correspond to footprinted cut-site structure in the candidate intervals
+(Figure~\ref{fig:denovo_validation}). These results support using de novo motif
+discovery as a complement to database-based motif matching when the chosen motif
+collection is incomplete or conservative.
 
 \begin{figure}[!htb]
 \includegraphics[width=\textwidth]{figures/Fig2.pdf}
@@ -413,22 +425,6 @@ de novo-only motif-supported intervals in K562 and HepG2. (\textbf{C,D})
 Representative K562 and HepG2 de novo motifs show footprint-like normalized
 cut-site aggregate profiles centered on motif instances.
 \label{fig:denovo_validation}}
-\end{figure}
-
-A representative K562 versus HepG2 differential footprint report is shown in
-Figure~\ref{fig:differential_report}. The report combines selected motif logos,
-top differential motif rankings, a volcano summary, and replicate-level aggregate
-footprint profiles in one browser-review view.
-
-\begin{figure}[p]
-\centering
-\includegraphics[height=0.88\textheight,keepaspectratio]{figures/Fig3.png}
-\caption{Interactive differential footprint report for K562 versus HepG2.
-The browser report view summarizes selected differential motifs, motif
-logos, top differential footprint-score bar plots, a volcano plot, and
-replicate-level motif-centered aggregate profiles. Blue indicates HepG2-biased
-footprint scores and red indicates K562-biased footprint scores.
-\label{fig:differential_report}}
 \end{figure}
 
 \subsection{Replicate-aware Differential Footprint Analysis}
@@ -448,6 +444,22 @@ across motifs~\cite{smyth2004}. The K562/HepG2 replicate-supported output
 reports condition means, replicate counts, SD and SE summaries, moderated
 statistics, and adjusted q-values alongside the original motif-background
 comparison.
+
+A representative K562 versus HepG2 differential footprint report is shown in
+Figure~\ref{fig:differential_report}. The report combines selected motif logos,
+top differential motif rankings, a volcano summary, and replicate-level aggregate
+footprint profiles in one browser-review view.
+
+\begin{figure}[p]
+\centering
+\includegraphics[height=0.88\textheight,keepaspectratio]{figures/Fig3.png}
+\caption{Interactive differential footprint report for K562 versus HepG2.
+The browser report view summarizes selected differential motifs, motif
+logos, top differential footprint-score bar plots, a volcano plot, and
+replicate-level motif-centered aggregate profiles. Blue indicates HepG2-biased
+footprint scores and red indicates K562-biased footprint scores.
+\label{fig:differential_report}}
+\end{figure}
 
 \subsection{Single-cell ATAC Fragments Support Pseudobulk Footprinting}
 
@@ -681,7 +693,7 @@ ENCODE BAM processing & Released GRCh38 alignment BAMs for K562 ENCSR868FGK and 
 Blacklist and peak set & Mitochondrial and nonstandard contigs excluded; hg38 blacklist v2 regions subtracted; released ENCODE peak intervals sorted and merged across replicates into one analysis peak set.\\
 Bias correction and footprint scores & \texttt{atac-correct} run on filtered BAMs with merged peaks and blacklist regions using default Tn5-bias settings; corrected cut-site tracks q95-scaled over shared background regions for multi-sample analyses; \texttt{call-footprints --score footprint} run with default footprint and flank windows.\\
 Differential footprint analysis & The 3-vs-3 ENCODE K562/HepG2 replicate footprint tracks were analyzed with repeated condition labels, JASPAR 2026 motifs, and replicate reporting enabled. One-sample contrasts use motif-site versus background-distribution comparison; replicate-supported analyses use empirical-Bayes variance moderation on per-sample aggregated motif scores.\\
-De novo motif validation & ENCODE K562/HepG2 candidate footprints exported as condition-level FASTA files with \(\pm 75\) bp flanks; reciprocal STREME 5.5.9 runs used \texttt{--dna --nmotifs 250}; Tomtom 5.5.9 matched discovered motifs to JASPAR 2026; de novo motifs were evaluated alone and as additions to known motif sets.\\
+De novo motif validation & ENCODE K562/HepG2 candidate footprints exported as cell-line-level FASTA files with \(\pm 75\) bp flanks; reciprocal STREME 5.5.9 runs used \texttt{--dna --nmotifs 250}; Tomtom 5.5.9 matched discovered motifs to JASPAR 2026; discovered motifs were scanned back into candidate intervals for motif-window overlap summaries and aggregate footprint review.\\
 Pseudobulk PBMC analysis & Public 10x PBMC5k scATAC fragments grouped into broad B-cell, monocyte, and T--NK labels, retaining 4,437 annotated cells and requiring at least 300 cells and 50,000 fragments per group. The full \texttt{pseudobulk-footprints} route writes pseudo-BAMs, runs ATAC correction with zero read shifting for fragment-derived pseudobulk BAMs, and emits footprint-score tracks, motif-aware differential results, pairwise volcano plots, and KNN-smoothed footprint-signature UMAPs.\\
 \bottomrule
 \end{tabularx}

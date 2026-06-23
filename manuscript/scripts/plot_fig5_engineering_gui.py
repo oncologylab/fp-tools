@@ -33,6 +33,9 @@ def apply_svg_style() -> None:
             "ytick.labelsize": 9,
             "legend.fontsize": 9,
             "svg.fonttype": "none",
+            "axes.linewidth": 0.8,
+            "xtick.major.width": 0.8,
+            "ytick.major.width": 0.8,
         }
     )
 
@@ -73,19 +76,23 @@ def plot_metric_bars(ax: plt.Axes, table: pd.DataFrame, panel: str, title: str) 
     current = float(pd.to_numeric(subset["current_value"], errors="raise").mean())
     values = np.asarray([baseline, current], dtype=float)
     labels = [baseline_label, current_label]
-    x = np.arange(len(values), dtype=float)
+    y = np.arange(len(values), dtype=float)
     ymax = max(float(values.max()), 1.0) * 1.22
 
-    ax.bar(x, values, width=0.30, color=[COLORS["baseline"], COLORS["current"]])
-    for xpos, value in zip(x, values, strict=True):
-        ax.text(xpos, value + ymax * 0.025, f"{value:.1f}", ha="center", va="bottom")
+    ax.barh(y, values, height=0.32, color=[COLORS["baseline"], COLORS["current"]])
+    for idx, (ypos, value) in enumerate(zip(y, values, strict=True)):
+        label_color = "#111827" if idx == 0 else "#FFFFFF"
+        ax.text(value - ymax * 0.035, ypos, f"{value:.1f}", ha="right", va="center", color=label_color)
 
-    ax.set_title(f"{panel}. {title}", pad=5)
-    ax.set_xticks(x, labels=labels)
-    ax.set_ylabel(unit)
-    ax.set_ylim(0, ymax)
+    ax.text(-0.16, 1.06, panel, transform=ax.transAxes, ha="left", va="bottom")
+    ax.set_title(title, pad=7)
+    ax.set_yticks(y, labels=labels)
+    ax.set_xlabel(unit)
+    ax.set_xlim(0, ymax)
+    ax.set_ylim(-0.55, len(values) - 0.45)
+    ax.invert_yaxis()
     ax.spines[["top", "right"]].set_visible(False)
-    ax.grid(axis="y", color="#E5E7EB", linewidth=0.7)
+    ax.grid(axis="x", color="#E5E7EB", linewidth=0.65)
     ax.set_axisbelow(True)
 
 
@@ -381,12 +388,12 @@ def plot_fig5(source: Path, output: Path) -> None:
     fig, axes = plt.subplots(
         1,
         2,
-        figsize=(4.9, 2.25),
-        gridspec_kw={"wspace": 0.42},
+        figsize=(3.35, 1.65),
+        gridspec_kw={"wspace": 0.60},
     )
     plot_metric_bars(axes[0], table, "A", "Runtime")
     plot_metric_bars(axes[1], table, "B", "Peak memory")
-    fig.subplots_adjust(left=0.14, right=0.99, top=0.83, bottom=0.28)
+    fig.subplots_adjust(left=0.18, right=0.98, top=0.78, bottom=0.28)
     force_arial_bold(fig)
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, format="svg")
