@@ -1190,6 +1190,7 @@ def draw_knn_umap_panel(
     knn_scores: pd.DataFrame,
     markers: list[str],
     cax: plt.Axes | None = None,
+    boxed_axes: bool = False,
 ) -> None:
     x_padding = float((annotations["umap_1"].max() - annotations["umap_1"].min()) * 0.03)
     y_padding = float((annotations["umap_2"].max() - annotations["umap_2"].min()) * 0.03)
@@ -1215,7 +1216,12 @@ def draw_knn_umap_panel(
     reference_ax.set_ylim(ylim)
     reference_ax.set_xticks([])
     reference_ax.set_yticks([])
-    reference_ax.spines[["top", "right"]].set_visible(False)
+    if boxed_axes:
+        for spine in reference_ax.spines.values():
+            spine.set_visible(True)
+            spine.set_linewidth(0.55)
+    else:
+        reference_ax.spines[["top", "right"]].set_visible(False)
 
     marker_values = knn_scores[knn_scores["tf"].isin(markers)]["knn_footprint_oriented_z"]
     marker_arr = pd.to_numeric(marker_values, errors="coerce").to_numpy(dtype=float)
@@ -1248,7 +1254,12 @@ def draw_knn_umap_panel(
         ax.set_ylim(ylim)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.spines[["top", "right"]].set_visible(False)
+        if boxed_axes:
+            for spine in ax.spines.values():
+                spine.set_visible(True)
+                spine.set_linewidth(0.55)
+        else:
+            ax.spines[["top", "right"]].set_visible(False)
 
     if last_scatter is not None:
         if cax is not None:
@@ -1385,7 +1396,7 @@ def plot_fig4_single_cell_footprinting(
     bottom_grid = outer[1].subgridspec(3, 4, hspace=0.38, wspace=0.28, width_ratios=[1.0, 1.0, 1.0, 0.07])
     axes = [fig.add_subplot(bottom_grid[row, col]) for row in range(3) for col in range(3)]
     cax = fig.add_subplot(bottom_grid[:, 3])
-    draw_knn_umap_panel(fig, axes[: 1 + len(markers)], annotations, knn_scores, markers, cax=cax)
+    draw_knn_umap_panel(fig, axes[: 1 + len(markers)], annotations, knn_scores, markers, cax=cax, boxed_axes=True)
     for ax in axes[1 + len(markers) :]:
         ax.set_visible(False)
     fig.text(0.035, 0.61, "B", fontsize=9, fontweight="bold", fontfamily="Arial", va="top")

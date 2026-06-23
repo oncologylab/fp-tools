@@ -316,6 +316,14 @@ L 56.294738 293.299065
 L 195.723742 409.064299 
 " style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
+   <g id="fig4b_box_4">
+    <path d="M 56.294738 293.299065
+L 195.723742 293.299065
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+    <path d="M 195.723742 409.064299
+L 195.723742 293.299065
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
    <g id="text_15">
     <g id="patch_9">
      <path d="M 64.512809 370.832853 
@@ -1184,6 +1192,14 @@ L 233.571679 293.299065
 L 373.000684 409.064299 
 " style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
+   <g id="fig4b_box_5">
+    <path d="M 233.571679 293.299065
+L 373.000684 293.299065
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+    <path d="M 373.000684 409.064299
+L 373.000684 293.299065
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
    <g id="text_19">
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(289.794791 284.423019)">IKZF1</text>
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(279.930759 291.572925)">MA1508.2</text>
@@ -1296,6 +1312,14 @@ L 410.84862 293.299065
    <g id="patch_17">
     <path d="M 410.84862 409.064299 
 L 550.277625 409.064299 
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig4b_box_6">
+    <path d="M 410.848620 293.299065
+L 550.277625 293.299065
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+    <path d="M 550.277625 409.064299
+L 550.277625 293.299065
 " style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="text_20">
@@ -1430,6 +1454,14 @@ L 56.294738 466.946916
 L 195.723742 582.71215 
 " style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
+   <g id="fig4b_box_7">
+    <path d="M 56.294738 466.946916
+L 195.723742 466.946916
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+    <path d="M 195.723742 582.712150
+L 195.723742 466.946916
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
    <g id="text_27">
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(111.090638 458.07087)">CEBPA</text>
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(102.653818 465.220775)">MA0102.5</text>
@@ -1544,6 +1576,14 @@ L 233.571679 466.946916
 L 373.000684 582.71215 
 " style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
+   <g id="fig4b_box_8">
+    <path d="M 233.571679 466.946916
+L 373.000684 466.946916
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+    <path d="M 373.000684 582.712150
+L 373.000684 466.946916
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
    <g id="text_28">
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(288.037525 458.07087)">CEBPB</text>
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(279.930759 465.220775)">MA0466.4</text>
@@ -1656,6 +1696,14 @@ L 410.84862 466.946916
    <g id="patch_26">
     <path d="M 410.84862 582.71215 
 L 550.277625 582.71215 
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig4b_box_9">
+    <path d="M 410.848620 466.946916
+L 550.277625 466.946916
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+    <path d="M 550.277625 582.712150
+L 550.277625 466.946916
 " style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="text_29">
@@ -1808,6 +1856,14 @@ L 56.294738 640.594766
 L 195.723742 756.36 
 " style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
+   <g id="fig4b_box_10">
+    <path d="M 56.294738 640.594766
+L 195.723742 640.594766
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+    <path d="M 195.723742 756.360000
+L 195.723742 640.594766
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
    <g id="text_42">
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(114.426849 631.71872)">KLF2</text>
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(102.653818 638.868626)">MA1515.2</text>
@@ -1940,6 +1996,14 @@ L 233.571679 640.594766
 L 373.000684 756.36 
 " style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
+   <g id="fig4b_box_11">
+    <path d="M 233.571679 640.594766
+L 373.000684 640.594766
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+    <path d="M 373.000684 756.360000
+L 373.000684 640.594766
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
    <g id="text_49">
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(288.816298 631.71872)">KLF13</text>
     <text style="font-weight: 700; font-size: 8.3px; font-family: 'Arial'" transform="translate(279.930759 638.868626)">MA0657.2</text>
@@ -2070,6 +2134,14 @@ L 410.84862 640.594766
    <g id="patch_35">
     <path d="M 410.84862 756.36 
 L 550.277625 756.36 
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="fig4b_box_12">
+    <path d="M 410.848620 640.594766
+L 550.277625 640.594766
+" style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
+    <path d="M 550.277625 756.360000
+L 550.277625 640.594766
 " style="fill: none; stroke: #000000; stroke-width: 0.55; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="text_56">
