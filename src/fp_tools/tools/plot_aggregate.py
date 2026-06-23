@@ -243,6 +243,115 @@ def plot_normalization_comparison(raw_aggregates, norm_aggregates, condition_nam
     fig.savefig(output, bbox_inches="tight", dpi=dpi)
     plt.close(fig)
 
+
+def _path_stem(path):
+    return os.path.splitext(os.path.basename(str(path)))[0]
+
+
+def _aggregate_output_format(args):
+    requested = getattr(args, "format", "auto") or "auto"
+    if requested != "auto":
+        return requested
+    ext = os.path.splitext(str(args.output or ""))[1].lower()
+    return "html" if ext in {".html", ".htm"} else "pdf"
+
+
+def _match_dir_rows(args):
+    signals = list(args.signals or [])
+    if not signals:
+        raise ValueError("--signals is required with --match-dir")
+
+    labels = list(args.signal_labels or [_path_stem(path) for path in signals])
+    if len(labels) != len(signals):
+        raise ValueError("--signal-labels must have the same length as --signals")
+
+    conditions = list(args.cond_names or labels)
+    if len(conditions) != len(signals):
+        raise ValueError("--cond-names must have the same length as --signals")
+
+    match_dirs = list(args.match_dir or [])
+    if len(match_dirs) == 1:
+        match_dirs = match_dirs * len(signals)
+    if len(match_dirs) != len(signals):
+        raise ValueError("--match-dir must contain one directory or one directory per --signals input")
+
+    rows = []
+    for signal, label, condition, match_dir in zip(signals, labels, conditions, match_dirs):
+        rows.append({
+            "sample": label,
+            "label": label,
+            "condition": condition,
+            "signal": signal,
+            "match_dir": match_dir,
+        })
+    return rows
+
+
+def _run_match_dir_html(args, logger):
+    from fp_tools.tools.plot_aggregate_batch import build_payload, write_html
+
+    try:
+        rows = _match_dir_rows(args)
+    except ValueError as exc:
+        logger.error(f"ERROR: {exc}")
+        sys.exit(1)
+    payload = build_payload(
+        rows,
+        flank=max(1, int(args.flank)),
+        top_n=max(1, int(args.top_n)),
+        normalization=args.normalization,
+        motif_names=args.motifs,
+        site_set=args.site_set,
+    )
+    make_directory(os.path.dirname(os.path.abspath(args.output)) or ".")
+    write_html(payload, args.output, args.title, default_layout=args.default_layout, show_summary=False)
+    logger.info(f"Wrote interactive aggregate HTML report to {args.output}")
+
+
+def _resolve_match_dir_tfbs(args, logger):
+    if not getattr(args, "match_dir", None):
+        return
+    from fp_tools.tools.plot_aggregate_batch import _discover_motifs, _motif_bed_path, _select_motif_prefixes
+
+    try:
+        rows = _match_dir_rows(args)
+    except ValueError as exc:
+        logger.error(f"ERROR: {exc}")
+        sys.exit(1)
+
+    motif_meta = {}
+    motif_scores = {}
+    for row in rows:
+        for motif in _discover_motifs(row["match_dir"]):
+            prefix = str(motif["prefix"])
+            motif_meta.setdefault(prefix, motif)
+            motif_scores[prefix] = max(float(motif.get("score") or 0.0), motif_scores.get(prefix, 0.0))
+    ranked = sorted(motif_meta.values(), key=lambda row: (-motif_scores[str(row["prefix"])], str(row.get("name") or row["prefix"])))
+    selected = _select_motif_prefixes(ranked, args.motifs, max(1, int(args.top_n)))
+    first = rows[0]
+    tfbs = []
+    labels = []
+    for prefix in selected:
+        bed = _motif_bed_path(
+            first["match_dir"],
+            prefix,
+            condition=first["condition"],
+            sample=first["sample"],
+            site_set=args.site_set,
+        )
+        if not bed.exists():
+            logger.warning(f"Skipping motif {prefix}; no BED file found at {bed}")
+            continue
+        tfbs.append(str(bed))
+        labels.append(str(motif_meta[prefix].get("name") or prefix))
+    if not tfbs:
+        logger.error("ERROR: no motif BED files were resolved from --match-dir")
+        sys.exit(1)
+    args.TFBS = tfbs
+    if args.TFBS_labels is None:
+        args.TFBS_labels = labels
+
+
 def run_aggregate(args):
     """Create aggregate plots and optional aggregate exports."""
 
@@ -254,6 +363,16 @@ def run_aggregate(args):
     logger = FpToolsLogger("PlotAggregate", args.verbosity)
     logger.begin()
 
+    if getattr(args, "match_dir", None) and _aggregate_output_format(args) == "html":
+        logger.arguments_overview(add_aggregate_arguments(argparse.ArgumentParser()), args)
+        _run_match_dir_html(args, logger)
+        logger.end()
+        return
+
+    _resolve_match_dir_tfbs(args, logger)
+
+    if args.TFBS is None:
+        args.TFBS = []
     if len(args.TFBS) == 1 and os.path.isdir(args.TFBS[0]):
         bed_dir = args.TFBS[0]
         beds = sorted(

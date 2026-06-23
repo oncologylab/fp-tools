@@ -35,12 +35,12 @@ The GUI opens in a browser and writes the same YAML configs that can be run from
 ```text
 atac-correct
   -> call-footprints
-  -> match-motifs
+  -> match-motifs or motif-discovery
   -> diff-footprints
-  -> plot-aggregate or plot-aggregate-batch
+  -> plot-aggregate
 ```
 
-Use `match-motifs` to inspect motif sites and bound/unbound calls for a single footprint track. For two or more conditions, use `diff-footprints`; it can scan the same motif database, compare conditions, and write an interactive HTML report.
+Use `match-motifs` to inspect motif sites and bound/unbound calls for one or more footprint tracks. Use `motif-discovery` when candidate footprint intervals should be searched for de novo motifs. For two or more conditions, use `diff-footprints`; it can scan the same motif database, compare conditions, and write an interactive HTML report.
 
 ## Minimal Example
 
@@ -53,9 +53,9 @@ atac-correct \
   --outdir results/atac_correct/sample
 
 call-footprints \
-  --signal results/atac_correct/sample/sample_corrected.bw \
+  --signals results/atac_correct/sample/sample_corrected.bw \
   --regions peaks.bed \
-  --output results/footprints/sample_footprints.bw
+  --outdir results/footprints
 
 match-motifs \
   --signals results/footprints/sample_footprints.bw \
@@ -147,12 +147,12 @@ diff-footprints \
 | Command | Use |
 | --- | --- |
 | `atac-correct` | Bias-correct ATAC-seq cut-site signal. |
-| `call-footprints` | Create footprint score tracks. |
-| `match-motifs` | Scan motifs for one sample. |
+| `call-footprints` | Create footprint score tracks from one or more bigWigs. |
+| `match-motifs` | Scan motifs for one or more footprint tracks. |
 | `diff-footprints` | Compare motif footprints across conditions. |
 | `normalize-bigwig` | Scale bigWigs before aggregate plotting. |
-| `plot-aggregate` | Make static aggregate footprint plots. |
-| `plot-aggregate-batch` | Make interactive aggregate HTML reports. |
+| `plot-aggregate` | Make aggregate footprint plots as PDF/SVG-style output or HTML. |
+| `plot-aggregate-batch` | Compatibility command for interactive aggregate HTML reports. |
 | `motif-discovery` | Prepare candidate-centered de novo motif discovery. |
 | `motif-summary` | Summarize motif discovery outputs. |
 | `fp-tools-score-variants` | Score variants against candidate footprints and motifs. |

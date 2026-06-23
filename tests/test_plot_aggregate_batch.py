@@ -216,6 +216,46 @@ class PlotAggregateBatchTest(unittest.TestCase):
         self.assertIn("bedSummaryFromRows", html)
         self.assertIn("plot_aggregate_batch_grid.svg", html)
 
+    def test_write_html_can_hide_summary_sidebar(self):
+        payload = {
+            "schema": "fp-tools.aggregate.batch.v2",
+            "x": [-1, 1],
+            "motifs": [
+                {
+                    "prefix": "TF1",
+                    "name": "TF1",
+                    "motif_id": "",
+                    "score": 1,
+                    "sites": 1,
+                    "site_set": "bound.bed",
+                    "series": [
+                        {
+                            "id": "sample::S1",
+                            "label": "S1",
+                            "kind": "sample",
+                            "condition": "S1",
+                            "profile": [0.1, 0.2],
+                            "avg_score": 0.15,
+                            "sites": 1,
+                            "bed_source": "bound.bed",
+                        }
+                    ],
+                }
+            ],
+            "conditions": ["S1"],
+            "colors": {"S1": "#2563eb"},
+            "normalization": "none",
+            "site_set": "bound.bed",
+            "x_label": "Distance from motif center (bp)",
+            "y_label": "Corrected cut-site signal (a.u.)",
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = Path(tmpdir) / "aggregate.html"
+            write_html(payload, out, "Selected TFs", show_summary=False)
+            html = out.read_text(encoding="utf-8")
+        self.assertIn("waterfall-card{display:none}", html)
+        self.assertIn("data-panel-tf", html)
+
 
 if __name__ == "__main__":
     unittest.main()

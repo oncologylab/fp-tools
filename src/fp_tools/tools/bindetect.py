@@ -129,7 +129,9 @@ def _prepare_condition_metadata(args):
             args.sample_to_condition[sample_name] = cond
             args.condition_samples[cond].append(sample_name)
 
-    if args.time_series:
+    if getattr(args, "match_only", False):
+        args.comparisons = []
+    elif args.time_series:
         args.comparisons = list(zip(args.cond_names[:-1], args.cond_names[1:]))
     else:
         args.comparisons = list(itertools.combinations(args.cond_names, 2))
@@ -661,6 +663,7 @@ def run_bindetect(args):
     logger.info("Estimating bound/unbound threshold")
     bg_values = np.array([background["signal"][c] for c in args.cond_names]).flatten()
     logger.debug(f"Size of background array collected: {bg_values.size}")
+    bg_values = bg_values[np.isfinite(bg_values)]
     bg_values = bg_values[~np.isclose(bg_values, 0.0)]
     logger.debug(f"Size after filtering > 0: {bg_values.size}")
     if len(bg_values) == 0:
@@ -850,25 +853,12 @@ def run_bindetect(args):
                 ws.autofilter(0, 0, n_rows, n_cols)
 
     # BEGIN EDIT: emit skew/shift PDF right next to *_results.txt
-    skew_pdf = os.path.join(args.outdir, args.prefix + "_results_skewness_report.pdf")
-    try:
-        # Prefer a programmatic API if available
-        if hasattr(skewrep, "generate_skew_report"):
-            skewrep.generate_skew_report(
-                results_tsv=bindetect_out,
-                out_pdf=skew_pdf,
-                out_json=None,
-                skew_method="perm",
-                skew_stat="bowley",
-                n_perm=20000,
-                seed=1,
-            )
-            logger.info(f"Skew/shift report saved → {os.path.basename(skew_pdf)}")
-        else:
-            # Backward-compatible fallback to module main() style runner
-            # (expects skewrep.main_from_kwargs to exist; see note below)
-            if hasattr(skewrep, "main_from_kwargs"):
-                skewrep.main_from_kwargs(
+    if comparisons:
+        skew_pdf = os.path.join(args.outdir, args.prefix + "_results_skewness_report.pdf")
+        try:
+            # Prefer a programmatic API if available
+            if hasattr(skewrep, "generate_skew_report"):
+                skewrep.generate_skew_report(
                     results_tsv=bindetect_out,
                     out_pdf=skew_pdf,
                     out_json=None,
@@ -879,10 +869,24 @@ def run_bindetect(args):
                 )
                 logger.info(f"Skew/shift report saved → {os.path.basename(skew_pdf)}")
             else:
-                logger.warning(
-                    "bindetect_skew_report has no generate_skew_report() or main_from_kwargs(); skipping PDF.")
-    except Exception as e:
-        logger.warning(f"Could not generate skew/shift report: {e}")
+                # Backward-compatible fallback to module main() style runner
+                # (expects skewrep.main_from_kwargs to exist; see note below)
+                if hasattr(skewrep, "main_from_kwargs"):
+                    skewrep.main_from_kwargs(
+                        results_tsv=bindetect_out,
+                        out_pdf=skew_pdf,
+                        out_json=None,
+                        skew_method="perm",
+                        skew_stat="bowley",
+                        n_perm=20000,
+                        seed=1,
+                    )
+                    logger.info(f"Skew/shift report saved → {os.path.basename(skew_pdf)}")
+                else:
+                    logger.warning(
+                        "bindetect_skew_report has no generate_skew_report() or main_from_kwargs(); skipping PDF.")
+        except Exception as e:
+            logger.warning(f"Could not generate skew/shift report: {e}")
     # END EDIT
 
     # ------------------------------ plots ------------------------------------ #
@@ -996,13 +1000,14 @@ def match_motifs_cli():
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
-    if not args.signals or len(args.signals) != 1:
-        parser.error("match-motifs expects exactly one --signals bigWig for single-sample motif matching")
-    if args.cond_names is not None and len(args.cond_names) != 1:
-        parser.error("match-motifs expects exactly one --cond-names value when provided")
+    if not args.signals:
+        parser.error("match-motifs expects at least one --signals bigWig")
+    if args.cond_names is not None and len(args.cond_names) != len(args.signals):
+        parser.error("match-motifs expects one --cond-names value per --signals bigWig when provided")
     if args.prefix in {"bindetect", "diff_footprints"}:
         args.prefix = "motif_matches"
     args.method = "bindetect"
+    args.match_only = True
     args.replicate_report = "off"
     run_bindetect(args)
 

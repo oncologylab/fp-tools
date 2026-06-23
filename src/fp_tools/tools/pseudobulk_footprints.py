@@ -325,15 +325,15 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
 
         footprint_command = [
             "call-footprints",
-            "--signal",
+            "--signals",
             str(corrected_bigwig),
             "--regions",
             str(peaks_for_run),
-            "--output",
+            "--outputs",
             str(footprint_bigwig),
             "--score",
             "footprint",
-            "--output-bed",
+            "--output-beds",
             str(candidate_bed),
             "--cores",
             str(args.cores),

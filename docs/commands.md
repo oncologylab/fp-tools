@@ -13,7 +13,7 @@ pip install fp-tools-bio
   </div>
   <div class="fp-card">
     <h3>Review reports</h3>
-    <p>plot-aggregate and plot-aggregate-batch generate static figures and standalone HTML browsers.</p>
+    <p>plot-aggregate generates static figures or standalone HTML aggregate browsers.</p>
   </div>
   <div class="fp-card">
     <h3>Add optional routes</h3>
@@ -26,12 +26,12 @@ pip install fp-tools-bio
 | Command | Purpose |
 | --- | --- |
 | `atac-correct` | Correct ATAC-seq cut-site signal for Tn5 sequence bias. |
-| `call-footprints` | Calculate footprint scores and optionally write ranked candidate BED intervals. |
-| `match-motifs` | Scan motifs for one sample and infer bound/unbound motif sites. |
+| `call-footprints` | Calculate footprint scores from one or more bigWigs and optionally write candidate BED intervals. |
+| `match-motifs` | Scan motifs for one or more footprint tracks and infer bound/unbound motif sites. |
 | `diff-footprints` | Compare motif-associated footprint scores across conditions or replicates. |
 | `normalize-bigwig` | Background-match corrected or footprint-score bigWigs before aggregate visualization. |
-| `plot-aggregate` | Plot static aggregate signal around TFBS or region sets. |
-| `plot-aggregate-batch` | Create an interactive multi-sample, multi-TF aggregate HTML report. |
+| `plot-aggregate` | Plot aggregate signal around motif sites as PDF/SVG-style output or HTML. |
+| `plot-aggregate-batch` | Compatibility command for interactive aggregate HTML reports. |
 | `run-workflow` | Run optional YAML batch configurations. |
 | `fp-tools-gui` | Launch the optional Streamlit GUI. |
 
@@ -53,10 +53,10 @@ For multi-sample analyses, score footprints from q95-scaled corrected bigWigs an
 ## Standard Bulk Workflow
 
 ```text
-atac-correct -> call-footprints -> match-motifs -> diff-footprints -> plot-aggregate-batch
+atac-correct -> call-footprints -> match-motifs / motif-discovery -> diff-footprints -> plot-aggregate
 ```
 
-`match-motifs` is the single-sample motif-site review step. `diff-footprints` repeats motif scanning for multi-condition comparisons and writes the differential report.
+`match-motifs` is the motif-site review step for one or more footprint tracks. `motif-discovery` is the optional de novo route from candidate footprint intervals. `diff-footprints` performs multi-condition comparisons and writes the differential report.
 
 ## Pseudobulk Workflow
 

@@ -7,12 +7,12 @@ The public interface of `fp-tools` is command-first. This page lists the full co
 | Command | Purpose |
 | --- | --- |
 | [`atac-correct`](#atac-correct) | Bias-correct ATAC-seq cut-site signal. |
-| [`call-footprints`](#call-footprints) | Create footprint score tracks from bigWig signal. |
-| [`match-motifs`](#match-motifs) | Scan motifs for one sample and infer bound/unbound motif sites. |
+| [`call-footprints`](#call-footprints) | Create footprint score tracks from one or more bigWig signals. |
+| [`match-motifs`](#match-motifs) | Scan motifs for one or more footprint tracks and infer bound/unbound motif sites. |
 | [`diff-footprints`](#diff-footprints) | Compare motif-associated footprint scores across conditions or replicates. |
 | [`normalize-bigwig`](#normalize-bigwig) | Normalize bigWig tracks using shared background regions. |
-| [`plot-aggregate`](#plot-aggregate) | Plot static aggregate signal around TFBS or region sets. |
-| [`plot-aggregate-batch`](#plot-aggregate-batch) | Create an interactive aggregate HTML report. |
+| [`plot-aggregate`](#plot-aggregate) | Plot aggregate signal around motif sites as PDF/SVG-style output or HTML. |
+| [`plot-aggregate-batch`](#plot-aggregate-batch) | Compatibility command for interactive aggregate HTML reports. |
 | [`run-workflow`](#run-workflow) | Run a saved YAML workflow config. |
 | [`fp-tools-gui`](#fp-tools-gui) | Launch the optional browser GUI. |
 | [`motif-discovery`](#motif-discovery) | Prepare or run a de novo motif discovery command plan. |
@@ -124,17 +124,20 @@ Run arguments:
 
 ### `call-footprints`
 
-Create footprint score tracks from bigWig signal.
+Create footprint score tracks from one or more bigWig signals.
 
 ```text
-usage: call-footprints [-h] [-s <bigwig>] [-o <bigwig>] [-r <bed>] [--score <score>]
+usage: call-footprints [-h] [-s <bigwig>] [--signals [<bigwig> ...]] [-o <bigwig>]
+                       [--outputs [<bigwig> ...]] [-r <bed>] [--score <score>]
                        [--absolute] [--extend <int>] [--smooth <int>]
                        [--min-limit <float>] [--max-limit <float>] [--scales [<int> ...]]
                        [--multiscale-summary <method>] [--output-multiscale-npz <npz>]
-                       [--output-bed <bed>] [--top-n <int>] [--min-score <float>]
-                       [--call-width <bp>] [--min-distance <bp>] [--fp-min <int>]
-                       [--fp-max <int>] [--flank-min <int>] [--flank-max <int>]
-                       [--window <int>] [--cores <int>] [--split <int>]
+                       [--output-multiscale-npzs [<npz> ...]] [--output-bed <bed>]
+                       [--output-beds [<bed> ...]] [--output-bed-dir <directory>]
+                       [--top-n <int>] [--min-score <float>] [--call-width <bp>]
+                       [--min-distance <bp>] [--fp-min <int>] [--fp-max <int>]
+                       [--flank-min <int>] [--flank-max <int>] [--window <int>]
+                       [--outdir <directory>] [--cores <int>] [--split <int>]
                        [--verbosity <int>]
 
 __________________________________________________________________________________________
@@ -142,75 +145,88 @@ ________________________________________________________________________________
                                  fp-tools call-footprints
 __________________________________________________________________________________________
 
-call-footprints calculates footprint, sum, mean, or pass-through scores from bigWig signal
-and can optionally call ranked footprint candidate intervals.
+call-footprints calculates footprint, sum, mean, or pass-through scores from one or more
+bigWig signals and can optionally call ranked footprint candidate intervals.
 
-Usage: call-footprints --signal <cutsites.bw> --regions <regions.bed> --output <output.bw>
+Usage: call-footprints --signals <cutsites.bw> [<more_cutsites.bw> ...] --regions
+<regions.bed> --outdir <output_dir>
+   or: call-footprints --signal <cutsites.bw> --regions <regions.bed> --output <output.bw>
 
 Output:
-- <output.bw>
-- optional candidate BED from --output-bed
+- footprint score bigWig(s)
+- optional candidate BED from --output-bed/--output-beds for de novo motif discovery
 
 ------------------------------------------------------------------------------------------
 
 Required arguments:
-  -s <bigwig>, --signal <bigwig>  A .bw file of ATAC-seq cutsite signal
-  -o <bigwig>, --output <bigwig>  Full path to output bigwig
-  -r <bed>, --regions <bed>       Genomic regions to run footprinting within
+  -s <bigwig>, --signal <bigwig>        A .bw file of ATAC-seq cutsite signal
+  --signals [<bigwig> ...]              One or more .bw files of ATAC-seq cutsite signal
+  -o <bigwig>, --output <bigwig>        Full path to output bigwig
+  --outputs [<bigwig> ...]              Output bigWig path per --signals input
+  -r <bed>, --regions <bed>             Genomic regions to run footprinting within
 
 Optional arguments:
-  --score <score>                 Type of scoring to perform on cutsites
-                                  (footprint/sum/mean/none/multiscale) (default:
-                                  footprint)
-  --absolute                      Convert bigwig signal to absolute values before
-                                  calculating score
-  --extend <int>                  Extend input regions with bp (default: 100)
-  --smooth <int>                  Smooth output signal by mean in <bp> windows (default:
-                                  no smoothing)
-  --min-limit <float>             Limit input bigwig value range (default: no lower limit)
-  --max-limit <float>             Limit input bigwig value range (default: no upper limit)
+  --score <score>                       Type of scoring to perform on cutsites
+                                        (footprint/sum/mean/none/multiscale) (default:
+                                        footprint)
+  --absolute                            Convert bigwig signal to absolute values before
+                                        calculating score
+  --extend <int>                        Extend input regions with bp (default: 100)
+  --smooth <int>                        Smooth output signal by mean in <bp> windows
+                                        (default: no smoothing)
+  --min-limit <float>                   Limit input bigwig value range (default: no lower
+                                        limit)
+  --max-limit <float>                   Limit input bigwig value range (default: no upper
+                                        limit)
 
 Parameters for score == multiscale:
-  --scales [<int> ...]            Window sizes for multiscale depletion scoring (default:
-                                  8 16 24 32 64 100 147)
-  --multiscale-summary <method>   How to collapse scale-specific scores into the output
-                                  bigWig (default: max)
-  --output-multiscale-npz <npz>   Optional compressed NumPy sidecar with per-region scale-
-                                  by-position multiscale scores (only for --score
-                                  multiscale)
+  --scales [<int> ...]                  Window sizes for multiscale depletion scoring
+                                        (default: 8 16 24 32 64 100 147)
+  --multiscale-summary <method>         How to collapse scale-specific scores into the
+                                        output bigWig (default: max)
+  --output-multiscale-npz <npz>         Optional compressed NumPy sidecar with per-region
+                                        scale-by-position multiscale scores (only for
+                                        --score multiscale)
+  --output-multiscale-npzs [<npz> ...]  Output multiscale NPZ sidecar per --signals input
 
 Optional footprint candidate BED calling:
-  --output-bed <bed>              Optional BED-like file of ranked local footprint calls
-                                  for de novo motif discovery
-  --top-n <int>                   Keep only the top N footprint calls by score (default:
-                                  keep all)
-  --min-score <float>             Minimum footprint score for candidate BED calls
-                                  (default: no threshold)
-  --call-width <bp>               Width of candidate BED intervals centered on local
-                                  maxima (default: 50)
-  --min-distance <bp>             Minimum distance between retained local footprint
-                                  centers within a region (default: 20)
+  --output-bed <bed>                    Optional BED-like file of genomic coordinates for
+                                        footprint peaks used by de novo motif discovery
+  --output-beds [<bed> ...]             Candidate BED path per --signals input
+  --output-bed-dir <directory>          Directory for candidate BED files derived from
+                                        --signals names
+  --top-n <int>                         Keep only the top N footprint calls by score
+                                        (default: keep all)
+  --min-score <float>                   Minimum footprint score for candidate BED calls
+                                        (default: no threshold)
+  --call-width <bp>                     Width of candidate BED intervals centered on local
+                                        maxima (default: 50)
+  --min-distance <bp>                   Minimum distance between retained local footprint
+                                        centers within a region (default: 20)
 
 Parameters for score == footprint:
-  --fp-min <int>                  Minimum footprint width (default: 20)
-  --fp-max <int>                  Maximum footprint width (default: 50)
-  --flank-min <int>               Minimum range of flanking regions (default: 10)
-  --flank-max <int>               Maximum range of flanking regions (default: 30)
+  --fp-min <int>                        Minimum footprint width (default: 20)
+  --fp-max <int>                        Maximum footprint width (default: 50)
+  --flank-min <int>                     Minimum range of flanking regions (default: 10)
+  --flank-max <int>                     Maximum range of flanking regions (default: 30)
 
 Parameters for score == sum:
-  --window <int>                  The window for calculation of sum (default: 100)
+  --window <int>                        The window for calculation of sum (default: 100)
 
 Run arguments:
-  --cores <int>                   Number of cores to use for computation (default: all
-                                  available cores)
-  --split <int>                   Split of multiprocessing jobs (default: 100)
-  --verbosity <int>               Level of output logging (0: silent, 1: errors/warnings,
-                                  2: info, 3: stats, 4: debug, 5: spam) (default: 3)
+  --outdir <directory>                  Output directory used with --signals when
+                                        --outputs is not supplied
+  --cores <int>                         Number of cores to use for computation (default:
+                                        all available cores)
+  --split <int>                         Split of multiprocessing jobs (default: 100)
+  --verbosity <int>                     Level of output logging (0: silent, 1:
+                                        errors/warnings, 2: info, 3: stats, 4: debug, 5:
+                                        spam) (default: 3)
 ```
 
 ### `match-motifs`
 
-Scan motifs for one sample and infer bound/unbound motif sites.
+Scan motifs for one or more footprint tracks and infer bound/unbound motif sites.
 
 ```text
 usage: match-motifs [-h] [--signals [<bigwig> ...]] [--peaks <bed>] [--genome <fasta>]
@@ -233,12 +249,12 @@ ________________________________________________________________________________
                                   fp-tools match-motifs
 __________________________________________________________________________________________
 
-match-motifs scans motifs in open chromatin regions for one sample and infers motif-
-associated bound and unbound sites from a footprint signal.
+match-motifs scans motifs in open chromatin regions for one or more footprint score tracks
+and infers sample-specific bound and unbound motif sites.
 
 Usage:
-match-motifs --signals <footprints.bw> --genome <genome.fasta> --peaks <peaks.bed>
-[--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]
+match-motifs --signals <footprints.bw> [<more_footprints.bw> ...] --genome <genome.fasta>
+--peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]
 
 Output files:
 - <outdir>/<prefix>_figures.pdf
@@ -252,7 +268,7 @@ Output files:
 ------------------------------------------------------------------------------------------
 
 Required arguments:
-  --signals [<bigwig> ...]         Single footprint score bigWig (.bigwig format)
+  --signals [<bigwig> ...]         One or more footprint score bigWigs (.bigwig format)
   --peaks <bed>                    Peaks.bed containing open chromatin regions
   --genome <fasta>                 Genome .fasta file
 
@@ -511,15 +527,18 @@ options:
 
 ### `plot-aggregate`
 
-Plot static aggregate signal around TFBS or region sets.
+Plot aggregate signal around motif sites as PDF/SVG-style output or HTML.
 
 ```text
 usage: plot-aggregate [-h] [--TFBS [<bed> ...]] [--signals [<bigwig> ...]]
-                      [--regions [<bed> ...]] [--whitelist [<bed> ...]]
-                      [--blacklist [<bed> ...]] [--output] [--output-txt] [--output-csv]
-                      [--output_aggregated_signals] [--output_aggregated_scores]
-                      [--multiscale-npz <npz>] [--output-multiscale-aggregate] [--title]
-                      [--flank] [--TFBS-labels [...]] [--signal-labels [...]]
+                      [--match-dir [<directory> ...]] [--regions [<bed> ...]]
+                      [--whitelist [<bed> ...]] [--blacklist [<bed> ...]] [--output]
+                      [--output-txt] [--output-csv] [--output_aggregated_signals]
+                      [--output_aggregated_scores] [--multiscale-npz <npz>]
+                      [--output-multiscale-aggregate] [--title] [--format {auto,pdf,html}]
+                      [--flank] [--motifs [<motif> ...]] [--site-set {bound,all,unbound}]
+                      [--top-n <int>] [--default-layout {1x1,1x2,2x2,2x3}]
+                      [--TFBS-labels [...]] [--signal-labels [...]]
                       [--cond-names [<name> ...]] [--region-labels [...]]
                       [--control-label <label>] [--grid <rows>x<cols>] [--share-y]
                       [--normalize]
@@ -537,6 +556,8 @@ ________________________________________________________________________________
 Input / output arguments:
   --TFBS [<bed> ...]                    TFBS sites (*required)
   --signals [<bigwig> ...]              Signals in bigwig format (*required)
+  --match-dir [<directory> ...]         match-motifs output directory or directories to
+                                        use as the motif-site source
   --regions [<bed> ...]                 Regions to overlap with TFBS (optional)
   --whitelist [<bed> ...]               Only plot sites overlapping whitelist (optional)
   --blacklist [<bed> ...]               Exclude sites overlapping blacklist (optional)
@@ -558,8 +579,17 @@ Input / output arguments:
 
 Plot arguments:
   --title                               Title of plot (default: "Aggregated signals")
+  --format {auto,pdf,html}              Output format for --output. auto uses the output
+                                        file extension (default: auto)
   --flank                               Flanking basepairs (+/-) to show in plot (counted
                                         from middle of the TFBS) (default: 60)
+  --motifs [<motif> ...]                Motif prefixes, names, or IDs to plot from
+                                        --match-dir
+  --site-set {bound,all,unbound}        Motif-site BED set to use from --match-dir
+                                        (default: bound)
+  --top-n <int>                         Number of motifs to plot from --match-dir when
+                                        --motifs is omitted (default: 12)
+  --default-layout {1x1,1x2,2x2,2x3}    Initial HTML subplot layout (default: 2x2)
   --TFBS-labels [ ...]                  Labels used for each TFBS file (default: prefix of
                                         each --TFBS)
   --signal-labels [ ...]                Labels used for each signal file (default: prefix
@@ -610,15 +640,17 @@ Run arguments:
 
 ### `plot-aggregate-batch`
 
-Create an interactive aggregate HTML report.
+Compatibility command for interactive aggregate HTML reports. Prefer `plot-aggregate --format html` for new workflows.
 
 ```text
 usage: plot-aggregate-batch [-h] [--manifest MANIFEST]
                             [--input-html [INPUT_HTML ...]] --output OUTPUT
                             [--flank FLANK] [--top-n TOP_N]
+                            [--motifs [MOTIFS ...]]
+                            [--site-set {bound,all,unbound}]
                             [--normalization {none,sample-quantile,condition-quantile}]
                             [--default-layout {1x1,1x2,2x2,2x3}]
-                            [--title TITLE]
+                            [--title TITLE] [--hide-summary]
 
 Create an interactive aggregate HTML report from match-motifs or embedded
 diff-footprints outputs.
@@ -634,11 +666,18 @@ options:
                         (default: 100).
   --top-n TOP_N         Number of motifs to preload from manifest mode
                         (default: 30).
+  --motifs [MOTIFS ...]
+                        Motif prefixes, names, or IDs to preload from manifest
+                        mode.
+  --site-set {bound,all,unbound}
+                        Motif-site BED set to use from match directories in
+                        manifest mode (default: bound).
   --normalization {none,sample-quantile,condition-quantile}
                         Profile scaling for manifest mode (default: none).
   --default-layout {1x1,1x2,2x2,2x3}
                         Initial panel grid layout (default: 2x2).
   --title TITLE
+  --hide-summary        Hide the TF site summary sidebar in the HTML report.
 ```
 
 ### `run-workflow`

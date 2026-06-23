@@ -1,6 +1,6 @@
-"""Contract tests that keep documentation in sync with the packaged entry points.
+"""Contract tests that keep documentation in sync with packaged entry points.
 
-These guard against the README/MANUAL/PyPI drift where the documented command
+These guard against README/MkDocs/PyPI drift where the documented command
 surface diverges from the console scripts declared in ``pyproject.toml``.
 """
 
@@ -37,7 +37,14 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.data = _load_pyproject()
         self.project_scripts = self.data["project"]["scripts"]
         self.readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.manual = (ROOT / "MANUAL.md").read_text(encoding="utf-8")
+        self.site_docs = "\n".join(
+            (ROOT / path).read_text(encoding="utf-8")
+            for path in [
+                "docs/index.md",
+                "docs/commands.md",
+                "docs/api.md",
+            ]
+        )
         self.api_reference = (ROOT / "docs" / "api.md").read_text(encoding="utf-8")
 
     def test_setuptools_and_poetry_scripts_match(self):
@@ -52,7 +59,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
         primary = set(self.project_scripts) - LEGACY_ALIASES
         for command in primary:
             self.assertIn(command, self.readme, f"{command} is missing from README.md")
-            self.assertIn(command, self.manual, f"{command} is missing from MANUAL.md")
+            self.assertIn(command, self.site_docs, f"{command} is missing from MkDocs pages")
 
     def test_help_block_exactly_covers_non_alias_commands(self):
         documented = _verify_help_commands(self.readme)

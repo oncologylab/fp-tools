@@ -66,14 +66,18 @@ def _read_bed_sites(path: Path) -> set[tuple[str, int, int]]:
     return sites
 
 
-def _motif_bed_path(match_dir: str | Path, prefix: str, condition: str | None = None, sample: str | None = None) -> Path:
-    """Prefer bound footprint BEDs when present, falling back to the merged all-site BED."""
+def _motif_bed_path(match_dir: str | Path, prefix: str, condition: str | None = None, sample: str | None = None, site_set: str = "bound") -> Path:
+    """Return the requested motif-site BED, with sensible fallbacks."""
     bed_dir = Path(match_dir) / prefix / "beds"
     candidates = []
-    for label in (condition, sample):
-        if label:
-            candidates.append(bed_dir / f"{prefix}_{label}_bound.bed")
-    candidates.extend(sorted(bed_dir.glob(f"{prefix}_*_bound.bed")))
+    site_set = (site_set or "bound").lower()
+    if site_set in {"bound", "unbound"}:
+        for label in (condition, sample):
+            if label:
+                candidates.append(bed_dir / f"{prefix}_{label}_{site_set}.bed")
+        candidates.extend(sorted(bed_dir.glob(f"{prefix}_*_{site_set}.bed")))
+    if site_set == "all":
+        candidates.append(bed_dir / f"{prefix}_all.bed")
     candidates.append(bed_dir / f"{prefix}_all.bed")
     for candidate in candidates:
         if candidate.exists():
@@ -173,7 +177,30 @@ def _profile_mean(profiles: list[list[float]]) -> list[float]:
     return [round(float(v), 6) for v in np.nanmean(np.asarray(profiles, dtype=float), axis=0)]
 
 
-def build_payload(rows: list[dict[str, str]], flank: int, top_n: int, normalization: str = "none") -> dict:
+def _select_motif_prefixes(motifs: list[dict[str, str | int | float]], requested: list[str] | None, top_n: int) -> list[str]:
+    if not requested:
+        return [str(motif["prefix"]) for motif in motifs[:top_n]]
+    lookup = {}
+    for motif in motifs:
+        for key in ("prefix", "name", "motif_id"):
+            value = str(motif.get(key) or "").lower()
+            if value:
+                lookup[value] = str(motif["prefix"])
+    selected = []
+    missing = []
+    for value in requested:
+        prefix = lookup.get(str(value).lower())
+        if prefix is None:
+            missing.append(str(value))
+            continue
+        if prefix not in selected:
+            selected.append(prefix)
+    if missing:
+        raise SystemExit(f"Requested motif(s) not found in match directory: {', '.join(missing)}")
+    return selected
+
+
+def build_payload(rows: list[dict[str, str]], flank: int, top_n: int, normalization: str = "none", motif_names: list[str] | None = None, site_set: str = "bound") -> dict:
     """Build the compact batch aggregate payload from manifest rows."""
 
     x = _x_values(flank)
@@ -192,14 +219,16 @@ def build_payload(rows: list[dict[str, str]], flank: int, top_n: int, normalizat
             motif_meta.setdefault(prefix, motif)
             motif_scores[prefix] = max(motif_scores[prefix], float(motif.get("score") or 0.0))
 
-    selected_prefixes = sorted(motif_scores, key=lambda pfx: (-motif_scores[pfx], str(motif_meta[pfx].get("name", pfx))))[:top_n]
+    ranked_prefixes = sorted(motif_scores, key=lambda pfx: (-motif_scores[pfx], str(motif_meta[pfx].get("name", pfx))))
+    ranked_motifs = [motif_meta[prefix] for prefix in ranked_prefixes]
+    selected_prefixes = _select_motif_prefixes(ranked_motifs, motif_names, top_n)
     raw_profiles: dict[tuple[str, str], list[float]] = {}
     profile_values_for_norm = []
     for sample_info in sample_rows:
         row = sample_info["row"]
         sample = sample_info["sample"]
         for prefix in selected_prefixes:
-            bed = _motif_bed_path(row["match_dir"], prefix, condition=sample_info["condition"], sample=sample)
+            bed = _motif_bed_path(row["match_dir"], prefix, condition=sample_info["condition"], sample=sample, site_set=site_set)
             centers = _read_bed_centers(bed)
             profile = _mean_profile(row["signal"], centers, flank)
             raw_profiles[(sample, prefix)] = profile
@@ -381,15 +410,16 @@ def merge_payloads(payloads: list[dict]) -> dict:
     return merged
 
 
-def write_html(payload: dict, output: str | Path, title: str, default_layout: str = "2x2") -> None:
+def write_html(payload: dict, output: str | Path, title: str, default_layout: str = "2x2", show_summary: bool = True) -> None:
     payload = _ensure_batch_payload(payload)
     payload["default_layout"] = default_layout
     escaped_title = html.escape(title)
     payload_b64 = _compressed_json_b64(payload)
+    summary_css = "" if show_summary else ".main-layout{grid-template-columns:minmax(0,1fr)}.waterfall-card{display:none}"
     document = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{escaped_title}</title><style>
 :root{{--ink:#152133;--muted:#596579;--line:#d9e2ec;--grid:#e8eef5;--bg:#eef3f8;--accent:#173b73}}*{{box-sizing:border-box}}body{{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);font-weight:700}}.wrap{{max-width:min(1880px,calc(100vw - 16px));margin:5px auto;padding:0 5px}}.panel,.plot-card,.waterfall-card,.card{{background:#fff;border:1px solid var(--line);border-radius:7px}}.panel{{box-shadow:0 14px 34px rgba(21,33,51,.10);overflow:hidden}}.head{{padding:7px 14px 5px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff 0%,#f7fafc 100%)}}h1{{margin:0;font-size:19px;line-height:1.1;font-weight:900}}.sub{{margin:2px 0 0;color:var(--muted);font-size:11px}}.top-row{{display:grid;grid-template-columns:280px minmax(540px,1fr) 210px;gap:7px;padding:6px 8px;border-bottom:1px solid var(--line);background:#fbfdff}}.card{{padding:5px;min-height:48px}}.section-title{{font-size:10px;line-height:1.05;text-transform:uppercase;letter-spacing:.08em;color:#728197;margin:0 0 4px;font-weight:900}}.controls,.summary-controls{{display:flex;flex-wrap:wrap;align-items:center;gap:5px}}label{{font-size:10px;color:#52606d;text-transform:uppercase;letter-spacing:.06em;font-weight:900}}select,input{{border:1px solid #cbd5e1;border-radius:6px;background:white;color:var(--ink);font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:800;padding:4px 6px}}input[type=checkbox]{{width:13px;height:13px;padding:0}}button,summary{{border:1px solid #b8c5d6;background:#fff;color:var(--accent);border-radius:6px;padding:4px 7px;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:900;cursor:pointer}}button:hover,summary:hover{{background:#f2f6fb}}.color-row,.pill{{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:#334e68;font-weight:800;border:1px solid #e6edf5;border-radius:999px;padding:3px 6px;background:#fbfdff}}.color-row input{{width:24px;height:17px;padding:0}}.advanced{{margin:6px 8px}}.options-grid{{display:grid;grid-template-columns:280px minmax(520px,1fr) 210px;gap:8px;margin-top:8px}}.advanced summary{{display:inline-flex;list-style:none}}.advanced summary::-webkit-details-marker{{display:none}}.style-panel{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}}.sample-style-row{{display:grid;grid-template-columns:minmax(0,1fr) 28px 58px 58px 64px;gap:5px;align-items:center;border:1px solid #dbe5f0;border-radius:6px;padding:5px;background:#fff}}.sample-style-name{{font-size:10px;color:#334e68;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}.sample-style-row input[type=color]{{width:28px;height:22px;padding:1px}}.sample-style-row input[type=number]{{width:58px;min-width:58px}}.sample-style-row select{{width:64px}}.main-layout{{display:grid;grid-template-columns:330px minmax(0,1fr);align-items:start;gap:7px;padding:7px;background:#f8fbff}}.waterfall-card{{padding:6px;min-width:0;max-width:330px}}.waterfall-card svg{{width:318px;max-width:100%;margin-top:5px}}.grid{{display:grid;gap:7px;align-items:start}}.grid.g1x1{{grid-template-columns:340px}}.grid.g1x2{{grid-template-columns:repeat(2,340px)}}.grid.g2x2{{grid-template-columns:repeat(2,340px)}}.grid.g2x3{{grid-template-columns:repeat(3,340px)}}.plot-card{{padding:5px;min-width:0;width:340px;cursor:pointer}}.plot-card.active{{border-color:#173b73;box-shadow:0 0 0 2px rgba(23,59,115,.10)}}.panel-tools{{display:grid;grid-template-columns:54px minmax(0,1fr);align-items:center;gap:4px;margin-bottom:4px}}.panel-label{{font-size:10px;color:#52606d;text-transform:uppercase;letter-spacing:.06em;font-weight:900;white-space:nowrap}}.panel-actions{{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;gap:5px}}.panel-tf{{width:100%;min-width:0}}.sample-picker{{position:relative;display:inline-block}}.sample-picker summary{{min-width:118px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}.sample-menu{{display:grid;gap:2px;position:absolute;right:0;z-index:30;width:210px;max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:#fff;box-shadow:0 10px 24px rgba(21,33,51,.16);padding:5px}}.sample-menu label{{display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;color:#334e68;font-size:11px}}svg{{width:100%;height:auto;display:block;background:#fff}}.axis{{stroke:#3b4552;stroke-width:1.2}}.grid-line{{stroke:var(--grid);stroke-width:1}}.zero{{stroke:#677386;stroke-width:1.25;stroke-dasharray:4 4}}.tick{{font-family:Arial,Helvetica,sans-serif;font-size:10px;fill:var(--muted);font-weight:800}}.summary-label{{fill:#334e68;stroke:#fff;stroke-width:2.5;paint-order:stroke;stroke-linejoin:round}}.axis-label{{font-family:Arial,Helvetica,sans-serif;font-size:10px;fill:var(--ink);font-weight:900}}.plot-title{{font-family:Arial,Helvetica,sans-serif;font-size:12px;fill:var(--ink);font-weight:900}}@media(max-width:1260px){{.options-grid{{grid-template-columns:1fr 1fr}}.style-panel{{grid-template-columns:repeat(2,minmax(0,1fr))}}.grid.g1x2,.grid.g2x2,.grid.g2x3{{grid-template-columns:repeat(2,340px)}}}}@media(max-width:980px){{.main-layout{{grid-template-columns:1fr}}.waterfall-card{{max-width:330px}}.grid.g1x2,.grid.g2x2,.grid.g2x3{{grid-template-columns:1fr}}}}@media(max-width:760px){{.options-grid,.style-panel{{grid-template-columns:1fr}}.grid.g1x1,.grid.g1x2,.grid.g2x2,.grid.g2x3{{grid-template-columns:minmax(0,1fr)}}.plot-card{{width:auto}}}}
-</style></head><body><div class="wrap"><div class="panel"><div class="head"><h1>{escaped_title}</h1><p class="sub" id="report-detail">Standalone multi-sample, multi-TF aggregate report</p></div><details class="advanced"><summary>Plot options</summary><div class="options-grid"><div><p class="section-title">Groups</p><div class="card controls" id="color-controls"></div></div><div><p class="section-title">Layout</p><div class="card controls"><select id="layout" aria-label="Grid"><option value="1x1">1x1</option><option value="1x2">1x2</option><option value="2x2">2x2</option><option value="2x3">2x3</option></select><label class="pill"><input id="show-mean" type="checkbox">Mean</label><label>Mean width <input id="mean-width" type="number" min="0.2" max="6" step="0.1" value="1.05"></label><label>Mean type <select id="mean-type"><option value="solid">Solid</option><option value="dash">Dash</option><option value="dot">Dot</option></select></label><button id="download-grid">Download grid SVG</button></div></div><div><p class="section-title">Status</p><div class="card"><p id="status-detail" class="sub">Loading report</p></div></div></div><div><p class="section-title">Sample line styles</p><div class="style-panel" id="sample-style-controls"></div></div></div></details><div class="main-layout"><div class="waterfall-card"><p class="section-title">TF site summary</p><div class="summary-controls"><label>Sort by <select id="summary-sort"></select></label><label>Rows <select id="summary-rows"><option value="20">20</option><option value="50">50</option><option value="100">100</option><option value="all">All</option></select></label></div><svg id="waterfall-chart" viewBox="0 0 320 520"></svg></div><div id="plot-grid" class="grid g2x2"></div></div></div></div><script>
+{summary_css}</style></head><body><div class="wrap"><div class="panel"><div class="head"><h1>{escaped_title}</h1><p class="sub" id="report-detail">Standalone multi-sample, multi-TF aggregate report</p></div><details class="advanced"><summary>Plot options</summary><div class="options-grid"><div><p class="section-title">Groups</p><div class="card controls" id="color-controls"></div></div><div><p class="section-title">Layout</p><div class="card controls"><select id="layout" aria-label="Grid"><option value="1x1">1x1</option><option value="1x2">1x2</option><option value="2x2">2x2</option><option value="2x3">2x3</option></select><label class="pill"><input id="show-mean" type="checkbox">Mean</label><label>Mean width <input id="mean-width" type="number" min="0.2" max="6" step="0.1" value="1.05"></label><label>Mean type <select id="mean-type"><option value="solid">Solid</option><option value="dash">Dash</option><option value="dot">Dot</option></select></label><button id="download-grid">Download grid SVG</button></div></div><div><p class="section-title">Status</p><div class="card"><p id="status-detail" class="sub">Loading report</p></div></div></div><div><p class="section-title">Sample line styles</p><div class="style-panel" id="sample-style-controls"></div></div></div></details><div class="main-layout"><div class="waterfall-card"><p class="section-title">TF site summary</p><div class="summary-controls"><label>Sort by <select id="summary-sort"></select></label><label>Rows <select id="summary-rows"><option value="20">20</option><option value="50">50</option><option value="100">100</option><option value="all">All</option></select></label></div><svg id="waterfall-chart" viewBox="0 0 320 520"></svg></div><div id="plot-grid" class="grid g2x2"></div></div></div></div><script>
 const DEFAULT_COLORS={json.dumps(DEFAULT_COLORS)};const reportPayloadB64="{payload_b64}";let payload=null,slotPrefixes=[],slotSamples=[],activeSlot=0,sampleLineStyles={{}};const reportDetail=document.getElementById('report-detail'),statusDetail=document.getElementById('status-detail'),colorControls=document.getElementById('color-controls'),layoutSel=document.getElementById('layout'),plotGrid=document.getElementById('plot-grid'),waterfallChart=document.getElementById('waterfall-chart'),sampleStyleControls=document.getElementById('sample-style-controls'),showMean=document.getElementById('show-mean'),meanWidth=document.getElementById('mean-width'),meanType=document.getElementById('mean-type'),summarySort=document.getElementById('summary-sort'),summaryRows=document.getElementById('summary-rows');
 function escText(v){{return String(v??'').replace(/[&<>\"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}}[c]))}}
 function b64ToBytes(b64){{return Uint8Array.from(atob(b64),c=>c.charCodeAt(0))}}
@@ -451,19 +481,31 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--output", required=True, help="Output self-contained HTML file.")
     parser.add_argument("--flank", type=int, default=100, help="Flank around motif centers for aggregate profiles (default: 100).")
     parser.add_argument("--top-n", type=int, default=30, help="Number of motifs to preload from manifest mode (default: 30).")
+    parser.add_argument("--motifs", nargs="*", help="Motif prefixes, names, or IDs to preload from manifest mode.")
+    parser.add_argument("--site-set", choices=["bound", "all", "unbound"], default="bound", help="Motif-site BED set to use from match directories in manifest mode (default: bound).")
     parser.add_argument("--normalization", choices=["none", "sample-quantile", "condition-quantile"], default="none", help="Profile scaling for manifest mode (default: none).")
     parser.add_argument("--default-layout", choices=["1x1", "1x2", "2x2", "2x3"], default="2x2", help="Initial panel grid layout (default: 2x2).")
     parser.add_argument("--title", default="Aggregate motif footprint browser")
+    parser.add_argument("--hide-summary", action="store_true", help="Hide the TF site summary sidebar in the HTML report.")
     args = parser.parse_args(argv)
     payloads = []
     if args.manifest:
-        payloads.append(build_payload(_read_manifest(args.manifest), flank=max(1, args.flank), top_n=max(1, args.top_n), normalization=args.normalization))
+        payloads.append(
+            build_payload(
+                _read_manifest(args.manifest),
+                flank=max(1, args.flank),
+                top_n=max(1, args.top_n),
+                normalization=args.normalization,
+                motif_names=args.motifs,
+                site_set=args.site_set,
+            )
+        )
     for path in args.input_html:
         payloads.append(read_embedded_payload(path))
     if not payloads:
         parser.error("provide --manifest and/or --input-html")
     payload = merge_payloads(payloads)
-    write_html(payload, args.output, args.title, default_layout=args.default_layout)
+    write_html(payload, args.output, args.title, default_layout=args.default_layout, show_summary=not args.hide_summary)
     print(f"Wrote {args.output}")
     return 0
 

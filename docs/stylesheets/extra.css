@@ -160,7 +160,7 @@
 @media screen and (min-width: 76.25em) {
   .md-main__inner,
   .md-grid {
-    max-width: min(108rem, calc(100vw - 3rem));
+    max-width: calc(100vw - 3rem);
   }
 
   .md-sidebar--primary {
@@ -168,7 +168,16 @@
   }
 
   .md-sidebar--secondary {
-    width: 14rem;
+    width: 11rem;
+  }
+
+  .md-sidebar--secondary .md-nav__title {
+    font-size: 0.68rem;
+  }
+
+  .md-sidebar--secondary .md-nav__link {
+    font-size: 0.72rem;
+    line-height: 1.35;
   }
 
   .md-content {
@@ -199,4 +208,13 @@
 
 .md-typeset table:not([class]) {
   width: 100%;
+}
+
+.md-typeset__table {
+  display: block;
+  width: 100%;
+}
+
+.md-typeset__table table:not([class]) {
+  display: table;
 }

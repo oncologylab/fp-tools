@@ -65,9 +65,10 @@ def add_atacorrect_arguments(parser):
 def add_scorebigwig_arguments(parser):
 
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=40, width=90)
-	description = "call-footprints calculates footprint, sum, mean, or pass-through scores from bigWig signal and can optionally call ranked footprint candidate intervals.\n\n"
-	description += "Usage: call-footprints --signal <cutsites.bw> --regions <regions.bed> --output <output.bw>\n\n"
-	description += "Output:\n- <output.bw>\n- optional candidate BED from --output-bed"
+	description = "call-footprints calculates footprint, sum, mean, or pass-through scores from one or more bigWig signals and can optionally call ranked footprint candidate intervals.\n\n"
+	description += "Usage: call-footprints --signals <cutsites.bw> [<more_cutsites.bw> ...] --regions <regions.bed> --outdir <output_dir>\n"
+	description += "   or: call-footprints --signal <cutsites.bw> --regions <regions.bed> --output <output.bw>\n\n"
+	description += "Output:\n- footprint score bigWig(s)\n- optional candidate BED from --output-bed/--output-beds for de novo motif discovery"
 	parser.description = format_help_description("call-footprints", description)
 	
 	parser._action_groups.pop()	#pop -h
@@ -75,7 +76,9 @@ def add_scorebigwig_arguments(parser):
 	#Required arguments
 	required = parser.add_argument_group('Required arguments')
 	required.add_argument('-s', '--signal', metavar="<bigwig>", help="A .bw file of ATAC-seq cutsite signal")
-	required.add_argument('-o', '--output', metavar="<bigwig>", help="Full path to output bigwig")			
+	required.add_argument('--signals', metavar="<bigwig>", nargs="*", help="One or more .bw files of ATAC-seq cutsite signal")
+	required.add_argument('-o', '--output', metavar="<bigwig>", help="Full path to output bigwig")
+	required.add_argument('--outputs', metavar="<bigwig>", nargs="*", help="Output bigWig path per --signals input")
 	required.add_argument('-r', '--regions', metavar="<bed>", help="Genomic regions to run footprinting within")
 
 	optargs = parser.add_argument_group('Optional arguments')
@@ -90,9 +93,12 @@ def add_scorebigwig_arguments(parser):
 	multiscaleargs.add_argument('--scales', metavar="<int>", nargs="*", type=int, help="Window sizes for multiscale depletion scoring (default: 8 16 24 32 64 100 147)", default=[8, 16, 24, 32, 64, 100, 147])
 	multiscaleargs.add_argument('--multiscale-summary', metavar="<method>", choices=["max", "mean"], help="How to collapse scale-specific scores into the output bigWig (default: max)", default="max")
 	multiscaleargs.add_argument('--output-multiscale-npz', metavar="<npz>", help="Optional compressed NumPy sidecar with per-region scale-by-position multiscale scores (only for --score multiscale)")
+	multiscaleargs.add_argument('--output-multiscale-npzs', metavar="<npz>", nargs="*", help="Output multiscale NPZ sidecar per --signals input")
 
 	callargs = parser.add_argument_group('Optional footprint candidate BED calling')
-	callargs.add_argument('--output-bed', metavar="<bed>", help="Optional BED-like file of ranked local footprint calls for de novo motif discovery")
+	callargs.add_argument('--output-bed', metavar="<bed>", help="Optional BED-like file of genomic coordinates for footprint peaks used by de novo motif discovery")
+	callargs.add_argument('--output-beds', metavar="<bed>", nargs="*", help="Candidate BED path per --signals input")
+	callargs.add_argument('--output-bed-dir', metavar="<directory>", help="Directory for candidate BED files derived from --signals names")
 	callargs.add_argument('--top-n', metavar="<int>", type=int, help="Keep only the top N footprint calls by score (default: keep all)")
 	callargs.add_argument('--min-score', metavar="<float>", type=float, help="Minimum footprint score for candidate BED calls (default: no threshold)")
 	callargs.add_argument('--call-width', metavar="<bp>", type=int, default=50, help="Width of candidate BED intervals centered on local maxima (default: 50)")
@@ -108,6 +114,7 @@ def add_scorebigwig_arguments(parser):
 	sumargs.add_argument('--window', metavar="<int>", type=int, help="The window for calculation of sum (default: 100)", default=100)
 
 	runargs = parser.add_argument_group('Run arguments')
+	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory used with --signals when --outputs is not supplied")
 	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: all available cores)", default=None)
 	runargs.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)
 	runargs = add_logger_args(runargs)
@@ -120,8 +127,8 @@ def add_bindetect_arguments(parser, command_name="diff-footprints"):
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=35, width=90)
 	is_match_motifs = command_name == "match-motifs"
 	if is_match_motifs:
-		description = "match-motifs scans motifs in open chromatin regions for one sample and infers motif-associated bound and unbound sites from a footprint signal.\n\n"
-		description += "Usage:\nmatch-motifs --signals <footprints.bw> --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
+		description = "match-motifs scans motifs in open chromatin regions for one or more footprint score tracks and infers sample-specific bound and unbound motif sites.\n\n"
+		description += "Usage:\nmatch-motifs --signals <footprints.bw> [<more_footprints.bw> ...] --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
 	else:
 		description = "diff-footprints takes motifs, footprint signals, and genome sequence as input to infer motif-associated bound sites and compare footprint evidence across conditions. "
 		description += "The method ranks motifs by signal differences across input conditions and reports motif-level and site-level results.\n\n"
@@ -137,7 +144,7 @@ def add_bindetect_arguments(parser, command_name="diff-footprints"):
 	parser._action_groups.pop()	#pop -h
 	
 	required = parser.add_argument_group('Required arguments')
-	required.add_argument('--signals', metavar="<bigwig>", help="Single footprint score bigWig (.bigwig format)" if is_match_motifs else "Signal per condition (.bigwig format)", nargs="*")
+	required.add_argument('--signals', metavar="<bigwig>", help="One or more footprint score bigWigs (.bigwig format)" if is_match_motifs else "Signal per condition (.bigwig format)", nargs="*")
 	required.add_argument('--peaks', metavar="<bed>", help="Peaks.bed containing open chromatin regions" if is_match_motifs else "Peaks.bed containing open chromatin regions across all conditions")
 	required.add_argument('--genome', metavar="<fasta>", help="Genome .fasta file")
 
@@ -288,6 +295,7 @@ def add_aggregate_arguments(parser):
 	IO = parser.add_argument_group('Input / output arguments')
 	IO.add_argument('--TFBS', metavar="<bed>", nargs="*", help="TFBS sites (*required)") 						#default is None
 	IO.add_argument('--signals', metavar="<bigwig>", nargs="*", help="Signals in bigwig format (*required)")	#default is None
+	IO.add_argument('--match-dir', metavar="<directory>", nargs="*", help="match-motifs output directory or directories to use as the motif-site source")
 	IO.add_argument('--regions', metavar="<bed>", nargs="*", help="Regions to overlap with TFBS (optional)", default=[])
 	IO.add_argument('--whitelist', metavar="<bed>", nargs="*", help="Only plot sites overlapping whitelist (optional)", default=[])
 	IO.add_argument('--blacklist', metavar="<bed>", nargs="*", help="Exclude sites overlapping blacklist (optional)", default=[])
@@ -301,7 +309,12 @@ def add_aggregate_arguments(parser):
 
 	PLOT = parser.add_argument_group('Plot arguments')
 	PLOT.add_argument('--title', metavar="", help="Title of plot (default: \"Aggregated signals\")", default="Aggregated signals")
+	PLOT.add_argument('--format', choices=["auto", "pdf", "html"], default="auto", help="Output format for --output. auto uses the output file extension (default: auto)")
 	PLOT.add_argument('--flank', metavar="", help="Flanking basepairs (+/-) to show in plot (counted from middle of the TFBS) (default: 60)", default=60, type=int)
+	PLOT.add_argument('--motifs', metavar="<motif>", nargs="*", help="Motif prefixes, names, or IDs to plot from --match-dir")
+	PLOT.add_argument('--site-set', choices=["bound", "all", "unbound"], default="bound", help="Motif-site BED set to use from --match-dir (default: bound)")
+	PLOT.add_argument('--top-n', metavar="<int>", type=int, default=12, help="Number of motifs to plot from --match-dir when --motifs is omitted (default: 12)")
+	PLOT.add_argument('--default-layout', choices=["1x1", "1x2", "2x2", "2x3"], default="2x2", help="Initial HTML subplot layout (default: 2x2)")
 	PLOT.add_argument('--TFBS-labels', metavar="", help="Labels used for each TFBS file (default: prefix of each --TFBS)", nargs="*")
 	PLOT.add_argument('--signal-labels', metavar="", help="Labels used for each signal file (default: prefix of each --signals)", nargs="*")
 	PLOT.add_argument('--cond-names', metavar="<name>", nargs="*", help="Condition names for --signals; repeated names are averaged as replicates")

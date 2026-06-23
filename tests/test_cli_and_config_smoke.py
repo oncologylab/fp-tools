@@ -1,11 +1,13 @@
 import contextlib
 import io
+import argparse
 import pathlib
 import subprocess
 import unittest
 
 from fp_tools.cli_batch import run_config_file
 from fp_tools.gui_config import expand_jobs, load_yaml_config, normalize_config
+from fp_tools.parsers import add_aggregate_arguments, add_scorebigwig_arguments
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -89,6 +91,48 @@ class CliAndConfigSmokeTest(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("usage:", result.stdout.lower())
+
+    def test_call_footprints_accepts_batch_signal_arguments(self):
+        parser = add_scorebigwig_arguments(argparse.ArgumentParser())
+        args = parser.parse_args(
+            [
+                "--signals",
+                "A_corrected.bw",
+                "B_corrected.bw",
+                "--outputs",
+                "A_footprints.bw",
+                "B_footprints.bw",
+                "--regions",
+                "peaks.bed",
+                "--output-beds",
+                "A_candidates.bed",
+                "B_candidates.bed",
+            ]
+        )
+        self.assertEqual(args.signals, ["A_corrected.bw", "B_corrected.bw"])
+        self.assertEqual(args.outputs, ["A_footprints.bw", "B_footprints.bw"])
+        self.assertEqual(args.output_beds, ["A_candidates.bed", "B_candidates.bed"])
+
+    def test_plot_aggregate_accepts_match_dir_html_arguments(self):
+        parser = add_aggregate_arguments(argparse.ArgumentParser())
+        args = parser.parse_args(
+            [
+                "--match-dir",
+                "results/motif_matches/sample",
+                "--signals",
+                "sample_corrected.bw",
+                "--motifs",
+                "SPIB",
+                "CEBPB",
+                "--format",
+                "html",
+                "--output",
+                "aggregate.html",
+            ]
+        )
+        self.assertEqual(args.match_dir, ["results/motif_matches/sample"])
+        self.assertEqual(args.motifs, ["SPIB", "CEBPB"])
+        self.assertEqual(args.format, "html")
 
 
 if __name__ == "__main__":

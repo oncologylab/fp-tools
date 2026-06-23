@@ -283,8 +283,10 @@ def build_pdf(src: Path, out: Path) -> None:
 
 
 def main() -> int:
-    src = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("MANUAL.md")
-    out = Path(sys.argv[2]) if len(sys.argv) > 2 else Path("MANUAL.pdf")
+    if len(sys.argv) < 2:
+        raise SystemExit("Usage: python scripts/build_manual_pdf.py <input.md> [output.pdf]")
+    src = Path(sys.argv[1])
+    out = Path(sys.argv[2]) if len(sys.argv) > 2 else src.with_suffix(".pdf")
     build_pdf(src, out)
     return 0
 

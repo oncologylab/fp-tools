@@ -18,7 +18,7 @@ fp-tools-gui
 ## Standard Workflow
 
 <div class="fp-command-chain">
-  atac-correct -> call-footprints -> match-motifs -> diff-footprints -> plot-aggregate-batch
+  atac-correct -> call-footprints -> 3a. match-motifs / 3b. motif-discovery -> diff-footprints -> plot-aggregate
 </div>
 
 ### 1. Correct ATAC Signal
@@ -38,14 +38,14 @@ Output: corrected cut-site bigWigs and QC files.
 
 ```bash
 call-footprints \
-  --signal results/atac_correct/sample/sample_corrected.bw \
+  --signals results/atac_correct/sample/sample_corrected.bw \
   --regions peaks.bed \
-  --output results/footprints/sample_footprints.bw
+  --outdir results/footprints
 ```
 
-Output: a footprint score bigWig. Add `--output-bed` to write ranked candidate intervals.
+Output: footprint score bigWig files. Use `--signals` with multiple corrected bigWigs to score several samples in one run. Add `--output-bed` or `--output-bed-dir` to write genomic coordinates for footprint peaks needed by de novo motif discovery.
 
-### 3. Match Motifs
+### 3a. Match Motifs
 
 ```bash
 match-motifs \
@@ -56,7 +56,43 @@ match-motifs \
   --outdir results/motif_matches/sample
 ```
 
-Output: motif-site tables, bound/unbound motif calls, and files that can be reviewed before multi-condition comparisons.
+For multiple footprint tracks, pass all tracks to `--signals` and provide one sample name per track:
+
+```bash
+match-motifs \
+  --signals \
+    results/footprints/A_footprints.bw \
+    results/footprints/B_footprints.bw \
+  --cond-names A B \
+  --genome hg38.fa.gz \
+  --peaks peaks.bed \
+  --motif-db jaspar2026_vertebrates \
+  --outdir results/motif_matches/A_B
+```
+
+Output: for each sample, the summary table contains motif binding statistics. Each motif folder contains BED files such as `<motif>_all.bed`, `<motif>_<sample>_bound.bed`, and `<motif>_<sample>_unbound.bed`.
+
+### 3b. Discover De Novo Motifs
+
+Use de novo motif discovery when you want to start from candidate footprint intervals rather than only a curated database.
+
+```bash
+call-footprints \
+  --signals results/atac_correct/sample/sample_corrected.bw \
+  --regions peaks.bed \
+  --outdir results/footprints \
+  --output-bed-dir results/footprints/candidates
+
+motif-discovery \
+  --candidates results/footprints/candidates/sample_candidates.bed \
+  --genome hg38.fa.gz \
+  --flank 75 \
+  --method streme \
+  --known-motif-db jaspar2026_vertebrates \
+  --outdir results/de_novo/sample
+```
+
+Output: candidate FASTA files, a runnable MEME/STREME/DREME command script, motif-discovery outputs, and optional Tomtom comparison against the selected known motif database. Discovered motifs can be used alone with `--motifs`, or added to a database run with `--motif-db` plus `--motifs`.
 
 ### 4. Compare Conditions
 
@@ -82,25 +118,16 @@ Repeated names in `--cond-names` define biological replicates. Output includes m
 ### 5. Review Aggregate Plots
 
 ```bash
-plot-aggregate-batch \
-  --input-html results/diff_footprints/A_vs_B/diff_footprints_A_B.html \
+plot-aggregate \
+  --match-dir results/motif_matches/sample \
+  --signals results/atac_correct/sample/sample_corrected.bw \
+  --motifs SPIB CEBPB \
+  --site-set bound \
+  --format html \
   --output results/reports/aggregate_browser.html
 ```
 
-Output: an interactive HTML browser for motif-centered aggregate profiles.
-
-## Single-Sample Motif Matching
-
-Use `match-motifs` when you have one footprint score track and want motif-site tables and bound/unbound motif calls.
-
-```bash
-match-motifs \
-  --signals sample_footprints.bw \
-  --genome hg38.fa.gz \
-  --peaks peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir results/motif_matches/sample
-```
+Output: static PDF/SVG-style aggregate plots or an interactive HTML subplot browser, depending on `--format` or the `--output` extension.
 
 ## Pseudobulk Single-Cell ATAC
 
@@ -133,40 +160,6 @@ find-signature-fp \
   --all-motif-results results/pseudobulk/pseudobulk_diff_footprints_results.txt \
   --all-motif-diff-dir results/pseudobulk/diff_footprints \
   --outdir results/pseudobulk/signature_fp
-```
-
-## De Novo Motif Discovery
-
-Use de novo motif discovery when you want to start from candidate footprint intervals rather than only a curated database.
-
-```bash
-call-footprints \
-  --signal results/atac_correct/sample/sample_corrected.bw \
-  --regions peaks.bed \
-  --output results/footprints/sample_footprints.bw \
-  --output-bed results/footprints/sample_candidates.bed
-
-motif-discovery \
-  --candidates results/footprints/sample_candidates.bed \
-  --genome hg38.fa.gz \
-  --flank 75 \
-  --method streme \
-  --known-motif-db jaspar2026_vertebrates \
-  --outdir results/de_novo/sample
-```
-
-This writes candidate FASTA, a runnable MEME/STREME/DREME shell script, and optional Tomtom comparison against the selected known motif database.
-
-Use the discovered motifs in either mode:
-
-```bash
-# De novo-only
-diff-footprints ... --motifs results/de_novo/sample/streme/streme.txt
-
-# Database plus de novo supplement
-diff-footprints ... \
-  --motif-db jaspar2026_vertebrates \
-  --motifs results/de_novo/sample/streme/streme.txt
 ```
 
 ## Where To Go Next

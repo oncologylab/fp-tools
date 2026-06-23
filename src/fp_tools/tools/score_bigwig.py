@@ -11,6 +11,7 @@ import os
 import signal
 import sys
 import argparse
+import copy
 import numpy as np
 import pyBigWig
 import multiprocessing as mp
@@ -59,6 +60,72 @@ def _normalize_paths(args):
         args.output_bed = os.path.abspath(args.output_bed)
 
     return args
+
+
+def _stem(path):
+    stem = os.path.basename(os.path.splitext(str(path))[0])
+    for suffix in ("_corrected", ".corrected", "_cutsites", ".cutsites"):
+        if stem.endswith(suffix):
+            return stem[: -len(suffix)]
+    return stem
+
+
+def _as_list(value):
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return [value]
+
+
+def _scorebigwig_batch_items(args):
+    signals = _as_list(getattr(args, "signals", None))
+    if not signals and getattr(args, "signal", None):
+        signals = [args.signal]
+
+    if not signals:
+        sys.exit("call-footprints requires --signal or --signals")
+    if len(signals) == 1 and getattr(args, "output", None) and not getattr(args, "outputs", None):
+        outputs = [args.output]
+    else:
+        outputs = _as_list(getattr(args, "outputs", None))
+        if not outputs:
+            outdir = getattr(args, "outdir", None)
+            if not outdir:
+                sys.exit("call-footprints with --signals requires --outputs or --outdir")
+            outputs = [os.path.join(outdir, f"{_stem(path)}_footprints.bw") for path in signals]
+
+    if len(outputs) != len(signals):
+        sys.exit("--outputs must have the same number of files as --signals")
+
+    output_beds = _as_list(getattr(args, "output_beds", None))
+    if output_beds and len(output_beds) != len(signals):
+        sys.exit("--output-beds must have the same number of files as --signals")
+    if not output_beds and getattr(args, "output_bed", None):
+        if len(signals) > 1:
+            sys.exit("use --output-beds or --output-bed-dir when scoring multiple --signals")
+        output_beds = [args.output_bed]
+    if not output_beds and getattr(args, "output_bed_dir", None):
+        output_beds = [os.path.join(args.output_bed_dir, f"{_stem(path)}_candidates.bed") for path in signals]
+    if not output_beds:
+        output_beds = [None] * len(signals)
+
+    output_npzs = _as_list(getattr(args, "output_multiscale_npzs", None))
+    if output_npzs and len(output_npzs) != len(signals):
+        sys.exit("--output-multiscale-npzs must have the same number of files as --signals")
+    if not output_npzs and getattr(args, "output_multiscale_npz", None):
+        if len(signals) > 1:
+            sys.exit("use --output-multiscale-npzs when scoring multiple --signals with --score multiscale")
+        output_npzs = [args.output_multiscale_npz]
+    if not output_npzs:
+        output_npzs = [None] * len(signals)
+
+    return list(zip(signals, outputs, output_beds, output_npzs))
+
+
+def _is_batch_request(args):
+    signals = _as_list(getattr(args, "signals", None))
+    return bool(signals) or bool(getattr(args, "outputs", None)) or bool(getattr(args, "outdir", None))
 
 
 # ----------------------------------------------------------------------------- #
@@ -232,7 +299,7 @@ def _validate_bigwig_output(path, logger):
         raise RuntimeError(f"Expected score bigWig is not readable: {path}") from exc
 
 # ----------------------------------------------------------------------------- #
-def run_scorebigwig(args):
+def _run_scorebigwig_single(args):
     # Ensure paths are sane and the output directory exists
     args = _normalize_paths(args)
 
@@ -365,6 +432,27 @@ def run_scorebigwig(args):
 
     logger.stop_logger_queue()
     logger.end()
+
+
+def run_scorebigwig(args):
+    if _is_batch_request(args):
+        items = _scorebigwig_batch_items(args)
+        for signal_path, output_path, output_bed, output_npz in items:
+            single_args = copy.copy(args)
+            single_args.signals = None
+            single_args.outputs = None
+            single_args.output_beds = None
+            single_args.output_bed_dir = None
+            single_args.output_multiscale_npzs = None
+            single_args.outdir = None
+            single_args.signal = signal_path
+            single_args.output = output_path
+            single_args.output_bed = output_bed
+            single_args.output_multiscale_npz = output_npz
+            _run_scorebigwig_single(single_args)
+        return
+
+    _run_scorebigwig_single(args)
 
 
 # ----------------------------------------------------------------------------- #
