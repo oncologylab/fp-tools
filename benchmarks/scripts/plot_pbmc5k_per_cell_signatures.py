@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.text as mtext
 import matplotlib.transforms as mtransforms
 from matplotlib.colors import ListedColormap, TwoSlopeNorm
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 import pandas as pd
 import pysam
@@ -38,24 +39,24 @@ plt.rcParams.update(
     }
 )
 
-MARKERS = ("IKZF1", "FOXO1", "CEBPA", "CEBPB", "IRF8", "KLF2", "KLF13", "ZNF683")
+MARKERS = ("STAT6", "FOSB", "CEBPA", "IRF8", "RELA", "ZNF683", "NR4A1", "SMAD3")
 SUMMARY_MARKER_ORDER = MARKERS
 UMAP_MARKER_LABELS = MARKERS
 CELL_TYPES = ("B_cell", "Monocyte", "T_NK_cell")
 MARKER_GROUPS = {
-    "IKZF1": "B_cell",
-    "FOXO1": "B_cell",
+    "STAT6": "B_cell",
+    "FOSB": "B_cell",
     "CEBPA": "Monocyte",
-    "CEBPB": "Monocyte",
     "IRF8": "Monocyte",
-    "KLF2": "T_NK_cell",
-    "KLF13": "T_NK_cell",
+    "RELA": "Monocyte",
     "ZNF683": "T_NK_cell",
+    "NR4A1": "T_NK_cell",
+    "SMAD3": "T_NK_cell",
 }
 EXPECTED_MARKER_GROUPS = {
-    "B_cell": ("IKZF1", "FOXO1"),
-    "Monocyte": ("CEBPA", "CEBPB", "IRF8"),
-    "T_NK_cell": ("KLF2", "KLF13", "ZNF683"),
+    "B_cell": ("STAT6", "FOSB"),
+    "Monocyte": ("CEBPA", "IRF8", "RELA"),
+    "T_NK_cell": ("ZNF683", "NR4A1", "SMAD3"),
 }
 CELL_TYPE_COLORS = {
     "B_cell": "#3B82F6",
@@ -80,7 +81,7 @@ def save_illustrator_svg(fig: plt.Figure, output_prefix: Path, *, tight: bool = 
         text.set_fontsize(9)
         text.set_fontweight("bold")
     save_kwargs = {"bbox_inches": "tight"} if tight else {}
-    fig.savefig(output_prefix.with_suffix(".svg"), **save_kwargs)
+    fig.savefig(output_prefix.with_suffix(".svg"), dpi=600, **save_kwargs)
 
 
 def open_text(path: Path):
@@ -1201,6 +1202,12 @@ def draw_celltype_strip(ax: plt.Axes, ordered_annotations: pd.DataFrame) -> None
         spine.set_visible(False)
 
 
+def set_umap_axis_ticks(ax: plt.Axes) -> None:
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=4, integer=True))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=4, integer=True))
+    ax.tick_params(axis="both", which="major", labelsize=7, length=2.0, width=0.55, pad=1.5)
+
+
 def draw_top_motif_heatmap_panel(
     fig: plt.Figure,
     strip_ax: plt.Axes,
@@ -1261,14 +1268,13 @@ def draw_knn_umap_panel(
             linewidths=0,
             color=CELL_TYPE_COLORS.get(cell_type),
             label=cell_type,
-            rasterized=True,
+            rasterized=False,
         )
     label_groups(reference_ax, annotations, fontsize=9, positions=REFERENCE_LABEL_POSITIONS)
     reference_ax.set_title("Broad cell types", fontweight="bold", pad=4)
     reference_ax.set_xlim(xlim)
     reference_ax.set_ylim(ylim)
-    reference_ax.set_xticks([])
-    reference_ax.set_yticks([])
+    set_umap_axis_ticks(reference_ax)
     if boxed_axes:
         for spine in reference_ax.spines.values():
             spine.set_visible(True)
@@ -1299,14 +1305,13 @@ def draw_knn_umap_panel(
             s=1.8,
             alpha=0.92,
             linewidths=0,
-            rasterized=True,
+            rasterized=False,
         )
         last_scatter = sc
         ax.set_title(tf, fontweight="bold", pad=4)
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
-        ax.set_xticks([])
-        ax.set_yticks([])
+        set_umap_axis_ticks(ax)
         if boxed_axes:
             for spine in ax.spines.values():
                 spine.set_visible(True)
@@ -1589,7 +1594,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bin-size", type=int, default=500)
     parser.add_argument(
         "--marker-groups",
-        default="IKZF1:B_cell,FOXO1:B_cell,CEBPA:Monocyte,CEBPB:Monocyte,IRF8:Monocyte,KLF2:T_NK_cell,KLF13:T_NK_cell,ZNF683:T_NK_cell",
+        default="STAT6:B_cell,FOSB:B_cell,CEBPA:Monocyte,IRF8:Monocyte,RELA:Monocyte,ZNF683:T_NK_cell,NR4A1:T_NK_cell,SMAD3:T_NK_cell",
         help="Comma-separated TF:cell_type pairs used to orient KNN marker scores for UMAP review.",
     )
     parser.add_argument("--all-motif-bindetect-dir", help="Optional BINDetect output directory containing */beds/*_all.bed files for all-motif per-cell heatmap scoring.")
@@ -1632,7 +1637,7 @@ def main(argv: list[str] | None = None) -> int:
     plot_knn_with_reference(annotations, knn_scores, markers, outdir / "pbmc5k_knn_footprint_signature_umap")
     summary_markers = [marker for marker in SUMMARY_MARKER_ORDER if marker in markers]
     summary_markers.extend(marker for marker in markers if marker not in summary_markers)
-    representative_markers = [marker for marker in ("PAX5", "CEBPB", "TCF7") if marker in markers]
+    representative_markers = [marker for marker in ("STAT6", "CEBPA", "ZNF683") if marker in markers]
     plot_single_cell_footprinting_summary(
         annotations,
         knn_scores,

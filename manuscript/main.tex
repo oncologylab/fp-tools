@@ -321,7 +321,8 @@ and batch processing
 (Figure~\ref{fig:workflow_overview}).
 
 \begin{figure}[!htb]
-\includegraphics[width=\textwidth]{figures/Fig1.pdf}
+\centering
+\includegraphics[height=0.56\textheight,keepaspectratio]{figures/Fig1.pdf}
 \caption{Overview of the \texttt{fp-tools} ATAC-seq footprinting platform.
 Bulk ATAC-seq BAM/fragments and single-cell ATAC fragments with annotations enter
 a shared command-oriented analysis. The analysis supports Tn5 bias correction,
@@ -480,8 +481,10 @@ expected lineage direction. We then projected KNN-smoothed footprint-signature
 scores onto the PBMC5k UMAP. For each cell, the displayed value summarizes local
 motif-centered cut-site profiles in neighboring cells. The final figure combines
 a marker-by-cell heatmap with UMAP panels for broad cell-type labels and
-representative B-cell-, monocyte-, and T/NK-associated motif signatures
-(Figure~\ref{fig:single_cell_footprinting}).
+representative regulatory programs: B-cell-associated cytokine-response and AP-1
+activation signatures, monocyte myeloid/interferon/inflammatory signatures, and
+T/NK-associated cytotoxic, tolerance-like, and TGF-\(\beta\) regulatory-state
+signatures (Figure~\ref{fig:single_cell_footprinting}).
 
 \begin{figure}[!htb]
 \includegraphics[width=\textwidth]{figures/Fig4.pdf}
@@ -489,11 +492,19 @@ representative B-cell-, monocyte-, and T/NK-associated motif signatures
 (\textbf{A}) KNN-smoothed per-cell footprint-signature heatmap for top
 cell-type-specific motif signatures across B cells, monocytes, and T/NK cells;
 the TF rows used for Panel B are labelled on the left. (\textbf{B}) UMAP
-projections show broad cell-type annotations and representative B-cell
-(IKZF1, FOXO1), monocyte (CEBPA, CEBPB, IRF8), and T/NK (KLF2, KLF13, ZNF683)
-footprint-signature z-scores. Positive values indicate the marker-oriented
-footprint-signature direction after per-TF standardization; ATAC-corrected
-footprint tracks are computed from grouped pseudobulk profiles.
+projections show broad cell-type annotations and representative motif-associated
+footprint-signature z-scores. B-cell-associated signatures include STAT6,
+consistent with IL-4-responsive humoral and class-switch-related signaling, and
+FOSB/AP-1, consistent with an activation-responsive immediate-early regulatory
+program. Monocyte-associated signatures include CEBPA, consistent with a
+C/EBP-family myeloid differentiation program; IRF8, consistent with
+monocyte/dendritic-cell and interferon-regulatory activity; and RELA, consistent
+with NF-\(\kappa\)B-mediated inflammatory activation. T/NK-associated
+regulatory-state signatures include ZNF683/Hobit, consistent with a cytotoxic or
+resident-like program; NR4A1/Nur77, consistent with TCR-response and
+tolerance-like regulation; and SMAD3, consistent with TGF-\(\beta\) regulatory
+signaling. TF labels indicate motif-associated footprint signatures rather than
+direct TF-specific occupancy.
 \label{fig:single_cell_footprinting}}
 \end{figure}
 
