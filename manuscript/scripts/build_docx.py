@@ -12,8 +12,14 @@ import argparse
 import re
 import shutil
 import subprocess
+import tempfile
+import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
+
+W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+ET.register_namespace("w", W_NS)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MANUSCRIPT_DIR = REPO_ROOT / "manuscript"
@@ -66,6 +72,61 @@ CAPTION_PREFIXES = {
     r"\caption{Primary analysis": r"\caption{Table S1. Primary analysis",
     r"\caption{Software and resource": r"\caption{Table S2. Software and resource",
 }
+
+DOCX_STYLE_SPECS = {
+    "Normal": {"size": 20},
+    "BodyText": {"size": 20},
+    "FirstParagraph": {"size": 20},
+    "Compact": {"size": 18},
+    "Abstract": {"size": 20},
+    "Bibliography": {"size": 18},
+    "Title": {"size": 28, "bold": True},
+    "Subtitle": {"size": 22, "bold": True},
+    "Author": {"size": 20},
+    "Date": {"size": 20},
+    "AbstractTitle": {"size": 20, "bold": True},
+    "Heading1": {"size": 24, "bold": True},
+    "Heading2": {"size": 22, "bold": True},
+    "Heading3": {"size": 20, "bold": True},
+    "Heading4": {"size": 20, "bold": True},
+    "Heading5": {"size": 20, "bold": True},
+    "Heading6": {"size": 20, "bold": True},
+    "Heading7": {"size": 20, "bold": True},
+    "Heading8": {"size": 20, "bold": True},
+    "Heading9": {"size": 20, "bold": True},
+    "TOCHeading": {"size": 24, "bold": True},
+    "Caption": {"size": 18, "italic": True},
+    "ImageCaption": {"size": 18, "italic": True},
+    "TableCaption": {"size": 18, "italic": True},
+    "Table": {"size": 18},
+}
+
+DOCX_STYLE_SPACING = {
+    "Normal": {"after": "120", "line": "240"},
+    "BodyText": {"after": "120", "line": "240"},
+    "FirstParagraph": {"after": "120", "line": "240"},
+    "Compact": {"after": "60", "line": "220"},
+    "Abstract": {"after": "120", "line": "240"},
+    "Bibliography": {"after": "60", "line": "220"},
+    "Title": {"after": "160", "line": "240"},
+    "Author": {"after": "120", "line": "240"},
+    "AbstractTitle": {"before": "120", "after": "60", "line": "240"},
+    "Heading1": {"before": "260", "after": "100", "line": "240"},
+    "Heading2": {"before": "180", "after": "80", "line": "240"},
+    "Heading3": {"before": "140", "after": "60", "line": "240"},
+    "TOCHeading": {"before": "260", "after": "100", "line": "240"},
+    "Caption": {"before": "80", "after": "140", "line": "220"},
+    "ImageCaption": {"before": "80", "after": "140", "line": "220"},
+    "TableCaption": {"before": "80", "after": "100", "line": "220"},
+}
+
+
+def w_tag(name: str) -> str:
+    return f"{{{W_NS}}}{name}"
+
+
+def w_attr(name: str) -> str:
+    return f"{{{W_NS}}}{name}"
 
 
 def run(cmd: list[str], cwd: Path | None = None) -> None:
@@ -156,6 +217,106 @@ def simplify_table_lines(text: str) -> str:
             line = r"\hline"
         lines.append(line)
     return "\n".join(lines)
+
+
+def get_or_add(parent: ET.Element, tag: str) -> ET.Element:
+    child = parent.find(w_tag(tag))
+    if child is None:
+        child = ET.SubElement(parent, w_tag(tag))
+    return child
+
+
+def set_or_remove_bool(rpr: ET.Element, tag: str, enabled: bool | None) -> None:
+    child = rpr.find(w_tag(tag))
+    if enabled is None:
+        return
+    if enabled:
+        if child is None:
+            ET.SubElement(rpr, w_tag(tag))
+    elif child is not None:
+        rpr.remove(child)
+
+
+def set_arial_font(rpr: ET.Element) -> None:
+    fonts = get_or_add(rpr, "rFonts")
+    for attr in ("ascii", "hAnsi", "eastAsia", "cs"):
+        fonts.set(w_attr(attr), "Arial")
+    for attr in ("asciiTheme", "hAnsiTheme", "eastAsiaTheme", "cstheme"):
+        fonts.attrib.pop(w_attr(attr), None)
+
+
+def apply_run_style(rpr: ET.Element, size: int, *, bold: bool | None = None, italic: bool | None = None) -> None:
+    set_arial_font(rpr)
+
+    sz = get_or_add(rpr, "sz")
+    sz.set(w_attr("val"), str(size))
+    sz_cs = get_or_add(rpr, "szCs")
+    sz_cs.set(w_attr("val"), str(size))
+
+    color = get_or_add(rpr, "color")
+    color.set(w_attr("val"), "000000")
+
+    set_or_remove_bool(rpr, "b", bold)
+    set_or_remove_bool(rpr, "bCs", bold)
+    set_or_remove_bool(rpr, "i", italic)
+    set_or_remove_bool(rpr, "iCs", italic)
+
+
+def apply_paragraph_spacing(ppr: ET.Element, spacing_spec: dict[str, str]) -> None:
+    spacing = get_or_add(ppr, "spacing")
+    for attr, value in spacing_spec.items():
+        spacing.set(w_attr(attr), value)
+    if "line" in spacing_spec:
+        spacing.set(w_attr("lineRule"), "auto")
+
+
+def normalize_styles_xml(xml_bytes: bytes) -> bytes:
+    root = ET.fromstring(xml_bytes)
+
+    doc_defaults = get_or_add(root, "docDefaults")
+    rpr_default = get_or_add(get_or_add(doc_defaults, "rPrDefault"), "rPr")
+    apply_run_style(rpr_default, 20)
+
+    for style in root.findall(w_tag("style")):
+        existing_rpr = style.find(w_tag("rPr"))
+        if existing_rpr is not None:
+            set_arial_font(existing_rpr)
+
+        style_id = style.get(w_attr("styleId"))
+        if style_id is None:
+            continue
+        spec = DOCX_STYLE_SPECS.get(style_id)
+        spacing_spec = DOCX_STYLE_SPACING.get(style_id)
+        if spec is None and spacing_spec is None:
+            continue
+        if spec is not None:
+            rpr = get_or_add(style, "rPr")
+            apply_run_style(
+                rpr,
+                spec["size"],
+                bold=spec.get("bold", False),
+                italic=spec.get("italic", False),
+            )
+        if spacing_spec is not None:
+            ppr = get_or_add(style, "pPr")
+            apply_paragraph_spacing(ppr, spacing_spec)
+
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
+def normalize_docx_styles(docx_path: Path) -> None:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        tmp_path = Path(tmp.name)
+    try:
+        with zipfile.ZipFile(docx_path, "r") as zin, zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+                if item.filename == "word/styles.xml":
+                    data = normalize_styles_xml(data)
+                zout.writestr(item, data)
+        shutil.move(tmp_path, docx_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
 
 def prepare_docx_tex(source: Path) -> Path:
@@ -249,6 +410,7 @@ def build_docx(source: Path, output: Path, keep_build_dir: bool = False) -> None
     finally:
         if not keep_build_dir:
             shutil.rmtree(BUILD_DIR, ignore_errors=True)
+    normalize_docx_styles(output)
 
 
 def main(argv: list[str] | None = None) -> int:
