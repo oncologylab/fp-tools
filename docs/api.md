@@ -19,7 +19,8 @@ The public interface of `fp-tools` is command-first. This page lists the full co
 | [`motif-summary`](#motif-summary) | Summarize MEME/Tomtom motif discovery outputs. |
 | [`fp-tools-score-variants`](#fp-tools-score-variants) | Annotate variants with footprint, sequence, and motif scores. |
 | [`pseudobulk-fragments`](#pseudobulk-fragments) | Group single-cell ATAC fragments into pseudobulk files. |
-| [`pseudobulk-footprints`](#pseudobulk-footprints) | Run grouping, ATAC correction, footprint scoring, reports, and optional Fig4-style single-cell plots. |
+| [`find-signature-fp`](#find-signature-fp) | Plot per-cell footprint-signature heatmaps and UMAP reports. |
+| [`pseudobulk-footprints`](#pseudobulk-footprints) | Run grouping, ATAC correction, footprint scoring, reports, aggregate plots, and optional signature reporting. |
 
 ## Command Manuals
 
@@ -840,9 +841,123 @@ options:
                         samtools commands (default: all available cores).
 ```
 
+### `find-signature-fp`
+
+Plot per-cell footprint-signature heatmaps and UMAP reports.
+
+```text
+usage: find-signature-fp [-h] --annotations ANNOTATIONS --fragments FRAGMENTS
+                         --h5ad H5AD --tf-site-dir TF_SITE_DIR --outdir OUTDIR
+                         [--markers MARKERS]
+                         [--max-sites-per-tf MAX_SITES_PER_TF] [--knn KNN]
+                         [--flank FLANK]
+                         [--center-half-width CENTER_HALF_WIDTH]
+                         [--flank-inner FLANK_INNER]
+                         [--flank-outer FLANK_OUTER] [--bin-size BIN_SIZE]
+                         [--marker-groups MARKER_GROUPS]
+                         [--all-motif-diff-dir ALL_MOTIF_DIFF_DIR]
+                         [--all-motif-results ALL_MOTIF_RESULTS]
+                         [--all-motif-score-table ALL_MOTIF_SCORE_TABLE]
+                         [--marker-score-table MARKER_SCORE_TABLE]
+                         [--all-motif-batch-size ALL_MOTIF_BATCH_SIZE]
+                         [--max-sites-per-motif MAX_SITES_PER_MOTIF]
+                         [--max-motifs MAX_MOTIFS]
+                         [--top-motif-signatures-per-cell-type TOP_MOTIF_SIGNATURES_PER_CELL_TYPE]
+                         [--top-motif-min-specificity TOP_MOTIF_MIN_SPECIFICITY]
+                         [--summary-output-prefix SUMMARY_OUTPUT_PREFIX]
+                         [--all-tf-review-prefix ALL_TF_REVIEW_PREFIX]
+                         [--all-tf-review-panels-per-page ALL_TF_REVIEW_PANELS_PER_PAGE]
+                         [--skip-all-tf-review-pdfs]
+                         [--no-create-fragment-index]
+
+Generate per-cell footprint-signature heatmaps and UMAP reports.
+
+options:
+  -h, --help            show this help message and exit
+  --annotations ANNOTATIONS
+                        Cell annotation TSV/CSV with barcode, cell type, and
+                        UMAP columns.
+  --fragments FRAGMENTS
+                        10x-style fragments TSV/TSV.GZ used to count cut sites
+                        around motif centers.
+  --h5ad H5AD           AnnData file containing the single-cell embedding used
+                        for KNN smoothing.
+  --tf-site-dir TF_SITE_DIR
+                        Directory containing marker motif-site BED files named
+                        by TF.
+  --outdir OUTDIR       Output directory for signature score tables, heatmaps,
+                        and UMAP reports.
+  --markers MARKERS     Comma-separated marker TFs to score and plot (default:
+                        STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3).
+  --max-sites-per-tf MAX_SITES_PER_TF
+                        Maximum marker motif sites per TF for selected-marker
+                        UMAP scoring (default: 1500).
+  --knn KNN             Number of nearest neighbors used to smooth per-cell
+                        cut-site profiles (default: 75).
+  --flank FLANK         Motif-centered half-window in bp for fragment counting
+                        (default: 100).
+  --center-half-width CENTER_HALF_WIDTH
+                        Half-width in bp of the protected center window
+                        (default: 10).
+  --flank-inner FLANK_INNER
+                        Inner flank distance from motif center in bp (default:
+                        25).
+  --flank-outer FLANK_OUTER
+                        Outer flank distance from motif center in bp (default:
+                        100).
+  --bin-size BIN_SIZE   Bin size for the companion chromVAR-like motif
+                        activity score (default: 500).
+  --marker-groups MARKER_GROUPS
+                        Comma-separated TF:cell_type pairs used to orient KNN
+                        marker scores for UMAP review.
+  --all-motif-diff-dir ALL_MOTIF_DIFF_DIR
+                        Optional differential-footprint output directory
+                        containing */beds/*_all.bed files for all-motif per-
+                        cell heatmap scoring.
+  --all-motif-results ALL_MOTIF_RESULTS
+                        Differential-footprint results table used to order and
+                        annotate all-motif heatmap rows.
+  --all-motif-score-table ALL_MOTIF_SCORE_TABLE
+                        Existing all-motif per-cell heatmap TSV to redraw
+                        all/top heatmaps without rescoring fragments.
+  --marker-score-table MARKER_SCORE_TABLE
+                        Existing KNN marker score table used to orient
+                        selected marker rows in top heatmaps and summary
+                        UMAPs.
+  --all-motif-batch-size ALL_MOTIF_BATCH_SIZE
+                        Number of motif signatures to score per batch for the
+                        all-motif heatmap.
+  --max-sites-per-motif MAX_SITES_PER_MOTIF
+                        Maximum motif instances per motif for all-motif
+                        heatmap scoring; use 0 for all sites.
+  --max-motifs MAX_MOTIFS
+                        Optional all-motif smoke-test limit.
+  --top-motif-signatures-per-cell-type TOP_MOTIF_SIGNATURES_PER_CELL_TYPE
+                        Top cell-type-specific all-motif signatures to keep
+                        per broad cell type (default: 40).
+  --top-motif-min-specificity TOP_MOTIF_MIN_SPECIFICITY
+                        Minimum dominant-vs-next cell-type mean z-score
+                        difference for top all-motif heatmap rows (default:
+                        0.5).
+  --summary-output-prefix SUMMARY_OUTPUT_PREFIX
+                        Output prefix for the combined heatmap and UMAP
+                        summary SVG when all-motif heatmap data are available.
+  --all-tf-review-prefix ALL_TF_REVIEW_PREFIX
+                        Output prefix for three multi-page all-TF signature
+                        review PDFs grouped by dominant broad cell type.
+  --all-tf-review-panels-per-page ALL_TF_REVIEW_PANELS_PER_PAGE
+                        Number of TF signature UMAP panels per all-TF review
+                        PDF page (default: 12).
+  --skip-all-tf-review-pdfs
+                        Do not write the three all-TF signature review PDFs.
+  --no-create-fragment-index
+                        Do not create a tabix index for the fragment file when
+                        it is missing.
+```
+
 ### `pseudobulk-footprints`
 
-Run grouping, ATAC correction, footprint scoring, reports, and optional Fig4-style single-cell plots.
+Run grouping, ATAC correction, footprint scoring, reports, aggregate plots, and optional signature reporting.
 
 ```text
 usage: pseudobulk-footprints [-h] (--fragments FRAGMENTS | --bam BAM)
@@ -873,7 +988,6 @@ usage: pseudobulk-footprints [-h] (--fragments FRAGMENTS | --bam BAM)
                              [--single-cell-signature-outdir SINGLE_CELL_SIGNATURE_OUTDIR]
                              [--single-cell-signature-markers SINGLE_CELL_SIGNATURE_MARKERS]
                              [--single-cell-signature-fig-prefix SINGLE_CELL_SIGNATURE_FIG_PREFIX]
-                             [--single-cell-signature-script SINGLE_CELL_SIGNATURE_SCRIPT]
                              [--single-cell-signature-all-motif-score-table SINGLE_CELL_SIGNATURE_ALL_MOTIF_SCORE_TABLE]
                              [--single-cell-signature-marker-score-table SINGLE_CELL_SIGNATURE_MARKER_SCORE_TABLE]
                              [--single-cell-signature-top-per-cell-type SINGLE_CELL_SIGNATURE_TOP_PER_CELL_TYPE]
@@ -963,31 +1077,28 @@ options:
                         Plotting script path for optional aggregate plots.
   --single-cell-signature-h5ad SINGLE_CELL_SIGNATURE_H5AD
                         Optional h5ad with cell embeddings/counts; with
-                        --fragments and --tf-site-dir, write Fig4-style per-
-                        cell KNN footprint-signature plots.
+                        --fragments and --tf-site-dir, write per-cell KNN
+                        footprint-signature heatmaps and UMAP reports.
   --single-cell-signature-outdir SINGLE_CELL_SIGNATURE_OUTDIR
-                        Output directory for optional Fig4-style per-cell
-                        signature plots (default:
+                        Output directory for optional per-cell signature
+                        reports (default:
                         <outdir>/plots/single_cell_footprinting).
   --single-cell-signature-markers SINGLE_CELL_SIGNATURE_MARKERS
                         Comma-separated marker TFs for optional per-cell
                         signature UMAPs (default:
-                        PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2).
+                        STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3).
   --single-cell-signature-fig-prefix SINGLE_CELL_SIGNATURE_FIG_PREFIX
-                        Output prefix for the combined Fig4-style single-cell
-                        footprinting SVG (default: single_cell_footprinting).
-  --single-cell-signature-script SINGLE_CELL_SIGNATURE_SCRIPT
-                        Plotting script path for optional per-cell signature
-                        plots.
+                        Output prefix for the combined single-cell footprint-
+                        signature SVG (default: single_cell_footprinting).
   --single-cell-signature-all-motif-score-table SINGLE_CELL_SIGNATURE_ALL_MOTIF_SCORE_TABLE
                         Existing all-motif per-cell signature TSV; skips
-                        rescoring all motif sites for the Fig4-style heatmap.
+                        rescoring all motif sites for the signature heatmap.
   --single-cell-signature-marker-score-table SINGLE_CELL_SIGNATURE_MARKER_SCORE_TABLE
                         Existing KNN marker score TSV used for marker rows and
                         UMAP plots.
   --single-cell-signature-top-per-cell-type SINGLE_CELL_SIGNATURE_TOP_PER_CELL_TYPE
                         Top all-motif signatures to keep per cell type in the
-                        Fig4-style heatmap (default: 40).
+                        signature heatmap (default: 40).
   --single-cell-signature-top-min-specificity SINGLE_CELL_SIGNATURE_TOP_MIN_SPECIFICITY
                         Minimum dominant-vs-next cell-type z-score difference
                         for top heatmap rows (default: 0.5).

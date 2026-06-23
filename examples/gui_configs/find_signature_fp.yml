@@ -1,0 +1,13 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: signature_fp_run
+    tool: find-signature-fp
+    fragments: data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz
+    annotations: data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv
+    h5ad: data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad.h5ad
+    tf_site_dir: data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/tf_sites
+    outdir: examples/gui_demo_outputs/signature_fp
+    markers: STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3
+    summary_output_prefix: single_cell_footprinting
+    max_motifs: 25

@@ -43,7 +43,8 @@ pip install fp-tools-bio
 | `motif-summary` | Summarize MEME/Tomtom outputs into TSV and HTML reports. |
 | `fp-tools-score-variants` | Score variants with allele checks, candidate overlaps, sequence deltas, and optional motif/model deltas. |
 | `pseudobulk-fragments` | Group single-cell ATAC fragments into pseudobulk fragment files. |
-| `pseudobulk-footprints` | Run the full pseudobulk fragment, correction, footprint, report, and optional Fig4-style plotting workflow. |
+| `find-signature-fp` | Plot per-cell footprint-signature heatmaps and UMAP reports. |
+| `pseudobulk-footprints` | Run the full pseudobulk fragment, correction, footprint, report, aggregate, and optional signature-reporting workflow. |
 
 ## Differential Footprint Defaults
 
@@ -60,15 +61,14 @@ atac-correct -> call-footprints -> match-motifs -> diff-footprints -> plot-aggre
 ## Pseudobulk Workflow
 
 ```text
-pseudobulk-footprints
+pseudobulk-fragments
   -> pseudobulk fragments and pseudo-BAMs
-  -> atac-correct per group
-  -> call-footprints per group
-  -> diff-footprints across groups
-  -> aggregate and Fig4-style single-cell footprinting plots
+  -> atac-correct / call-footprints / match-motifs / diff-footprints
+  -> find-signature-fp
+  -> marker signature heatmaps and UMAP reports
 ```
 
-Provide `--motif-db` for motif-aware reports. Provide `--tf-site-dir` and `--single-cell-signature-h5ad` to write the standard Fig4-style marker heatmap and UMAP outputs.
+Use `pseudobulk-footprints` when you want this route in one wrapper command. Provide `--motif-db` for motif-aware reports. Provide `--tf-site-dir` and `--single-cell-signature-h5ad` to add marker footprint-signature heatmaps and UMAP outputs.
 
 ## De Novo Motif Workflow
 

@@ -8,6 +8,15 @@ Buenrostro, J.D.; Giresi, P.G.; Zaba, L.C.; Chang, H.Y.; Greenleaf, W.J.
 \newblock {\em Nature Methods} {\bf 2013}, {\em 10},~1213--1218.
 \newblock {\url{https://doi.org/10.1038/nmeth.2688}}.
 
+\bibitem[Buenrostro et~al.(2015)Buenrostro, Wu, Litzenburger, Ruff, Gonzales,
+  Snyder, Chang, and Greenleaf]{buenrostro2015scatac}
+Buenrostro, J.D.; Wu, B.; Litzenburger, U.M.; Ruff, D.; Gonzales, M.L.; Snyder,
+  M.P.; Chang, H.Y.; Greenleaf, W.J.
+\newblock Single-cell chromatin accessibility reveals principles of regulatory
+  variation.
+\newblock {\em Nature} {\bf 2015}, {\em 523},~486--490.
+\newblock {\url{https://doi.org/10.1038/nature14590}}.
+
 \bibitem[Pique-Regi et~al.(2011)Pique-Regi, Degner, Pai, Gaffney, Gilad, and
   Pritchard]{pique2011centipede}
 Pique-Regi, R.; Degner, J.F.; Pai, A.A.; Gaffney, D.J.; Gilad, Y.; Pritchard,
@@ -41,6 +50,14 @@ Quach, B.; Furey, T.S.
 \newblock {\em Bioinformatics} {\bf 2017}, {\em 33},~956--963.
 \newblock {\url{https://doi.org/10.1093/bioinformatics/btw740}}.
 
+\bibitem[Li et~al.(2019)Li, Schulz, Look, Begemann, Zenke, and
+  Costa]{li2019hint}
+Li, Z.; Schulz, M.H.; Look, T.; Begemann, M.; Zenke, M.; Costa, I.G.
+\newblock Identification of transcription factor binding sites using
+  {ATAC}-seq.
+\newblock {\em Genome Biology} {\bf 2019}, {\em 20},~45.
+\newblock {\url{https://doi.org/10.1186/s13059-019-1642-2}}.
+
 \bibitem[Bentsen et~al.(2020)Bentsen, Goymann, Schultheis, Klee, Petrova,
   Wiegandt, Fust, Preussner, Kuenne, Braun, Kim, and Looso]{bentsen2020}
 Bentsen, M.; Goymann, P.; Schultheis, H.; Klee, K.; Petrova, A.; Wiegandt, R.;
@@ -49,14 +66,6 @@ Bentsen, M.; Goymann, P.; Schultheis, H.; Klee, K.; Petrova, A.; Wiegandt, R.;
   binding during zygotic genome activation.
 \newblock {\em Nature Communications} {\bf 2020}, {\em 11},~4267.
 \newblock {\url{https://doi.org/10.1038/s41467-020-18035-1}}.
-
-\bibitem[Li et~al.(2019)Li, Schulz, Look, Begemann, Zenke, and
-  Costa]{li2019hint}
-Li, Z.; Schulz, M.H.; Look, T.; Begemann, M.; Zenke, M.; Costa, I.G.
-\newblock Identification of transcription factor binding sites using
-  {ATAC}-seq.
-\newblock {\em Genome Biology} {\bf 2019}, {\em 20},~45.
-\newblock {\url{https://doi.org/10.1186/s13059-019-1642-2}}.
 
 \bibitem[Hu et~al.(2025)Hu, Horlbeck, Zhang, Ma, Shrestha, Kartha, Duarte,
   Hock, Savage, Labade, Kletzien, Meliki, Castillo, Durand, Mattei, Anderson,
@@ -88,25 +97,6 @@ Pampari, A.; Shcherbina, A.; Kvon, E.Z.; Kosicki, M.; Nair, S.; Kundu, S.;
 \newblock {\em bioRxiv} {\bf 2024}.
 \newblock Preprint, {\url{https://doi.org/10.1101/2024.12.25.630221}}.
 
-\bibitem[Bailey et~al.(2015)Bailey, Johnson, Grant, and Noble]{bailey2015meme}
-Bailey, T.L.; Johnson, J.; Grant, C.E.; Noble, W.S.
-\newblock The {MEME} Suite.
-\newblock {\em Nucleic Acids Research} {\bf 2015}, {\em 43},~W39--W49.
-\newblock {\url{https://doi.org/10.1093/nar/gkv416}}.
-
-\bibitem[Bailey(2021)]{Bailey2021_STREME}
-Bailey, T.L.
-\newblock STREME: accurate and versatile sequence motif discovery.
-\newblock {\em Bioinformatics} {\bf 2021}, {\em 37},~2834--2840.
-\newblock {\url{https://doi.org/10.1093/bioinformatics/btab203}}.
-
-\bibitem[Gupta et~al.(2007)Gupta, Stamatoyannopoulos, Bailey, and
-  Noble]{gupta2007tomtom}
-Gupta, S.; Stamatoyannopoulos, J.A.; Bailey, T.L.; Noble, W.S.
-\newblock Quantifying similarity between motifs.
-\newblock {\em Genome Biology} {\bf 2007}, {\em 8},~R24.
-\newblock {\url{https://doi.org/10.1186/gb-2007-8-2-r24}}.
-
 \bibitem[Ovek~Baydar et~al.(2026)Ovek~Baydar, Rauluseviciute, Aronsen,
   Blanc-Mathieu, Bonthuis, de~Beukelaer, Ferenc, Jegou, Kumar, Lemma, Lucas,
   Pochon, Yun, Ramalingam, Deshpande, Patel, Marinov, Wang, Aguirre,
@@ -121,11 +111,30 @@ Ovek~Baydar, D.; Rauluseviciute, I.; Aronsen, D.R.; Blanc-Mathieu, R.;
 \newblock {\em Nucleic Acids Research} {\bf 2026}, {\em 54},~D184--D193.
 \newblock {\url{https://doi.org/10.1093/nar/gkaf1209}}.
 
+\bibitem[Bailey et~al.(2015)Bailey, Johnson, Grant, and Noble]{bailey2015meme}
+Bailey, T.L.; Johnson, J.; Grant, C.E.; Noble, W.S.
+\newblock The {MEME} Suite.
+\newblock {\em Nucleic Acids Research} {\bf 2015}, {\em 43},~W39--W49.
+\newblock {\url{https://doi.org/10.1093/nar/gkv416}}.
+
 \bibitem[Bailey(2011)]{Bailey2011_DREME}
 Bailey, T.L.
 \newblock DREME: motif discovery in transcription factor ChIP-seq data.
 \newblock {\em Bioinformatics} {\bf 2011}, {\em 27},~1653--1659.
 \newblock {\url{https://doi.org/10.1093/bioinformatics/btr261}}.
+
+\bibitem[Bailey(2021)]{Bailey2021_STREME}
+Bailey, T.L.
+\newblock STREME: accurate and versatile sequence motif discovery.
+\newblock {\em Bioinformatics} {\bf 2021}, {\em 37},~2834--2840.
+\newblock {\url{https://doi.org/10.1093/bioinformatics/btab203}}.
+
+\bibitem[Gupta et~al.(2007)Gupta, Stamatoyannopoulos, Bailey, and
+  Noble]{gupta2007tomtom}
+Gupta, S.; Stamatoyannopoulos, J.A.; Bailey, T.L.; Noble, W.S.
+\newblock Quantifying similarity between motifs.
+\newblock {\em Genome Biology} {\bf 2007}, {\em 8},~R24.
+\newblock {\url{https://doi.org/10.1186/gb-2007-8-2-r24}}.
 
 \bibitem[Smyth(2004)]{smyth2004}
 Smyth, G.K.
@@ -183,36 +192,5 @@ Ewels, P.A.; Peltzer, A.; Fillinger, S.; Patel, H.; Alneberg, J.; Wilm, A.;
   atac\_pbmc\_5k\_nextgem dataset. Available online:
   \url{https://www.10xgenomics.com/datasets/5-k-peripheral-blood-mononuclear-cells-pbm-cs-from-a-healthy-donor-next-gem-v-1-1-1-1-standard-2-0-0}
   (accessed on 22 June 2026).
-
-\bibitem[Granja et~al.(2021)Granja, Corces, Pierce, et~al.]{Granja2021_ArchR}
-Granja, J.M.; Corces, M.R.; Pierce, S.E.;  et~al.
-\newblock ArchR is a scalable software package for integrative single-cell
-  chromatin accessibility analysis.
-\newblock {\em Nature Genetics} {\bf 2021}, {\em 53},~403--411.
-\newblock {\url{https://doi.org/10.1038/s41588-021-00790-6}}.
-
-\bibitem[Stuart et~al.(2021)Stuart, Srivastava, Madad, Lareau, and
-  Satija]{Stuart2021_Signac}
-Stuart, T.; Srivastava, A.; Madad, S.; Lareau, C.; Satija, R.
-\newblock Single-cell chromatin state analysis with Signac.
-\newblock {\em Nature Methods} {\bf 2021}, {\em 18},~1333--1341.
-\newblock {\url{https://doi.org/10.1038/s41592-021-01282-5}}.
-
-\bibitem[Schep et~al.(2017)Schep, Wu, Buenrostro, and
-  Greenleaf]{Schep2017_chromVAR}
-Schep, A.N.; Wu, B.; Buenrostro, J.D.; Greenleaf, W.J.
-\newblock chromVAR: inferring transcription-factor-associated accessibility
-  from single-cell epigenomic data.
-\newblock {\em Nature Methods} {\bf 2017}, {\em 14},~975--978.
-\newblock {\url{https://doi.org/10.1038/nmeth.4401}}.
-
-\bibitem[Berest et~al.(2019)Berest, Arnold, Reyes-Palomares, Palla, Rasmussen,
-  Giles, Bruch, Binder, and Guenther]{Berest2019_diffTF}
-Berest, I.; Arnold, C.; Reyes-Palomares, A.; Palla, G.; Rasmussen, K.D.; Giles,
-  H.; Bruch, P.M.; Binder, H.; Guenther, T.
-\newblock Quantification of differential transcription factor activity and
-  multiomics-based classification into activators and repressors: diffTF.
-\newblock {\em Cell Reports} {\bf 2019}, {\em 29},~3147--3159.e12.
-\newblock {\url{https://doi.org/10.1016/j.celrep.2019.10.106}}.
 
 \end{thebibliography}

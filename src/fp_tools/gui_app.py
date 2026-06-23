@@ -45,6 +45,7 @@ PAGE_OPTIONS = [
     "motif-summary",
     "fp-tools-score-variants",
     "pseudobulk-fragments",
+    "find-signature-fp",
     "pseudobulk-footprints",
     "Config",
 ]
@@ -54,7 +55,7 @@ NAV_GROUPS = [
     ("Core workflow", ["atac-correct", "call-footprints", "match-motifs", "diff-footprints"]),
     ("Signals and reports", ["normalize-bigwig", "plot-aggregate", "plot-aggregate-batch"]),
     ("Motifs and variants", ["motif-discovery", "motif-summary", "fp-tools-score-variants"]),
-    ("Single-cell ATAC", ["pseudobulk-fragments", "pseudobulk-footprints"]),
+    ("Single-cell ATAC", ["pseudobulk-fragments", "find-signature-fp", "pseudobulk-footprints"]),
     ("Configuration", ["Config"]),
 ]
 
@@ -119,6 +120,17 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "min_cells": 1,
         "min_fragments": 1,
         "index_output": True,
+    },
+    "find-signature-fp": {
+        "sample_id": "signature_fp_run",
+        "fragments": "data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz",
+        "annotations": "data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv",
+        "h5ad": "data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad.h5ad",
+        "tf_site_dir": "data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/tf_sites",
+        "outdir": "examples/gui_demo_outputs/signature_fp",
+        "markers": "STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3",
+        "summary_output_prefix": "single_cell_footprinting",
+        "max_motifs": 25,
     },
     "pseudobulk-footprints": {
         "sample_id": "pseudobulk_footprints_run",
@@ -796,7 +808,7 @@ def _render_home(run_dir: Path) -> None:
         </section>
         <div class="fp-section-title">Typical workflow</div>
         <div class="fp-card-grid">
-          <div class="fp-gui-card"><h3>1. Choose command</h3><p>Open bulk ATAC, motif, report, variant, or pseudobulk tools.</p></div>
+          <div class="fp-gui-card"><h3>1. Choose command</h3><p>Open bulk ATAC, motif, report, variant, pseudobulk, or signature tools.</p></div>
           <div class="fp-gui-card"><h3>2. Load example</h3><p>Start from bundled YAML or paste your own paths.</p></div>
           <div class="fp-gui-card"><h3>3. Review YAML</h3><p>Check the exact config before running.</p></div>
           <div class="fp-gui-card"><h3>4. Inspect outputs</h3><p>Open logs, tables, bigWigs, and HTML reports.</p></div>
@@ -1490,7 +1502,7 @@ def _discover_outputs(child_run_dir: Path) -> list[Path]:
             add_path(item.get(key, ""))
     elif tool == "fp-tools-score-variants":
         add_path(item.get("out", ""))
-    elif tool in {"pseudobulk-fragments", "pseudobulk-footprints"}:
+    elif tool in {"pseudobulk-fragments", "find-signature-fp", "pseudobulk-footprints"}:
         add_path(item.get("outdir", ""))
 
     seen: set[str] = set()

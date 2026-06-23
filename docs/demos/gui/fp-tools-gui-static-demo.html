@@ -269,6 +269,7 @@
       <a class="nav-item" href="#plot-aggregate-batch" data-page="plot-aggregate-batch">plot-aggregate-batch</a>
       <div class="nav-group">Single-cell ATAC</div>
       <a class="nav-item" href="#pseudobulk-fragments" data-page="pseudobulk-fragments">pseudobulk-fragments</a>
+      <a class="nav-item" href="#find-signature-fp" data-page="find-signature-fp">find-signature-fp</a>
       <a class="nav-item" href="#pseudobulk-footprints" data-page="pseudobulk-footprints">pseudobulk-footprints</a>
     </aside>
     <main id="main-content">
@@ -279,7 +280,7 @@
       </section>
 
       <section class="steps">
-        <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, variants, or pseudobulk.</span></div>
+        <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, variants, pseudobulk, or signatures.</span></div>
         <div class="step"><strong>2. Load example</strong><span>Start from bundled YAML or paste your own paths.</span></div>
         <div class="step"><strong>3. Review YAML</strong><span>See the exact config before running.</span></div>
         <div class="step"><strong>4. Inspect outputs</strong><span>Open logs, tables, bigWigs, and HTML reports.</span></div>
@@ -452,15 +453,29 @@ plot_aggregate: sig</pre>
         yaml: "tool: pseudobulk-fragments\nfragments: pbmc5k_fragments.tsv.gz\nannotations: pbmc5k_celltypes.tsv\ngroup_by: broad_cell_type",
         metrics: [["Tool", "scATAC"], ["Groups", "3"], ["Output", "fragments"]]
       },
+      "find-signature-fp": {
+        title: "find-signature-fp",
+        description: "Create marker footprint-signature heatmaps and UMAP reports after pseudobulk motif analysis.",
+        fields: [
+          ["Fragments", "pbmc_fragments.tsv.gz"],
+          ["Annotations", "cell_annotations.tsv"],
+          ["Cell embedding", "pbmc_embedding.h5ad"],
+          ["TF site folder", "marker_motif_sites"],
+          ["Markers", "STAT6, FOSB, CEBPA, IRF8, RELA, ZNF683, NR4A1, SMAD3"],
+          ["Output folder", "results/signature_fp"]
+        ],
+        yaml: "tool: find-signature-fp\nfragments: pbmc_fragments.tsv.gz\nannotations: cell_annotations.tsv\nh5ad: pbmc_embedding.h5ad\ntf_site_dir: marker_motif_sites\noutdir: results/signature_fp",
+        metrics: [["Tool", "scATAC"], ["Output", "heatmap + UMAP"], ["Mode", "report"]]
+      },
       "pseudobulk-footprints": {
         title: "pseudobulk-footprints",
-        description: "Run full pseudobulk ATAC correction, footprint scoring, motif analysis, and marker plots.",
+        description: "Run full pseudobulk ATAC correction, footprint scoring, motif analysis, aggregate plots, and optional signature reports.",
         fields: [
           ["Fragments", "pbmc_fragments.tsv.gz"],
           ["Genome FASTA", "hg38.fa"],
           ["Peaks BED", "pbmc_peaks.bed"],
           ["Motif database", "jaspar2026_vertebrates"],
-          ["Marker TFs", "PAX5, CEBPB, TCF7"],
+          ["Marker TFs", "STAT6, FOSB, CEBPA"],
           ["Cell embedding", "pbmc_embedding.h5ad"],
           ["Output folder", "results/pseudobulk_footprints"]
         ],
@@ -476,7 +491,7 @@ plot_aggregate: sig</pre>
         intro: "Choose a command, load an example, review the YAML, and launch the same reproducible workflow used by the command line.",
         body: `
           <section class="steps">
-            <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, variants, or pseudobulk.</span></div>
+            <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, variants, pseudobulk, or signatures.</span></div>
             <div class="step"><strong>2. Load example</strong><span>Start from bundled YAML or paste your own paths.</span></div>
             <div class="step"><strong>3. Review YAML</strong><span>See the exact config before running.</span></div>
             <div class="step"><strong>4. Inspect outputs</strong><span>Open logs, tables, bigWigs, and HTML reports.</span></div>

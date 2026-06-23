@@ -104,7 +104,7 @@ match-motifs \
 
 ## Pseudobulk Single-Cell ATAC
 
-Use `pseudobulk-footprints` when starting from single-cell fragments and cell annotations.
+Use `pseudobulk-fragments` to group single-cell fragments by annotation, then run the standard footprint commands on the grouped pseudobulk samples. Use `pseudobulk-footprints` when you want grouping, correction, scoring, motif reports, aggregate plots, and optional signature reporting in one wrapper command.
 
 ```bash
 pseudobulk-footprints \
@@ -120,9 +120,20 @@ pseudobulk-footprints \
   --outdir results/pseudobulk
 ```
 
-Standard outputs include pseudobulk fragments, pseudo-BAMs, corrected cut-site bigWigs, footprint-score bigWigs, motif-aware differential reports, aggregate plots, and Fig4-style single-cell footprinting plots. The combined plot is written as `plots/single_cell_footprinting/single_cell_footprinting.svg` when `--single-cell-signature-h5ad` and `--tf-site-dir` are supplied.
+Standard outputs include pseudobulk fragments, pseudo-BAMs, corrected cut-site bigWigs, footprint-score bigWigs, motif-aware differential reports, aggregate plots, and optional single-cell footprint-signature heatmaps/UMAPs. The combined signature plot is written as `plots/single_cell_footprinting/single_cell_footprinting.svg` when `--single-cell-signature-h5ad` and `--tf-site-dir` are supplied.
 
-For a lighter first step, use `pseudobulk-fragments` to only group fragments and write cut-site tracks.
+For a lighter first step, use `pseudobulk-fragments` to only group fragments and write cut-site tracks. After motif-aware analysis, use `find-signature-fp` as a standalone reporting step for marker signature heatmaps and UMAPs.
+
+```bash
+find-signature-fp \
+  --annotations cell_annotations.tsv \
+  --fragments pbmc_fragments.tsv.gz \
+  --h5ad pbmc_embedding.h5ad \
+  --tf-site-dir marker_motif_sites \
+  --all-motif-results results/pseudobulk/pseudobulk_diff_footprints_results.txt \
+  --all-motif-diff-dir results/pseudobulk/diff_footprints \
+  --outdir results/pseudobulk/signature_fp
+```
 
 ## De Novo Motif Discovery
 

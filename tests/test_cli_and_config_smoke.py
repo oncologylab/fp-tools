@@ -37,6 +37,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
                             "motif-summary",
                             "fp-tools-score-variants",
                             "pseudobulk-fragments",
+                            "find-signature-fp",
                             "pseudobulk-footprints",
                         },
                     )
@@ -65,6 +66,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
             "motif-summary",
             "fp-tools-score-variants",
             "pseudobulk-fragments",
+            "find-signature-fp",
             "ATACorrect",
             "FootprintScores",
             "ScoreBigwig",

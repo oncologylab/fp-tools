@@ -28,6 +28,7 @@ The GUI opens in a browser and writes the same YAML configs that can be run from
 - Generate volcano-style differential footprint HTML reports.
 - Plot motif-centered aggregate footprints.
 - Group single-cell ATAC fragments into pseudobulk cell-type profiles.
+- Plot per-cell footprint-signature heatmaps and UMAP reports from single-cell fragments.
 
 ## Typical Workflow
 
@@ -83,7 +84,7 @@ Repeated names in `--cond-names` define biological replicates. The main report w
 
 ## Pseudobulk Workflow
 
-Use `pseudobulk-footprints` when starting from single-cell ATAC fragments and cell annotations. With a motif database, marker motif-site BEDs, and an h5ad file containing the cell embedding, the standard pseudobulk route also writes Fig4-style single-cell footprinting plots.
+For single-cell ATAC data, start with `pseudobulk-fragments` to group fragments by cell annotation. Then run the standard footprint workflow on the grouped pseudobulk samples. After motif-aware comparisons are available, use `find-signature-fp` to write marker footprint-signature heatmaps and UMAP reports. `pseudobulk-footprints` is the convenience wrapper that can run grouping, correction, scoring, motif reports, aggregate plots, and optional signature reporting in one command.
 
 ```bash
 pseudobulk-footprints \
@@ -99,7 +100,20 @@ pseudobulk-footprints \
   --outdir results/pseudobulk
 ```
 
-Key outputs include pseudobulk fragments, pseudo-BAMs, corrected bigWigs, footprint-score bigWigs, differential footprint reports, aggregate plots, and `plots/single_cell_footprinting/single_cell_footprinting.svg`.
+To run the signature report as a standalone step:
+
+```bash
+find-signature-fp \
+  --annotations cell_annotations.tsv \
+  --fragments pbmc_fragments.tsv.gz \
+  --h5ad pbmc_embedding.h5ad \
+  --tf-site-dir marker_motif_sites \
+  --all-motif-results results/pseudobulk/pseudobulk_diff_footprints_results.txt \
+  --all-motif-diff-dir results/pseudobulk/diff_footprints \
+  --outdir results/pseudobulk/signature_fp
+```
+
+Key outputs include pseudobulk fragments, pseudo-BAMs, corrected bigWigs, footprint-score bigWigs, differential footprint reports, aggregate plots, and single-cell footprint-signature heatmaps/UMAPs.
 
 ## De Novo Motif Workflow
 
@@ -143,7 +157,8 @@ diff-footprints \
 | `motif-summary` | Summarize motif discovery outputs. |
 | `fp-tools-score-variants` | Score variants against candidate footprints and motifs. |
 | `pseudobulk-fragments` | Group single-cell fragments by annotation. |
-| `pseudobulk-footprints` | Run the full pseudobulk footprint workflow, including optional Fig4-style single-cell plots. |
+| `find-signature-fp` | Plot per-cell footprint-signature heatmaps and UMAP reports. |
+| `pseudobulk-footprints` | Run the full pseudobulk footprint workflow, including optional signature reporting. |
 | `run-workflow` | Run a saved YAML config. |
 | `fp-tools-gui` | Open the optional browser GUI. |
 
@@ -163,6 +178,7 @@ motif-discovery --help
 motif-summary --help
 fp-tools-score-variants --help
 pseudobulk-fragments --help
+find-signature-fp --help
 pseudobulk-footprints --help
 ```
 

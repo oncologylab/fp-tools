@@ -156,3 +156,47 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media screen and (min-width: 76.25em) {
+  .md-main__inner,
+  .md-grid {
+    max-width: min(108rem, calc(100vw - 3rem));
+  }
+
+  .md-sidebar--primary {
+    display: none;
+  }
+
+  .md-sidebar--secondary {
+    width: 14rem;
+  }
+
+  .md-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .md-content__inner {
+    margin-left: 0.8rem;
+    margin-right: 0.8rem;
+    max-width: none;
+  }
+
+  .md-content article,
+  .md-typeset {
+    max-width: none;
+  }
+}
+
+.md-typeset pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.md-typeset pre > code {
+  white-space: pre;
+}
+
+.md-typeset table:not([class]) {
+  width: 100%;
+}

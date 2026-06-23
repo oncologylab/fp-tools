@@ -26,6 +26,7 @@ class PublicApiAliasesTest(unittest.TestCase):
             "motif-summary": "fp_tools.tools.motif_discovery:motif_report_main",
             "fp-tools-score-variants": "fp_tools.tools.variants:main",
             "pseudobulk-fragments": "fp_tools.tools.pseudobulk:main",
+            "find-signature-fp": "fp_tools.tools.find_signature_fp:main",
             "pseudobulk-footprints": "fp_tools.tools.pseudobulk_footprints:main",
             "ATACorrect": "fp_tools.cli:main",
             "FootprintScores": "fp_tools.cli_scorebigwig:main",
@@ -54,6 +55,7 @@ class PublicApiAliasesTest(unittest.TestCase):
             "fp-tools-score-variants": "fp-tools-score-variants",
             "score-variants": "fp-tools-score-variants",
             "pseudobulk-fragments": "pseudobulk-fragments",
+            "find-signature-fp": "find-signature-fp",
             "pseudobulk-footprints": "pseudobulk-footprints",
         }
 

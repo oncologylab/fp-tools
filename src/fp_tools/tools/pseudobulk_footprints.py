@@ -141,31 +141,35 @@ def _add_single_cell_signature_command(
 
     signature_dir = Path(args.single_cell_signature_outdir) if args.single_cell_signature_outdir else plot_dir / "single_cell_footprinting"
     signature_dir.mkdir(parents=True, exist_ok=True)
-    signature_script = _resolve_script_path(args.single_cell_signature_script)
-    signature_command = [
-        sys.executable,
-        str(signature_script),
-        "--annotations",
-        str(args.annotations),
-        "--fragments",
-        str(args.fragments),
-        "--h5ad",
-        str(args.single_cell_signature_h5ad),
-        "--tf-site-dir",
-        str(args.tf_site_dir),
-        "--outdir",
-        str(signature_dir),
-        "--markers",
-        str(args.single_cell_signature_markers),
-        "--fig4-output-prefix",
-        str(args.single_cell_signature_fig_prefix),
-    ]
+    if args.single_cell_signature_script:
+        signature_script = _resolve_script_path(args.single_cell_signature_script)
+        signature_command = [sys.executable, str(signature_script)]
+    else:
+        signature_command = ["find-signature-fp"]
+    signature_command.extend(
+        [
+            "--annotations",
+            str(args.annotations),
+            "--fragments",
+            str(args.fragments),
+            "--h5ad",
+            str(args.single_cell_signature_h5ad),
+            "--tf-site-dir",
+            str(args.tf_site_dir),
+            "--outdir",
+            str(signature_dir),
+            "--markers",
+            str(args.single_cell_signature_markers),
+            "--summary-output-prefix",
+            str(args.single_cell_signature_fig_prefix),
+        ]
+    )
     if args.single_cell_signature_all_motif_score_table:
         signature_command.extend(["--all-motif-score-table", str(args.single_cell_signature_all_motif_score_table)])
     elif motif_report_available and bindetect_results is not None:
         signature_command.extend(
             [
-                "--all-motif-bindetect-dir",
+                "--all-motif-diff-dir",
                 str(diff_dir),
                 "--all-motif-results",
                 str(bindetect_results),
@@ -184,7 +188,7 @@ def _add_single_cell_signature_command(
     if args.single_cell_signature_max_motifs is not None:
         signature_command.extend(["--max-motifs", str(args.single_cell_signature_max_motifs)])
 
-    commands.append(("Fig4-style single-cell footprinting plots", signature_command))
+    commands.append(("single-cell footprint-signature report", signature_command))
     if not args.dry_run and exit_code == 0:
         code = _run_command(
             signature_command,
@@ -513,14 +517,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--tfs", default="auto", help="Comma-separated TFs or 'auto' for plotting (default: auto).")
     parser.add_argument("--plot-flank", type=int, default=100, help="Flank for optional aggregate plots (default: 100).")
     parser.add_argument("--plot-script", default="manuscript/scripts/plot_pseudobulk_tf_aggregates.py", help="Plotting script path for optional aggregate plots.")
-    parser.add_argument("--single-cell-signature-h5ad", help="Optional h5ad with cell embeddings/counts; with --fragments and --tf-site-dir, write Fig4-style per-cell KNN footprint-signature plots.")
-    parser.add_argument("--single-cell-signature-outdir", help="Output directory for optional Fig4-style per-cell signature plots (default: <outdir>/plots/single_cell_footprinting).")
-    parser.add_argument("--single-cell-signature-markers", default="PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2", help="Comma-separated marker TFs for optional per-cell signature UMAPs (default: PAX5,CEBPB,TCF7,CEBPA,SPIB,ZBTB7B,POU2F2).")
-    parser.add_argument("--single-cell-signature-fig-prefix", default="single_cell_footprinting", help="Output prefix for the combined Fig4-style single-cell footprinting SVG (default: single_cell_footprinting).")
-    parser.add_argument("--single-cell-signature-script", default="benchmarks/scripts/plot_pbmc5k_per_cell_signatures.py", help="Plotting script path for optional per-cell signature plots.")
-    parser.add_argument("--single-cell-signature-all-motif-score-table", help="Existing all-motif per-cell signature TSV; skips rescoring all motif sites for the Fig4-style heatmap.")
+    parser.add_argument("--single-cell-signature-h5ad", help="Optional h5ad with cell embeddings/counts; with --fragments and --tf-site-dir, write per-cell KNN footprint-signature heatmaps and UMAP reports.")
+    parser.add_argument("--single-cell-signature-outdir", help="Output directory for optional per-cell signature reports (default: <outdir>/plots/single_cell_footprinting).")
+    parser.add_argument("--single-cell-signature-markers", default="STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3", help="Comma-separated marker TFs for optional per-cell signature UMAPs (default: STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3).")
+    parser.add_argument("--single-cell-signature-fig-prefix", default="single_cell_footprinting", help="Output prefix for the combined single-cell footprint-signature SVG (default: single_cell_footprinting).")
+    parser.add_argument("--single-cell-signature-script", default=None, help=argparse.SUPPRESS)
+    parser.add_argument("--single-cell-signature-all-motif-score-table", help="Existing all-motif per-cell signature TSV; skips rescoring all motif sites for the signature heatmap.")
     parser.add_argument("--single-cell-signature-marker-score-table", help="Existing KNN marker score TSV used for marker rows and UMAP plots.")
-    parser.add_argument("--single-cell-signature-top-per-cell-type", type=int, default=40, help="Top all-motif signatures to keep per cell type in the Fig4-style heatmap (default: 40).")
+    parser.add_argument("--single-cell-signature-top-per-cell-type", type=int, default=40, help="Top all-motif signatures to keep per cell type in the signature heatmap (default: 40).")
     parser.add_argument("--single-cell-signature-top-min-specificity", type=float, default=0.5, help="Minimum dominant-vs-next cell-type z-score difference for top heatmap rows (default: 0.5).")
     parser.add_argument("--single-cell-signature-knn", type=int, default=75, help="KNN size for optional per-cell footprint-signature smoothing (default: 75).")
     parser.add_argument("--single-cell-signature-max-sites-per-motif", type=int, default=200, help="Maximum motif instances per motif for optional all-motif per-cell heatmap scoring; use 0 for all sites (default: 200).")

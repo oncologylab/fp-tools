@@ -519,7 +519,7 @@ class PseudobulkTest(unittest.TestCase):
             self.assertIn("candidate_bed", table)
             self.assertIn("dry_run", table)
 
-    def test_pseudobulk_footprints_dry_run_can_plan_fig4_style_signature_plots(self):
+    def test_pseudobulk_footprints_dry_run_can_plan_signature_report(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             fragments = tmp / "fragments.tsv"
@@ -582,11 +582,11 @@ class PseudobulkTest(unittest.TestCase):
 
             commands = (outdir / "pseudobulk_footprint_commands.sh").read_text(encoding="utf-8")
             self.assertIn("diff-footprints", commands)
-            self.assertIn("plot_pbmc5k_per_cell_signatures.py", commands)
+            self.assertIn("find-signature-fp", commands)
             self.assertIn("--h5ad", commands)
-            self.assertIn("--all-motif-bindetect-dir", commands)
+            self.assertIn("--all-motif-diff-dir", commands)
             self.assertIn("--all-motif-results", commands)
-            self.assertIn("--fig4-output-prefix single_cell_footprinting", commands)
+            self.assertIn("--summary-output-prefix single_cell_footprinting", commands)
 
     def test_pseudobulk_footprints_bam_dry_run_uses_default_shift_and_bindetect(self):
         with tempfile.TemporaryDirectory() as tmpdir:
