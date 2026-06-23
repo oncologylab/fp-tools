@@ -32,15 +32,13 @@ The GUI opens in a browser and writes the same YAML configs that can be run from
 
 ## Typical Workflow
 
-```text
-atac-correct
-  -> call-footprints
-  -> match-motifs or motif-discovery
-  -> diff-footprints
-  -> plot-aggregate
-```
+[`atac-correct`](https://oncologylab.github.io/fp-tools/api/#atac-correct)
+-> [`call-footprints`](https://oncologylab.github.io/fp-tools/api/#call-footprints)
+-> [`match-motifs`](https://oncologylab.github.io/fp-tools/api/#match-motifs) or [`motif-discovery`](https://oncologylab.github.io/fp-tools/api/#motif-discovery)
+-> [`diff-footprints`](https://oncologylab.github.io/fp-tools/api/#diff-footprints)
+-> [`plot-aggregate`](https://oncologylab.github.io/fp-tools/api/#plot-aggregate)
 
-Use `match-motifs` to inspect motif sites and bound/unbound calls for one or more footprint tracks. Use `motif-discovery` when candidate footprint intervals should be searched for de novo motifs. For two or more conditions, use `diff-footprints`; it can scan the same motif database, compare conditions, and write an interactive HTML report.
+Use [`match-motifs`](https://oncologylab.github.io/fp-tools/api/#match-motifs) to inspect motif sites and bound/unbound calls for one or more footprint tracks. Use [`motif-discovery`](https://oncologylab.github.io/fp-tools/api/#motif-discovery) when candidate footprint intervals should be searched for de novo motifs. For two or more conditions, use [`diff-footprints`](https://oncologylab.github.io/fp-tools/api/#diff-footprints); it can scan the same motif database, compare conditions, and write an interactive HTML report.
 
 ## Minimal Example
 
@@ -84,7 +82,7 @@ Repeated names in `--cond-names` define biological replicates. The main report w
 
 ## Pseudobulk Workflow
 
-For single-cell ATAC data, start with `pseudobulk-fragments` to group fragments by cell annotation. Then run the standard footprint workflow on the grouped pseudobulk samples. After motif-aware comparisons are available, use `find-signature-fp` to write marker footprint-signature heatmaps and UMAP reports. `pseudobulk-footprints` is the convenience wrapper that can run grouping, correction, scoring, motif reports, aggregate plots, and optional signature reporting in one command.
+For single-cell ATAC data, start with [`pseudobulk-fragments`](https://oncologylab.github.io/fp-tools/api/#pseudobulk-fragments) to group fragments by cell annotation. Then run the standard footprint workflow on the grouped pseudobulk samples. After motif-aware comparisons are available, use [`find-signature-fp`](https://oncologylab.github.io/fp-tools/api/#find-signature-fp) to write marker footprint-signature heatmaps and UMAP reports. [`pseudobulk-footprints`](https://oncologylab.github.io/fp-tools/api/#pseudobulk-footprints) is the convenience wrapper that can run grouping, correction, scoring, motif reports, aggregate plots, and optional signature reporting in one command.
 
 ```bash
 pseudobulk-footprints \
@@ -117,7 +115,7 @@ Key outputs include pseudobulk fragments, pseudo-BAMs, corrected bigWigs, footpr
 
 ## De Novo Motif Workflow
 
-Use candidate footprints from `call-footprints --output-bed` to prepare de novo motif discovery. This route writes a reproducible MEME/STREME/DREME script and can compare discovered motifs to a built-in motif database.
+Use candidate footprints from [`call-footprints`](https://oncologylab.github.io/fp-tools/api/#call-footprints) `--output-bed` to prepare de novo motif discovery. This route writes a reproducible MEME/STREME/DREME script and can compare discovered motifs to a built-in motif database.
 
 ```bash
 motif-discovery \
@@ -146,21 +144,21 @@ diff-footprints \
 
 | Command | Use |
 | --- | --- |
-| `atac-correct` | Bias-correct ATAC-seq cut-site signal. |
-| `call-footprints` | Create footprint score tracks from one or more bigWigs. |
-| `match-motifs` | Scan motifs for one or more footprint tracks. |
-| `diff-footprints` | Compare motif footprints across conditions. |
-| `normalize-bigwig` | Scale bigWigs before aggregate plotting. |
-| `plot-aggregate` | Make aggregate footprint plots as PDF/SVG-style output or HTML. |
-| `plot-aggregate-batch` | Compatibility command for interactive aggregate HTML reports. |
-| `motif-discovery` | Prepare candidate-centered de novo motif discovery. |
-| `motif-summary` | Summarize motif discovery outputs. |
-| `fp-tools-score-variants` | Score variants against candidate footprints and motifs. |
-| `pseudobulk-fragments` | Group single-cell fragments by annotation. |
-| `find-signature-fp` | Plot per-cell footprint-signature heatmaps and UMAP reports. |
-| `pseudobulk-footprints` | Run the full pseudobulk footprint workflow, including optional signature reporting. |
-| `run-workflow` | Run a saved YAML config. |
-| `fp-tools-gui` | Open the optional browser GUI. |
+| [`atac-correct`](https://oncologylab.github.io/fp-tools/api/#atac-correct) | Bias-correct ATAC-seq cut-site signal. |
+| [`call-footprints`](https://oncologylab.github.io/fp-tools/api/#call-footprints) | Create footprint score tracks from one or more bigWigs. |
+| [`match-motifs`](https://oncologylab.github.io/fp-tools/api/#match-motifs) | Scan motifs for one or more footprint tracks. |
+| [`diff-footprints`](https://oncologylab.github.io/fp-tools/api/#diff-footprints) | Compare motif footprints across conditions. |
+| [`normalize-bigwig`](https://oncologylab.github.io/fp-tools/api/#normalize-bigwig) | Scale bigWigs before aggregate plotting. |
+| [`plot-aggregate`](https://oncologylab.github.io/fp-tools/api/#plot-aggregate) | Make aggregate footprint plots as PDF/SVG-style output or HTML. |
+| [`plot-aggregate-batch`](https://oncologylab.github.io/fp-tools/api/#plot-aggregate-batch) | Compatibility command for interactive aggregate HTML reports. |
+| [`motif-discovery`](https://oncologylab.github.io/fp-tools/api/#motif-discovery) | Prepare candidate-centered de novo motif discovery. |
+| [`motif-summary`](https://oncologylab.github.io/fp-tools/api/#motif-summary) | Summarize motif discovery outputs. |
+| [`pseudobulk-fragments`](https://oncologylab.github.io/fp-tools/api/#pseudobulk-fragments) | Group single-cell fragments by annotation. |
+| [`find-signature-fp`](https://oncologylab.github.io/fp-tools/api/#find-signature-fp) | Plot per-cell footprint-signature heatmaps and UMAP reports. |
+| [`pseudobulk-footprints`](https://oncologylab.github.io/fp-tools/api/#pseudobulk-footprints) | Run the full pseudobulk footprint workflow, including optional signature reporting. |
+| [`run-workflow`](https://oncologylab.github.io/fp-tools/api/#run-workflow) | Run a saved YAML config. |
+| [`fp-tools-gui`](https://oncologylab.github.io/fp-tools/api/#fp-tools-gui) | Open the optional browser GUI. |
+| [`fp-tools-score-variants`](https://oncologylab.github.io/fp-tools/api/#fp-tools-score-variants) | Optional variant-annotation utility; not part of the standard footprint workflow. |
 
 Check any command with `--help`:
 
@@ -192,7 +190,7 @@ Open the printed URL in a browser. If running on a server or cloud VM, make sure
 
 ## More Examples
 
-Example YAML configs are in `examples/gui_configs/`. They can be loaded in the GUI or run directly:
+Example YAML configs are in `examples/gui_configs/`. They can be loaded in the GUI or run directly with [`run-workflow`](https://oncologylab.github.io/fp-tools/api/#run-workflow):
 
 ```bash
 run-workflow --config examples/gui_configs/footprintscores_single.yml

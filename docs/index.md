@@ -1,6 +1,6 @@
 # Get Started
 
-`fp-tools` runs ATAC-seq footprint workflows from the command line or the optional browser GUI. The same YAML configuration can be saved from the GUI and rerun with `run-workflow`.
+`fp-tools` runs ATAC-seq footprint workflows from the command line or the optional browser GUI. The same YAML configuration can be saved from the GUI and rerun with [run-workflow](api.md#run-workflow).
 
 ## Install
 
@@ -18,7 +18,7 @@ fp-tools-gui
 ## Standard Workflow
 
 <div class="fp-command-chain">
-  atac-correct -> call-footprints -> 3a. match-motifs / 3b. motif-discovery -> diff-footprints -> plot-aggregate
+  <a href="api/#atac-correct">atac-correct</a> -> <a href="api/#call-footprints">call-footprints</a> -> 3a. <a href="api/#match-motifs">match-motifs</a> / 3b. <a href="api/#motif-discovery">motif-discovery</a> -> <a href="api/#diff-footprints">diff-footprints</a> -> <a href="api/#plot-aggregate">plot-aggregate</a>
 </div>
 
 ### 1. Correct ATAC Signal
@@ -113,7 +113,7 @@ diff-footprints \
   --outdir results/diff_footprints/A_vs_B
 ```
 
-Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and a standalone HTML report.
+Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html).
 
 ### 5. Review Aggregate Plots
 
@@ -131,7 +131,7 @@ Output: static PDF/SVG-style aggregate plots or an interactive HTML subplot brow
 
 ## Pseudobulk Single-Cell ATAC
 
-Use `pseudobulk-fragments` to group single-cell fragments by annotation, then run the standard footprint commands on the grouped pseudobulk samples. Use `pseudobulk-footprints` when you want grouping, correction, scoring, motif reports, aggregate plots, and optional signature reporting in one wrapper command.
+Use [pseudobulk-fragments](api.md#pseudobulk-fragments) to group single-cell fragments by annotation, then run the standard footprint commands on the grouped pseudobulk samples. Use [pseudobulk-footprints](api.md#pseudobulk-footprints) when you want grouping, correction, scoring, motif reports, aggregate plots, and optional signature reporting in one wrapper command.
 
 ```bash
 pseudobulk-footprints \
@@ -149,7 +149,7 @@ pseudobulk-footprints \
 
 Standard outputs include pseudobulk fragments, pseudo-BAMs, corrected cut-site bigWigs, footprint-score bigWigs, motif-aware differential reports, aggregate plots, and optional single-cell footprint-signature heatmaps/UMAPs. The combined signature plot is written as `plots/single_cell_footprinting/single_cell_footprinting.svg` when `--single-cell-signature-h5ad` and `--tf-site-dir` are supplied.
 
-For a lighter first step, use `pseudobulk-fragments` to only group fragments and write cut-site tracks. After motif-aware analysis, use `find-signature-fp` as a standalone reporting step for marker signature heatmaps and UMAPs.
+For a lighter first step, use [pseudobulk-fragments](api.md#pseudobulk-fragments) to only group fragments and write cut-site tracks. After motif-aware analysis, use [find-signature-fp](api.md#find-signature-fp) as a standalone reporting step for marker signature heatmaps and UMAPs.
 
 ```bash
 find-signature-fp \
@@ -166,13 +166,8 @@ find-signature-fp \
 
 <div class="fp-grid">
   <div class="fp-card">
-    <h3>Command List</h3>
-    <p>See all primary commands and what each one does.</p>
-    <p><a href="commands/">Open Commands</a></p>
-  </div>
-  <div class="fp-card">
     <h3>Command Manuals</h3>
-    <p>Read full command help for options, inputs, and outputs.</p>
+    <p>See the command overview and full help for every supported command.</p>
     <p><a href="api/">Open API Reference</a></p>
   </div>
   <div class="fp-card">

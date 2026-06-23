@@ -1,6 +1,6 @@
 # GUI Demo
 
-`fp-tools-gui` is an optional browser interface for users who prefer forms over long command lines. It still runs the same fp-tools commands and saves reusable YAML configs.
+[fp-tools-gui](api.md#fp-tools-gui) is an optional browser interface for users who prefer forms over long command lines. It still runs the same fp-tools commands and saves reusable YAML configs.
 
 ## Open The GUI
 
@@ -44,7 +44,7 @@ Open the printed URL in a browser. Public access also requires the port to be al
 
 ## Example Configs
 
-Bundled configs are in `examples/gui_configs/`. The same file can be loaded in the GUI or run directly:
+Bundled configs are in `examples/gui_configs/`. The same file can be loaded in the GUI or run directly with [run-workflow](api.md#run-workflow):
 
 ```bash
 run-workflow --config examples/gui_configs/footprintscores_single.yml

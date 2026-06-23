@@ -17,7 +17,7 @@ The public interface of `fp-tools` is command-first. This page lists the full co
 | [`fp-tools-gui`](#fp-tools-gui) | Launch the optional browser GUI. |
 | [`motif-discovery`](#motif-discovery) | Prepare or run a de novo motif discovery command plan. |
 | [`motif-summary`](#motif-summary) | Summarize MEME/Tomtom motif discovery outputs. |
-| [`fp-tools-score-variants`](#fp-tools-score-variants) | Annotate variants with footprint, sequence, and motif scores. |
+| [`fp-tools-score-variants`](#fp-tools-score-variants) | Optional utility for annotating variants with footprint, sequence, and motif scores. |
 | [`pseudobulk-fragments`](#pseudobulk-fragments) | Group single-cell ATAC fragments into pseudobulk files. |
 | [`find-signature-fp`](#find-signature-fp) | Plot per-cell footprint-signature heatmaps and UMAP reports. |
 | [`pseudobulk-footprints`](#pseudobulk-footprints) | Run grouping, ATAC correction, footprint scoring, reports, aggregate plots, and optional signature reporting. |

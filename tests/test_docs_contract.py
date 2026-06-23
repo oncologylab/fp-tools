@@ -41,7 +41,6 @@ class DocsEntryPointContractTest(unittest.TestCase):
             (ROOT / path).read_text(encoding="utf-8")
             for path in [
                 "docs/index.md",
-                "docs/commands.md",
                 "docs/api.md",
             ]
         )
@@ -110,7 +109,6 @@ class DocsEntryPointContractTest(unittest.TestCase):
             for path in [
                 "README.md",
                 "docs/index.md",
-                "docs/commands.md",
                 "docs/reports.md",
                 "docs/api.md",
             ]

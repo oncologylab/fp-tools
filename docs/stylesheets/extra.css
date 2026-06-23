@@ -103,6 +103,15 @@
   padding: 0.9rem 1rem;
 }
 
+.fp-command-chain a {
+  color: var(--fp-blue);
+  text-decoration: none;
+}
+
+.fp-command-chain a:hover {
+  text-decoration: underline;
+}
+
 .fp-screenshot-grid {
   display: grid;
   gap: 1rem;
@@ -168,7 +177,10 @@
   }
 
   .md-sidebar--secondary {
+    order: -1;
     width: 11rem;
+    margin-left: 0;
+    margin-right: 1rem;
   }
 
   .md-sidebar--secondary .md-nav__title {
@@ -181,6 +193,7 @@
   }
 
   .md-content {
+    order: 1;
     flex: 1 1 auto;
     min-width: 0;
   }

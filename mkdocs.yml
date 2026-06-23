@@ -39,7 +39,6 @@ extra_css:
 
 nav:
   - Get Started: index.md
-  - Commands: commands.md
   - Reports: reports.md
   - GUI Demo: gui.md
   - API Reference: api.md
