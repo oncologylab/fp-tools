@@ -457,7 +457,7 @@ Compare motif-associated footprint scores across conditions or biological replic
 
 **Input parameters**
 
-- Two or more footprint score bigWigs passed with `--signals`.
+- Two or more footprint score bigWigs passed with `--signals`, or standardized sample folders passed with `--sample-dirs` / `--project-dir`.
 - `--cond-names` to define conditions; repeat names for replicates.
 - Optional `--sample-names` to override file-derived sample labels without changing conditions.
 - Genome FASTA, peak BED, and motif database or motif files.
@@ -474,16 +474,16 @@ Compare motif-associated footprint scores across conditions or biological replic
 
 ```bash
 diff-footprints \
-  --signals A_rep1_footprints.bw A_rep2_footprints.bw B_rep1_footprints.bw B_rep2_footprints.bw \
-  --sample-names A_R1 A_R2 B_R1 B_R2 \
+  --sample-dirs results/samples/A_rep1 results/samples/A_rep2 results/samples/B_rep1 results/samples/B_rep2 \
   --cond-names A A B B \
-  --aggregate-signals A_rep1_corrected.bw A_rep2_corrected.bw B_rep1_corrected.bw B_rep2_corrected.bw \
   --genome hg38.fa.gz \
   --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
   --plot-aggregate sig \
   --outdir results/diff_footprints/A_vs_B
 ```
+
+`--sample-dirs` expects each folder to contain a footprint bigWig and a `match_motifs/` or `motif_matches/` cache. This skips motif rescanning and motif-site rescoring while recomputing the background distribution for the requested comparison.
 
 **Options**
 
@@ -493,6 +493,7 @@ This option reference is generated from `diff-footprints --help` and lists every
 usage: diff-footprints [-h] [--signals [<bigwig> ...]] [--peaks <bed>] [--genome <fasta>]
                        [--motifs [<motifs> ...]] [--motif-db <name>] [--list-motif-dbs]
                        [--sample-names [<name> ...]] [--cond-names [<name> ...]]
+                       [--sample-dirs [<directory> ...]] [--project-dir <directory>]
                        [--peak-header <file>] [--naming <string>] [--motif-pvalue <float>]
                        [--bound-pvalue <float>] [--cluster-threshold <float>]
                        [--pseudo <float>] [--time-series] [--time-course] [--skip-excel]
@@ -555,6 +556,10 @@ Optional arguments:
   --cond-names [<name> ...]        Condition labels for --signals; repeat names to define
                                    biological replicates (default: prefix of each
                                    --signals file)
+  --sample-dirs [<directory> ...]  Sample output folders containing a footprint bigWig and
+                                   match_motifs/ cache to reuse for differential analysis
+  --project-dir <directory>        Parent folder containing sample output folders for
+                                   folder-based differential analysis
   --peak-header <file>             File containing the header of --peaks separated by
                                    whitespace or newlines (default: peak columns are named
                                    "_additional_<count>")

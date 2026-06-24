@@ -98,13 +98,9 @@ Output: candidate FASTA files, a runnable MEME/STREME/DREME command script, moti
 
 ```bash
 diff-footprints \
-  --signals \
-    A_rep1_footprints.bw A_rep2_footprints.bw \
-    B_rep1_footprints.bw B_rep2_footprints.bw \
-  --sample-names A_R1 A_R2 B_R1 B_R2 \
-  --aggregate-signals \
-    A_rep1_corrected.bw A_rep2_corrected.bw \
-    B_rep1_corrected.bw B_rep2_corrected.bw \
+  --sample-dirs \
+    results/samples/A_rep1 results/samples/A_rep2 \
+    results/samples/B_rep1 results/samples/B_rep2 \
   --genome hg38.fa.gz \
   --peaks merged_peaks.bed \
   --cond-names A A B B \
@@ -114,7 +110,7 @@ diff-footprints \
   --outdir results/diff_footprints/A_vs_B
 ```
 
-Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html).
+`--sample-dirs` reuses cached motif-site tables from prior `match-motifs` runs, avoiding another motif scan while producing the same differential-footprint tables as direct `--signals` input. Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html).
 
 ### 5. Plot Aggregate
 

@@ -63,13 +63,9 @@ match-motifs \
   --outdir results/motif_matches/sample
 
 diff-footprints \
-  --signals \
-    conditionA_rep1_footprints.bw conditionA_rep2_footprints.bw \
-    conditionB_rep1_footprints.bw conditionB_rep2_footprints.bw \
-  --sample-names conditionA_R1 conditionA_R2 conditionB_R1 conditionB_R2 \
-  --aggregate-signals \
-    conditionA_rep1_corrected.bw conditionA_rep2_corrected.bw \
-    conditionB_rep1_corrected.bw conditionB_rep2_corrected.bw \
+  --sample-dirs \
+    results/samples/conditionA_rep1 results/samples/conditionA_rep2 \
+    results/samples/conditionB_rep1 results/samples/conditionB_rep2 \
   --genome hg38.fa.gz \
   --peaks merged_peaks.bed \
   --cond-names conditionA conditionA conditionB conditionB \
@@ -81,7 +77,7 @@ diff-footprints \
 
 `atac-correct --bams` also accepts multiple BAMs. With multiple inputs, fp-tools writes one subfolder per sample under `--outdir`. For multi-sample projects, provide either one shared `merged_peaks.bed` or one peak BED per sample; multiple peak BED files are merged internally and saved as `merged_all.bed`.
 
-Use `--sample-names` for readable per-sample labels. Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
+After `match-motifs`, `diff-footprints --sample-dirs` can reuse each sample folder's cached motif-site tables instead of rescanning motifs. Use `--sample-names` only when you want labels different from folder names. Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
 
 ## Pseudobulk Workflow
 

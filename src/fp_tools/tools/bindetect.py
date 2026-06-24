@@ -16,6 +16,8 @@ import sys
 import argparse
 import base64
 import time
+import glob
+import random
 import numpy as np
 import multiprocessing as mp
 import itertools
@@ -111,6 +113,110 @@ def _resolve_sample_names(args, default_names):
     return sample_names
 
 
+def _disambiguate_sample_condition_collisions(sample_names, condition_names, match_only=False):
+    """Avoid duplicate sample-level and condition-level score columns."""
+
+    if match_only:
+        return list(sample_names)
+    condition_set = set(condition_names or [])
+    out = []
+    for sample in sample_names:
+        out.append(f"{sample}_sample" if sample in condition_set else sample)
+    duplicates = sorted(name for name, count in Counter(out).items() if count > 1)
+    if duplicates:
+        raise ValueError(
+            "Sample names collide with condition-derived internal labels; "
+            "please provide distinct --sample-names. Duplicates: " + ", ".join(duplicates)
+        )
+    return out
+
+
+def _find_one_file(root, patterns, label):
+    matches = []
+    for pattern in patterns:
+        matches.extend(sorted(root.glob(pattern)))
+    files = [p for p in matches if p.is_file()]
+    if len(files) != 1:
+        found = ", ".join(str(p) for p in files[:5]) or "none"
+        raise ValueError(f"Expected exactly one {label} in {root}; found {len(files)} ({found})")
+    return files[0]
+
+
+def _sample_name_from_folder(sample_dir):
+    manifest = sample_dir / "fp_tools_sample.json"
+    if manifest.exists():
+        try:
+            import json
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            for key in ("sample_name", "sample", "name"):
+                value = str(data.get(key, "")).strip()
+                if value:
+                    return value
+        except Exception:
+            pass
+    return sample_dir.name
+
+
+def _resolve_folder_inputs(args):
+    """Resolve --sample-dirs/--project-dir into signal paths and match caches."""
+
+    from pathlib import Path
+
+    dirs = []
+    if getattr(args, "sample_dirs", None):
+        dirs.extend(Path(p).resolve() for p in args.sample_dirs)
+    if getattr(args, "project_dir", None):
+        project = Path(args.project_dir).resolve()
+        discovered = []
+        for child in sorted(project.iterdir()):
+            if not child.is_dir():
+                continue
+            if (child / "match_motifs").is_dir() or (child / "motif_matches").is_dir():
+                discovered.append(child)
+        dirs.extend(discovered)
+    if not dirs:
+        return args
+
+    if getattr(args, "signals", None):
+        raise ValueError("--signals cannot be combined with --sample-dirs or --project-dir")
+    seen = set()
+    unique_dirs = []
+    for directory in dirs:
+        if directory in seen:
+            continue
+        seen.add(directory)
+        unique_dirs.append(directory)
+    signals = []
+    match_dirs = []
+    default_names = []
+    aggregate_signals = []
+    for sample_dir in unique_dirs:
+        if not sample_dir.exists():
+            raise FileNotFoundError(f"Sample directory does not exist: {sample_dir}")
+        footprint = _find_one_file(
+            sample_dir,
+            ["*_footprints.bw", "*_footprint.bw", "footprints.bw", "footprint.bw"],
+            "footprint bigWig",
+        )
+        match_dir = sample_dir / "match_motifs"
+        if not match_dir.is_dir():
+            match_dir = sample_dir / "motif_matches"
+        if not match_dir.is_dir():
+            raise FileNotFoundError(f"Sample directory lacks match_motifs/ output: {sample_dir}")
+        signals.append(str(footprint))
+        match_dirs.append(str(match_dir))
+        default_names.append(_sample_name_from_folder(sample_dir))
+        corrected = sorted(sample_dir.glob("*_corrected.bw"))
+        if corrected:
+            aggregate_signals.append(str(corrected[0]))
+    args.signals = signals
+    args.cached_match_dirs = match_dirs
+    args.folder_default_sample_names = default_names
+    if not getattr(args, "aggregate_signals", None) and len(aggregate_signals) == len(signals):
+        args.aggregate_signals = aggregate_signals
+    return args
+
+
 def _resolve_motif_arguments(args):
     try:
         args.motifs = resolve_motif_inputs(getattr(args, "motifs", None), getattr(args, "motif_db", None))
@@ -126,7 +232,7 @@ def norm_fit(x, mean, std, scale):
 def _prepare_condition_metadata(args):
     """Derive condition, replicate, and comparison metadata from CLI arguments."""
 
-    default_sample_names = _signal_sample_stems(args.signals)
+    default_sample_names = list(getattr(args, "folder_default_sample_names", None) or _signal_sample_stems(args.signals))
     sample_names = _resolve_sample_names(args, default_sample_names)
     default_condition_names = default_sample_names
     if getattr(args, "match_only", False) and getattr(args, "sample_names", None) is not None:
@@ -148,6 +254,11 @@ def _prepare_condition_metadata(args):
         idxs.setdefault(nm, []).append(i)
     args.cond_groups = idxs
     args.cond_names = list(idxs.keys())
+    sample_names = _disambiguate_sample_condition_collisions(
+        sample_names,
+        args.cond_names,
+        match_only=getattr(args, "match_only", False),
+    )
     args.condition_replicates = {cond: len(indices) for cond, indices in idxs.items()}
     args.signal_sample_names = list(sample_names)
     args.sample_names = list(sample_names)
@@ -331,6 +442,122 @@ def run_bindetect_reuse_existing_results(args):
     logger.end()
 
 
+def _read_cached_all_bed(path, peak_cols, sample_col_count=1):
+    """Read a cached *_all.bed file without a header."""
+
+    rows = []
+    expected = 6 + peak_cols + sample_col_count
+    with open(path, "r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < expected:
+                raise ValueError(f"Cached motif BED has {len(parts)} columns but expected at least {expected}: {path}")
+            rows.append(parts)
+    return rows
+
+
+def _cached_motif_bed_map(match_dir):
+    """Map motif prefix to cached all.bed path in a match-motifs output directory."""
+
+    paths = {}
+    for bed in sorted(os.path.abspath(p) for p in glob.glob(os.path.join(match_dir, "*", "beds", "*_all.bed"))):
+        prefix = os.path.basename(bed)[:-len("_all.bed")]
+        paths[prefix] = bed
+    if not paths:
+        raise FileNotFoundError(f"No cached motif BEDs found under {match_dir}")
+    return paths
+
+
+def _write_cached_tfbs_tmp_files(args, motif_names, logger):
+    """Merge per-sample match-motifs caches into the .tmp files process_tfbs expects."""
+
+    cached_dirs = list(getattr(args, "cached_match_dirs", []) or [])
+    if len(cached_dirs) != len(args.sample_names):
+        raise ValueError("--sample-dirs/--project-dir cache count must match resolved samples")
+
+    maps = [_cached_motif_bed_map(path) for path in cached_dirs]
+    common = set(maps[0])
+    for mapping in maps[1:]:
+        common &= set(mapping)
+    missing = [name for name in motif_names if name not in common]
+    if missing:
+        raise ValueError("Cached match-motifs outputs are missing motif(s): " + ", ".join(missing[:10]))
+
+    peak_cols = len(args.peak_header_list)
+    global_tfbs = RegionList()
+    for motif in motif_names:
+        per_sample_rows = [_read_cached_all_bed(mapping[motif], peak_cols, sample_col_count=1) for mapping in maps]
+        lengths = {len(rows) for rows in per_sample_rows}
+        if len(lengths) != 1:
+            raise ValueError(f"Cached motif site count mismatch for {motif}: {sorted(lengths)}")
+        out_rows = []
+        for row_idx in range(len(per_sample_rows[0])):
+            key = per_sample_rows[0][row_idx][:6 + peak_cols]
+            scores = []
+            for sample_idx, rows in enumerate(per_sample_rows):
+                other_key = rows[row_idx][:6 + peak_cols]
+                if other_key != key:
+                    raise ValueError(
+                        f"Cached motif site mismatch for {motif} at row {row_idx + 1} "
+                        f"between sample 1 and sample {sample_idx + 1}"
+                    )
+                scores.append(rows[row_idx][6 + peak_cols])
+            out_rows.append(key + scores)
+        tmp_path = os.path.join(args.outdir, motif, "beds", motif + ".tmp")
+        with open(tmp_path, "w", encoding="utf-8") as handle:
+            handle.write("\n".join("\t".join(row) for row in out_rows))
+            if out_rows:
+                handle.write("\n")
+        if out_rows:
+            global_tfbs.extend(RegionList().from_bed(tmp_path))
+    logger.info(f"Reused cached motif-site scores from {len(cached_dirs)} sample folder(s)")
+    return global_tfbs.count_overlaps() if len(global_tfbs) else {}
+
+
+def _background_from_signal_chunk(regions, args):
+    """Collect background scores from signals using the same random-position rule as scanning."""
+
+    sample_bigwigs = {sample: pybw.open(args.signals[idx], "rb") for idx, sample in enumerate(args.sample_names)}
+    background = {
+        "gc": [],
+        "signal": {c: [] for c in args.cond_names},
+        "sample_signal": {s: [] for s in args.sample_names},
+    }
+    logger = FpToolsLogger("", args.verbosity, getattr(args, "log_q", None))
+    rand_window = 200
+    for region in regions:
+        reglen = region.get_length()
+        random.seed(reglen)
+        rand_positions = random.sample(range(reglen), max(1, int(reglen / rand_window)))
+        sample_footprints = {}
+        for sample_name in args.sample_names:
+            bw = sample_bigwigs[sample_name]
+            arr = region.get_signal(bw, logger=logger, key=sample_name)
+            sample_footprints[sample_name] = arr
+            for pos in rand_positions:
+                background["sample_signal"][sample_name].append(arr[pos])
+        for condition in args.cond_names:
+            rep_signals = [sample_footprints[sample_name] for sample_name in args.condition_samples[condition]]
+            stacked = np.vstack(rep_signals)
+            values = np.mean(stacked, axis=0)
+            for pos in rand_positions:
+                background["signal"][condition].append(values[pos])
+    for bw in sample_bigwigs.values():
+        bw.close()
+    return background
+
+
+def _collect_cached_background(peak_chunks, args, pool, worker_cores):
+    if worker_cores == 1:
+        results = [_background_from_signal_chunk(chunk, args) for chunk in peak_chunks]
+    else:
+        tasks = [pool.apply_async(_background_from_signal_chunk, (chunk, args)) for chunk in peak_chunks]
+        results = [task.get() for task in tasks]
+    return merge_dicts(results)
+
+
 
 # ----------------------------------------------------------------------------- #
 def run_bindetect(args):
@@ -338,6 +565,7 @@ def run_bindetect(args):
     if getattr(args, "reuse_existing_results", False):
         return run_bindetect_reuse_existing_results(args)
 
+    _resolve_folder_inputs(args)
     _resolve_motif_arguments(args)
     check_required(args, ["signals", "genome", "peaks"])
     _prepare_condition_metadata(args)
@@ -551,72 +779,81 @@ def run_bindetect(args):
         with open(logo_filenames[m.prefix], "rb") as png:
             m.base = base64.b64encode(png.read()).decode("utf-8")
 
-    # --------------------- scan motifs + match to signals --------------------- #
+    # --------------------- scan/cache motifs + match to signals --------------- #
     logger.comment("")
     logger.start_logger_queue()
     args.log_q = logger.queue
-    manager = mp.Manager()
-    logger.info("Scanning for motifs and matching to signals...")
-
-    # bed writer queues (one or more writers)
-    logger.debug("Setting up writer queues")
-    qs_list, writer_qs = [], {}
-    TF_names_chunks = [motif_names[i::writer_cores] for i in range(writer_cores)]
-    writer_tasks = []
-    for TF_sub in TF_names_chunks:
-        logger.debug(f"Creating writer queue for {TF_sub}")
-        files = [os.path.join(args.outdir, TF, "beds", TF + ".tmp") for TF in TF_sub]
-        q = manager.Queue()
-        qs_list.append(q)
-        writer_tasks.append(writer_pool.apply_async(file_writer, args=(q, dict(zip(TF_sub, files)), args)))
-        for TF in TF_sub:
-            writer_qs[TF] = q
-    writer_pool.close()  # no more writer jobs
-
-    # scan in parallel
-    results = []
-    if worker_cores == 1:
-        logger.debug("Running with cores = 1")
-        for chunk in peak_chunks:
-            results.append(scan_and_score(chunk, motif_list, args, args.log_q, writer_qs))
+    cached_mode = bool(getattr(args, "cached_match_dirs", None))
+    if cached_mode:
+        logger.info("Reusing cached motif-site scores from match-motifs sample folders")
+        writer_pool.terminate()
+        writer_pool.join()
+        TF_overlaps = _write_cached_tfbs_tmp_files(args, motif_names, logger)
+        logger.info("Collecting background scores from footprint bigWigs")
+        background = _collect_cached_background(peak_chunks, args, pool, worker_cores)
     else:
-        logger.debug("Sending jobs to worker pool")
-        tlist = [pool.apply_async(scan_and_score, (chunk, motif_list, args, args.log_q, writer_qs))
-                 for chunk in peak_chunks]
-        monitor_progress(tlist, logger)
-        results = [t.get() for t in tlist]
+        manager = mp.Manager()
+        logger.info("Scanning for motifs and matching to signals...")
 
-    logger.info("Done scanning for TFBS across regions!")
-    logger.info("Waiting for bedfiles to write")
+        # bed writer queues (one or more writers)
+        logger.debug("Setting up writer queues")
+        qs_list, writer_qs = [], {}
+        TF_names_chunks = [motif_names[i::writer_cores] for i in range(writer_cores)]
+        writer_tasks = []
+        for TF_sub in TF_names_chunks:
+            logger.debug(f"Creating writer queue for {TF_sub}")
+            files = [os.path.join(args.outdir, TF, "beds", TF + ".tmp") for TF in TF_sub]
+            q = manager.Queue()
+            qs_list.append(q)
+            writer_tasks.append(writer_pool.apply_async(file_writer, args=(q, dict(zip(TF_sub, files)), args)))
+            for TF in TF_sub:
+                writer_qs[TF] = q
+        writer_pool.close()  # no more writer jobs
 
-    # stop writer queues
-    logger.debug("Stop all queues by inserting None")
-    for q in qs_list:
-        q.put((None, None))
+        # scan in parallel
+        results = []
+        if worker_cores == 1:
+            logger.debug("Running with cores = 1")
+            for chunk in peak_chunks:
+                results.append(scan_and_score(chunk, motif_list, args, args.log_q, writer_qs))
+        else:
+            logger.debug("Sending jobs to worker pool")
+            tlist = [pool.apply_async(scan_and_score, (chunk, motif_list, args, args.log_q, writer_qs))
+                     for chunk in peak_chunks]
+            monitor_progress(tlist, logger)
+            results = [t.get() for t in tlist]
 
-    # wait for writers to complete
-    finished = 0
-    while finished == 0:
-        logger.debug(f"Writer task return status: {[t.get() if t.ready() else 'NA' for t in writer_tasks]}")
-        if sum([t.ready() for t in writer_tasks]) == len(writer_tasks):
-            finished = 1
-            return_codes = [t.get() for t in writer_tasks]
-            if sum(return_codes) != 0:
-                logger.error("Bedfile writer finished with an error")
-            else:
-                logger.debug("Bedfile writer(s) finished!")
-        time.sleep(0.5)
+        logger.info("Done scanning for TFBS across regions!")
+        logger.info("Waiting for bedfiles to write")
 
-    logger.debug("Joining bed_writer queues")
-    for i, q in enumerate(qs_list):
-        logger.debug(f"- Queue {i} (size {q.qsize()})")
-    writer_pool.join()
+        # stop writer queues
+        logger.debug("Stop all queues by inserting None")
+        for q in qs_list:
+            q.put((None, None))
 
-    # ---------------------- background + normalization ----------------------- #
-    logger.info("Merging results from subsets")
-    background = merge_dicts([r[0] for r in results])
-    TF_overlaps = merge_dicts([r[1] for r in results])
-    results = None
+        # wait for writers to complete
+        finished = 0
+        while finished == 0:
+            logger.debug(f"Writer task return status: {[t.get() if t.ready() else 'NA' for t in writer_tasks]}")
+            if sum([t.ready() for t in writer_tasks]) == len(writer_tasks):
+                finished = 1
+                return_codes = [t.get() for t in writer_tasks]
+                if sum(return_codes) != 0:
+                    logger.error("Bedfile writer finished with an error")
+                else:
+                    logger.debug("Bedfile writer(s) finished!")
+            time.sleep(0.5)
+
+        logger.debug("Joining bed_writer queues")
+        for i, q in enumerate(qs_list):
+            logger.debug(f"- Queue {i} (size {q.qsize()})")
+        writer_pool.join()
+
+        # ---------------------- background + normalization ----------------------- #
+        logger.info("Merging results from subsets")
+        background = merge_dicts([r[0] for r in results])
+        TF_overlaps = merge_dicts([r[1] for r in results])
+        results = None
 
     # fill possible missing overlap keys
     for TF1 in motif_list:
@@ -1054,12 +1291,18 @@ def diff_footprints_cli():
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
-    if args.method == "bindetect" and (not args.signals or len(args.signals) < 2):
-        parser.error("diff-footprints expects at least two --signals bigWigs")
-    if args.sample_names is not None and len(args.sample_names) != len(args.signals):
-        parser.error("diff-footprints expects one --sample-names value per --signals bigWig when provided")
-    if args.cond_names is not None and len(args.cond_names) != len(args.signals):
-        parser.error("diff-footprints expects one --cond-names value per --signals bigWig when provided")
+    folder_mode = bool(args.sample_dirs or args.project_dir)
+    n_inputs = len(args.sample_dirs or []) if args.sample_dirs else len(args.signals or [])
+    if args.project_dir and not args.sample_dirs:
+        n_inputs = None
+    if args.method == "bindetect" and not folder_mode and (not args.signals or len(args.signals) < 2):
+        parser.error("diff-footprints expects at least two --signals bigWigs, or --sample-dirs/--project-dir")
+    if args.signals and folder_mode:
+        parser.error("diff-footprints cannot combine --signals with --sample-dirs/--project-dir")
+    if n_inputs is not None and args.sample_names is not None and len(args.sample_names) != n_inputs:
+        parser.error("diff-footprints expects one --sample-names value per input sample when provided")
+    if n_inputs is not None and args.cond_names is not None and len(args.cond_names) != n_inputs:
+        parser.error("diff-footprints expects one --cond-names value per input sample when provided")
     if args.prefix == "bindetect":
         args.prefix = "diff_footprints"
     run_bindetect(args)

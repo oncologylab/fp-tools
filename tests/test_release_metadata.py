@@ -35,7 +35,7 @@ class ReleaseMetadataTest(unittest.TestCase):
 
 
     def test_release_metadata_files_exist(self):
-        for relative in ["LICENSE", "CITATION.cff", ".zenodo.json", "environment.yml", "Dockerfile", "Makefile"]:
+        for relative in ["LICENSE", "CITATION.cff", "environment.yml", "Dockerfile", "Makefile"]:
             self.assertTrue((ROOT / relative).exists(), f"Missing {relative}")
         citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
         self.assertIn('repository-code: "https://github.com/oncologylab/fp-tools"', citation)

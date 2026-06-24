@@ -1,165 +1,87 @@
 # GUI Status
 
-## Goal
-Provide an optional browser-based GUI for `fp-tools` that runs as a per-user process on a Linux server without changing the core command-line workflows.
+## Current State
 
-## Current Status
-The first working GUI layer is implemented and remains an optional wrapper around the command-line tools.
+The browser GUI is implemented and is now part of the normal `fp-tools` user
+surface. It remains an optional wrapper around the command-line tools: direct
+CLI execution is still the primary interface, and GUI runs save reusable YAML
+configs that can be rerun with `run-workflow`.
 
-Available commands:
-- `fp-tools-gui`
-- `fp-tools-run --config ...`
+The current design and layout are accepted as the baseline GUI style:
 
-Core packaged commands remain primary and unchanged:
-- `ATACorrect`
-- `FootprintScores`
-- `BINDetect`
-- `PlotAggregate`
+- clean sidebar navigation grouped by workflow area
+- professional full-width content panels with reduced whitespace
+- guided tutorial panel for first-time users
+- example YAML loading, upload, path loading, editing, and saving
+- runnable YAML preview before launch
+- background job launch with run-history inspection
+- logs, command records, detected outputs, tables, bigWigs, and HTML report links
+- static website preview at `docs/demos/gui/fp-tools-gui-static-demo.html`
 
-## Implemented
+## Implemented Command Coverage
 
-### Architecture
-- GUI remains isolated from `src/fp_tools/tools/`.
-- Core logic was not moved out of the packaged commands.
-- YAML is shared between GUI and optional config-driven CLI.
-- Plain CLI does not require YAML.
+The GUI exposes the current command-first workflow:
 
-### Files Added
-- `src/fp_tools/gui_app.py`
-- `src/fp_tools/gui_jobs.py`
-- `src/fp_tools/gui_forms.py`
-- `src/fp_tools/gui_config.py`
-- `src/fp_tools/cli_batch.py`
-- `src/fp_tools/cli_gui.py`
+- `atac-correct`
+- `call-footprints`
+- `match-motifs`
+- `diff-footprints`
+- `normalize-bigwig`
+- `plot-aggregate`
+- `plot-aggregate-batch`
+- `motif-discovery`
+- `motif-summary`
+- `fp-tools-score-variants`
+- `pseudobulk-fragments`
+- `find-signature-fp`
+- `pseudobulk-footprints`
+- `run-workflow`
 
-### Config Model
-- GUI can run without a preexisting YAML file.
-- GUI can load YAML.
-- GUI can save YAML.
-- Every GUI run materializes a normalized `config.yml`.
-- GUI-saved YAML can be rerun with:
-  - `fp-tools-run --config <file>.yml`
+Legacy command aliases remain available at the CLI level for compatibility, but
+the GUI and public documentation should use the newer command names.
 
-### Batch Support
-- sample-list batch support for:
-  - `ATACorrect`
-  - `FootprintScores`
-  - `PlotAggregate`
-  - single-condition `BINDetect`
-- comparison-list batch support for:
-  - multi-condition `BINDetect`
-  - replicate grouping by repeated `cond_names`
+## Design Rules
 
-### GUI Pages
-- `Home`
-- `Run History`
-- `ATACorrect`
-- `FootprintScores`
-- `BINDetect`
-- `PlotAggregate`
-- `Config`
+- Keep the GUI isolated from scientific implementations in `src/fp_tools/tools/`.
+- Keep command-line execution and Python tool modules authoritative.
+- Keep YAML optional for CLI users, but shared between GUI and `run-workflow`.
+- A GUI-saved config must remain runnable from the command line.
+- Do not introduce a shared hosted service, user login, or multi-user scheduler
+  into the package-level GUI; run one GUI process per user/session.
+- Keep examples simple enough for biologists while preserving full command
+  traceability.
 
-### GUI Behavior
-- supports direct form-driven runs
-- supports loading example YAML configs
-- supports loading uploaded YAML
-- supports loading YAML from a path
-- supports lightweight pre-launch config validation
-- supports background job launch
-- supports run-history inspection
-- detects primary output paths for completed child jobs
-- supports changing the GUI run directory from the sidebar
+## Validation Status
 
-### Example Assets
-Ready-to-load GUI YAML:
-- `examples/gui_configs/`
+Completed validation includes:
 
-GUI run metadata and logs are written locally under ignored run directories, typically:
-- `examples/gui_runs/`
+- GUI and config module smoke tests through the unittest suite
+- command help checks for packaged entry points
+- YAML config expansion and dry-run checks for bundled examples
+- local MkDocs build for GUI documentation and static GUI preview
+- remote-access command documented as `fp-tools-gui --host 0.0.0.0 --port 8891`
 
-GUI example output files are also local and ignored, typically:
-- `examples/gui_demo_outputs/`
+The GUI has also been visually reviewed and aligned with the current Fig. 6/GUI
+demo style. The current design should be treated as the style baseline for
+future GUI changes.
 
-### Validation Completed
-- local syntax checks for GUI/config modules
-- local `fp-tools-run --help`
-- local `fp-tools-gui --help`
-- local YAML-driven `PlotAggregate` run through `fp-tools-run`
-- local `fp-tools-gui` launch validation
-- remote install on `cy232`
-- remote `fp-tools-gui --help`
-- remote `fp-tools-run --help`
-- remote GUI HTTP response check
-- remote example YAML run through `fp-tools-run`
+## Remaining Work
 
-## Current Limitations
+Highest-value future improvements:
 
-### GUI UX
-- page forms currently cover the most important options, not every advanced CLI flag
-- no inline preview yet for generated PDFs, HTML, or tables
-- run history is functional but still basic beyond log/status/output-path inspection
-- Home page does not yet provide rich quick links into recent runs
+1. Add deeper GUI-specific integration tests that click through the main pages
+   and verify rendered layout states.
+2. Add an optional cancel button for long-running background jobs.
+3. Expand output preview support for selected HTML, table, and image outputs
+   without turning the run history into a separate analysis system.
+4. Continue adding advanced CLI options only when they are useful for common
+   workflows; avoid crowding pages with rarely used flags.
+5. Add richer rerun-from-history support once the saved YAML and command records
+   are stable enough to make reruns predictable.
 
-### Execution Model
-- GUI jobs are launched in the background, but there is no explicit cancel button yet
-- output discovery is still path-based rather than a richer results browser
-- top-level run status handling was improved, but the status layer should still be hardened with more edge-case testing
+## Maintenance Notes
 
-### Validation
-- the GUI has been smoke-tested locally and remotely
-- not every page and every option combination has been exhaustively exercised through the GUI yet
-- most deep validation still exists at the CLI level rather than the GUI level
-
-## Confirmed Design Rules
-- one GUI process per Linux user
-- no shared multi-user service
-- no login in the first version
-- direct CLI remains primary
-- YAML on CLI is optional, not required
-- GUI and config runner must not break existing direct CLI workflows
-
-## Recommended Usage
-
-Launch with an auto-selected port:
-
-```bash
-fp-tools-gui --host 0.0.0.0 --run-dir examples/gui_runs
-```
-
-Or use a fixed port:
-
-```bash
-fp-tools-gui --host 0.0.0.0 --port 8891 --run-dir examples/gui_runs
-```
-
-Run a saved YAML config directly:
-
-```bash
-fp-tools-run --config examples/gui_configs/plotaggregate_single.yml
-```
-
-## Next Tasks
-
-### Highest Priority
-1. Expand per-page validation and user feedback beyond the current required-field checks.
-2. Improve output browsing from simple detected paths into a richer results view.
-3. Harden run-status refresh and batch-status aggregation.
-
-### Medium Priority
-1. Add broader advanced-option coverage on the tool pages.
-2. Improve Run History with better recent-run navigation and filtering.
-3. Add cleaner success/failure summaries after background launch.
-
-### Optional Enhancements
-1. Inline PDF/HTML previews.
-2. Cancel running jobs.
-3. Re-run from previous run folder.
-4. Preset templates for common workflows.
-
-## Keep This File
-This file is still needed.
-
-It is no longer just a future design draft. It now serves as:
-- implementation status
-- remaining-work tracker
-- boundary document for keeping the GUI isolated from core `fp-tools` logic
+- Update this file only when the GUI architecture, command coverage, or accepted
+  design baseline changes.
+- Website deployment instructions belong in `RELEASE_CHECKLIST.md`; do not use
+  `mkdocs gh-deploy` for this repository.

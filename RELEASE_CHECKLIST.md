@@ -77,7 +77,7 @@ The build script uses isolated `python -m build`. Validate metadata when `twine`
 - Confirm `project.urls` point to `https://github.com/oncologylab/fp-tools`. The currently published PyPI `0.1.7` metadata still points to the old repository until a new release is published.
 - Confirm README renders on GitHub, especially the feature comparison table.
 - Validate the MkDocs site locally with `.venv/bin/mkdocs build --clean --strict`, then push documentation changes to `main`. The GitHub Actions `Docs` workflow deploys GitHub Pages from `main`; do not use `mkdocs gh-deploy` or create a `gh-pages` branch for this repository.
-- Confirm `LICENSE`, `CITATION.cff`, `.zenodo.json`, `environment.yml`, and `Dockerfile` are present and current.
+- Confirm `LICENSE`, `CITATION.cff`, `environment.yml`, and `Dockerfile` are present and current.
 
 ## 6. Data Hygiene
 
