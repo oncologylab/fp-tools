@@ -14,7 +14,7 @@ def add_atacorrect_arguments(parser):
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=35, width=90)
 
 	description = "atac-correct corrects ATAC-seq cutsite signal for Tn5 sequence bias.\n\n"
-	description += "Usage:\natac-correct --bams <reads.bam> [<more_reads.bam> ...] --genome <genome.fa> --peaks <peaks.bed> [<more_peaks.bed> ...]\n\n"
+	description += "Usage:\natac-correct --bams <reads.bam> [<more_reads.bam> ...] --genome <genome.fa> --peaks <merged_peaks.bed> [<sample_peaks.bed> ...]\n\n"
 	description += "Output files:\n"
 	description += "\n".join(["- <outdir>/<sample>/<sample>_{0}.bw for multi-BAM runs".format(track) for track in ["uncorrected", "bias", "expected", "corrected"]]) + "\n"
 	description += "- <outdir>/<prefix>_atacorrect.pdf"
@@ -26,7 +26,7 @@ def add_atacorrect_arguments(parser):
 	reqargs = parser.add_argument_group('Required arguments')
 	reqargs.add_argument('--bams', metavar="<bam>", nargs="*", help="One or more .bam files containing reads to be corrected")
 	reqargs.add_argument('-g', '--genome', metavar="<fasta>", help="A .fasta-file containing whole genomic sequence")
-	reqargs.add_argument('-p', '--peaks', metavar="<bed>", nargs="*", help="One shared .bed peak file, or multiple per-sample peak BEDs to merge internally")
+	reqargs.add_argument('-p', '--peaks', metavar="<bed>", nargs="*", help="One shared merged peak BED, or multiple per-sample peak BEDs to merge internally")
 
 	#Optional arguments
 	optargs = parser.add_argument_group('Optional arguments')

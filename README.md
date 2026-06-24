@@ -46,19 +46,19 @@ Use [`match-motifs`](https://oncologylab.github.io/fp-tools/api/#match-motifs) t
 atac-correct \
   --bams sample.bam \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --blacklist hg38.blacklist.bed \
   --outdir results/atac_correct/sample
 
 call-footprints \
   --signals results/atac_correct/sample/sample_corrected.bw \
-  --regions peaks.bed \
+  --regions merged_peaks.bed \
   --outdir results/footprints
 
 match-motifs \
   --signals results/footprints/sample_footprints.bw \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir results/motif_matches/sample
 
@@ -71,7 +71,7 @@ diff-footprints \
     conditionA_rep1_corrected.bw conditionA_rep2_corrected.bw \
     conditionB_rep1_corrected.bw conditionB_rep2_corrected.bw \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --cond-names conditionA conditionA conditionB conditionB \
   --motif-db jaspar2026_vertebrates \
   --normalization none \
@@ -79,7 +79,7 @@ diff-footprints \
   --outdir results/diff_footprints/conditionA_vs_conditionB
 ```
 
-`atac-correct --bams` also accepts multiple BAMs. With multiple inputs, fp-tools writes one subfolder per sample under `--outdir`. If multiple peak BED files are supplied to `--peaks`, they are merged internally and saved as `merged_all.bed`.
+`atac-correct --bams` also accepts multiple BAMs. With multiple inputs, fp-tools writes one subfolder per sample under `--outdir`. For multi-sample projects, provide either one shared `merged_peaks.bed` or one peak BED per sample; multiple peak BED files are merged internally and saved as `merged_all.bed`.
 
 Use `--sample-names` for readable per-sample labels. Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
 
@@ -94,7 +94,7 @@ pseudobulk-footprints \
   --group-by cell_type \
   --genome-sizes hg38.chrom.sizes \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
   --tf-site-dir marker_motif_sites \
   --single-cell-signature-h5ad pbmc_embedding.h5ad \
@@ -137,7 +137,7 @@ diff-footprints \
   --signals conditionA_footprints.bw conditionB_footprints.bw \
   --sample-names conditionA conditionB \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --cond-names conditionA conditionB \
   --motif-db jaspar2026_vertebrates \
   --motifs results/de_novo/sample/streme/streme.txt \

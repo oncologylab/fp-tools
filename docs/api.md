@@ -34,13 +34,13 @@ Bias-correct ATAC-seq cut-site signal.
 
 - One or more BAM files from ATAC-seq experiments.
 - Reference genome FASTA.
-- One shared peak BED, or multiple peak BEDs that are merged internally; optional blacklist and q95 scaling regions.
+- One shared `merged_peaks.bed`, or multiple per-sample peak BEDs that are merged internally; optional blacklist and q95 scaling regions.
 
 **Output**
 
 - Uncorrected, expected, bias, and corrected bigWig tracks.
 - QC PDF and run logs in the output directory.
-- For multi-BAM runs, one output subfolder per sample and `merged_all.bed` when multiple peak BEDs are supplied.
+- For multi-BAM runs, one output subfolder per sample. If multiple peak BEDs are supplied, fp-tools merges them and saves `merged_all.bed`.
 
 **Example commands**
 
@@ -48,7 +48,7 @@ Bias-correct ATAC-seq cut-site signal.
 atac-correct \
   --bams sample.bam \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --blacklist hg38.blacklist.bed \
   --outdir results/atac_correct/sample
 
@@ -87,7 +87,7 @@ atac-correct corrects ATAC-seq cutsite signal for Tn5 sequence bias.
 
 Usage:
 atac-correct --bams <reads.bam> [<more_reads.bam> ...] --genome <genome.fa> --peaks
-<peaks.bed> [<more_peaks.bed> ...]
+<merged_peaks.bed> [<sample_peaks.bed> ...]
 
 Output files:
 - <outdir>/<sample>/<sample>_uncorrected.bw for multi-BAM runs
@@ -102,8 +102,8 @@ Required arguments:
   --bams [<bam> ...]               One or more .bam files containing reads to be corrected
   -g <fasta>, --genome <fasta>     A .fasta-file containing whole genomic sequence
   -p [<bed> ...], --peaks [<bed> ...]
-                                   One shared .bed peak file, or multiple per-sample peak
-                                   BEDs to merge internally
+                                   One shared merged peak BED, or multiple per-sample
+                                   peak BEDs to merge internally
 
 Optional arguments:
   --regions-in <bed>               Input regions for estimating bias (default: regions not
@@ -187,7 +187,7 @@ Create footprint score tracks from one or more corrected bigWig signals.
 ```bash
 call-footprints \
   --signals A_corrected.bw B_corrected.bw \
-  --regions peaks.bed \
+  --regions merged_peaks.bed \
   --outdir results/footprints \
   --output-bed-dir results/footprints/candidates
 ```
@@ -321,7 +321,7 @@ match-motifs \
   --signals A_footprints.bw B_footprints.bw \
   --sample-names A B \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir results/motif_matches/A_B
 ```
@@ -479,7 +479,7 @@ diff-footprints \
   --cond-names A A B B \
   --aggregate-signals A_rep1_corrected.bw A_rep2_corrected.bw B_rep1_corrected.bw B_rep2_corrected.bw \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
   --plot-aggregate sig \
   --outdir results/diff_footprints/A_vs_B
@@ -1451,7 +1451,7 @@ pseudobulk-footprints \
   --group-by cell_type \
   --genome-sizes hg38.chrom.sizes \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir results/pseudobulk
 ```

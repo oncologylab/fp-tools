@@ -24,6 +24,7 @@ import argparse
 import numpy as np
 import multiprocessing as mp
 from copy import deepcopy
+import re
 
 from collections import OrderedDict
 import itertools
@@ -114,6 +115,39 @@ def _sample_names_from_bams(bams, requested=None):
 	return clean
 
 
+def _input_name_key(path_or_name):
+	name = os.path.basename(str(path_or_name)).lower()
+	for suffix in (".narrowpeak", ".broadpeak", ".bed", ".bam", ".sam", ".cram"):
+		if name.endswith(suffix):
+			name = name[:-len(suffix)]
+	name = re.sub(r"([._-]?(merged|all|peaks?|regions?|replicate|rep))+$", "", name)
+	name = re.sub(r"[^a-z0-9]+", "", name)
+	return name
+
+
+def _warn_peak_sample_mismatches(bams, sample_names, peak_files, logger):
+	if len(bams) <= 1 or len(peak_files) <= 1:
+		return
+	if len(peak_files) != len(bams):
+		logger.warning(
+			"Multiple BAMs and multiple peak BEDs were supplied, but their counts differ "
+			"({0} BAMs vs {1} peak BEDs). fp-tools will merge all peak BEDs into merged_all.bed; "
+			"please confirm these peaks are intended for the same analysis.".format(len(bams), len(peak_files))
+		)
+		return
+	mismatches = []
+	for sample_name, peak_file in zip(sample_names, peak_files):
+		sample_key = _input_name_key(sample_name)
+		peak_key = _input_name_key(peak_file)
+		if sample_key and peak_key and sample_key not in peak_key and peak_key not in sample_key:
+			mismatches.append("{0} vs {1}".format(sample_name, os.path.basename(peak_file)))
+	if mismatches:
+		logger.warning(
+			"Sample names and peak BED filenames do not appear to match by position: {0}. "
+			"fp-tools will still merge all peak BEDs into merged_all.bed.".format("; ".join(mismatches))
+		)
+
+
 def _merge_peak_files(peak_files, outdir):
 	peak_files = _compact_list(peak_files)
 	if not peak_files:
@@ -167,6 +201,9 @@ def run_atacorrect(args):
 
 	base_outdir = os.path.abspath(args.outdir) if args.outdir != None else os.path.abspath(os.getcwd())
 	sample_names = _sample_names_from_bams(bams, getattr(args, "sample_names", None))
+	peak_files = _compact_list(args.peaks)
+	preflight_logger = FpToolsLogger("ATACorrect", getattr(args, "verbosity", 3))
+	_warn_peak_sample_mismatches(bams, sample_names, peak_files, preflight_logger)
 	peaks_for_run = _merge_peak_files(args.peaks, base_outdir)
 	corrected_bigwigs = []
 

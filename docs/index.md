@@ -27,19 +27,19 @@ fp-tools-gui
 atac-correct \
   --bams sample.bam \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --blacklist hg38.blacklist.bed \
   --outdir results/atac_correct/sample
 ```
 
-Output: corrected cut-site bigWigs and QC files. Use `--bams` with multiple BAMs to process several samples in one command; fp-tools writes one subfolder per sample. If multiple peak BEDs are supplied, fp-tools merges them and saves `merged_all.bed`.
+Output: corrected cut-site bigWigs and QC files. Use `--bams` with multiple BAMs to process several samples in one command; fp-tools writes one subfolder per sample. For multi-sample projects, provide either one shared `merged_peaks.bed` or one peak BED per sample; multiple peak BEDs are merged internally and saved as `merged_all.bed`.
 
 ### 2. Call Footprints
 
 ```bash
 call-footprints \
   --signals results/atac_correct/sample/sample_corrected.bw \
-  --regions peaks.bed \
+  --regions merged_peaks.bed \
   --outdir results/footprints
 ```
 
@@ -51,7 +51,7 @@ Output: footprint score bigWig files. Use `--signals` with multiple corrected bi
 match-motifs \
   --signals results/footprints/sample_footprints.bw \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir results/motif_matches/sample
 ```
@@ -65,7 +65,7 @@ match-motifs \
     results/footprints/B_footprints.bw \
   --sample-names A B \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir results/motif_matches/A_B
 ```
@@ -79,7 +79,7 @@ Use de novo motif discovery when you want to start from candidate footprint inte
 ```bash
 call-footprints \
   --signals results/atac_correct/sample/sample_corrected.bw \
-  --regions peaks.bed \
+  --regions merged_peaks.bed \
   --outdir results/footprints \
   --output-bed-dir results/footprints/candidates
 
@@ -106,7 +106,7 @@ diff-footprints \
     A_rep1_corrected.bw A_rep2_corrected.bw \
     B_rep1_corrected.bw B_rep2_corrected.bw \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --cond-names A A B B \
   --motif-db jaspar2026_vertebrates \
   --normalization none \
@@ -141,7 +141,7 @@ pseudobulk-footprints \
   --group-by cell_type \
   --genome-sizes hg38.chrom.sizes \
   --genome hg38.fa.gz \
-  --peaks peaks.bed \
+  --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
   --tf-site-dir marker_motif_sites \
   --single-cell-signature-h5ad pbmc_embedding.h5ad \

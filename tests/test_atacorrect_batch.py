@@ -1,4 +1,6 @@
 import argparse
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -62,6 +64,66 @@ class AtacCorrectBatchTest(unittest.TestCase):
             self.assertEqual(second.bam, "B.bam")
             self.assertEqual(second.prefix, "B")
             self.assertEqual(Path(second.outdir), tmp / "out" / "B")
+
+    def test_multi_bam_shared_peak_does_not_warn(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / "merged_peaks.bed").write_text("chr1\t1\t5\n", encoding="utf-8")
+            args = self._args(tmp, peaks=[str(tmp / "merged_peaks.bed")], verbosity=1)
+
+            stdout = io.StringIO()
+            with mock.patch("fp_tools.tools.atacorrect._run_atacorrect_single"), contextlib.redirect_stdout(stdout):
+                run_atacorrect(args)
+
+            self.assertNotIn("WARNING", stdout.getvalue())
+
+    def test_multi_bam_matching_peak_names_do_not_warn(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            peaks_a = tmp / "A_peaks.bed"
+            peaks_b = tmp / "B_peaks.bed"
+            peaks_a.write_text("chr1\t1\t5\n", encoding="utf-8")
+            peaks_b.write_text("chr1\t10\t15\n", encoding="utf-8")
+            args = self._args(tmp, peaks=[str(peaks_a), str(peaks_b)], verbosity=1)
+
+            stdout = io.StringIO()
+            with mock.patch("fp_tools.tools.atacorrect._run_atacorrect_single"), contextlib.redirect_stdout(stdout):
+                run_atacorrect(args)
+
+            self.assertNotIn("WARNING", stdout.getvalue())
+
+    def test_multi_bam_mismatched_peak_count_warns_and_continues(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            peaks_a = tmp / "A_peaks.bed"
+            peaks_b = tmp / "B_peaks.bed"
+            peaks_c = tmp / "C_peaks.bed"
+            for i, path in enumerate([peaks_a, peaks_b, peaks_c], start=1):
+                path.write_text(f"chr1\t{i}\t{i + 5}\n", encoding="utf-8")
+            args = self._args(tmp, peaks=[str(peaks_a), str(peaks_b), str(peaks_c)], verbosity=1)
+
+            stdout = io.StringIO()
+            with mock.patch("fp_tools.tools.atacorrect._run_atacorrect_single") as run_one, contextlib.redirect_stdout(stdout):
+                run_atacorrect(args)
+
+            self.assertEqual(run_one.call_count, 2)
+            self.assertIn("counts differ", stdout.getvalue())
+
+    def test_multi_bam_mismatched_peak_names_warn_and_continue(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            peaks_a = tmp / "B_peaks.bed"
+            peaks_b = tmp / "A_peaks.bed"
+            peaks_a.write_text("chr1\t1\t5\n", encoding="utf-8")
+            peaks_b.write_text("chr1\t10\t15\n", encoding="utf-8")
+            args = self._args(tmp, peaks=[str(peaks_a), str(peaks_b)], verbosity=1)
+
+            stdout = io.StringIO()
+            with mock.patch("fp_tools.tools.atacorrect._run_atacorrect_single") as run_one, contextlib.redirect_stdout(stdout):
+                run_atacorrect(args)
+
+            self.assertEqual(run_one.call_count, 2)
+            self.assertIn("do not appear to match", stdout.getvalue())
 
     def test_multi_bam_rejects_prefix(self):
         with tempfile.TemporaryDirectory() as tmpdir:
