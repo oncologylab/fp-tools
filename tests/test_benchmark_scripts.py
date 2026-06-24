@@ -22,12 +22,18 @@ def load_module(name, path):
     return module
 
 
+def load_optional_module(name, path):
+    if not path.exists():
+        return None
+    return load_module(name, path)
+
+
 download_manifest = load_module("download_manifest", ROOT / "benchmarks" / "scripts" / "download_manifest.py")
 compute_binary_metrics = load_module("compute_binary_metrics", ROOT / "benchmarks" / "scripts" / "compute_binary_metrics.py")
 compute_calibration = load_module("compute_calibration", ROOT / "benchmarks" / "scripts" / "compute_calibration.py")
-plot_benchmark_panels = load_module("plot_benchmark_panels", ROOT / "manuscript" / "scripts" / "plot_benchmark_panels.py")
-plot_calibration_panels = load_module("plot_calibration_panels", ROOT / "manuscript" / "scripts" / "plot_calibration_panels.py")
-plot_multiscale_npz = load_module("plot_multiscale_npz", ROOT / "manuscript" / "scripts" / "plot_multiscale_npz.py")
+plot_benchmark_panels = load_optional_module("plot_benchmark_panels", ROOT / "manuscript" / "scripts" / "plot_benchmark_panels.py")
+plot_calibration_panels = load_optional_module("plot_calibration_panels", ROOT / "manuscript" / "scripts" / "plot_calibration_panels.py")
+plot_multiscale_npz = load_optional_module("plot_multiscale_npz", ROOT / "manuscript" / "scripts" / "plot_multiscale_npz.py")
 build_encode_manifest = load_module("build_encode_manifest", ROOT / "benchmarks" / "scripts" / "build_encode_manifest.py")
 build_motif_removal_benchmark = load_module("build_motif_removal_benchmark", ROOT / "benchmarks" / "scripts" / "build_motif_removal_benchmark.py")
 build_label_overlap_benchmark = load_module("build_label_overlap_benchmark", ROOT / "benchmarks" / "scripts" / "build_label_overlap_benchmark.py")
@@ -37,7 +43,7 @@ footprint_from_bam = load_module("footprint_from_bam", ROOT / "benchmarks" / "sc
 footprint_occupancy_score = load_module("footprint_occupancy_score", ROOT / "benchmarks" / "scripts" / "footprint_occupancy_score.py")
 build_tf_feature_table = load_module("build_tf_feature_table", ROOT / "benchmarks" / "scripts" / "build_tf_feature_table.py")
 evaluate_methods = load_module("evaluate_methods", ROOT / "benchmarks" / "scripts" / "evaluate_methods.py")
-plot_method_comparison = load_module("plot_method_comparison", ROOT / "manuscript" / "scripts" / "plot_method_comparison.py")
+plot_method_comparison = load_optional_module("plot_method_comparison", ROOT / "manuscript" / "scripts" / "plot_method_comparison.py")
 validate_manifests = load_module("validate_manifests", ROOT / "benchmarks" / "scripts" / "validate_manifests.py")
 run_engineering_benchmark = load_module("run_engineering_benchmark", ROOT / "benchmarks" / "scripts" / "run_engineering_benchmark.py")
 
@@ -169,6 +175,7 @@ class FootprintOccupancyScoreTest(unittest.TestCase):
 
 class PlotMethodComparisonTest(unittest.TestCase):
 
+    @unittest.skipIf(plot_method_comparison is None, "manuscript plotting scripts are not published")
     def test_plot_writes_three_formats(self):
         metrics = pd.DataFrame(
             {
@@ -438,6 +445,7 @@ class BenchmarkScriptsTest(unittest.TestCase):
                 self.assertEqual(len(outputs[key]), 3)
                 self.assertTrue(all(path.exists() for path in outputs[key]))
 
+    @unittest.skipIf(plot_calibration_panels is None, "manuscript plotting scripts are not published")
     def test_compute_and_plot_calibration_reports(self):
         df = pd.DataFrame(
             {
@@ -460,6 +468,7 @@ class BenchmarkScriptsTest(unittest.TestCase):
             for output in outputs:
                 self.assertTrue(output.exists())
 
+    @unittest.skipIf(plot_multiscale_npz is None, "manuscript plotting scripts are not published")
     def test_plot_multiscale_npz_writes_all_formats(self):
         records = [
             (("chr1", 0, 5), {8: np.array([1, 2, 3, 2, 1]), 16: np.array([0, 1, 2, 1, 0])}),
@@ -475,6 +484,7 @@ class BenchmarkScriptsTest(unittest.TestCase):
                 self.assertTrue(output.exists())
                 self.assertGreater(output.stat().st_size, 0)
 
+    @unittest.skipIf(plot_benchmark_panels is None, "manuscript plotting scripts are not published")
     def test_plot_benchmark_panels_writes_all_formats(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             out_prefix = pathlib.Path(tmpdir) / "figure_benchmark_summary"

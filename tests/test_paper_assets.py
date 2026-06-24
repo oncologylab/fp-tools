@@ -6,6 +6,7 @@ import unittest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+PREPARE_BIOMED_SCRIPT = ROOT / "manuscript" / "scripts" / "prepare_biomedinformatics_template.py"
 
 
 def load_module(name, path):
@@ -16,7 +17,10 @@ def load_module(name, path):
     return module
 
 
-prepare_biomed = load_module("prepare_biomedinformatics_template", ROOT / "manuscript" / "scripts" / "prepare_biomedinformatics_template.py")
+if not PREPARE_BIOMED_SCRIPT.exists():
+    raise unittest.SkipTest("manuscript template scripts are not published")
+
+prepare_biomed = load_module("prepare_biomedinformatics_template", PREPARE_BIOMED_SCRIPT)
 
 
 class PaperAssetsTest(unittest.TestCase):

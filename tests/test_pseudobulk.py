@@ -12,6 +12,10 @@ import pysam
 from fp_tools.tools.pseudobulk import group_bam_by_tag, group_fragments, write_cutsite_bigwig, write_downstream_commands, write_pseudo_paired_bam
 
 
+ROOT = Path(__file__).resolve().parents[1]
+PSEUDOBULK_AGGREGATE_SCRIPT = ROOT / "manuscript" / "scripts" / "plot_pseudobulk_tf_aggregates.py"
+
+
 class PseudobulkTest(unittest.TestCase):
     def test_group_fragments_writes_manifest_and_group_files(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -213,6 +217,7 @@ class PseudobulkTest(unittest.TestCase):
             finally:
                 bw.close()
 
+    @unittest.skipUnless(PSEUDOBULK_AGGREGATE_SCRIPT.exists(), "manuscript plotting scripts are not published")
     def test_pseudobulk_aggregate_plot_script_smoke(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -236,7 +241,7 @@ class PseudobulkTest(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
+                    str(PSEUDOBULK_AGGREGATE_SCRIPT),
                     "--manifest",
                     str(manifest),
                     "--tf-site-dir",
@@ -250,7 +255,7 @@ class PseudobulkTest(unittest.TestCase):
                     "--flank",
                     "20",
                 ],
-                cwd=Path(__file__).resolve().parents[1],
+                cwd=ROOT,
                 check=True,
             )
 
@@ -262,7 +267,7 @@ class PseudobulkTest(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
+                    str(PSEUDOBULK_AGGREGATE_SCRIPT),
                     "--manifest",
                     str(manifest),
                     "--tf-site-dir",
@@ -278,7 +283,7 @@ class PseudobulkTest(unittest.TestCase):
                     "--footprint-like-output",
                     str(footprint_prefix),
                 ],
-                cwd=Path(__file__).resolve().parents[1],
+                cwd=ROOT,
                 check=True,
             )
 
@@ -290,7 +295,7 @@ class PseudobulkTest(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
+                    str(PSEUDOBULK_AGGREGATE_SCRIPT),
                     "--manifest",
                     str(manifest),
                     "--tf-site-dir",
@@ -308,13 +313,14 @@ class PseudobulkTest(unittest.TestCase):
                     "--max-selected-sites",
                     "1",
                 ],
-                cwd=Path(__file__).resolve().parents[1],
+                cwd=ROOT,
                 check=True,
             )
 
             self.assertTrue(selected_prefix.with_suffix(".png").exists())
             self.assertTrue(selected_prefix.with_suffix(".tsv").exists())
 
+    @unittest.skipUnless(PSEUDOBULK_AGGREGATE_SCRIPT.exists(), "manuscript plotting scripts are not published")
     def test_pseudobulk_aggregate_auto_selection_writes_screen(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -365,7 +371,7 @@ class PseudobulkTest(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
+                    str(PSEUDOBULK_AGGREGATE_SCRIPT),
                     "--manifest",
                     str(manifest),
                     "--tf-site-dir",
@@ -393,7 +399,7 @@ class PseudobulkTest(unittest.TestCase):
                     "--protection-flank-outer",
                     "15",
                 ],
-                cwd=Path(__file__).resolve().parents[1],
+                cwd=ROOT,
                 check=True,
             )
 
@@ -406,6 +412,7 @@ class PseudobulkTest(unittest.TestCase):
             self.assertIn("True", text)
 
 
+    @unittest.skipUnless(PSEUDOBULK_AGGREGATE_SCRIPT.exists(), "manuscript plotting scripts are not published")
     def test_pseudobulk_aggregate_supports_footprint_signal_column(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -431,7 +438,7 @@ class PseudobulkTest(unittest.TestCase):
             subprocess.run(
                 [
                     sys.executable,
-                    "manuscript/scripts/plot_pseudobulk_tf_aggregates.py",
+                    str(PSEUDOBULK_AGGREGATE_SCRIPT),
                     "--manifest",
                     str(manifest),
                     "--tf-site-dir",
@@ -451,7 +458,7 @@ class PseudobulkTest(unittest.TestCase):
                     "--ylabel",
                     "Footprint score",
                 ],
-                cwd=Path(__file__).resolve().parents[1],
+                cwd=ROOT,
                 check=True,
             )
 
