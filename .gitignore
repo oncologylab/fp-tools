@@ -52,44 +52,9 @@ examples/reports/*_dev.*
 test_data/*.bam
 test_data/*.bam.bai
 
-# Public benchmark data and generated paper artifacts
+# Public benchmark data and local manuscript artifacts
 /data/public/raw/
 /data/public/processed/
 /benchmarks/results/
 /benchmarks/download_reports/
-/manuscript/figures/*.pdf
-/manuscript/figures/*.png
-/manuscript/figures/*.svg
-!/manuscript/figures/footprint_representation.pdf
-!/manuscript/figures/footprint_representation.png
-!/manuscript/figures/fp-tools-de-novo-motif.svg
-!/manuscript/figures/denovo_motif_validation.svg
-!/manuscript/figures/Fig1. Overall Schematics emphasizing new features.svg
-!/manuscript/figures/Fig1.svg
-!/manuscript/figures/Fig2.svg
-!/manuscript/figures/Fig3.png
-!/manuscript/figures/Fig4.svg
-!/manuscript/figures/Fig5.svg
-!/manuscript/figures/figure_calibration_genome.png
-!/manuscript/figures/k562_method_comparison_multitf.pdf
-!/manuscript/figures/k562_method_comparison_multitf.png
-!/manuscript/figures/method_comparison_multi.pdf
-!/manuscript/figures/method_comparison_multi.png
-!/manuscript/figures/supp_pseudobulk_footprint_like.pdf
-!/manuscript/figures/supp_pseudobulk_footprint_like.png
-!/manuscript/figures/supp_pseudobulk_footprint_like.tsv
-!/manuscript/figures/supp_pseudobulk_tf_aggregates.pdf
-!/manuscript/figures/supp_pseudobulk_tf_aggregates.png
-!/manuscript/figures/supp_pseudobulk_tf_aggregates.tsv
-/manuscript/tables/*.tsv
-/manuscript/tables/*.csv
-!/manuscript/tables/software_versions.tsv
-!/manuscript/tables/analysis_parameters.tsv
-
-# LaTeX auxiliary files; keep source and intentional preview PDFs only.
-/manuscript/*.aux
-/manuscript/*.fdb_latexmk
-/manuscript/*.fls
-/manuscript/*.log
-/manuscript/*.out
-/manuscript/*.blg
+/manuscript/
