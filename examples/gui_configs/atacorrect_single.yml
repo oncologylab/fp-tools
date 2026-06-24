@@ -3,7 +3,8 @@ run_mode: single
 samples:
   - sample_id: atacorrect_bcell
     tool: atac-correct
-    bam: test_data/Bcell.bam
+    bams:
+      - test_data/Bcell.bam
     genome: test_data/genome.fa.gz
     peaks: test_data/merged_peaks.bed
     blacklist: test_data/blacklist.bed

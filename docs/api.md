@@ -32,24 +32,33 @@ Bias-correct ATAC-seq cut-site signal.
 
 **Input parameters**
 
-- BAM reads from an ATAC-seq experiment.
+- One or more BAM files from ATAC-seq experiments.
 - Reference genome FASTA.
-- Peak or region BED file; optional blacklist and q95 scaling regions.
+- One shared peak BED, or multiple peak BEDs that are merged internally; optional blacklist and q95 scaling regions.
 
 **Output**
 
 - Uncorrected, expected, bias, and corrected bigWig tracks.
 - QC PDF and run logs in the output directory.
+- For multi-BAM runs, one output subfolder per sample and `merged_all.bed` when multiple peak BEDs are supplied.
 
 **Example commands**
 
 ```bash
 atac-correct \
-  --bam sample.bam \
+  --bams sample.bam \
   --genome hg38.fa.gz \
   --peaks peaks.bed \
   --blacklist hg38.blacklist.bed \
   --outdir results/atac_correct/sample
+
+atac-correct \
+  --bams A.bam B.bam \
+  --sample-names A B \
+  --genome hg38.fa.gz \
+  --peaks A_peaks.bed B_peaks.bed \
+  --blacklist hg38.blacklist.bed \
+  --outdir results/atac_correct
 ```
 
 **Options**
@@ -57,17 +66,17 @@ atac-correct \
 This option reference is generated from `atac-correct --help` and lists every accepted option for the command.
 
 ```text
-usage: atac-correct [-h] [-b <bam>] [-g <fasta>] [-p <bed>] [--regions-in <bed>]
-                    [--regions-out <bed>] [--blacklist <bed>] [--extend <int>]
-                    [--split-strands] [--norm-off] [--track-off [<track> ...]]
-                    [--scale-corrected {auto,none,q95}] [--scale-background <bed>]
-                    [--scale-corrected-bigwigs [<bigwig> ...]]
+usage: atac-correct [-h] [--bams [<bam> ...]] [-g <fasta>] [-p [<bed> ...]]
+                    [--regions-in <bed>] [--regions-out <bed>] [--blacklist <bed>]
+                    [--extend <int>] [--split-strands] [--norm-off]
+                    [--track-off [<track> ...]] [--scale-corrected {auto,none,q95}]
+                    [--scale-background <bed>] [--scale-corrected-bigwigs [<bigwig> ...]]
                     [--scale-target {median,mean}] [--scale-chrom-sizes <chrom.sizes>]
                     [--drop-chroms [<chrom> ...]] [--k_flank <int>]
                     [--read_shift <int> <int>] [--bg_shift <int>] [--window <int>]
                     [--score_mat <mat>] [--bias-pkl <obj>] [--prefix <prefix>]
-                    [--outdir <directory>] [--cores <int>] [--split <int>]
-                    [--verbosity <int>]
+                    [--sample-names [<name> ...]] [--outdir <directory>] [--cores <int>]
+                    [--split <int>] [--verbosity <int>]
 
 __________________________________________________________________________________________
 
@@ -77,21 +86,24 @@ ________________________________________________________________________________
 atac-correct corrects ATAC-seq cutsite signal for Tn5 sequence bias.
 
 Usage:
-atac-correct --bam <reads.bam> --genome <genome.fa> --peaks <peaks.bed>
+atac-correct --bams <reads.bam> [<more_reads.bam> ...] --genome <genome.fa> --peaks
+<peaks.bed> [<more_peaks.bed> ...]
 
 Output files:
-- <outdir>/<prefix>_uncorrected.bw
-- <outdir>/<prefix>_bias.bw
-- <outdir>/<prefix>_expected.bw
-- <outdir>/<prefix>_corrected.bw
+- <outdir>/<sample>/<sample>_uncorrected.bw for multi-BAM runs
+- <outdir>/<sample>/<sample>_bias.bw for multi-BAM runs
+- <outdir>/<sample>/<sample>_expected.bw for multi-BAM runs
+- <outdir>/<sample>/<sample>_corrected.bw for multi-BAM runs
 - <outdir>/<prefix>_atacorrect.pdf
 
 ------------------------------------------------------------------------------------------
 
 Required arguments:
-  -b <bam>, --bam <bam>            A .bam-file containing reads to be corrected
+  --bams [<bam> ...]               One or more .bam files containing reads to be corrected
   -g <fasta>, --genome <fasta>     A .fasta-file containing whole genomic sequence
-  -p <bed>, --peaks <bed>          A .bed-file containing ATAC peak regions
+  -p [<bed> ...], --peaks [<bed> ...]
+                                   One shared .bed peak file, or multiple per-sample peak
+                                   BEDs to merge internally
 
 Optional arguments:
   --regions-in <bed>               Input regions for estimating bias (default: regions not
@@ -140,7 +152,9 @@ Advanced atac-correct arguments (no need to touch):
                                    be used to bypass the internal bias estimation.
 
 Run arguments:
-  --prefix <prefix>                Prefix for output files (default: same as .bam file)
+  --prefix <prefix>                Prefix for output files in single-BAM runs (default:
+                                   BAM filename stem)
+  --sample-names [<name> ...]      Sample labels for --bams (default: BAM filename stems)
   --outdir <directory>             Output directory for files (default: current working
                                    directory)
   --cores <int>                    Number of cores to use for computation (default: all
@@ -1248,7 +1262,7 @@ options:
                         Write one sparse cut-site bigWig per kept pseudobulk
                         group.
   --write-pseudo-bams   Write sorted pseudo-paired BAMs for kept groups; use
-                        atac-correct --read_shift 0 0 on these BAMs.
+                        atac-correct --bams ... --read_shift 0 0 on these BAMs.
   --no-cpm-normalize    Write raw cut counts instead of CPM-normalized bigWig
                         values.
   --write-downstream-commands

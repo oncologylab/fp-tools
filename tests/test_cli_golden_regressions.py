@@ -255,7 +255,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             run_command(
                 [
                     BIN / "ATACorrect",
-                    "--bam",
+                    "--bams",
                     "test_data/Bcell.bam",
                     "--genome",
                     "test_data/genome.fa.gz",

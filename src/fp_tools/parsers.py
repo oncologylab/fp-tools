@@ -10,12 +10,13 @@ from fp_tools.utils.logger import add_logger_args
 #--------------------------------------------------------------------------------------------------------#
 def add_atacorrect_arguments(parser):
 
+	parser.allow_abbrev = False
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=35, width=90)
 
 	description = "atac-correct corrects ATAC-seq cutsite signal for Tn5 sequence bias.\n\n"
-	description += "Usage:\natac-correct --bam <reads.bam> --genome <genome.fa> --peaks <peaks.bed>\n\n"
+	description += "Usage:\natac-correct --bams <reads.bam> [<more_reads.bam> ...] --genome <genome.fa> --peaks <peaks.bed> [<more_peaks.bed> ...]\n\n"
 	description += "Output files:\n"
-	description += "\n".join(["- <outdir>/<prefix>_{0}.bw".format(track) for track in ["uncorrected", "bias", "expected", "corrected"]]) + "\n"
+	description += "\n".join(["- <outdir>/<sample>/<sample>_{0}.bw for multi-BAM runs".format(track) for track in ["uncorrected", "bias", "expected", "corrected"]]) + "\n"
 	description += "- <outdir>/<prefix>_atacorrect.pdf"
 	parser.description = format_help_description("atac-correct", description)
 
@@ -23,9 +24,9 @@ def add_atacorrect_arguments(parser):
 
 	#Required arguments
 	reqargs = parser.add_argument_group('Required arguments')
-	reqargs.add_argument('-b', '--bam', metavar="<bam>", help="A .bam-file containing reads to be corrected")
+	reqargs.add_argument('--bams', metavar="<bam>", nargs="*", help="One or more .bam files containing reads to be corrected")
 	reqargs.add_argument('-g', '--genome', metavar="<fasta>", help="A .fasta-file containing whole genomic sequence")
-	reqargs.add_argument('-p', '--peaks', metavar="<bed>", help="A .bed-file containing ATAC peak regions")
+	reqargs.add_argument('-p', '--peaks', metavar="<bed>", nargs="*", help="One shared .bed peak file, or multiple per-sample peak BEDs to merge internally")
 
 	#Optional arguments
 	optargs = parser.add_argument_group('Optional arguments')
@@ -52,7 +53,8 @@ def add_atacorrect_arguments(parser):
 	optargs.add_argument('--bias-pkl', metavar="<obj>", help="Path to a pre-calculated AtacBias.pkl-object, as output from a previous atac-correct run (default: None). Can be used to bypass the internal bias estimation.", default=None)
 
 	runargs = parser.add_argument_group('Run arguments')
-	runargs.add_argument('--prefix', metavar="<prefix>", help="Prefix for output files (default: same as .bam file)")
+	runargs.add_argument('--prefix', metavar="<prefix>", help="Prefix for output files in single-BAM runs (default: BAM filename stem)")
+	runargs.add_argument('--sample-names', metavar="<name>", nargs="*", help="Sample labels for --bams (default: BAM filename stems)")
 	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory for files (default: current working directory)", default="")
 	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: all available cores)", default=None)
 	runargs.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)

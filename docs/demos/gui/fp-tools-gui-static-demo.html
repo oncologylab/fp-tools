@@ -343,16 +343,16 @@ plot_aggregate: sig</pre>
     const commandPages = {
       "atac-correct": {
         title: "atac-correct",
-        description: "Bias-correct ATAC-seq cut-site signal from BAM, genome, peaks, and blacklist inputs.",
+        description: "Bias-correct ATAC-seq cut-site signal from one or more BAM files, genome, peaks, and blacklist inputs.",
         fields: [
-          ["BAM", "Bcell.bam"],
+          ["BAMs", "Bcell.bam"],
           ["Genome FASTA", "hg38.fa"],
           ["Peaks BED", "merged_peaks.bed"],
           ["Blacklist BED", "hg38.blacklist.bed"],
           ["Output folder", "results/atac_correct/Bcell"],
           ["Cores", "8"]
         ],
-        yaml: "tool: atac-correct\nbam: Bcell.bam\ngenome: hg38.fa\npeaks: merged_peaks.bed\nblacklist: hg38.blacklist.bed",
+        yaml: "tool: atac-correct\nbams:\n  - Bcell.bam\ngenome: hg38.fa\npeaks: merged_peaks.bed\nblacklist: hg38.blacklist.bed",
         metrics: [["Tool", "ATAC"], ["Input", "BAM"], ["Output", "bigWig"]]
       },
       "call-footprints": {

@@ -44,7 +44,7 @@ Use [`match-motifs`](https://oncologylab.github.io/fp-tools/api/#match-motifs) t
 
 ```bash
 atac-correct \
-  --bam sample.bam \
+  --bams sample.bam \
   --genome hg38.fa.gz \
   --peaks peaks.bed \
   --blacklist hg38.blacklist.bed \
@@ -78,6 +78,8 @@ diff-footprints \
   --plot-aggregate sig \
   --outdir results/diff_footprints/conditionA_vs_conditionB
 ```
+
+`atac-correct --bams` also accepts multiple BAMs. With multiple inputs, fp-tools writes one subfolder per sample under `--outdir`. If multiple peak BED files are supplied to `--peaks`, they are merged internally and saved as `merged_all.bed`.
 
 Use `--sample-names` for readable per-sample labels. Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
 

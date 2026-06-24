@@ -7,7 +7,7 @@ import unittest
 
 from fp_tools.cli_batch import run_config_file
 from fp_tools.gui_config import expand_jobs, load_yaml_config, normalize_config
-from fp_tools.parsers import add_aggregate_arguments, add_bindetect_arguments, add_scorebigwig_arguments
+from fp_tools.parsers import add_aggregate_arguments, add_atacorrect_arguments, add_bindetect_arguments, add_scorebigwig_arguments
 from fp_tools.tools.bindetect import _prepare_condition_metadata
 
 
@@ -113,6 +113,27 @@ class CliAndConfigSmokeTest(unittest.TestCase):
         self.assertEqual(args.signals, ["A_corrected.bw", "B_corrected.bw"])
         self.assertEqual(args.outputs, ["A_footprints.bw", "B_footprints.bw"])
         self.assertEqual(args.output_beds, ["A_candidates.bed", "B_candidates.bed"])
+
+    def test_atac_correct_accepts_batch_bam_and_peak_arguments(self):
+        parser = add_atacorrect_arguments(argparse.ArgumentParser())
+        args = parser.parse_args(
+            [
+                "--bams",
+                "A.bam",
+                "B.bam",
+                "--sample-names",
+                "A",
+                "B",
+                "--genome",
+                "genome.fa",
+                "--peaks",
+                "A_peaks.bed",
+                "B_peaks.bed",
+            ]
+        )
+        self.assertEqual(args.bams, ["A.bam", "B.bam"])
+        self.assertEqual(args.sample_names, ["A", "B"])
+        self.assertEqual(args.peaks, ["A_peaks.bed", "B_peaks.bed"])
 
     def test_plot_aggregate_accepts_match_dir_html_arguments(self):
         parser = add_aggregate_arguments(argparse.ArgumentParser())

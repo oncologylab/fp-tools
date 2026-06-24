@@ -190,7 +190,7 @@ write_metadata() {
     echo -e "analysis\tparameters"
     echo -e "encode_inputs\tK562 ENCSR868FGK vs HepG2 ENCSR291GJU; three released GRCh38 alignment BAM biological replicates per condition"
     echo -e "merged_peaks\tbedtools sort and merge across released ENCODE IDR thresholded peak BEDs; exclude '_' contigs and chrM/MT"
-    echo -e "atac-correct\t--bam ENCODE alignment BAM --genome hg38.fa --peaks merged_peaks.bed --blacklist hg38-blacklist.v2.bed --outdir sample"
+    echo -e "atac-correct\t--bams ENCODE alignment BAM --genome hg38.fa --peaks merged_peaks.bed --blacklist hg38-blacklist.v2.bed --outdir sample"
     echo -e "call-footprints\t--signal sample_corrected_scaled.bw --regions merged_peaks.bed --score footprint"
     echo -e "normalize-bigwig\t--background merged_peaks.50bp_bins.bed --method background-scale --stat q95 --target median"
     echo -e "diff-footprints_default_q95\tq95-scaled corrected bigWigs -> call-footprints; --normalization none; aggregate tracks use q95-scaled corrected bigWigs"
@@ -211,7 +211,7 @@ run_fp_tools_for_sample() {
   mkdir -p "${atac_dir}" "${FP_DIR}/footprints"
 
   run_step "${sample}.atac_correct" "${ATAC_CORRECT}" \
-    --bam "${bam}" \
+    --bams "${bam}" \
     --genome "${GENOME}" \
     --peaks "${MERGED_PEAKS}" \
     --blacklist "${BLACKLIST}" \

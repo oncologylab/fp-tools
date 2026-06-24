@@ -25,14 +25,14 @@ fp-tools-gui
 
 ```bash
 atac-correct \
-  --bam sample.bam \
+  --bams sample.bam \
   --genome hg38.fa.gz \
   --peaks peaks.bed \
   --blacklist hg38.blacklist.bed \
   --outdir results/atac_correct/sample
 ```
 
-Output: corrected cut-site bigWigs and QC files.
+Output: corrected cut-site bigWigs and QC files. Use `--bams` with multiple BAMs to process several samples in one command; fp-tools writes one subfolder per sample. If multiple peak BEDs are supplied, fp-tools merges them and saves `merged_all.bed`.
 
 ### 2. Call Footprints
 

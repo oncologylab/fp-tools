@@ -693,7 +693,7 @@ def _ensure_session_config() -> None:
     if "current_config" not in st.session_state:
         st.session_state.current_config = make_single_config(
             "atac-correct",
-            {"bam": "", "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": 1},
+            {"bams": [], "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": 1},
             job_id="run",
         )
     if "gui_run_dir" not in st.session_state:
@@ -730,7 +730,7 @@ def _default_config_for_tool(tool: str) -> dict[str, Any]:
     tool = canonical_tool_name(tool)
     defaults: dict[str, Any]
     if tool == "atac-correct":
-        defaults = {"bam": "", "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": 1}
+        defaults = {"bams": [], "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": 1}
     elif tool == "call-footprints":
         defaults = {"signal": "", "regions": "", "output": "", "score": "footprint", "cores": 1}
     elif tool == "diff-footprints":
@@ -971,13 +971,16 @@ def _render_atacorrect_page(run_dir: Path) -> None:
         single = _current_single_params("atac-correct")
         batch_rows = _current_sample_rows(
             "atac-correct",
-            default_rows=[{"sample_id": "sample1", "bam": "", "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": 1}],
+            default_rows=[{"sample_id": "sample1", "bams": "", "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": 1}],
         )
         if mode == "Single run":
             with st.form("atacorrect_single_form"):
                 left, right = st.columns(2)
                 with left:
-                    bam = st.text_input("BAM", value=str(single.get("bam", "")))
+                    bams_value = single.get("bams", "")
+                    if isinstance(bams_value, list):
+                        bams_value = "\n".join(str(value) for value in bams_value)
+                    bams = st.text_area("BAMs", value=str(bams_value), height=82, help="One BAM path per line")
                     genome = st.text_input("Genome FASTA", value=str(single.get("genome", "")))
                     peaks = st.text_input("Peaks BED", value=str(single.get("peaks", "")))
                 with right:
@@ -990,7 +993,7 @@ def _render_atacorrect_page(run_dir: Path) -> None:
                     make_single_config(
                         "atac-correct",
                         {
-                            "bam": bam,
+                            "bams": [line.strip() for line in bams.splitlines() if line.strip()],
                             "genome": genome,
                             "peaks": peaks,
                             "blacklist": blacklist,

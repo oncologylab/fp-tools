@@ -70,7 +70,7 @@ def _maybe_scale_corrected_bigwigs(args, corrected_bigwigs, logger):
 	if not getattr(args, "scale_background", None):
 		message = "--scale-background is required when q95 corrected-track scaling is requested"
 		if mode == "auto":
-			logger.warning(message + "; skipping scaling")
+			logger.info(message + "; skipping scaling")
 			return []
 		raise ValueError(message)
 	logger.info("Q95-scaling corrected bigWigs")
@@ -89,11 +89,116 @@ def _maybe_scale_corrected_bigwigs(args, corrected_bigwigs, logger):
 		logger.stats("Q95_SCALE\t{0}\t{1:.5f}\t{2}".format(row.sample, row.scale_factor, row.output_bigwig))
 	return rows
 
+
+def _compact_list(values):
+	if values is None:
+		return []
+	if isinstance(values, (str, os.PathLike)):
+		values = [values]
+	return [str(value) for value in values if str(value).strip()]
+
+
+def _sample_names_from_bams(bams, requested=None):
+	names = _compact_list(requested)
+	if names and len(names) != len(bams):
+		sys.exit("Error: --sample-names must contain one value per --bams input")
+	if not names:
+		names = [os.path.splitext(os.path.basename(bam))[0] for bam in bams]
+	clean = []
+	for name in names:
+		if not name or os.path.basename(name) != name or name in (".", ".."):
+			sys.exit("Error: --sample-names values must be non-empty names, not paths: {0}".format(name))
+		clean.append(name)
+	if len(set(clean)) != len(clean):
+		sys.exit("Error: --sample-names values must be unique")
+	return clean
+
+
+def _merge_peak_files(peak_files, outdir):
+	peak_files = _compact_list(peak_files)
+	if not peak_files:
+		sys.exit("Error: No .peaks-file given")
+	if len(peak_files) == 1:
+		return peak_files[0]
+	make_directory(outdir)
+	merged = RegionList()
+	for peak_file in peak_files:
+		merged.extend(RegionList().from_bed(peak_file))
+	merged.merge()
+	merged_path = os.path.join(outdir, "merged_all.bed")
+	merged.write_bed(merged_path)
+	return merged_path
+
+
+def _corrected_output_paths_for_args(args):
+	tracks = ["uncorrected", "bias", "expected", "corrected"]
+	tracks = [track for track in tracks if track not in args.track_off]
+	if "corrected" not in tracks:
+		return []
+	strands = ["forward", "reverse"] if args.split_strands else ["both"]
+	paths = []
+	for strand in strands:
+		elements = [args.prefix, "corrected"] if strand == "both" else [args.prefix, "corrected", strand]
+		paths.append(os.path.join(args.outdir, "{0}.bw".format("_".join(elements))))
+	return paths
+
 #--------------------------------------------------------------------------------------------------------#
 #-------------------------------------- Main pipeline function ------------------------------------------#
 #--------------------------------------------------------------------------------------------------------#
 
 def run_atacorrect(args):
+
+	"""
+	Batch-aware ATACorrect entry point.
+
+	``--bams`` accepts one or more BAM files. Single-BAM runs keep the legacy
+	output layout; multi-BAM runs write one subdirectory per sample.
+	"""
+
+	bams = _compact_list(getattr(args, "bams", None))
+	if not bams:
+		sys.exit("Error: No .bam-file given. Use --bams <reads.bam> [<more_reads.bam> ...]")
+	if args.genome == None:
+		sys.exit("Error: No .fasta-file given")
+	if not _compact_list(getattr(args, "peaks", None)):
+		sys.exit("Error: No .peaks-file given")
+	if len(bams) > 1 and getattr(args, "prefix", None):
+		sys.exit("Error: --prefix can only be used with a single --bams input. Use --sample-names for multi-BAM runs.")
+
+	base_outdir = os.path.abspath(args.outdir) if args.outdir != None else os.path.abspath(os.getcwd())
+	sample_names = _sample_names_from_bams(bams, getattr(args, "sample_names", None))
+	peaks_for_run = _merge_peak_files(args.peaks, base_outdir)
+	corrected_bigwigs = []
+
+	for bam, sample_name in zip(bams, sample_names):
+		sample_args = deepcopy(args)
+		sample_args.bam = bam
+		sample_args.bams = [bam]
+		sample_args.peaks = peaks_for_run
+		sample_args.prefix = args.prefix if len(bams) == 1 and args.prefix else sample_name
+		sample_args.outdir = base_outdir if len(bams) == 1 else os.path.join(base_outdir, sample_name)
+		sample_args.scale_corrected = "none"
+		sample_args._scale_after_single = False
+		corrected_bigwigs.extend(_corrected_output_paths_for_args(sample_args))
+		_run_atacorrect_single(sample_args)
+
+	args.outdir = base_outdir
+	if len(bams) == 1:
+		args.prefix = args.prefix if args.prefix else sample_names[0]
+	mode = getattr(args, "scale_corrected", "auto")
+	if mode != "none":
+		logger = FpToolsLogger("ATACorrect", args.verbosity)
+		logger.begin()
+		try:
+			_maybe_scale_corrected_bigwigs(args, corrected_bigwigs, logger)
+		except Exception as exc:
+			logger.error("Corrected-track q95 scaling failed: {0}".format(exc))
+			raise
+		finally:
+			logger.end()
+
+
+def _run_atacorrect_single(args):
 
 	"""
 	Function for bias correction of input .bam files
@@ -201,7 +306,7 @@ def run_atacorrect(args):
 	#Subset bam_references to those for which there are sequences in fasta
 	chrom_not_in_fasta = set(bam_references) - set(fasta_chrom_info.keys())
 	if len(chrom_not_in_fasta) > 1:
-		logger.warning("The following contigs in --bam did not have sequences in --fasta: {0}. NOTE: These contigs will be skipped in calculation and output.".format(chrom_not_in_fasta))
+		logger.warning("The following contigs in the input BAM did not have sequences in --fasta: {0}. NOTE: These contigs will be skipped in calculation and output.".format(chrom_not_in_fasta))
 
 	bam_references = [ref for ref in bam_references if ref in fasta_chrom_info]
 	chrom_in_common = [ref for ref in chrom_in_common if ref in bam_references]
@@ -219,7 +324,7 @@ def run_atacorrect(args):
 
 	#Check if any contigs were left; else exit
 	if len(chrom_in_common) == 0:
-		logger.error("No common contigs left to run ATACorrect on. Please check that '--bam' and '--fasta' are matching.")
+		logger.error("No common contigs left to run ATACorrect on. Please check that the input BAM and '--fasta' are matching.")
 		sys.exit()
 
 	#----------------------------------------------------------------------------------------------------#
@@ -525,17 +630,18 @@ def run_atacorrect(args):
 	# Finish up
 	#----------------------------------------------------------------------------------------------------#
 
-		plt.close('all')
-		figure_pdf.close()
-		corrected_bigwigs = []
-		if "corrected" in output_bws:
-			corrected_bigwigs = [output_bws["corrected"][strand]["fn"] for strand in output_bws["corrected"]]
+	plt.close('all')
+	figure_pdf.close()
+	corrected_bigwigs = []
+	if "corrected" in output_bws:
+		corrected_bigwigs = [output_bws["corrected"][strand]["fn"] for strand in output_bws["corrected"]]
+	if getattr(args, "_scale_after_single", True):
 		try:
 			_maybe_scale_corrected_bigwigs(args, corrected_bigwigs, logger)
 		except Exception as exc:
 			logger.error("Corrected-track q95 scaling failed: {0}".format(exc))
 			raise
-		logger.end()
+	logger.end()
 
 #--------------------------------------------------------------------------------------------------------#
 if __name__ == '__main__':

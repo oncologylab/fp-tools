@@ -304,7 +304,7 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
 
         atac_command = [
             "atac-correct",
-            "--bam",
+            "--bams",
             str(source["pseudo_bam"]),
             "--genome",
             str(args.genome),

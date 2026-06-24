@@ -55,6 +55,7 @@ RESERVED_KEYS = {
 
 LIST_FLAGS = {
     "signals",
+    "bams",
     "sample_names",
     "sample-names",
     "cond_names",
@@ -69,7 +70,7 @@ LIST_FLAGS = {
 }
 
 REQUIRED_FIELDS = {
-    "atac-correct": ("bam", "genome", "peaks"),
+    "atac-correct": ("bams", "genome", "peaks"),
     "call-footprints": ("signal", "regions", "output"),
     "match-motifs": ("signals", "genome", "peaks"),
     "diff-footprints": ("signals", "genome", "peaks"),

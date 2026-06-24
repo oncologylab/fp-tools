@@ -273,7 +273,7 @@ run_fp_tools_for_sample() {
   mkdir -p "${atac_dir}" "${FP_DIR}/footprints"
 
   run_step "${sample}.atac_correct" "${ATAC_CORRECT}" \
-    --bam "${bam}" \
+    --bams "${bam}" \
     --genome "${GENOME}" \
     --peaks "${MERGED_PEAKS}" \
     --blacklist "${BLACKLIST}" \
