@@ -468,6 +468,7 @@ Compare motif-associated footprint scores across conditions or biological replic
 - Motif-level differential footprint tables and per-motif overview tables.
 - Bound/unbound BED files per motif and condition.
 - Standalone interactive HTML report with volcano summaries and aggregate profiles.
+- Optional static volcano/cluster PDFs with `--static-plots` and optional skew/shift PDF with `--skew-report`.
 - Replicate diagnostic tables when replicate groups are present.
 
 **Example commands**
@@ -507,8 +508,9 @@ usage: diff-footprints [-h] [--signals [<bigwig> ...]] [--peaks <bed>] [--genome
                        [--aggregate-pvalue-threshold <float>] [--aggregate-flank <bp>]
                        [--aggregate-normalization {match,none,sample-quantile,size-factor}]
                        [--aggregate-site-set {all,bound}] [--reuse-existing-results]
-                       [--report-label <text>] [--outdir <directory>] [--prefix <prefix>]
-                       [--cores <int>] [--split <int>] [--debug] [--verbosity <int>]
+                       [--static-plots] [--skew-report] [--report-label <text>]
+                       [--outdir <directory>] [--prefix <prefix>] [--cores <int>]
+                       [--split <int>] [--debug] [--verbosity <int>]
 
 __________________________________________________________________________________________
 
@@ -525,9 +527,11 @@ diff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --
 <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]
 
 Output files:
-- <outdir>/<prefix>_figures.pdf
 - <outdir>/<prefix>_results.{txt,xlsx}
 - <outdir>/<prefix>_distances.txt
+- <outdir>/<prefix>_<condition1>_<condition2>.html
+- optional <outdir>/<prefix>_figures.pdf with --static-plots
+- optional <outdir>/<prefix>_clusters.pdf with --static-plots
 - <outdir>/<TF>/<TF>_overview.{txt,xlsx} (per motif)
 - <outdir>/<TF>/beds/<TF>_all.bed (per motif)
 - <outdir>/<TF>/beds/<TF>_<condition>_bound.bed (per motif-condition pair)
@@ -624,6 +628,11 @@ Optional arguments:
   --reuse-existing-results         Regenerate final diff-footprints reports from existing
                                    <prefix>_results.txt and per-motif BEDs without
                                    rescanning motifs
+  --static-plots                   Also write static volcano and cluster PDF summaries. By
+                                   default diff-footprints writes the interactive HTML
+                                   report without these PDFs.
+  --skew-report                    Also write the optional skew/shift PDF report. Disabled
+                                   by default.
   --report-label <text>            Optional method label shown under the report subtitle
                                    in interactive HTML reports
   --prefix <prefix>                Prefix for overview files in --outdir folder (default:

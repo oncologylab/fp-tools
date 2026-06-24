@@ -182,6 +182,13 @@ class CliGoldenRegressionTest(unittest.TestCase):
         self.assertAlmostEqual(float(row["Bcell_Tcell_change"]), 0.35168, places=5)
         self.assertIn("Bcell_Tcell_qvalue_bh", results.columns)
         self.assertIn("Bcell_Tcell_significant_fdr05", results.columns)
+        for column in (
+            "Bcell_score_sd",
+            "Tcell_score_sd",
+            "Bcell_Tcell_delta_fp_se",
+            "Bcell_Tcell_log2fc_se",
+        ):
+            self.assertNotIn(column, results.columns)
         self.assertGreaterEqual(float(row["Bcell_Tcell_qvalue_bh"]), 0.0)
         self.assertLessEqual(float(row["Bcell_Tcell_qvalue_bh"]), 1.0)
 

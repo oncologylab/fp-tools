@@ -135,7 +135,11 @@ def add_bindetect_arguments(parser, command_name="diff-footprints"):
 		description = "diff-footprints takes motifs, footprint signals, and genome sequence as input to infer motif-associated bound sites and compare footprint evidence across conditions. "
 		description += "The method ranks motifs by signal differences across input conditions and reports motif-level and site-level results.\n\n"
 		description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
-	description += "Output files:\n- <outdir>/<prefix>_figures.pdf\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n"
+	if is_match_motifs:
+		description += "Output files:\n- <outdir>/<prefix>_figures.pdf\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n"
+	else:
+		description += "Output files:\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n- <outdir>/<prefix>_<condition1>_<condition2>.html\n"
+		description += "- optional <outdir>/<prefix>_figures.pdf with --static-plots\n- optional <outdir>/<prefix>_clusters.pdf with --static-plots\n"
 	description += "- <outdir>/<TF>/<TF>_overview.{txt,xlsx} (per motif)\n- <outdir>/<TF>/beds/<TF>_all.bed (per motif)\n"
 	if is_match_motifs:
 		description += "- <outdir>/<TF>/beds/<TF>_<sample>_bound.bed (per motif)\n- <outdir>/<TF>/beds/<TF>_<sample>_unbound.bed (per motif)\n\n"
@@ -189,6 +193,8 @@ def add_bindetect_arguments(parser, command_name="diff-footprints"):
 	optargs.add_argument('--aggregate-normalization', choices=["match", "none", "sample-quantile", "size-factor"], default="match", help="Normalization for embedded aggregate profiles (default: match --normalization)")
 	optargs.add_argument('--aggregate-site-set', choices=["all", "bound"], default="all", help="Motif-site BEDs used for embedded aggregate profiles: all motif hits or sample-specific bound sites (default: all)" if is_match_motifs else "Motif-site BEDs used for embedded aggregate profiles: all motif hits or condition-specific bound sites (default: all)")
 	optargs.add_argument('--reuse-existing-results', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Regenerate final diff-footprints reports from existing <prefix>_results.txt and per-motif BEDs without rescanning motifs")
+	optargs.add_argument('--static-plots', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write static volcano and cluster PDF summaries. By default diff-footprints writes the interactive HTML report without these PDFs.")
+	optargs.add_argument('--skew-report', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write the optional skew/shift PDF report. Disabled by default.")
 	optargs.add_argument('--report-label', metavar="<text>", help="Optional method label shown under the report subtitle in interactive HTML reports")
 
 	runargs = parser.add_argument_group("Run arguments")

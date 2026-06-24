@@ -583,9 +583,14 @@ def run_bindetect(args):
         os.path.abspath(os.path.join(args.outdir, args.prefix + "_distances.txt")),
         os.path.abspath(os.path.join(args.outdir, args.prefix + "_results.txt")),
         os.path.abspath(os.path.join(args.outdir, args.prefix + "_results.xlsx")),
-        os.path.abspath(os.path.join(args.outdir, args.prefix + "_figures.pdf")),
-        os.path.abspath(os.path.join(args.outdir, args.prefix + "_clusters.pdf")),
     ]
+    if getattr(args, "static_plots", False):
+        outfiles += [
+            os.path.abspath(os.path.join(args.outdir, args.prefix + "_figures.pdf")),
+            os.path.abspath(os.path.join(args.outdir, args.prefix + "_clusters.pdf")),
+        ]
+    if getattr(args, "skew_report", False):
+        outfiles.append(os.path.abspath(os.path.join(args.outdir, args.prefix + "_results_skewness_report.pdf")))
 
     # ------------------------------ logger/pools ------------------------------ #
     logger = FpToolsLogger("BINDetect", args.verbosity)
@@ -607,7 +612,7 @@ def run_bindetect(args):
     logger.info("----- Processing input data -----")
     logger.info("Checking reading/writing of files")
     check_files([args.signals, args.motifs, args.genome, args.peaks], action="r")
-    check_files(outfiles[-4:], action="w")
+    check_files([path for path in outfiles if "*" not in path], action="w")
     make_directory(args.outdir)
 
     # condition comparisons
@@ -619,35 +624,38 @@ def run_bindetect(args):
         debug_out = os.path.join(args.outdir, args.prefix + "_debug.pdf")
         debug_pdf = PdfPages(debug_out, keep_empty=True)
 
-    fig_out = os.path.join(args.outdir, args.prefix + "_figures.pdf")
-    figure_pdf = PdfPages(fig_out, keep_empty=True)
-    cluster_out = os.path.join(args.outdir, args.prefix + "_clusters.pdf")
-    cluster_pdf = PdfPages(cluster_out, keep_empty=True)
+    figure_pdf = None
+    cluster_pdf = None
+    if getattr(args, "static_plots", False):
+        fig_out = os.path.join(args.outdir, args.prefix + "_figures.pdf")
+        figure_pdf = PdfPages(fig_out, keep_empty=True)
+        cluster_out = os.path.join(args.outdir, args.prefix + "_clusters.pdf")
+        cluster_pdf = PdfPages(cluster_out, keep_empty=True)
 
-    plt.figure()
-    plt.axis('off')
-    plt.text(0.5, 0.8, "BINDETECT FIGURES", ha="center", va="center", fontsize=PDF_FONT_SIZE, fontweight="bold")
-    titles = ["Raw score distributions"]
-    if no_conditions > 1 and not args.norm_off:
-        titles.append("Normalized score distributions")
-    if args.debug:
+        plt.figure()
+        plt.axis('off')
+        plt.text(0.5, 0.8, "BINDETECT FIGURES", ha="center", va="center", fontsize=PDF_FONT_SIZE, fontweight="bold")
+        titles = ["Raw score distributions"]
+        if no_conditions > 1 and not args.norm_off:
+            titles.append("Normalized score distributions")
+        if args.debug:
+            for (c1, c2) in comparisons:
+                titles.append(f"Background log2FCs ({c1} / {c2})")
         for (c1, c2) in comparisons:
-            titles.append(f"Background log2FCs ({c1} / {c2})")
-    for (c1, c2) in comparisons:
-        titles.append(f"BINDetect volcano plot ({c1} / {c2})")
-    plt.text(0.1, 0.6, "\n".join([f"Page {i+2}) {t}" for i, t in enumerate(titles)]) + "\n\n", va="top", fontsize=PDF_FONT_SIZE, fontweight="bold")
-    apply_ascii_minus_to_figure(plt.gcf())
-    figure_pdf.savefig(bbox_inches='tight')
-    plt.close()
+            titles.append(f"BINDetect volcano plot ({c1} / {c2})")
+        plt.text(0.1, 0.6, "\n".join([f"Page {i+2}) {t}" for i, t in enumerate(titles)]) + "\n\n", va="top", fontsize=PDF_FONT_SIZE, fontweight="bold")
+        apply_ascii_minus_to_figure(plt.gcf())
+        figure_pdf.savefig(bbox_inches='tight')
+        plt.close()
 
-    plt.figure()
-    plt.axis('off')
-    plt.text(0.5, 0.8, "BINDETECT CLUSTERS", ha="center", va="center", fontsize=PDF_FONT_SIZE, fontweight="bold")
-    cluster_titles = [f"Cluster overview ({c1} / {c2})" for (c1, c2) in comparisons]
-    plt.text(0.1, 0.6, "\n".join([f"Page {i+2}) {t}" for i, t in enumerate(cluster_titles)]) + "\n\n", va="top", fontsize=PDF_FONT_SIZE, fontweight="bold")
-    apply_ascii_minus_to_figure(plt.gcf())
-    cluster_pdf.savefig(bbox_inches='tight')
-    plt.close()
+        plt.figure()
+        plt.axis('off')
+        plt.text(0.5, 0.8, "BINDETECT CLUSTERS", ha="center", va="center", fontsize=PDF_FONT_SIZE, fontweight="bold")
+        cluster_titles = [f"Cluster overview ({c1} / {c2})" for (c1, c2) in comparisons]
+        plt.text(0.1, 0.6, "\n".join([f"Page {i+2}) {t}" for i, t in enumerate(cluster_titles)]) + "\n\n", va="top", fontsize=PDF_FONT_SIZE, fontweight="bold")
+        apply_ascii_minus_to_figure(plt.gcf())
+        cluster_pdf.savefig(bbox_inches='tight')
+        plt.close()
 
     # ------------------------------ peaks ------------------------------------ #
     logger.info("Reading peaks")
@@ -880,8 +888,10 @@ def run_bindetect(args):
     # raw score distributions
     fig = plot_score_distribution([background["signal"][c] for c in args.cond_names],
                                   labels=args.cond_names, title="Raw scores per condition")
-    apply_ascii_minus_to_figure(fig)
-    figure_pdf.savefig(fig, bbox_inches='tight'); plt.close()
+    if figure_pdf is not None:
+        apply_ascii_minus_to_figure(fig)
+        figure_pdf.savefig(fig, bbox_inches='tight')
+    plt.close(fig)
 
     # normalization
     args.norm_objects = {}
@@ -905,8 +915,10 @@ def run_bindetect(args):
             background["signal"][cond] = np.mean(stacked, axis=0)
         fig = plot_score_distribution([background["signal"][c] for c in args.cond_names],
                                       labels=args.cond_names, title="Sample-quantile normalized scores per condition")
-        apply_ascii_minus_to_figure(fig)
-        figure_pdf.savefig(fig, bbox_inches='tight'); plt.close()
+        if figure_pdf is not None:
+            apply_ascii_minus_to_figure(fig)
+            figure_pdf.savefig(fig, bbox_inches='tight')
+        plt.close(fig)
     else:
         logger.comment("")
         logger.info("Normalizing scores across conditions")
@@ -923,8 +935,10 @@ def run_bindetect(args):
 
         fig = plot_score_distribution([background["signal"][c] for c in args.cond_names],
                                       labels=args.cond_names, title="Condition-quantile normalized scores per condition")
-        apply_ascii_minus_to_figure(fig)
-        figure_pdf.savefig(fig, bbox_inches='tight'); plt.close()
+        if figure_pdf is not None:
+            apply_ascii_minus_to_figure(fig)
+            figure_pdf.savefig(fig, bbox_inches='tight')
+        plt.close(fig)
 
     # ---------------------- threshold (bound/unbound) ------------------------ #
     logger.info("Estimating bound/unbound threshold")
@@ -1064,6 +1078,8 @@ def run_bindetect(args):
         if f"{cond}_n_replicates" in info_table.columns:
             info_table[f"{cond}_n_replicates"] = info_table[f"{cond}_n_replicates"].map(int)
 
+    repeated_conditions = any(count > 1 for count in args.condition_replicates.values())
+
     for (c1, c2) in comparisons:
         base = f"{c1}_{c2}"
         info_table[base + "_change"] = info_table[base + "_change"].astype(float).round(5)
@@ -1085,10 +1101,17 @@ def run_bindetect(args):
             name_key = names_series.iloc[i] if hasattr(names_series, "iloc") else names_series[i]
             info_table.at[name_key, f"{base}_highlighted"] = (chg < change_min) or (chg > change_max) or (p < pval_min)
 
+    if not repeated_conditions:
+        single_sample_uncertainty_cols = [f"{cond}_score_sd" for cond in args.cond_names]
+        single_sample_uncertainty_cols += [
+            f"{c1}_{c2}_{metric}"
+            for (c1, c2), metric in itertools.product(comparisons, ["delta_fp_se", "log2fc_se"])
+        ]
+        info_table = info_table.drop(columns=[c for c in single_sample_uncertainty_cols if c in info_table.columns])
+
     bindetect_out = os.path.join(args.outdir, args.prefix + "_results.txt")
     info_table.to_csv(bindetect_out, sep="\t", index=False, header=True, na_rep="NA")
 
-    repeated_conditions = any(count > 1 for count in args.condition_replicates.values())
     write_replicate_report = args.replicate_report == "on" or (
         args.replicate_report == "auto" and (repeated_conditions or args.replicate_map is not None)
     )
@@ -1119,8 +1142,7 @@ def run_bindetect(args):
                 n_cols = ws.dim_colmax
                 ws.autofilter(0, 0, n_rows, n_cols)
 
-    # BEGIN EDIT: emit skew/shift PDF right next to *_results.txt
-    if comparisons:
+    if getattr(args, "skew_report", False) and comparisons:
         skew_pdf = os.path.join(args.outdir, args.prefix + "_results_skewness_report.pdf")
         try:
             # Prefer a programmatic API if available
@@ -1154,7 +1176,6 @@ def run_bindetect(args):
                         "bindetect_skew_report has no generate_skew_report() or main_from_kwargs(); skipping PDF.")
         except Exception as e:
             logger.warning(f"Could not generate skew/shift report: {e}")
-    # END EDIT
 
     # ------------------------------ plots ------------------------------------ #
     if no_conditions > 1:
@@ -1165,7 +1186,6 @@ def run_bindetect(args):
         info_table[pvalue_cols] = info_table[pvalue_cols].fillna(1)
 
         for (c1, c2) in comparisons:
-            logger.info(f"- {c1} / {c2} (static plot)")
             base = f"{c1}_{c2}"
             for m in motif_list:
                 name = m.prefix
@@ -1179,11 +1199,13 @@ def run_bindetect(args):
                     m.group = f"{c2}_up" if m.change < 0 else f"{c1}_up"
                 else:
                     m.group = "n.s."
-            volcano_fig, cluster_fig = plot_bindetect(motif_list, clustering, [c1, c2], args)
-            apply_ascii_minus_to_figure(volcano_fig)
-            apply_ascii_minus_to_figure(cluster_fig)
-            figure_pdf.savefig(volcano_fig, bbox_inches='tight'); plt.close(volcano_fig)
-            cluster_pdf.savefig(cluster_fig, bbox_inches='tight'); plt.close(cluster_fig)
+            if figure_pdf is not None and cluster_pdf is not None:
+                logger.info(f"- {c1} / {c2} (static plot)")
+                volcano_fig, cluster_fig = plot_bindetect(motif_list, clustering, [c1, c2], args)
+                apply_ascii_minus_to_figure(volcano_fig)
+                apply_ascii_minus_to_figure(cluster_fig)
+                figure_pdf.savefig(volcano_fig, bbox_inches='tight'); plt.close(volcano_fig)
+                cluster_pdf.savefig(cluster_fig, bbox_inches='tight'); plt.close(cluster_fig)
 
             logger.info(f"- {c1} / {c2} (interactive plot)")
             html_out = os.path.join(args.outdir, args.prefix + "_" + base + ".html")
@@ -1238,8 +1260,10 @@ def run_bindetect(args):
 
     if args.debug:
         debug_pdf.close()
-    figure_pdf.close()
-    cluster_pdf.close()
+    if figure_pdf is not None:
+        figure_pdf.close()
+    if cluster_pdf is not None:
+        cluster_pdf.close()
     logger.end()
 
 
@@ -1278,6 +1302,8 @@ def match_motifs_cli():
     args.method = "bindetect"
     args.match_only = True
     args.replicate_report = "off"
+    args.static_plots = True
+    args.skew_report = False
     run_bindetect(args)
 
 
