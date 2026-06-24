@@ -364,7 +364,7 @@ def nuc_to_num(str sequence):
 
 #--------------------------------------------------------------------------------------------------#
 class GenomicSequence:
-	""" Used in ATACorrect for fast scoring of PWM/DWM """
+	""" Used in atac-correct for fast scoring of PWM/DWM """
 
 	def __init__(self, region):
 

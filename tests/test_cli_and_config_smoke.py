@@ -9,9 +9,9 @@ from types import SimpleNamespace
 
 from fp_tools.cli_batch import run_config_file
 from fp_tools.gui_config import expand_jobs, load_yaml_config, normalize_config
-from fp_tools.parsers import add_aggregate_arguments, add_atacorrect_arguments, add_bindetect_arguments, add_scorebigwig_arguments
-from fp_tools.tools import bindetect
-from fp_tools.tools.bindetect import _prepare_condition_metadata
+from fp_tools.parsers import add_aggregate_arguments, add_atacorrect_arguments, add_diff_footprints_arguments, add_scorebigwig_arguments
+from fp_tools.tools import diff_footprints
+from fp_tools.tools.diff_footprints import _prepare_condition_metadata
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -73,11 +73,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
             "fp-tools-score-variants",
             "pseudobulk-fragments",
             "find-signature-fp",
-            "ATACorrect",
-            "FootprintScores",
-            "ScoreBigwig",
-            "BINDetect",
-            "PlotAggregate",
+            "pseudobulk-footprints",
         ]
         for command in commands:
             exe = ROOT / ".venv" / "bin" / command
@@ -160,7 +156,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
         self.assertEqual(args.format, "html")
 
     def test_diff_footprints_accepts_sample_names_separate_from_conditions(self):
-        parser = add_bindetect_arguments(argparse.ArgumentParser(prog="diff-footprints"))
+        parser = add_diff_footprints_arguments(argparse.ArgumentParser(prog="diff-footprints"))
         args = parser.parse_args(
             [
                 "--signals",
@@ -192,7 +188,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
         self.assertEqual(prepared.sample_to_condition["K562_R2"], "K562")
 
     def test_diff_footprints_accepts_folder_inputs(self):
-        parser = add_bindetect_arguments(argparse.ArgumentParser(prog="diff-footprints"))
+        parser = add_diff_footprints_arguments(argparse.ArgumentParser(prog="diff-footprints"))
         args = parser.parse_args(
             [
                 "--sample-dirs",
@@ -211,7 +207,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
         self.assertIsNone(args.project_dir)
 
     def test_diff_footprints_disambiguates_sample_condition_name_collisions(self):
-        parser = add_bindetect_arguments(argparse.ArgumentParser(prog="diff-footprints"))
+        parser = add_diff_footprints_arguments(argparse.ArgumentParser(prog="diff-footprints"))
         args = parser.parse_args(
             [
                 "--signals",
@@ -255,16 +251,49 @@ class CliAndConfigSmokeTest(unittest.TestCase):
                 outdir=str(outdir),
                 peak_header_list=["peak_chr", "peak_start", "peak_end"],
             )
-            logger = bindetect.FpToolsLogger("test", 0)
-            bindetect._write_cached_tfbs_tmp_files(args, ["TF1_MA0001.1"], logger)
+            logger = diff_footprints.FpToolsLogger("test", 0)
+            diff_footprints._write_cached_tfbs_tmp_files(args, ["TF1_MA0001.1"], logger)
             tmp_file = outdir / "TF1_MA0001.1" / "beds" / "TF1_MA0001.1.tmp"
             self.assertEqual(
                 tmp_file.read_text(encoding="utf-8").strip(),
                 "chr1\t10\t20\tTF1\t8.0\t+\tchr1\t1\t100\t1.25000\t2.50000",
             )
 
+    def test_cached_match_dirs_load_background_without_bigwigs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            logger = diff_footprints.FpToolsLogger("test", 0)
+            for sample, scores in [("A", [1.0, 3.0]), ("B", [2.0, 4.0])]:
+                match_dir = root / sample / "match_motifs"
+                match_dir.mkdir(parents=True)
+                args = SimpleNamespace(
+                    outdir=str(match_dir),
+                    sample_names=[sample],
+                    cond_names=[sample],
+                    peak_header_list=["peak_chr", "peak_start", "peak_end"],
+                    normalization="none",
+                )
+                background = {
+                    "keys": [["chr1", "1", "100", "5"], ["chr1", "1", "100", "25"]],
+                    "sample_signal": {sample: scores},
+                }
+                diff_footprints._write_match_motifs_cache(args, background, logger)
+
+            args = SimpleNamespace(
+                cached_without_bigwigs=True,
+                cached_match_dirs=[str(root / "A" / "match_motifs"), str(root / "B" / "match_motifs")],
+                sample_names=["A", "B"],
+                cond_names=["condition"],
+                condition_samples={"condition": ["A", "B"]},
+            )
+            background = diff_footprints._collect_cached_background([], args, None, 1)
+            self.assertEqual(background["keys"], [["chr1", "1", "100", "5"], ["chr1", "1", "100", "25"]])
+            self.assertEqual(background["sample_signal"]["A"].tolist(), [1.0, 3.0])
+            self.assertEqual(background["sample_signal"]["B"].tolist(), [2.0, 4.0])
+            self.assertEqual(background["signal"]["condition"].tolist(), [1.5, 3.5])
+
     def test_match_motifs_sample_names_label_match_only_outputs(self):
-        parser = add_bindetect_arguments(argparse.ArgumentParser(prog="match-motifs"), command_name="match-motifs")
+        parser = add_diff_footprints_arguments(argparse.ArgumentParser(prog="match-motifs"), command_name="match-motifs")
         args = parser.parse_args(
             [
                 "--signals",

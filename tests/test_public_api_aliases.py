@@ -15,8 +15,8 @@ class PublicApiAliasesTest(unittest.TestCase):
         expected = {
             "atac-correct": "fp_tools.cli:main",
             "call-footprints": "fp_tools.cli_scorebigwig:main",
-            "match-motifs": "fp_tools.tools.bindetect:match_motifs_cli",
-            "diff-footprints": "fp_tools.tools.bindetect:diff_footprints_cli",
+            "match-motifs": "fp_tools.tools.match_motifs:main",
+            "diff-footprints": "fp_tools.tools.diff_footprints:diff_footprints_cli",
             "normalize-bigwig": "fp_tools.tools.normalize_bigwig:main",
             "plot-aggregate": "fp_tools.cli_plotaggregate:main",
             "plot-aggregate-batch": "fp_tools.tools.plot_aggregate_batch:main",
@@ -28,29 +28,19 @@ class PublicApiAliasesTest(unittest.TestCase):
             "pseudobulk-fragments": "fp_tools.tools.pseudobulk:main",
             "find-signature-fp": "fp_tools.tools.find_signature_fp:main",
             "pseudobulk-footprints": "fp_tools.tools.pseudobulk_footprints:main",
-            "ATACorrect": "fp_tools.cli:main",
-            "FootprintScores": "fp_tools.cli_scorebigwig:main",
-            "ScoreBigwig": "fp_tools.cli_scorebigwig:main",
-            "BINDetect": "fp_tools.tools.bindetect:run_cli",
-            "PlotAggregate": "fp_tools.cli_plotaggregate:main",
         }
 
         self.assertEqual(scripts, expected)
         self.assertEqual(poetry_scripts, expected)
 
-    def test_config_accepts_public_names_and_tobias_aliases(self):
+    def test_config_accepts_public_names(self):
         aliases = {
             "atac-correct": "atac-correct",
-            "ATACorrect": "atac-correct",
             "call-footprints": "call-footprints",
-            "FootprintScores": "call-footprints",
-            "ScoreBigwig": "call-footprints",
             "match-motifs": "match-motifs",
             "diff-footprints": "diff-footprints",
             "normalize-bigwig": "normalize-bigwig",
-            "BINDetect": "diff-footprints",
             "plot-aggregate": "plot-aggregate",
-            "PlotAggregate": "plot-aggregate",
             "motif-summary": "motif-summary",
             "fp-tools-score-variants": "fp-tools-score-variants",
             "score-variants": "fp-tools-score-variants",

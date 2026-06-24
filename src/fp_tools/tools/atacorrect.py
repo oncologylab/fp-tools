@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 """
-ATACorrect command driver for bias estimation and cutsite correction.
+atac-correct command driver for bias estimation and cutsite correction.
 
 This module keeps the main command-line execution path for:
 - reading BAM/FASTA/peak inputs
 - estimating Tn5 sequence bias
 - writing corrected and auxiliary bigWig tracks
-- generating the ATACorrect summary PDF
+- generating the atac-correct summary PDF
 """
 
 #--------------------------------------------------------------------------------------------------------#
@@ -183,7 +183,7 @@ def _corrected_output_paths_for_args(args):
 def run_atacorrect(args):
 
 	"""
-	Batch-aware ATACorrect entry point.
+	Batch-aware atac-correct entry point.
 
 	``--bams`` accepts one or more BAM files. Single-BAM runs keep the legacy
 	output layout; multi-BAM runs write one subdirectory per sample.
@@ -202,7 +202,7 @@ def run_atacorrect(args):
 	base_outdir = os.path.abspath(args.outdir) if args.outdir != None else os.path.abspath(os.getcwd())
 	sample_names = _sample_names_from_bams(bams, getattr(args, "sample_names", None))
 	peak_files = _compact_list(args.peaks)
-	preflight_logger = FpToolsLogger("ATACorrect", getattr(args, "verbosity", 3))
+	preflight_logger = FpToolsLogger("atac-correct", getattr(args, "verbosity", 3))
 	_warn_peak_sample_mismatches(bams, sample_names, peak_files, preflight_logger)
 	peaks_for_run = _merge_peak_files(args.peaks, base_outdir)
 	corrected_bigwigs = []
@@ -224,7 +224,7 @@ def run_atacorrect(args):
 		args.prefix = args.prefix if args.prefix else sample_names[0]
 	mode = getattr(args, "scale_corrected", "auto")
 	if mode != "none":
-		logger = FpToolsLogger("ATACorrect", args.verbosity)
+		logger = FpToolsLogger("atac-correct", args.verbosity)
 		logger.begin()
 		try:
 			_maybe_scale_corrected_bigwigs(args, corrected_bigwigs, logger)
@@ -239,7 +239,7 @@ def _run_atacorrect_single(args):
 
 	"""
 	Function for bias correction of input .bam files
-	Calls functions in ATACorrect_functions and several internal classes
+	Calls functions in atac-correct_functions and several internal classes
 	"""
 
 	#Test if required arguments were given:
@@ -284,7 +284,7 @@ def _run_atacorrect_single(args):
 	# Print info on run
 	#----------------------------------------------------------------------------------------------------#
 
-	logger = FpToolsLogger("ATACorrect", args.verbosity)
+	logger = FpToolsLogger("atac-correct", args.verbosity)
 	logger.begin()
 
 	parser = add_atacorrect_arguments(argparse.ArgumentParser())
@@ -361,7 +361,7 @@ def _run_atacorrect_single(args):
 
 	#Check if any contigs were left; else exit
 	if len(chrom_in_common) == 0:
-		logger.error("No common contigs left to run ATACorrect on. Please check that the input BAM and '--fasta' are matching.")
+		logger.error("No common contigs left to run atac-correct on. Please check that the input BAM and '--fasta' are matching.")
 		sys.exit()
 
 	#----------------------------------------------------------------------------------------------------#

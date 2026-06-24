@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 """
-Helper classes and routines used by the ATACorrect workflow.
+Helper classes and routines used by the atac-correct workflow.
 
-This module contains the lower-level ATACorrect logic for:
+This module contains the lower-level atac-correct logic for:
 - storing learned bias models
 - estimating expected cutsite signal from sequence bias
 - correcting observed signal
-- generating ATACorrect diagnostic plots
+- generating atac-correct diagnostic plots
 """
 
 import os

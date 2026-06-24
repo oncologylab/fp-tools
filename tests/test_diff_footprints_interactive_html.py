@@ -9,15 +9,15 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from fp_tools.parsers import add_bindetect_arguments
+from fp_tools.parsers import add_diff_footprints_arguments
 import pandas as pd
 
-from fp_tools.tools import bindetect
-from fp_tools.tools import bindetect_functions
-from fp_tools.tools.bindetect_functions import plot_interactive_bindetect
+from fp_tools.tools import diff_footprints
+from fp_tools.tools import diff_footprint_helpers
+from fp_tools.tools.diff_footprint_helpers import plot_interactive_diff_footprints
 
 
-class InteractiveBindetectHtmlTest(unittest.TestCase):
+class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
     def test_aggregate_payload_is_serialized_as_compressed_json(self):
         motif = SimpleNamespace(
             name="TF1",
@@ -50,7 +50,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "report.html"
-            plot_interactive_bindetect(
+            plot_interactive_diff_footprints(
                 [motif],
                 ["Bcell", "Tcell"],
                 str(out),
@@ -260,7 +260,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         motif = SimpleNamespace(name="TF1", group="Bcell_up", change=1.2, pvalue=0.001, base="ZmFrZS1wbmc=")
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "report.html"
-            plot_interactive_bindetect([motif], ["Bcell", "Tcell"], str(out))
+            plot_interactive_diff_footprints([motif], ["Bcell", "Tcell"], str(out))
             html = out.read_text()
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
         self.assertIsNotNone(match)
@@ -272,7 +272,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         motif = SimpleNamespace(name="TF1", group="Bcell_up", change=0.25, pvalue=0.001, base="")
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "report.html"
-            plot_interactive_bindetect(
+            plot_interactive_diff_footprints(
                 [motif],
                 ["Bcell", "Tcell"],
                 str(out),
@@ -325,9 +325,9 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
             row = task[0]
             return {"prefix": row["output_prefix"], "name": row["name"], "conditions": []}
 
-        with patch.object(bindetect_functions, "ProcessPoolExecutor", FakeExecutor):
-            with patch.object(bindetect_functions, "_aggregate_payload_for_row", side_effect=fake_row_worker):
-                payload = bindetect_functions.build_bindetect_aggregate_payload([], info_table, ["Bcell", "Tcell"], args)
+        with patch.object(diff_footprint_helpers, "ProcessPoolExecutor", FakeExecutor):
+            with patch.object(diff_footprint_helpers, "_aggregate_payload_for_row", side_effect=fake_row_worker):
+                payload = diff_footprint_helpers.build_diff_footprint_aggregate_payload([], info_table, ["Bcell", "Tcell"], args)
         self.assertTrue(FakeExecutor.used)
         self.assertEqual([motif["prefix"] for motif in payload["motifs"]], ["TF1", "TF2"])
 
@@ -356,8 +356,8 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
             row = task[0]
             return {"prefix": row["output_prefix"], "name": row["name"], "conditions": []}
 
-        with patch.object(bindetect_functions, "_aggregate_payload_for_row", side_effect=fake_row_worker):
-            payload = bindetect_functions.build_bindetect_aggregate_payload([], info_table, ["Bcell", "Tcell"], args)
+        with patch.object(diff_footprint_helpers, "_aggregate_payload_for_row", side_effect=fake_row_worker):
+            payload = diff_footprint_helpers.build_diff_footprint_aggregate_payload([], info_table, ["Bcell", "Tcell"], args)
         self.assertEqual([motif["prefix"] for motif in payload["motifs"]], ["TF1", "TF2", "TF3"])
 
 
@@ -368,25 +368,25 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         cond_groups = {"Bcell": [0], "Tcell": [1]}
         norm_spec = {
             "sample": {
-                "sample_1": bindetect_functions.AggregateAffineNorm(0.0, 2.0, 1.0),
-                "sample_2": bindetect_functions.AggregateAffineNorm(20.0, 0.5, 1.0),
+                "sample_1": diff_footprint_helpers.AggregateAffineNorm(0.0, 2.0, 1.0),
+                "sample_2": diff_footprint_helpers.AggregateAffineNorm(20.0, 0.5, 1.0),
             }
         }
-        normalized = bindetect_functions._normalize_aggregate_profiles(
+        normalized = diff_footprint_helpers._normalize_aggregate_profiles(
             raw_profiles, names, ("Bcell", "Tcell"), cond_groups, "sample-quantile", norm_spec
         )
         self.assertEqual(set(normalized), set(names))
         self.assertEqual(normalized["sample_1"].tolist(), [-3.0, 1.0, 5.0])
         self.assertEqual(normalized["sample_2"].tolist(), [-4.0, 1.0, 6.0])
 
-        unchanged = bindetect_functions._normalize_aggregate_profiles(
+        unchanged = diff_footprint_helpers._normalize_aggregate_profiles(
             raw_profiles, names, ("Bcell", "Tcell"), cond_groups, "sample-quantile"
         )
         self.assertEqual(unchanged["sample_1"].tolist(), raw_profiles[0])
 
     def test_aggregate_affine_normalizers_preserve_shape_and_align_scale(self):
         arrays = [pd.Series([-2.0, 0.0, 2.0]).to_numpy(), pd.Series([10.0, 20.0, 30.0]).to_numpy()]
-        norms = bindetect_functions._robust_affine_normalizers(arrays, ["a", "b"])
+        norms = diff_footprint_helpers._robust_affine_normalizers(arrays, ["a", "b"])
         self.assertEqual(set(norms), {"a", "b"})
         a = norms["a"].normalize(arrays[0])
         b = norms["b"].normalize(arrays[1])
@@ -398,7 +398,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
 
     def test_aggregate_size_factor_normalizers_divide_by_sample_factor(self):
         arrays = [pd.Series([1.0, 2.0, 3.0]).to_numpy(), pd.Series([10.0, 20.0, 30.0]).to_numpy()]
-        norms = bindetect_functions._size_factor_normalizers(arrays, ["low", "high"])
+        norms = diff_footprint_helpers._size_factor_normalizers(arrays, ["low", "high"])
         low = norms["low"].normalize(arrays[0])
         high = norms["high"].normalize(arrays[1])
         self.assertEqual(set(norms), {"low", "high"})
@@ -408,17 +408,17 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
         self.assertGreater(norms["high"].size_factor, norms["low"].size_factor)
 
     def test_bound_site_set_uses_condition_specific_bound_beds(self):
-        paths = bindetect_functions._aggregate_bed_paths("out", "TF1", ("Bcell", "Tcell"), "bound")
+        paths = diff_footprint_helpers._aggregate_bed_paths("out", "TF1", ("Bcell", "Tcell"), "bound")
         self.assertEqual(paths["Bcell"], "out/TF1/beds/TF1_Bcell_bound.bed")
         self.assertEqual(paths["Tcell"], "out/TF1/beds/TF1_Tcell_bound.bed")
-        all_paths = bindetect_functions._aggregate_bed_paths("out", "TF1", ("Bcell", "Tcell"), "all")
+        all_paths = diff_footprint_helpers._aggregate_bed_paths("out", "TF1", ("Bcell", "Tcell"), "all")
         self.assertEqual(set(all_paths.values()), {"out/TF1/beds/TF1_all.bed"})
 
     def test_aggregate_center_limit_is_deterministic(self):
         centers = [("chr1", idx) for idx in range(10)]
-        limited = bindetect_functions._limit_aggregate_centers(centers, 4)
+        limited = diff_footprint_helpers._limit_aggregate_centers(centers, 4)
         self.assertEqual(limited, [("chr1", 0), ("chr1", 3), ("chr1", 6), ("chr1", 9)])
-        self.assertEqual(bindetect_functions._limit_aggregate_centers(centers, None), centers)
+        self.assertEqual(diff_footprint_helpers._limit_aggregate_centers(centers, None), centers)
 
     def test_aggregate_payload_for_row_keeps_replicate_profiles(self):
         row = {"output_prefix": "TF1_MA0001.1", "name": "TF1", "motif_id": "MA0001.1", "Bcell_Tcell_change": 1.0, "Bcell_Tcell_pvalue_numeric": 0.001}
@@ -430,9 +430,9 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
             "T1.bw": [10.0, 20.0],
             "T2.bw": [30.0, 40.0],
         }
-        with patch.object(bindetect_functions, "_read_bed_centers", return_value=[("chr1", 10)]):
-            with patch.object(bindetect_functions, "_mean_profile", side_effect=lambda path, centers, flank, norm=None: profiles[path]):
-                payload = bindetect_functions._aggregate_payload_for_row(task)
+        with patch.object(diff_footprint_helpers, "_read_bed_centers", return_value=[("chr1", 10)]):
+            with patch.object(diff_footprint_helpers, "_mean_profile", side_effect=lambda path, centers, flank, norm=None: profiles[path]):
+                payload = diff_footprint_helpers._aggregate_payload_for_row(task)
         self.assertEqual(payload["motif_id"], "MA0001.1")
         self.assertEqual(payload["conditions"][0]["profile"], [2.0, 4.0])
         self.assertEqual(payload["conditions"][1]["profile"], [20.0, 30.0])
@@ -466,7 +466,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
                 "Bcell_n_replicates\tTcell_n_replicates\tBcell_Tcell_change\tBcell_Tcell_pvalue\tBcell_Tcell_highlighted\n"
                 "TF1_MA0001.1\tTF1\tMA0001.1\tTF1\t1\t1.0\t0.5\t1\t1\t1.25\t1.0E-04\tTrue\n"
             )
-            parser = add_bindetect_arguments(argparse.ArgumentParser())
+            parser = add_diff_footprints_arguments(argparse.ArgumentParser())
             args = parser.parse_args([
                 "--signals", "B1.bw", "T1.bw",
                 "--cond-names", "Bcell", "Tcell",
@@ -477,9 +477,9 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
                 "--plot-aggregate", "top",
                 "--replicate-report", "off",
             ])
-            with patch.object(bindetect, "scan_and_score", side_effect=AssertionError("scan should not run")):
-                with patch.object(bindetect, "build_bindetect_aggregate_payload", return_value=aggregate_data):
-                    bindetect.run_bindetect(args)
+            with patch.object(diff_footprints, "scan_and_score", side_effect=AssertionError("scan should not run")):
+                with patch.object(diff_footprints, "build_diff_footprint_aggregate_payload", return_value=aggregate_data):
+                    diff_footprints.run_diff_footprints(args)
             html = (outdir / "diff_footprints_Bcell_Tcell.html").read_text()
         self.assertIn("const reportPayloadB64=", html)
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
@@ -488,7 +488,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
 
     def test_reuse_existing_results_requires_results_table(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            parser = add_bindetect_arguments(argparse.ArgumentParser())
+            parser = add_diff_footprints_arguments(argparse.ArgumentParser())
             args = parser.parse_args([
                 "--signals", "B1.bw", "T1.bw",
                 "--cond-names", "Bcell", "Tcell",
@@ -497,7 +497,7 @@ class InteractiveBindetectHtmlTest(unittest.TestCase):
                 "--reuse-existing-results",
             ])
             with self.assertRaises(FileNotFoundError):
-                bindetect.run_bindetect(args)
+                diff_footprints.run_diff_footprints(args)
 
 
 if __name__ == "__main__":

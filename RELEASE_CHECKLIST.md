@@ -22,7 +22,7 @@ Run the full local test suite:
 
 Required coverage before release:
 
-- public console script aliases and legacy aliases
+- public console scripts
 - YAML config expansion and dry-run behavior
 - command `--help` smoke checks
 - core-count handling
@@ -45,16 +45,6 @@ Primary current API checks:
 .venv/bin/motif-summary --help
 .venv/bin/pseudobulk-fragments --help
 .venv/bin/run-workflow --config examples/gui_configs/plotaggregate_single.yml --dry-run
-```
-
-Compatibility alias checks:
-
-```bash
-.venv/bin/ATACorrect --help
-.venv/bin/FootprintScores --help
-.venv/bin/ScoreBigwig --help
-.venv/bin/BINDetect --help
-.venv/bin/PlotAggregate --help
 ```
 
 ## 4. Build Artifacts

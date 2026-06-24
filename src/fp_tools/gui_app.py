@@ -82,7 +82,7 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
     },
     "plot-aggregate-batch": {
         "sample_id": "plot_aggregate_batch_run",
-        "input_html": "examples/gui_demo_outputs/bindetect_comparison_2v2/bindetect_Bcell_Tcell.html",
+        "input_html": "docs/demos/reports/diff_footprints_K562_HepG2.html",
         "output": "examples/gui_demo_outputs/plotaggregate_batch_browser.html",
         "default_layout": "2x2",
         "top_n": 30,
@@ -185,7 +185,7 @@ def main() -> None:
     elif page == "call-footprints":
         _render_footprintscores_page(run_dir)
     elif page == "diff-footprints":
-        _render_bindetect_page(run_dir)
+        _render_diff_footprints_page(run_dir)
     elif page == "plot-aggregate":
         _render_plotaggregate_page(run_dir)
     elif page == "Config":
@@ -1073,7 +1073,7 @@ def _render_footprintscores_page(run_dir: Path) -> None:
         _render_run_controls(run_dir, label="footprintscores")
 
 
-def _render_bindetect_page(run_dir: Path) -> None:
+def _render_diff_footprints_page(run_dir: Path) -> None:
     _render_page_heading("diff-footprints", "Run motif-aware differential footprint detection across conditions or comparisons.")
     form_col, run_col = st.columns([0.64, 0.36], gap="large")
     with form_col:
@@ -1082,7 +1082,7 @@ def _render_bindetect_page(run_dir: Path) -> None:
             "Mode",
             ["Single condition", "Batch single-condition list", "Batch comparison list"],
             horizontal=True,
-            key="bindetect_mode",
+            key="diff_footprints_mode",
         )
         single = _current_single_params("diff-footprints")
         sample_rows = _current_sample_rows(
@@ -1122,7 +1122,7 @@ def _render_bindetect_page(run_dir: Path) -> None:
             ],
         )
         if mode == "Single condition":
-            with st.form("bindetect_single_form"):
+            with st.form("diff_footprints_single_form"):
                 left, right = st.columns(2)
                 with left:
                     motifs = st.text_input("Motifs", value=str(single.get("motifs", "")))
@@ -1132,7 +1132,7 @@ def _render_bindetect_page(run_dir: Path) -> None:
                 with right:
                     peak_header = st.text_input("Peak header", value=str(single.get("peak_header", "")))
                     outdir = st.text_input("Output directory", value=str(single.get("outdir", "")))
-                    cores = st.number_input("Cores", min_value=1, value=int(single.get("cores", 1)), step=1, key="bindetect_single_cores")
+                    cores = st.number_input("Cores", min_value=1, value=int(single.get("cores", 1)), step=1, key="diff_footprints_single_cores")
                     skip_excel = st.checkbox("Skip Excel", value=bool(single.get("skip_excel", False)))
                 signals = st.text_area("Signals", value=_join_multi(single.get("signals", [])), height=94)
                 cond_names = st.text_area("Condition names", value=_join_multi(single.get("cond_names", ["Bcell"])), height=76)
@@ -1153,12 +1153,12 @@ def _render_bindetect_page(run_dir: Path) -> None:
                             "cores": int(cores),
                             "skip_excel": bool(skip_excel),
                         },
-                        job_id="bindetect_single",
+                        job_id="diff_footprints_single",
                     )
                 )
         elif mode == "Batch single-condition list":
-            rows = _data_editor("diff-footprints single-condition sample list", sample_rows, key="bindetect_sample_editor")
-            if st.button("Update page config from single-condition list", key="bindetect_sample_set"):
+            rows = _data_editor("diff-footprints single-condition sample list", sample_rows, key="diff_footprints_sample_editor")
+            if st.button("Update page config from single-condition list", key="diff_footprints_sample_set"):
                 _set_config(
                     {
                         "version": 1,
@@ -1178,8 +1178,8 @@ def _render_bindetect_page(run_dir: Path) -> None:
                     }
                 )
         else:
-            rows = _data_editor("diff-footprints comparison list", comparison_rows, key="bindetect_comparison_editor")
-            if st.button("Update page config from comparison list", key="bindetect_comparison_set"):
+            rows = _data_editor("diff-footprints comparison list", comparison_rows, key="diff_footprints_comparison_editor")
+            if st.button("Update page config from comparison list", key="diff_footprints_comparison_set"):
                 _set_config(
                     {
                         "version": 1,
@@ -1199,7 +1199,7 @@ def _render_bindetect_page(run_dir: Path) -> None:
                     }
                 )
     with run_col:
-        _render_run_controls(run_dir, label="bindetect")
+        _render_run_controls(run_dir, label="diff-footprints")
 
 
 def _render_plotaggregate_page(run_dir: Path) -> None:
@@ -1486,13 +1486,13 @@ def _discover_outputs(child_run_dir: Path) -> list[Path]:
             outputs.append(outdir_path)
             if outdir_path.exists():
                 preferred = [
-                    "bindetect_results.txt",
-                    "bindetect_figures.pdf",
-                    "bindetect_clusters.pdf",
-                    "bindetect_results_skewness_report.pdf",
+                    "diff_footprints_results.txt",
+                    "diff_footprints_figures.pdf",
+                    "diff_footprints_clusters.pdf",
+                    "diff_footprints_results_skewness_report.pdf",
                 ]
                 outputs.extend(outdir_path / name for name in preferred if (outdir_path / name).exists())
-                outputs.extend(sorted(path for path in outdir_path.glob("bindetect_*.html")))
+                outputs.extend(sorted(path for path in outdir_path.glob("diff_footprints_*.html")))
     elif tool == "normalize-bigwig":
         add_path(item.get("outdir", ""))
     elif tool == "plot-aggregate-batch":
@@ -1622,7 +1622,7 @@ def _example_files_for_tool(tool: str) -> list[Path]:
     prefixes = {
         "atac-correct": ["atacorrect", "atac_correct"],
         "call-footprints": ["call_footprints", "footprintscores"],
-        "diff-footprints": ["diff_footprints", "bindetect"],
+        "diff-footprints": ["diff_footprints"],
         "plot-aggregate": ["plotaggregate", "plot_aggregate"],
         "plot-aggregate-batch": ["plot_aggregate_batch", "plotaggregate_batch"],
     }.get(tool, [tool.replace("-", "_")])

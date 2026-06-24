@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Skewness and shift report generator for BINDetect summary tables.
+Skewness and shift report generator for diff-footprints summary tables.
 
-This is an fp-tools-specific reporting module. It scans BINDetect result tables
+This is an fp-tools-specific reporting module. It scans diff-footprints result tables
 for comparison columns, computes direction/shift/skew statistics for each
 comparison, and writes a compact multi-page PDF plus optional JSON summary.
 """
@@ -302,7 +302,7 @@ def analyze_one(x: np.ndarray,
         wilcoxon_p=wilcoxon_p, HL_estimate=HL,
         skewness_value=skew_val, skewness_p=p_skew
     )
-# ---------- Core runner (re-usable by CLI and BINDetect) ----------
+# ---------- Core runner (re-usable by CLI and diff-footprints) ----------
 
 def _default_output_paths(results_tsv: str | Path,
                           out_json: str | None,
@@ -440,8 +440,8 @@ def run_skew_report(results_tsv: str | Path,
 # ---------- CLI ----------
 
 def main():
-    ap = argparse.ArgumentParser(description="Skew/shift report for BINDetect results")
-    ap.add_argument("results_tsv", help="Path to BINDetect *_results.txt (tab-delimited)")
+    ap = argparse.ArgumentParser(description="Skew/shift report for diff-footprints results")
+    ap.add_argument("results_tsv", help="Path to diff-footprints *_results.txt (tab-delimited)")
     ap.add_argument("--out-json", default=None, help="Write JSON summary (all comparisons)")
     ap.add_argument("--out-pdf", default=None, help="Write multi-page PDF per comparison")
     ap.add_argument("--skew-method", choices=["perm", "z"], default="perm",
@@ -466,7 +466,7 @@ def main():
     )
 
     # Console summary (same as before)
-    print("\n=== BINDetect Skew/Shift Report ===")
+    print("\n=== diff-footprints Skew/Shift Report ===")
     print(f"Input file : {args.results_tsv}")
     for key, res in summaries.items():
         print(f"\n[{key}]")
@@ -484,7 +484,7 @@ def main():
     print(f"\nWrote JSON → {out_json}")
     print(f"Wrote PDF  → {out_pdf}\n")
 
-# ---------- Programmatic entry points for BINDetect ----------
+# ---------- Programmatic entry points for diff-footprints ----------
 
 def generate_skew_report(results_tsv: str | Path,
                          out_json: str | None = None,
@@ -495,7 +495,7 @@ def generate_skew_report(results_tsv: str | Path,
                          seed: int = 1,
                          **kwargs) -> dict:
     """
-    Entry point used by BINDetect’s driver.
+    Entry point used by diff-footprints’s driver.
 
     - results_tsv: path to *_results.txt
     - out_json / out_pdf: optional; if None, default names are created in the
@@ -518,7 +518,7 @@ def generate_skew_report(results_tsv: str | Path,
 def main_from_kwargs(**kwargs) -> dict:
     """
     Alternate programmatic entry: accepts keyword args similar to the CLI.
-    This is here because some BINDetect versions look for main_from_kwargs().
+    This is here because some diff-footprints versions look for main_from_kwargs().
     """
     results_tsv = kwargs.pop("results_tsv")
     out_json = kwargs.pop("out_json", None)

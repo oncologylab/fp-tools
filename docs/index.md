@@ -110,7 +110,7 @@ diff-footprints \
   --outdir results/diff_footprints/A_vs_B
 ```
 
-`--sample-dirs` reuses cached motif-site tables from prior `match-motifs` runs, avoiding another motif scan while producing the same differential-footprint tables as direct `--signals` input. Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html).
+`--sample-dirs` reuses cached motif-site tables and background scores from prior `match-motifs` runs, avoiding another motif scan and footprint bigWig reread while producing the same differential-footprint tables as direct `--signals` input. Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html).
 
 ### 5. Plot Aggregate
 

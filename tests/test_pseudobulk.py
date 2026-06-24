@@ -597,7 +597,7 @@ class PseudobulkTest(unittest.TestCase):
             self.assertIn("--all-motif-results", commands)
             self.assertIn("--summary-output-prefix single_cell_footprinting", commands)
 
-    def test_pseudobulk_footprints_bam_dry_run_uses_default_shift_and_bindetect(self):
+    def test_pseudobulk_footprints_bam_dry_run_uses_default_shift_and_diff_footprints(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             bam_path = tmp / "all_cells.bam"
@@ -660,7 +660,7 @@ class PseudobulkTest(unittest.TestCase):
             self.assertIn("diff-footprints", commands)
             self.assertIn("--motif-db hocomoco14_core", commands)
             self.assertIn("--aggregate-signals", commands)
-            self.assertIn("bindetect_results", manifest)
+            self.assertIn("diff_results", manifest)
             self.assertIn("tagged_bam", manifest)
 
     def test_write_downstream_commands_for_kept_groups(self):

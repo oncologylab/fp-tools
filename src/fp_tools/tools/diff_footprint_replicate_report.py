@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Replicate-aware uncertainty summaries for BINDetect result tables."""
+"""Replicate-aware uncertainty summaries for diff-footprints result tables."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from scipy.stats import norm
 def replicate_uncertainty(change: float, pvalue: float, n_min: int) -> dict[str, float]:
     """Derive a p-value-based standard error and replicate-shrunk effect estimate.
 
-    BINDetect result tables report an aggregate change and a two-sided p-value but
+    diff-footprints result tables report an aggregate change and a two-sided p-value but
     not per-replicate scores, so the standard error is recovered from the p-value
     (``SE = |change| / z``) and the effect is shrunk toward zero by a weight that
     grows with replicate support (``n / (n + 1)``), giving a conservative
@@ -78,7 +78,7 @@ def read_replicate_map(path: str | Path | None) -> dict[str, int]:
 
 
 def infer_conditions(frame: pd.DataFrame) -> list[str]:
-    """Infer BINDetect condition names from `<condition>_mean_score` columns."""
+    """Infer diff-footprints condition names from `<condition>_mean_score` columns."""
 
     suffix = "_mean_score"
     return [column[:-len(suffix)] for column in frame.columns if column.endswith(suffix)]
@@ -132,13 +132,13 @@ def build_replicate_report(
     replicate_map: str | Path | None = None,
     alpha: float = 0.05,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Create long-form replicate-aware comparison diagnostics from BINDetect results."""
+    """Create long-form replicate-aware comparison diagnostics from diff-footprints results."""
 
     frame = pd.read_csv(results, sep="\t")
     conditions = infer_conditions(frame)
     comparisons = infer_comparisons(frame, conditions)
     if not comparisons:
-        raise ValueError("No BINDetect comparison columns of the form <cond1>_<cond2>_change/pvalue were found.")
+        raise ValueError("No diff-footprints comparison columns of the form <cond1>_<cond2>_change/pvalue were found.")
     replicate_counts = read_replicate_map(replicate_map)
 
     rows = []
@@ -227,7 +227,7 @@ def plot_replicate_report(report: pd.DataFrame, summary: pd.DataFrame, output: s
     for support, group in report.groupby("replicate_support"):
         ax.scatter(group["change"], group["neg_log10_pvalue"], s=18, alpha=0.8, label=support, color=colors.get(support))
     ax.axvline(0, color="0.5", linewidth=0.8, linestyle="--")
-    ax.set_xlabel("BINDetect change")
+    ax.set_xlabel("diff-footprints change")
     ax.set_ylabel("-log10(p-value)")
     ax.set_title("Differential binding evidence")
     ax.grid(alpha=0.25)
@@ -249,7 +249,7 @@ def plot_replicate_report(report: pd.DataFrame, summary: pd.DataFrame, output: s
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--results", required=True, help="BINDetect *_results.txt table.")
+    parser.add_argument("--results", required=True, help="diff-footprints *_results.txt table.")
     parser.add_argument("--out", required=True, help="Output long-form replicate uncertainty TSV.")
     parser.add_argument("--summary-out", help="Optional comparison-level summary TSV.")
     parser.add_argument("--figure-out", help="Optional PDF/SVG/PNG report figure.")

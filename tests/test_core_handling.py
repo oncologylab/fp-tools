@@ -2,7 +2,7 @@ import argparse
 import unittest
 from unittest import mock
 
-from fp_tools.parsers import add_atacorrect_arguments, add_bindetect_arguments, add_scorebigwig_arguments
+from fp_tools.parsers import add_atacorrect_arguments, add_diff_footprints_arguments, add_scorebigwig_arguments
 from fp_tools.utils import utilities
 
 
@@ -32,7 +32,7 @@ class CoreHandlingTest(unittest.TestCase):
         logger.warning.assert_called_once()
 
     def test_public_parser_core_defaults_are_auto(self):
-        for builder in (add_atacorrect_arguments, add_scorebigwig_arguments, add_bindetect_arguments):
+        for builder in (add_atacorrect_arguments, add_scorebigwig_arguments, add_diff_footprints_arguments):
             parser = builder(argparse.ArgumentParser())
             with self.subTest(builder=builder.__name__):
                 args = parser.parse_args([])

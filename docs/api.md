@@ -313,6 +313,7 @@ Scan motifs for one or more footprint tracks and write per-sample bound/unbound 
 
 - Summary tables with motif binding statistics for each sample.
 - Per-motif folders containing `<motif>_all.bed`, `<motif>_<sample>_bound.bed`, and `<motif>_<sample>_unbound.bed`.
+- A compact background-score cache used by `diff-footprints --sample-dirs`.
 
 **Example commands**
 
@@ -457,7 +458,7 @@ Compare motif-associated footprint scores across conditions or biological replic
 
 **Input parameters**
 
-- Two or more footprint score bigWigs passed with `--signals`, or standardized sample folders passed with `--sample-dirs` / `--project-dir`.
+- Two or more footprint score bigWigs passed with `--signals`, or standardized sample folders from prior `match-motifs` runs passed with `--sample-dirs` / `--project-dir`.
 - `--cond-names` to define conditions; repeat names for replicates.
 - Optional `--sample-names` to override file-derived sample labels without changing conditions.
 - Genome FASTA, peak BED, and motif database or motif files.
@@ -484,7 +485,7 @@ diff-footprints \
   --outdir results/diff_footprints/A_vs_B
 ```
 
-`--sample-dirs` expects each folder to contain a footprint bigWig and a `match_motifs/` or `motif_matches/` cache. This skips motif rescanning and motif-site rescoring while recomputing the background distribution for the requested comparison.
+`--sample-dirs` expects each folder to contain a `match_motifs/` or `motif_matches/` output from the current `match-motifs` command. The cached motif-site tables and background scores are reused, so folder mode skips motif rescanning, motif-site rescoring, and footprint bigWig rereads for the differential table.
 
 **Options**
 
@@ -560,8 +561,8 @@ Optional arguments:
   --cond-names [<name> ...]        Condition labels for --signals; repeat names to define
                                    biological replicates (default: prefix of each
                                    --signals file)
-  --sample-dirs [<directory> ...]  Sample output folders containing a footprint bigWig and
-                                   match_motifs/ cache to reuse for differential analysis
+  --sample-dirs [<directory> ...]  Sample output folders containing match_motifs/ outputs
+                                   to reuse for differential analysis
   --project-dir <directory>        Parent folder containing sample output folders for
                                    folder-based differential analysis
   --peak-header <file>             File containing the header of --peaks separated by

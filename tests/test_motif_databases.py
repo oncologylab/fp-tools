@@ -4,7 +4,7 @@ import subprocess
 import unittest
 
 from fp_tools.gui_config import expand_jobs, normalize_config
-from fp_tools.tools.bindetect import _resolve_motif_arguments
+from fp_tools.tools.diff_footprints import _resolve_motif_arguments
 from fp_tools.utils.motif_databases import (
     DEFAULT_MOTIF_DB,
     MOTIF_DATABASES,
@@ -57,7 +57,7 @@ class MotifDatabaseTest(unittest.TestCase):
                     self.assertEqual(len(motifs), expected_counts[key])
                 self.assertIn(db.license.split(";")[0], db.license)
 
-    def test_bindetect_resolver_sets_default_motifs_on_args(self):
+    def test_diff_footprints_resolver_sets_default_motifs_on_args(self):
         args = argparse.Namespace(motifs=None, motif_db=None)
         paths = _resolve_motif_arguments(args)
         self.assertEqual(paths, args.motifs)

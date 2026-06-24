@@ -12,9 +12,7 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
-# Backward-compatibility aliases for the classical TOBIAS-style command names.
-# They are intentionally not part of the primary ``--help`` verification block.
-LEGACY_ALIASES = {
+REMOVED_ALIASES = {
     "ATACorrect",
     "FootprintScores",
     "ScoreBigwig",
@@ -55,14 +53,13 @@ class DocsEntryPointContractTest(unittest.TestCase):
         )
 
     def test_primary_entry_points_are_documented_in_readme_and_manual(self):
-        primary = set(self.project_scripts) - LEGACY_ALIASES
-        for command in primary:
+        for command in self.project_scripts:
             self.assertIn(command, self.readme, f"{command} is missing from README.md")
             self.assertIn(command, self.site_docs, f"{command} is missing from MkDocs pages")
 
     def test_help_block_exactly_covers_non_alias_commands(self):
         documented = _verify_help_commands(self.readme)
-        expected = set(self.project_scripts) - LEGACY_ALIASES
+        expected = set(self.project_scripts)
         # Every primary command must appear in the README --help verification block ...
         self.assertEqual(
             expected - documented,
@@ -76,11 +73,11 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "README `--help` block references commands that are not entry points.",
         )
 
-    def test_tobias_compatible_aliases_are_registered_but_not_primary_help_commands(self):
-        for alias in LEGACY_ALIASES:
-            self.assertIn(alias, self.project_scripts)
+    def test_tobias_compatible_aliases_are_removed(self):
+        for alias in REMOVED_ALIASES:
+            self.assertNotIn(alias, self.project_scripts)
         documented = _verify_help_commands(self.readme)
-        self.assertFalse(documented & LEGACY_ALIASES)
+        self.assertFalse(documented & REMOVED_ALIASES)
 
     def test_gui_extra_is_declared_and_documented(self):
         extras = self.data["project"].get("optional-dependencies", {})
@@ -97,8 +94,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertIn('fp-tools-bio[gui]', self.readme)
 
     def test_api_reference_is_command_manual(self):
-        primary = set(self.project_scripts) - LEGACY_ALIASES
-        for command in primary:
+        for command in self.project_scripts:
             self.assertIn(f"### `{command}`", self.api_reference)
             self.assertIn(f"usage: {command}", self.api_reference)
         self.assertNotIn("::: fp_tools", self.api_reference)
@@ -116,6 +112,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
         for stale in [
             "BINDetect",
             "BINDetect-style",
+            "Compatibility Aliases",
             "Compatibility Aliases",
             "Open static report",
             "GUI Preview",

@@ -19,19 +19,11 @@ CONFIG_VERSION = 1
 
 TOOL_ALIASES = {
     "atac-correct": "atac-correct",
-    "atacorrect": "atac-correct",
     "call-footprints": "call-footprints",
-    "score-footprints": "call-footprints",
-    "footprintscores": "call-footprints",
-    "scorebigwig": "call-footprints",
-    "score-bigwig": "call-footprints",
     "match-motifs": "match-motifs",
-    "detect-tf-binding": "diff-footprints",
     "diff-footprints": "diff-footprints",
-    "bindetect": "diff-footprints",
     "normalize-bigwig": "normalize-bigwig",
     "plot-aggregate": "plot-aggregate",
-    "plotaggregate": "plot-aggregate",
     "plot-aggregate-batch": "plot-aggregate-batch",
     "run-workflow": "run-workflow",
     "motif-discovery": "motif-discovery",
@@ -73,7 +65,7 @@ REQUIRED_FIELDS = {
     "atac-correct": ("bams", "genome", "peaks"),
     "call-footprints": ("signal", "regions", "output"),
     "match-motifs": ("signals", "genome", "peaks"),
-    "diff-footprints": ("signals", "genome", "peaks"),
+    "diff-footprints": ("genome", "peaks"),
     "normalize-bigwig": ("bigwigs", "background", "outdir"),
     "plot-aggregate": ("TFBS", "signals", "output"),
     "plot-aggregate-batch": ("manifest", "output"),
@@ -125,7 +117,6 @@ FLAG_NAME_MAP = {
     "marker_groups": "--marker-groups",
     "summary_output_prefix": "--summary-output-prefix",
     "all_motif_diff_dir": "--all-motif-diff-dir",
-    "all_motif_bindetect_dir": "--all-motif-bindetect-dir",
     "all_motif_results": "--all-motif-results",
     "all_motif_score_table": "--all-motif-score-table",
     "marker_score_table": "--marker-score-table",
@@ -343,6 +334,16 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
             if tool == "motif-discovery":
                 if not str(item.get("fasta") or "").strip() and not str(item.get("candidates") or "").strip():
                     errors.append(f"{job_name}: provide either 'fasta' or 'candidates'")
+            if tool == "diff-footprints":
+                signals = item.get("signals") or []
+                sample_dirs = item.get("sample_dirs") or item.get("sample-dirs") or []
+                project_dir = item.get("project_dir") or item.get("project-dir")
+                if isinstance(signals, str):
+                    signals = [signals]
+                if isinstance(sample_dirs, str):
+                    sample_dirs = [sample_dirs]
+                if not [value for value in signals if str(value).strip()] and not [value for value in sample_dirs if str(value).strip()] and not str(project_dir or "").strip():
+                    errors.append(f"{job_name}: provide either 'signals', 'sample_dirs', or 'project_dir'")
             if tool == "pseudobulk-footprints":
                 if not str(item.get("fragments") or "").strip() and not str(item.get("bam") or "").strip():
                     errors.append(f"{job_name}: provide either 'fragments' or 'bam'")

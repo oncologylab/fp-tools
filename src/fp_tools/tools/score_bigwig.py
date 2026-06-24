@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-FootprintScores command driver for scoring cutsite bigWig inputs.
+call-footprints command driver for scoring cutsite bigWig inputs.
 
 This module is responsible for:
 - reading corrected cutsite bigWigs
@@ -313,7 +313,7 @@ def _run_scorebigwig_single(args):
     # ------------------------------------------------------------------------- #
     # Logger
     # ------------------------------------------------------------------------- #
-    logger = FpToolsLogger("FootprintScores", args.verbosity)
+    logger = FpToolsLogger("call-footprints", args.verbosity)
     logger.begin()
     parser = add_scorebigwig_arguments(argparse.ArgumentParser())
     logger.arguments_overview(parser, args)

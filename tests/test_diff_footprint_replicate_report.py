@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from fp_tools.tools.bindetect_replicate_report import (
+from fp_tools.tools.diff_footprint_replicate_report import (
     build_replicate_report,
     infer_comparisons,
     infer_conditions,

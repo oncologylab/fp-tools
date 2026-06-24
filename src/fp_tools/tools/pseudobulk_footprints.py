@@ -127,7 +127,7 @@ def _add_single_cell_signature_command(
     *,
     plot_dir: Path,
     diff_dir: Path,
-    bindetect_results: Path | None,
+    diff_results: Path | None,
     log_dir: Path,
     motif_report_available: bool,
     exit_code: int,
@@ -166,13 +166,13 @@ def _add_single_cell_signature_command(
     )
     if args.single_cell_signature_all_motif_score_table:
         signature_command.extend(["--all-motif-score-table", str(args.single_cell_signature_all_motif_score_table)])
-    elif motif_report_available and bindetect_results is not None:
+    elif motif_report_available and diff_results is not None:
         signature_command.extend(
             [
                 "--all-motif-diff-dir",
                 str(diff_dir),
                 "--all-motif-results",
-                str(bindetect_results),
+                str(diff_results),
             ]
         )
     if args.single_cell_signature_marker_score_table:
@@ -283,8 +283,8 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
                 "atacorrect_stderr": "",
                 "call_footprints_stdout": "",
                 "call_footprints_stderr": "",
-                "bindetect_outdir": "",
-                "bindetect_results": "",
+                "diff_footprints_outdir": "",
+                "diff_results": "",
                 "status": "filtered" if not passes else ("skipped_group" if not selected else "pending"),
             }
         )
@@ -379,14 +379,14 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
     output_manifest = pd.DataFrame(rows)
     runnable_mask = output_manifest["status"].isin(["succeeded", "dry_run"])
     motif_inputs = resolve_motif_inputs(args.motifs, args.motif_db, use_default=False)
-    bindetect_results: Path | None = None
+    diff_results: Path | None = None
     motif_report_available = bool(motif_inputs and runnable_mask.any())
     if motif_inputs and runnable_mask.any():
-        bindetect_results = diff_dir / f"{args.diff_prefix}_results.txt"
-        output_manifest.loc[runnable_mask, "bindetect_outdir"] = str(diff_dir)
-        output_manifest.loc[runnable_mask, "bindetect_results"] = str(bindetect_results)
+        diff_results = diff_dir / f"{args.diff_prefix}_results.txt"
+        output_manifest.loc[runnable_mask, "diff_footprints_outdir"] = str(diff_dir)
+        output_manifest.loc[runnable_mask, "diff_results"] = str(diff_results)
         signal_rows = output_manifest.loc[runnable_mask]
-        bindetect_command = [
+        diff_command = [
             "diff-footprints",
             "--signals",
             *signal_rows["footprint_bigwig"].astype(str).tolist(),
@@ -410,16 +410,16 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
             str(args.cores),
         ]
         if args.motif_db:
-            bindetect_command.extend(["--motif-db", str(args.motif_db)])
+            diff_command.extend(["--motif-db", str(args.motif_db)])
         if args.motifs:
-            bindetect_command.extend(["--motifs", *[str(path) for path in args.motifs]])
+            diff_command.extend(["--motifs", *[str(path) for path in args.motifs]])
         if args.peak_header:
-            bindetect_command.extend(["--peak-header", str(args.peak_header)])
+            diff_command.extend(["--peak-header", str(args.peak_header)])
         if args.skip_excel:
-            bindetect_command.append("--skip-excel")
-        commands.append(("motif-aware pseudobulk diff-footprints report", bindetect_command))
+            diff_command.append("--skip-excel")
+        commands.append(("motif-aware pseudobulk diff-footprints report", diff_command))
         if not args.dry_run and exit_code == 0:
-            code = _run_command(bindetect_command, log_dir / "diff_footprints.stdout.log", log_dir / "diff_footprints.stderr.log")
+            code = _run_command(diff_command, log_dir / "diff_footprints.stdout.log", log_dir / "diff_footprints.stderr.log")
             if code != 0:
                 exit_code = code
 
@@ -463,7 +463,7 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
         commands,
         plot_dir=plot_dir,
         diff_dir=diff_dir,
-        bindetect_results=bindetect_results,
+        diff_results=diff_results,
         log_dir=log_dir,
         motif_report_available=motif_report_available,
         exit_code=exit_code,
@@ -505,9 +505,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--motif-db", help="Optional built-in motif database for motif-aware diff-footprints; can be combined with --motifs.")
     parser.add_argument("--list-motif-dbs", action="store_true", help="List available built-in motif databases and exit.")
     parser.add_argument("--peak-header", help="Optional peak-header file passed to diff-footprints.")
-    parser.add_argument("--bindetect-prefix", dest="diff_prefix", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
-    parser.add_argument("--bindetect-normalization", dest="diff_normalization", choices=["condition-quantile", "sample-quantile", "none"], default=argparse.SUPPRESS, help=argparse.SUPPRESS)
-    parser.add_argument("--bindetect-plot-aggregate", dest="diff_plot_aggregate", choices=["sig", "all", "top", "off"], default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     parser.add_argument("--diff-prefix", dest="diff_prefix", default="pseudobulk_diff_footprints", help="Prefix for optional motif-aware diff-footprints outputs.")
     parser.add_argument("--diff-normalization", dest="diff_normalization", choices=["condition-quantile", "sample-quantile", "none"], default="none", help="Normalization mode for optional motif-aware diff-footprints outputs (default: none).")
     parser.add_argument("--diff-plot-aggregate", dest="diff_plot_aggregate", choices=["sig", "all", "top", "off"], default="top", help="Aggregate plot selection for optional motif-aware diff-footprints HTML/PDF outputs.")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Helper functions for BINDetect scoring, summaries, and output generation.
+Helper functions for diff-footprints scoring, summaries, and output generation.
 
 This module contains reusable routines for:
 - score normalization
@@ -176,6 +176,7 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
 
     rand_window = 200
     background_signal = {
+        "keys": [],
         "gc": [],
         "signal": {c: [] for c in args.cond_names},
         "sample_signal": {s: [] for s in args.sample_names},
@@ -211,6 +212,8 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
         random.seed(reglen)
         rand_positions = random.sample(range(reglen), max(1, int(reglen / rand_window)))
         logger.spam(f"Random indices: {rand_positions} for len {reglen}")
+        for pos in rand_positions:
+            background_signal["keys"].append([region.chrom, str(region.start), str(region.end), str(pos)])
 
         # read signals for all samples, then summarize replicate groups per condition
         sample_footprints = {}
@@ -284,7 +287,7 @@ def process_tfbs(TF_name, args, log2fc_params):
     diff_dist = scipy.stats.norm
 
     if args.output_peaks is not None:
-        # Import lazily so BINDetect --help and parser-only paths do not touch
+        # Import lazily so diff-footprints --help and parser-only paths do not touch
         # pybedtools/genomepy cache initialization.
         from pybedtools import BedTool
 
@@ -464,7 +467,7 @@ def process_tfbs(TF_name, args, log2fc_params):
 
 
 # ------------------------------ plotting utils ------------------------------ #
-def plot_bindetect(motifs, cluster_obj, conditions, args):
+def plot_diff_footprints(motifs, cluster_obj, conditions, args):
     import warnings as _warnings
     _warnings.filterwarnings("ignore")
 
@@ -500,9 +503,9 @@ def plot_bindetect(motifs, cluster_obj, conditions, args):
     node_color = cluster_obj.node_color
     IDS = np.array(cluster_obj.names)
 
-    # Volcano plot lives in the main BINDetect PDF
+    # Volcano plot lives in the main diff-footprints PDF
     volcano_fig, ax1 = plt.subplots(figsize=(4.0, 4.0))
-    ax1.set_title("BINDetect volcano plot", fontsize=PDF_FONT_SIZE, fontweight="bold", pad=12)
+    ax1.set_title("diff-footprints volcano plot", fontsize=PDF_FONT_SIZE, fontweight="bold", pad=12)
     ax1.scatter(xvalues, yvalues, color="black", s=5)
     ylim = ax1.get_ylim(); y_extra = (ylim[1] - ylim[0]) * 0.1
     ax1.set_ylim(ylim[0], ylim[1] + y_extra)
@@ -946,7 +949,7 @@ def _aggregate_payload_for_row(task):
     }
 
 
-def build_bindetect_aggregate_payload(motifs, info_table, comparison, args):
+def build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args):
     """Build compact aggregate profiles for embedding in comparison HTML."""
 
     if not getattr(args, "aggregate_signals", None):
@@ -1126,7 +1129,7 @@ def _motif_logo_map(motifs):
     return logos
 
 
-def plot_interactive_bindetect(
+def plot_interactive_diff_footprints(
     motifs,
     comparison,
     html_out,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-PlotAggregate command for aggregate signal visualization from TFBS and bigWigs.
+plot-aggregate command for aggregate signal visualization from TFBS and bigWigs.
 
 This implementation provides:
 - aggregate plotting from explicit BED inputs or a BED directory
@@ -47,7 +47,7 @@ def default_multiscale_output(output_path):
 
 
 def plot_multiscale_aggregate_npz(npz_path, output_path, title="Multiscale aggregate"):
-    """Render a PlotAggregate companion figure from a multiscale NPZ sidecar."""
+    """Render a plot-aggregate companion figure from a multiscale NPZ sidecar."""
 
     data = load_multiscale_npz(str(npz_path))
     aggregate = aggregate_multiscale_tensor(data, align="center")
@@ -121,7 +121,7 @@ def build_condition_groups(signal_labels, cond_names=None):
 
 
 def apply_quantile_normalization_to_signal_dict(signal_dict, region_names, regions_dict, signal_names, condition_names, condition_groups, mode, logger):
-    """Apply shared BINDetect-style quantile normalization to per-region signal arrays."""
+    """Apply shared diff-footprints-style quantile normalization to per-region signal arrays."""
 
     mode = (mode or "none").replace("_", "-")
     if mode == "none":
@@ -355,12 +355,12 @@ def _resolve_match_dir_tfbs(args, logger):
 def run_aggregate(args):
     """Create aggregate plots and optional aggregate exports."""
 
-    # Import lazily so PlotAggregate --help does not trigger pybedtools/genomepy
+    # Import lazily so plot-aggregate --help does not trigger pybedtools/genomepy
     # cache initialization before argument parsing.
     import pybedtools as pb
 
     apply_pdf_style()
-    logger = FpToolsLogger("PlotAggregate", args.verbosity)
+    logger = FpToolsLogger("plot-aggregate", args.verbosity)
     logger.begin()
 
     if getattr(args, "match_dir", None) and _aggregate_output_format(args) == "html":

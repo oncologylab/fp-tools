@@ -77,7 +77,7 @@ diff-footprints \
 
 `atac-correct --bams` also accepts multiple BAMs. With multiple inputs, fp-tools writes one subfolder per sample under `--outdir`. For multi-sample projects, provide either one shared `merged_peaks.bed` or one peak BED per sample; multiple peak BED files are merged internally and saved as `merged_all.bed`.
 
-After `match-motifs`, `diff-footprints --sample-dirs` can reuse each sample folder's cached motif-site tables instead of rescanning motifs. Use `--sample-names` only when you want labels different from folder names. Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
+After `match-motifs`, `diff-footprints --sample-dirs` can reuse each sample folder's cached motif-site tables and background scores instead of rescanning motifs or rereading footprint bigWigs. Use `--sample-names` only when you want labels different from folder names. Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
 
 ## Pseudobulk Workflow
 

@@ -124,7 +124,7 @@ def add_scorebigwig_arguments(parser):
 	return(parser)
 
 #--------------------------------------------------------------------------------------------------------#
-def add_bindetect_arguments(parser, command_name="diff-footprints"):
+def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=35, width=90)
 	is_match_motifs = command_name == "match-motifs"
@@ -160,7 +160,7 @@ def add_bindetect_arguments(parser, command_name="diff-footprints"):
 	optargs.add_argument('--list-motif-dbs', action='store_true', help="List available built-in motif databases and exit")
 	optargs.add_argument('--sample-names', metavar="<name>", nargs="*", help="Sample labels for --signals (default: prefix of each --signals file)" if is_match_motifs else "Sample labels for --signals; distinct from --cond-names and used for per-sample score columns, replicate reports, and aggregate profiles (default: prefix of each --signals file)")
 	optargs.add_argument('--cond-names', metavar="<name>", nargs="*", help="Optional condition labels for --signals (default: prefix of each --signals file)" if is_match_motifs else "Condition labels for --signals; repeat names to define biological replicates (default: prefix of each --signals file)")
-	optargs.add_argument('--sample-dirs', metavar="<directory>", nargs="*", help=argparse.SUPPRESS if is_match_motifs else "Sample output folders containing a footprint bigWig and match_motifs/ cache to reuse for differential analysis")
+	optargs.add_argument('--sample-dirs', metavar="<directory>", nargs="*", help=argparse.SUPPRESS if is_match_motifs else "Sample output folders containing match_motifs/ outputs to reuse for differential analysis")
 	optargs.add_argument('--project-dir', metavar="<directory>", help=argparse.SUPPRESS if is_match_motifs else "Parent folder containing sample output folders for folder-based differential analysis")
 	optargs.add_argument('--peak-header', metavar="<file>", help="File containing the header of --peaks separated by whitespace or newlines (default: peak columns are named \"_additional_<count>\")")
 	optargs.add_argument('--naming', metavar="<string>", help="Naming convention for TF output files ('id', 'name', 'name_id', 'id_name') (default: 'name_id')", choices=["id", "name", "name_id", "id_name"], default="name_id")
@@ -179,7 +179,7 @@ def add_bindetect_arguments(parser, command_name="diff-footprints"):
 																	NOTE: --peaks must still be set to the full peak set!""")
 	optargs.add_argument('--norm-off', action='store_true', help="Turn off normalization of footprint scores" if is_match_motifs else "Turn off normalization of footprint scores across conditions")
 	optargs.add_argument('--normalization', choices=["condition-quantile", "sample-quantile", "none"], default="none", help="Signal normalization mode (default: none; --norm-off maps to none)" if is_match_motifs else "Cross-sample normalization mode (default: none; --norm-off maps to none)")
-	optargs.add_argument('--method', choices=["bindetect"], default="bindetect", help=argparse.SUPPRESS)
+	optargs.add_argument('--method', choices=["motif"], default="motif", help=argparse.SUPPRESS)
 	optargs.add_argument('--replicate-report', choices=["auto", "on", "off"], default="auto", help=argparse.SUPPRESS if is_match_motifs else "Write replicate-aware differential-footprint diagnostics (default: auto for repeated condition names or --replicate-map)")
 	optargs.add_argument('--replicate-map', metavar="<tsv>", help=argparse.SUPPRESS if is_match_motifs else "Optional TSV with condition/replicate or condition/n_replicates columns")
 	optargs.add_argument('--replicate-report-out', metavar="<tsv>", help=argparse.SUPPRESS if is_match_motifs else "Output long-form replicate diagnostic TSV (default: <outdir>/<prefix>_replicate_report.tsv)")
@@ -356,21 +356,21 @@ def add_aggregate_arguments(parser):
 def add_plotchanges_arguments(parser):
 
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=35, width=90)
-	description = "PlotChanges is a utility to plot the changes in TF binding across multiple conditions as predicted by fp-tools BINDetect.\n\n"
-	description += "Example usage:\n$ echo CTCF GATA > TFS.txt\n$ fp-tools PlotChanges --bindetect <bindetect_results.txt> --TFS TFS.txt\n\n"
+	description = "PlotChanges is a utility to plot changes in motif-associated footprint scores across multiple conditions.\n\n"
+	description += "Example usage:\n$ echo CTCF GATA > TFS.txt\n$ fp-tools PlotChanges --results <diff_footprints_results.txt> --TFS TFS.txt\n\n"
 
 	parser.description = format_help_description("PlotChanges", description)
 
 	parser._action_groups.pop()	#pop -h
 
 	required_arguments = parser.add_argument_group('Required arguments')
-	required_arguments.add_argument('--bindetect', metavar="", help='Bindetect_results.txt file from BINDetect run')
+	required_arguments.add_argument('--results', metavar="", dest="results", help='diff-footprints *_results.txt table')
 	
 	#All other arguments are optional
 	optional_arguments = parser.add_argument_group('Optional arguments')
 	optional_arguments.add_argument('--TFS', metavar="", help='Text file containing names of TFs to show in plot (one per line)') 
-	optional_arguments.add_argument('--output', metavar="", help='Output file for plot (default: bindetect_changes.pdf)', default="bindetect_changes.pdf")
-	optional_arguments.add_argument('--conditions', metavar="", help="Ordered list of conditions to show (default: conditions are ordered as within the bindetect file)", nargs="*")
+	optional_arguments.add_argument('--output', metavar="", help='Output file for plot (default: diff_footprint_changes.pdf)', default="diff_footprint_changes.pdf")
+	optional_arguments.add_argument('--conditions', metavar="", help="Ordered list of conditions to show (default: conditions are ordered as within the results file)", nargs="*")
 	optional_arguments = add_logger_args(optional_arguments)
 	
 	return(parser)
@@ -529,14 +529,14 @@ def add_network_arguments(parser):
 def add_log2table_arguments(parser):
 
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=40, width=90)
-	description = "Log2Table creates tables of footprint depth (FPD) and aggregate correlations from the PlotAggregate logfiles." 
+	description = "Log2Table creates tables of footprint depth (FPD) and aggregate correlations from plot-aggregate logfiles."
 	parser.description = format_help_description("Log2Table", description)
 
 	parser._action_groups.pop()	#pop -h
 	
 	#Required arguments
 	required = parser.add_argument_group('Required arguments')
-	required.add_argument('--logfiles', nargs="*", metavar="", help="Logfiles from PlotAggregate")
+	required.add_argument('--logfiles', nargs="*", metavar="", help="Logfiles from plot-aggregate")
 	required.add_argument('--outdir', metavar="", help="Output directory for tables (default: current dir)", default=".")
 	required.add_argument('--prefix', metavar="", help="Prefix of output files", default="aggregate")
 
@@ -632,14 +632,14 @@ def add_downloaddata_arguments(parser):
 def add_submerge_arguments(parser):
 
 	parser.formatter_class = lambda prog: argparse.RawDescriptionHelpFormatter(prog, max_help_position=40, width=90)
-	description = "Subsets the analysis results of BINDetect to given genomic regions and merges the information of all TFBS found within them into one table."
+	description = "Subsets diff-footprints motif-site outputs to given genomic regions and merges the information of all TFBS found within them into one table."
 	parser.description = format_help_description("SubMerge", description)
 
 	parser._action_groups.pop()	#pop -h
 
 	#Required arguments
 	required = parser.add_argument_group('Required arguments')
-	required.add_argument("--input", required=True, type=os.path.abspath, dest="tfbs", help="Path to the output directory of BINDetect containing all TFBS files.")
+	required.add_argument("--input", required=True, type=os.path.abspath, dest="tfbs", help="Path to the diff-footprints output directory containing all TFBS files.")
 	required.add_argument("--regions", required=True, help="Path to the query regions bed file.", type=os.path.abspath, dest="regions")
 
 
@@ -650,7 +650,7 @@ def add_submerge_arguments(parser):
 					   default=['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21', 'chr22', 'chrX', 'chrY', 'chrM'],
 					   help="Path to file containing the order of chormosomes to sort by. Entries should either be the first column of a table / one contig per line. Default: human chromosomes",
 					   type=os.path.abspath, dest="order")
-	optional.add_argument("--TFs", help="Path to the file containing the list of TFs to subset. File has to contain one column with the TFBS names in the same format used in the BINDetect output files/directories.", type=os.path.abspath, dest="tf", default=None)
+	optional.add_argument("--TFs", help="Path to the file containing the list of TFs to subset. File has to contain one column with the TFBS names in the same format used in the diff-footprints output files/directories.", type=os.path.abspath, dest="tf", default=None)
 	optional = add_logger_args(optional)
 
 	return(parser)

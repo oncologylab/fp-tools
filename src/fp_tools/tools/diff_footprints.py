@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-BINDetect command driver for TF binding and differential binding analysis.
+Differential-footprint command driver for motif-associated footprint analysis.
 
 This module handles:
 - motif/scored-signal integration
@@ -8,13 +8,15 @@ This module handles:
 - differential binding statistics between conditions
 - summary tables, PDFs, and interactive HTML outputs
 
-It also includes replicate grouping support and skewness report integration.
+It also includes replicate grouping support and optional skewness report integration.
 """
 
 import os
 import sys
 import argparse
 import base64
+import gzip
+import json
 import time
 import glob
 import random
@@ -44,10 +46,10 @@ import pysam
 import pyBigWig as pybw
 
 # Internal (fp_tools namespace)
-from fp_tools.parsers import add_bindetect_arguments
-from fp_tools.tools.bindetect_functions import *
-from fp_tools.tools import bindetect_skew_report as skewrep
-from fp_tools.tools.bindetect_replicate_report import build_replicate_report
+from fp_tools.parsers import add_diff_footprints_arguments
+from fp_tools.tools.diff_footprint_helpers import *
+from fp_tools.tools import diff_footprint_skew_report as skewrep
+from fp_tools.tools.diff_footprint_replicate_report import build_replicate_report
 
 from fp_tools.utils.utilities import (
     check_required, check_files, make_directory, merge_dicts,
@@ -142,6 +144,17 @@ def _find_one_file(root, patterns, label):
     return files[0]
 
 
+def _find_optional_file(root, patterns):
+    matches = []
+    for pattern in patterns:
+        matches.extend(sorted(root.glob(pattern)))
+    files = [p for p in matches if p.is_file()]
+    if len(files) > 1:
+        found = ", ".join(str(p) for p in files[:5])
+        raise ValueError(f"Expected at most one file in {root}; found {len(files)} ({found})")
+    return files[0] if files else None
+
+
 def _sample_name_from_folder(sample_dir):
     manifest = sample_dir / "fp_tools_sample.json"
     if manifest.exists():
@@ -193,24 +206,25 @@ def _resolve_folder_inputs(args):
     for sample_dir in unique_dirs:
         if not sample_dir.exists():
             raise FileNotFoundError(f"Sample directory does not exist: {sample_dir}")
-        footprint = _find_one_file(
+        footprint = _find_optional_file(
             sample_dir,
             ["*_footprints.bw", "*_footprint.bw", "footprints.bw", "footprint.bw"],
-            "footprint bigWig",
         )
         match_dir = sample_dir / "match_motifs"
         if not match_dir.is_dir():
             match_dir = sample_dir / "motif_matches"
         if not match_dir.is_dir():
             raise FileNotFoundError(f"Sample directory lacks match_motifs/ output: {sample_dir}")
-        signals.append(str(footprint))
+        sample_name = _sample_name_from_folder(sample_dir)
+        signals.append(str(footprint) if footprint is not None else f"cached:{sample_name}")
         match_dirs.append(str(match_dir))
-        default_names.append(_sample_name_from_folder(sample_dir))
+        default_names.append(sample_name)
         corrected = sorted(sample_dir.glob("*_corrected.bw"))
         if corrected:
             aggregate_signals.append(str(corrected[0]))
     args.signals = signals
     args.cached_match_dirs = match_dirs
+    args.cached_without_bigwigs = any(str(signal).startswith("cached:") for signal in signals)
     args.folder_default_sample_names = default_names
     if not getattr(args, "aggregate_signals", None) and len(aggregate_signals) == len(signals):
         args.aggregate_signals = aggregate_signals
@@ -371,14 +385,14 @@ def _load_reuse_motif_lookup(args, logger):
     return motif_lookup
 
 
-def run_bindetect_reuse_existing_results(args):
+def run_diff_footprints_reuse_existing_results(args):
     """Regenerate final diff-footprints reports from completed motif-level outputs."""
 
     _resolve_motif_arguments(args)
     _prepare_condition_metadata(args)
     logger = FpToolsLogger("diff-footprints", args.verbosity)
     logger.begin()
-    parser = add_bindetect_arguments(argparse.ArgumentParser())
+    parser = add_diff_footprints_arguments(argparse.ArgumentParser())
     args.cores = check_cores(args.cores, logger)
     logger.arguments_overview(parser, args)
 
@@ -422,13 +436,13 @@ def run_bindetect_reuse_existing_results(args):
         aggregate_data = None
         if getattr(args, "aggregate_signals", None) and getattr(args, "plot_aggregate", "off") != "off":
             try:
-                aggregate_data = build_bindetect_aggregate_payload(motifs, info_table, comparison, args)
+                aggregate_data = build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args)
                 if aggregate_data is None or len(aggregate_data.get("motifs", [])) == 0:
                     logger.warning(f"No reusable aggregate profiles were found for {base}; writing volcano-only HTML")
             except Exception as exc:
                 logger.warning(f"Could not build aggregate payload from existing motif BEDs: {exc}")
         html_out = os.path.join(args.outdir, args.prefix + "_" + base + ".html")
-        plot_interactive_bindetect(
+        plot_interactive_diff_footprints(
             motifs,
             [c1, c2],
             html_out,
@@ -516,11 +530,71 @@ def _write_cached_tfbs_tmp_files(args, motif_names, logger):
     return global_tfbs.count_overlaps() if len(global_tfbs) else {}
 
 
+def _match_cache_paths(match_dir):
+    cache_dir = os.path.join(match_dir, "cache")
+    return (
+        os.path.join(cache_dir, "background_scores.tsv.gz"),
+        os.path.join(cache_dir, "manifest.json"),
+    )
+
+
+def _write_match_motifs_cache(args, background, logger):
+    """Persist background scores needed by folder-based diff-footprints reuse."""
+
+    cache_tsv, manifest_json = _match_cache_paths(args.outdir)
+    make_directory(os.path.dirname(cache_tsv))
+    keys = background.get("keys") or []
+    sample_names = list(args.sample_names)
+    lengths = [len(keys)] + [len(background["sample_signal"].get(sample, [])) for sample in sample_names]
+    if len(set(lengths)) != 1:
+        raise ValueError(f"Cannot write match-motifs cache; background row counts differ: {lengths}")
+    with gzip.open(cache_tsv, "wt", encoding="utf-8") as handle:
+        handle.write("\t".join(["chrom", "start", "end", "offset"] + sample_names) + "\n")
+        for row_idx, key in enumerate(keys):
+            scores = [f"{float(background['sample_signal'][sample][row_idx]):.8g}" for sample in sample_names]
+            handle.write("\t".join(list(key) + scores) + "\n")
+    manifest = {
+        "format": "fp-tools match-motifs background cache",
+        "version": 1,
+        "sample_names": sample_names,
+        "condition_names": list(args.cond_names),
+        "peak_header": list(getattr(args, "peak_header_list", [])),
+        "background_rows": len(keys),
+        "normalization": getattr(args, "normalization", "none"),
+    }
+    with open(manifest_json, "w", encoding="utf-8") as handle:
+        json.dump(manifest, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    logger.info(f"Wrote match-motifs reuse cache: {cache_tsv}")
+
+
+def _load_match_background_cache(match_dir):
+    cache_tsv, manifest_json = _match_cache_paths(match_dir)
+    if not os.path.exists(cache_tsv):
+        raise FileNotFoundError(
+            f"Missing match-motifs background cache: {cache_tsv}. "
+            "Re-run match-motifs with the current fp-tools version before using --sample-dirs."
+        )
+    manifest = {}
+    if os.path.exists(manifest_json):
+        with open(manifest_json, "r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+    df = pd.read_csv(cache_tsv, sep="\t")
+    if df.shape[1] < 5:
+        raise ValueError(f"Background cache has no sample-score columns: {cache_tsv}")
+    key_cols = ["chrom", "start", "end", "offset"]
+    if list(df.columns[:4]) != key_cols:
+        raise ValueError(f"Unexpected background cache header in {cache_tsv}")
+    score_cols = list(df.columns[4:])
+    return df[key_cols].astype(str), {col: df[col].to_numpy(dtype=float) for col in score_cols}, manifest
+
+
 def _background_from_signal_chunk(regions, args):
     """Collect background scores from signals using the same random-position rule as scanning."""
 
     sample_bigwigs = {sample: pybw.open(args.signals[idx], "rb") for idx, sample in enumerate(args.sample_names)}
     background = {
+        "keys": [],
         "gc": [],
         "signal": {c: [] for c in args.cond_names},
         "sample_signal": {s: [] for s in args.sample_names},
@@ -531,6 +605,8 @@ def _background_from_signal_chunk(regions, args):
         reglen = region.get_length()
         random.seed(reglen)
         rand_positions = random.sample(range(reglen), max(1, int(reglen / rand_window)))
+        for pos in rand_positions:
+            background["keys"].append([region.chrom, str(region.start), str(region.end), str(pos)])
         sample_footprints = {}
         for sample_name in args.sample_names:
             bw = sample_bigwigs[sample_name]
@@ -550,6 +626,36 @@ def _background_from_signal_chunk(regions, args):
 
 
 def _collect_cached_background(peak_chunks, args, pool, worker_cores):
+    if getattr(args, "cached_without_bigwigs", False):
+        cached_dirs = list(getattr(args, "cached_match_dirs", []) or [])
+        if len(cached_dirs) != len(args.sample_names):
+            raise ValueError("--sample-dirs/--project-dir cache count must match resolved samples")
+        first_keys = None
+        sample_arrays = {}
+        for match_dir, sample_name in zip(cached_dirs, args.sample_names):
+            keys, score_map, _manifest = _load_match_background_cache(match_dir)
+            if first_keys is None:
+                first_keys = keys
+            elif not keys.equals(first_keys):
+                raise ValueError(f"Background cache coordinates differ between sample folders; first mismatch: {match_dir}")
+            if sample_name in score_map:
+                sample_arrays[sample_name] = score_map[sample_name]
+            elif len(score_map) == 1:
+                sample_arrays[sample_name] = next(iter(score_map.values()))
+            else:
+                raise ValueError(
+                    f"Background cache for {match_dir} has multiple samples but no column named {sample_name}"
+                )
+        background = {
+            "keys": first_keys.astype(str).values.tolist() if first_keys is not None else [],
+            "gc": [],
+            "sample_signal": sample_arrays,
+            "signal": {},
+        }
+        for condition in args.cond_names:
+            stacked = np.vstack([sample_arrays[sample_name] for sample_name in args.condition_samples[condition]])
+            background["signal"][condition] = np.mean(stacked, axis=0)
+        return background
     if worker_cores == 1:
         results = [_background_from_signal_chunk(chunk, args) for chunk in peak_chunks]
     else:
@@ -560,14 +666,16 @@ def _collect_cached_background(peak_chunks, args, pool, worker_cores):
 
 
 # ----------------------------------------------------------------------------- #
-def run_bindetect(args):
-    """Run the BINDetect pipeline from parsed CLI arguments."""
+def run_diff_footprints(args):
+    """Run the differential-footprint pipeline from parsed CLI arguments."""
     if getattr(args, "reuse_existing_results", False):
-        return run_bindetect_reuse_existing_results(args)
+        return run_diff_footprints_reuse_existing_results(args)
 
     _resolve_folder_inputs(args)
     _resolve_motif_arguments(args)
-    check_required(args, ["signals", "genome", "peaks"])
+    check_required(args, ["genome", "peaks"])
+    if not getattr(args, "cached_match_dirs", None):
+        check_required(args, ["signals"])
     _prepare_condition_metadata(args)
 
     # outputs we’ll create
@@ -593,9 +701,9 @@ def run_bindetect(args):
         outfiles.append(os.path.abspath(os.path.join(args.outdir, args.prefix + "_results_skewness_report.pdf")))
 
     # ------------------------------ logger/pools ------------------------------ #
-    logger = FpToolsLogger("BINDetect", args.verbosity)
+    logger = FpToolsLogger("diff-footprints", args.verbosity)
     logger.begin()
-    parser = add_bindetect_arguments(argparse.ArgumentParser())
+    parser = add_diff_footprints_arguments(argparse.ArgumentParser())
     logger.arguments_overview(parser, args)
     logger.output_files(outfiles)
 
@@ -611,7 +719,10 @@ def run_bindetect(args):
     # ------------------------------ inputs ----------------------------------- #
     logger.info("----- Processing input data -----")
     logger.info("Checking reading/writing of files")
-    check_files([args.signals, args.motifs, args.genome, args.peaks], action="r")
+    files_to_check = [args.motifs, args.genome, args.peaks]
+    if not getattr(args, "cached_without_bigwigs", False):
+        files_to_check.insert(0, args.signals)
+    check_files(files_to_check, action="r")
     check_files([path for path in outfiles if "*" not in path], action="w")
     make_directory(args.outdir)
 
@@ -634,7 +745,7 @@ def run_bindetect(args):
 
         plt.figure()
         plt.axis('off')
-        plt.text(0.5, 0.8, "BINDETECT FIGURES", ha="center", va="center", fontsize=PDF_FONT_SIZE, fontweight="bold")
+        plt.text(0.5, 0.8, "DIFF-FOOTPRINTS FIGURES", ha="center", va="center", fontsize=PDF_FONT_SIZE, fontweight="bold")
         titles = ["Raw score distributions"]
         if no_conditions > 1 and not args.norm_off:
             titles.append("Normalized score distributions")
@@ -642,7 +753,7 @@ def run_bindetect(args):
             for (c1, c2) in comparisons:
                 titles.append(f"Background log2FCs ({c1} / {c2})")
         for (c1, c2) in comparisons:
-            titles.append(f"BINDetect volcano plot ({c1} / {c2})")
+            titles.append(f"diff-footprints volcano plot ({c1} / {c2})")
         plt.text(0.1, 0.6, "\n".join([f"Page {i+2}) {t}" for i, t in enumerate(titles)]) + "\n\n", va="top", fontsize=PDF_FONT_SIZE, fontweight="bold")
         apply_ascii_minus_to_figure(plt.gcf())
         figure_pdf.savefig(bbox_inches='tight')
@@ -650,7 +761,7 @@ def run_bindetect(args):
 
         plt.figure()
         plt.axis('off')
-        plt.text(0.5, 0.8, "BINDETECT CLUSTERS", ha="center", va="center", fontsize=PDF_FONT_SIZE, fontweight="bold")
+        plt.text(0.5, 0.8, "DIFF-FOOTPRINTS CLUSTERS", ha="center", va="center", fontsize=PDF_FONT_SIZE, fontweight="bold")
         cluster_titles = [f"Cluster overview ({c1} / {c2})" for (c1, c2) in comparisons]
         plt.text(0.1, 0.6, "\n".join([f"Page {i+2}) {t}" for i, t in enumerate(cluster_titles)]) + "\n\n", va="top", fontsize=PDF_FONT_SIZE, fontweight="bold")
         apply_ascii_minus_to_figure(plt.gcf())
@@ -705,13 +816,14 @@ def run_bindetect(args):
     logger.debug(f"Fasta boundaries: {fasta_boundaries}")
     peaks = peaks.apply_method(OneRegion.check_boundary, fasta_boundaries, "exit")
 
-    for signal in args.signals:
-        logger.info(f"- Comparing peaks to {signal}")
-        pybw_obj = pybw.open(signal)
-        pybw_header = pybw_obj.chroms()
-        pybw_obj.close()
-        logger.debug(f"Signal boundaries: {pybw_header}")
-        peaks = peaks.apply_method(OneRegion.check_boundary, pybw_header, "exit")
+    if not getattr(args, "cached_without_bigwigs", False):
+        for signal in args.signals:
+            logger.info(f"- Comparing peaks to {signal}")
+            pybw_obj = pybw.open(signal)
+            pybw_header = pybw_obj.chroms()
+            pybw_obj.close()
+            logger.debug(f"Signal boundaries: {pybw_header}")
+            peaks = peaks.apply_method(OneRegion.check_boundary, pybw_header, "exit")
 
     # GC content (for motif background)
     logger.info("Estimating GC content from peak sequences")
@@ -797,7 +909,7 @@ def run_bindetect(args):
         writer_pool.terminate()
         writer_pool.join()
         TF_overlaps = _write_cached_tfbs_tmp_files(args, motif_names, logger)
-        logger.info("Collecting background scores from footprint bigWigs")
+        logger.info("Collecting cached background scores")
         background = _collect_cached_background(peak_chunks, args, pool, worker_cores)
     else:
         manager = mp.Manager()
@@ -861,6 +973,8 @@ def run_bindetect(args):
         logger.info("Merging results from subsets")
         background = merge_dicts([r[0] for r in results])
         TF_overlaps = merge_dicts([r[1] for r in results])
+        if getattr(args, "match_only", False):
+            _write_match_motifs_cache(args, background, logger)
         results = None
 
     # fill possible missing overlap keys
@@ -1053,7 +1167,7 @@ def run_bindetect(args):
     clustering.write_distance_mat(matrix_out)
 
     logger.comment("")
-    logger.info("Writing all_bindetect files")
+    logger.info("Writing all motif-site files")
 
     names, ids = [], []
     for prefix in info_table.index:
@@ -1109,8 +1223,8 @@ def run_bindetect(args):
         ]
         info_table = info_table.drop(columns=[c for c in single_sample_uncertainty_cols if c in info_table.columns])
 
-    bindetect_out = os.path.join(args.outdir, args.prefix + "_results.txt")
-    info_table.to_csv(bindetect_out, sep="\t", index=False, header=True, na_rep="NA")
+    diff_results_out = os.path.join(args.outdir, args.prefix + "_results.txt")
+    info_table.to_csv(diff_results_out, sep="\t", index=False, header=True, na_rep="NA")
 
     write_replicate_report = args.replicate_report == "on" or (
         args.replicate_report == "auto" and (repeated_conditions or args.replicate_map is not None)
@@ -1121,19 +1235,19 @@ def run_bindetect(args):
         figure_out = args.replicate_figure_out or os.path.join(args.outdir, args.prefix + "_replicate_report.png")
         try:
             build_replicate_report(
-                bindetect_out,
+                diff_results_out,
                 report_out,
                 summary_output=summary_out,
                 figure_output=figure_out,
                 replicate_map=args.replicate_map,
             )
-            logger.info(f"Wrote replicate-aware BINDetect report to {report_out}")
+            logger.info(f"Wrote replicate-aware differential-footprint report to {report_out}")
         except Exception as exc:
-            logger.warning(f"Could not write replicate-aware BINDetect report: {exc}")
+            logger.warning(f"Could not write replicate-aware differential-footprint report: {exc}")
 
     if not args.skip_excel:
-        bindetect_excel = os.path.join(args.outdir, args.prefix + "_results.xlsx")
-        with pd.ExcelWriter(bindetect_excel, engine='xlsxwriter') as writer:
+        diff_results_excel = os.path.join(args.outdir, args.prefix + "_results.xlsx")
+        with pd.ExcelWriter(diff_results_excel, engine='xlsxwriter') as writer:
             info_table.to_excel(writer, index=False, sheet_name="Individual motifs")
             info_table_clustered.to_excel(writer, index=False, sheet_name="Motif clusters")
             for sheet in writer.sheets:
@@ -1148,7 +1262,7 @@ def run_bindetect(args):
             # Prefer a programmatic API if available
             if hasattr(skewrep, "generate_skew_report"):
                 skewrep.generate_skew_report(
-                    results_tsv=bindetect_out,
+                    results_tsv=diff_results_out,
                     out_pdf=skew_pdf,
                     out_json=None,
                     skew_method="perm",
@@ -1162,7 +1276,7 @@ def run_bindetect(args):
                 # (expects skewrep.main_from_kwargs to exist; see note below)
                 if hasattr(skewrep, "main_from_kwargs"):
                     skewrep.main_from_kwargs(
-                        results_tsv=bindetect_out,
+                        results_tsv=diff_results_out,
                         out_pdf=skew_pdf,
                         out_json=None,
                         skew_method="perm",
@@ -1173,13 +1287,13 @@ def run_bindetect(args):
                     logger.info(f"Skew/shift report saved → {os.path.basename(skew_pdf)}")
                 else:
                     logger.warning(
-                        "bindetect_skew_report has no generate_skew_report() or main_from_kwargs(); skipping PDF.")
+                        "diff_footprint_skew_report has no generate_skew_report() or main_from_kwargs(); skipping PDF.")
         except Exception as e:
             logger.warning(f"Could not generate skew/shift report: {e}")
 
     # ------------------------------ plots ------------------------------------ #
     if no_conditions > 1:
-        logger.info("Creating BINDetect plot(s)")
+        logger.info("Creating diff-footprints plot(s)")
         change_cols = [c for c in info_table.columns if "_change" in c]
         pvalue_cols = [c for c in info_table.columns if "_pvalue" in c]
         info_table[change_cols] = info_table[change_cols].fillna(0)
@@ -1201,7 +1315,7 @@ def run_bindetect(args):
                     m.group = "n.s."
             if figure_pdf is not None and cluster_pdf is not None:
                 logger.info(f"- {c1} / {c2} (static plot)")
-                volcano_fig, cluster_fig = plot_bindetect(motif_list, clustering, [c1, c2], args)
+                volcano_fig, cluster_fig = plot_diff_footprints(motif_list, clustering, [c1, c2], args)
                 apply_ascii_minus_to_figure(volcano_fig)
                 apply_ascii_minus_to_figure(cluster_fig)
                 figure_pdf.savefig(volcano_fig, bbox_inches='tight'); plt.close(volcano_fig)
@@ -1212,10 +1326,10 @@ def run_bindetect(args):
             aggregate_data = None
             if getattr(args, "aggregate_signals", None) and getattr(args, "plot_aggregate", "off") != "off":
                 try:
-                    aggregate_data = build_bindetect_aggregate_payload(motif_list, info_table, [c1, c2], args)
+                    aggregate_data = build_diff_footprint_aggregate_payload(motif_list, info_table, [c1, c2], args)
                 except Exception as exc:
                     logger.warning(f"Could not build aggregate payload for interactive HTML: {exc}")
-            plot_interactive_bindetect(
+            plot_interactive_diff_footprints(
                 motif_list,
                 [c1, c2],
                 html_out,
@@ -1270,7 +1384,7 @@ def run_bindetect(args):
 # ----------------------------------------------------------------------------- #
 def run_cli():
     parser = argparse.ArgumentParser()
-    parser = add_bindetect_arguments(parser)
+    parser = add_diff_footprints_arguments(parser)
     args = parser.parse_args()
     if getattr(args, "list_motif_dbs", False):
         print(motif_db_table())
@@ -1278,12 +1392,12 @@ def run_cli():
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
-    run_bindetect(args)
+    run_diff_footprints(args)
 
 
 def match_motifs_cli():
     parser = argparse.ArgumentParser(prog="match-motifs")
-    parser = add_bindetect_arguments(parser, command_name="match-motifs")
+    parser = add_diff_footprints_arguments(parser, command_name="match-motifs")
     args = parser.parse_args()
     if getattr(args, "list_motif_dbs", False):
         print(motif_db_table())
@@ -1297,19 +1411,19 @@ def match_motifs_cli():
         parser.error("match-motifs expects one --sample-names value per --signals bigWig when provided")
     if args.cond_names is not None and len(args.cond_names) != len(args.signals):
         parser.error("match-motifs expects one --cond-names value per --signals bigWig when provided")
-    if args.prefix in {"bindetect", "diff_footprints"}:
+    if args.prefix == "diff_footprints":
         args.prefix = "motif_matches"
-    args.method = "bindetect"
+    args.method = "motif"
     args.match_only = True
     args.replicate_report = "off"
     args.static_plots = True
     args.skew_report = False
-    run_bindetect(args)
+    run_diff_footprints(args)
 
 
 def diff_footprints_cli():
     parser = argparse.ArgumentParser(prog="diff-footprints")
-    parser = add_bindetect_arguments(parser, command_name="diff-footprints")
+    parser = add_diff_footprints_arguments(parser, command_name="diff-footprints")
     args = parser.parse_args()
     if getattr(args, "list_motif_dbs", False):
         print(motif_db_table())
@@ -1321,7 +1435,7 @@ def diff_footprints_cli():
     n_inputs = len(args.sample_dirs or []) if args.sample_dirs else len(args.signals or [])
     if args.project_dir and not args.sample_dirs:
         n_inputs = None
-    if args.method == "bindetect" and not folder_mode and (not args.signals or len(args.signals) < 2):
+    if args.method == "motif" and not folder_mode and (not args.signals or len(args.signals) < 2):
         parser.error("diff-footprints expects at least two --signals bigWigs, or --sample-dirs/--project-dir")
     if args.signals and folder_mode:
         parser.error("diff-footprints cannot combine --signals with --sample-dirs/--project-dir")
@@ -1329,9 +1443,7 @@ def diff_footprints_cli():
         parser.error("diff-footprints expects one --sample-names value per input sample when provided")
     if n_inputs is not None and args.cond_names is not None and len(args.cond_names) != n_inputs:
         parser.error("diff-footprints expects one --cond-names value per input sample when provided")
-    if args.prefix == "bindetect":
-        args.prefix = "diff_footprints"
-    run_bindetect(args)
+    run_diff_footprints(args)
 
 
 if __name__ == '__main__':

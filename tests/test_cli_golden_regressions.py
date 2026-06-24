@@ -48,7 +48,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             output = pathlib.Path(tmpdir) / "footprints_sum.bw"
             run_command(
                 [
-                    BIN / "FootprintScores",
+                    BIN / "call-footprints",
                     "--signal",
                     "test_data/Bcell_corrected.bw",
                     "--regions",
@@ -114,7 +114,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             output_txt = tmp / "aggregate.txt"
             run_command(
                 [
-                    BIN / "PlotAggregate",
+                    BIN / "plot-aggregate",
                     "--TFBS",
                     "test_data/IRF1_all.bed",
                     "--signals",
@@ -138,12 +138,12 @@ class CliGoldenRegressionTest(unittest.TestCase):
         self.assertEqual(round(sum(values[:5]), 4), 53.5609)
         self.assertEqual(round(values[-1], 4), 10.3948)
 
-    def test_bindetect_one_motif_summary_is_stable(self):
+    def test_diff_footprints_one_motif_summary_is_stable(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            outdir = pathlib.Path(tmpdir) / "bindetect"
+            outdir = pathlib.Path(tmpdir) / "diff_footprints"
             run_command(
                 [
-                    BIN / "BINDetect",
+                    BIN / "diff-footprints",
                     "--signals",
                     "test_data/Bcell_footprints.bw",
                     "test_data/Tcell_footprints.bw",
@@ -159,7 +159,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
                     "--outdir",
                     outdir,
                     "--prefix",
-                    "bindetect_probe",
+                    "diff_footprints_probe",
                     "--cores",
                     max_cores(),
                     "--skip-excel",
@@ -168,7 +168,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
                 ],
                 timeout=120,
             )
-            results = pd.read_csv(outdir / "bindetect_probe_results.txt", sep="\t")
+            results = pd.read_csv(outdir / "diff_footprints_probe_results.txt", sep="\t")
 
         self.assertEqual(len(results), 1)
         row = results.iloc[0]
@@ -192,12 +192,12 @@ class CliGoldenRegressionTest(unittest.TestCase):
         self.assertGreaterEqual(float(row["Bcell_Tcell_qvalue_bh"]), 0.0)
         self.assertLessEqual(float(row["Bcell_Tcell_qvalue_bh"]), 1.0)
 
-    def test_bindetect_replicate_grouping_writes_diagnostics(self):
+    def test_diff_footprints_replicate_grouping_writes_diagnostics(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            outdir = pathlib.Path(tmpdir) / "bindetect_reps"
+            outdir = pathlib.Path(tmpdir) / "diff_footprints_reps"
             run_command(
                 [
-                    BIN / "BINDetect",
+                    BIN / "diff-footprints",
                     "--signals",
                     "test_data/demo_Bcell_rep1_footprints.bw",
                     "test_data/demo_Bcell_rep2_footprints.bw",
@@ -217,7 +217,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
                     "--outdir",
                     outdir,
                     "--prefix",
-                    "bindetect_probe",
+                    "diff_footprints_probe",
                     "--cores",
                     max_cores(),
                     "--skip-excel",
@@ -230,8 +230,8 @@ class CliGoldenRegressionTest(unittest.TestCase):
                 ],
                 timeout=120,
             )
-            results = pd.read_csv(outdir / "bindetect_probe_results.txt", sep="	")
-            report = pd.read_csv(outdir / "bindetect_probe_replicate_report.tsv", sep="	")
+            results = pd.read_csv(outdir / "diff_footprints_probe_results.txt", sep="	")
+            report = pd.read_csv(outdir / "diff_footprints_probe_replicate_report.tsv", sep="	")
 
         row = results.iloc[0]
         for column in (
@@ -255,13 +255,13 @@ class CliGoldenRegressionTest(unittest.TestCase):
         self.assertGreater(float(row["Bcell_Tcell_mean_log2fc"]), 0.0)
         self.assertTrue((report["replicate_support"] == "replicate-supported").all())
 
-    @unittest.skipUnless(os.environ.get("FP_TOOLS_RUN_SLOW_REGRESSIONS") == "1", "slow ATACorrect regression is opt-in")
+    @unittest.skipUnless(os.environ.get("FP_TOOLS_RUN_SLOW_REGRESSIONS") == "1", "slow atac-correct regression is opt-in")
     def test_atacorrect_fixture_smoke_outputs_corrected_bigwig(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             outdir = pathlib.Path(tmpdir)
             run_command(
                 [
-                    BIN / "ATACorrect",
+                    BIN / "atac-correct",
                     "--bams",
                     "test_data/Bcell.bam",
                     "--genome",

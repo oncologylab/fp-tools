@@ -1,4 +1,4 @@
-"""Shared signal normalization helpers for BINDetect and PlotAggregate."""
+"""Shared signal normalization helpers for diff-footprints and plot-aggregate."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def _positive_values(arr):
 
 
 def fit_quantile_normalizers(list_of_arrays, names, logger=None, quantiles=None):
-    """Fit BINDetect-style multiplicative quantile normalizers."""
+    """Fit diff-footprints-style multiplicative quantile normalizers."""
 
     if quantiles is None:
         quantiles = np.linspace(0.05, 0.99, 1000, endpoint=True)

@@ -128,7 +128,7 @@ def batched(items: list[str], batch_size: int):
         yield items[start : start + batch_size]
 
 
-def read_bindetect_motif_table(results_path: Path, bindetect_dir: Path, max_motifs: int | None) -> pd.DataFrame:
+def read_diff_footprint_motif_table(results_path: Path, diff_dir: Path, max_motifs: int | None) -> pd.DataFrame:
     results = pd.read_csv(results_path, sep="\t")
     required = {"output_prefix", "name", "motif_id", "total_tfbs"}
     missing = required.difference(results.columns)
@@ -137,7 +137,7 @@ def read_bindetect_motif_table(results_path: Path, bindetect_dir: Path, max_moti
     rows = []
     for _, row in results.iterrows():
         motif_id = str(row["output_prefix"])
-        bed = bindetect_dir / motif_id / "beds" / f"{motif_id}_all.bed"
+        bed = diff_dir / motif_id / "beds" / f"{motif_id}_all.bed"
         if not bed.exists():
             continue
         rows.append(
@@ -152,7 +152,7 @@ def read_bindetect_motif_table(results_path: Path, bindetect_dir: Path, max_moti
         if max_motifs is not None and len(rows) >= max_motifs:
             break
     if not rows:
-        raise SystemExit(f"No differential-footprint motif BED files found under {bindetect_dir}")
+        raise SystemExit(f"No differential-footprint motif BED files found under {diff_dir}")
     return pd.DataFrame(rows)
 
 
@@ -1600,11 +1600,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--all-motif-diff-dir",
-        dest="all_motif_bindetect_dir",
+        dest="all_motif_diff_dir",
         metavar="ALL_MOTIF_DIFF_DIR",
         help="Optional differential-footprint output directory containing */beds/*_all.bed files for all-motif per-cell heatmap scoring.",
     )
-    parser.add_argument("--all-motif-bindetect-dir", dest="all_motif_bindetect_dir", help=argparse.SUPPRESS)
     parser.add_argument("--all-motif-results", help="Differential-footprint results table used to order and annotate all-motif heatmap rows.")
     parser.add_argument("--all-motif-score-table", help="Existing all-motif per-cell heatmap TSV to redraw all/top heatmaps without rescoring fragments.")
     parser.add_argument("--marker-score-table", help="Existing KNN marker score table used to orient selected marker rows in top heatmaps and summary UMAPs.")
@@ -1717,13 +1716,13 @@ def main(argv: list[str] | None = None) -> int:
                 outdir / all_tf_review_prefix,
                 panels_per_page=args.all_tf_review_panels_per_page,
             )
-    if args.all_motif_bindetect_dir or args.all_motif_results:
-        if not args.all_motif_bindetect_dir or not args.all_motif_results:
+    if args.all_motif_diff_dir or args.all_motif_results:
+        if not args.all_motif_diff_dir or not args.all_motif_results:
             raise SystemExit("--all-motif-diff-dir and --all-motif-results must be provided together.")
         max_sites_per_motif = None if args.max_sites_per_motif == 0 else args.max_sites_per_motif
-        motif_table = read_bindetect_motif_table(
+        motif_table = read_diff_footprint_motif_table(
             Path(args.all_motif_results),
-            Path(args.all_motif_bindetect_dir),
+            Path(args.all_motif_diff_dir),
             args.max_motifs,
         )
         score_all_motif_per_cell_heatmap(
