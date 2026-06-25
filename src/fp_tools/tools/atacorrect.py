@@ -23,6 +23,7 @@ import sys
 import argparse
 import numpy as np
 import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from copy import deepcopy
 import re
 
@@ -76,6 +77,10 @@ def _maybe_scale_corrected_bigwigs(args, corrected_bigwigs, logger):
 		raise ValueError(message)
 	logger.info("Q95-scaling corrected bigWigs")
 	output_paths = [corrected_scaled_output_path(path) for path in cohort]
+	norm_workers = getattr(args, "sample_workers", None)
+	if norm_workers is None and getattr(args, "cores", None):
+		norm_workers = min(len(cohort), max(1, int(args.cores) // 4))
+	norm_workers = max(1, min(int(norm_workers or 1), len(cohort)))
 	rows = normalize_bigwigs(
 		cohort,
 		args.scale_background,
@@ -85,6 +90,7 @@ def _maybe_scale_corrected_bigwigs(args, corrected_bigwigs, logger):
 		target=getattr(args, "scale_target", "median"),
 		chrom_sizes=getattr(args, "scale_chrom_sizes", None),
 		output_paths=output_paths,
+		workers=norm_workers,
 	)
 	for row in rows:
 		logger.stats("Q95_SCALE\t{0}\t{1:.5f}\t{2}".format(row.sample, row.scale_factor, row.output_bigwig))
@@ -164,9 +170,23 @@ def _merge_peak_files(peak_files, outdir):
 	return merged_path
 
 
-def _corrected_output_paths_for_args(args):
+def _selected_output_tracks(args):
 	tracks = ["uncorrected", "bias", "expected", "corrected"]
-	tracks = [track for track in tracks if track not in args.track_off]
+	requested = getattr(args, "write_tracks", None)
+	if requested:
+		requested = list(requested)
+		if "all" in requested:
+			selected = list(tracks)
+		else:
+			selected = [track for track in tracks if track in requested]
+	else:
+		selected = list(tracks)
+	selected = [track for track in selected if track not in getattr(args, "track_off", [])]
+	return selected
+
+
+def _corrected_output_paths_for_args(args):
+	tracks = _selected_output_tracks(args)
 	if "corrected" not in tracks:
 		return []
 	strands = ["forward", "reverse"] if args.split_strands else ["both"]
@@ -175,6 +195,27 @@ def _corrected_output_paths_for_args(args):
 		elements = [args.prefix, "corrected"] if strand == "both" else [args.prefix, "corrected", strand]
 		paths.append(os.path.join(args.outdir, "{0}.bw".format("_".join(elements))))
 	return paths
+
+
+def _sample_worker_plan(n_items, cores, requested=None):
+	"""Return (sample_workers, cores_per_sample) for multi-sample dispatch."""
+	if n_items <= 1:
+		return 1, cores
+	if requested is not None:
+		workers = max(1, min(int(requested), n_items))
+	else:
+		if cores is None:
+			return 1, cores
+		workers = min(n_items, max(1, int(cores) // 8))
+	cores_per_sample = cores
+	if cores is not None and workers > 1:
+		cores_per_sample = max(1, int(cores) // workers)
+	return workers, cores_per_sample
+
+
+def _run_atacorrect_sample(sample_args):
+	_run_atacorrect_single(sample_args)
+	return sample_args.prefix
 
 #--------------------------------------------------------------------------------------------------------#
 #-------------------------------------- Main pipeline function ------------------------------------------#
@@ -207,6 +248,7 @@ def run_atacorrect(args):
 	peaks_for_run = _merge_peak_files(args.peaks, base_outdir)
 	corrected_bigwigs = []
 
+	sample_args_list = []
 	for bam, sample_name in zip(bams, sample_names):
 		sample_args = deepcopy(args)
 		sample_args.bam = bam
@@ -217,7 +259,29 @@ def run_atacorrect(args):
 		sample_args.scale_corrected = "none"
 		sample_args._scale_after_single = False
 		corrected_bigwigs.extend(_corrected_output_paths_for_args(sample_args))
-		_run_atacorrect_single(sample_args)
+		sample_args_list.append(sample_args)
+
+	sample_workers, sample_cores = _sample_worker_plan(
+		len(sample_args_list),
+		getattr(args, "cores", None),
+		getattr(args, "sample_workers", None),
+	)
+	for sample_args in sample_args_list:
+		sample_args.cores = sample_cores
+
+	if sample_workers == 1:
+		for sample_args in sample_args_list:
+			_run_atacorrect_sample(sample_args)
+	else:
+		preflight_logger.info(
+			"Processing {0} BAMs with {1} concurrent sample workers and {2} cores per sample".format(
+				len(sample_args_list), sample_workers, sample_cores
+			)
+		)
+		with ProcessPoolExecutor(max_workers=sample_workers) as executor:
+			futures = [executor.submit(_run_atacorrect_sample, sample_args) for sample_args in sample_args_list]
+			for future in as_completed(futures):
+				future.result()
 
 	args.outdir = base_outdir
 	if len(bams) == 1:
@@ -255,8 +319,7 @@ def _run_atacorrect_single(args):
 	args.outdir = os.path.abspath(args.outdir) if args.outdir != None else os.path.abspath(os.getcwd())
 
 	#Set output bigwigs based on input
-	tracks = ["uncorrected", "bias", "expected", "corrected"]
-	tracks = [track for track in tracks if track not in args.track_off] 	# switch off printing
+	tracks = _selected_output_tracks(args)
 
 	if args.split_strands == True:
 		strands = ["forward", "reverse"]

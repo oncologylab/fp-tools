@@ -267,6 +267,7 @@ def bigwig_writer(q, key_file_dict, header, regions, args):
 
     i_to_write = {key:0 for key in handles}			#index of next region to write
     ready_to_write = {key:{} for key in handles}	#key:dict; dict is region-tup:signal array
+    writing_progress = Progress(n_regions, logger, prefix="Writing progress", round=0)
     while True:
 
         try:
@@ -284,8 +285,6 @@ def bigwig_writer(q, key_file_dict, header, regions, args):
             #Save key:region:signal to ready_to_write
             ready_to_write[key][region] = signal
 
-            writing_progress = Progress(n_regions, logger, prefix="Writing progress", round=0)
-
             #Check if next-to-write region was done
             for key in handles:
                 logger.spam("Key: {0}. Index to write: {1}".format(key, i_to_write[key]))
@@ -298,13 +297,12 @@ def bigwig_writer(q, key_file_dict, header, regions, args):
                     while next_region in ready_to_write[key]: 	#When true: Keep writing when the next region is available
                         chrom = next_region[0]
                         signal = ready_to_write[key][next_region]
-                        included = signal.nonzero()[0]
-                        positions = np.arange(next_region[1],next_region[2])		#start-end	(including end)
-                        pos = positions[included].tolist()
-                        val = signal[included].tolist()
+                        included = np.flatnonzero(signal)
 
-                        if len(pos) > 0:
+                        if len(included) > 0:
                             try:
+                                pos = (included + next_region[1]).astype(int, copy=False).tolist()
+                                val = signal[included].tolist()
                                 handles[key].addEntries(chrom, pos, values=val, span=1)
                             except Exception as e:
                                 logger.error("Error writing key: {0}, region: {1} to bigwig. Exception was: '{2}'".format(key, next_region, e))

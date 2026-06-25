@@ -60,6 +60,42 @@ class NormalizeBigwigTest(unittest.TestCase):
             self.assertEqual(data[0]["background_q90"], "4.6")
             self.assertEqual(data[0]["scale_factor"], "1.5")
 
+    def test_parallel_background_scale_matches_serial_outputs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            bw1 = tmp / "sample1_corrected.bw"
+            bw2 = tmp / "sample2_corrected.bw"
+            self._write_bigwig(bw1, [1, 2, 3, 4, 5, 10, 10, 10, 10, 10])
+            self._write_bigwig(bw2, [2, 4, 6, 8, 10, 20, 20, 20, 20, 20])
+            background = tmp / "background.bed"
+            background.write_text("".join(f"chr1\t{i}\t{i + 1}\n" for i in range(5)), encoding="utf-8")
+
+            serial_rows = normalize_bigwigs(
+                [str(bw1), str(bw2)],
+                background,
+                tmp / "serial",
+                method="background-scale",
+                stat="q95",
+                target="median",
+                workers=1,
+            )
+            parallel_rows = normalize_bigwigs(
+                [str(bw1), str(bw2)],
+                background,
+                tmp / "parallel",
+                method="background-scale",
+                stat="q95",
+                target="median",
+                workers=2,
+            )
+
+            self.assertEqual([row.scale_factor for row in serial_rows], [row.scale_factor for row in parallel_rows])
+            for serial, parallel in zip(serial_rows, parallel_rows):
+                np.testing.assert_allclose(
+                    self._read_values(Path(serial.output_bigwig), 0, 10),
+                    self._read_values(Path(parallel.output_bigwig), 0, 10),
+                )
+
 
     def test_background_scale_accepts_high_tail_quantiles(self):
         with tempfile.TemporaryDirectory() as tmpdir:

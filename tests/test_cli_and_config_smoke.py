@@ -259,6 +259,43 @@ class CliAndConfigSmokeTest(unittest.TestCase):
                 "chr1\t10\t20\tTF1\t8.0\t+\tchr1\t1\t100\t1.25000\t2.50000",
             )
 
+    def test_cached_match_dirs_use_compact_motif_site_cache_when_available(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            logger = diff_footprints.FpToolsLogger("test", 0)
+            for sample, score in [("A", "1.25000"), ("B", "2.50000")]:
+                match_dir = root / sample / "match_motifs"
+                bed_dir = match_dir / "TF1_MA0001.1" / "beds"
+                bed_dir.mkdir(parents=True)
+                (bed_dir / "TF1_MA0001.1_all.bed").write_text(
+                    "chr1\t10\t20\tTF1\t8.0\t+\tchr1\t1\t100\t" + score + "\t" + score + "\tNA\n",
+                    encoding="utf-8",
+                )
+                args = SimpleNamespace(
+                    outdir=str(match_dir),
+                    peak_header_list=["peak_chr", "peak_start", "peak_end"],
+                )
+                diff_footprints._write_match_motif_site_cache(args, ["TF1_MA0001.1"], logger)
+                (bed_dir / "TF1_MA0001.1_all.bed").unlink()
+
+            outdir = root / "out"
+            (outdir / "TF1_MA0001.1" / "beds").mkdir(parents=True)
+            args = SimpleNamespace(
+                cached_match_dirs=[
+                    str(root / "A" / "match_motifs"),
+                    str(root / "B" / "match_motifs"),
+                ],
+                sample_names=["A_sample", "B_sample"],
+                outdir=str(outdir),
+                peak_header_list=["peak_chr", "peak_start", "peak_end"],
+            )
+            diff_footprints._write_cached_tfbs_tmp_files(args, ["TF1_MA0001.1"], logger)
+            tmp_file = outdir / "TF1_MA0001.1" / "beds" / "TF1_MA0001.1.tmp"
+            self.assertEqual(
+                tmp_file.read_text(encoding="utf-8").strip(),
+                "chr1\t10\t20\tTF1\t8.0\t+\tchr1\t1\t100\t1.25000\t2.50000",
+            )
+
     def test_cached_match_dirs_load_background_without_bigwigs(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = pathlib.Path(tmpdir)

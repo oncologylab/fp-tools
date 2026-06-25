@@ -16,7 +16,8 @@ def add_atacorrect_arguments(parser):
 	description = "atac-correct corrects ATAC-seq cutsite signal for Tn5 sequence bias.\n\n"
 	description += "Usage:\natac-correct --bams <reads.bam> [<more_reads.bam> ...] --genome <genome.fa> --peaks <merged_peaks.bed> [<sample_peaks.bed> ...]\n\n"
 	description += "Output files:\n"
-	description += "\n".join(["- <outdir>/<sample>/<sample>_{0}.bw for multi-BAM runs".format(track) for track in ["uncorrected", "bias", "expected", "corrected"]]) + "\n"
+	description += "- <outdir>/<sample>/<sample>_corrected.bw for multi-BAM runs\n"
+	description += "- optional auxiliary tracks with --write-tracks\n"
 	description += "- <outdir>/<prefix>_atacorrect.pdf"
 	parser.description = format_help_description("atac-correct", description)
 
@@ -36,7 +37,8 @@ def add_atacorrect_arguments(parser):
 	optargs.add_argument('--extend', metavar="<int>", type=int, help="Extend output regions with basepairs upstream/downstream (default: 100)", default=100)
 	optargs.add_argument('--split-strands', help="Write out tracks per strand", action="store_true")
 	optargs.add_argument('--norm-off', help="Switches off normalization based on number of reads", action='store_true')
-	optargs.add_argument('--track-off', metavar="<track>", help="Switch off writing of individual .bigwig-tracks (uncorrected/bias/expected/corrected)", nargs="*", choices=["uncorrected", "bias", "expected", "corrected"], default=[])
+	optargs.add_argument('--write-tracks', metavar="<track>", nargs="*", choices=["corrected", "uncorrected", "bias", "expected", "all"], default=["corrected"], help="bigWig tracks to write (default: corrected; use all for corrected, uncorrected, bias, and expected)")
+	optargs.add_argument('--track-off', metavar="<track>", help="Compatibility option to switch off individual bigWig tracks after --write-tracks is resolved", nargs="*", choices=["uncorrected", "bias", "expected", "corrected"], default=[])
 	optargs.add_argument('--scale-corrected', choices=["auto", "none", "q95"], default="auto", help="Optionally q95-scale corrected bigWigs after correction. In auto mode this runs only when --scale-corrected-bigwigs has more than one track (default: auto)")
 	optargs.add_argument('--scale-background', metavar="<bed>", help="Shared BED regions used to estimate q95 scaling for --scale-corrected")
 	optargs.add_argument('--scale-corrected-bigwigs', metavar="<bigwig>", nargs="*", help="Corrected bigWigs to q95-scale together. Include the current sample's corrected bigWig or omit to scale only the current output")
@@ -57,6 +59,7 @@ def add_atacorrect_arguments(parser):
 	runargs.add_argument('--sample-names', metavar="<name>", nargs="*", help="Sample labels for --bams (default: BAM filename stems)")
 	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory for files (default: current working directory)", default="")
 	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: all available cores)", default=None)
+	runargs.add_argument('--sample-workers', metavar="<int>", type=int, default=None, help="Number of samples to process concurrently for multi-BAM runs (default: auto when --cores is set)")
 	runargs.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)
 	
 	runargs = add_logger_args(runargs)
@@ -118,6 +121,7 @@ def add_scorebigwig_arguments(parser):
 	runargs = parser.add_argument_group('Run arguments')
 	runargs.add_argument('--outdir', metavar="<directory>", help="Output directory used with --signals when --outputs is not supplied")
 	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: all available cores)", default=None)
+	runargs.add_argument('--sample-workers', metavar="<int>", type=int, default=None, help="Number of input signals to process concurrently for multi-signal runs (default: auto when --cores is set)")
 	runargs.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)
 	runargs = add_logger_args(runargs)
 
@@ -136,7 +140,7 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 		description += "The method ranks motifs by signal differences across input conditions and reports motif-level and site-level results.\n\n"
 		description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
 	if is_match_motifs:
-		description += "Output files:\n- <outdir>/<prefix>_figures.pdf\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n"
+		description += "Output files:\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n"
 	else:
 		description += "Output files:\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n- <outdir>/<prefix>_<condition1>_<condition2>.html\n"
 		description += "- optional <outdir>/<prefix>_figures.pdf with --static-plots\n- optional <outdir>/<prefix>_clusters.pdf with --static-plots\n"

@@ -5,12 +5,18 @@ from pathlib import Path
 
 import pyBigWig
 
-from fp_tools.tools.score_bigwig import _write_candidate_bed
+from fp_tools.tools.score_bigwig import _sample_worker_plan, _write_candidate_bed
 from fp_tools.utils.logger import FpToolsLogger
 from fp_tools.utils.regions import RegionList
 
 
 class CallFootprintsCandidateBedTest(unittest.TestCase):
+    def test_sample_worker_plan_splits_total_core_budget(self):
+        self.assertEqual(_sample_worker_plan(6, 32, None), (4, 8))
+        self.assertEqual(_sample_worker_plan(6, 32, 3), (3, 10))
+        self.assertEqual(_sample_worker_plan(6, None, None), (1, None))
+        self.assertEqual(_sample_worker_plan(1, 32, None), (1, 32))
+
     def test_output_bed_uses_ranked_local_maxima_and_filters(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)

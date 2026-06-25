@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import math
+import multiprocessing as mp
 import re
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -129,30 +131,14 @@ def _fit_background_stats(
     method: str,
     stat: str,
     target: str,
+    workers: int = 1,
 ) -> list[dict[str, float]]:
-    rows = []
-    stat_values = []
-    for bigwig in bigwigs:
-        values = _background_values(bigwig, background_regions)
-        median = float(np.median(values))
-        q25, q75 = np.quantile(values, [0.25, 0.75])
-        mad = float(np.median(np.abs(values - median)))
-        iqr = float(q75 - q25)
-        chosen = _stat(values, stat)
-        rows.append(
-            {
-                "background_median": median,
-                "background_q90": float(np.quantile(values, 0.9)),
-                "background_q95": float(np.quantile(values, 0.95)),
-                "background_q97_5": float(np.quantile(values, 0.975)),
-                "background_q99": float(np.quantile(values, 0.99)),
-                "background_mad": mad,
-                "background_iqr": iqr,
-                "scaling_stat": stat,
-                "chosen_stat": chosen,
-            }
-        )
-        stat_values.append(chosen)
+    if workers > 1 and len(bigwigs) > 1:
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            rows = list(executor.map(_fit_one_background_stats, [(bigwig, background_regions, stat) for bigwig in bigwigs]))
+    else:
+        rows = [_fit_one_background_stats((bigwig, background_regions, stat)) for bigwig in bigwigs]
+    stat_values = [row["chosen_stat"] for row in rows]
 
     if method == "none":
         for row in rows:
@@ -177,6 +163,27 @@ def _fit_background_stats(
         row["target_scaling_value"] = target_value
         row["scale_factor"] = target_value / sample_value
     return rows
+
+
+def _fit_one_background_stats(args: tuple[str, list[tuple[str, int, int]], str]) -> dict[str, float]:
+    bigwig, background_regions, stat = args
+    values = _background_values(bigwig, background_regions)
+    median = float(np.median(values))
+    q25, q75 = np.quantile(values, [0.25, 0.75])
+    mad = float(np.median(np.abs(values - median)))
+    iqr = float(q75 - q25)
+    chosen = _stat(values, stat)
+    return {
+        "background_median": median,
+        "background_q90": float(np.quantile(values, 0.9)),
+        "background_q95": float(np.quantile(values, 0.95)),
+        "background_q97_5": float(np.quantile(values, 0.975)),
+        "background_q99": float(np.quantile(values, 0.99)),
+        "background_mad": mad,
+        "background_iqr": iqr,
+        "scaling_stat": stat,
+        "chosen_stat": chosen,
+    }
 
 
 def _output_path(input_bigwig: str | Path, outdir: Path, method: str, stat: str) -> Path:
@@ -245,6 +252,11 @@ def _write_normalized_bigwig(
             target.addEntries([chrom] * len(starts), starts, ends=ends, values=values.tolist())
 
 
+def _write_normalized_bigwig_task(args: tuple[str, str, str, dict[str, float], dict[str, int] | None]) -> None:
+    input_bigwig, output_bigwig, method, stats, chrom_sizes = args
+    _write_normalized_bigwig(input_bigwig, output_bigwig, method, stats, chrom_sizes)
+
+
 def normalize_bigwigs(
     bigwigs: list[str],
     background: str | Path,
@@ -256,6 +268,7 @@ def normalize_bigwigs(
     warn_scale_low: float = 0.5,
     warn_scale_high: float = 2.0,
     output_paths: list[str | Path] | None = None,
+    workers: int | None = None,
 ) -> list[BackgroundStats]:
     if not bigwigs:
         raise ValueError("--bigwigs requires at least one input bigWig")
@@ -263,21 +276,20 @@ def normalize_bigwigs(
     outdir_path.mkdir(parents=True, exist_ok=True)
     if output_paths is not None and len(output_paths) != len(bigwigs):
         raise ValueError("output_paths must have the same length as bigwigs")
+    if workers is None:
+        workers = mp.cpu_count()
+    workers = max(1, min(int(workers or 1), len(bigwigs)))
     background_regions = _read_background(background)
     chrom_size_dict = _read_chrom_sizes(chrom_sizes) if chrom_sizes else None
-    fitted = _fit_background_stats(bigwigs, background_regions, method, stat, target)
+    fitted = _fit_background_stats(bigwigs, background_regions, method, stat, target, workers=workers)
 
     rows: list[BackgroundStats] = []
-    for bigwig, stats in zip(bigwigs, fitted):
-        output = Path(output_paths[len(rows)]).expanduser() if output_paths is not None else _output_path(bigwig, outdir_path, method, stat)
+    write_tasks: list[tuple[str, str, str, dict[str, float], dict[str, int] | None]] = []
+    for index, (bigwig, stats) in enumerate(zip(bigwigs, fitted)):
+        output = Path(output_paths[index]).expanduser() if output_paths is not None else _output_path(bigwig, outdir_path, method, stat)
         output.parent.mkdir(parents=True, exist_ok=True)
-        _write_normalized_bigwig(bigwig, output, method, stats, chrom_size_dict)
+        write_tasks.append((str(bigwig), str(output), method, stats, chrom_size_dict))
         scale = stats["scale_factor"]
-        if method == "background-scale" and (scale < warn_scale_low or scale > warn_scale_high):
-            print(
-                f"WARNING: scale factor for {bigwig} is {scale:.4g}; check library quality or background regions.",
-                file=sys.stderr,
-            )
         rows.append(
             BackgroundStats(
                 sample=_safe_stem(bigwig),
@@ -296,6 +308,21 @@ def normalize_bigwigs(
                 scale_factor=scale,
             )
         )
+
+    if workers > 1 and len(write_tasks) > 1:
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            list(executor.map(_write_normalized_bigwig_task, write_tasks))
+    else:
+        for task in write_tasks:
+            _write_normalized_bigwig_task(task)
+
+    for row in rows:
+        scale = row.scale_factor
+        if method == "background-scale" and (scale < warn_scale_low or scale > warn_scale_high):
+            print(
+                f"WARNING: scale factor for {row.input_bigwig} is {scale:.4g}; check library quality or background regions.",
+                file=sys.stderr,
+            )
 
     _write_qc_tables(rows, outdir_path)
     return rows
@@ -381,6 +408,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Across-sample target statistic for background-scale (default: median).",
     )
     parser.add_argument("--chrom-sizes", help="Optional chromosome sizes file for output validation/header.")
+    parser.add_argument("--workers", type=int, default=None, help="Number of bigWig tracks to normalize concurrently (default: all available cores, capped by input count).")
     return parser
 
 
@@ -395,6 +423,7 @@ def main(argv: list[str] | None = None) -> None:
         stat=args.stat,
         target=args.target,
         chrom_sizes=args.chrom_sizes,
+        workers=args.workers,
     )
 
 

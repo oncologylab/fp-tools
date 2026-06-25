@@ -12,9 +12,11 @@ import signal
 import sys
 import argparse
 import copy
+import bisect
 import numpy as np
 import pyBigWig
 import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import closing
 
 # Internal functions and classes (fp_tools namespace)
@@ -128,6 +130,28 @@ def _is_batch_request(args):
     return bool(signals) or bool(getattr(args, "outputs", None)) or bool(getattr(args, "outdir", None))
 
 
+def _sample_worker_plan(n_items, cores, requested=None):
+    """Return (sample_workers, cores_per_sample) for multi-signal dispatch."""
+
+    if n_items <= 1:
+        return 1, cores
+    if requested is not None:
+        workers = max(1, min(int(requested), n_items))
+    else:
+        if cores is None:
+            return 1, cores
+        workers = min(n_items, max(1, int(cores) // 8))
+    cores_per_sample = cores
+    if cores is not None and workers > 1:
+        cores_per_sample = max(1, int(cores) // workers)
+    return workers, cores_per_sample
+
+
+def _run_scorebigwig_batch_item(single_args):
+    _run_scorebigwig_single(single_args)
+    return single_args.output
+
+
 # ----------------------------------------------------------------------------- #
 def calculate_scores(regions, args):
 
@@ -212,19 +236,20 @@ def calculate_scores(regions, args):
 def _local_maxima(values):
     """Yield 0-based offsets that are local maxima in a one-dimensional score array."""
 
-    if len(values) == 0:
-        return
-    if len(values) == 1:
-        if np.isfinite(values[0]):
-            yield 0
-        return
-    for idx, value in enumerate(values):
-        if not np.isfinite(value):
-            continue
-        left = values[idx - 1] if idx > 0 else -np.inf
-        right = values[idx + 1] if idx < len(values) - 1 else -np.inf
-        if value >= left and value >= right and (value > left or value > right):
-            yield idx
+    values = np.asarray(values, dtype=float)
+    if values.size == 0:
+        return iter(())
+    if values.size == 1:
+        return iter([0] if np.isfinite(values[0]) else [])
+
+    left = np.empty_like(values)
+    right = np.empty_like(values)
+    left[0] = -np.inf
+    left[1:] = values[:-1]
+    right[-1] = -np.inf
+    right[:-1] = values[1:]
+    mask = np.isfinite(values) & (values >= left) & (values >= right) & ((values > left) | (values > right))
+    return iter(np.flatnonzero(mask).tolist())
 
 
 def _write_candidate_bed(score_bigwig, regions, output_bed, args, chrom_info, logger):
@@ -253,9 +278,12 @@ def _write_candidate_bed(score_bigwig, regions, output_bed, args, chrom_info, lo
             candidates.sort(key=lambda item: (-item[0], item[1]))
             kept_centers = []
             for score, center, reg_i, chrom, reg_start, reg_end in candidates:
-                if any(abs(center - other) < min_distance for other in kept_centers):
+                insert_at = bisect.bisect_left(kept_centers, center)
+                left_too_close = insert_at > 0 and center - kept_centers[insert_at - 1] < min_distance
+                right_too_close = insert_at < len(kept_centers) and kept_centers[insert_at] - center < min_distance
+                if left_too_close or right_too_close:
                     continue
-                kept_centers.append(center)
+                kept_centers.insert(insert_at, center)
                 start = max(0, center - half_width)
                 end = min(int(chrom_info[chrom]), start + call_width)
                 start = max(0, end - call_width)
@@ -437,6 +465,7 @@ def _run_scorebigwig_single(args):
 def run_scorebigwig(args):
     if _is_batch_request(args):
         items = _scorebigwig_batch_items(args)
+        single_args_list = []
         for signal_path, output_path, output_bed, output_npz in items:
             single_args = copy.copy(args)
             single_args.signals = None
@@ -449,7 +478,22 @@ def run_scorebigwig(args):
             single_args.output = output_path
             single_args.output_bed = output_bed
             single_args.output_multiscale_npz = output_npz
-            _run_scorebigwig_single(single_args)
+            single_args_list.append(single_args)
+        sample_workers, sample_cores = _sample_worker_plan(
+            len(single_args_list),
+            getattr(args, "cores", None),
+            getattr(args, "sample_workers", None),
+        )
+        for single_args in single_args_list:
+            single_args.cores = sample_cores
+        if sample_workers == 1:
+            for single_args in single_args_list:
+                _run_scorebigwig_batch_item(single_args)
+        else:
+            with ProcessPoolExecutor(max_workers=sample_workers) as executor:
+                futures = [executor.submit(_run_scorebigwig_batch_item, single_args) for single_args in single_args_list]
+                for future in as_completed(futures):
+                    future.result()
         return
 
     _run_scorebigwig_single(args)

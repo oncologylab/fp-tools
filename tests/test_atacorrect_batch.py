@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from fp_tools.tools.atacorrect import _merge_peak_files, run_atacorrect
+from fp_tools.tools.atacorrect import _merge_peak_files, _sample_worker_plan, _selected_output_tracks, run_atacorrect
 
 
 class AtacCorrectBatchTest(unittest.TestCase):
@@ -29,6 +29,20 @@ class AtacCorrectBatchTest(unittest.TestCase):
         }
         values.update(overrides)
         return argparse.Namespace(**values)
+
+    def test_sample_worker_plan_splits_total_core_budget(self):
+        self.assertEqual(_sample_worker_plan(6, 32, None), (4, 8))
+        self.assertEqual(_sample_worker_plan(6, 32, 2), (2, 16))
+        self.assertEqual(_sample_worker_plan(6, None, None), (1, None))
+        self.assertEqual(_sample_worker_plan(1, 32, None), (1, 32))
+
+    def test_write_tracks_default_and_all_modes(self):
+        args = argparse.Namespace(write_tracks=["corrected"], track_off=[])
+        self.assertEqual(_selected_output_tracks(args), ["corrected"])
+        args = argparse.Namespace(write_tracks=["all"], track_off=[])
+        self.assertEqual(_selected_output_tracks(args), ["uncorrected", "bias", "expected", "corrected"])
+        args = argparse.Namespace(write_tracks=["all"], track_off=["bias"])
+        self.assertEqual(_selected_output_tracks(args), ["uncorrected", "expected", "corrected"])
 
     def test_merge_peak_files_writes_sorted_union(self):
         with tempfile.TemporaryDirectory() as tmpdir:

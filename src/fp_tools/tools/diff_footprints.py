@@ -550,6 +550,24 @@ def _write_cached_tfbs_tmp_files(args, motif_names, logger):
     if len(cached_dirs) != len(args.sample_names):
         raise ValueError("--sample-dirs/--project-dir cache count must match resolved samples")
 
+    peak_cols = len(args.peak_header_list)
+    build_overlap_clusters = bool(getattr(args, "static_plots", False))
+    if not build_overlap_clusters:
+        args.cached_cluster_map = _cached_cluster_map(cached_dirs[0])
+        args.cached_distance_table = _cached_distance_table(cached_dirs[0])
+
+    compact_paths = [_match_motif_site_cache_path(path) for path in cached_dirs]
+    try:
+        compact_overlaps = _write_cached_tfbs_tmp_files_from_compact(
+            args, motif_names, compact_paths, peak_cols, build_overlap_clusters
+        )
+    except Exception as exc:
+        logger.warning(f"Compact motif-site cache could not be reused ({exc}); falling back to per-motif BED files")
+        compact_overlaps = None
+    if compact_overlaps is not None:
+        logger.info(f"Reused cached motif-site scores from {len(cached_dirs)} sample folder(s) using compact motif-site cache")
+        return compact_overlaps
+
     maps = [_cached_motif_bed_map(path) for path in cached_dirs]
     common = set(maps[0])
     for mapping in maps[1:]:
@@ -558,38 +576,11 @@ def _write_cached_tfbs_tmp_files(args, motif_names, logger):
     if missing:
         raise ValueError("Cached match-motifs outputs are missing motif(s): " + ", ".join(missing[:10]))
 
-    peak_cols = len(args.peak_header_list)
-    build_overlap_clusters = bool(getattr(args, "static_plots", False))
-    if not build_overlap_clusters:
-        args.cached_cluster_map = _cached_cluster_map(cached_dirs[0])
-        args.cached_distance_table = _cached_distance_table(cached_dirs[0])
     global_tfbs = RegionList() if build_overlap_clusters else None
     for motif in motif_names:
         per_sample_rows = [_read_cached_all_bed(mapping[motif], peak_cols, sample_col_count=1) for mapping in maps]
-        lengths = {len(rows) for rows in per_sample_rows}
-        if len(lengths) != 1:
-            raise ValueError(f"Cached motif site count mismatch for {motif}: {sorted(lengths)}")
-        out_rows = []
-        for row_idx in range(len(per_sample_rows[0])):
-            key = per_sample_rows[0][row_idx][:6 + peak_cols]
-            scores = []
-            for sample_idx, rows in enumerate(per_sample_rows):
-                other_key = rows[row_idx][:6 + peak_cols]
-                if other_key != key:
-                    raise ValueError(
-                        f"Cached motif site mismatch for {motif} at row {row_idx + 1} "
-                        f"between sample 1 and sample {sample_idx + 1}"
-                    )
-                scores.append(rows[row_idx][6 + peak_cols])
-            out_rows.append(key + scores)
-        tmp_path = os.path.join(args.outdir, motif, "beds", motif + ".tmp")
-        with open(tmp_path, "w", encoding="utf-8") as handle:
-            handle.write("\n".join("\t".join(row) for row in out_rows))
-            if out_rows:
-                handle.write("\n")
-        if build_overlap_clusters and out_rows:
-            global_tfbs.extend(RegionList().from_bed(tmp_path))
-    logger.info(f"Reused cached motif-site scores from {len(cached_dirs)} sample folder(s)")
+        _write_merged_cached_rows_for_motif(args, motif, peak_cols, per_sample_rows, global_tfbs)
+    logger.info(f"Reused cached motif-site scores from {len(cached_dirs)} sample folder(s) using per-motif BED files")
     if build_overlap_clusters:
         return global_tfbs.count_overlaps() if len(global_tfbs) else {}
     return {}
@@ -603,6 +594,10 @@ def _match_cache_paths(match_dir):
     )
 
 
+def _match_motif_site_cache_path(match_dir):
+    return os.path.join(match_dir, "cache", "motif_sites.tsv.gz")
+
+
 def _write_match_motifs_cache(args, background, logger):
     """Persist background scores needed by folder-based diff-footprints reuse."""
 
@@ -613,7 +608,7 @@ def _write_match_motifs_cache(args, background, logger):
     lengths = [len(keys)] + [len(background["sample_signal"].get(sample, [])) for sample in sample_names]
     if len(set(lengths)) != 1:
         raise ValueError(f"Cannot write match-motifs cache; background row counts differ: {lengths}")
-    with gzip.open(cache_tsv, "wt", encoding="utf-8") as handle:
+    with gzip.open(cache_tsv, "wt", encoding="utf-8", compresslevel=1) as handle:
         handle.write("\t".join(["chrom", "start", "end", "offset"] + sample_names) + "\n")
         for row_idx, key in enumerate(keys):
             scores = [f"{float(background['sample_signal'][sample][row_idx]):.8g}" for sample in sample_names]
@@ -631,6 +626,154 @@ def _write_match_motifs_cache(args, background, logger):
         json.dump(manifest, handle, indent=2, sort_keys=True)
         handle.write("\n")
     logger.info(f"Wrote match-motifs reuse cache: {cache_tsv}")
+
+
+def _write_match_motif_site_cache(args, motif_names, logger):
+    """Persist per-motif site scores for fast folder-based diff-footprints reuse."""
+
+    cache_tsv = _match_motif_site_cache_path(args.outdir)
+    make_directory(os.path.dirname(cache_tsv))
+    peak_cols = len(args.peak_header_list)
+    expected = 6 + peak_cols + 1
+    written = 0
+    with gzip.open(cache_tsv, "wt", encoding="utf-8", compresslevel=1) as handle:
+        header = [
+            "motif",
+            "TFBS_chr",
+            "TFBS_start",
+            "TFBS_end",
+            "TFBS_name",
+            "TFBS_score",
+            "TFBS_strand",
+        ] + list(args.peak_header_list) + ["score"]
+        handle.write("\t".join(header) + "\n")
+        for motif in motif_names:
+            path = os.path.join(args.outdir, motif, "beds", motif + "_all.bed")
+            if not os.path.exists(path):
+                continue
+            with open(path, "r", encoding="utf-8") as bed_handle:
+                for line in bed_handle:
+                    if not line.strip():
+                        continue
+                    parts = line.rstrip("\n").split("\t")
+                    if len(parts) < expected:
+                        raise ValueError(f"Motif BED has {len(parts)} columns but expected at least {expected}: {path}")
+                    handle.write(motif + "\t" + "\t".join(parts[:expected]) + "\n")
+                    written += 1
+    logger.info(f"Wrote compact motif-site reuse cache with {written} rows: {cache_tsv}")
+
+
+def _load_match_motif_site_cache(match_dir):
+    cache_tsv = _match_motif_site_cache_path(match_dir)
+    if not os.path.exists(cache_tsv):
+        return None
+    rows_by_motif = {}
+    with gzip.open(cache_tsv, "rt", encoding="utf-8") as handle:
+        header = handle.readline().rstrip("\n").split("\t")
+        if len(header) < 8 or header[0] != "motif":
+            raise ValueError(f"Unexpected motif-site cache header in {cache_tsv}")
+        for line_no, line in enumerate(handle, start=2):
+            if not line.strip():
+                continue
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) != len(header):
+                raise ValueError(f"Motif-site cache line {line_no} has {len(parts)} columns but expected {len(header)}: {cache_tsv}")
+            motif = parts[0]
+            rows_by_motif.setdefault(motif, []).append(parts[1:])
+    return rows_by_motif
+
+
+def _read_next_motif_site_cache_group(handle, expected_cols):
+    line = handle.readline()
+    if not line:
+        return None
+    parts = line.rstrip("\n").split("\t")
+    if len(parts) < expected_cols + 1:
+        raise ValueError("Motif-site cache row has fewer columns than expected")
+    motif = parts[0]
+    rows = [parts[1:expected_cols + 1]]
+    while True:
+        pos = handle.tell()
+        line = handle.readline()
+        if not line:
+            break
+        parts = line.rstrip("\n").split("\t")
+        if len(parts) < expected_cols + 1:
+            raise ValueError("Motif-site cache row has fewer columns than expected")
+        if parts[0] != motif:
+            handle.seek(pos)
+            break
+        rows.append(parts[1:expected_cols + 1])
+    return motif, rows
+
+
+def _write_cached_tfbs_tmp_files_from_compact(args, motif_names, cache_paths, peak_cols, build_overlap_clusters):
+    expected_cols = 6 + peak_cols + 1
+    motif_order = {motif: index for index, motif in enumerate(motif_names)}
+    handles = []
+    groups = []
+    global_tfbs = RegionList() if build_overlap_clusters else None
+    try:
+        for path in cache_paths:
+            if not os.path.exists(path):
+                return None
+            handle = gzip.open(path, "rt", encoding="utf-8")
+            header = handle.readline().rstrip("\n").split("\t")
+            if len(header) < expected_cols + 1 or header[0] != "motif":
+                return None
+            handles.append(handle)
+            groups.append(_read_next_motif_site_cache_group(handle, expected_cols))
+
+        for motif_index, motif in enumerate(motif_names):
+            per_sample_rows = []
+            for sample_idx, group in enumerate(groups):
+                if group is None:
+                    per_sample_rows.append([])
+                    continue
+                group_motif, rows = group
+                group_index = motif_order.get(group_motif)
+                if group_index is None:
+                    return None
+                if group_index < motif_index:
+                    return None
+                if group_motif == motif:
+                    per_sample_rows.append(rows)
+                    groups[sample_idx] = _read_next_motif_site_cache_group(handles[sample_idx], expected_cols)
+                else:
+                    per_sample_rows.append([])
+            _write_merged_cached_rows_for_motif(args, motif, peak_cols, per_sample_rows, global_tfbs)
+        if build_overlap_clusters:
+            return global_tfbs.count_overlaps() if len(global_tfbs) else {}
+        return {}
+    finally:
+        for handle in handles:
+            handle.close()
+
+
+def _write_merged_cached_rows_for_motif(args, motif, peak_cols, per_sample_rows, global_tfbs=None):
+    lengths = {len(rows) for rows in per_sample_rows}
+    if len(lengths) != 1:
+        raise ValueError(f"Cached motif site count mismatch for {motif}: {sorted(lengths)}")
+    out_rows = []
+    for row_idx in range(len(per_sample_rows[0])):
+        key = per_sample_rows[0][row_idx][:6 + peak_cols]
+        scores = []
+        for sample_idx, rows in enumerate(per_sample_rows):
+            other_key = rows[row_idx][:6 + peak_cols]
+            if other_key != key:
+                raise ValueError(
+                    f"Cached motif site mismatch for {motif} at row {row_idx + 1} "
+                    f"between sample 1 and sample {sample_idx + 1}"
+                )
+            scores.append(rows[row_idx][6 + peak_cols])
+        out_rows.append(key + scores)
+    tmp_path = os.path.join(args.outdir, motif, "beds", motif + ".tmp")
+    with open(tmp_path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join("\t".join(row) for row in out_rows))
+        if out_rows:
+            handle.write("\n")
+    if global_tfbs is not None and out_rows:
+        global_tfbs.extend(RegionList().from_bed(tmp_path))
 
 
 def _load_match_background_cache(match_dir):
@@ -1310,6 +1453,8 @@ def run_diff_footprints(args):
 
     diff_results_out = os.path.join(args.outdir, args.prefix + "_results.txt")
     info_table.to_csv(diff_results_out, sep="\t", index=False, header=True, na_rep="NA")
+    if getattr(args, "match_only", False):
+        _write_match_motif_site_cache(args, motif_names, logger)
 
     write_replicate_report = args.replicate_report == "on" or (
         args.replicate_report == "auto" and (repeated_conditions or args.replicate_map is not None)
@@ -1501,8 +1646,8 @@ def match_motifs_cli():
     args.method = "motif"
     args.match_only = True
     args.replicate_report = "off"
-    args.static_plots = True
-    args.per_motif_plots = True
+    args.static_plots = False
+    args.per_motif_plots = False
     args.skew_report = False
     run_diff_footprints(args)
 
