@@ -389,8 +389,11 @@ def process_tfbs(TF_name, args, log2fc_params):
         info_table.at[TF_name, condition + "_bound"] = int(np.sum(bed_table[condition + "_bound"].values))
 
     # per-comparison stats and figure
-    fig_out = os.path.join(args.outdir, TF_name, "plots", TF_name + "_log2fcs.pdf")
-    log2fc_pdf = PdfPages(fig_out, keep_empty=False)
+    write_per_motif_plots = bool(getattr(args, "per_motif_plots", False))
+    log2fc_pdf = None
+    if write_per_motif_plots:
+        fig_out = os.path.join(args.outdir, TF_name, "plots", TF_name + "_log2fcs.pdf")
+        log2fc_pdf = PdfPages(fig_out, keep_empty=False)
 
     if n_rows > 0:
         for (cond1, cond2) in comparisons:
@@ -438,23 +441,25 @@ def process_tfbs(TF_name, args, log2fc_params):
             ttest = scipy.stats.ttest_1samp(sample_changes, float(info_table.at[TF_name, base + "_change"]))
             info_table.at[TF_name, base + "_pvalue"] = ttest[1]
 
-            fig, ax = plt.subplots(1, 1)
-            ax.hist(observed_log2fcs, bins='auto', label="Observed log2fcs", density=True)
-            xvals = np.linspace(plt.xlim()[0], plt.xlim()[1], 100)
-            ax.plot(xvals, scipy.stats.norm.pdf(xvals, *obs_params), label="Observed (fit)", color="red", ls="--")
-            ax.axvline(obs_mean, color="red", label="Observed mean")
-            ax.plot(xvals, scipy.stats.norm.pdf(xvals, bg_mean, bg_std), label="Background (fit)", color="black", ls="--")
-            ax.axvline(bg_mean, color="black", label="Background mean")
-            x0, x1 = ax.get_xlim(); y0, y1 = ax.get_ylim()
-            ax.set_aspect(((x1 - x0) / (y1 - y0)) / 1.5)
-            ax.legend(); plt.xlabel("Log2 fold change"); plt.ylabel("Density")
-            plt.title(f"Differential binding for \"{TF_name}\"\n({cond1} / {cond2})", fontsize=PDF_FONT_SIZE, fontweight="bold")
-            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-            plt.tight_layout()
-            apply_ascii_minus_to_figure(fig)
-            log2fc_pdf.savefig(fig, bbox_inches='tight'); plt.close(fig)
+            if write_per_motif_plots:
+                fig, ax = plt.subplots(1, 1)
+                ax.hist(observed_log2fcs, bins='auto', label="Observed log2fcs", density=True)
+                xvals = np.linspace(plt.xlim()[0], plt.xlim()[1], 100)
+                ax.plot(xvals, scipy.stats.norm.pdf(xvals, *obs_params), label="Observed (fit)", color="red", ls="--")
+                ax.axvline(obs_mean, color="red", label="Observed mean")
+                ax.plot(xvals, scipy.stats.norm.pdf(xvals, bg_mean, bg_std), label="Background (fit)", color="black", ls="--")
+                ax.axvline(bg_mean, color="black", label="Background mean")
+                x0, x1 = ax.get_xlim(); y0, y1 = ax.get_ylim()
+                ax.set_aspect(((x1 - x0) / (y1 - y0)) / 1.5)
+                ax.legend(); plt.xlabel("Log2 fold change"); plt.ylabel("Density")
+                plt.title(f"Differential binding for \"{TF_name}\"\n({cond1} / {cond2})", fontsize=PDF_FONT_SIZE, fontweight="bold")
+                ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                plt.tight_layout()
+                apply_ascii_minus_to_figure(fig)
+                log2fc_pdf.savefig(fig, bbox_inches='tight'); plt.close(fig)
 
-    log2fc_pdf.close()
+    if log2fc_pdf is not None:
+        log2fc_pdf.close()
 
     # cleanup tmp
     for fn in tmp_files:

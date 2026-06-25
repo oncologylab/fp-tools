@@ -20,6 +20,7 @@ import json
 import time
 import glob
 import random
+import shutil
 import numpy as np
 import multiprocessing as mp
 import itertools
@@ -484,6 +485,64 @@ def _cached_motif_bed_map(match_dir):
     return paths
 
 
+def _cached_motif_logo_map(match_dir):
+    """Map motif prefix to cached logo PNG path in a match-motifs output directory."""
+
+    paths = {}
+    for logo in sorted(os.path.abspath(p) for p in glob.glob(os.path.join(match_dir, "*", "*.png"))):
+        prefix = os.path.splitext(os.path.basename(logo))[0]
+        paths[prefix] = logo
+    return paths
+
+
+def _cached_result_table(match_dir):
+    candidates = sorted(glob.glob(os.path.join(match_dir, "*_results.txt")))
+    if not candidates:
+        return None
+    return candidates[0]
+
+
+def _cached_distance_table(match_dir):
+    candidates = sorted(glob.glob(os.path.join(match_dir, "*_distances.txt")))
+    if not candidates:
+        return None
+    return candidates[0]
+
+
+def _cached_cluster_map(match_dir):
+    result_table = _cached_result_table(match_dir)
+    if result_table is None:
+        return {}
+    try:
+        table = pd.read_csv(result_table, sep="\t", usecols=["output_prefix", "cluster"])
+    except Exception:
+        return {}
+    return dict(zip(table["output_prefix"].astype(str), table["cluster"].astype(str)))
+
+
+def _copy_cached_logos(args, motif_list, logo_filenames, logger):
+    cached_dirs = list(getattr(args, "cached_match_dirs", []) or [])
+    if not cached_dirs:
+        return 0
+    logo_maps = [_cached_motif_logo_map(path) for path in cached_dirs]
+    copied = 0
+    for motif in motif_list:
+        src = None
+        for mapping in logo_maps:
+            if motif.prefix in mapping:
+                src = mapping[motif.prefix]
+                break
+        if src is None:
+            continue
+        dst = logo_filenames[motif.prefix]
+        make_directory(os.path.dirname(dst))
+        shutil.copyfile(src, dst)
+        copied += 1
+    if copied:
+        logger.info(f"Reused {copied} cached motif logo(s) from match-motifs sample folders")
+    return copied
+
+
 def _write_cached_tfbs_tmp_files(args, motif_names, logger):
     """Merge per-sample match-motifs caches into the .tmp files process_tfbs expects."""
 
@@ -500,7 +559,11 @@ def _write_cached_tfbs_tmp_files(args, motif_names, logger):
         raise ValueError("Cached match-motifs outputs are missing motif(s): " + ", ".join(missing[:10]))
 
     peak_cols = len(args.peak_header_list)
-    global_tfbs = RegionList()
+    build_overlap_clusters = bool(getattr(args, "static_plots", False))
+    if not build_overlap_clusters:
+        args.cached_cluster_map = _cached_cluster_map(cached_dirs[0])
+        args.cached_distance_table = _cached_distance_table(cached_dirs[0])
+    global_tfbs = RegionList() if build_overlap_clusters else None
     for motif in motif_names:
         per_sample_rows = [_read_cached_all_bed(mapping[motif], peak_cols, sample_col_count=1) for mapping in maps]
         lengths = {len(rows) for rows in per_sample_rows}
@@ -524,10 +587,12 @@ def _write_cached_tfbs_tmp_files(args, motif_names, logger):
             handle.write("\n".join("\t".join(row) for row in out_rows))
             if out_rows:
                 handle.write("\n")
-        if out_rows:
+        if build_overlap_clusters and out_rows:
             global_tfbs.extend(RegionList().from_bed(tmp_path))
     logger.info(f"Reused cached motif-site scores from {len(cached_dirs)} sample folder(s)")
-    return global_tfbs.count_overlaps() if len(global_tfbs) else {}
+    if build_overlap_clusters:
+        return global_tfbs.count_overlaps() if len(global_tfbs) else {}
+    return {}
 
 
 def _match_cache_paths(match_dir):
@@ -685,7 +750,6 @@ def run_diff_footprints(args):
         for (cond, state) in itertools.product(args.cond_names, states)]
     outfiles += [
         os.path.abspath(os.path.join(args.outdir, "*", "beds", "*_all.bed")),
-        os.path.abspath(os.path.join(args.outdir, "*", "plots", "*_log2fcs.pdf")),
         os.path.abspath(os.path.join(args.outdir, "*", "*_overview.txt")),
         os.path.abspath(os.path.join(args.outdir, "*", "*_overview.xlsx")),
         os.path.abspath(os.path.join(args.outdir, args.prefix + "_distances.txt")),
@@ -697,6 +761,8 @@ def run_diff_footprints(args):
             os.path.abspath(os.path.join(args.outdir, args.prefix + "_figures.pdf")),
             os.path.abspath(os.path.join(args.outdir, args.prefix + "_clusters.pdf")),
         ]
+    if getattr(args, "per_motif_plots", False):
+        outfiles.append(os.path.abspath(os.path.join(args.outdir, "*", "plots", "*_log2fcs.pdf")))
     if getattr(args, "skew_report", False):
         outfiles.append(os.path.abspath(os.path.join(args.outdir, args.prefix + "_results_skewness_report.pdf")))
 
@@ -888,11 +954,14 @@ def run_diff_footprints(args):
 
     # logos
     logo_filenames = {m.prefix: os.path.join(args.outdir, m.prefix, m.prefix + ".png") for m in motif_list}
-    logger.info("Plotting sequence logos for each motif")
-    task_list = [pool.apply_async(OneMotif.logo_to_file, (m, logo_filenames[m.prefix],)) for m in motif_list]
-    monitor_progress(task_list, logger)
-    _ = [t.get() for t in task_list]
-    logger.comment("")
+    copied_logos = _copy_cached_logos(args, motif_list, logo_filenames, logger) if getattr(args, "cached_match_dirs", None) else 0
+    missing_logo_motifs = [m for m in motif_list if not os.path.exists(logo_filenames[m.prefix])]
+    if missing_logo_motifs:
+        logger.info("Plotting sequence logos for each motif" if not copied_logos else "Plotting missing sequence logos")
+        task_list = [pool.apply_async(OneMotif.logo_to_file, (m, logo_filenames[m.prefix],)) for m in missing_logo_motifs]
+        monitor_progress(task_list, logger)
+        _ = [t.get() for t in task_list]
+        logger.comment("")
 
     logger.debug("Getting base64 strings per motif")
     for m in motif_list:
@@ -1154,17 +1223,27 @@ def run_diff_footprints(args):
     pool.join()
     logger.stop_logger_queue()
 
-    # ---------------------- cluster TF overlaps & outputs -------------------- #
-    clustering = RegionCluster(TF_overlaps)
-    clustering.cluster(threshold=args.cluster_threshold)
-
-    convert = {m.prefix: m.name for m in motif_list}
-    for cluster in clustering.clusters:
-        for name in convert:
-            clustering.clusters[cluster]["cluster_name"] = clustering.clusters[cluster]["cluster_name"].replace(name, convert[name])
-
     matrix_out = os.path.join(args.outdir, args.prefix + "_distances.txt")
-    clustering.write_distance_mat(matrix_out)
+    cached_cluster_map = getattr(args, "cached_cluster_map", {}) or {}
+    if cached_cluster_map and not set(motif_names).issubset(cached_cluster_map):
+        cached_cluster_map = {}
+    clustering = None
+    if cached_cluster_map and not getattr(args, "static_plots", False):
+        cached_distance = getattr(args, "cached_distance_table", None)
+        if cached_distance and os.path.exists(cached_distance):
+            shutil.copyfile(cached_distance, matrix_out)
+        else:
+            pd.DataFrame(index=motif_names, columns=motif_names).to_csv(matrix_out, sep="\t")
+    else:
+        clustering = RegionCluster(TF_overlaps)
+        clustering.cluster(threshold=args.cluster_threshold)
+
+        convert = {m.prefix: m.name for m in motif_list}
+        for cluster in clustering.clusters:
+            for name in convert:
+                clustering.clusters[cluster]["cluster_name"] = clustering.clusters[cluster]["cluster_name"].replace(name, convert[name])
+
+        clustering.write_distance_mat(matrix_out)
 
     logger.comment("")
     logger.info("Writing all motif-site files")
@@ -1179,9 +1258,15 @@ def run_diff_footprints(args):
 
     cluster_names = []
     for name in info_table.index:
-        for cluster in clustering.clusters:
-            if name in clustering.clusters[cluster]["member_names"]:
-                cluster_names.append(clustering.clusters[cluster]["cluster_name"])
+        if cached_cluster_map and name in cached_cluster_map:
+            cluster_names.append(cached_cluster_map[name])
+        else:
+            for cluster in clustering.clusters:
+                if name in clustering.clusters[cluster]["member_names"]:
+                    cluster_names.append(clustering.clusters[cluster]["cluster_name"])
+                    break
+            else:
+                cluster_names.append(str(name))
     info_table.insert(3, "cluster", cluster_names)
 
     info_table_clustered = info_table.groupby("cluster").mean(numeric_only=True).reset_index()
@@ -1417,6 +1502,7 @@ def match_motifs_cli():
     args.match_only = True
     args.replicate_report = "off"
     args.static_plots = True
+    args.per_motif_plots = True
     args.skew_report = False
     run_diff_footprints(args)
 

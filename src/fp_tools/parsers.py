@@ -140,6 +140,7 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 	else:
 		description += "Output files:\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n- <outdir>/<prefix>_<condition1>_<condition2>.html\n"
 		description += "- optional <outdir>/<prefix>_figures.pdf with --static-plots\n- optional <outdir>/<prefix>_clusters.pdf with --static-plots\n"
+		description += "- optional <outdir>/<TF>/plots/<TF>_log2fcs.pdf with --per-motif-plots\n"
 	description += "- <outdir>/<TF>/<TF>_overview.{txt,xlsx} (per motif)\n- <outdir>/<TF>/beds/<TF>_all.bed (per motif)\n"
 	if is_match_motifs:
 		description += "- <outdir>/<TF>/beds/<TF>_<sample>_bound.bed (per motif)\n- <outdir>/<TF>/beds/<TF>_<sample>_unbound.bed (per motif)\n\n"
@@ -194,6 +195,7 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 	optargs.add_argument('--aggregate-site-set', choices=["all", "bound"], default="all", help="Motif-site BEDs used for embedded aggregate profiles: all motif hits or sample-specific bound sites (default: all)" if is_match_motifs else "Motif-site BEDs used for embedded aggregate profiles: all motif hits or condition-specific bound sites (default: all)")
 	optargs.add_argument('--reuse-existing-results', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Regenerate final diff-footprints reports from existing <prefix>_results.txt and per-motif BEDs without rescanning motifs")
 	optargs.add_argument('--static-plots', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write static volcano and cluster PDF summaries. By default diff-footprints writes the interactive HTML report without these PDFs.")
+	optargs.add_argument('--per-motif-plots', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write one diagnostic log2 fold-change PDF per motif. Disabled by default to keep diff-footprints fast.")
 	optargs.add_argument('--skew-report', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write the optional skew/shift PDF report. Disabled by default.")
 	optargs.add_argument('--report-label', metavar="<text>", help="Optional method label shown under the report subtitle in interactive HTML reports")
 
