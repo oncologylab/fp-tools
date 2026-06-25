@@ -150,7 +150,7 @@ diff-footprints \
 | [`diff-footprints`](https://oncologylab.github.io/fp-tools/api/#diff-footprints) | Compare motif footprints across conditions. |
 | [`normalize-bigwig`](https://oncologylab.github.io/fp-tools/api/#normalize-bigwig) | Scale bigWigs before aggregate plotting. |
 | [`plot-aggregate`](https://oncologylab.github.io/fp-tools/api/#plot-aggregate) | Make aggregate footprint plots as PDF/SVG-style output or HTML. |
-| [`plot-aggregate-batch`](https://oncologylab.github.io/fp-tools/api/#plot-aggregate-batch) | Compatibility command for interactive aggregate HTML reports. |
+| [`review-multi-comparisons`](https://oncologylab.github.io/fp-tools/api/#review-multi-comparisons) | Review multiple differential-footprint HTML reports in one page. |
 | [`motif-discovery`](https://oncologylab.github.io/fp-tools/api/#motif-discovery) | Prepare candidate-centered de novo motif discovery. |
 | [`motif-summary`](https://oncologylab.github.io/fp-tools/api/#motif-summary) | Summarize motif discovery outputs. |
 | [`pseudobulk-fragments`](https://oncologylab.github.io/fp-tools/api/#pseudobulk-fragments) | Group single-cell fragments by annotation. |
@@ -169,7 +169,7 @@ match-motifs --help
 diff-footprints --help
 normalize-bigwig --help
 plot-aggregate --help
-plot-aggregate-batch --help
+review-multi-comparisons --help
 run-workflow --help
 fp-tools-gui --help
 motif-discovery --help

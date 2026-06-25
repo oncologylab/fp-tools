@@ -45,43 +45,44 @@ class PlotAggregateBatchTest(unittest.TestCase):
         self.assertNotIn("sample-search", html)
         self.assertNotIn("slot-controls", html)
         self.assertNotIn("subplots-panel", html)
-        self.assertIn("data-panel-tf", html)
-        self.assertIn("panel-tf", html)
-        self.assertIn("waterfall-chart", html)
-        self.assertIn("sample-style-controls", html)
-        self.assertIn("Plot options", html)
+        self.assertIn("motif-columns", html)
+        self.assertIn("motif-col", html)
+        self.assertIn("motif-select", html)
+        self.assertIn("sample-panel", html)
+        self.assertIn("legend-panel", html)
         self.assertNotIn("Advanced line styles", html)
-        self.assertIn("sample-picker", html)
-        self.assertIn("data-slot-sample", html)
+        self.assertNotIn("sample-picker", html)
+        self.assertNotIn("data-slot-sample", html)
         self.assertIn("data-download-panel", html)
-        self.assertIn("data-sample-alpha", html)
-        self.assertIn("data-sample-width", html)
-        self.assertIn("data-sample-type", html)
-        self.assertIn("width:58px;min-width:58px", html)
-        self.assertIn("show-mean", html)
-        self.assertIn("mean-width", html)
-        self.assertIn("mean-type", html)
-        self.assertIn("Download grid SVG", html)
+        self.assertIn("data-visible", html)
+        self.assertIn("data-alpha", html)
+        self.assertIn("data-width", html)
+        self.assertIn("data-type", html)
+        self.assertIn("Group autoscale", html)
+        self.assertIn("Download motif logo panel", html)
+        self.assertIn("Download motif aggregate panel", html)
         self.assertIn("Download SVG", html)
         self.assertNotIn("Download selected panel SVG", html)
-        self.assertIn("TF site summary", html)
-        self.assertIn("summary-sort", html)
-        self.assertIn("summary-rows", html)
-        self.assertIn("Union sites", html)
-        self.assertIn("union sites", html)
-        self.assertIn("site counts use the plotted site set", html)
+        self.assertNotIn("TF site summary", html)
+        self.assertNotIn("summary-sort", html)
+        self.assertNotIn("summary-rows", html)
+        self.assertNotIn("Union sites", html)
+        self.assertNotIn("site counts use plotted BED", html)
         self.assertNotIn("bound sites", html)
         self.assertNotIn("FP score", html)
         self.assertNotIn("footprint score", html)
         self.assertNotIn("Visible TF condition summary", html)
-        self.assertIn("function drawSummary", html)
-        self.assertIn("1x1", html)
-        self.assertIn("2x3", html)
+        self.assertNotIn("function drawSummary", html)
+        self.assertIn("plot-count", html)
+        self.assertNotIn("plot-cols", html)
         self.assertIn("width=340,height=340", html)
+        self.assertIn("payload.groups_defined", html)
+        self.assertIn("'Samples'", html)
         self.assertNotIn("const data =", html)
         self.assertEqual(payload["schema"], "fp-tools.aggregate.batch.v2")
         self.assertEqual(payload["motifs"][0]["prefix"], "CTCF_MA0139.1")
         self.assertEqual(payload["motifs"][0]["series"][0]["condition"], "Bcell")
+        self.assertFalse(payload["groups_defined"])
 
     def test_build_payload_adds_sample_and_condition_series(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -108,6 +109,34 @@ class PlotAggregateBatchTest(unittest.TestCase):
         self.assertEqual(payload["motifs"][0]["sites"], 1)
         self.assertEqual([s for s in series if s["kind"] == "condition"][0]["sites"], 1)
         self.assertEqual([s for s in series if s["kind"] == "condition"][0]["profile"], [2.0, 4.0])
+        self.assertFalse(payload["groups_defined"])
+
+    def test_build_payload_marks_explicit_groups_and_supports_more_than_two_groups(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            rows = []
+            for sample, condition in [("S1", "A"), ("S2", "B"), ("S3", "C")]:
+                bed_dir = root / sample / "TF1" / "beds"
+                bed_dir.mkdir(parents=True)
+                (bed_dir / "TF1_all.bed").write_text("chr1\t10\t20\n", encoding="utf-8")
+                rows.append({
+                    "sample": sample,
+                    "label": sample,
+                    "condition": condition,
+                    "_groups_defined": True,
+                    "signal": f"{sample}.bw",
+                    "match_dir": str(root / sample),
+                })
+            import fp_tools.tools.plot_aggregate_batch as mod
+            old = mod._mean_profile
+            try:
+                mod._mean_profile = lambda signal, centers, flank: [1.0, 2.0]
+                payload = build_payload(rows, flank=1, top_n=1)
+            finally:
+                mod._mean_profile = old
+
+        self.assertTrue(payload["groups_defined"])
+        self.assertEqual(payload["conditions"], ["A", "B", "C"])
 
     def test_build_payload_prefers_condition_bound_bed_for_profiles(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -202,21 +231,21 @@ class PlotAggregateBatchTest(unittest.TestCase):
         self.assertEqual(payload["motifs"][0]["site_set"], "bound.bed")
         self.assertEqual([s for s in payload["motifs"][0]["series"] if s["kind"] == "condition"][0]["fp_score"], -0.4)
         self.assertNotIn("sample-search", html)
-        self.assertIn("data-panel-tf", html)
-        self.assertIn("sample-picker", html)
-        self.assertIn("waterfall-chart", html)
-        self.assertIn("TF site summary", html)
-        self.assertIn("summary-sort", html)
-        self.assertIn("summary-rows", html)
-        self.assertIn("Union sites", html)
-        self.assertIn("union sites", html)
+        self.assertIn("motif-columns", html)
+        self.assertIn("sample-panel", html)
+        self.assertNotIn("data-panel-tf", html)
+        self.assertNotIn("sample-picker", html)
+        self.assertNotIn("waterfall-chart", html)
+        self.assertNotIn("TF site summary", html)
+        self.assertNotIn("summary-sort", html)
+        self.assertNotIn("summary-rows", html)
+        self.assertNotIn("Union sites", html)
         self.assertNotIn("bound sites", html)
         self.assertNotIn("FP score", html)
-        self.assertIn("subplotSubtitle", html)
-        self.assertIn("bedSummaryFromRows", html)
-        self.assertIn("plot_aggregate_batch_grid.svg", html)
+        self.assertIn("plot_aggregate_grid.svg", html)
+        self.assertIn("plot_aggregate_motif_logo_panel.svg", html)
 
-    def test_write_html_can_hide_summary_sidebar(self):
+    def test_write_html_uses_column_layout_without_summary_sidebar(self):
         payload = {
             "schema": "fp-tools.aggregate.batch.v2",
             "x": [-1, 1],
@@ -253,8 +282,10 @@ class PlotAggregateBatchTest(unittest.TestCase):
             out = Path(tmpdir) / "aggregate.html"
             write_html(payload, out, "Selected TFs", show_summary=False)
             html = out.read_text(encoding="utf-8")
-        self.assertIn("waterfall-card{display:none}", html)
-        self.assertIn("data-panel-tf", html)
+        self.assertNotIn("waterfall-card", html)
+        self.assertNotIn("TF site summary", html)
+        self.assertIn("motif-columns", html)
+        self.assertIn("sample-panel", html)
 
 
 if __name__ == "__main__":

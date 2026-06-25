@@ -12,7 +12,7 @@ The public interface of `fp-tools` is command-first. Each command below includes
 | [`diff-footprints`](#diff-footprints) | Compare motif-associated footprint scores across conditions or biological replicates. |
 | [`normalize-bigwig`](#normalize-bigwig) | Normalize bigWig tracks with a shared background-region scale estimate. |
 | [`plot-aggregate`](#plot-aggregate) | Plot aggregate signal around motif sites or region sets as static output or HTML. |
-| [`plot-aggregate-batch`](#plot-aggregate-batch) | Create or update an interactive aggregate HTML report from a manifest or existing reports. |
+| [`review-multi-comparisons`](#review-multi-comparisons) | Review multiple differential-footprint HTML reports in one page. |
 | [`run-workflow`](#run-workflow) | Run a saved YAML workflow configuration. |
 | [`fp-tools-gui`](#fp-tools-gui) | Launch the optional browser GUI for command-compatible workflows. |
 | [`motif-discovery`](#motif-discovery) | Prepare or run de novo motif discovery from candidate footprint intervals or FASTA. |
@@ -864,69 +864,50 @@ Run arguments:
 
 </div>
 
-### `plot-aggregate-batch`
+### `review-multi-comparisons`
 
 <div class="fp-api-card" markdown="1">
 
-Create or update an interactive aggregate HTML report from a manifest or existing reports.
+Review multiple diff-footprints HTML reports in one interactive HTML file.
 
 **Input parameters**
 
-- A manifest describing samples, signals, and match directories, or existing report HTML files.
-- Optional output path and report title.
+- One or more `diff_footprints_*.html` files, or directories containing those files.
+- Optional labels for the resolved comparisons.
 
 **Output**
 
-- Interactive aggregate HTML report.
+- A standalone HTML report with comparison bar/volcano plot pairs, shared selected motifs, aggregate profiles, and editable SVG export buttons.
 
 **Example commands**
 
 ```bash
-plot-aggregate-batch \
-  --manifest aggregate_manifest.tsv \
-  --output results/reports/aggregate_batch.html
+review-multi-comparisons \
+  --inputs results/q95/diff_footprints_K562_HepG2.html results/none/diff_footprints_K562_HepG2.html \
+  --labels "Q95 corrected" "No normalization" \
+  --output results/reports/review_multi_comparisons.html
 ```
 
 **Options**
 
-This option reference is generated from `plot-aggregate-batch --help` and lists every accepted option for the command.
+This option reference is generated from `review-multi-comparisons --help` and lists every accepted option for the command.
 
 ```text
-usage: plot-aggregate-batch [-h] [--manifest MANIFEST]
-                            [--input-html [INPUT_HTML ...]] --output OUTPUT
-                            [--flank FLANK] [--top-n TOP_N]
-                            [--motifs [MOTIFS ...]]
-                            [--site-set {bound,all,unbound}]
-                            [--normalization {none,sample-quantile,condition-quantile}]
-                            [--default-layout {1x1,1x2,2x2,2x3}]
-                            [--title TITLE] [--hide-summary]
+usage: review-multi-comparisons [-h] --inputs INPUTS [INPUTS ...]
+                                [--labels [LABELS ...]] --output OUTPUT
+                                [--title TITLE]
 
-Create an interactive aggregate HTML report from match-motifs or embedded
-diff-footprints outputs.
+Review multiple diff-footprints HTML reports in one interactive HTML file.
 
 options:
   -h, --help            show this help message and exit
-  --manifest MANIFEST   TSV with sample, signal, and match_dir columns.
-  --input-html [INPUT_HTML ...]
-                        Existing aggregate/diff-footprints HTML report(s) with
-                        embedded reportPayloadB64 payloads.
-  --output OUTPUT       Output self-contained HTML file.
-  --flank FLANK         Flank around motif centers for aggregate profiles
-                        (default: 100).
-  --top-n TOP_N         Number of motifs to preload from manifest mode
-                        (default: 30).
-  --motifs [MOTIFS ...]
-                        Motif prefixes, names, or IDs to preload from manifest
-                        mode.
-  --site-set {bound,all,unbound}
-                        Motif-site BED set to use from match directories in
-                        manifest mode (default: bound).
-  --normalization {none,sample-quantile,condition-quantile}
-                        Profile scaling for manifest mode (default: none).
-  --default-layout {1x1,1x2,2x2,2x3}
-                        Initial panel grid layout (default: 2x2).
+  --inputs INPUTS [INPUTS ...]
+                        diff-footprints HTML files or directories containing
+                        diff_footprints_*.html files.
+  --labels [LABELS ...]
+                        Optional labels, one per resolved input HTML.
+  --output OUTPUT       Output standalone review HTML.
   --title TITLE
-  --hide-summary        Hide the TF site summary sidebar in the HTML report.
 ```
 
 </div>

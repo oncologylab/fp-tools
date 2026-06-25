@@ -16,6 +16,7 @@ import itertools
 import os
 import re
 import sys
+from pathlib import Path
 
 import matplotlib as mpl
 mpl.use("Agg")
@@ -265,11 +266,12 @@ def _match_dir_rows(args):
     if len(labels) != len(signals):
         raise ValueError("--signal-labels must have the same length as --signals")
 
+    groups_defined = bool(args.cond_names)
     conditions = list(args.cond_names or labels)
     if len(conditions) != len(signals):
         raise ValueError("--cond-names must have the same length as --signals")
 
-    match_dirs = list(args.match_dir or [])
+    match_dirs = list(getattr(args, "sample_dirs", None) or args.match_dir or [])
     if len(match_dirs) == 1:
         match_dirs = match_dirs * len(signals)
     if len(match_dirs) != len(signals):
@@ -281,6 +283,7 @@ def _match_dir_rows(args):
             "sample": label,
             "label": label,
             "condition": condition,
+            "_groups_defined": groups_defined,
             "signal": signal,
             "match_dir": match_dir,
         })
@@ -288,23 +291,77 @@ def _match_dir_rows(args):
 
 
 def _run_match_dir_html(args, logger):
-    from fp_tools.tools.plot_aggregate_batch import build_payload, write_html
+    from fp_tools.tools.plot_aggregate_batch import _read_manifest, build_payload, build_payload_from_tfbs, merge_payloads, read_embedded_payload, write_html
 
-    try:
-        rows = _match_dir_rows(args)
-    except ValueError as exc:
-        logger.error(f"ERROR: {exc}")
+    payloads = []
+    if getattr(args, "manifest", None):
+        manifest_rows = _read_manifest(args.manifest)
+        for row in manifest_rows:
+            if "match_dir" not in row and row.get("sample_dir"):
+                row["match_dir"] = row["sample_dir"]
+        payloads.append(
+            build_payload(
+                manifest_rows,
+                flank=max(1, int(args.flank)),
+                top_n=max(1, int(args.top_n)),
+                normalization=args.normalization,
+                motif_names=args.motifs,
+                site_set=args.site_set,
+            )
+        )
+    if getattr(args, "input_html", None):
+        for path in args.input_html:
+            payloads.append(read_embedded_payload(path))
+    if getattr(args, "match_dir", None) or getattr(args, "sample_dirs", None):
+        try:
+            rows = _match_dir_rows(args)
+        except ValueError as exc:
+            logger.error(f"ERROR: {exc}")
+            sys.exit(1)
+        payloads.append(
+            build_payload(
+                rows,
+                flank=max(1, int(args.flank)),
+                top_n=max(1, int(args.top_n)),
+                normalization=args.normalization,
+                motif_names=args.motifs,
+                site_set=args.site_set,
+            )
+        )
+    elif getattr(args, "TFBS", None) and getattr(args, "signals", None):
+        labels = list(args.signal_labels or [_path_stem(path) for path in args.signals])
+        groups_defined = bool(args.cond_names)
+        conditions = list(args.cond_names or labels)
+        if len(labels) != len(args.signals) or len(conditions) != len(args.signals):
+            logger.error("ERROR: --signal-labels and --cond-names must have the same length as --signals")
+            sys.exit(1)
+        tfbs_inputs = list(args.TFBS)
+        if len(tfbs_inputs) == 1 and os.path.isdir(tfbs_inputs[0]):
+            tfbs_inputs = sorted(str(path) for path in Path(tfbs_inputs[0]).glob("*.bed"))
+            if args.top_n:
+                tfbs_inputs = tfbs_inputs[: max(1, int(args.top_n))]
+        if not tfbs_inputs:
+            logger.error("ERROR: no BED files found for --TFBS")
+            sys.exit(1)
+        motif_labels = list(args.TFBS_labels or [_path_stem(path) for path in tfbs_inputs])
+        payloads.append(
+            build_payload_from_tfbs(
+                tfbs_inputs,
+                args.signals,
+                labels,
+                conditions,
+                flank=max(1, int(args.flank)),
+                normalization=args.normalization,
+                motif_labels=motif_labels,
+                groups_defined=groups_defined,
+            )
+        )
+    if not payloads:
+        logger.error("ERROR: --format html requires --sample-dirs/--match-dir, --manifest, --input-html, or --TFBS with --signals")
         sys.exit(1)
-    payload = build_payload(
-        rows,
-        flank=max(1, int(args.flank)),
-        top_n=max(1, int(args.top_n)),
-        normalization=args.normalization,
-        motif_names=args.motifs,
-        site_set=args.site_set,
-    )
+    payload = merge_payloads(payloads)
     make_directory(os.path.dirname(os.path.abspath(args.output)) or ".")
-    write_html(payload, args.output, args.title, default_layout=args.default_layout, show_summary=False)
+    write_html(payload, args.output, args.title, default_layout=args.default_layout, show_summary=not getattr(args, "hide_summary", False))
     logger.info(f"Wrote interactive aggregate HTML report to {args.output}")
 
 
@@ -363,7 +420,14 @@ def run_aggregate(args):
     logger = FpToolsLogger("plot-aggregate", args.verbosity)
     logger.begin()
 
-    if getattr(args, "match_dir", None) and _aggregate_output_format(args) == "html":
+    html_inputs = any([
+        getattr(args, "match_dir", None),
+        getattr(args, "sample_dirs", None),
+        getattr(args, "manifest", None),
+        getattr(args, "input_html", None),
+        getattr(args, "TFBS", None),
+    ])
+    if html_inputs and _aggregate_output_format(args) == "html":
         logger.arguments_overview(add_aggregate_arguments(argparse.ArgumentParser()), args)
         _run_match_dir_html(args, logger)
         logger.end()

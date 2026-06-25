@@ -198,6 +198,7 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 	optargs.add_argument('--aggregate-normalization', choices=["match", "none", "sample-quantile", "size-factor"], default="match", help="Normalization for embedded aggregate profiles (default: match --normalization)")
 	optargs.add_argument('--aggregate-site-set', choices=["all", "bound"], default="all", help="Motif-site BEDs used for embedded aggregate profiles: all motif hits or sample-specific bound sites (default: all)" if is_match_motifs else "Motif-site BEDs used for embedded aggregate profiles: all motif hits or condition-specific bound sites (default: all)")
 	optargs.add_argument('--reuse-existing-results', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Regenerate final diff-footprints reports from existing <prefix>_results.txt and per-motif BEDs without rescanning motifs")
+	optargs.add_argument('--motif-outputs', choices=["auto", "summary", "full"], default="auto", help=argparse.SUPPRESS if is_match_motifs else "Per-motif output mode. auto writes full BED/overview files when embedded aggregate plots need them; summary writes only main result/report tables; full always writes per-motif BED/overview files.")
 	optargs.add_argument('--static-plots', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write static volcano and cluster PDF summaries. By default diff-footprints writes the interactive HTML report without these PDFs.")
 	optargs.add_argument('--per-motif-plots', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write one diagnostic log2 fold-change PDF per motif. Disabled by default to keep diff-footprints fast.")
 	optargs.add_argument('--skew-report', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write the optional skew/shift PDF report. Disabled by default.")
@@ -313,6 +314,9 @@ def add_aggregate_arguments(parser):
 	IO.add_argument('--TFBS', metavar="<bed>", nargs="*", help="TFBS sites (*required)") 						#default is None
 	IO.add_argument('--signals', metavar="<bigwig>", nargs="*", help="Signals in bigwig format (*required)")	#default is None
 	IO.add_argument('--match-dir', metavar="<directory>", nargs="*", help="match-motifs output directory or directories to use as the motif-site source")
+	IO.add_argument('--sample-dirs', metavar="<directory>", nargs="*", help="Alias for --match-dir in HTML mode; sample or differential output directories containing motif BEDs")
+	IO.add_argument('--manifest', metavar="<tsv>", help="TSV with sample, signal, and match_dir/sample_dir columns for HTML mode")
+	IO.add_argument('--input-html', metavar="<html>", nargs="*", default=[], help="Existing aggregate or diff-footprints HTML payload(s) to merge in HTML mode")
 	IO.add_argument('--regions', metavar="<bed>", nargs="*", help="Regions to overlap with TFBS (optional)", default=[])
 	IO.add_argument('--whitelist', metavar="<bed>", nargs="*", help="Only plot sites overlapping whitelist (optional)", default=[])
 	IO.add_argument('--blacklist', metavar="<bed>", nargs="*", help="Exclude sites overlapping blacklist (optional)", default=[])
@@ -332,6 +336,7 @@ def add_aggregate_arguments(parser):
 	PLOT.add_argument('--site-set', choices=["bound", "all", "unbound"], default="bound", help="Motif-site BED set to use from --match-dir (default: bound)")
 	PLOT.add_argument('--top-n', metavar="<int>", type=int, default=12, help="Number of motifs to plot from --match-dir when --motifs is omitted (default: 12)")
 	PLOT.add_argument('--default-layout', choices=["1x1", "1x2", "2x2", "2x3"], default="2x2", help="Initial HTML subplot layout (default: 2x2)")
+	PLOT.add_argument('--hide-summary', action="store_true", help="Hide the TF site-count summary sidebar in HTML mode")
 	PLOT.add_argument('--TFBS-labels', metavar="", help="Labels used for each TFBS file (default: prefix of each --TFBS)", nargs="*")
 	PLOT.add_argument('--signal-labels', metavar="", help="Labels used for each signal file (default: prefix of each --signals)", nargs="*")
 	PLOT.add_argument('--cond-names', metavar="<name>", nargs="*", help="Condition names for --signals; repeated names are averaged as replicates")

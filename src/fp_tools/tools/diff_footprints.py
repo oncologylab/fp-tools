@@ -556,6 +556,21 @@ def _write_cached_tfbs_tmp_files(args, motif_names, logger):
         args.cached_cluster_map = _cached_cluster_map(cached_dirs[0])
         args.cached_distance_table = _cached_distance_table(cached_dirs[0])
 
+    if not build_overlap_clusters and not getattr(args, "write_motif_outputs", True):
+        maps = [_cached_motif_bed_map(path) for path in cached_dirs]
+        common = set(maps[0])
+        for mapping in maps[1:]:
+            common &= set(mapping)
+        missing = [name for name in motif_names if name not in common]
+        if missing:
+            raise ValueError("Cached match-motifs outputs are missing motif(s): " + ", ".join(missing[:10]))
+        args.cached_motif_bed_maps = maps
+        logger.info(
+            f"Reusing cached motif-site scores from {len(cached_dirs)} sample folder(s) "
+            "with parallel per-motif reads"
+        )
+        return {}
+
     compact_paths = [_match_motif_site_cache_path(path) for path in cached_dirs]
     try:
         compact_overlaps = _write_cached_tfbs_tmp_files_from_compact(
@@ -584,6 +599,18 @@ def _write_cached_tfbs_tmp_files(args, motif_names, logger):
     if build_overlap_clusters:
         return global_tfbs.count_overlaps() if len(global_tfbs) else {}
     return {}
+
+
+def _process_tfbs_from_cached_beds(TF_name, args, log2fc_params):
+    """Build one cached motif temp file inside a worker, then run normal summary logic."""
+
+    peak_cols = len(args.peak_header_list)
+    maps = getattr(args, "cached_motif_bed_maps", None)
+    if not maps:
+        return process_tfbs(TF_name, args, log2fc_params)
+    per_sample_rows = [_read_cached_all_bed(mapping[TF_name], peak_cols, sample_col_count=1) for mapping in maps]
+    _write_merged_cached_rows_for_motif(args, TF_name, peak_cols, per_sample_rows, None)
+    return process_tfbs(TF_name, args, log2fc_params)
 
 
 def _match_cache_paths(match_dir):
@@ -886,19 +913,31 @@ def run_diff_footprints(args):
         check_required(args, ["signals"])
     _prepare_condition_metadata(args)
 
+    motif_output_mode = getattr(args, "motif_outputs", "auto")
+    args.write_motif_outputs = (
+        getattr(args, "match_only", False)
+        or motif_output_mode == "full"
+        or (motif_output_mode == "auto" and getattr(args, "plot_aggregate", "off") != "off")
+    )
+
     # outputs we’ll create
-    states = ["bound", "unbound"]
-    outfiles = [os.path.abspath(os.path.join(
-        args.outdir, "*", "beds", f"*_{cond}_{state}.bed"))
-        for (cond, state) in itertools.product(args.cond_names, states)]
-    outfiles += [
-        os.path.abspath(os.path.join(args.outdir, "*", "beds", "*_all.bed")),
-        os.path.abspath(os.path.join(args.outdir, "*", "*_overview.txt")),
-        os.path.abspath(os.path.join(args.outdir, "*", "*_overview.xlsx")),
+    outfiles = [
         os.path.abspath(os.path.join(args.outdir, args.prefix + "_distances.txt")),
         os.path.abspath(os.path.join(args.outdir, args.prefix + "_results.txt")),
-        os.path.abspath(os.path.join(args.outdir, args.prefix + "_results.xlsx")),
     ]
+    if not getattr(args, "skip_excel", False):
+        outfiles.append(os.path.abspath(os.path.join(args.outdir, args.prefix + "_results.xlsx")))
+    if args.write_motif_outputs:
+        states = ["bound", "unbound"]
+        outfiles += [os.path.abspath(os.path.join(
+            args.outdir, "*", "beds", f"*_{cond}_{state}.bed"))
+            for (cond, state) in itertools.product(args.cond_names, states)]
+        outfiles += [
+            os.path.abspath(os.path.join(args.outdir, "*", "beds", "*_all.bed")),
+            os.path.abspath(os.path.join(args.outdir, "*", "*_overview.txt")),
+        ]
+        if not getattr(args, "skip_excel", False):
+            outfiles.append(os.path.abspath(os.path.join(args.outdir, "*", "*_overview.xlsx")))
     if getattr(args, "static_plots", False):
         outfiles += [
             os.path.abspath(os.path.join(args.outdir, args.prefix + "_figures.pdf")),
@@ -1350,12 +1389,13 @@ def run_diff_footprints(args):
                               columns=info_columns, index=motif_names)
 
     results = []
+    process_func = _process_tfbs_from_cached_beds if getattr(args, "cached_motif_bed_maps", None) else process_tfbs
     if args.cores == 1:
         for name in motif_names:
             logger.info(f"- {name}")
-            results.append(process_tfbs(name, args, log2fc_params))
+            results.append(process_func(name, args, log2fc_params))
     else:
-        tlist = [pool.apply_async(process_tfbs, (name, args, log2fc_params)) for name in motif_names]
+        tlist = [pool.apply_async(process_func, (name, args, log2fc_params)) for name in motif_names]
         monitor_progress(tlist, logger)
         results = [t.get() for t in tlist]
 
@@ -1389,7 +1429,10 @@ def run_diff_footprints(args):
         clustering.write_distance_mat(matrix_out)
 
     logger.comment("")
-    logger.info("Writing all motif-site files")
+    if getattr(args, "write_motif_outputs", True):
+        logger.info("Writing motif summaries and motif-site files")
+    else:
+        logger.info("Writing motif summaries")
 
     names, ids = [], []
     for prefix in info_table.index:

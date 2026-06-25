@@ -24,7 +24,7 @@ TOOL_ALIASES = {
     "diff-footprints": "diff-footprints",
     "normalize-bigwig": "normalize-bigwig",
     "plot-aggregate": "plot-aggregate",
-    "plot-aggregate-batch": "plot-aggregate-batch",
+    "review-multi-comparisons": "review-multi-comparisons",
     "run-workflow": "run-workflow",
     "motif-discovery": "motif-discovery",
     "motif-summary": "motif-summary",
@@ -56,6 +56,10 @@ LIST_FLAGS = {
     "regions",
     "bigwigs",
     "motifs",
+    "match_dir",
+    "match-dir",
+    "sample_dirs",
+    "sample-dirs",
     "input_html",
     "known_motifs",
     "read_shift",
@@ -67,8 +71,8 @@ REQUIRED_FIELDS = {
     "match-motifs": ("signals", "genome", "peaks"),
     "diff-footprints": ("genome", "peaks"),
     "normalize-bigwig": ("bigwigs", "background", "outdir"),
-    "plot-aggregate": ("TFBS", "signals", "output"),
-    "plot-aggregate-batch": ("manifest", "output"),
+    "plot-aggregate": ("output",),
+    "review-multi-comparisons": ("inputs", "output"),
     "motif-discovery": ("outdir",),
     "motif-summary": ("out_tsv",),
     "fp-tools-score-variants": ("variants", "genome", "out"),
@@ -99,6 +103,8 @@ FLAG_NAME_MAP = {
     "motif_flank": "--motif-flank",
     "tfbs_model": "--tfbs-model",
     "input_html": "--input-html",
+    "match_dir": "--match-dir",
+    "sample_dirs": "--sample-dirs",
     "default_layout": "--default-layout",
     "chrom_sizes": "--chrom-sizes",
     "genome_sizes": "--genome-sizes",
@@ -325,12 +331,6 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
                         errors.append(f"{job_name}: missing required field '{field}'")
                 elif str(value or "").strip() == "":
                     errors.append(f"{job_name}: missing required field '{field}'")
-            if tool == "plot-aggregate-batch" and not str(item.get("manifest") or "").strip():
-                input_html = item.get("input_html") or item.get("input-html") or []
-                if not isinstance(input_html, list):
-                    input_html = [input_html]
-                if [value for value in input_html if str(value).strip()]:
-                    errors = [error for error in errors if error != f"{job_name}: missing required field 'manifest'"]
             if tool == "motif-discovery":
                 if not str(item.get("fasta") or "").strip() and not str(item.get("candidates") or "").strip():
                     errors.append(f"{job_name}: provide either 'fasta' or 'candidates'")

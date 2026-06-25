@@ -278,6 +278,7 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
 def process_tfbs(TF_name, args, log2fc_params):
     """Split into bound/unbound, write per-TF BED/overview, return TF summary row."""
     logger = FpToolsLogger("", args.verbosity, args.log_q)
+    write_motif_outputs = bool(getattr(args, "write_motif_outputs", True))
 
     bed_outdir = os.path.join(args.outdir, TF_name, "beds")
     filename = os.path.join(bed_outdir, TF_name + ".tmp")
@@ -340,39 +341,41 @@ def process_tfbs(TF_name, args, log2fc_params):
 
     condition_columns = [f"{cond}_score" for cond in args.cond_names]
     condition_sd_columns = [f"{cond}_score_sd" for cond in args.cond_names]
-    # write *_all.bed
-    outfile = os.path.join(bed_outdir, TF_name + "_all.bed")
-    dict_to_tab(bedlines, outfile, header + condition_columns + condition_sd_columns)
-
-    # write bound/unbound per condition
-    for condition in args.cond_names:
-        chosen_columns = header[:-len(args.sample_names)] + [condition + "_score"]
-        for state in ["bound", "unbound"]:
-            chosen_bool = 1 if state == "bound" else 0
-            subset = [bl for bl in bedlines if bl[condition + "_bound"] == chosen_bool]
-            outfile = os.path.join(bed_outdir, f"{TF_name}_{condition}_{state}.bed")
-            dict_to_tab(subset, outfile, chosen_columns)
-
-    # overview (txt + optional xlsx)
     overview_columns = header + condition_columns + condition_sd_columns + [c + "_bound" for c in args.cond_names] \
                        + [f"{c1}_{c2}_delta_fp" for (c1, c2) in comparisons] \
                        + [f"{c1}_{c2}_log2fc" for (c1, c2) in comparisons]
-    overview_txt = os.path.join(args.outdir, TF_name, TF_name + "_overview.txt")
-    dict_to_tab(bedlines, overview_txt, overview_columns, header=True)
 
     bed_table = pd.DataFrame(bedlines, columns=overview_columns)
     logger.spam(f"Read table {bed_table.shape} for TF {TF_name}")
 
-    if not args.skip_excel and n_rows > 0:
-        try:
-            overview_excel = os.path.join(args.outdir, TF_name, TF_name + "_overview.xlsx")
-            with pd.ExcelWriter(overview_excel, engine='xlsxwriter') as writer:
-                bed_table.to_excel(writer, index=False, columns=overview_columns)
-                ws = writer.sheets['Sheet1']
-                n_rows_x, n_cols_x = bed_table.shape
-                ws.autofilter(0, 0, n_rows_x, n_cols_x)
-        except Exception as e:
-            logger.warning(f"Could not write Excel for TF {TF_name}. Exception: {e}")
+    if write_motif_outputs:
+        # write *_all.bed
+        outfile = os.path.join(bed_outdir, TF_name + "_all.bed")
+        dict_to_tab(bedlines, outfile, header + condition_columns + condition_sd_columns)
+
+        # write bound/unbound per condition
+        for condition in args.cond_names:
+            chosen_columns = header[:-len(args.sample_names)] + [condition + "_score"]
+            for state in ["bound", "unbound"]:
+                chosen_bool = 1 if state == "bound" else 0
+                subset = [bl for bl in bedlines if bl[condition + "_bound"] == chosen_bool]
+                outfile = os.path.join(bed_outdir, f"{TF_name}_{condition}_{state}.bed")
+                dict_to_tab(subset, outfile, chosen_columns)
+
+        # overview (txt + optional xlsx)
+        overview_txt = os.path.join(args.outdir, TF_name, TF_name + "_overview.txt")
+        dict_to_tab(bedlines, overview_txt, overview_columns, header=True)
+
+        if not args.skip_excel and n_rows > 0:
+            try:
+                overview_excel = os.path.join(args.outdir, TF_name, TF_name + "_overview.xlsx")
+                with pd.ExcelWriter(overview_excel, engine='xlsxwriter') as writer:
+                    bed_table.to_excel(writer, index=False, columns=overview_columns)
+                    ws = writer.sheets['Sheet1']
+                    n_rows_x, n_cols_x = bed_table.shape
+                    ws.autofilter(0, 0, n_rows_x, n_cols_x)
+            except Exception as e:
+                logger.warning(f"Could not write Excel for TF {TF_name}. Exception: {e}")
 
     # global summary row
     info_columns = ["total_tfbs"]

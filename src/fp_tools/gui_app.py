@@ -40,7 +40,6 @@ PAGE_OPTIONS = [
     "diff-footprints",
     "normalize-bigwig",
     "plot-aggregate",
-    "plot-aggregate-batch",
     "motif-discovery",
     "motif-summary",
     "fp-tools-score-variants",
@@ -53,7 +52,7 @@ PAGE_OPTIONS = [
 NAV_GROUPS = [
     ("Overview", ["Home", "Run History"]),
     ("Core workflow", ["atac-correct", "call-footprints", "match-motifs", "diff-footprints"]),
-    ("Signals and reports", ["normalize-bigwig", "plot-aggregate", "plot-aggregate-batch"]),
+    ("Signals and reports", ["normalize-bigwig", "plot-aggregate"]),
     ("Motifs and variants", ["motif-discovery", "motif-summary", "fp-tools-score-variants"]),
     ("Single-cell ATAC", ["pseudobulk-fragments", "find-signature-fp", "pseudobulk-footprints"]),
     ("Configuration", ["Config"]),
@@ -79,13 +78,6 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "method": "background-scale",
         "stat": "q95",
         "target": "median",
-    },
-    "plot-aggregate-batch": {
-        "sample_id": "plot_aggregate_batch_run",
-        "input_html": "docs/demos/reports/diff_footprints_K562_HepG2.html",
-        "output": "examples/gui_demo_outputs/plotaggregate_batch_browser.html",
-        "default_layout": "2x2",
-        "top_n": 30,
     },
     "motif-discovery": {
         "sample_id": "motif_discovery_run",
@@ -1495,8 +1487,6 @@ def _discover_outputs(child_run_dir: Path) -> list[Path]:
                 outputs.extend(sorted(path for path in outdir_path.glob("diff_footprints_*.html")))
     elif tool == "normalize-bigwig":
         add_path(item.get("outdir", ""))
-    elif tool == "plot-aggregate-batch":
-        add_path(item.get("output", ""))
     elif tool == "motif-discovery":
         add_path(item.get("outdir", ""))
         add_path(item.get("script", ""))
@@ -1527,7 +1517,7 @@ def _prepare_generic_params(tool: str, params: dict[str, Any]) -> dict[str, Any]
             continue
         else:
             prepared[key] = value
-    if tool == "plot-aggregate-batch" and prepared.get("input_html"):
+    if tool == "plot-aggregate" and prepared.get("input_html"):
         prepared.pop("manifest", None)
     return prepared
 
@@ -1624,7 +1614,6 @@ def _example_files_for_tool(tool: str) -> list[Path]:
         "call-footprints": ["call_footprints", "footprintscores"],
         "diff-footprints": ["diff_footprints"],
         "plot-aggregate": ["plotaggregate", "plot_aggregate"],
-        "plot-aggregate-batch": ["plot_aggregate_batch", "plotaggregate_batch"],
     }.get(tool, [tool.replace("-", "_")])
     files: list[Path] = []
     for prefix in prefixes:
