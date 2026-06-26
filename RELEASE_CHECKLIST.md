@@ -38,12 +38,17 @@ Primary current API checks:
 .venv/bin/call-footprints --help
 .venv/bin/match-motifs --help
 .venv/bin/diff-footprints --help
+.venv/bin/normalize-bigwig --help
 .venv/bin/plot-aggregate --help
-.venv/bin/plot-aggregate-batch --help
+.venv/bin/review-multi-comparisons --help
 .venv/bin/run-workflow --help
+.venv/bin/fp-tools-gui --help
 .venv/bin/motif-discovery --help
 .venv/bin/motif-summary --help
+.venv/bin/fp-tools-score-variants --help
 .venv/bin/pseudobulk-fragments --help
+.venv/bin/find-signature-fp --help
+.venv/bin/pseudobulk-footprints --help
 .venv/bin/run-workflow --config examples/gui_configs/plotaggregate_single.yml --dry-run
 ```
 

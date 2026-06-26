@@ -266,7 +266,7 @@
       <div class="nav-group">Reports</div>
       <a class="nav-item" href="#normalize-bigwig" data-page="normalize-bigwig">normalize-bigwig</a>
       <a class="nav-item" href="#plot-aggregate" data-page="plot-aggregate">plot-aggregate</a>
-      <a class="nav-item" href="#plot-aggregate-batch" data-page="plot-aggregate-batch">plot-aggregate-batch</a>
+      <a class="nav-item" href="#plot-aggregate-html" data-page="plot-aggregate-html">plot-aggregate HTML</a>
       <div class="nav-group">Single-cell ATAC</div>
       <a class="nav-item" href="#pseudobulk-fragments" data-page="pseudobulk-fragments">pseudobulk-fragments</a>
       <a class="nav-item" href="#find-signature-fp" data-page="find-signature-fp">find-signature-fp</a>
@@ -425,8 +425,8 @@ plot_aggregate: sig</pre>
         yaml: "tool: plot-aggregate\ntfbs: SPIB_sites.bed\nsignals: Bcell_footprints.bw\nsignal_labels: B_cell\noutput: SPIB_aggregate.svg",
         metrics: [["Tool", "Plot"], ["Panel", "1"], ["Output", "SVG"]]
       },
-      "plot-aggregate-batch": {
-        title: "plot-aggregate-batch",
+      "plot-aggregate-html": {
+        title: "plot-aggregate HTML",
         description: "Create a standalone HTML report for many transcription factors and sample tracks.",
         fields: [
           ["Manifest", "aggregate_panels.tsv"],
@@ -436,7 +436,7 @@ plot_aggregate: sig</pre>
           ["Default panels", "4"],
           ["Export", "SVG panels"]
         ],
-        yaml: "tool: plot-aggregate-batch\nmanifest: aggregate_panels.tsv\nsignals: signals.tsv\noutput: aggregate_report.html",
+        yaml: "tool: plot-aggregate\nmanifest: aggregate_panels.tsv\nsignals: signals.tsv\noutput: aggregate_report.html\noutput_format: html",
         metrics: [["Tool", "Report"], ["Panels", "Many"], ["Output", "HTML"]]
       },
       "pseudobulk-fragments": {
