@@ -18,7 +18,7 @@ fp-tools-gui
 ## Standard Workflow
 
 <div class="fp-command-chain">
-  <a href="api/#atac-correct">atac-correct</a> -> <a href="api/#call-footprints">call-footprints</a> -> 3a. <a href="api/#match-motifs">match-motifs</a> / 3b. <a href="api/#motif-discovery">motif-discovery</a> -> <a href="api/#diff-footprints">diff-footprints</a> -> <a href="api/#plot-aggregate">plot-aggregate</a>
+  <a href="api/#atac-correct">atac-correct</a> -> <a href="api/#call-footprints">call-footprints</a> -> <a href="api/#match-motifs">match-motifs</a> / <a href="api/#motif-discovery">motif-discovery</a> -> <a href="api/#diff-footprints">diff-footprints</a> -> <a href="api/#plot-aggregate">plot-aggregate</a>
 </div>
 
 ### 1. Correct ATAC Signal
