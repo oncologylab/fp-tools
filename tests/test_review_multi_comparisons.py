@@ -103,6 +103,15 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertIn("drawRank", html)
         self.assertIn("drawVolcano", html)
         self.assertIn("activePrefix", html)
+        self.assertIn('id="rank-rows"', html)
+        self.assertIn('id="rank-rows-slider"', html)
+        self.assertIn("Top rows", html)
+        self.assertIn("syncRankRows", html)
+        self.assertIn("niceStep", html)
+        self.assertIn("aggregateLegendHtml", html)
+        self.assertIn("agg-legend-row", html)
+        self.assertIn("position", html)
+        self.assertIn("bits", html)
         self.assertIn("1 selected motif", html)
         self.assertIn("Group autoscale", html)
         self.assertIn("downloadLogoPanel", html)
@@ -110,6 +119,10 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertIn("review_multi_comparisons_panel.svg", html)
         self.assertIn("motifLogoSvgFromCounts", html)
         self.assertNotIn("Motif matrix embedded", html)
+        self.assertNotIn("motif-detail", html)
+        self.assertNotIn("motifDetail", html)
+        self.assertNotIn("&#916;FP", html)
+        self.assertNotIn("FDR =", html)
 
 
 if __name__ == "__main__":
