@@ -50,7 +50,7 @@ jobs:
           python -m venv /tmp/fp-tools-wheel-smoke
           /tmp/fp-tools-wheel-smoke/bin/python -m pip install --upgrade pip
           /tmp/fp-tools-wheel-smoke/bin/python -m pip install dist/*.whl
-          for cmd in atac-correct call-footprints match-motifs diff-footprints plot-aggregate plot-aggregate-batch run-workflow motif-discovery motif-summary pseudobulk-fragments ATACorrect FootprintScores ScoreBigwig BINDetect PlotAggregate; do
+          for cmd in atac-correct call-footprints match-motifs diff-footprints normalize-bigwig plot-aggregate review-multi-comparisons run-workflow fp-tools-gui motif-discovery motif-summary fp-tools-score-variants pseudobulk-fragments find-signature-fp pseudobulk-footprints; do
             /tmp/fp-tools-wheel-smoke/bin/$cmd --help >/dev/null
           done
 
