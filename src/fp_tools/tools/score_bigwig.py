@@ -32,6 +32,15 @@ from fp_tools.utils.multiscale import (
     trim_multiscale_features, write_multiscale_npz,
 )
 from fp_tools.utils.logger import FpToolsLogger
+from fp_tools.utils.project_layout import (
+    analysis_peaks_path,
+    corrected_bigwig_path,
+    is_project_layout,
+    normalized_bigwig_path,
+    project_root,
+    read_sample_table,
+    samples_root,
+)
 
 
 def _normalize_paths(args):
@@ -81,13 +90,40 @@ def _as_list(value):
 
 
 def _scorebigwig_batch_items(args):
+    if is_project_layout(getattr(args, "layout", None)) and getattr(args, "sample_table", None):
+        if not getattr(args, "outdir", None):
+            sys.exit("--layout project requires --outdir")
+        project = project_root(getattr(args, "outdir", None))
+        samples = read_sample_table(args.sample_table)
+        args.sample_names = [row.sample for row in samples]
+        args.sample_output_root = str(samples_root(project))
+        args.signals = [
+            str(normalized_bigwig_path(project, row.sample))
+            if normalized_bigwig_path(project, row.sample).exists()
+            else str(corrected_bigwig_path(project, row.sample))
+            for row in samples
+        ]
+        if not getattr(args, "regions", None):
+            args.regions = str(analysis_peaks_path(project))
+
     signals = _as_list(getattr(args, "signals", None))
     if not signals and getattr(args, "signal", None):
         signals = [args.signal]
 
     if not signals:
         sys.exit("call-footprints requires --signal or --signals")
-    if len(signals) == 1 and getattr(args, "output", None) and not getattr(args, "outputs", None):
+    sample_output_root = getattr(args, "sample_output_root", None)
+    sample_names = _as_list(getattr(args, "sample_names", None))
+    if sample_output_root:
+        if not sample_names:
+            sys.exit("--sample-output-root requires --sample-names")
+        if len(sample_names) != len(signals):
+            sys.exit("--sample-names must have the same number of values as --signals")
+        outputs = [
+            os.path.join(sample_output_root, sample, "footprints", f"{sample}_footprints.bw")
+            for sample in sample_names
+        ]
+    elif len(signals) == 1 and getattr(args, "output", None) and not getattr(args, "outputs", None):
         outputs = [args.output]
     else:
         outputs = _as_list(getattr(args, "outputs", None))
@@ -103,7 +139,12 @@ def _scorebigwig_batch_items(args):
     output_beds = _as_list(getattr(args, "output_beds", None))
     if output_beds and len(output_beds) != len(signals):
         sys.exit("--output-beds must have the same number of files as --signals")
-    if not output_beds and getattr(args, "output_bed", None):
+    if not output_beds and sample_output_root:
+        output_beds = [
+            os.path.join(sample_output_root, sample, "footprints", f"{sample}_candidate_footprints.bed")
+            for sample in sample_names
+        ]
+    elif not output_beds and getattr(args, "output_bed", None):
         if len(signals) > 1:
             sys.exit("use --output-beds or --output-bed-dir when scoring multiple --signals")
         output_beds = [args.output_bed]

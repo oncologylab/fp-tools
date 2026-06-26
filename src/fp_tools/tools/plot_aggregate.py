@@ -30,6 +30,14 @@ from fp_tools.utils.logger import FpToolsLogger
 from fp_tools.utils.multiscale import aggregate_multiscale_tensor, load_multiscale_npz
 from fp_tools.utils.normalization import fit_quantile_normalizers
 from fp_tools.utils.plotting_style import PDF_FONT_SIZE, apply_pdf_style, ascii_tick_formatter
+from fp_tools.utils.project_layout import (
+    corrected_bigwig_path,
+    is_project_layout,
+    match_motifs_dir,
+    project_root,
+    read_sample_table,
+    reports_dir,
+)
 from fp_tools.utils.regions import OneRegion, RegionList
 from fp_tools.utils.signals import fast_rolling_math
 from fp_tools.utils.utilities import check_files, check_required, make_directory
@@ -419,6 +427,20 @@ def run_aggregate(args):
     apply_pdf_style()
     logger = FpToolsLogger("plot-aggregate", args.verbosity)
     logger.begin()
+
+    if is_project_layout(getattr(args, "layout", None)) and getattr(args, "sample_table", None):
+        if not getattr(args, "outdir", None):
+            logger.error("ERROR: --layout project requires --outdir")
+            sys.exit(1)
+        project = project_root(getattr(args, "outdir", None))
+        samples = read_sample_table(args.sample_table)
+        args.signals = [str(corrected_bigwig_path(project, row.sample)) for row in samples]
+        args.signal_labels = [row.sample for row in samples]
+        args.cond_names = [row.condition for row in samples]
+        args.match_dir = [str(match_motifs_dir(project, row.sample)) for row in samples]
+        args.format = "html" if getattr(args, "format", "auto") == "auto" else args.format
+        if getattr(args, "output", None) == "fp-tools_aggregate.pdf":
+            args.output = str(reports_dir(project) / "plot_aggregate.html")
 
     html_inputs = any([
         getattr(args, "match_dir", None),

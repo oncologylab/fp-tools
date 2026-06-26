@@ -23,7 +23,14 @@ def _diff_payload(label="A vs B"):
             {"prefix": "TF1", "name": "TF1", "motif_id": "M1", "group": "A_up", "change": 0.4, "pvalue": 1e-6, "fdr": 1e-4, "neglog10p": 6.0},
             {"prefix": "TF2", "name": "TF2", "motif_id": "M2", "group": "B_up", "change": -0.3, "pvalue": 1e-5, "fdr": 1e-3, "neglog10p": 5.0},
         ],
-        "motif_matrices": {},
+        "motif_matrices": {
+            "TF1": [
+                [10, 0, 0, 1],
+                [0, 10, 1, 0],
+                [0, 0, 10, 0],
+                [0, 0, 0, 10],
+            ]
+        },
         "logos": {},
         "aggregate": {
             "x": [-1, 1],
@@ -62,6 +69,18 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
 
             self.assertEqual(discover_input_htmls([root]), [first, second])
 
+    def test_discovers_nested_diff_htmls_from_directories(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            first = root / "A_vs_B" / "diff_footprints_A_B.html"
+            second = root / "C_vs_D" / "nested" / "diff_footprints_C_D.html"
+            first.parent.mkdir(parents=True)
+            second.parent.mkdir(parents=True)
+            _write_diff_html(first, _diff_payload("A vs B"))
+            _write_diff_html(second, _diff_payload("C vs D"))
+
+            self.assertEqual(discover_input_htmls([root]), [first, second])
+
     def test_builds_payload_and_writes_standalone_html(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -89,6 +108,8 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertIn("downloadLogoPanel", html)
         self.assertIn("review_multi_comparisons_motif_logo_panel.svg", html)
         self.assertIn("review_multi_comparisons_panel.svg", html)
+        self.assertIn("motifLogoSvgFromCounts", html)
+        self.assertNotIn("Motif matrix embedded", html)
 
 
 if __name__ == "__main__":

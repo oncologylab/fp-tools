@@ -42,42 +42,60 @@ Use [`match-motifs`](https://oncologylab.github.io/fp-tools/api/#match-motifs) t
 
 ## Minimal Example
 
-```bash
-atac-correct \
-  --bams sample.bam \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --blacklist hg38.blacklist.bed \
-  --outdir results/atac_correct/sample
+Create a simple sample table:
 
-call-footprints \
-  --signals results/atac_correct/sample/sample_corrected.bw \
-  --regions merged_peaks.bed \
-  --outdir results/footprints
-
-match-motifs \
-  --signals results/footprints/sample_footprints.bw \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir results/motif_matches/sample
-
-diff-footprints \
-  --sample-dirs \
-    results/samples/conditionA_rep1 results/samples/conditionA_rep2 \
-    results/samples/conditionB_rep1 results/samples/conditionB_rep2 \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --cond-names conditionA conditionA conditionB conditionB \
-  --motif-db jaspar2026_vertebrates \
-  --normalization none \
-  --plot-aggregate sig \
-  --outdir results/diff_footprints/conditionA_vs_conditionB
+```text
+sample	condition	bam	peaks
+A	conditionA	A.bam	A_peaks.bed
+B	conditionB	B.bam	B_peaks.bed
 ```
 
-`atac-correct --bams` also accepts multiple BAMs. With multiple inputs, fp-tools writes one subfolder per sample under `--outdir`. For multi-sample projects, provide either one shared `merged_peaks.bed` or one peak BED per sample; multiple peak BED files are merged internally and saved as `merged_all.bed`.
+For condition comparisons, create a comparison table:
 
-After `match-motifs`, `diff-footprints --sample-dirs` can reuse each sample folder's cached motif-site tables and background scores instead of rescanning motifs or rereading footprint bigWigs. Use `--sample-names` only when you want labels different from folder names. Repeated names in `--cond-names` define biological replicates. The main report will be written inside the output folder as a standalone HTML file.
+```text
+comparison	cond1	cond2
+conditionA_vs_conditionB	conditionA	conditionB
+```
+
+```bash
+atac-correct \
+  --sample-table project/metadata/samples.tsv \
+  --genome hg38.fa.gz \
+  --blacklist hg38.blacklist.bed \
+  --outdir project
+
+normalize-bigwig \
+  --sample-table project/metadata/samples.tsv \
+  --background project/peaks/merged_peaks.analysis.bed \
+  --outdir project \
+  --method background-scale \
+  --stat q95 \
+  --target median
+
+call-footprints \
+  --sample-table project/metadata/samples.tsv \
+  --regions project/peaks/merged_peaks.analysis.bed \
+  --outdir project
+
+match-motifs \
+  --sample-table project/metadata/samples.tsv \
+  --genome hg38.fa.gz \
+  --peaks project/peaks/merged_peaks.analysis.bed \
+  --motif-db jaspar2026_vertebrates \
+  --outdir project
+
+diff-footprints \
+  --sample-table project/metadata/samples.tsv \
+  --comparison-table project/metadata/comparisons.tsv \
+  --genome hg38.fa.gz \
+  --peaks project/peaks/merged_peaks.analysis.bed \
+  --motif-db jaspar2026_vertebrates \
+  --outdir project
+```
+
+With a sample table and `--outdir project`, fp-tools uses the recommended project layout by default: merged peaks in `project/peaks`, per-sample outputs in `project/samples/<sample>/`, differential reports in `project/comparisons`, and review pages in `project/reports`. Custom paths remain available with `--layout custom`.
+
+After `match-motifs`, project-mode `diff-footprints` reuses each sample folder's cached motif-site tables and background scores instead of rescanning motifs or rereading footprint bigWigs. Repeated samples with the same `condition` are treated as biological replicates.
 
 ## Pseudobulk Workflow
 
@@ -94,7 +112,7 @@ pseudobulk-footprints \
   --motif-db jaspar2026_vertebrates \
   --tf-site-dir marker_motif_sites \
   --single-cell-signature-h5ad pbmc_embedding.h5ad \
-  --outdir results/pseudobulk
+  --outdir project/pseudobulk
 ```
 
 To run the signature report as a standalone step:
@@ -105,9 +123,9 @@ find-signature-fp \
   --fragments pbmc_fragments.tsv.gz \
   --h5ad pbmc_embedding.h5ad \
   --tf-site-dir marker_motif_sites \
-  --all-motif-results results/pseudobulk/pseudobulk_diff_footprints_results.txt \
-  --all-motif-diff-dir results/pseudobulk/diff_footprints \
-  --outdir results/pseudobulk/signature_fp
+  --all-motif-results project/pseudobulk/pseudobulk_diff_footprints_results.txt \
+  --all-motif-diff-dir project/pseudobulk/diff_footprints \
+  --outdir project/pseudobulk/signature_fp
 ```
 
 Key outputs include pseudobulk fragments, pseudo-BAMs, corrected bigWigs, footprint-score bigWigs, differential footprint reports, aggregate plots, and single-cell footprint-signature heatmaps/UMAPs.
@@ -118,12 +136,12 @@ Use candidate footprints from [`call-footprints`](https://oncologylab.github.io/
 
 ```bash
 motif-discovery \
-  --candidates results/footprints/sample_candidates.bed \
+  --candidates project/samples/sample/footprints/sample_candidate_footprints.bed \
   --genome hg38.fa.gz \
   --flank 75 \
   --method streme \
   --known-motif-db jaspar2026_vertebrates \
-  --outdir results/de_novo/sample
+  --outdir project/de_novo/sample
 ```
 
 Use discovered motifs alone for a de novo-only run, or add them to a standard database run:
@@ -136,8 +154,8 @@ diff-footprints \
   --peaks merged_peaks.bed \
   --cond-names conditionA conditionB \
   --motif-db jaspar2026_vertebrates \
-  --motifs results/de_novo/sample/streme/streme.txt \
-  --outdir results/diff_footprints/database_plus_de_novo
+  --motifs project/de_novo/sample/streme/streme.txt \
+  --outdir project/comparisons/database_plus_de_novo
 ```
 
 ## Main Commands

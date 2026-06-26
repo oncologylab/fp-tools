@@ -360,6 +360,45 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
             payload = diff_footprint_helpers.build_diff_footprint_aggregate_payload([], info_table, ["Bcell", "Tcell"], args)
         self.assertEqual([motif["prefix"] for motif in payload["motifs"]], ["TF1", "TF2", "TF3"])
 
+    def test_cached_match_dirs_provide_aggregate_centers_without_comparison_beds(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            all_bed = tmp / "TF1_all.bed"
+            b_bound = tmp / "TF1_Bcell_bound.bed"
+            t_bound = tmp / "TF1_Tcell_bound.bed"
+            all_bed.write_text("chr1\t10\t20\nchr1\t30\t40\n", encoding="utf-8")
+            b_bound.write_text("chr1\t10\t20\n", encoding="utf-8")
+            t_bound.write_text("chr1\t30\t40\n", encoding="utf-8")
+
+            maps = [
+                {"TF1": {"all": str(all_bed), "bound": str(b_bound)}},
+                {"TF1": {"all": str(all_bed), "bound": str(t_bound)}},
+            ]
+
+            centers_by_condition, all_centers = diff_footprint_helpers._aggregate_centers_for_row(
+                str(tmp / "comparison"),
+                "TF1",
+                ("Bcell", "Tcell"),
+                "all",
+                aggregate_site_maps=maps,
+                cond_groups={"Bcell": [0], "Tcell": [1]},
+            )
+            self.assertEqual(centers_by_condition["Bcell"], [("chr1", 15), ("chr1", 35)])
+            self.assertEqual(centers_by_condition["Tcell"], [("chr1", 15), ("chr1", 35)])
+            self.assertEqual(all_centers, [("chr1", 15), ("chr1", 35)])
+
+            centers_by_condition, all_centers = diff_footprint_helpers._aggregate_centers_for_row(
+                str(tmp / "comparison"),
+                "TF1",
+                ("Bcell", "Tcell"),
+                "bound",
+                aggregate_site_maps=maps,
+                cond_groups={"Bcell": [0], "Tcell": [1]},
+            )
+            self.assertEqual(centers_by_condition["Bcell"], [("chr1", 15)])
+            self.assertEqual(centers_by_condition["Tcell"], [("chr1", 35)])
+            self.assertEqual(all_centers, [("chr1", 15), ("chr1", 35)])
+
 
 
     def test_aggregate_profile_normalization_uses_report_level_normalizers(self):

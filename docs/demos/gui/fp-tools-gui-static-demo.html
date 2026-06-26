@@ -312,7 +312,7 @@
             </div>
             <div>
               <label>Output folder</label>
-              <div class="input">results/diff_footprints/K562_vs_HepG2</div>
+              <div class="input">project/comparisons/K562_vs_HepG2</div>
             </div>
           </div>
         </div>
@@ -349,7 +349,7 @@ plot_aggregate: sig</pre>
           ["Genome FASTA", "hg38.fa"],
           ["Peaks BED", "merged_peaks.bed"],
           ["Blacklist BED", "hg38.blacklist.bed"],
-          ["Output folder", "results/atac_correct/Bcell"],
+          ["Output folder", "project/samples/Bcell"],
           ["Cores", "8"]
         ],
         yaml: "tool: atac-correct\nbams:\n  - Bcell.bam\ngenome: hg38.fa\npeaks: merged_peaks.bed\nblacklist: hg38.blacklist.bed",
@@ -392,7 +392,7 @@ plot_aggregate: sig</pre>
           ["Genome FASTA", "hg38.fa"],
           ["Motif database", "jaspar2026_vertebrates"],
           ["Peaks BED", "merged_peaks.bed"],
-          ["Output folder", "results/diff_footprints/K562_vs_HepG2"]
+          ["Output folder", "project/comparisons/K562_vs_HepG2"]
         ],
         yaml: "tool: diff-footprints\nmotif_db: jaspar2026_vertebrates\nnormalization: none\nplot_aggregate: sig",
         metrics: [["Tool", "Diff"], ["Samples", "6"], ["Report", "HTML"]]
@@ -405,7 +405,7 @@ plot_aggregate: sig</pre>
           ["Output bigWig", "Bcell_corrected.q95.bw"],
           ["Method", "q95"],
           ["Regions BED", "merged_peaks.bed"],
-          ["Output folder", "results/normalized"],
+          ["Output folder", "project/logs/normalize_q95"],
           ["Cores", "4"]
         ],
         yaml: "tool: normalize-bigwig\nsignal: Bcell_corrected.bw\nmethod: q95\noutput: Bcell_corrected.q95.bw",
@@ -448,7 +448,7 @@ plot_aggregate: sig</pre>
           ["Group by", "broad_cell_type"],
           ["Minimum cells", "300"],
           ["Minimum fragments", "50000"],
-          ["Output folder", "results/pseudobulk"]
+          ["Output folder", "project/pseudobulk"]
         ],
         yaml: "tool: pseudobulk-fragments\nfragments: pbmc5k_fragments.tsv.gz\nannotations: pbmc5k_celltypes.tsv\ngroup_by: broad_cell_type",
         metrics: [["Tool", "scATAC"], ["Groups", "3"], ["Output", "fragments"]]
@@ -477,7 +477,7 @@ plot_aggregate: sig</pre>
           ["Motif database", "jaspar2026_vertebrates"],
           ["Marker TFs", "STAT6, FOSB, CEBPA"],
           ["Cell embedding", "pbmc_embedding.h5ad"],
-          ["Output folder", "results/pseudobulk_footprints"]
+          ["Output folder", "project/pseudobulk_footprints"]
         ],
         yaml: "tool: pseudobulk-footprints\nfragments: pbmc_fragments.tsv.gz\nannotations: cell_annotations.tsv\ngroup_by: cell_type\nmotif_db: jaspar2026_vertebrates\ntf_site_dir: marker_motif_sites\nsingle_cell_signature_h5ad: pbmc_embedding.h5ad",
         metrics: [["Tool", "scATAC"], ["Steps", "Full"], ["Plots", "UMAP"]]
@@ -510,7 +510,7 @@ plot_aggregate: sig</pre>
               <div class="form-grid">
                 <div><label>Status</label><div class="input">Complete: diff-footprints</div></div>
                 <div><label>Command</label><div class="input">fp-tools-run results/config.yml</div></div>
-                <div><label>Log</label><div class="input">results/diff_footprints/run.log</div></div>
+                <div><label>Log</label><div class="input">project/comparisons/run.log</div></div>
                 <div><label>Report</label><div class="input">diff_footprints_K562_HepG2.html</div></div>
               </div>
             </div>
@@ -523,7 +523,7 @@ plot_aggregate: sig</pre>
                   <div class="metric"><span>Runtime</span><strong>16.7 min</strong></div>
                   <div class="metric"><span>Files</span><strong>HTML + TSV</strong></div>
                 </div>
-                <pre>results/diff_footprints/
+                <pre>project/comparisons/
   run.log
   config.yml
   diff_footprints_K562_HepG2.html</pre>

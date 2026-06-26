@@ -21,6 +21,8 @@ import time
 import glob
 import random
 import shutil
+import copy
+import tempfile
 import numpy as np
 import multiprocessing as mp
 import itertools
@@ -60,6 +62,21 @@ from fp_tools.utils.regions import *
 from fp_tools.utils.motifs import *
 from fp_tools.utils.motif_databases import motif_db_table, resolve_motif_inputs
 from fp_tools.utils.logger import FpToolsLogger
+from fp_tools.utils.project_layout import (
+    analysis_peaks_path,
+    comparison_dir,
+    corrected_bigwig_path,
+    footprint_bigwig_path,
+    is_project_layout,
+    match_motifs_dir,
+    normalized_bigwig_path,
+    project_root,
+    read_comparison_table,
+    read_sample_table,
+    sample_dir,
+    samples_for_condition,
+    samples_root,
+)
 from fp_tools.utils.plotting_style import PDF_FONT_SIZE, apply_pdf_style, apply_ascii_minus_to_figure
 
 # tame some noisy warnings during curve fitting
@@ -156,6 +173,17 @@ def _find_optional_file(root, patterns):
     return files[0] if files else None
 
 
+def _find_preferred_optional_file(root, patterns):
+    for pattern in patterns:
+        files = [p for p in sorted(root.glob(pattern)) if p.is_file()]
+        if len(files) > 1:
+            found = ", ".join(str(p) for p in files[:5])
+            raise ValueError(f"Expected at most one file for pattern {pattern!r} in {root}; found {len(files)} ({found})")
+        if files:
+            return files[0]
+    return None
+
+
 def _sample_name_from_folder(sample_dir):
     manifest = sample_dir / "fp_tools_sample.json"
     if manifest.exists():
@@ -220,9 +248,17 @@ def _resolve_folder_inputs(args):
         signals.append(str(footprint) if footprint is not None else f"cached:{sample_name}")
         match_dirs.append(str(match_dir))
         default_names.append(sample_name)
-        corrected = sorted(sample_dir.glob("*_corrected.bw"))
-        if corrected:
-            aggregate_signals.append(str(corrected[0]))
+        aggregate_signal = _find_preferred_optional_file(
+            sample_dir,
+            [
+                "normalize/*_corrected_q95_scaled.bw",
+                "atac_correct/*_corrected.bw",
+                "*_corrected_q95_scaled.bw",
+                "*_corrected.bw",
+            ],
+        )
+        if aggregate_signal:
+            aggregate_signals.append(str(aggregate_signal))
     args.signals = signals
     args.cached_match_dirs = match_dirs
     args.cached_without_bigwigs = any(str(signal).startswith("cached:") for signal in signals)
@@ -794,13 +830,32 @@ def _write_merged_cached_rows_for_motif(args, motif, peak_cols, per_sample_rows,
                 )
             scores.append(rows[row_idx][6 + peak_cols])
         out_rows.append(key + scores)
-    tmp_path = os.path.join(args.outdir, motif, "beds", motif + ".tmp")
+    tmp_root = getattr(args, "tmp_tfbs_root", None) or args.outdir
+    tmp_path = os.path.join(tmp_root, motif, "beds", motif + ".tmp")
+    make_directory(os.path.dirname(tmp_path))
     with open(tmp_path, "w", encoding="utf-8") as handle:
         handle.write("\n".join("\t".join(row) for row in out_rows))
         if out_rows:
             handle.write("\n")
     if global_tfbs is not None and out_rows:
         global_tfbs.extend(RegionList().from_bed(tmp_path))
+
+
+def _aggregate_site_maps_from_cached_match_dirs(args):
+    cached_dirs = list(getattr(args, "cached_match_dirs", []) or [])
+    if not cached_dirs:
+        return None
+    maps = []
+    for sample_name, match_dir in zip(args.sample_names, cached_dirs):
+        sample_map = {}
+        for bed in sorted(glob.glob(os.path.join(match_dir, "*", "beds", "*_all.bed"))):
+            prefix = os.path.basename(bed)[:-len("_all.bed")]
+            sample_map.setdefault(prefix, {})["all"] = os.path.abspath(bed)
+        for bed in sorted(glob.glob(os.path.join(match_dir, "*", "beds", f"*_{sample_name}_bound.bed"))):
+            prefix = os.path.basename(bed)[:-len(f"_{sample_name}_bound.bed")]
+            sample_map.setdefault(prefix, {})["bound"] = os.path.abspath(bed)
+        maps.append(sample_map)
+    return maps
 
 
 def _load_match_background_cache(match_dir):
@@ -1128,27 +1183,35 @@ def run_diff_footprints(args):
     for m in motif_list:
         logger.debug(f"Motif {m.name}: threshold {m.threshold}")
 
-    logger.info("Creating folder structure for each TF")
-    for TF in motif_names:
-        make_directory(os.path.join(args.outdir, TF))
-        make_directory(os.path.join(args.outdir, TF, "beds"))
-        make_directory(os.path.join(args.outdir, TF, "plots"))
+    cached_summary_mode = bool(getattr(args, "cached_match_dirs", None)) and not getattr(args, "write_motif_outputs", True)
+    temp_tfbs_dir = None
+    if cached_summary_mode:
+        temp_tfbs_dir = tempfile.mkdtemp(prefix="fp_tools_diff_tfbs_")
+        args.tmp_tfbs_root = temp_tfbs_dir
+        args.aggregate_site_maps = _aggregate_site_maps_from_cached_match_dirs(args)
+        logger.info("Using temporary motif-site files for cached summary mode")
+    else:
+        logger.info("Creating folder structure for each TF")
+        for TF in motif_names:
+            make_directory(os.path.join(args.outdir, TF))
+            make_directory(os.path.join(args.outdir, TF, "beds"))
+            make_directory(os.path.join(args.outdir, TF, "plots"))
 
-    # logos
-    logo_filenames = {m.prefix: os.path.join(args.outdir, m.prefix, m.prefix + ".png") for m in motif_list}
-    copied_logos = _copy_cached_logos(args, motif_list, logo_filenames, logger) if getattr(args, "cached_match_dirs", None) else 0
-    missing_logo_motifs = [m for m in motif_list if not os.path.exists(logo_filenames[m.prefix])]
-    if missing_logo_motifs:
-        logger.info("Plotting sequence logos for each motif" if not copied_logos else "Plotting missing sequence logos")
-        task_list = [pool.apply_async(OneMotif.logo_to_file, (m, logo_filenames[m.prefix],)) for m in missing_logo_motifs]
-        monitor_progress(task_list, logger)
-        _ = [t.get() for t in task_list]
-        logger.comment("")
+        # logos
+        logo_filenames = {m.prefix: os.path.join(args.outdir, m.prefix, m.prefix + ".png") for m in motif_list}
+        copied_logos = _copy_cached_logos(args, motif_list, logo_filenames, logger) if getattr(args, "cached_match_dirs", None) else 0
+        missing_logo_motifs = [m for m in motif_list if not os.path.exists(logo_filenames[m.prefix])]
+        if missing_logo_motifs:
+            logger.info("Plotting sequence logos for each motif" if not copied_logos else "Plotting missing sequence logos")
+            task_list = [pool.apply_async(OneMotif.logo_to_file, (m, logo_filenames[m.prefix],)) for m in missing_logo_motifs]
+            monitor_progress(task_list, logger)
+            _ = [t.get() for t in task_list]
+            logger.comment("")
 
-    logger.debug("Getting base64 strings per motif")
-    for m in motif_list:
-        with open(logo_filenames[m.prefix], "rb") as png:
-            m.base = base64.b64encode(png.read()).decode("utf-8")
+        logger.debug("Getting base64 strings per motif")
+        for m in motif_list:
+            with open(logo_filenames[m.prefix], "rb") as png:
+                m.base = base64.b64encode(png.read()).decode("utf-8")
 
     # --------------------- scan/cache motifs + match to signals --------------- #
     logger.comment("")
@@ -1651,6 +1714,8 @@ def run_diff_footprints(args):
         figure_pdf.close()
     if cluster_pdf is not None:
         cluster_pdf.close()
+    if temp_tfbs_dir is not None:
+        shutil.rmtree(temp_tfbs_dir, ignore_errors=True)
     logger.end()
 
 
@@ -1668,6 +1733,55 @@ def run_cli():
     run_diff_footprints(args)
 
 
+def _apply_match_motifs_project_layout(args, parser):
+    if not (is_project_layout(getattr(args, "layout", None)) and getattr(args, "sample_table", None)):
+        return
+    if not getattr(args, "outdir", None):
+        parser.error("--layout project requires --outdir")
+    project = project_root(getattr(args, "outdir", None))
+    if not getattr(args, "sample_table", None):
+        parser.error("--layout project requires --sample-table")
+    samples = read_sample_table(args.sample_table)
+    args.signals = [str(footprint_bigwig_path(project, row.sample)) for row in samples]
+    args.sample_names = [row.sample for row in samples]
+    args.cond_names = [row.condition for row in samples]
+    args.sample_output_root = str(samples_root(project))
+    if not getattr(args, "peaks", None):
+        args.peaks = str(analysis_peaks_path(project))
+
+
+def _run_project_comparison_table(args, parser):
+    if not getattr(args, "outdir", None):
+        parser.error("--layout project requires --outdir")
+    project = project_root(getattr(args, "outdir", None))
+    if not getattr(args, "sample_table", None):
+        parser.error("--layout project with --comparison-table requires --sample-table")
+    samples = read_sample_table(args.sample_table)
+    comparisons = read_comparison_table(args.comparison_table)
+    if not getattr(args, "peaks", None):
+        args.peaks = str(analysis_peaks_path(project))
+    for comparison in comparisons:
+        cond1_samples = samples_for_condition(samples, comparison.cond1, comparison.cond1_samples)
+        cond2_samples = samples_for_condition(samples, comparison.cond2, comparison.cond2_samples)
+        selected = cond1_samples + cond2_samples
+        comparison_args = copy.copy(args)
+        comparison_args.comparison_table = None
+        comparison_args.project_dir = None
+        comparison_args.sample_dirs = [str(sample_dir(project, row.sample)) for row in selected]
+        comparison_args.sample_names = [row.sample for row in selected]
+        comparison_args.cond_names = [comparison.cond1] * len(cond1_samples) + [comparison.cond2] * len(cond2_samples)
+        comparison_args.outdir = str(comparison_dir(project, comparison.comparison))
+        comparison_args.aggregate_signals = [
+            str(normalized_bigwig_path(project, row.sample))
+            if normalized_bigwig_path(project, row.sample).exists()
+            else str(corrected_bigwig_path(project, row.sample))
+            for row in selected
+        ]
+        comparison_args.motif_outputs = "summary" if getattr(args, "motif_outputs", "auto") == "auto" else args.motif_outputs
+        comparison_args.skip_excel = True if not getattr(args, "skip_excel", False) else args.skip_excel
+        run_diff_footprints(comparison_args)
+
+
 def match_motifs_cli():
     parser = argparse.ArgumentParser(prog="match-motifs")
     parser = add_diff_footprints_arguments(parser, command_name="match-motifs")
@@ -1678,6 +1792,7 @@ def match_motifs_cli():
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
+    _apply_match_motifs_project_layout(args, parser)
     if not args.signals:
         parser.error("match-motifs expects at least one --signals bigWig")
     if args.sample_names is not None and len(args.sample_names) != len(args.signals):
@@ -1692,6 +1807,20 @@ def match_motifs_cli():
     args.static_plots = False
     args.per_motif_plots = False
     args.skew_report = False
+    if getattr(args, "sample_output_root", None):
+        if args.sample_names is None:
+            parser.error("--sample-output-root requires --sample-names")
+        if len(args.sample_names) != len(args.signals):
+            parser.error("--sample-names must contain one value per --signals bigWig")
+        cond_names = args.cond_names or args.sample_names
+        for signal, sample, cond in zip(args.signals, args.sample_names, cond_names):
+            sample_args = copy.copy(args)
+            sample_args.signals = [signal]
+            sample_args.sample_names = [sample]
+            sample_args.cond_names = [cond]
+            sample_args.outdir = os.path.join(os.path.abspath(args.sample_output_root), sample, "match_motifs")
+            run_diff_footprints(sample_args)
+        return
     run_diff_footprints(args)
 
 
@@ -1705,6 +1834,9 @@ def diff_footprints_cli():
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         sys.exit()
+    if is_project_layout(getattr(args, "layout", None)) and getattr(args, "comparison_table", None):
+        _run_project_comparison_table(args, parser)
+        return
     folder_mode = bool(args.sample_dirs or args.project_dir)
     n_inputs = len(args.sample_dirs or []) if args.sample_dirs else len(args.signals or [])
     if args.project_dir and not args.sample_dirs:

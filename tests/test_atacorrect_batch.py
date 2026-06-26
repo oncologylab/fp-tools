@@ -16,6 +16,8 @@ class AtacCorrectBatchTest(unittest.TestCase):
             "genome": "genome.fa",
             "peaks": [str(tmp / "peaks.bed")],
             "sample_names": ["A", "B"],
+            "sample_output_root": None,
+            "merged_peaks_out": None,
             "prefix": None,
             "outdir": str(tmp / "out"),
             "track_off": [],
@@ -54,7 +56,7 @@ class AtacCorrectBatchTest(unittest.TestCase):
 
             merged = Path(_merge_peak_files([peaks_a, peaks_b], tmp / "out"))
 
-            self.assertEqual(merged.name, "merged_all.bed")
+            self.assertEqual(merged.name, "merged_peaks.bed")
             self.assertEqual(
                 merged.read_text(encoding="utf-8").splitlines(),
                 ["chr1\t1\t5", "chr1\t10\t25", "chr2\t2\t4"],
@@ -78,6 +80,34 @@ class AtacCorrectBatchTest(unittest.TestCase):
             self.assertEqual(second.bam, "B.bam")
             self.assertEqual(second.prefix, "B")
             self.assertEqual(Path(second.outdir), tmp / "out" / "B")
+
+    def test_project_layout_uses_atac_correct_subdirectories(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / "peaks.bed").write_text("chr1\t1\t5\n", encoding="utf-8")
+            args = self._args(tmp, sample_output_root=str(tmp / "samples"))
+
+            with mock.patch("fp_tools.tools.atacorrect._run_atacorrect_single") as run_one:
+                run_atacorrect(args)
+
+            first = run_one.call_args_list[0].args[0]
+            second = run_one.call_args_list[1].args[0]
+            self.assertEqual(Path(first.outdir), tmp / "samples" / "A" / "atac_correct")
+            self.assertEqual(Path(second.outdir), tmp / "samples" / "B" / "atac_correct")
+
+    def test_merge_peak_files_honors_explicit_output(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            peaks_a = tmp / "a.bed"
+            peaks_b = tmp / "b.bed"
+            merged_out = tmp / "peaks" / "merged_peaks.bed"
+            peaks_a.write_text("chr1\t10\t20\n", encoding="utf-8")
+            peaks_b.write_text("chr1\t18\t25\n", encoding="utf-8")
+
+            merged = Path(_merge_peak_files([peaks_a, peaks_b], tmp / "out", merged_out))
+
+            self.assertEqual(merged, merged_out)
+            self.assertTrue(merged.exists())
 
     def test_multi_bam_shared_peak_does_not_warn(self):
         with tempfile.TemporaryDirectory() as tmpdir:

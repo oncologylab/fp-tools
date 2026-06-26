@@ -40,7 +40,8 @@ Bias-correct ATAC-seq cut-site signal.
 
 - Uncorrected, expected, bias, and corrected bigWig tracks.
 - QC PDF and run logs in the output directory.
-- For multi-BAM runs, one output subfolder per sample. If multiple peak BEDs are supplied, fp-tools merges them and saves `merged_all.bed`.
+- For multi-BAM runs, one output subfolder per sample. If multiple peak BEDs are supplied, fp-tools merges them and saves `merged_peaks.bed`.
+- With a sample table and `--outdir project`, each sample is written under `<project>/samples/<sample>/atac_correct/`, merged peaks are written under `<project>/peaks/`, and downstream commands can reuse the same sample table. Use `--layout custom` for fully manual paths.
 
 **Example commands**
 
@@ -50,15 +51,13 @@ atac-correct \
   --genome hg38.fa.gz \
   --peaks merged_peaks.bed \
   --blacklist hg38.blacklist.bed \
-  --outdir results/atac_correct/sample
+  --outdir project/samples/sample/atac_correct
 
 atac-correct \
-  --bams A.bam B.bam \
-  --sample-names A B \
+  --sample-table project/metadata/samples.tsv \
   --genome hg38.fa.gz \
-  --peaks A_peaks.bed B_peaks.bed \
   --blacklist hg38.blacklist.bed \
-  --outdir results/atac_correct
+  --outdir project
 ```
 
 **Options**
@@ -181,15 +180,16 @@ Create footprint score tracks from one or more corrected bigWig signals.
 
 - Footprint score bigWig per input signal.
 - Optional BED coordinates for candidate footprint peaks used by de novo motif discovery.
+- With `--sample-output-root`, outputs are written under `<root>/<sample>/footprints/`.
 
 **Example commands**
 
 ```bash
 call-footprints \
   --signals A_corrected.bw B_corrected.bw \
+  --sample-names A B \
   --regions merged_peaks.bed \
-  --outdir results/footprints \
-  --output-bed-dir results/footprints/candidates
+  --sample-output-root project/samples
 ```
 
 **Options**
@@ -314,6 +314,7 @@ Scan motifs for one or more footprint tracks and write per-sample bound/unbound 
 - Summary tables with motif binding statistics for each sample.
 - Per-motif folders containing `<motif>_all.bed`, `<motif>_<sample>_bound.bed`, and `<motif>_<sample>_unbound.bed`.
 - A compact background-score cache used by `diff-footprints --sample-dirs`.
+- With `--sample-output-root`, each signal is run as its own sample folder under `<root>/<sample>/match_motifs/`.
 
 **Example commands**
 
@@ -324,7 +325,7 @@ match-motifs \
   --genome hg38.fa.gz \
   --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
-  --outdir results/motif_matches/A_B
+  --sample-output-root project/samples
 ```
 
 **Options**
@@ -458,7 +459,7 @@ Compare motif-associated footprint scores across conditions or biological replic
 
 **Input parameters**
 
-- Two or more footprint score bigWigs passed with `--signals`, or standardized sample folders from prior `match-motifs` runs passed with `--sample-dirs` / `--project-dir`.
+- Two or more footprint score bigWigs passed with `--signals`, standardized sample folders from prior `match-motifs` runs passed with `--sample-dirs` / `--project-dir`, or a project-mode sample/comparison table.
 - `--cond-names` to define conditions; repeat names for replicates.
 - Optional `--sample-names` to override file-derived sample labels without changing conditions.
 - Genome FASTA, peak BED, and motif database or motif files.
@@ -476,16 +477,15 @@ Compare motif-associated footprint scores across conditions or biological replic
 
 ```bash
 diff-footprints \
-  --sample-dirs results/samples/A_rep1 results/samples/A_rep2 results/samples/B_rep1 results/samples/B_rep2 \
-  --cond-names A A B B \
+  --sample-table project/metadata/samples.tsv \
+  --comparison-table project/metadata/comparisons.tsv \
   --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
+  --peaks project/peaks/merged_peaks.analysis.bed \
   --motif-db jaspar2026_vertebrates \
-  --plot-aggregate sig \
-  --outdir results/diff_footprints/A_vs_B
+  --outdir project
 ```
 
-`--sample-dirs` expects each folder to contain a `match_motifs/` or `motif_matches/` output from the current `match-motifs` command. The cached motif-site tables and background scores are reused, so folder mode skips motif rescanning, motif-site rescoring, and footprint bigWig rereads for the differential table.
+Project-mode comparisons use a generic table with `comparison`, `cond1`, and `cond2` columns. Each comparison reuses cached `match_motifs` folders from the project samples directory, so folder mode skips motif rescanning, motif-site rescoring, and footprint bigWig rereads for the differential table.
 
 **Options**
 
@@ -665,33 +665,43 @@ Normalize bigWig tracks with a shared background-region scale estimate.
 
 **Input parameters**
 
-- One or more bigWig tracks.
-- Shared background BED regions.
-- Output directory and optional labels.
+- A project sample table with `sample`, `condition`, `bam`, and `peaks` columns, or one or more explicit bigWig tracks.
+- Shared background BED regions. In project mode this is usually `project/peaks/merged_peaks.analysis.bed`, written by `atac-correct`.
+- Output project directory and optional labels.
 
 **Output**
 
-- Normalized bigWig files and a summary table of scaling factors.
+- Per-sample normalized bigWig files under `project/samples/<sample>/normalize/`.
+- A summary table of background statistics and scaling factors.
+- A manifest of normalized output tracks.
 
 **Example commands**
 
 ```bash
 normalize-bigwig \
-  --bigwigs A_corrected.bw B_corrected.bw \
-  --background shared_background.bed \
-  --outdir results/normalized
+  --sample-table project/metadata/samples.tsv \
+  --background project/peaks/merged_peaks.analysis.bed \
+  --outdir project \
+  --method background-scale \
+  --stat q95 \
+  --target median
 ```
+
+Project mode reads corrected tracks from each sample's `atac_correct` folder and writes q95-scaled tracks back into the same sample folder structure for `call-footprints` to reuse.
 
 **Options**
 
 This option reference is generated from `normalize-bigwig --help` and lists every accepted option for the command.
 
 ```text
-usage: normalize-bigwig [-h] --bigwigs BIGWIGS [BIGWIGS ...] --background
-                        BACKGROUND --outdir OUTDIR
+usage: normalize-bigwig [-h] [--bigwigs BIGWIGS [BIGWIGS ...]]
+                        [--background BACKGROUND] [--outdir OUTDIR]
+                        [--sample-names [SAMPLE_NAMES ...]]
+                        [--sample-table SAMPLE_TABLE] [--layout {custom,project}]
+                        [--sample-output-root SAMPLE_OUTPUT_ROOT]
                         [--method {background-scale,background-zscore,none}]
                         [--stat STAT] [--target {median,mean}]
-                        [--chrom-sizes CHROM_SIZES]
+                        [--chrom-sizes CHROM_SIZES] [--workers WORKERS]
 
 Normalize bigWig tracks using robust statistics from shared background BED
 regions. For corrected cut-site bigWigs, the recommended method is background-
@@ -704,7 +714,21 @@ options:
   --background BACKGROUND
                         Shared background BED used to estimate sample
                         statistics.
-  --outdir OUTDIR       Output directory for normalized bigWigs and QC tables.
+  --outdir OUTDIR       Output directory for normalized bigWig QC tables and
+                        default outputs.
+  --sample-names [SAMPLE_NAMES ...]
+                        Sample labels for --bigwigs when using project layout.
+  --sample-table SAMPLE_TABLE
+                        Project sample table with sample, condition, bam, and
+                        peaks columns.
+  --layout {custom,project}
+                        Use fp-tools standard project output layout under
+                        --outdir (default: project when --sample-table is
+                        provided).
+  --sample-output-root SAMPLE_OUTPUT_ROOT
+                        Sample output root; writes each sample under
+                        <root>/<sample>/normalize, typically
+                        <project>/samples.
   --method {background-scale,background-zscore,none}
                         Normalization method (default: background-scale).
   --stat STAT           Background statistic used by background-scale
@@ -716,6 +740,8 @@ options:
   --chrom-sizes CHROM_SIZES
                         Optional chromosome sizes file for output
                         validation/header.
+  --workers WORKERS     Number of bigWig tracks to normalize concurrently
+                        (default: all available cores, capped by input count).
 ```
 
 </div>
@@ -741,13 +767,13 @@ Plot aggregate signal around motif sites or region sets as static output or HTML
 
 ```bash
 plot-aggregate \
-  --match-dir results/motif_matches/sample \
-  --signals sample_corrected.bw \
+  --sample-table project/metadata/samples.tsv \
   --motifs SPIB CEBPB \
   --site-set bound \
-  --format html \
-  --output results/reports/aggregate_browser.html
+  --outdir project
 ```
+
+Project mode reads each sample's `match_motifs` folder and corrected cut-site bigWig, then writes the aggregate browser to `project/reports/plot_aggregate.html` unless `--output` is provided.
 
 **Options**
 
@@ -883,9 +909,7 @@ Review multiple diff-footprints HTML reports in one interactive HTML file.
 
 ```bash
 review-multi-comparisons \
-  --inputs results/q95/diff_footprints_K562_HepG2.html results/none/diff_footprints_K562_HepG2.html \
-  --labels "Q95 corrected" "No normalization" \
-  --output results/reports/review_multi_comparisons.html
+  --outdir project
 ```
 
 **Options**
@@ -893,8 +917,9 @@ review-multi-comparisons \
 This option reference is generated from `review-multi-comparisons --help` and lists every accepted option for the command.
 
 ```text
-usage: review-multi-comparisons [-h] --inputs INPUTS [INPUTS ...]
-                                [--labels [LABELS ...]] --output OUTPUT
+usage: review-multi-comparisons [-h] [--inputs INPUTS [INPUTS ...]]
+                                [--labels [LABELS ...]] [--output OUTPUT]
+                                [--outdir OUTDIR] [--layout {custom,project}]
                                 [--title TITLE]
 
 Review multiple diff-footprints HTML reports in one interactive HTML file.
@@ -903,10 +928,16 @@ options:
   -h, --help            show this help message and exit
   --inputs INPUTS [INPUTS ...]
                         diff-footprints HTML files or directories containing
-                        diff_footprints_*.html files.
+                        diff_footprints_*.html files; directories are searched
+                        recursively.
   --labels [LABELS ...]
                         Optional labels, one per resolved input HTML.
   --output OUTPUT       Output standalone review HTML.
+  --outdir OUTDIR       Project directory used with --layout project.
+  --layout {custom,project}
+                        Use fp-tools standard project output layout under
+                        --outdir (default: project when only --outdir is
+                        provided).
   --title TITLE
 ```
 
@@ -1019,12 +1050,12 @@ Prepare or run de novo motif discovery from candidate footprint intervals or FAS
 
 ```bash
 motif-discovery \
-  --candidates results/footprints/candidates/sample_candidates.bed \
+  --candidates project/samples/sample/footprints/sample_candidate_footprints.bed \
   --genome hg38.fa.gz \
   --flank 75 \
   --method streme \
   --known-motif-db jaspar2026_vertebrates \
-  --outdir results/de_novo/sample
+  --outdir project/de_novo/sample
 ```
 
 **Options**
@@ -1085,9 +1116,9 @@ Summarize MEME/STREME/DREME and Tomtom motif discovery outputs.
 
 ```bash
 motif-summary \
-  --meme-txt results/de_novo/sample/streme/streme.txt \
-  --tomtom-tsv results/de_novo/sample/tomtom/tomtom.tsv \
-  --out-tsv results/de_novo/sample/motif_summary.tsv
+  --meme-txt project/de_novo/sample/streme/streme.txt \
+  --tomtom-tsv project/de_novo/sample/tomtom/tomtom.tsv \
+  --out-tsv project/de_novo/sample/motif_summary.tsv
 ```
 
 **Options**
@@ -1134,7 +1165,7 @@ Annotate variants with footprint, sequence, candidate-overlap, and optional moti
 fp-tools-score-variants \
   --variants variants.vcf \
   --genome hg38.fa.gz \
-  --out results/variants/variant_scores.tsv
+  --out project/variants/variant_scores.tsv
 ```
 
 **Options**
@@ -1208,7 +1239,7 @@ pseudobulk-fragments \
   --group-by cell_type \
   --genome-sizes hg38.chrom.sizes \
   --write-cutsite-bigwigs \
-  --outdir results/pseudobulk/fragments
+  --outdir project/pseudobulk/fragments
 ```
 
 **Options**
@@ -1303,8 +1334,8 @@ find-signature-fp \
   --fragments pbmc_fragments.tsv.gz \
   --h5ad pbmc_embedding.h5ad \
   --tf-site-dir marker_motif_sites \
-  --all-motif-results results/pseudobulk/pseudobulk_diff_footprints_results.txt \
-  --outdir results/pseudobulk/signature_fp
+  --all-motif-results project/pseudobulk/pseudobulk_diff_footprints_results.txt \
+  --outdir project/pseudobulk/signature_fp
 ```
 
 **Options**
@@ -1453,7 +1484,7 @@ pseudobulk-footprints \
   --genome hg38.fa.gz \
   --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates \
-  --outdir results/pseudobulk
+  --outdir project/pseudobulk
 ```
 
 **Options**

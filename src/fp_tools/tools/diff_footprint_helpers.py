@@ -280,7 +280,8 @@ def process_tfbs(TF_name, args, log2fc_params):
     logger = FpToolsLogger("", args.verbosity, args.log_q)
     write_motif_outputs = bool(getattr(args, "write_motif_outputs", True))
 
-    bed_outdir = os.path.join(args.outdir, TF_name, "beds")
+    tmp_root = getattr(args, "tmp_tfbs_root", None) or args.outdir
+    bed_outdir = os.path.join(tmp_root, TF_name, "beds")
     filename = os.path.join(bed_outdir, TF_name + ".tmp")
     tmp_files = [filename]
     no_cond = len(args.cond_names)
@@ -740,7 +741,58 @@ def _limit_aggregate_centers(centers, max_centers):
     return [centers[idx] for idx in indices]
 
 
-def _aggregate_centers_for_row(outdir, prefix, comparison, site_set, max_centers=None):
+def _cached_aggregate_centers_for_row(prefix, comparison, site_set, aggregate_site_maps, cond_groups, max_centers=None):
+    site_set = (site_set or "all").replace("_", "-")
+
+    def add_unique(centers, path):
+        seen = set(centers)
+        for center in _read_bed_centers(path):
+            if center not in seen:
+                seen.add(center)
+                centers.append(center)
+        return centers
+
+    centers_by_condition = {}
+    if site_set == "bound":
+        for cond in comparison:
+            centers = []
+            for idx in cond_groups.get(cond, []):
+                if idx >= len(aggregate_site_maps):
+                    continue
+                path = aggregate_site_maps[idx].get(prefix, {}).get("bound")
+                if path:
+                    centers = add_unique(centers, path)
+            centers_by_condition[cond] = _limit_aggregate_centers(centers, max_centers)
+    else:
+        shared = []
+        for sample_map in aggregate_site_maps:
+            path = sample_map.get(prefix, {}).get("all")
+            if path:
+                shared = add_unique(shared, path)
+                break
+        shared = _limit_aggregate_centers(shared, max_centers)
+        centers_by_condition = {cond: list(shared) for cond in comparison}
+
+    unique = []
+    seen = set()
+    for centers in centers_by_condition.values():
+        for center in centers:
+            if center not in seen:
+                seen.add(center)
+                unique.append(center)
+    return centers_by_condition, unique
+
+
+def _aggregate_centers_for_row(outdir, prefix, comparison, site_set, max_centers=None, aggregate_site_maps=None, cond_groups=None):
+    if aggregate_site_maps:
+        return _cached_aggregate_centers_for_row(
+            prefix,
+            comparison,
+            site_set,
+            aggregate_site_maps,
+            cond_groups or {},
+            max_centers=max_centers,
+        )
     paths = _aggregate_bed_paths(outdir, prefix, comparison, site_set)
     centers_by_condition = {cond: _limit_aggregate_centers(_read_bed_centers(path), max_centers) for cond, path in paths.items()}
     unique = []
@@ -812,7 +864,7 @@ def _sample_bigwig_window_values(bigwig_path, centers, flank, max_values=500000)
     return np.concatenate(values)
 
 
-def _fit_aggregate_normalizers(selected, outdir, aggregate_signals, cond_groups, comparison, flank, mode, site_set="all", logger=None, max_centers=None):
+def _fit_aggregate_normalizers(selected, outdir, aggregate_signals, cond_groups, comparison, flank, mode, site_set="all", logger=None, max_centers=None, aggregate_site_maps=None):
     """Fit one report-level normalizer for aggregate cut-site profiles.
 
     This uses pooled windows from all displayed motifs. Fitting a separate quantile
@@ -829,7 +881,15 @@ def _fit_aggregate_normalizers(selected, outdir, aggregate_signals, cond_groups,
     seen = set()
     for _, row in selected.iterrows():
         prefix = str(row["output_prefix"])
-        _, row_centers = _aggregate_centers_for_row(outdir, prefix, comparison, site_set, max_centers=max_centers)
+        _, row_centers = _aggregate_centers_for_row(
+            outdir,
+            prefix,
+            comparison,
+            site_set,
+            max_centers=max_centers,
+            aggregate_site_maps=aggregate_site_maps,
+            cond_groups=cond_groups,
+        )
         for key in row_centers:
             if key not in seen:
                 seen.add(key)
@@ -900,14 +960,27 @@ def _aggregate_payload_for_row(task):
         row, comparison, outdir, aggregate_signals, cond_groups, flank, x_len, base, normalization, aggregate_norm_spec, sample_names = task
         site_set = "all"
         max_centers = None
+        aggregate_site_maps = None
     elif len(task) == 12:
         row, comparison, outdir, aggregate_signals, cond_groups, flank, x_len, base, normalization, aggregate_norm_spec, sample_names, site_set = task
         max_centers = None
-    else:
+        aggregate_site_maps = None
+    elif len(task) == 13:
         row, comparison, outdir, aggregate_signals, cond_groups, flank, x_len, base, normalization, aggregate_norm_spec, sample_names, site_set, max_centers = task
+        aggregate_site_maps = None
+    else:
+        row, comparison, outdir, aggregate_signals, cond_groups, flank, x_len, base, normalization, aggregate_norm_spec, sample_names, site_set, max_centers, aggregate_site_maps = task
     c1, c2 = comparison
     prefix = str(row["output_prefix"])
-    centers_by_condition, all_centers = _aggregate_centers_for_row(outdir, prefix, comparison, site_set, max_centers=max_centers)
+    centers_by_condition, all_centers = _aggregate_centers_for_row(
+        outdir,
+        prefix,
+        comparison,
+        site_set,
+        max_centers=max_centers,
+        aggregate_site_maps=aggregate_site_maps,
+        cond_groups=cond_groups,
+    )
     if not all_centers:
         return None
 
@@ -999,6 +1072,7 @@ def build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args)
     site_set = (getattr(args, "aggregate_site_set", "all") or "all").replace("_", "-")
     max_centers = getattr(args, "aggregate_max_sites", None)
     cond_groups = {cond: list(indices) for cond, indices in getattr(args, "cond_groups", {}).items()}
+    aggregate_site_maps = getattr(args, "aggregate_site_maps", None)
     aggregate_norm_spec = _fit_aggregate_normalizers(
         selected,
         args.outdir,
@@ -1010,9 +1084,10 @@ def build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args)
         site_set=site_set,
         logger=getattr(args, "logger", None),
         max_centers=max_centers,
+        aggregate_site_maps=aggregate_site_maps,
     )
     sample_names = list(getattr(args, "sample_names", []) or [f"sample_{idx + 1}" for idx in range(len(args.aggregate_signals))])
-    tasks = [(row.to_dict(), (c1, c2), args.outdir, list(args.aggregate_signals), cond_groups, flank, len(x), base, normalization, aggregate_norm_spec, sample_names, site_set, max_centers) for _, row in selected.iterrows()]
+    tasks = [(row.to_dict(), (c1, c2), args.outdir, list(args.aggregate_signals), cond_groups, flank, len(x), base, normalization, aggregate_norm_spec, sample_names, site_set, max_centers, aggregate_site_maps) for _, row in selected.iterrows()]
 
     cores = max(1, int(getattr(args, "cores", 1) or 1))
     if cores > 1 and len(tasks) > 1:

@@ -46,6 +46,15 @@ from fp_tools.utils.regions import OneRegion, RegionList
 from fp_tools.utils.ngs import OneRead, ReadList
 from fp_tools.utils.sequences import *
 from fp_tools.utils.logger import FpToolsLogger
+from fp_tools.utils.project_layout import (
+	analysis_peaks_path,
+	is_project_layout,
+	merged_peaks_path,
+	project_root,
+	read_sample_table,
+	samples_root,
+	write_analysis_peaks,
+)
 from fp_tools.tools.normalize_bigwig import corrected_scaled_output_path, normalize_bigwigs
 
 #np.seterr(divide='raise', invalid='raise')
@@ -137,7 +146,7 @@ def _warn_peak_sample_mismatches(bams, sample_names, peak_files, logger):
 	if len(peak_files) != len(bams):
 		logger.warning(
 			"Multiple BAMs and multiple peak BEDs were supplied, but their counts differ "
-			"({0} BAMs vs {1} peak BEDs). fp-tools will merge all peak BEDs into merged_all.bed; "
+			"({0} BAMs vs {1} peak BEDs). fp-tools will merge all peak BEDs into merged_peaks.bed; "
 			"please confirm these peaks are intended for the same analysis.".format(len(bams), len(peak_files))
 		)
 		return
@@ -150,22 +159,26 @@ def _warn_peak_sample_mismatches(bams, sample_names, peak_files, logger):
 	if mismatches:
 		logger.warning(
 			"Sample names and peak BED filenames do not appear to match by position: {0}. "
-			"fp-tools will still merge all peak BEDs into merged_all.bed.".format("; ".join(mismatches))
+			"fp-tools will still merge all peak BEDs into merged_peaks.bed.".format("; ".join(mismatches))
 		)
 
 
-def _merge_peak_files(peak_files, outdir):
+def _merge_peak_files(peak_files, outdir, merged_peaks_out=None):
 	peak_files = _compact_list(peak_files)
 	if not peak_files:
 		sys.exit("Error: No .peaks-file given")
 	if len(peak_files) == 1:
 		return peak_files[0]
-	make_directory(outdir)
+	if merged_peaks_out:
+		merged_path = os.path.abspath(merged_peaks_out)
+		make_directory(os.path.dirname(merged_path) or ".")
+	else:
+		make_directory(outdir)
+		merged_path = os.path.join(outdir, "merged_peaks.bed")
 	merged = RegionList()
 	for peak_file in peak_files:
 		merged.extend(RegionList().from_bed(peak_file))
 	merged.merge()
-	merged_path = os.path.join(outdir, "merged_all.bed")
 	merged.write_bed(merged_path)
 	return merged_path
 
@@ -230,6 +243,18 @@ def run_atacorrect(args):
 	output layout; multi-BAM runs write one subdirectory per sample.
 	"""
 
+	if is_project_layout(getattr(args, "layout", None)) and getattr(args, "sample_table", None):
+		if not getattr(args, "outdir", None):
+			sys.exit("Error: --layout project requires --outdir")
+		project = project_root(getattr(args, "outdir", None))
+		samples = read_sample_table(args.sample_table)
+		args.bams = [row.bam for row in samples]
+		args.peaks = [row.peaks for row in samples]
+		args.sample_names = [row.sample for row in samples]
+		args.sample_output_root = str(samples_root(project))
+		args.merged_peaks_out = str(merged_peaks_path(project))
+		args.outdir = str(project)
+
 	bams = _compact_list(getattr(args, "bams", None))
 	if not bams:
 		sys.exit("Error: No .bam-file given. Use --bams <reads.bam> [<more_reads.bam> ...]")
@@ -241,11 +266,19 @@ def run_atacorrect(args):
 		sys.exit("Error: --prefix can only be used with a single --bams input. Use --sample-names for multi-BAM runs.")
 
 	base_outdir = os.path.abspath(args.outdir) if args.outdir != None else os.path.abspath(os.getcwd())
+	sample_output_root = getattr(args, "sample_output_root", None)
+	if sample_output_root:
+		sample_output_root = os.path.abspath(sample_output_root)
+		if not getattr(args, "outdir", None):
+			base_outdir = sample_output_root
 	sample_names = _sample_names_from_bams(bams, getattr(args, "sample_names", None))
 	peak_files = _compact_list(args.peaks)
 	preflight_logger = FpToolsLogger("atac-correct", getattr(args, "verbosity", 3))
 	_warn_peak_sample_mismatches(bams, sample_names, peak_files, preflight_logger)
-	peaks_for_run = _merge_peak_files(args.peaks, base_outdir)
+	peaks_for_run = _merge_peak_files(args.peaks, base_outdir, getattr(args, "merged_peaks_out", None))
+	if is_project_layout(getattr(args, "layout", None)) and getattr(args, "sample_table", None):
+		project = project_root(getattr(args, "outdir", None))
+		write_analysis_peaks(peaks_for_run, analysis_peaks_path(project), tuple(getattr(args, "drop_chroms", []) or []))
 	corrected_bigwigs = []
 
 	sample_args_list = []
@@ -255,7 +288,10 @@ def run_atacorrect(args):
 		sample_args.bams = [bam]
 		sample_args.peaks = peaks_for_run
 		sample_args.prefix = args.prefix if len(bams) == 1 and args.prefix else sample_name
-		sample_args.outdir = base_outdir if len(bams) == 1 else os.path.join(base_outdir, sample_name)
+		if sample_output_root:
+			sample_args.outdir = os.path.join(sample_output_root, sample_name, "atac_correct")
+		else:
+			sample_args.outdir = base_outdir if len(bams) == 1 else os.path.join(base_outdir, sample_name)
 		sample_args.scale_corrected = "none"
 		sample_args._scale_after_single = False
 		corrected_bigwigs.extend(_corrected_output_paths_for_args(sample_args))

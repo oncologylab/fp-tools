@@ -14,6 +14,15 @@ from pathlib import Path
 
 import numpy as np
 import pyBigWig
+from fp_tools.utils.project_layout import (
+    analysis_peaks_path,
+    corrected_bigwig_path,
+    is_project_layout,
+    normalize_qc_dir,
+    project_root,
+    read_sample_table,
+    samples_root,
+)
 
 
 @dataclass
@@ -207,6 +216,11 @@ def corrected_scaled_output_path(input_bigwig: str | Path, outdir: str | Path | 
     return parent / f"{stem}_scaled.bw"
 
 
+def project_scaled_output_path(sample_output_root: str | Path, sample: str) -> Path:
+    """Return the standard project-layout q95-scaled corrected-track path."""
+    return Path(sample_output_root).expanduser() / sample / "normalize" / f"{sample}_corrected_q95_scaled.bw"
+
+
 def _transform_values(values: np.ndarray, method: str, stats: dict[str, float]) -> np.ndarray:
     values = np.nan_to_num(values.astype(float, copy=False), nan=0.0, posinf=0.0, neginf=0.0)
     if method == "none":
@@ -269,6 +283,7 @@ def normalize_bigwigs(
     warn_scale_high: float = 2.0,
     output_paths: list[str | Path] | None = None,
     workers: int | None = None,
+    sample_names: list[str] | None = None,
 ) -> list[BackgroundStats]:
     if not bigwigs:
         raise ValueError("--bigwigs requires at least one input bigWig")
@@ -276,6 +291,8 @@ def normalize_bigwigs(
     outdir_path.mkdir(parents=True, exist_ok=True)
     if output_paths is not None and len(output_paths) != len(bigwigs):
         raise ValueError("output_paths must have the same length as bigwigs")
+    if sample_names is not None and len(sample_names) != len(bigwigs):
+        raise ValueError("sample_names must have the same length as bigwigs")
     if workers is None:
         workers = mp.cpu_count()
     workers = max(1, min(int(workers or 1), len(bigwigs)))
@@ -292,7 +309,7 @@ def normalize_bigwigs(
         scale = stats["scale_factor"]
         rows.append(
             BackgroundStats(
-                sample=_safe_stem(bigwig),
+                sample=sample_names[index] if sample_names is not None else _safe_stem(bigwig),
                 input_bigwig=str(bigwig),
                 output_bigwig=str(output),
                 background_median=stats["background_median"],
@@ -384,9 +401,13 @@ def build_parser() -> argparse.ArgumentParser:
             "For corrected cut-site bigWigs, the recommended method is background-scale."
         )
     )
-    parser.add_argument("--bigwigs", nargs="+", required=True, help="Input bigWig files to normalize together.")
-    parser.add_argument("--background", required=True, help="Shared background BED used to estimate sample statistics.")
-    parser.add_argument("--outdir", required=True, help="Output directory for normalized bigWigs and QC tables.")
+    parser.add_argument("--bigwigs", nargs="+", help="Input bigWig files to normalize together.")
+    parser.add_argument("--background", help="Shared background BED used to estimate sample statistics.")
+    parser.add_argument("--outdir", help="Output directory for normalized bigWig QC tables and default outputs.")
+    parser.add_argument("--sample-names", nargs="*", help="Sample labels for --bigwigs when using project layout.")
+    parser.add_argument("--sample-table", help="Project sample table with sample, condition, bam, and peaks columns.")
+    parser.add_argument("--layout", choices=["custom", "project"], default="project", help="Use fp-tools standard project output layout under --outdir (default: project when --sample-table is provided).")
+    parser.add_argument("--sample-output-root", help="Sample output root; writes each sample under <root>/<sample>/normalize, typically <project>/samples.")
     parser.add_argument(
         "--method",
         choices=["background-scale", "background-zscore", "none"],
@@ -415,15 +436,45 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     parser = build_parser()
     args = parser.parse_args(argv)
+    output_paths = None
+    outdir = args.outdir
+    if is_project_layout(args.layout) and args.sample_table:
+        if not args.outdir:
+            parser.error("--layout project requires --outdir")
+        project = project_root(args.outdir)
+        samples = read_sample_table(args.sample_table)
+        args.sample_names = [row.sample for row in samples]
+        args.bigwigs = [str(corrected_bigwig_path(project, row.sample)) for row in samples]
+        args.sample_output_root = str(samples_root(project))
+        if not args.background:
+            args.background = str(analysis_peaks_path(project))
+        if not outdir:
+            outdir = str(normalize_qc_dir(project))
+    if args.sample_output_root:
+        if not args.sample_names:
+            parser.error("--sample-output-root requires --sample-names")
+        if len(args.sample_names) != len(args.bigwigs):
+            parser.error("--sample-names must contain one value per --bigwigs input")
+        output_paths = [project_scaled_output_path(args.sample_output_root, sample) for sample in args.sample_names]
+        if not outdir:
+            outdir = str(Path(args.sample_output_root).expanduser() / "normalize_qc")
+    if not outdir:
+        parser.error("provide --outdir or --sample-output-root")
+    if not args.bigwigs:
+        parser.error("provide --bigwigs or use --layout project with --sample-table")
+    if not args.background:
+        parser.error("provide --background or use --layout project after atac-correct")
     normalize_bigwigs(
         bigwigs=args.bigwigs,
         background=args.background,
-        outdir=args.outdir,
+        outdir=outdir,
         method=args.method,
         stat=args.stat,
         target=args.target,
         chrom_sizes=args.chrom_sizes,
+        output_paths=output_paths,
         workers=args.workers,
+        sample_names=args.sample_names,
     )
 
 

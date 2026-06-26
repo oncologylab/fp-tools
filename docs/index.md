@@ -25,49 +25,46 @@ fp-tools-gui
 
 ```bash
 atac-correct \
-  --bams sample.bam \
+  --sample-table project/metadata/samples.tsv \
   --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
   --blacklist hg38.blacklist.bed \
-  --outdir results/atac_correct/sample
+  --outdir project
 ```
 
-Output: corrected cut-site bigWigs and QC files. Use `--bams` with multiple BAMs to process several samples in one command; fp-tools writes one subfolder per sample. For multi-sample projects, provide either one shared `merged_peaks.bed` or one peak BED per sample; multiple peak BEDs are merged internally and saved as `merged_all.bed`.
+Output: corrected cut-site bigWigs and QC files. With a sample table and `--outdir project`, fp-tools uses the project layout by default, reads a generic `sample	condition	bam	peaks` table, merges the sample peak BED files, writes `project/peaks/merged_peaks.bed`, and writes analysis-ready peaks to `project/peaks/merged_peaks.analysis.bed`.
+
+Optional q95 scaling for multi-sample projects:
+
+```bash
+normalize-bigwig \
+  --sample-table project/metadata/samples.tsv \
+  --background project/peaks/merged_peaks.analysis.bed \
+  --outdir project \
+  --method background-scale \
+  --stat q95 \
+  --target median
+```
 
 ### 2. Call Footprints
 
 ```bash
 call-footprints \
-  --signals results/atac_correct/sample/sample_corrected.bw \
-  --regions merged_peaks.bed \
-  --outdir results/footprints
+  --sample-table project/metadata/samples.tsv \
+  --regions project/peaks/merged_peaks.analysis.bed \
+  --outdir project
 ```
 
-Output: footprint score bigWig files. Use `--signals` with multiple corrected bigWigs to score several samples in one run. Add `--output-bed` or `--output-bed-dir` to write genomic coordinates for footprint peaks needed by de novo motif discovery.
+Output: footprint score bigWig files and candidate footprint BEDs for de novo motif discovery. In project mode, fp-tools uses q95-scaled corrected tracks when present and otherwise falls back to corrected tracks.
 
 ### 3a. Match Motifs
 
 ```bash
 match-motifs \
-  --signals results/footprints/sample_footprints.bw \
+  --sample-table project/metadata/samples.tsv \
   --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
+  --peaks project/peaks/merged_peaks.analysis.bed \
   --motif-db jaspar2026_vertebrates \
-  --outdir results/motif_matches/sample
-```
-
-For multiple footprint tracks, pass all tracks to `--signals` and provide one sample name per track:
-
-```bash
-match-motifs \
-  --signals \
-    results/footprints/A_footprints.bw \
-    results/footprints/B_footprints.bw \
-  --sample-names A B \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir results/motif_matches/A_B
+  --outdir project
 ```
 
 Output: for each sample, the summary table contains motif binding statistics. Each motif folder contains BED files such as `<motif>_all.bed`, `<motif>_<sample>_bound.bed`, and `<motif>_<sample>_unbound.bed`.
@@ -78,18 +75,18 @@ Use de novo motif discovery when you want to start from candidate footprint inte
 
 ```bash
 call-footprints \
-  --signals results/atac_correct/sample/sample_corrected.bw \
+  --signals project/samples/sample/atac_correct/sample_corrected.bw \
+  --sample-names sample \
   --regions merged_peaks.bed \
-  --outdir results/footprints \
-  --output-bed-dir results/footprints/candidates
+  --sample-output-root project/samples
 
 motif-discovery \
-  --candidates results/footprints/candidates/sample_candidates.bed \
+  --candidates project/samples/sample/footprints/sample_candidate_footprints.bed \
   --genome hg38.fa.gz \
   --flank 75 \
   --method streme \
   --known-motif-db jaspar2026_vertebrates \
-  --outdir results/de_novo/sample
+  --outdir project/de_novo/sample
 ```
 
 Output: candidate FASTA files, a runnable MEME/STREME/DREME command script, motif-discovery outputs, and optional Tomtom comparison against the selected known motif database. Discovered motifs can be used alone with `--motifs`, or added to a database run with `--motif-db` plus `--motifs`.
@@ -98,30 +95,24 @@ Output: candidate FASTA files, a runnable MEME/STREME/DREME command script, moti
 
 ```bash
 diff-footprints \
-  --sample-dirs \
-    results/samples/A_rep1 results/samples/A_rep2 \
-    results/samples/B_rep1 results/samples/B_rep2 \
+  --sample-table project/metadata/samples.tsv \
+  --comparison-table project/metadata/comparisons.tsv \
   --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --cond-names A A B B \
+  --peaks project/peaks/merged_peaks.analysis.bed \
   --motif-db jaspar2026_vertebrates \
-  --normalization none \
-  --plot-aggregate sig \
-  --outdir results/diff_footprints/A_vs_B
+  --outdir project
 ```
 
-`--sample-dirs` reuses cached motif-site tables and background scores from prior `match-motifs` runs, avoiding another motif scan and footprint bigWig reread while producing the same differential-footprint tables as direct `--signals` input. Repeated names in `--cond-names` define biological replicates. Output includes motif tables, BED files, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html).
+`metadata/comparisons.tsv` uses generic columns: `comparison`, `cond1`, and `cond2`. Project-mode `diff-footprints` reuses cached motif-site tables and background scores from prior `match-motifs` runs, and samples with the same condition are treated as replicates. Output includes motif tables, BED files, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html).
 
 ### 5. Plot Aggregate
 
 ```bash
 plot-aggregate \
-  --match-dir results/motif_matches/sample \
-  --signals results/atac_correct/sample/sample_corrected.bw \
+  --sample-table project/metadata/samples.tsv \
   --motifs SPIB CEBPB \
   --site-set bound \
-  --format html \
-  --output results/reports/aggregate_browser.html
+  --outdir project
 ```
 
 Output: static PDF/SVG-style aggregate plots or an interactive HTML subplot browser, depending on `--format` or the `--output` extension.
@@ -141,7 +132,7 @@ pseudobulk-footprints \
   --motif-db jaspar2026_vertebrates \
   --tf-site-dir marker_motif_sites \
   --single-cell-signature-h5ad pbmc_embedding.h5ad \
-  --outdir results/pseudobulk
+  --outdir project/pseudobulk
 ```
 
 Standard outputs include pseudobulk fragments, pseudo-BAMs, corrected cut-site bigWigs, footprint-score bigWigs, motif-aware differential reports, aggregate plots, and optional single-cell footprint-signature heatmaps/UMAPs. The combined signature plot is written as `plots/single_cell_footprinting/single_cell_footprinting.svg` when `--single-cell-signature-h5ad` and `--tf-site-dir` are supplied.
@@ -154,9 +145,9 @@ find-signature-fp \
   --fragments pbmc_fragments.tsv.gz \
   --h5ad pbmc_embedding.h5ad \
   --tf-site-dir marker_motif_sites \
-  --all-motif-results results/pseudobulk/pseudobulk_diff_footprints_results.txt \
-  --all-motif-diff-dir results/pseudobulk/diff_footprints \
-  --outdir results/pseudobulk/signature_fp
+  --all-motif-results project/pseudobulk/pseudobulk_diff_footprints_results.txt \
+  --all-motif-diff-dir project/pseudobulk/diff_footprints \
+  --outdir project/pseudobulk/signature_fp
 ```
 
 ## Where To Go Next
