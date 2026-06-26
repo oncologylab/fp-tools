@@ -110,6 +110,8 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertIn("niceStep", html)
         self.assertIn("aggregateLegendHtml", html)
         self.assertIn("agg-legend-row", html)
+        self.assertIn("function sampleDisplayName", html)
+        self.assertIn("label=sampleDisplayName(s,s.condition)", html)
         self.assertIn("position", html)
         self.assertIn("bits", html)
         self.assertIn("1 selected motif", html)
