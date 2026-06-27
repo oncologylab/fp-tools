@@ -13,7 +13,7 @@ comparisons:
     genome: test_data/genome.fa.gz
     peaks: test_data/merged_peaks_annotated.bed
     peak_header: test_data/merged_peaks_annotated_header.txt
-    outdir: examples/gui_demo_outputs/bindetect_comparison_2v2
+    outdir: examples/gui_demo_outputs/diff_call_footprints_comparison_2v2
     cond_names:
       - Bcell
       - Bcell

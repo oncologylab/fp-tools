@@ -8,6 +8,10 @@
 pip install fp-tools-bio
 ```
 
+Supported and tested platform: Linux x86_64 with Python 3.12. macOS source
+builds may work in compatible bioinformatics environments, but macOS wheels are
+not published yet. Windows is not currently supported.
+
 For the browser GUI:
 
 ```bash
@@ -54,7 +58,7 @@ call-footprints \
   --outdir project
 ```
 
-Output: footprint score bigWig files and candidate footprint BEDs for de novo motif discovery. In project mode, fp-tools uses q95-scaled corrected tracks when present and otherwise falls back to corrected tracks.
+Output: footprint score bigWig files. Add `--call-candidates` in project mode, or `--output-bed`/`--output-beds` in custom mode, to also write genomic coordinates for footprint peaks used by de novo motif discovery. In project mode, fp-tools uses q95-scaled corrected tracks when present and otherwise falls back to corrected tracks.
 
 ### 3a. Match Motifs
 

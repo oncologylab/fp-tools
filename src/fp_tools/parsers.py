@@ -108,6 +108,7 @@ def add_scorebigwig_arguments(parser):
 	callargs.add_argument('--output-bed', metavar="<bed>", help="Optional BED-like file of genomic coordinates for footprint peaks used by de novo motif discovery")
 	callargs.add_argument('--output-beds', metavar="<bed>", nargs="*", help="Candidate BED path per --signals input")
 	callargs.add_argument('--output-bed-dir', metavar="<directory>", help="Directory for candidate BED files derived from --signals names")
+	callargs.add_argument('--call-candidates', action='store_true', help="In project/sample-output-root mode, also write candidate footprint BEDs for de novo motif discovery")
 	callargs.add_argument('--top-n', metavar="<int>", type=int, help="Keep only the top N footprint calls by score (default: keep all)")
 	callargs.add_argument('--min-score', metavar="<float>", type=float, help="Minimum footprint score for candidate BED calls (default: no threshold)")
 	callargs.add_argument('--call-width', metavar="<bp>", type=int, default=50, help="Width of candidate BED intervals centered on local maxima (default: 50)")
@@ -222,6 +223,7 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 	runargs.add_argument('--outdir', metavar="<directory>", help=f"Output directory to place motif tables, BED files, and plots in (default: {outdir_default})", default=outdir_default)
 	optargs.add_argument('--prefix', metavar="<prefix>", help=f"Prefix for overview files in --outdir folder (default: {prefix_default})", default=prefix_default)
 	runargs.add_argument('--cores', metavar="<int>", type=int, help="Number of cores to use for computation (default: all available cores)", default=None)
+	runargs.add_argument('--sample-workers', metavar="<int>", type=int, default=None, help=argparse.SUPPRESS if not is_match_motifs else "Number of input samples to process concurrently in project/sample-output-root mode (default: auto when --cores is set)")
 	runargs.add_argument('--split', metavar="<int>", type=int, help="Split of multiprocessing jobs (default: 100)", default=100)
 	runargs.add_argument('--debug', action='store_true', help="Creates an additional '_debug.pdf'-file with debug plots")	#creates extra output for debugging
 	

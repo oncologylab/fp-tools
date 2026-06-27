@@ -10,6 +10,10 @@ Documentation: <https://oncologylab.github.io/fp-tools/>
 pip install fp-tools-bio
 ```
 
+Supported and tested platform: Linux x86_64 with Python 3.12. macOS source
+builds may work in compatible bioinformatics environments, but macOS wheels are
+not published yet. Windows is not currently supported.
+
 To use the browser interface:
 
 ```bash
@@ -132,7 +136,7 @@ Key outputs include pseudobulk fragments, pseudo-BAMs, corrected bigWigs, footpr
 
 ## De Novo Motif Workflow
 
-Use candidate footprints from [`call-footprints`](https://oncologylab.github.io/fp-tools/api/#call-footprints) `--output-bed` to prepare de novo motif discovery. This route writes a reproducible MEME/STREME/DREME script and can compare discovered motifs to a built-in motif database.
+Use candidate footprints from [`call-footprints`](https://oncologylab.github.io/fp-tools/api/#call-footprints) `--call-candidates` in project mode, or `--output-bed`/`--output-beds` in custom mode, to prepare de novo motif discovery. This route writes a reproducible MEME/STREME/DREME script and can compare discovered motifs to a built-in motif database.
 
 ```bash
 motif-discovery \
@@ -211,7 +215,7 @@ Open the printed URL in a browser. If running on a server or cloud VM, make sure
 Example YAML configs are in `examples/gui_configs/`. They can be loaded in the GUI or run directly with [`run-workflow`](https://oncologylab.github.io/fp-tools/api/#run-workflow):
 
 ```bash
-run-workflow --config examples/gui_configs/footprintscores_single.yml
+run-workflow --config examples/gui_configs/call_footprints_single.yml
 ```
 
 Static report demos and GUI screenshots are available in the documentation site.

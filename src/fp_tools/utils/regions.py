@@ -207,7 +207,8 @@ class RegionList(list):
 
 		#Read all lines
 		try:
-			bedlines = open(bedfile_f).readlines()
+			with open(bedfile_f, encoding="utf-8") as handle:
+				bedlines = handle.readlines()
 		except UnicodeDecodeError as e:
 			logger.error("Could not read input file '{0}'. It looks like the file might be compressed. fp-tools reads .bed files in raw text format. Exception is: '{1}'".format(bedfile_f, e))
 			sys.exit(1)

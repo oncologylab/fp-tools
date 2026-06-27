@@ -47,5 +47,5 @@ Open the printed URL in a browser. Public access also requires the port to be al
 Bundled configs are in `examples/gui_configs/`. The same file can be loaded in the GUI or run directly with [run-workflow](api.md#run-workflow):
 
 ```bash
-run-workflow --config examples/gui_configs/footprintscores_single.yml
+run-workflow --config examples/gui_configs/call_footprints_single.yml
 ```

@@ -23,6 +23,7 @@ __pycache__/
 # Packaging and build outputs
 build/
 dist/
+wheelhouse/
 site/
 *.egg-info/
 

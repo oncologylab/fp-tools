@@ -1,20 +1,20 @@
 version: 1
 run_mode: batch
 samples:
-  - sample_id: atacorrect_batch_a
+  - sample_id: atac_correct_batch_a
     tool: atac-correct
     bams:
       - test_data/Bcell.bam
     genome: test_data/genome.fa.gz
     peaks: test_data/merged_peaks.bed
     blacklist: test_data/blacklist.bed
-    outdir: examples/gui_demo_outputs/atacorrect_batch_a
-  - sample_id: atacorrect_batch_b
+    outdir: examples/gui_demo_outputs/atac_correct_batch_a
+  - sample_id: atac_correct_batch_b
     tool: atac-correct
     bams:
       - test_data/Bcell.bam
     genome: test_data/genome.fa.gz
     peaks: test_data/merged_peaks.bed
     blacklist: test_data/blacklist.bed
-    outdir: examples/gui_demo_outputs/atacorrect_batch_b
+    outdir: examples/gui_demo_outputs/atac_correct_batch_b
 comparisons: []

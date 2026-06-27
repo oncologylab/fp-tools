@@ -28,6 +28,7 @@ import multiprocessing as mp
 import itertools
 import pandas as pd
 import seaborn as sns
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from collections import Counter
 from types import SimpleNamespace
 import warnings
@@ -266,6 +267,28 @@ def _resolve_folder_inputs(args):
     if not getattr(args, "aggregate_signals", None) and len(aggregate_signals) == len(signals):
         args.aggregate_signals = aggregate_signals
     return args
+
+
+def _sample_worker_plan(n_items, cores, requested=None):
+    """Return (sample_workers, cores_per_sample) for sample-level batch commands."""
+
+    if n_items <= 1:
+        return 1, cores
+    if requested is not None:
+        workers = max(1, min(int(requested), n_items))
+    else:
+        if cores is None:
+            return 1, cores
+        workers = min(n_items, max(1, int(cores) // 8))
+    cores_per_sample = cores
+    if cores is not None and workers > 1:
+        cores_per_sample = max(1, int(cores) // workers)
+    return workers, cores_per_sample
+
+
+def _run_match_motifs_sample(sample_args):
+    run_diff_footprints(sample_args)
+    return sample_args.outdir
 
 
 def _resolve_motif_arguments(args):
@@ -1813,13 +1836,29 @@ def match_motifs_cli():
         if len(args.sample_names) != len(args.signals):
             parser.error("--sample-names must contain one value per --signals bigWig")
         cond_names = args.cond_names or args.sample_names
+        sample_args_list = []
         for signal, sample, cond in zip(args.signals, args.sample_names, cond_names):
             sample_args = copy.copy(args)
             sample_args.signals = [signal]
             sample_args.sample_names = [sample]
             sample_args.cond_names = [cond]
             sample_args.outdir = os.path.join(os.path.abspath(args.sample_output_root), sample, "match_motifs")
-            run_diff_footprints(sample_args)
+            sample_args_list.append(sample_args)
+        sample_workers, sample_cores = _sample_worker_plan(
+            len(sample_args_list),
+            getattr(args, "cores", None),
+            getattr(args, "sample_workers", None),
+        )
+        for sample_args in sample_args_list:
+            sample_args.cores = sample_cores
+        if sample_workers == 1:
+            for sample_args in sample_args_list:
+                _run_match_motifs_sample(sample_args)
+        else:
+            with ProcessPoolExecutor(max_workers=sample_workers) as executor:
+                futures = [executor.submit(_run_match_motifs_sample, sample_args) for sample_args in sample_args_list]
+                for future in as_completed(futures):
+                    future.result()
         return
     run_diff_footprints(args)
 

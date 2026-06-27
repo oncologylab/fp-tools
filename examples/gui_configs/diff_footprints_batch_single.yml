@@ -1,7 +1,7 @@
 version: 1
 run_mode: batch
 samples:
-  - sample_id: bindetect_single_bcell
+  - sample_id: diff_call_footprints_single_bcell
     tool: diff-footprints
     motifs: test_data/motifs.jaspar
     signals:
@@ -9,11 +9,11 @@ samples:
     genome: test_data/genome.fa.gz
     peaks: test_data/merged_peaks_annotated.bed
     peak_header: test_data/merged_peaks_annotated_header.txt
-    outdir: examples/gui_demo_outputs/bindetect_batch_single_bcell
+    outdir: examples/gui_demo_outputs/diff_call_footprints_batch_single_bcell
     cond_names:
       - Bcell
     skip_excel: true
-  - sample_id: bindetect_single_tcell
+  - sample_id: diff_call_footprints_single_tcell
     tool: diff-footprints
     motifs: test_data/motifs.jaspar
     signals:
@@ -21,7 +21,7 @@ samples:
     genome: test_data/genome.fa.gz
     peaks: test_data/merged_peaks_annotated.bed
     peak_header: test_data/merged_peaks_annotated_header.txt
-    outdir: examples/gui_demo_outputs/bindetect_batch_single_tcell
+    outdir: examples/gui_demo_outputs/diff_call_footprints_batch_single_tcell
     cond_names:
       - Tcell
     skip_excel: true

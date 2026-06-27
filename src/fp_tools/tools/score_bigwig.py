@@ -139,7 +139,7 @@ def _scorebigwig_batch_items(args):
     output_beds = _as_list(getattr(args, "output_beds", None))
     if output_beds and len(output_beds) != len(signals):
         sys.exit("--output-beds must have the same number of files as --signals")
-    if not output_beds and sample_output_root:
+    if not output_beds and sample_output_root and getattr(args, "call_candidates", False):
         output_beds = [
             os.path.join(sample_output_root, sample, "footprints", f"{sample}_candidate_footprints.bed")
             for sample in sample_names
@@ -469,9 +469,16 @@ def _run_scorebigwig_single(args):
     args.writer_qs = writer_qs
 
     try:
-        # Start workers
+        # Start workers. Each task receives its own shallow argument snapshot;
+        # reusing one mutable Namespace here can race with multiprocessing
+        # pickling in nested project-mode runs.
         pool = mp.Pool(processes=args.cores)
-        task_list = [pool.apply_async(calculate_scores, args=[chunk, args]) for chunk in regions_chunks]
+        worker_args = copy.copy(args)
+        worker_args.writer_qs = dict(writer_qs)
+        task_list = [
+            pool.apply_async(calculate_scores, args=[chunk, copy.copy(worker_args)])
+            for chunk in regions_chunks
+        ]
         pool.close()
         monitor_progress(task_list, logger)
         results = [task.get() for task in task_list]

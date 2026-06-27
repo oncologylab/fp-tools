@@ -1,7 +1,7 @@
 version: 1
 run_mode: single
 samples:
-  - sample_id: pseudobulk_footprints_plan
+  - sample_id: pseudobulk_call_footprints_plan
     tool: pseudobulk-footprints
     fragments: data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz
     annotations: data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv

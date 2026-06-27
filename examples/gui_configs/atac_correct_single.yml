@@ -8,5 +8,5 @@ samples:
     genome: test_data/genome.fa.gz
     peaks: test_data/merged_peaks.bed
     blacklist: test_data/blacklist.bed
-    outdir: examples/gui_demo_outputs/atacorrect_single
+    outdir: examples/gui_demo_outputs/atac_correct_single
 comparisons: []

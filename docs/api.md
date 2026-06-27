@@ -179,7 +179,7 @@ Create footprint score tracks from one or more corrected bigWig signals.
 **Output**
 
 - Footprint score bigWig per input signal.
-- Optional BED coordinates for candidate footprint peaks used by de novo motif discovery.
+- Optional BED coordinates for candidate footprint peaks used by de novo motif discovery when `--call-candidates`, `--output-bed`, or `--output-beds` is used.
 - With `--sample-output-root`, outputs are written under `<root>/<sample>/footprints/`.
 
 **Example commands**
@@ -204,7 +204,7 @@ usage: call-footprints [-h] [-s <bigwig>] [--signals [<bigwig> ...]] [-o <bigwig
                        [--multiscale-summary <method>] [--output-multiscale-npz <npz>]
                        [--output-multiscale-npzs [<npz> ...]] [--output-bed <bed>]
                        [--output-beds [<bed> ...]] [--output-bed-dir <directory>]
-                       [--top-n <int>] [--min-score <float>] [--call-width <bp>]
+                       [--call-candidates] [--top-n <int>] [--min-score <float>] [--call-width <bp>]
                        [--min-distance <bp>] [--fp-min <int>] [--fp-max <int>]
                        [--flank-min <int>] [--flank-max <int>] [--window <int>]
                        [--outdir <directory>] [--cores <int>] [--split <int>]
@@ -224,7 +224,7 @@ Usage: call-footprints --signals <cutsites.bw> [<more_cutsites.bw> ...] --region
 
 Output:
 - footprint score bigWig(s)
-- optional candidate BED from --output-bed/--output-beds for de novo motif discovery
+- optional candidate BED from --call-candidates, --output-bed, or --output-beds for de novo motif discovery
 
 ------------------------------------------------------------------------------------------
 
@@ -265,6 +265,9 @@ Optional footprint candidate BED calling:
   --output-beds [<bed> ...]             Candidate BED path per --signals input
   --output-bed-dir <directory>          Directory for candidate BED files derived from
                                         --signals names
+  --call-candidates                     In project/sample-output-root mode, also write
+                                        candidate footprint BEDs for de novo motif
+                                        discovery
   --top-n <int>                         Keep only the top N footprint calls by score
                                         (default: keep all)
   --min-score <float>                   Minimum footprint score for candidate BED calls

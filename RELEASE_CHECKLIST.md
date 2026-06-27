@@ -54,17 +54,41 @@ Primary current API checks:
 
 ## 4. Build Artifacts
 
-Build source and wheel artifacts:
+Build source and wheel artifacts. On Linux releases, install `auditwheel` and
+`patchelf` first so `scripts/build_release.sh` can repair platform wheels to
+manylinux tags accepted by PyPI:
 
 ```bash
+.venv/bin/python -m pip install build twine auditwheel patchelf
 ./scripts/build_release.sh
 ```
 
-The build script uses isolated `python -m build`. Validate metadata when `twine` is available:
+The build script uses isolated `python -m build`, removes unrepaired
+`linux_x86_64` wheels when a repaired manylinux wheel is produced, and leaves
+the upload-ready files in `dist/`. Validate metadata before upload:
 
 ```bash
 .venv/bin/python -m twine check dist/*
 ```
+
+After uploading, verify a fresh install from PyPI:
+
+```bash
+python -m venv /tmp/fp-tools-pypi-smoke
+/tmp/fp-tools-pypi-smoke/bin/python -m pip install --upgrade pip
+/tmp/fp-tools-pypi-smoke/bin/python -m pip install "fp-tools-bio[gui]==<version>"
+/tmp/fp-tools-pypi-smoke/bin/atac-correct --help >/dev/null
+/tmp/fp-tools-pypi-smoke/bin/plot-aggregate --help >/dev/null
+/tmp/fp-tools-pypi-smoke/bin/fp-tools-gui --help >/dev/null
+```
+
+Prefer PyPI Trusted Publishing or a GitHub Actions secret for publishing
+credentials. Do not paste PyPI tokens into chat, shell history, or committed
+files. Rotate any token that was exposed outside a secret manager.
+
+The preferred publish path is the manual GitHub Actions `Publish` workflow. It
+uses PyPI Trusted Publishing, repairs the Linux wheel, checks metadata, and
+smoke-tests the repaired wheel before upload.
 
 ## 5. Metadata And Docs
 

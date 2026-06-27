@@ -1,7 +1,7 @@
 version: 1
 run_mode: single
 samples:
-  - sample_id: bindetect_single_bcell
+  - sample_id: diff_call_footprints_single_bcell
     tool: diff-footprints
     motifs: test_data/motifs.jaspar
     signals:
@@ -9,7 +9,7 @@ samples:
     genome: test_data/genome.fa.gz
     peaks: test_data/merged_peaks_annotated.bed
     peak_header: test_data/merged_peaks_annotated_header.txt
-    outdir: examples/gui_demo_outputs/bindetect_single
+    outdir: examples/gui_demo_outputs/diff_call_footprints_single
     cond_names:
       - Bcell
     skip_excel: true

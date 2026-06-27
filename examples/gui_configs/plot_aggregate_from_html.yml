@@ -5,7 +5,7 @@ samples:
     tool: plot-aggregate
     format: html
     input_html:
-      - examples/gui_demo_outputs/bindetect_comparison_2v2/bindetect_Bcell_Tcell.html
-    output: examples/gui_demo_outputs/plotaggregate_batch_browser.html
+      - examples/gui_demo_outputs/diff_call_footprints_comparison_2v2/diff_call_footprints_Bcell_Tcell.html
+    output: examples/gui_demo_outputs/plot_aggregate_batch_browser.html
     default_layout: 2x2
 comparisons: []

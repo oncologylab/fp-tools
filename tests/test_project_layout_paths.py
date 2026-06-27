@@ -34,6 +34,7 @@ class ProjectLayoutPathTest(unittest.TestCase):
                 output_bed_dir=None,
                 output_multiscale_npz=None,
                 output_multiscale_npzs=None,
+                call_candidates=False,
                 outdir=None,
                 sample_names=["A", "B"],
                 sample_output_root=str(root),
@@ -43,6 +44,11 @@ class ProjectLayoutPathTest(unittest.TestCase):
 
             self.assertEqual(items[0][1], str(root / "A" / "footprints" / "A_footprints.bw"))
             self.assertEqual(items[1][1], str(root / "B" / "footprints" / "B_footprints.bw"))
+            self.assertIsNone(items[0][2])
+            self.assertIsNone(items[1][2])
+
+            args.call_candidates = True
+            items = _scorebigwig_batch_items(args)
             self.assertEqual(items[0][2], str(root / "A" / "footprints" / "A_candidate_footprints.bed"))
             self.assertEqual(items[1][2], str(root / "B" / "footprints" / "B_candidate_footprints.bed"))
 

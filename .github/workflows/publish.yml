@@ -1,0 +1,46 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf
+          python -m pip install --upgrade pip build twine auditwheel
+
+      - name: Build and repair release artifacts
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip build twine auditwheel
+          ./scripts/build_release.sh
+          .venv/bin/python -m twine check dist/*
+
+      - name: Smoke test repaired wheel
+        run: |
+          python -m venv /tmp/fp-tools-publish-smoke
+          /tmp/fp-tools-publish-smoke/bin/python -m pip install --upgrade pip
+          /tmp/fp-tools-publish-smoke/bin/python -m pip install dist/*.whl
+          for cmd in atac-correct call-footprints match-motifs diff-footprints normalize-bigwig plot-aggregate review-multi-comparisons run-workflow fp-tools-gui motif-discovery motif-summary fp-tools-score-variants pseudobulk-fragments find-signature-fp pseudobulk-footprints; do
+            /tmp/fp-tools-publish-smoke/bin/$cmd --help >/dev/null
+          done
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

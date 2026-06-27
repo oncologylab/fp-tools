@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       slow_regressions:
-        description: "Run opt-in slow ATACorrect regression"
+        description: "Run opt-in slow atac-correct regression"
         required: false
         default: "false"
         type: choice

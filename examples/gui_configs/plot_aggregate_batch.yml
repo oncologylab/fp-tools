@@ -9,9 +9,9 @@ samples:
     signals:
       - test_data/Bcell_corrected.bw
       - test_data/Tcell_corrected.bw
-    output: examples/gui_demo_outputs/plotaggregate_batch/panel_a.pdf
-    output_aggregated_scores: examples/gui_demo_outputs/plotaggregate_batch/panel_a_scores.csv
-    output_aggregated_signals: examples/gui_demo_outputs/plotaggregate_batch/panel_a_signals.csv
+    output: examples/gui_demo_outputs/plot_aggregate_batch/panel_a.pdf
+    output_aggregated_scores: examples/gui_demo_outputs/plot_aggregate_batch/panel_a_scores.csv
+    output_aggregated_signals: examples/gui_demo_outputs/plot_aggregate_batch/panel_a_signals.csv
     grid: 2x2
   - sample_id: plotaggregate_panel_b
     tool: plot-aggregate
@@ -24,8 +24,8 @@ samples:
     signals:
       - test_data/Bcell_corrected.bw
       - test_data/Tcell_corrected.bw
-    output: examples/gui_demo_outputs/plotaggregate_batch/panel_b.pdf
-    output_aggregated_scores: examples/gui_demo_outputs/plotaggregate_batch/panel_b_scores.csv
-    output_aggregated_signals: examples/gui_demo_outputs/plotaggregate_batch/panel_b_signals.csv
+    output: examples/gui_demo_outputs/plot_aggregate_batch/panel_b.pdf
+    output_aggregated_scores: examples/gui_demo_outputs/plot_aggregate_batch/panel_b_scores.csv
+    output_aggregated_signals: examples/gui_demo_outputs/plot_aggregate_batch/panel_b_signals.csv
     grid: 2x5
 comparisons: []

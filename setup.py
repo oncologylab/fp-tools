@@ -15,6 +15,7 @@ ext_modules = [
 setup(
     ext_modules=cythonize(
         ext_modules,
+        build_dir="build/cythonized",
         language_level="3",
         compiler_directives={"boundscheck": False, "wraparound": False},
     ),

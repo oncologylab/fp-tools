@@ -23,6 +23,8 @@ import pysam
 from sklearn.neighbors import NearestNeighbors
 
 
+SANS_SERIF_FONTS = ["Arial", "Helvetica", "Liberation Sans", "Nimbus Sans", "DejaVu Sans"]
+
 plt.rcParams.update(
     {
         "font.size": 8.5,
@@ -31,7 +33,8 @@ plt.rcParams.update(
         "xtick.labelsize": 7.6,
         "ytick.labelsize": 7.6,
         "legend.fontsize": 7.4,
-        "font.family": "Arial",
+        "font.family": "sans-serif",
+        "font.sans-serif": SANS_SERIF_FONTS,
         "font.weight": "bold",
         "axes.titleweight": "bold",
         "axes.labelweight": "bold",
@@ -77,7 +80,7 @@ REFERENCE_LABEL_POSITIONS = {
 
 def save_illustrator_svg(fig: plt.Figure, output_prefix: Path, *, tight: bool = True) -> None:
     for text in fig.findobj(match=mtext.Text):
-        text.set_fontfamily("Arial")
+        text.set_fontfamily(SANS_SERIF_FONTS)
         text.set_fontsize(9)
         text.set_fontweight("bold")
     save_kwargs = {"bbox_inches": "tight"} if tight else {}
@@ -850,7 +853,7 @@ def add_repelled_row_labels(
             va="center",
             fontsize=9,
             fontweight="bold",
-            fontfamily="Arial",
+            fontfamily=SANS_SERIF_FONTS,
             arrowprops={"arrowstyle": "-", "linewidth": 0.35, "color": "#374151", "shrinkA": 0, "shrinkB": 0},
             clip_on=False,
         )
@@ -1449,7 +1452,7 @@ def plot_fig4_single_cell_footprinting(
     cax = fig.add_subplot(top_grid[1, 1])
     draw_top_motif_heatmap_panel(fig, strip_ax, heat_ax, cax, top_matrix, top_metadata, ordered_cell_annotations(annotations), UMAP_MARKER_LABELS)
     strip_ax.set_title("Top marker and cell-type-specific footprint signatures", fontsize=9, fontweight="bold", pad=4)
-    fig.text(0.035, 0.965, "A", fontsize=9, fontweight="bold", fontfamily="Arial", va="top")
+    fig.text(0.035, 0.965, "A", fontsize=9, fontweight="bold", fontfamily=SANS_SERIF_FONTS, va="top")
 
     bottom_grid = outer[1].subgridspec(3, 4, hspace=0.38, wspace=0.28, width_ratios=[1.0, 1.0, 1.0, 0.07])
     axes = [fig.add_subplot(bottom_grid[row, col]) for row in range(3) for col in range(3)]
@@ -1457,7 +1460,7 @@ def plot_fig4_single_cell_footprinting(
     draw_knn_umap_panel(fig, axes[: 1 + len(markers)], annotations, knn_scores, markers, cax=cax, boxed_axes=True)
     for ax in axes[1 + len(markers) :]:
         ax.set_visible(False)
-    fig.text(0.035, 0.61, "B", fontsize=9, fontweight="bold", fontfamily="Arial", va="top")
+    fig.text(0.035, 0.61, "B", fontsize=9, fontweight="bold", fontfamily=SANS_SERIF_FONTS, va="top")
     fig.suptitle("Single-cell footprinting", fontsize=9, fontweight="bold", y=0.992)
     save_illustrator_svg(fig, output_prefix, tight=False)
     plt.close(fig)

@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 
 
+SANS_SERIF_FONTS = ["Arial", "Helvetica", "Liberation Sans", "Nimbus Sans", "DejaVu Sans"]
+
 plt.rcParams.update(
     {
         "font.size": 8,
@@ -23,7 +25,8 @@ plt.rcParams.update(
         "xtick.labelsize": 7.4,
         "ytick.labelsize": 7.4,
         "legend.fontsize": 7.2,
-        "font.family": "Arial",
+        "font.family": "sans-serif",
+        "font.sans-serif": SANS_SERIF_FONTS,
         "font.weight": "bold",
         "axes.titleweight": "bold",
         "axes.labelweight": "bold",
@@ -64,7 +67,7 @@ COLORS = {
 
 def save_illustrator_svg(fig: plt.Figure, output_prefix: Path) -> None:
     for text in fig.findobj(match=mtext.Text):
-        text.set_fontfamily("Arial")
+        text.set_fontfamily(SANS_SERIF_FONTS)
         text.set_fontsize(9)
         text.set_fontweight("bold")
     fig.savefig(output_prefix.with_suffix(".svg"), bbox_inches="tight")
