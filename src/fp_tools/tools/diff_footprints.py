@@ -23,6 +23,8 @@ import random
 import shutil
 import copy
 import tempfile
+import zipfile
+import subprocess
 import numpy as np
 import multiprocessing as mp
 import itertools
@@ -64,13 +66,13 @@ from fp_tools.utils.motifs import *
 from fp_tools.utils.motif_databases import motif_db_table, resolve_motif_inputs
 from fp_tools.utils.logger import FpToolsLogger
 from fp_tools.utils.project_layout import (
-    analysis_peaks_path,
     comparison_dir,
     corrected_bigwig_path,
     footprint_bigwig_path,
     is_project_layout,
     match_motifs_dir,
     normalized_bigwig_path,
+    project_analysis_peaks,
     project_root,
     read_comparison_table,
     read_sample_table,
@@ -103,6 +105,38 @@ def _benjamini_hochberg(pvalues):
     unsorted[order] = adjusted
     qvals[finite] = unsorted
     return qvals
+
+
+def _estimate_bound_threshold(bg_values, bound_pvalue):
+    """Estimate the bound/unbound score threshold using the existing lognormal fit."""
+
+    bg_values = np.asarray(bg_values, dtype=float).flatten()
+    bg_values = bg_values[np.isfinite(bg_values)]
+    bg_values = bg_values[~np.isclose(bg_values, 0.0)]
+    if len(bg_values) == 0:
+        raise ValueError("All background scores are zero. Check inputs.")
+    x_max = np.percentile(bg_values, [99])
+    bg_values = bg_values[bg_values < x_max]
+    log_vals = np.log(bg_values).reshape(-1, 1)
+    gmm = sklearn.mixture.GaussianMixture(n_components=2, random_state=1).fit(log_vals)
+    means = gmm.means_.flatten()
+    stds = np.sqrt(gmm.covariances_).flatten()
+    chosen_i = np.argmax(means)
+    log_params = scipy.stats.lognorm.fit(bg_values, f0=stds[chosen_i], fscale=np.exp(means[chosen_i]))
+    mode = scipy.optimize.fmin(lambda x: -scipy.stats.lognorm.pdf(x, *log_params), 0, disp=False)[0]
+    leftside_x = np.linspace(scipy.stats.lognorm(*log_params).ppf([0.01]), mode, 100)
+    leftside_pdf = scipy.stats.lognorm.pdf(leftside_x, *log_params)
+    leftside_x_scale = leftside_x - np.min(leftside_x)
+    mirrored_x = np.concatenate([leftside_x, np.max(leftside_x) + leftside_x_scale]).flatten()
+    mirrored_pdf = np.concatenate([leftside_pdf, leftside_pdf[::-1]]).flatten()
+    popt, _ = scipy.optimize.curve_fit(
+        lambda x, std, sc: sc * scipy.stats.norm.pdf(x, mode, std),
+        mirrored_x, mirrored_pdf
+    )
+    norm_params = (mode, popt[0])
+    threshold = round(scipy.stats.norm.ppf(1 - bound_pvalue, *norm_params), 5)
+    pseudo = mode / 2.0
+    return threshold, pseudo
 
 warnings.simplefilter("ignore", OptimizeWarning)
 warnings.simplefilter("ignore", RuntimeWarning)
@@ -289,6 +323,103 @@ def _sample_worker_plan(n_items, cores, requested=None):
 def _run_match_motifs_sample(sample_args):
     run_diff_footprints(sample_args)
     return sample_args.outdir
+
+
+def _async_remove_tree(path):
+    """Remove a large temporary tree without blocking command completion."""
+
+    if not path:
+        return
+    path = os.path.abspath(path)
+    base = os.path.basename(path)
+    if not base.startswith(("fp_tools_match_shared_", "fp_tools_diff_tfbs_")):
+        shutil.rmtree(path, ignore_errors=True)
+        return
+    subprocess.Popen(
+        ["rm", "-rf", path],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+
+def _run_match_motifs_cached_sample(sample_args):
+    """Summarize one sample from a split match-motifs cache."""
+
+    sample = sample_args.sample_names[0]
+    cached_args = copy.copy(sample_args)
+    cached_args.signals = [f"cached:{sample}"]
+    cached_args.cached_match_dirs = [sample_args.outdir]
+    cached_args.cached_without_bigwigs = True
+    cached_args.folder_default_sample_names = [sample]
+    cached_args.sample_output_root = None
+    cached_args.match_scan_mode = "per-sample"
+    cached_args.motif_outputs = "summary"
+    cached_args.materialize_match_motif_beds = False
+    run_diff_footprints(cached_args)
+    return sample_args.outdir
+
+
+def _shared_match_status(args, message):
+    if int(getattr(args, "verbosity", 3) or 0) >= 2:
+        print(f"[match-motifs shared] {message}", file=sys.stderr, flush=True)
+
+
+def _run_match_motifs_shared_project(args, sample_args_list):
+    """Run one shared motif scan, then summarize each sample from split caches."""
+
+    staging_root = tempfile.mkdtemp(prefix="fp_tools_match_shared_")
+    shared_tmp_root = None
+    try:
+        shared_dir = os.path.join(staging_root, "shared_match_motifs")
+        shared_args = copy.copy(args)
+        shared_args.sample_output_root = None
+        shared_args.outdir = shared_dir
+        shared_args.sample_names = list(args.sample_names)
+        shared_args.cond_names = list(args.sample_names)
+        shared_args.motif_outputs = "summary"
+        shared_args.skip_excel = True
+        shared_args.match_scan_mode = "per-sample"
+        shared_args.materialize_match_motif_beds = False
+        _shared_match_status(args, f"running one shared motif scan for {len(sample_args_list)} sample(s)")
+        run_diff_footprints(shared_args)
+        shared_tmp_root = getattr(shared_args, "tmp_tfbs_root", None)
+
+        results_path = os.path.join(shared_dir, shared_args.prefix + "_results.txt")
+        shared_results = pd.read_csv(results_path, sep="\t")
+        motif_names = shared_results["output_prefix"].astype(str).tolist()
+        sample_names = list(args.sample_names)
+        sample_match_dirs = [sample_args.outdir for sample_args in sample_args_list]
+        _shared_match_status(args, "splitting shared motif-site and background caches")
+        stats_by_sample = _split_shared_match_outputs(
+            shared_dir,
+            shared_tmp_root or shared_dir,
+            sample_match_dirs,
+            sample_names,
+            [sample_args.cond_names[0] for sample_args in sample_args_list],
+            motif_names,
+            list(shared_args.peak_header_list),
+            bound_pvalue=getattr(args, "bound_pvalue", 0.001),
+        )
+
+        _shared_match_status(args, "writing per-sample summary tables")
+        for sample_args in sample_args_list:
+            _write_single_sample_match_summary_from_stats(
+                sample_args.outdir,
+                sample_args.cond_names[0],
+                shared_results,
+                stats_by_sample[sample_args.sample_names[0]],
+            )
+        requested_cores = getattr(args, "cores", None)
+        total_cores = int(requested_cores) if requested_cores is not None else (os.cpu_count() or 1)
+        _shared_match_status(args, "starting background BED materialization")
+        _launch_async_match_motif_bed_materialization(sample_args_list, total_cores)
+        return [sample_args.outdir for sample_args in sample_args_list]
+    finally:
+        _shared_match_status(args, "scheduling temporary-file cleanup")
+        if shared_tmp_root:
+            _async_remove_tree(shared_tmp_root)
+        _async_remove_tree(staging_root)
 
 
 def _resolve_motif_arguments(args):
@@ -532,6 +663,31 @@ def _read_cached_all_bed(path, peak_cols, sample_col_count=1):
     return rows
 
 
+def _read_cached_zip_bed(zip_path, motif, peak_cols, sample_col_count=1):
+    """Read one motif member from the random-access match-motifs ZIP cache."""
+
+    expected = 6 + peak_cols + sample_col_count
+    member = motif + ".bed"
+    rows = []
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        try:
+            with zf.open(member, "r") as raw:
+                for line_no, raw_line in enumerate(raw, start=1):
+                    line = raw_line.decode("utf-8").rstrip("\n")
+                    if not line:
+                        continue
+                    parts = line.split("\t")
+                    if len(parts) < expected:
+                        raise ValueError(
+                            f"Cached motif ZIP member {member} line {line_no} has "
+                            f"{len(parts)} columns but expected at least {expected}: {zip_path}"
+                        )
+                    rows.append(parts)
+        except KeyError:
+            raise KeyError(f"Cached motif ZIP is missing {member}: {zip_path}")
+    return rows
+
+
 def _cached_motif_bed_map(match_dir):
     """Map motif prefix to cached all.bed path in a match-motifs output directory."""
 
@@ -542,6 +698,96 @@ def _cached_motif_bed_map(match_dir):
     if not paths:
         raise FileNotFoundError(f"No cached motif BEDs found under {match_dir}")
     return paths
+
+
+def _cached_motif_shard_map(match_dir):
+    """Map motif prefix to fast all-site shard path in a match-motifs cache."""
+
+    paths = {}
+    shard_dir = _match_motif_site_shard_dir(match_dir)
+    if not os.path.isdir(shard_dir):
+        return paths
+    for bed in sorted(os.path.abspath(p) for p in glob.glob(os.path.join(shard_dir, "*.bed"))):
+        paths[os.path.basename(bed)[:-len(".bed")]] = bed
+    return paths
+
+
+def _build_match_motif_shards_for_sample(payload):
+    """Build per-motif all-site shard files from one compact motif-site cache."""
+
+    match_dir, motif_names = payload
+    cache_tsv = _match_motif_site_cache_path(match_dir)
+    if not os.path.exists(cache_tsv):
+        raise FileNotFoundError(f"Missing compact motif-site cache: {cache_tsv}")
+
+    motif_set = set(motif_names)
+    shard_dir = _match_motif_site_shard_dir(match_dir)
+    complete = os.path.join(shard_dir, ".complete")
+    if os.path.exists(complete):
+        mapping = _cached_motif_shard_map(match_dir)
+        if motif_set.issubset(mapping):
+            return match_dir
+
+    tmp_dir = shard_dir + ".tmp"
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+    make_directory(tmp_dir)
+    handles = {}
+    try:
+        with gzip.open(cache_tsv, "rt", encoding="utf-8") as cache_handle:
+            header = cache_handle.readline().rstrip("\n").split("\t")
+            if len(header) < 8 or header[0] != "motif":
+                raise ValueError(f"Unexpected motif-site cache header in {cache_tsv}")
+            for line in cache_handle:
+                if not line.strip():
+                    continue
+                parts = line.rstrip("\n").split("\t")
+                motif = parts[0]
+                if motif not in motif_set:
+                    continue
+                handle = handles.get(motif)
+                if handle is None:
+                    handle = open(os.path.join(tmp_dir, motif + ".bed"), "w", encoding="utf-8")
+                    handles[motif] = handle
+                handle.write("\t".join(parts[1:]) + "\n")
+    finally:
+        for handle in handles.values():
+            handle.close()
+
+    for motif in motif_names:
+        path = os.path.join(tmp_dir, motif + ".bed")
+        if not os.path.exists(path):
+            open(path, "w", encoding="utf-8").close()
+    with open(os.path.join(tmp_dir, ".complete"), "w", encoding="utf-8") as done:
+        done.write("ok\n")
+    if os.path.exists(shard_dir):
+        shutil.rmtree(shard_dir, ignore_errors=True)
+    os.replace(tmp_dir, shard_dir)
+    return match_dir
+
+
+def _ensure_match_motif_shard_caches(cached_dirs, motif_names, workers=1):
+    """Ensure fast per-motif shard caches exist for selected sample folders."""
+
+    motif_set = set(motif_names)
+    missing = []
+    for match_dir in cached_dirs:
+        mapping = _cached_motif_shard_map(match_dir)
+        complete = os.path.join(_match_motif_site_shard_dir(match_dir), ".complete")
+        if not os.path.exists(complete) or not motif_set.issubset(mapping):
+            missing.append(match_dir)
+    if missing:
+        tasks = [(match_dir, list(motif_names)) for match_dir in missing]
+        max_workers = max(1, min(int(workers or 1), len(tasks)))
+        if max_workers == 1:
+            for task in tasks:
+                _build_match_motif_shards_for_sample(task)
+        else:
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(_build_match_motif_shards_for_sample, task) for task in tasks]
+                for future in as_completed(futures):
+                    future.result()
+    return [_cached_motif_shard_map(match_dir) for match_dir in cached_dirs]
 
 
 def _cached_motif_logo_map(match_dir):
@@ -616,6 +862,49 @@ def _write_cached_tfbs_tmp_files(args, motif_names, logger):
         args.cached_distance_table = _cached_distance_table(cached_dirs[0])
 
     if not build_overlap_clusters and not getattr(args, "write_motif_outputs", True):
+        try:
+            shard_maps = _ensure_match_motif_shard_caches(
+                cached_dirs,
+                motif_names,
+                workers=max(1, min(len(cached_dirs), int(getattr(args, "cores", 1) or 1))),
+            )
+            common = set(shard_maps[0])
+            for mapping in shard_maps[1:]:
+                common &= set(mapping)
+            missing = [name for name in motif_names if name not in common]
+            if missing:
+                raise ValueError("Cached motif shard outputs are missing motif(s): " + ", ".join(missing[:10]))
+            args.cached_motif_bed_maps = shard_maps
+            logger.info(
+                f"Reusing cached motif-site scores from {len(cached_dirs)} sample folder(s) "
+                "with per-motif shard caches"
+            )
+            return {}
+        except Exception as exc:
+            logger.warning(f"Per-motif shard cache could not be reused ({exc}); falling back to compact motif-site cache")
+
+    compact_paths = [_match_motif_site_cache_path(path) for path in cached_dirs]
+    try:
+        compact_overlaps = _write_cached_tfbs_tmp_files_from_compact(
+            args, motif_names, compact_paths, peak_cols, build_overlap_clusters
+        )
+    except Exception as exc:
+        logger.warning(f"Compact motif-site cache could not be reused ({exc}); falling back to per-motif BED files")
+        compact_overlaps = None
+    if compact_overlaps is not None:
+        logger.info(f"Reused cached motif-site scores from {len(cached_dirs)} sample folder(s) using compact motif-site cache")
+        return compact_overlaps
+
+    zip_paths = [_match_motif_site_zip_path(path) for path in cached_dirs]
+    if not build_overlap_clusters and not getattr(args, "write_motif_outputs", True) and all(os.path.exists(path) for path in zip_paths):
+        args.cached_motif_zip_paths = zip_paths
+        logger.info(
+            f"Reusing cached motif-site scores from {len(cached_dirs)} sample folder(s) "
+            "with random-access ZIP caches"
+        )
+        return {}
+
+    if not build_overlap_clusters and not getattr(args, "write_motif_outputs", True):
         maps = [_cached_motif_bed_map(path) for path in cached_dirs]
         common = set(maps[0])
         for mapping in maps[1:]:
@@ -629,18 +918,6 @@ def _write_cached_tfbs_tmp_files(args, motif_names, logger):
             "with parallel per-motif reads"
         )
         return {}
-
-    compact_paths = [_match_motif_site_cache_path(path) for path in cached_dirs]
-    try:
-        compact_overlaps = _write_cached_tfbs_tmp_files_from_compact(
-            args, motif_names, compact_paths, peak_cols, build_overlap_clusters
-        )
-    except Exception as exc:
-        logger.warning(f"Compact motif-site cache could not be reused ({exc}); falling back to per-motif BED files")
-        compact_overlaps = None
-    if compact_overlaps is not None:
-        logger.info(f"Reused cached motif-site scores from {len(cached_dirs)} sample folder(s) using compact motif-site cache")
-        return compact_overlaps
 
     maps = [_cached_motif_bed_map(path) for path in cached_dirs]
     common = set(maps[0])
@@ -668,6 +945,25 @@ def _process_tfbs_from_cached_beds(TF_name, args, log2fc_params):
     if not maps:
         return process_tfbs(TF_name, args, log2fc_params)
     per_sample_rows = [_read_cached_all_bed(mapping[TF_name], peak_cols, sample_col_count=1) for mapping in maps]
+    if (
+        not getattr(args, "write_motif_outputs", True)
+        and getattr(args, "output_peaks", None) is None
+        and not getattr(args, "keep_tmp_tfbs_for_cache", False)
+    ):
+        bed_rows = _merge_cached_rows_for_motif(TF_name, peak_cols, per_sample_rows)
+        return process_tfbs(TF_name, args, log2fc_params, bed_rows=bed_rows)
+    _write_merged_cached_rows_for_motif(args, TF_name, peak_cols, per_sample_rows, None)
+    return process_tfbs(TF_name, args, log2fc_params)
+
+
+def _process_tfbs_from_cached_zips(TF_name, args, log2fc_params):
+    """Build one cached motif temp file from ZIP caches, then run normal summary logic."""
+
+    peak_cols = len(args.peak_header_list)
+    zip_paths = getattr(args, "cached_motif_zip_paths", None)
+    if not zip_paths:
+        return process_tfbs(TF_name, args, log2fc_params)
+    per_sample_rows = [_read_cached_zip_bed(path, TF_name, peak_cols, sample_col_count=1) for path in zip_paths]
     _write_merged_cached_rows_for_motif(args, TF_name, peak_cols, per_sample_rows, None)
     return process_tfbs(TF_name, args, log2fc_params)
 
@@ -682,6 +978,33 @@ def _match_cache_paths(match_dir):
 
 def _match_motif_site_cache_path(match_dir):
     return os.path.join(match_dir, "cache", "motif_sites.tsv.gz")
+
+
+def _match_motif_site_zip_path(match_dir):
+    return os.path.join(match_dir, "cache", "motif_sites.zip")
+
+
+def _match_motif_site_shard_dir(match_dir):
+    return os.path.join(match_dir, "cache", "motif_sites_by_motif")
+
+
+def _match_threshold_cache_path(match_dir):
+    return os.path.join(match_dir, "cache", "thresholds.json")
+
+
+def _write_match_threshold_cache(args):
+    path = _match_threshold_cache_path(args.outdir)
+    make_directory(os.path.dirname(path))
+    payload = {
+        "format": "fp-tools match-motifs threshold cache",
+        "version": 1,
+        "condition_names": list(args.cond_names),
+        "sample_names": list(args.sample_names),
+        "thresholds": {str(k): float(v) for k, v in getattr(args, "thresholds", {}).items()},
+    }
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True)
+        handle.write("\n")
 
 
 def _write_match_motifs_cache(args, background, logger):
@@ -714,7 +1037,7 @@ def _write_match_motifs_cache(args, background, logger):
     logger.info(f"Wrote match-motifs reuse cache: {cache_tsv}")
 
 
-def _write_match_motif_site_cache(args, motif_names, logger):
+def _write_match_motif_site_cache(args, motif_names, logger, source_root=None):
     """Persist per-motif site scores for fast folder-based diff-footprints reuse."""
 
     cache_tsv = _match_motif_site_cache_path(args.outdir)
@@ -722,6 +1045,7 @@ def _write_match_motif_site_cache(args, motif_names, logger):
     peak_cols = len(args.peak_header_list)
     expected = 6 + peak_cols + 1
     written = 0
+    source_root = source_root or args.outdir
     with gzip.open(cache_tsv, "wt", encoding="utf-8", compresslevel=1) as handle:
         header = [
             "motif",
@@ -734,9 +1058,13 @@ def _write_match_motif_site_cache(args, motif_names, logger):
         ] + list(args.peak_header_list) + ["score"]
         handle.write("\t".join(header) + "\n")
         for motif in motif_names:
-            path = os.path.join(args.outdir, motif, "beds", motif + "_all.bed")
+            path = os.path.join(source_root, motif, "beds", motif + "_all.bed")
+            if not os.path.exists(path):
+                tmp_path = os.path.join(source_root, motif, "beds", motif + ".tmp")
+                path = tmp_path
             if not os.path.exists(path):
                 continue
+            motif_rows = []
             with open(path, "r", encoding="utf-8") as bed_handle:
                 for line in bed_handle:
                     if not line.strip():
@@ -744,9 +1072,606 @@ def _write_match_motif_site_cache(args, motif_names, logger):
                     parts = line.rstrip("\n").split("\t")
                     if len(parts) < expected:
                         raise ValueError(f"Motif BED has {len(parts)} columns but expected at least {expected}: {path}")
-                    handle.write(motif + "\t" + "\t".join(parts[:expected]) + "\n")
+                    row = "\t".join(parts[:expected]) + "\n"
+                    handle.write(motif + "\t" + row)
                     written += 1
     logger.info(f"Wrote compact motif-site reuse cache with {written} rows: {cache_tsv}")
+
+
+def _materialize_one_match_motif_bed(task):
+    """Write per-motif BED files from processed temporary all-site output."""
+
+    motif, tmp_all, outdir, peak_cols, sample_names, cond_names, condition_samples, thresholds = task
+    motif_dir = os.path.join(outdir, motif)
+    bed_dir = os.path.join(motif_dir, "beds")
+    tmp_bed_dir = bed_dir + ".tmp"
+    if os.path.exists(tmp_bed_dir):
+        shutil.rmtree(tmp_bed_dir, ignore_errors=True)
+    make_directory(tmp_bed_dir)
+
+    all_path_tmp = os.path.join(tmp_bed_dir, motif + "_all.bed")
+    bound_handles = {}
+    unbound_handles = {}
+    try:
+        for cond in cond_names:
+            bound_handles[cond] = open(os.path.join(tmp_bed_dir, f"{motif}_{cond}_bound.bed"), "w", encoding="utf-8")
+            unbound_handles[cond] = open(os.path.join(tmp_bed_dir, f"{motif}_{cond}_unbound.bed"), "w", encoding="utf-8")
+
+        base_cols = 6 + peak_cols
+        sample_cols = len(sample_names)
+        cond_start = base_cols + sample_cols
+        cond_index = {cond: cond_start + idx for idx, cond in enumerate(cond_names)}
+        with open(tmp_all, "r", encoding="utf-8") as src, open(all_path_tmp, "w", encoding="utf-8") as all_out:
+            for line in src:
+                if not line.strip():
+                    continue
+                all_out.write(line)
+                parts = line.rstrip("\n").split("\t")
+                prefix = parts[:base_cols]
+                for cond in cond_names:
+                    idx = cond_index[cond]
+                    if idx >= len(parts):
+                        continue
+                    score_text = parts[idx]
+                    score = float(score_text)
+                    row = "\t".join(prefix + [score_text]) + "\n"
+                    if score > float(thresholds[cond]):
+                        bound_handles[cond].write(row)
+                    else:
+                        unbound_handles[cond].write(row)
+    finally:
+        for handle in list(bound_handles.values()) + list(unbound_handles.values()):
+            handle.close()
+
+    done_tmp = os.path.join(tmp_bed_dir, ".done")
+    with open(done_tmp, "w", encoding="utf-8") as handle:
+        handle.write("ok\n")
+    if os.path.exists(bed_dir):
+        shutil.rmtree(bed_dir, ignore_errors=True)
+    os.replace(tmp_bed_dir, bed_dir)
+    return motif
+
+
+def _materialize_one_match_motif_bed_from_zip(task):
+    """Write single-sample match-motifs BED files from an older ZIP cache."""
+
+    motif, match_dir, sample_name, condition_name, threshold = task
+    cache_zip = _match_motif_site_zip_path(match_dir)
+    motif_dir = os.path.join(match_dir, motif)
+    bed_dir = os.path.join(motif_dir, "beds")
+    tmp_bed_dir = bed_dir + ".tmp"
+    if os.path.exists(tmp_bed_dir):
+        shutil.rmtree(tmp_bed_dir, ignore_errors=True)
+    make_directory(tmp_bed_dir)
+
+    all_path = os.path.join(tmp_bed_dir, motif + "_all.bed")
+    bound_path = os.path.join(tmp_bed_dir, f"{motif}_{condition_name}_bound.bed")
+    unbound_path = os.path.join(tmp_bed_dir, f"{motif}_{condition_name}_unbound.bed")
+    with zipfile.ZipFile(cache_zip, "r") as zip_handle:
+        try:
+            raw_content = zip_handle.read(motif + ".bed").decode("utf-8")
+        except KeyError:
+            raw_content = ""
+    with open(all_path, "w", encoding="utf-8") as all_handle, \
+            open(bound_path, "w", encoding="utf-8") as bound_handle, \
+            open(unbound_path, "w", encoding="utf-8") as unbound_handle:
+        for line in raw_content.splitlines():
+            if not line:
+                continue
+            parts = line.split("\t")
+            try:
+                score = float(parts[-1])
+            except (TypeError, ValueError):
+                score = float("nan")
+            all_handle.write("\t".join(parts + [parts[-1], "NA"]) + "\n")
+            if np.isfinite(score) and score > threshold:
+                bound_handle.write(line + "\n")
+            else:
+                unbound_handle.write(line + "\n")
+    if os.path.exists(bed_dir):
+        shutil.rmtree(bed_dir, ignore_errors=True)
+    os.replace(tmp_bed_dir, bed_dir)
+    return motif
+
+
+def _materialize_match_motif_beds_from_tsv(match_dir, motifs, sample_name, condition_name, threshold):
+    """Write all per-motif match-motifs BED folders in one pass over the compact cache."""
+
+    cache_tsv = _match_motif_site_cache_path(match_dir)
+    if not os.path.exists(cache_tsv):
+        raise FileNotFoundError(f"Missing match-motifs motif-site compact cache: {cache_tsv}")
+
+    motif_set = set(motifs)
+    tmp_roots = {}
+    handles = {}
+
+    def open_handles(motif):
+        motif_dir = os.path.join(match_dir, motif)
+        bed_dir = os.path.join(motif_dir, "beds")
+        tmp_bed_dir = bed_dir + ".tmp"
+        if os.path.exists(tmp_bed_dir):
+            shutil.rmtree(tmp_bed_dir, ignore_errors=True)
+        make_directory(tmp_bed_dir)
+        tmp_roots[motif] = (tmp_bed_dir, bed_dir)
+        handles[motif] = (
+            open(os.path.join(tmp_bed_dir, motif + "_all.bed"), "w", encoding="utf-8"),
+            open(os.path.join(tmp_bed_dir, f"{motif}_{condition_name}_bound.bed"), "w", encoding="utf-8"),
+            open(os.path.join(tmp_bed_dir, f"{motif}_{condition_name}_unbound.bed"), "w", encoding="utf-8"),
+        )
+        return handles[motif]
+
+    try:
+        with gzip.open(cache_tsv, "rt", encoding="utf-8") as cache_handle:
+            header = cache_handle.readline().rstrip("\n").split("\t")
+            if len(header) < 8 or header[0] != "motif":
+                raise ValueError(f"Unexpected motif-site cache header in {cache_tsv}")
+            for line in cache_handle:
+                if not line.strip():
+                    continue
+                parts = line.rstrip("\n").split("\t")
+                motif = parts[0]
+                if motif not in motif_set:
+                    continue
+                row_parts = parts[1:]
+                all_handle, bound_handle, unbound_handle = handles.get(motif) or open_handles(motif)
+                score_text = row_parts[-1]
+                try:
+                    score = float(score_text)
+                except (TypeError, ValueError):
+                    score = float("nan")
+                all_handle.write("\t".join(row_parts + [score_text, "NA"]) + "\n")
+                if np.isfinite(score) and score > threshold:
+                    bound_handle.write("\t".join(row_parts) + "\n")
+                else:
+                    unbound_handle.write("\t".join(row_parts) + "\n")
+    finally:
+        for all_handle, bound_handle, unbound_handle in handles.values():
+            all_handle.close()
+            bound_handle.close()
+            unbound_handle.close()
+
+    for motif in motifs:
+        if motif not in tmp_roots:
+            open_handles(motif)
+            for handle in handles[motif]:
+                handle.close()
+        tmp_bed_dir, bed_dir = tmp_roots[motif]
+        with open(os.path.join(tmp_bed_dir, ".done"), "w", encoding="utf-8") as done:
+            done.write("ok\n")
+        if os.path.exists(bed_dir):
+            shutil.rmtree(bed_dir, ignore_errors=True)
+        os.replace(tmp_bed_dir, bed_dir)
+
+
+def materialize_match_motif_beds_from_cache(match_dir, sample_name=None, condition_name=None, cores=1):
+    """Materialize per-motif BED folders from a match-motifs compact cache."""
+
+    results_path = os.path.join(match_dir, "motif_matches_results.txt")
+    if not os.path.exists(results_path):
+        raise FileNotFoundError(f"Missing match-motifs results table: {results_path}")
+    cache_zip = _match_motif_site_zip_path(match_dir)
+    cache_tsv = _match_motif_site_cache_path(match_dir)
+    if not os.path.exists(cache_tsv) and not os.path.exists(cache_zip):
+        raise FileNotFoundError(f"Missing match-motifs motif-site cache: {cache_tsv}")
+    results = pd.read_csv(results_path, sep="\t")
+    motifs = results["output_prefix"].astype(str).tolist()
+    if sample_name is None:
+        threshold_cols = [col for col in results.columns if col.endswith("_threshold")]
+        if len(threshold_cols) != 1:
+            raise ValueError(f"Could not infer sample name from threshold columns in {results_path}")
+        sample_name = threshold_cols[0][:-len("_threshold")]
+    threshold_col = f"{sample_name}_threshold"
+    threshold = None
+    threshold_path = _match_threshold_cache_path(match_dir)
+    if os.path.exists(threshold_path):
+        with open(threshold_path, "r", encoding="utf-8") as handle:
+            threshold_payload = json.load(handle)
+        cached_thresholds = threshold_payload.get("thresholds", {})
+        if condition_name is None:
+            condition_names = threshold_payload.get("condition_names") or []
+            if len(condition_names) == 1:
+                condition_name = condition_names[0]
+        if condition_name in cached_thresholds:
+            threshold = float(cached_thresholds[condition_name])
+        elif sample_name in cached_thresholds:
+            threshold = float(cached_thresholds[sample_name])
+        elif len(cached_thresholds) == 1:
+            threshold = float(next(iter(cached_thresholds.values())))
+    if condition_name is None:
+        condition_name = sample_name
+    if threshold is None and threshold_col in results.columns:
+        threshold = float(pd.to_numeric(results[threshold_col], errors="coerce").dropna().iloc[0])
+    if threshold is None:
+        raise ValueError(f"Missing threshold cache for sample {sample_name!r} in {match_dir}")
+    if os.path.exists(cache_tsv):
+        _materialize_match_motif_beds_from_tsv(match_dir, motifs, sample_name, condition_name, threshold)
+        return
+    tasks = [(motif, match_dir, sample_name, condition_name, threshold) for motif in motifs]
+    workers = max(1, min(int(cores or 1), len(tasks)))
+    if workers == 1:
+        for task in tasks:
+            _materialize_one_match_motif_bed_from_zip(task)
+    else:
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(_materialize_one_match_motif_bed_from_zip, task) for task in tasks]
+            for future in as_completed(futures):
+                future.result()
+
+
+def _materialize_match_motif_beds_payload(payload_path):
+    """Background entry point for async match-motifs BED materialization."""
+
+    with open(payload_path, "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    try:
+        samples = payload.get("samples", [])
+        workers = max(1, min(int(payload.get("workers", 1)), len(samples) or 1))
+        if workers == 1:
+            for item in samples:
+                materialize_match_motif_beds_from_cache(
+                    item["match_dir"],
+                    sample_name=item["sample_name"],
+                    condition_name=item.get("condition_name"),
+                    cores=int(item.get("cores", 1)),
+                )
+        else:
+            with ProcessPoolExecutor(max_workers=workers) as executor:
+                futures = [
+                    executor.submit(
+                        materialize_match_motif_beds_from_cache,
+                        item["match_dir"],
+                        item["sample_name"],
+                        item.get("condition_name"),
+                        int(item.get("cores", 1)),
+                    )
+                    for item in samples
+                ]
+                for future in as_completed(futures):
+                    future.result()
+    finally:
+        try:
+            os.remove(payload_path)
+        except OSError:
+            pass
+
+
+def _launch_async_match_motif_bed_materialization(sample_args_list, cores_per_sample):
+    """Start detached materialization of match-motifs BED folders."""
+
+    total_cores = max(1, int(cores_per_sample or 1))
+    sample_workers = max(1, min(len(sample_args_list), total_cores))
+    payload = {
+        "workers": sample_workers,
+        "samples": [
+            {
+                "match_dir": sample_args.outdir,
+                "sample_name": sample_args.sample_names[0],
+                "condition_name": sample_args.cond_names[0],
+                "cores": 1,
+            }
+            for sample_args in sample_args_list
+        ]
+    }
+    handle = tempfile.NamedTemporaryFile("w", encoding="utf-8", prefix="fp_tools_match_beds_", suffix=".json", delete=False)
+    try:
+        json.dump(payload, handle)
+        handle.write("\n")
+        payload_path = handle.name
+    finally:
+        handle.close()
+    code = (
+        "from fp_tools.tools.diff_footprints import _materialize_match_motif_beds_payload; "
+        f"_materialize_match_motif_beds_payload({payload_path!r})"
+    )
+    if os.environ.get("FP_TOOLS_SYNC_MATCH_BEDS") == "1":
+        _materialize_match_motif_beds_payload(payload_path)
+    else:
+        subprocess.Popen(
+            [sys.executable, "-c", code],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+
+
+def _write_single_sample_match_summary_from_cache(match_dir, sample_name, condition_name, shared_results, bound_pvalue):
+    """Write exact single-sample match-motifs summary from split cache files."""
+
+    _keys, score_map, _manifest = _load_match_background_cache(match_dir)
+    if sample_name in score_map:
+        bg_values = score_map[sample_name]
+    elif len(score_map) == 1:
+        bg_values = next(iter(score_map.values()))
+    else:
+        raise ValueError(f"Background cache for {match_dir} has no column named {sample_name}")
+    threshold, _pseudo = _estimate_bound_threshold(bg_values, bound_pvalue)
+    threshold_payload = {
+        "format": "fp-tools match-motifs threshold cache",
+        "version": 1,
+        "condition_names": [condition_name],
+        "sample_names": [sample_name],
+        "thresholds": {condition_name: float(threshold)},
+    }
+    threshold_path = _match_threshold_cache_path(match_dir)
+    make_directory(os.path.dirname(threshold_path))
+    with open(threshold_path, "w", encoding="utf-8") as handle:
+        json.dump(threshold_payload, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+
+    stats = {}
+    cache_tsv = _match_motif_site_cache_path(match_dir)
+    with gzip.open(cache_tsv, "rt", encoding="utf-8") as handle:
+        header = handle.readline().rstrip("\n").split("\t")
+        if len(header) < 2 or header[0] != "motif":
+            raise ValueError(f"Unexpected motif-site cache header in {cache_tsv}")
+        for line in handle:
+            if not line.strip():
+                continue
+            parts = line.rstrip("\n").split("\t")
+            motif = parts[0]
+            score = float(parts[-1])
+            entry = stats.setdefault(motif, [0, 0.0, 0])
+            entry[0] += 1
+            entry[1] += score
+            if score > threshold:
+                entry[2] += 1
+
+    rows = []
+    for _, row in shared_results.iterrows():
+        motif = str(row["output_prefix"])
+        total, score_sum, bound = stats.get(motif, [0, 0.0, 0])
+        mean_score = round(float(score_sum) / total, 5) if total else np.nan
+        rows.append({
+            "output_prefix": motif,
+            "name": row.get("name", motif),
+            "motif_id": row.get("motif_id", ""),
+            "cluster": row.get("cluster", motif),
+            "total_tfbs": int(total),
+            f"{condition_name}_mean_score": mean_score,
+            f"{condition_name}_n_replicates": 1,
+            f"{condition_name}_bound": int(bound),
+        })
+    out = pd.DataFrame(rows)
+    out.to_csv(os.path.join(match_dir, "motif_matches_results.txt"), sep="\t", index=False, header=True, na_rep="NA")
+
+
+def _write_single_sample_match_summary_from_stats(match_dir, condition_name, shared_results, stats):
+    """Write single-sample match-motifs summary from precomputed motif stats."""
+
+    rows = []
+    for _, row in shared_results.iterrows():
+        motif = str(row["output_prefix"])
+        total, score_sum, bound = stats.get(motif, [0, 0.0, 0])
+        mean_score = round(float(score_sum) / total, 5) if total else np.nan
+        rows.append({
+            "output_prefix": motif,
+            "name": row.get("name", motif),
+            "motif_id": row.get("motif_id", ""),
+            "cluster": row.get("cluster", motif),
+            "total_tfbs": int(total),
+            f"{condition_name}_mean_score": mean_score,
+            f"{condition_name}_n_replicates": 1,
+            f"{condition_name}_bound": int(bound),
+        })
+    out = pd.DataFrame(rows)
+    out.to_csv(os.path.join(match_dir, "motif_matches_results.txt"), sep="\t", index=False, header=True, na_rep="NA")
+
+
+def _materialize_match_motif_beds(args, motif_names, logger, source_root=None):
+    """Materialize match-motifs BED folders without rerunning motif scoring."""
+
+    source_root = source_root or args.outdir
+    tasks = []
+    peak_cols = len(args.peak_header_list)
+    condition_samples = {cond: list(args.condition_samples.get(cond, [])) for cond in args.cond_names}
+    thresholds = {cond: float(args.thresholds[cond]) for cond in args.cond_names}
+    for motif in motif_names:
+        tmp_all = os.path.join(source_root, motif, "beds", motif + "_all.bed")
+        if os.path.exists(tmp_all):
+            tasks.append((
+                motif,
+                tmp_all,
+                args.outdir,
+                peak_cols,
+                list(args.sample_names),
+                list(args.cond_names),
+                condition_samples,
+                thresholds,
+            ))
+    if not tasks:
+        logger.warning("No temporary motif BED files were available for materialization")
+        return
+
+    requested_cores = getattr(args, "cores", None)
+    workers_available = int(requested_cores) if requested_cores is not None else (os.cpu_count() or 1)
+    workers = max(1, min(workers_available, len(tasks)))
+    logger.info(f"Writing per-motif BED files from cache with {workers} worker(s)")
+    if workers == 1:
+        for task in tasks:
+            _materialize_one_match_motif_bed(task)
+    else:
+        with ProcessPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(_materialize_one_match_motif_bed, task) for task in tasks]
+            for future in as_completed(futures):
+                future.result()
+    logger.info(f"Wrote per-motif BED files for {len(tasks)} motif(s)")
+
+
+def _split_shared_background_cache(shared_match_dir, sample_match_dirs, sample_names, condition_names=None, bound_pvalue=0.001):
+    """Split a multi-sample background cache into single-sample match-motifs caches."""
+
+    source_tsv, _source_manifest = _match_cache_paths(shared_match_dir)
+    if not os.path.exists(source_tsv):
+        raise FileNotFoundError(f"Missing shared background cache: {source_tsv}")
+    out_handles = {}
+    bg_values = {sample: [] for sample in sample_names}
+    condition_names = list(condition_names or sample_names)
+    try:
+        for sample, match_dir in zip(sample_names, sample_match_dirs):
+            cache_tsv, manifest_json = _match_cache_paths(match_dir)
+            make_directory(os.path.dirname(cache_tsv))
+            out_handles[sample] = gzip.open(cache_tsv, "wt", encoding="utf-8", compresslevel=1)
+            out_handles[sample].write("\t".join(["chrom", "start", "end", "offset", sample]) + "\n")
+            manifest = {
+                "format": "fp-tools match-motifs background cache",
+                "version": 1,
+                "sample_names": [sample],
+                "condition_names": [sample],
+                "background_rows": 0,
+                "normalization": "none",
+            }
+            with open(manifest_json, "w", encoding="utf-8") as handle:
+                json.dump(manifest, handle, indent=2, sort_keys=True)
+                handle.write("\n")
+        row_count = 0
+        with gzip.open(source_tsv, "rt", encoding="utf-8") as src:
+            header = src.readline().rstrip("\n").split("\t")
+            sample_col = {sample: header.index(sample) for sample in sample_names}
+            for line in src:
+                if not line.strip():
+                    continue
+                parts = line.rstrip("\n").split("\t")
+                key = parts[:4]
+                for sample in sample_names:
+                    value = parts[sample_col[sample]]
+                    out_handles[sample].write("\t".join(key + [value]) + "\n")
+                    bg_values[sample].append(float(value))
+                row_count += 1
+    finally:
+        for handle in out_handles.values():
+            handle.close()
+
+    thresholds_by_sample = {}
+    for sample, match_dir in zip(sample_names, sample_match_dirs):
+        _cache_tsv, manifest_json = _match_cache_paths(match_dir)
+        with open(manifest_json, "r", encoding="utf-8") as handle:
+            manifest = json.load(handle)
+        manifest["background_rows"] = row_count
+        with open(manifest_json, "w", encoding="utf-8") as handle:
+            json.dump(manifest, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        threshold, _pseudo = _estimate_bound_threshold(bg_values[sample], bound_pvalue)
+        condition = condition_names[sample_names.index(sample)]
+        thresholds_by_sample[sample] = threshold
+        threshold_payload = {
+            "format": "fp-tools match-motifs threshold cache",
+            "version": 1,
+            "condition_names": [condition],
+            "sample_names": [sample],
+            "thresholds": {condition: float(threshold)},
+        }
+        threshold_path = _match_threshold_cache_path(match_dir)
+        make_directory(os.path.dirname(threshold_path))
+        with open(threshold_path, "w", encoding="utf-8") as handle:
+            json.dump(threshold_payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+    return thresholds_by_sample
+
+
+def _split_shared_motif_sites(
+    shared_site_dir,
+    sample_match_dirs,
+    sample_names,
+    motif_names,
+    peak_header_list,
+    thresholds_by_sample=None,
+    write_tsv=True,
+    write_zip=False,
+    zip_compression=zipfile.ZIP_DEFLATED,
+    zip_compresslevel=1,
+):
+    """Split staged multi-sample motif BEDs into single-sample cache files."""
+
+    cache_handles = {}
+    zip_handles = {}
+    stats_by_sample = {sample: {motif: [0, 0.0, 0] for motif in motif_names} for sample in sample_names}
+    thresholds_by_sample = thresholds_by_sample or {}
+    try:
+        peak_cols = len(peak_header_list)
+        header = [
+            "TFBS_chr",
+            "TFBS_start",
+            "TFBS_end",
+            "TFBS_name",
+            "TFBS_score",
+            "TFBS_strand",
+        ] + list(peak_header_list)
+        for sample, match_dir in zip(sample_names, sample_match_dirs):
+            cache_tsv = _match_motif_site_cache_path(match_dir)
+            cache_zip = _match_motif_site_zip_path(match_dir)
+            make_directory(os.path.dirname(cache_tsv))
+            if write_tsv:
+                cache_handles[sample] = gzip.open(cache_tsv, "wt", encoding="utf-8", compresslevel=1)
+                cache_handles[sample].write("\t".join(["motif"] + header + ["score"]) + "\n")
+            if write_zip:
+                zip_kwargs = {"compression": zip_compression}
+                if zip_compression != zipfile.ZIP_STORED:
+                    zip_kwargs["compresslevel"] = zip_compresslevel
+                zip_handles[sample] = zipfile.ZipFile(cache_zip, "w", **zip_kwargs)
+
+        score_start = 6 + peak_cols
+        for motif in motif_names:
+            source = os.path.join(shared_site_dir, motif, "beds", motif + "_all.bed")
+            if not os.path.exists(source):
+                continue
+            rows_by_sample = {sample: [] for sample in sample_names}
+            with open(source, "r", encoding="utf-8") as src:
+                for line in src:
+                    if not line.strip():
+                        continue
+                    parts = line.rstrip("\n").split("\t")
+                    base = parts[:score_start]
+                    for idx, sample in enumerate(sample_names):
+                        score_text = parts[score_start + idx]
+                        row = "\t".join(base + [score_text]) + "\n"
+                        if write_tsv:
+                            cache_handles[sample].write(motif + "\t" + row)
+                        if write_zip:
+                            rows_by_sample[sample].append(row)
+                        score = float(score_text)
+                        stat = stats_by_sample[sample][motif]
+                        stat[0] += 1
+                        stat[1] += score
+                        if score > float(thresholds_by_sample.get(sample, np.inf)):
+                            stat[2] += 1
+            if write_zip:
+                for sample in sample_names:
+                    zip_handles[sample].writestr(motif + ".bed", "".join(rows_by_sample[sample]))
+    finally:
+        for handle in cache_handles.values():
+            handle.close()
+        for handle in zip_handles.values():
+            handle.close()
+    return stats_by_sample
+
+
+def _split_shared_match_outputs(shared_match_dir, shared_site_dir, sample_match_dirs, sample_names, condition_names, motif_names, peak_header_list, bound_pvalue=0.001):
+    """Create normal single-sample match-motifs caches from one shared scan."""
+
+    for match_dir in sample_match_dirs:
+        make_directory(match_dir)
+        for name in ["motif_matches_results.txt", "motif_matches_distances.txt"]:
+            source = os.path.join(shared_match_dir, name)
+            if os.path.exists(source):
+                shutil.copyfile(source, os.path.join(match_dir, name))
+    thresholds_by_sample = _split_shared_background_cache(
+        shared_match_dir,
+        sample_match_dirs,
+        sample_names,
+        condition_names=condition_names,
+        bound_pvalue=bound_pvalue,
+    )
+    return _split_shared_motif_sites(
+        shared_site_dir,
+        sample_match_dirs,
+        sample_names,
+        motif_names,
+        peak_header_list,
+        thresholds_by_sample=thresholds_by_sample,
+        write_tsv=True,
+        write_zip=False,
+        zip_compression=zipfile.ZIP_STORED,
+    )
 
 
 def _load_match_motif_site_cache(match_dir):
@@ -793,11 +1718,40 @@ def _read_next_motif_site_cache_group(handle, expected_cols):
     return motif, rows
 
 
+def _read_next_motif_site_cache_group_buffered(handle, expected_cols, pending):
+    """Read the next motif group from a gzip text stream without seek/tell."""
+
+    if pending:
+        line = pending.pop()
+    else:
+        line = handle.readline()
+    if not line:
+        return None
+    parts = line.rstrip("\n").split("\t")
+    if len(parts) < expected_cols + 1:
+        raise ValueError("Motif-site cache row has fewer columns than expected")
+    motif = parts[0]
+    rows = [parts[1:expected_cols + 1]]
+    while True:
+        line = handle.readline()
+        if not line:
+            break
+        parts = line.rstrip("\n").split("\t")
+        if len(parts) < expected_cols + 1:
+            raise ValueError("Motif-site cache row has fewer columns than expected")
+        if parts[0] != motif:
+            pending.append(line)
+            break
+        rows.append(parts[1:expected_cols + 1])
+    return motif, rows
+
+
 def _write_cached_tfbs_tmp_files_from_compact(args, motif_names, cache_paths, peak_cols, build_overlap_clusters):
     expected_cols = 6 + peak_cols + 1
     motif_order = {motif: index for index, motif in enumerate(motif_names)}
     handles = []
     groups = []
+    pending = []
     global_tfbs = RegionList() if build_overlap_clusters else None
     try:
         for path in cache_paths:
@@ -808,7 +1762,8 @@ def _write_cached_tfbs_tmp_files_from_compact(args, motif_names, cache_paths, pe
             if len(header) < expected_cols + 1 or header[0] != "motif":
                 return None
             handles.append(handle)
-            groups.append(_read_next_motif_site_cache_group(handle, expected_cols))
+            pending.append([])
+            groups.append(_read_next_motif_site_cache_group_buffered(handle, expected_cols, pending[-1]))
 
         for motif_index, motif in enumerate(motif_names):
             per_sample_rows = []
@@ -824,7 +1779,7 @@ def _write_cached_tfbs_tmp_files_from_compact(args, motif_names, cache_paths, pe
                     return None
                 if group_motif == motif:
                     per_sample_rows.append(rows)
-                    groups[sample_idx] = _read_next_motif_site_cache_group(handles[sample_idx], expected_cols)
+                    groups[sample_idx] = _read_next_motif_site_cache_group_buffered(handles[sample_idx], expected_cols, pending[sample_idx])
                 else:
                     per_sample_rows.append([])
             _write_merged_cached_rows_for_motif(args, motif, peak_cols, per_sample_rows, global_tfbs)
@@ -837,6 +1792,19 @@ def _write_cached_tfbs_tmp_files_from_compact(args, motif_names, cache_paths, pe
 
 
 def _write_merged_cached_rows_for_motif(args, motif, peak_cols, per_sample_rows, global_tfbs=None):
+    out_rows = _merge_cached_rows_for_motif(motif, peak_cols, per_sample_rows)
+    tmp_root = getattr(args, "tmp_tfbs_root", None) or args.outdir
+    tmp_path = os.path.join(tmp_root, motif, "beds", motif + ".tmp")
+    make_directory(os.path.dirname(tmp_path))
+    with open(tmp_path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join("\t".join(row) for row in out_rows))
+        if out_rows:
+            handle.write("\n")
+    if global_tfbs is not None and out_rows:
+        global_tfbs.extend(RegionList().from_bed(tmp_path))
+
+
+def _merge_cached_rows_for_motif(motif, peak_cols, per_sample_rows):
     lengths = {len(rows) for rows in per_sample_rows}
     if len(lengths) != 1:
         raise ValueError(f"Cached motif site count mismatch for {motif}: {sorted(lengths)}")
@@ -853,15 +1821,7 @@ def _write_merged_cached_rows_for_motif(args, motif, peak_cols, per_sample_rows,
                 )
             scores.append(rows[row_idx][6 + peak_cols])
         out_rows.append(key + scores)
-    tmp_root = getattr(args, "tmp_tfbs_root", None) or args.outdir
-    tmp_path = os.path.join(tmp_root, motif, "beds", motif + ".tmp")
-    make_directory(os.path.dirname(tmp_path))
-    with open(tmp_path, "w", encoding="utf-8") as handle:
-        handle.write("\n".join("\t".join(row) for row in out_rows))
-        if out_rows:
-            handle.write("\n")
-    if global_tfbs is not None and out_rows:
-        global_tfbs.extend(RegionList().from_bed(tmp_path))
+    return out_rows
 
 
 def _aggregate_site_maps_from_cached_match_dirs(args):
@@ -992,10 +1952,14 @@ def run_diff_footprints(args):
     _prepare_condition_metadata(args)
 
     motif_output_mode = getattr(args, "motif_outputs", "auto")
+    args.materialize_match_motif_beds = bool(getattr(args, "match_only", False) and motif_output_mode == "auto")
     args.write_motif_outputs = (
-        getattr(args, "match_only", False)
-        or motif_output_mode == "full"
-        or (motif_output_mode == "auto" and getattr(args, "plot_aggregate", "off") != "off")
+        motif_output_mode == "full"
+        or (
+            not getattr(args, "match_only", False)
+            and motif_output_mode == "auto"
+            and getattr(args, "plot_aggregate", "off") != "off"
+        )
     )
 
     # outputs we’ll create
@@ -1208,11 +2172,17 @@ def run_diff_footprints(args):
 
     cached_summary_mode = bool(getattr(args, "cached_match_dirs", None)) and not getattr(args, "write_motif_outputs", True)
     temp_tfbs_dir = None
-    if cached_summary_mode:
+    summary_tmp_mode = not bool(getattr(args, "cached_match_dirs", None)) and not getattr(args, "write_motif_outputs", True)
+    if cached_summary_mode or summary_tmp_mode:
         temp_tfbs_dir = tempfile.mkdtemp(prefix="fp_tools_diff_tfbs_")
         args.tmp_tfbs_root = temp_tfbs_dir
-        args.aggregate_site_maps = _aggregate_site_maps_from_cached_match_dirs(args)
-        logger.info("Using temporary motif-site files for cached summary mode")
+        if cached_summary_mode:
+            args.aggregate_site_maps = _aggregate_site_maps_from_cached_match_dirs(args)
+            logger.info("Using temporary motif-site files for cached summary mode")
+        else:
+            logger.info("Using temporary motif-site files for summary/cache-only mode")
+        for TF in motif_names:
+            make_directory(os.path.join(temp_tfbs_dir, TF, "beds"))
     else:
         logger.info("Creating folder structure for each TF")
         for TF in motif_names:
@@ -1259,7 +2229,8 @@ def run_diff_footprints(args):
         writer_tasks = []
         for TF_sub in TF_names_chunks:
             logger.debug(f"Creating writer queue for {TF_sub}")
-            files = [os.path.join(args.outdir, TF, "beds", TF + ".tmp") for TF in TF_sub]
+            tmp_root = getattr(args, "tmp_tfbs_root", None) or args.outdir
+            files = [os.path.join(tmp_root, TF, "beds", TF + ".tmp") for TF in TF_sub]
             q = manager.Queue()
             qs_list.append(q)
             writer_tasks.append(writer_pool.apply_async(file_writer, args=(q, dict(zip(TF_sub, files)), args)))
@@ -1395,42 +2366,17 @@ def run_diff_footprints(args):
     logger.info("Estimating bound/unbound threshold")
     bg_values = np.array([background["signal"][c] for c in args.cond_names]).flatten()
     logger.debug(f"Size of background array collected: {bg_values.size}")
-    bg_values = bg_values[np.isfinite(bg_values)]
-    bg_values = bg_values[~np.isclose(bg_values, 0.0)]
-    logger.debug(f"Size after filtering > 0: {bg_values.size}")
-    if len(bg_values) == 0:
-        logger.error("All background scores are zero. Check inputs.")
+    try:
+        threshold, pseudo = _estimate_bound_threshold(bg_values, args.bound_pvalue)
+    except ValueError as exc:
+        logger.error(str(exc))
         sys.exit(1)
-
-    x_max = np.percentile(bg_values, [99])
-    bg_values = bg_values[bg_values < x_max]
-    logger.debug(f"Size after filtering < x_max ({x_max}): {bg_values.size}")
-
-    log_vals = np.log(bg_values).reshape(-1, 1)
-    gmm = sklearn.mixture.GaussianMixture(n_components=2, random_state=1).fit(log_vals)
-    means = gmm.means_.flatten()
-    stds = np.sqrt(gmm.covariances_).flatten()
-    chosen_i = np.argmax(means)
-    log_params = scipy.stats.lognorm.fit(bg_values, f0=stds[chosen_i], fscale=np.exp(means[chosen_i]))
-
-    mode = scipy.optimize.fmin(lambda x: -scipy.stats.lognorm.pdf(x, *log_params), 0, disp=False)[0]
-    logger.debug(f"- Mode estimated at: {mode}")
-    args.pseudo = mode / 2.0
+    args.pseudo = pseudo
     logger.debug(f"Pseudocount estimated at: {args.pseudo:.5f}")
-
-    leftside_x = np.linspace(scipy.stats.lognorm(*log_params).ppf([0.01]), mode, 100)
-    leftside_pdf = scipy.stats.lognorm.pdf(leftside_x, *log_params)
-    leftside_x_scale = leftside_x - np.min(leftside_x)
-    mirrored_x = np.concatenate([leftside_x, np.max(leftside_x) + leftside_x_scale]).flatten()
-    mirrored_pdf = np.concatenate([leftside_pdf, leftside_pdf[::-1]]).flatten()
-    popt, _ = scipy.optimize.curve_fit(
-        lambda x, std, sc: sc * scipy.stats.norm.pdf(x, mode, std),
-        mirrored_x, mirrored_pdf
-    )
-    norm_params = (mode, popt[0])
-    threshold = round(scipy.stats.norm.ppf(1 - args.bound_pvalue, *norm_params), 5)
     args.thresholds = {c: threshold for c in args.cond_names}
     logger.stats(f"- Threshold estimated at: {threshold}")
+    if getattr(args, "match_only", False):
+        _write_match_threshold_cache(args)
 
     # ------------------ background log2fc for comparisons -------------------- #
     logger.comment("")
@@ -1474,8 +2420,17 @@ def run_diff_footprints(args):
     info_table = pd.DataFrame(np.zeros((len(motif_names), len(info_columns))),
                               columns=info_columns, index=motif_names)
 
+    if getattr(args, "match_only", False) and getattr(args, "tmp_tfbs_root", None):
+        args.keep_tmp_tfbs_for_cache = True
+        args.write_cache_motif_all = True
+
     results = []
-    process_func = _process_tfbs_from_cached_beds if getattr(args, "cached_motif_bed_maps", None) else process_tfbs
+    if getattr(args, "cached_motif_zip_paths", None):
+        process_func = _process_tfbs_from_cached_zips
+    elif getattr(args, "cached_motif_bed_maps", None):
+        process_func = _process_tfbs_from_cached_beds
+    else:
+        process_func = process_tfbs
     if args.cores == 1:
         for name in motif_names:
             logger.info(f"- {name}")
@@ -1583,7 +2538,10 @@ def run_diff_footprints(args):
     diff_results_out = os.path.join(args.outdir, args.prefix + "_results.txt")
     info_table.to_csv(diff_results_out, sep="\t", index=False, header=True, na_rep="NA")
     if getattr(args, "match_only", False):
-        _write_match_motif_site_cache(args, motif_names, logger)
+        cache_source_root = getattr(args, "tmp_tfbs_root", None)
+        _write_match_motif_site_cache(args, motif_names, logger, source_root=cache_source_root)
+        if getattr(args, "materialize_match_motif_beds", False):
+            _materialize_match_motif_beds(args, motif_names, logger, source_root=cache_source_root)
 
     write_replicate_report = args.replicate_report == "on" or (
         args.replicate_report == "auto" and (repeated_conditions or args.replicate_map is not None)
@@ -1737,7 +2695,7 @@ def run_diff_footprints(args):
         figure_pdf.close()
     if cluster_pdf is not None:
         cluster_pdf.close()
-    if temp_tfbs_dir is not None:
+    if temp_tfbs_dir is not None and not getattr(args, "keep_tmp_tfbs_for_cache", False):
         shutil.rmtree(temp_tfbs_dir, ignore_errors=True)
     logger.end()
 
@@ -1769,8 +2727,7 @@ def _apply_match_motifs_project_layout(args, parser):
     args.sample_names = [row.sample for row in samples]
     args.cond_names = [row.condition for row in samples]
     args.sample_output_root = str(samples_root(project))
-    if not getattr(args, "peaks", None):
-        args.peaks = str(analysis_peaks_path(project))
+    args.peaks = str(project_analysis_peaks(project, getattr(args, "peaks", None)))
 
 
 def _run_project_comparison_table(args, parser):
@@ -1781,8 +2738,7 @@ def _run_project_comparison_table(args, parser):
         parser.error("--layout project with --comparison-table requires --sample-table")
     samples = read_sample_table(args.sample_table)
     comparisons = read_comparison_table(args.comparison_table)
-    if not getattr(args, "peaks", None):
-        args.peaks = str(analysis_peaks_path(project))
+    args.peaks = str(project_analysis_peaks(project, getattr(args, "peaks", None)))
     for comparison in comparisons:
         cond1_samples = samples_for_condition(samples, comparison.cond1, comparison.cond1_samples)
         cond2_samples = samples_for_condition(samples, comparison.cond2, comparison.cond2_samples)
@@ -1851,7 +2807,11 @@ def match_motifs_cli():
         )
         for sample_args in sample_args_list:
             sample_args.cores = sample_cores
-        if sample_workers == 1:
+        scan_mode = getattr(args, "match_scan_mode", "auto")
+        use_shared_scan = scan_mode == "shared" or (scan_mode == "auto" and len(sample_args_list) > 1)
+        if use_shared_scan:
+            _run_match_motifs_shared_project(args, sample_args_list)
+        elif sample_workers == 1:
             for sample_args in sample_args_list:
                 _run_match_motifs_sample(sample_args)
         else:

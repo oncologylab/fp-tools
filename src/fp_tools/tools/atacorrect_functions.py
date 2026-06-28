@@ -29,7 +29,11 @@ import pysam
 
 #Internal functions and classes
 from fp_tools.utils.sequences import SequenceMatrix, GenomicSequence
-from fp_tools.utils.signals import fast_rolling_math
+from fp_tools.utils.signals import (
+	add_bias_prediction_window,
+	finalize_bias_prediction,
+	atac_correct_arrays,
+)
 from fp_tools.utils.utilities import * 
 from fp_tools.utils.regions import OneRegion, RegionList
 from fp_tools.utils.ngs import OneRead, ReadList
@@ -208,8 +212,9 @@ def bias_correction(regions_list, params, bias_obj):
 	f_extend = k_flank + f
 
 	strands = ["forward", "reverse"]
-	pre_bias = {strand: SequenceMatrix.create(L, "PWM") for strand in strands}
-	post_bias = {strand: SequenceMatrix.create(L, "PWM") for strand in strands}
+	collect_qc = not getattr(params, "skip_qc", False)
+	pre_bias = {strand: SequenceMatrix.create(L, "PWM") for strand in strands} if collect_qc else None
+	post_bias = {strand: SequenceMatrix.create(L, "PWM") for strand in strands} if collect_qc else None
 
 	#Open bamfile and fasta
 	bam_obj = pysam.AlignmentFile(bam_f, "rb")
@@ -271,7 +276,6 @@ def bias_correction(regions_list, params, bias_obj):
 		
 		reg_end = reg_len - k_flank
 		step = 10
-		overlaps = int(params.window / step)
 		window_starts = list(range(k_flank, reg_end-params.window, step))
 		window_ends = list(range(k_flank+params.window, reg_end, step))
 		windows = list(zip(window_starts, window_ends))
@@ -279,9 +283,8 @@ def bias_correction(regions_list, params, bias_obj):
 		for strand in strands:
 
 			########### Estimate bias threshold ###########
-			bias_predictions = np.zeros((overlaps,reg_len))
-			bias_predictions[k_flank:reg_end] = np.nan #flanks stay 0 as no windows overlap
-			row = 0
+			bias_prediction_sum = np.zeros(reg_len, dtype="float64")
+			bias_prediction_count = np.zeros(reg_len, dtype=np.int64)
 
 			for window in windows:
 
@@ -306,74 +309,46 @@ def bias_correction(regions_list, params, bias_obj):
 				else:
 					bias_predict = np.zeros(window[1]-window[0])	
 
-				bias_predictions[row, window[0]:window[1]] = bias_predict
-				row = row + 1 if row < overlaps - 1 else 0
+				add_bias_prediction_window(bias_prediction_sum, bias_prediction_count, bias_predict.astype("float64", copy=False), window[0], window[1])
 
-				bias_prediction = np.nanmean(bias_predictions, axis=0) #nanmean because ends of array contain nan (before windows are completely overlapping)
-
+			bias_prediction = finalize_bias_prediction(bias_prediction_sum, bias_prediction_count, k_flank, reg_end)
 			bias = bias_prediction 
 
-			######## Calculate expected signal ######
-			signal_sum = fast_rolling_math(out_signals[reg_key]["uncorrected"][strand], w, "sum")
-			signal_sum[np.isnan(signal_sum)] = 0 	#f-width ends of region
-
-			bias_sum = fast_rolling_math(bias, w, "sum")	#ends of arr are nan
-			nulls = np.logical_or(np.isclose(bias_sum, 0), np.isnan(bias_sum))
-			bias_sum[nulls] = 1 		# N-regions will give stretches of 0-bias
-			bias_probas = bias / bias_sum
-			bias_probas[nulls] = 0 		#nan to 0
-
-			out_signals[reg_key]["expected"][strand] = signal_sum * bias_probas 
-
-			######## Correct signal ########
-			out_signals[reg_key]["uncorrected"][strand] *= bias_obj.correction_factor
-			out_signals[reg_key]["expected"][strand] *= bias_obj.correction_factor
-			out_signals[reg_key]["corrected"][strand] = out_signals[reg_key]["uncorrected"][strand] - out_signals[reg_key]["expected"][strand]
-
-			######## Rescale signal to fit uncorrected sum ########
-			uncorrected_sum = fast_rolling_math(out_signals[reg_key]["uncorrected"][strand], w, "sum")
-			uncorrected_sum[np.isnan(uncorrected_sum)] = 0
-			corrected_sum = fast_rolling_math(np.abs(out_signals[reg_key]["corrected"][strand]), w, "sum")	#negative values count as positive
-			corrected_sum[np.isnan(corrected_sum)] = 0
-
-			#Positive signal left after correction
-			corrected_pos = np.copy(out_signals[reg_key]["corrected"][strand])
-			corrected_pos[corrected_pos < 0] = 0 
-			corrected_pos_sum = fast_rolling_math(corrected_pos, w, "sum")
-			corrected_pos_sum[np.isnan(corrected_pos_sum)] = 0 
-			corrected_neg_sum = corrected_sum - corrected_pos_sum
-
-			#The corrected sum is less than the signal sum, so scale up positive cuts
-			zero_sum = corrected_pos_sum == 0
-			corrected_pos_sum[zero_sum] = np.nan 	#allow for zero division
-			scale_factor = (uncorrected_sum - corrected_neg_sum) / corrected_pos_sum
-			scale_factor[zero_sum] = 1			#Scale factor is 1 (which will be multiplied to the 0 values)
-			scale_factor[scale_factor < 1] = 1	#Only scale up if needed
-			pos_bool = out_signals[reg_key]["corrected"][strand] > 0
-			out_signals[reg_key]["corrected"][strand][pos_bool] *= scale_factor[pos_bool]
+			######## Calculate expected, corrected, and rescaled signal ######
+			uncorrected_scaled, expected, corrected = atac_correct_arrays(
+				out_signals[reg_key]["uncorrected"][strand].astype("float64", copy=False),
+				bias.astype("float64", copy=False),
+				w,
+				float(bias_obj.correction_factor),
+			)
+			out_signals[reg_key]["uncorrected"][strand] = uncorrected_scaled
+			out_signals[reg_key]["expected"][strand] = expected
+			out_signals[reg_key]["corrected"][strand] = corrected
 
 			
 		#######################################
 		########   Verify correction   ########
 		#######################################
 		
-		#Verify correction across all reads
-		for strand in strands:
-			for idx in range(k_flank,reg_len - k_flank -1): 
-				if idx > k_flank and idx < reg_len-k_flank:
+		#Verify correction across all reads. This is diagnostic only and does
+		#not affect corrected signal values written below.
+		if collect_qc:
+			for strand in strands:
+				for idx in range(k_flank,reg_len - k_flank -1):
+					if idx > k_flank and idx < reg_len-k_flank:
 
-					orig = out_signals[reg_key]["uncorrected"][strand][idx]
-					correct = out_signals[reg_key]["corrected"][strand][idx]
+						orig = out_signals[reg_key]["uncorrected"][strand][idx]
+						correct = out_signals[reg_key]["corrected"][strand][idx]
 
-					if orig != 0 or correct != 0:	#if both are 0, don't add to pre/post bias
-						if strand == "forward":
-							kmer = sequence_obj.sequence[idx-k_flank:idx+k_flank+1]
-						else:
-							kmer = sequence_obj.revcomp[reg_len-idx-k_flank-1:reg_len-idx+k_flank]
+						if orig != 0 or correct != 0:	#if both are 0, don't add to pre/post bias
+							if strand == "forward":
+								kmer = sequence_obj.sequence[idx-k_flank:idx+k_flank+1]
+							else:
+								kmer = sequence_obj.revcomp[reg_len-idx-k_flank-1:reg_len-idx+k_flank]
 
-						#Save kmer for bias correction verification
-						pre_bias[strand].add_sequence(kmer, orig)
-						post_bias[strand].add_sequence(kmer, correct)
+							#Save kmer for bias correction verification
+							pre_bias[strand].add_sequence(kmer, orig)
+							post_bias[strand].add_sequence(kmer, correct)
 
 
 		#######################################

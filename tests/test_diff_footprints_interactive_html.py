@@ -333,7 +333,7 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
         self.assertTrue(FakeExecutor.used)
         self.assertEqual([motif["prefix"] for motif in payload["motifs"]], ["TF1", "TF2"])
 
-    def test_sig_aggregate_mode_keeps_all_significant_rows(self):
+    def test_sig_aggregate_mode_caps_significant_rows_by_top_n(self):
         info_table = pd.DataFrame(
             [
                 {"output_prefix": "TF1", "name": "TF1", "motif_id": "M1", "Bcell_Tcell_change": 1.0, "Bcell_Tcell_pvalue": 0.001},
@@ -360,7 +360,7 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
 
         with patch.object(diff_footprint_helpers, "_aggregate_payload_for_row", side_effect=fake_row_worker):
             payload = diff_footprint_helpers.build_diff_footprint_aggregate_payload([], info_table, ["Bcell", "Tcell"], args)
-        self.assertEqual([motif["prefix"] for motif in payload["motifs"]], ["TF1", "TF2", "TF3"])
+        self.assertEqual([motif["prefix"] for motif in payload["motifs"]], ["TF1", "TF2"])
 
     def test_cached_match_dirs_provide_aggregate_centers_without_comparison_beds(self):
         with tempfile.TemporaryDirectory() as tmpdir:

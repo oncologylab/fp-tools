@@ -39,6 +39,7 @@ def add_atacorrect_arguments(parser):
 	optargs.add_argument('--norm-off', help="Switches off normalization based on number of reads", action='store_true')
 	optargs.add_argument('--write-tracks', metavar="<track>", nargs="*", choices=["corrected", "uncorrected", "bias", "expected", "all"], default=["corrected"], help="bigWig tracks to write (default: corrected; use all for corrected, uncorrected, bias, and expected)")
 	optargs.add_argument('--track-off', metavar="<track>", help="Compatibility option to switch off individual bigWig tracks after --write-tracks is resolved", nargs="*", choices=["uncorrected", "bias", "expected", "corrected"], default=[])
+	optargs.add_argument('--skip-qc', action="store_true", help="Skip atac-correct diagnostic PDF and pre/post bias verification counts. Corrected bigWig output is unchanged.")
 	optargs.add_argument('--scale-corrected', choices=["auto", "none", "q95"], default="auto", help="Optionally q95-scale corrected bigWigs after correction. In auto mode this runs only when --scale-corrected-bigwigs has more than one track (default: auto)")
 	optargs.add_argument('--scale-background', metavar="<bed>", help="Shared BED regions used to estimate q95 scaling for --scale-corrected")
 	optargs.add_argument('--scale-corrected-bigwigs', metavar="<bigwig>", nargs="*", help="Corrected bigWigs to q95-scale together. Include the current sample's corrected bigWig or omit to scale only the current output")
@@ -119,6 +120,7 @@ def add_scorebigwig_arguments(parser):
 	footprintargs.add_argument('--fp-max', metavar="<int>", type=int, help="Maximum footprint width (default: 50)", default=50)
 	footprintargs.add_argument('--flank-min', metavar="<int>", type=int, help="Minimum range of flanking regions (default: 10)", default=10)
 	footprintargs.add_argument('--flank-max', metavar="<int>", type=int, help="Maximum range of flanking regions (default: 30)", default=30)
+	footprintargs.add_argument('--footprint-kernel', choices=["fast", "legacy"], default="fast", help="Footprint scoring kernel (default: fast; use legacy for exact historical floating-point behavior)")
 	
 	sumargs = parser.add_argument_group('Parameters for score == sum')
 	sumargs.add_argument('--window', metavar="<int>", type=int, help="The window for calculation of sum (default: 100)", default=100)
@@ -149,14 +151,15 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 		description += "The method ranks motifs by signal differences across input conditions and reports motif-level and site-level results.\n\n"
 		description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
 	if is_match_motifs:
-		description += "Output files:\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n"
+		description += "Output files:\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n- <outdir>/cache/* compact reuse caches\n"
+		description += "- <outdir>/<TF>/beds/*_all.bed, *_bound.bed, and *_unbound.bed by default\n"
 	else:
 		description += "Output files:\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n- <outdir>/<prefix>_<condition1>_<condition2>.html\n"
 		description += "- optional <outdir>/<prefix>_figures.pdf with --static-plots\n- optional <outdir>/<prefix>_clusters.pdf with --static-plots\n"
 		description += "- optional <outdir>/<TF>/plots/<TF>_log2fcs.pdf with --per-motif-plots\n"
-	description += "- <outdir>/<TF>/<TF>_overview.{txt,xlsx} (per motif)\n- <outdir>/<TF>/beds/<TF>_all.bed (per motif)\n"
+	description += "- optional <outdir>/<TF>/<TF>_overview.{txt,xlsx} with --motif-outputs full\n"
 	if is_match_motifs:
-		description += "- <outdir>/<TF>/beds/<TF>_<sample>_bound.bed (per motif)\n- <outdir>/<TF>/beds/<TF>_<sample>_unbound.bed (per motif)\n\n"
+		description += "\n"
 	else:
 		description += "- <outdir>/<TF>/beds/<TF>_<condition>_bound.bed (per motif-condition pair)\n- <outdir>/<TF>/beds/<TF>_<condition>_unbound.bed (per motif-condition pair)\n\n"
 	parser.description = format_help_description(command_name, description)
@@ -177,6 +180,7 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 	optargs.add_argument('--sample-table', metavar="<tsv>", help="Project sample table with sample and condition columns plus bam/peaks for upstream steps")
 	optargs.add_argument('--comparison-table', metavar="<tsv>", help=argparse.SUPPRESS if is_match_motifs else "Project comparison table with comparison, cond1, and cond2 columns")
 	optargs.add_argument('--layout', choices=["custom", "project"], default="project", help="Use fp-tools standard project output layout under --outdir (default: project when --sample-table is provided)")
+	optargs.add_argument('--match-scan-mode', choices=["auto", "shared", "per-sample"], default="auto", help=argparse.SUPPRESS if not is_match_motifs else "Project match-motifs scan mode. auto uses one shared motif scan for multi-sample project runs; per-sample preserves independent sample scans.")
 	optargs.add_argument('--sample-output-root', metavar="<directory>", help=argparse.SUPPRESS if not is_match_motifs else "Sample output root; writes one match_motifs folder under <root>/<sample> for each input signal, typically <project>/samples")
 	optargs.add_argument('--sample-dirs', metavar="<directory>", nargs="*", help=argparse.SUPPRESS if is_match_motifs else "Sample output folders containing match_motifs/ outputs to reuse for differential analysis")
 	optargs.add_argument('--project-dir', metavar="<directory>", help=argparse.SUPPRESS if is_match_motifs else "Parent folder containing sample output folders for folder-based differential analysis, typically <project>/samples")
@@ -205,13 +209,13 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 	optargs.add_argument('--replicate-figure-out', metavar="<figure>", help=argparse.SUPPRESS if is_match_motifs else "Output replicate diagnostic figure (default: <outdir>/<prefix>_replicate_report.png)")
 	optargs.add_argument('--aggregate-signals', metavar="<bigwig>", nargs="*", help="Corrected cut-site bigWigs used for embedded aggregate profiles")
 	optargs.add_argument('--plot-aggregate', choices=["sig", "all", "top", "off"], default="sig", help="Embed aggregate profiles in HTML reports for significant, all, top-N, or no motifs (default: sig)")
-	optargs.add_argument('--plot-aggregate-top-n', metavar="<int>", type=int, default=20, help="Number of motifs to aggregate when --plot-aggregate top or fallback selection is used (default: 20)")
+	optargs.add_argument('--plot-aggregate-top-n', metavar="<int>", type=int, default=20, help="Maximum number of motifs to aggregate when --plot-aggregate sig/top or fallback selection is used (default: 20)")
 	optargs.add_argument('--aggregate-pvalue-threshold', metavar="<float>", type=float, default=0.05, help="P-value threshold for --plot-aggregate sig (default: 0.05)")
 	optargs.add_argument('--aggregate-flank', metavar="<bp>", type=int, default=100, help="Flank around motif centers for embedded aggregate profiles (default: 100)")
 	optargs.add_argument('--aggregate-normalization', choices=["match", "none", "sample-quantile", "size-factor"], default="match", help="Normalization for embedded aggregate profiles (default: match --normalization)")
 	optargs.add_argument('--aggregate-site-set', choices=["all", "bound"], default="all", help="Motif-site BEDs used for embedded aggregate profiles: all motif hits or sample-specific bound sites (default: all)" if is_match_motifs else "Motif-site BEDs used for embedded aggregate profiles: all motif hits or condition-specific bound sites (default: all)")
 	optargs.add_argument('--reuse-existing-results', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Regenerate final diff-footprints reports from existing <prefix>_results.txt and per-motif BEDs without rescanning motifs")
-	optargs.add_argument('--motif-outputs', choices=["auto", "summary", "full"], default="auto", help=argparse.SUPPRESS if is_match_motifs else "Per-motif output mode. auto writes full BED/overview files when embedded aggregate plots need them; summary writes only main result/report tables; full always writes per-motif BED/overview files.")
+	optargs.add_argument('--motif-outputs', choices=["auto", "summary", "full"], default="auto", help="Per-motif output mode. For match-motifs, auto writes compact caches plus per-motif BED files; summary writes only main result/report tables and caches; full writes per-motif BED and overview files synchronously. For diff-footprints, auto writes full motif outputs only when aggregate reports need them.")
 	optargs.add_argument('--static-plots', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write static volcano and cluster PDF summaries. By default diff-footprints writes the interactive HTML report without these PDFs.")
 	optargs.add_argument('--per-motif-plots', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write one diagnostic log2 fold-change PDF per motif. Disabled by default to keep diff-footprints fast.")
 	optargs.add_argument('--skew-report', action='store_true', help=argparse.SUPPRESS if is_match_motifs else "Also write the optional skew/shift PDF report. Disabled by default.")

@@ -70,7 +70,7 @@ atac-correct \
 
 normalize-bigwig \
   --sample-table project/metadata/samples.tsv \
-  --background project/peaks/merged_peaks.analysis.bed \
+  --background project/peaks/merged_peaks_filtered.bed \
   --outdir project \
   --method background-scale \
   --stat q95 \
@@ -78,13 +78,13 @@ normalize-bigwig \
 
 call-footprints \
   --sample-table project/metadata/samples.tsv \
-  --regions project/peaks/merged_peaks.analysis.bed \
+  --regions project/peaks/merged_peaks_filtered.bed \
   --outdir project
 
 match-motifs \
   --sample-table project/metadata/samples.tsv \
   --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks.analysis.bed \
+  --peaks project/peaks/merged_peaks_filtered.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir project
 
@@ -92,14 +92,18 @@ diff-footprints \
   --sample-table project/metadata/samples.tsv \
   --comparison-table project/metadata/comparisons.tsv \
   --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks.analysis.bed \
+  --peaks project/peaks/merged_peaks_filtered.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir project
 ```
 
-With a sample table and `--outdir project`, fp-tools uses the recommended project layout by default: merged peaks in `project/peaks`, per-sample outputs in `project/samples/<sample>/`, differential reports in `project/comparisons`, and review pages in `project/reports`. Custom paths remain available with `--layout custom`.
+With a sample table and `--outdir project`, fp-tools uses the recommended project layout by default: merged peaks in `project/peaks`, per-sample outputs in `project/samples/<sample>/`, differential reports in `project/comparisons`, and review pages in `project/reports`. `atac-correct` writes both the raw merged peak set and a filtered `project/peaks/merged_peaks_filtered.bed` with mitochondrial chromosomes excluded; downstream project commands use this filtered BED when peak/background regions are omitted or when the project raw merged BED is passed. Custom paths remain available with `--layout custom`.
 
-After `match-motifs`, project-mode `diff-footprints` reuses each sample folder's cached motif-site tables and background scores instead of rescanning motifs or rereading footprint bigWigs. Repeated samples with the same `condition` are treated as biological replicates.
+After `match-motifs`, project-mode `diff-footprints` reuses each sample folder's motif-site and background-score caches instead of rescanning motifs or rereading footprint bigWigs. The first cached comparison may create internal per-motif shard caches for faster reuse; later comparisons with the same sample folders reuse those shards. In project mode, `match-motifs` uses one shared motif scan across samples by default and then writes standard per-sample folders. Repeated samples with the same `condition` are treated as biological replicates. Per-motif BED folders are written by default in the background after report-ready outputs; use `match-motifs --motif-outputs summary` only when you want cache-only output. HTML aggregate profiles in `sig` and `top` modes are capped by `--plot-aggregate-top-n`; increase this value to show more motif profiles.
+
+## Methodological Improvements
+
+fp-tools keeps the interpretable TOBIAS-style center-versus-flank footprint score, but improves the workflow around it. Multi-sample projects can q95-scale corrected cut-site tracks over shared background regions before footprint scoring, reducing sample-level signal shifts without forcing full distributions to match. Footprint scoring and candidate detection use optimized Cython-backed kernels by default, with a legacy kernel available for exact historical comparisons. Known-motif analysis uses one shared motif scan across project samples, writes compact motif-site/background caches, and lets `diff-footprints` reuse those caches for replicate-aware comparisons and interactive reports instead of rescanning motifs for every contrast.
 
 ## Pseudobulk Workflow
 

@@ -120,13 +120,17 @@ class FpToolsLogger(logging.Logger):
     def stop_logger_queue(self):
         self.debug("Waiting for listener to finish")
         if self.queue is not None:
-            self.queue.put(None)
+            try:
+                self.queue.put(None)
+            except Exception:
+                pass
         if self.listener is not None:
-            while self.listener.exitcode != 0:
-                self.debug(f"Listener exitcode is: {self.listener.exitcode}. Waiting for exitcode = 0.")
-                time.sleep(0.1)
-            self.debug("Joining listener")
-            self.listener.join()
+            self.listener.join(timeout=5)
+            if self.listener.is_alive():
+                self.warning("Multiprocessing logger did not stop promptly; terminating listener.")
+                self.listener.terminate()
+                self.listener.join(timeout=2)
+            self.debug(f"Logger listener exitcode is: {self.listener.exitcode}")
 
     def main_logger_process(self):
         self.debug("Started main logger process")

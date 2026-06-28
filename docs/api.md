@@ -68,14 +68,18 @@ This option reference is generated from `atac-correct --help` and lists every ac
 usage: atac-correct [-h] [--bams [<bam> ...]] [-g <fasta>] [-p [<bed> ...]]
                     [--regions-in <bed>] [--regions-out <bed>] [--blacklist <bed>]
                     [--extend <int>] [--split-strands] [--norm-off]
-                    [--track-off [<track> ...]] [--scale-corrected {auto,none,q95}]
-                    [--scale-background <bed>] [--scale-corrected-bigwigs [<bigwig> ...]]
+                    [--write-tracks [<track> ...]] [--track-off [<track> ...]] [--skip-qc]
+                    [--scale-corrected {auto,none,q95}] [--scale-background <bed>]
+                    [--scale-corrected-bigwigs [<bigwig> ...]]
                     [--scale-target {median,mean}] [--scale-chrom-sizes <chrom.sizes>]
-                    [--drop-chroms [<chrom> ...]] [--k_flank <int>]
-                    [--read_shift <int> <int>] [--bg_shift <int>] [--window <int>]
-                    [--score_mat <mat>] [--bias-pkl <obj>] [--prefix <prefix>]
-                    [--sample-names [<name> ...]] [--outdir <directory>] [--cores <int>]
-                    [--split <int>] [--verbosity <int>]
+                    [--merged-peaks-out <bed>] [--drop-chroms [<chrom> ...]]
+                    [--k_flank <int>] [--read_shift <int> <int>] [--bg_shift <int>]
+                    [--window <int>] [--score_mat <mat>] [--bias-pkl <obj>]
+                    [--prefix <prefix>] [--sample-names [<name> ...]]
+                    [--sample-table <tsv>] [--layout {custom,project}]
+                    [--sample-output-root <directory>] [--outdir <directory>]
+                    [--cores <int>] [--sample-workers <int>] [--split <int>]
+                    [--verbosity <int>]
 
 __________________________________________________________________________________________
 
@@ -89,11 +93,9 @@ atac-correct --bams <reads.bam> [<more_reads.bam> ...] --genome <genome.fa> --pe
 <merged_peaks.bed> [<sample_peaks.bed> ...]
 
 Output files:
-- <outdir>/<sample>/<sample>_uncorrected.bw for multi-BAM runs
-- <outdir>/<sample>/<sample>_bias.bw for multi-BAM runs
-- <outdir>/<sample>/<sample>_expected.bw for multi-BAM runs
 - <outdir>/<sample>/<sample>_corrected.bw for multi-BAM runs
-- <outdir>/<prefix>_atacorrect.pdf
+- optional auxiliary tracks with --write-tracks
+- optional <outdir>/<prefix>_atacorrect.pdf unless --skip-qc is used
 
 ------------------------------------------------------------------------------------------
 
@@ -113,8 +115,13 @@ Optional arguments:
                                    upstream/downstream (default: 100)
   --split-strands                  Write out tracks per strand
   --norm-off                       Switches off normalization based on number of reads
-  --track-off [<track> ...]        Switch off writing of individual .bigwig-tracks
-                                   (uncorrected/bias/expected/corrected)
+  --write-tracks [<track> ...]     bigWig tracks to write (default: corrected; use all for
+                                   corrected, uncorrected, bias, and expected)
+  --track-off [<track> ...]        Compatibility option to switch off individual bigWig
+                                   tracks after --write-tracks is resolved
+  --skip-qc                        Skip atac-correct diagnostic PDF and pre/post bias
+                                   verification counts. Corrected bigWig output is
+                                   unchanged.
   --scale-corrected {auto,none,q95}
                                    Optionally q95-scale corrected bigWigs after
                                    correction. In auto mode this runs only when --scale-
@@ -131,6 +138,9 @@ Optional arguments:
   --scale-chrom-sizes <chrom.sizes>
                                    Optional chromosome sizes file for scaled bigWig output
                                    validation
+  --merged-peaks-out <bed>         Path for internally merged peak BED when multiple
+                                   --peaks files are supplied (default:
+                                   <outdir>/merged_peaks.bed)
   --drop-chroms [<chrom> ...]      Drop any chromosomes in the list from the correction.
                                    The default is to drop the mitochrondrial chromosome.
                                    Default: ['chrM', 'chrMT', 'M', 'MT', 'Mito']
@@ -154,10 +164,21 @@ Run arguments:
   --prefix <prefix>                Prefix for output files in single-BAM runs (default:
                                    BAM filename stem)
   --sample-names [<name> ...]      Sample labels for --bams (default: BAM filename stems)
+  --sample-table <tsv>             Project sample table with sample, condition, bam, and
+                                   peaks columns
+  --layout {custom,project}        Use fp-tools standard project output layout under
+                                   --outdir (default: project when --sample-table is
+                                   provided)
+  --sample-output-root <directory>
+                                   Sample output root; writes each sample under
+                                   <root>/<sample>/atac_correct, typically
+                                   <project>/samples
   --outdir <directory>             Output directory for files (default: current working
                                    directory)
   --cores <int>                    Number of cores to use for computation (default: all
                                    available cores)
+  --sample-workers <int>           Number of samples to process concurrently for multi-BAM
+                                   runs (default: auto when --cores is set)
   --split <int>                    Split of multiprocessing jobs (default: 100)
   --verbosity <int>                Level of output logging (0: silent, 1: errors/warnings,
                                    2: info, 3: stats, 4: debug, 5: spam) (default: 3)
@@ -204,11 +225,14 @@ usage: call-footprints [-h] [-s <bigwig>] [--signals [<bigwig> ...]] [-o <bigwig
                        [--multiscale-summary <method>] [--output-multiscale-npz <npz>]
                        [--output-multiscale-npzs [<npz> ...]] [--output-bed <bed>]
                        [--output-beds [<bed> ...]] [--output-bed-dir <directory>]
-                       [--call-candidates] [--top-n <int>] [--min-score <float>] [--call-width <bp>]
-                       [--min-distance <bp>] [--fp-min <int>] [--fp-max <int>]
-                       [--flank-min <int>] [--flank-max <int>] [--window <int>]
-                       [--outdir <directory>] [--cores <int>] [--split <int>]
-                       [--verbosity <int>]
+                       [--call-candidates] [--top-n <int>] [--min-score <float>]
+                       [--call-width <bp>] [--min-distance <bp>] [--fp-min <int>]
+                       [--fp-max <int>] [--flank-min <int>] [--flank-max <int>]
+                       [--footprint-kernel {fast,legacy}] [--window <int>]
+                       [--sample-names [<name> ...]] [--sample-table <tsv>]
+                       [--layout {custom,project}] [--sample-output-root <directory>]
+                       [--outdir <directory>] [--cores <int>] [--sample-workers <int>]
+                       [--split <int>] [--verbosity <int>]
 
 __________________________________________________________________________________________
 
@@ -224,7 +248,7 @@ Usage: call-footprints --signals <cutsites.bw> [<more_cutsites.bw> ...] --region
 
 Output:
 - footprint score bigWig(s)
-- optional candidate BED from --call-candidates, --output-bed, or --output-beds for de novo motif discovery
+- optional candidate BED from --output-bed/--output-beds for de novo motif discovery
 
 ------------------------------------------------------------------------------------------
 
@@ -282,15 +306,31 @@ Parameters for score == footprint:
   --fp-max <int>                        Maximum footprint width (default: 50)
   --flank-min <int>                     Minimum range of flanking regions (default: 10)
   --flank-max <int>                     Maximum range of flanking regions (default: 30)
+  --footprint-kernel {fast,legacy}      Footprint scoring kernel (default: fast; use
+                                        legacy for exact historical floating-point
+                                        behavior)
 
 Parameters for score == sum:
   --window <int>                        The window for calculation of sum (default: 100)
 
 Run arguments:
+  --sample-names [<name> ...]           Sample labels for --signals when using project
+                                        layout
+  --sample-table <tsv>                  Project sample table with sample, condition, bam,
+                                        and peaks columns
+  --layout {custom,project}             Use fp-tools standard project output layout under
+                                        --outdir (default: project when --sample-table is
+                                        provided)
+  --sample-output-root <directory>      Sample output root; writes each sample under
+                                        <root>/<sample>/footprints, typically
+                                        <project>/samples
   --outdir <directory>                  Output directory used with --signals when
                                         --outputs is not supplied
   --cores <int>                         Number of cores to use for computation (default:
                                         all available cores)
+  --sample-workers <int>                Number of input signals to process concurrently
+                                        for multi-signal runs (default: auto when --cores
+                                        is set)
   --split <int>                         Split of multiprocessing jobs (default: 100)
   --verbosity <int>                     Level of output logging (0: silent, 1:
                                         errors/warnings, 2: info, 3: stats, 4: debug, 5:
@@ -303,21 +343,21 @@ Run arguments:
 
 <div class="fp-api-card" markdown="1">
 
-Scan motifs for one or more footprint tracks and write per-sample bound/unbound motif-site calls.
+Scan motifs for one or more footprint tracks and write per-sample motif binding summaries plus compact reuse caches.
 
 **Input parameters**
 
 - One or more footprint score bigWigs passed with `--signals`.
 - Genome FASTA and peak BED.
 - A built-in motif database through `--motif-db` or custom motif files through `--motifs`.
-- Optional `--sample-names` labels for per-sample columns and BED names.
+- Optional `--sample-names` labels for per-sample columns.
 
 **Output**
 
 - Summary tables with motif binding statistics for each sample.
-- Per-motif folders containing `<motif>_all.bed`, `<motif>_<sample>_bound.bed`, and `<motif>_<sample>_unbound.bed`.
-- A compact background-score cache used by `diff-footprints --sample-dirs`.
-- With `--sample-output-root`, each signal is run as its own sample folder under `<root>/<sample>/match_motifs/`.
+- Motif-site and background-score caches used by `diff-footprints --sample-dirs`; cached comparisons may create internal per-motif shard caches on first reuse.
+- Per-motif folders containing `<motif>_all.bed`, `<motif>_<sample>_bound.bed`, and `<motif>_<sample>_unbound.bed` by default. In project mode these BED folders are materialized in the background after report-ready outputs. Use `--motif-outputs summary` to skip permanent BED folders.
+- With project/sample-table input or `--sample-output-root`, fp-tools uses a shared motif scan by default for multi-sample runs and writes one normal sample folder under `<root>/<sample>/match_motifs/`.
 
 **Example commands**
 
@@ -339,17 +379,20 @@ This option reference is generated from `match-motifs --help` and lists every ac
 usage: match-motifs [-h] [--signals [<bigwig> ...]] [--peaks <bed>] [--genome <fasta>]
                     [--motifs [<motifs> ...]] [--motif-db <name>] [--list-motif-dbs]
                     [--sample-names [<name> ...]] [--cond-names [<name> ...]]
-                    [--peak-header <file>] [--naming <string>] [--motif-pvalue <float>]
-                    [--bound-pvalue <float>] [--cluster-threshold <float>]
-                    [--pseudo <float>] [--skip-excel] [--output-peaks <bed>] [--norm-off]
+                    [--sample-table <tsv>] [--layout {custom,project}]
+                    [--sample-output-root <directory>] [--peak-header <file>]
+                    [--naming <string>] [--motif-pvalue <float>] [--bound-pvalue <float>]
+                    [--cluster-threshold <float>] [--pseudo <float>] [--skip-excel]
+                    [--output-peaks <bed>] [--norm-off]
                     [--normalization {condition-quantile,sample-quantile,none}]
                     [--aggregate-signals [<bigwig> ...]]
                     [--plot-aggregate {sig,all,top,off}] [--plot-aggregate-top-n <int>]
                     [--aggregate-pvalue-threshold <float>] [--aggregate-flank <bp>]
                     [--aggregate-normalization {match,none,sample-quantile,size-factor}]
-                    [--aggregate-site-set {all,bound}] [--report-label <text>]
+                    [--aggregate-site-set {all,bound}]
+                    [--motif-outputs {auto,summary,full}] [--report-label <text>]
                     [--outdir <directory>] [--prefix <prefix>] [--cores <int>]
-                    [--split <int>] [--debug] [--verbosity <int>]
+                    [--sample-workers <int>] [--split <int>] [--debug] [--verbosity <int>]
 
 __________________________________________________________________________________________
 
@@ -364,13 +407,11 @@ match-motifs --signals <footprints.bw> [<more_footprints.bw> ...] --genome <geno
 --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]
 
 Output files:
-- <outdir>/<prefix>_figures.pdf
 - <outdir>/<prefix>_results.{txt,xlsx}
 - <outdir>/<prefix>_distances.txt
-- <outdir>/<TF>/<TF>_overview.{txt,xlsx} (per motif)
-- <outdir>/<TF>/beds/<TF>_all.bed (per motif)
-- <outdir>/<TF>/beds/<TF>_<sample>_bound.bed (per motif)
-- <outdir>/<TF>/beds/<TF>_<sample>_unbound.bed (per motif)
+- <outdir>/cache/* compact reuse caches
+- optional <outdir>/<TF>/<TF>_overview.{txt,xlsx} and <outdir>/<TF>/beds/*.bed with
+--motif-outputs full
 
 ------------------------------------------------------------------------------------------
 
@@ -391,6 +432,19 @@ Optional arguments:
                                    --signals file)
   --cond-names [<name> ...]        Optional condition labels for --signals (default:
                                    prefix of each --signals file)
+  --sample-table <tsv>             Project sample table with sample and condition columns
+                                   plus bam/peaks for upstream steps
+  --layout {custom,project}        Use fp-tools standard project output layout under
+                                   --outdir (default: project when --sample-table is
+                                   provided)
+  --match-scan-mode {auto,shared,per-sample}
+                                   Project match-motifs scan mode. auto uses one shared
+                                   motif scan for multi-sample project runs; per-sample
+                                   preserves independent sample scans.
+  --sample-output-root <directory>
+                                   Sample output root; writes one match_motifs folder
+                                   under <root>/<sample> for each input signal, typically
+                                   <project>/samples
   --peak-header <file>             File containing the header of --peaks separated by
                                    whitespace or newlines (default: peak columns are named
                                    "_additional_<count>")
@@ -421,7 +475,7 @@ Optional arguments:
   --plot-aggregate {sig,all,top,off}
                                    Embed aggregate profiles in HTML reports for
                                    significant, all, top-N, or no motifs (default: sig)
-  --plot-aggregate-top-n <int>     Number of motifs to aggregate when --plot-aggregate top
+  --plot-aggregate-top-n <int>     Maximum number of motifs to aggregate when --plot-aggregate sig/top
                                    or fallback selection is used (default: 20)
   --aggregate-pvalue-threshold <float>
                                    P-value threshold for --plot-aggregate sig (default:
@@ -435,6 +489,13 @@ Optional arguments:
                                    Motif-site BEDs used for embedded aggregate profiles:
                                    all motif hits or sample-specific bound sites (default:
                                    all)
+  --motif-outputs {auto,summary,full}
+                                   Per-motif output mode. For match-motifs, auto writes
+                                   compact caches plus per-motif BED files; summary writes
+                                   only main result/report tables and caches; full writes
+                                   per-motif BED and overview files synchronously. For
+                                   diff-footprints, auto writes full motif outputs only when
+                                   aggregate reports need them.
   --report-label <text>            Optional method label shown under the report subtitle
                                    in interactive HTML reports
   --prefix <prefix>                Prefix for overview files in --outdir folder (default:
@@ -445,6 +506,9 @@ Run arguments:
                                    plots in (default: motif_matches_output)
   --cores <int>                    Number of cores to use for computation (default: all
                                    available cores)
+  --sample-workers <int>           Number of input samples to process concurrently in
+                                   project/sample-output-root mode (default: auto when
+                                   --cores is set)
   --split <int>                    Split of multiprocessing jobs (default: 100)
   --debug                          Creates an additional '_debug.pdf'-file with debug
                                    plots
@@ -470,8 +534,8 @@ Compare motif-associated footprint scores across conditions or biological replic
 
 **Output**
 
-- Motif-level differential footprint tables and per-motif overview tables.
-- Bound/unbound BED files per motif and condition.
+- Motif-level differential footprint tables.
+- Optional per-motif overview tables and bound/unbound BED files when `--motif-outputs full` is used.
 - Standalone interactive HTML report with volcano summaries and aggregate profiles.
 - Optional static volcano/cluster PDFs with `--static-plots`, optional per-motif diagnostic PDFs with `--per-motif-plots`, and optional skew/shift PDF with `--skew-report`.
 - Replicate diagnostic tables when replicate groups are present.
@@ -483,12 +547,12 @@ diff-footprints \
   --sample-table project/metadata/samples.tsv \
   --comparison-table project/metadata/comparisons.tsv \
   --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks.analysis.bed \
+  --peaks project/peaks/merged_peaks_filtered.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir project
 ```
 
-Project-mode comparisons use a generic table with `comparison`, `cond1`, and `cond2` columns. Each comparison reuses cached `match_motifs` folders from the project samples directory, so folder mode skips motif rescanning, motif-site rescoring, and footprint bigWig rereads for the differential table.
+Project-mode comparisons use a generic table with `comparison`, `cond1`, and `cond2` columns. Each comparison reuses cached `match_motifs` folders from the project samples directory, so folder mode skips motif rescanning, motif-site rescoring, and footprint bigWig rereads for the differential table. The first cached comparison can build internal per-motif shard caches; later comparisons reuse those shards.
 
 **Options**
 
@@ -616,7 +680,7 @@ Optional arguments:
   --plot-aggregate {sig,all,top,off}
                                    Embed aggregate profiles in HTML reports for
                                    significant, all, top-N, or no motifs (default: sig)
-  --plot-aggregate-top-n <int>     Number of motifs to aggregate when --plot-aggregate top
+  --plot-aggregate-top-n <int>     Maximum number of motifs to aggregate when --plot-aggregate sig/top
                                    or fallback selection is used (default: 20)
   --aggregate-pvalue-threshold <float>
                                    P-value threshold for --plot-aggregate sig (default:
@@ -669,7 +733,7 @@ Normalize bigWig tracks with a shared background-region scale estimate.
 **Input parameters**
 
 - A project sample table with `sample`, `condition`, `bam`, and `peaks` columns, or one or more explicit bigWig tracks.
-- Shared background BED regions. In project mode this is usually `project/peaks/merged_peaks.analysis.bed`, written by `atac-correct`.
+- Shared background BED regions. In project mode this is usually `project/peaks/merged_peaks_filtered.bed`, written by `atac-correct`.
 - Output project directory and optional labels.
 
 **Output**
@@ -683,7 +747,7 @@ Normalize bigWig tracks with a shared background-region scale estimate.
 ```bash
 normalize-bigwig \
   --sample-table project/metadata/samples.tsv \
-  --background project/peaks/merged_peaks.analysis.bed \
+  --background project/peaks/merged_peaks_filtered.bed \
   --outdir project \
   --method background-scale \
   --stat q95 \

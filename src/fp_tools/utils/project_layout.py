@@ -63,7 +63,32 @@ def merged_peaks_path(project: str | Path) -> Path:
 
 
 def analysis_peaks_path(project: str | Path) -> Path:
-    return peaks_dir(project) / "merged_peaks.analysis.bed"
+    return peaks_dir(project) / "merged_peaks_filtered.bed"
+
+
+def project_analysis_peaks(project: str | Path, requested: str | Path | None = None) -> Path | str | None:
+    """Return the chrM-filtered project BED when a project peak path is implied.
+
+    Project-mode atac-correct writes both the raw ``merged_peaks.bed`` and the
+    chrM-filtered ``merged_peaks_filtered.bed``. Downstream commands should use
+    the filtered BED when the user omits a peak path or passes the project's raw
+    merged BED. Explicit non-project BEDs are left untouched.
+    """
+
+    project_path = Path(project).expanduser().resolve()
+    analysis = analysis_peaks_path(project_path)
+    legacy_analysis = peaks_dir(project_path) / "merged_peaks.analysis.bed"
+    if requested is None or str(requested).strip() == "":
+        return analysis
+    requested_path = Path(requested).expanduser()
+    try:
+        resolved = requested_path.resolve()
+    except OSError:
+        resolved = requested_path
+    project_merged = merged_peaks_path(project_path)
+    if resolved == project_merged.resolve() or resolved == analysis.resolve() or resolved == legacy_analysis.resolve():
+        return analysis
+    return requested
 
 
 def corrected_bigwig_path(project: str | Path, sample: str) -> Path:

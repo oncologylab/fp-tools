@@ -35,14 +35,15 @@ atac-correct \
   --outdir project
 ```
 
-Output: corrected cut-site bigWigs and QC files. With a sample table and `--outdir project`, fp-tools uses the project layout by default, reads a generic `sample	condition	bam	peaks` table, merges the sample peak BED files, writes `project/peaks/merged_peaks.bed`, and writes analysis-ready peaks to `project/peaks/merged_peaks.analysis.bed`.
+Output: corrected cut-site bigWigs and QC files. With a sample table and `--outdir project`, fp-tools uses the project layout by default, reads a generic `sample	condition	bam	peaks` table, merges the sample peak BED files, writes `project/peaks/merged_peaks.bed`, and writes filtered peaks to `project/peaks/merged_peaks_filtered.bed` with mitochondrial chromosomes excluded. Downstream project-mode commands use this filtered BED when peak/background regions are omitted or when the project raw merged BED is passed.
+For production runs where corrected bigWigs are the required output, add `--skip-qc` to skip the diagnostic PDF and pre/post correction bias-count summaries without changing the corrected signal tracks.
 
 Optional q95 scaling for multi-sample projects:
 
 ```bash
 normalize-bigwig \
   --sample-table project/metadata/samples.tsv \
-  --background project/peaks/merged_peaks.analysis.bed \
+  --background project/peaks/merged_peaks_filtered.bed \
   --outdir project \
   --method background-scale \
   --stat q95 \
@@ -54,11 +55,11 @@ normalize-bigwig \
 ```bash
 call-footprints \
   --sample-table project/metadata/samples.tsv \
-  --regions project/peaks/merged_peaks.analysis.bed \
+  --regions project/peaks/merged_peaks_filtered.bed \
   --outdir project
 ```
 
-Output: footprint score bigWig files. Add `--call-candidates` in project mode, or `--output-bed`/`--output-beds` in custom mode, to also write genomic coordinates for footprint peaks used by de novo motif discovery. In project mode, fp-tools uses q95-scaled corrected tracks when present and otherwise falls back to corrected tracks.
+Output: footprint score bigWig files. Add `--call-candidates` in project mode, or `--output-bed`/`--output-beds` in custom mode, to also write genomic coordinates for footprint peaks used by de novo motif discovery. In project mode, fp-tools uses q95-scaled corrected tracks when present and otherwise falls back to corrected tracks. The default footprint kernel uses the faster prefix-sum implementation; use `--footprint-kernel legacy` only when exact historical floating-point behavior is required.
 
 ### 3a. Match Motifs
 
@@ -66,12 +67,12 @@ Output: footprint score bigWig files. Add `--call-candidates` in project mode, o
 match-motifs \
   --sample-table project/metadata/samples.tsv \
   --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks.analysis.bed \
+  --peaks project/peaks/merged_peaks_filtered.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir project
 ```
 
-Output: for each sample, the summary table contains motif binding statistics. Each motif folder contains BED files such as `<motif>_all.bed`, `<motif>_<sample>_bound.bed`, and `<motif>_<sample>_unbound.bed`.
+Output: for each sample, the summary table contains motif binding statistics, motif-site/background caches are written for fast reuse by `diff-footprints`, and per-motif BED folders are materialized by default with files such as `<motif>_all.bed`, `<motif>_<sample>_bound.bed`, and `<motif>_<sample>_unbound.bed`. In project mode, `match-motifs` uses one shared motif scan across samples by default and then writes normal per-sample folders; per-motif BED folders are written in the background after report-ready outputs. Cached `diff-footprints` comparisons may create internal per-motif shard caches on first reuse, then reuse those shards for later comparisons. Use `--match-scan-mode per-sample` only when independent sample scans are needed for debugging. Use `--motif-outputs summary` only when you want to skip permanent BED folders.
 
 ### 3b. Discover De Novo Motifs
 
@@ -102,12 +103,16 @@ diff-footprints \
   --sample-table project/metadata/samples.tsv \
   --comparison-table project/metadata/comparisons.tsv \
   --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks.analysis.bed \
+  --peaks project/peaks/merged_peaks_filtered.bed \
   --motif-db jaspar2026_vertebrates \
   --outdir project
 ```
 
-`metadata/comparisons.tsv` uses generic columns: `comparison`, `cond1`, and `cond2`. Project-mode `diff-footprints` reuses cached motif-site tables and background scores from prior `match-motifs` runs, and samples with the same condition are treated as replicates. Output includes motif tables, BED files, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html).
+`metadata/comparisons.tsv` uses generic columns: `comparison`, `cond1`, and `cond2`. Project-mode `diff-footprints` reuses compact motif-site tables and background scores from prior `match-motifs` runs, and samples with the same condition are treated as replicates. Output includes motif tables, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html). Aggregate profiles in the report are capped by `--plot-aggregate-top-n` in `sig` and `top` modes; increase this value when you want more motif profiles in the HTML.
+
+### Workflow Improvements
+
+fp-tools preserves the interpretable TOBIAS-style center-versus-flank footprint score while improving the multi-sample workflow. q95 scaling can align corrected cut-site tracks over shared background regions before scoring. The default footprint-scoring path uses optimized Cython-backed kernels, and project-mode motif analysis uses one shared motif scan plus compact caches that `diff-footprints` reuses for replicate-aware comparisons and HTML/SVG reports.
 
 ### 5. Plot Aggregate
 

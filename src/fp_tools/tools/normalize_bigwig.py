@@ -15,10 +15,10 @@ from pathlib import Path
 import numpy as np
 import pyBigWig
 from fp_tools.utils.project_layout import (
-    analysis_peaks_path,
     corrected_bigwig_path,
     is_project_layout,
     normalize_qc_dir,
+    project_analysis_peaks,
     project_root,
     read_sample_table,
     samples_root,
@@ -446,8 +446,7 @@ def main(argv: list[str] | None = None) -> None:
         args.sample_names = [row.sample for row in samples]
         args.bigwigs = [str(corrected_bigwig_path(project, row.sample)) for row in samples]
         args.sample_output_root = str(samples_root(project))
-        if not args.background:
-            args.background = str(analysis_peaks_path(project))
+        args.background = str(project_analysis_peaks(project, args.background))
         if not outdir:
             outdir = str(normalize_qc_dir(project))
     if args.sample_output_root:

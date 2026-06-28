@@ -4,13 +4,16 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from fp_tools.tools.diff_footprints import _run_project_comparison_table
+from fp_tools.tools.diff_footprints import _apply_match_motifs_project_layout, _run_project_comparison_table
 from fp_tools.utils.project_layout import (
     analysis_peaks_path,
     comparison_dir,
+    merged_peaks_path,
+    project_analysis_peaks,
     read_comparison_table,
     read_sample_table,
     samples_for_condition,
+    write_analysis_peaks,
 )
 from fp_tools.tools.normalize_bigwig import project_scaled_output_path
 from fp_tools.tools.score_bigwig import _scorebigwig_batch_items
@@ -77,7 +80,54 @@ class ProjectLayoutPathTest(unittest.TestCase):
             self.assertEqual(comparisons[0].comparison, "Treat_vs_Ctrl")
             self.assertEqual([row.sample for row in samples_for_condition(samples, "Ctrl")], ["A", "C"])
             self.assertEqual(comparison_dir(tmp, comparisons[0].comparison), tmp / "comparisons" / "Treat_vs_Ctrl")
-            self.assertEqual(analysis_peaks_path(tmp), tmp / "peaks" / "merged_peaks.analysis.bed")
+            self.assertEqual(analysis_peaks_path(tmp), tmp / "peaks" / "merged_peaks_filtered.bed")
+
+    def test_project_analysis_peaks_excludes_mitochondrial_chromosomes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            merged = merged_peaks_path(tmp)
+            merged.parent.mkdir(parents=True)
+            merged.write_text(
+                "chr1\t10\t20\n"
+                "chrM\t1\t10\n"
+                "MT\t2\t12\n"
+                "chr2\t30\t40\n",
+                encoding="utf-8",
+            )
+            analysis = write_analysis_peaks(merged, analysis_peaks_path(tmp))
+
+            self.assertEqual(Path(project_analysis_peaks(tmp)), analysis)
+            self.assertEqual(Path(project_analysis_peaks(tmp, merged)), analysis)
+            self.assertEqual(Path(project_analysis_peaks(tmp, analysis)), analysis)
+            self.assertEqual(analysis.read_text(encoding="utf-8"), "chr1\t10\t20\nchr2\t30\t40\n")
+
+    def test_match_motifs_project_layout_uses_analysis_peaks_when_raw_project_peaks_are_passed(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            sample_table = tmp / "samples.tsv"
+            sample_table.write_text("sample\tcondition\nA\tA\n", encoding="utf-8")
+            raw_peaks = merged_peaks_path(tmp)
+            raw_peaks.parent.mkdir(parents=True)
+            raw_peaks.write_text("chr1\t1\t10\nchrM\t1\t10\n", encoding="utf-8")
+            write_analysis_peaks(raw_peaks, analysis_peaks_path(tmp))
+            footprint_dir = tmp / "samples" / "A" / "footprints"
+            footprint_dir.mkdir(parents=True)
+            (footprint_dir / "A_footprints.bw").write_text("placeholder", encoding="utf-8")
+            args = argparse.Namespace(
+                layout="project",
+                sample_table=str(sample_table),
+                outdir=str(tmp),
+                peaks=str(raw_peaks),
+                signals=None,
+                sample_names=None,
+                cond_names=None,
+                sample_output_root=None,
+            )
+
+            _apply_match_motifs_project_layout(args, argparse.ArgumentParser())
+
+            self.assertEqual(Path(args.peaks), analysis_peaks_path(tmp))
+            self.assertEqual(args.signals, [str(footprint_dir / "A_footprints.bw")])
 
     def test_diff_footprints_project_comparison_table_expands_replicates(self):
         with tempfile.TemporaryDirectory() as tmpdir:

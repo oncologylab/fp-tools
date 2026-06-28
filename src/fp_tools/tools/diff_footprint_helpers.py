@@ -275,20 +275,21 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
     return (background_signal, overlap)
 
 
-def process_tfbs(TF_name, args, log2fc_params):
+def process_tfbs(TF_name, args, log2fc_params, bed_rows=None):
     """Split into bound/unbound, write per-TF BED/overview, return TF summary row."""
     logger = FpToolsLogger("", args.verbosity, args.log_q)
     write_motif_outputs = bool(getattr(args, "write_motif_outputs", True))
+    write_cache_motif_all = bool(getattr(args, "write_cache_motif_all", False))
 
     tmp_root = getattr(args, "tmp_tfbs_root", None) or args.outdir
     bed_outdir = os.path.join(tmp_root, TF_name, "beds")
     filename = os.path.join(bed_outdir, TF_name + ".tmp")
-    tmp_files = [filename]
+    tmp_files = [] if bed_rows is not None else [filename]
     no_cond = len(args.cond_names)
     comparisons = args.comparisons
     diff_dist = scipy.stats.norm
 
-    if args.output_peaks is not None:
+    if args.output_peaks is not None and bed_rows is None:
         # Import lazily so diff-footprints --help and parser-only paths do not touch
         # pybedtools/genomepy cache initialization.
         from pybedtools import BedTool
@@ -303,8 +304,11 @@ def process_tfbs(TF_name, args, log2fc_params):
     header = ["TFBS_chr", "TFBS_start", "TFBS_end", "TFBS_name", "TFBS_score", "TFBS_strand"] \
              + args.peak_header_list \
              + [f"{sample}_score" for sample in args.sample_names]
-    with open(filename) as f:
-        bedlines = [dict(zip(header, line.rstrip().split("\t"))) for line in f.readlines()]
+    if bed_rows is None:
+        with open(filename) as f:
+            bedlines = [dict(zip(header, line.rstrip().split("\t"))) for line in f.readlines()]
+    else:
+        bedlines = [dict(zip(header, row)) for row in bed_rows]
     n_rows = len(bedlines)
     logger.spam(f"{TF_name} - Reading took: {datetime.now() - stime}")
     if n_rows == 0:
@@ -349,11 +353,12 @@ def process_tfbs(TF_name, args, log2fc_params):
     bed_table = pd.DataFrame(bedlines, columns=overview_columns)
     logger.spam(f"Read table {bed_table.shape} for TF {TF_name}")
 
-    if write_motif_outputs:
+    if write_motif_outputs or write_cache_motif_all:
         # write *_all.bed
         outfile = os.path.join(bed_outdir, TF_name + "_all.bed")
         dict_to_tab(bedlines, outfile, header + condition_columns + condition_sd_columns)
 
+    if write_motif_outputs:
         # write bound/unbound per condition
         for condition in args.cond_names:
             chosen_columns = header[:-len(args.sample_names)] + [condition + "_score"]
@@ -465,12 +470,14 @@ def process_tfbs(TF_name, args, log2fc_params):
     if log2fc_pdf is not None:
         log2fc_pdf.close()
 
-    # cleanup tmp
-    for fn in tmp_files:
-        try:
-            os.remove(fn)
-        except Exception:
-            logger.error(f"Could not remove temporary file {fn} (harmless).")
+    # cleanup tmp unless the caller needs the temporary motif-site files for
+    # compact cache construction after per-motif summaries are computed.
+    if not getattr(args, "keep_tmp_tfbs_for_cache", False):
+        for fn in tmp_files:
+            try:
+                os.remove(fn)
+            except Exception:
+                logger.error(f"Could not remove temporary file {fn} (harmless).")
 
     return info_table
 
@@ -1062,6 +1069,8 @@ def build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args)
     else:
         threshold = float(getattr(args, "aggregate_pvalue_threshold", 0.05))
         selected = select_rows[select_rows[base + "_pvalue_numeric"] <= threshold].sort_values([base + "_pvalue_numeric", base + "_abs_change"], ascending=[True, False])
+        if not selected.empty:
+            selected = selected.head(top_n)
         if selected.empty and not no_fallback:
             selected = select_rows.sort_values([base + "_pvalue_numeric", base + "_abs_change"], ascending=[True, False]).head(top_n)
 

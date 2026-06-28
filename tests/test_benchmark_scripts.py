@@ -47,6 +47,7 @@ run_benchmark_pipeline = load_optional_module("run_benchmark_pipeline", ROOT / "
 score_peaks_with_pwm = load_module("score_peaks_with_pwm", ROOT / "benchmarks" / "scripts" / "score_peaks_with_pwm.py")
 footprint_from_bam = load_module("footprint_from_bam", ROOT / "benchmarks" / "scripts" / "footprint_from_bam.py")
 footprint_occupancy_score = load_module("footprint_occupancy_score", ROOT / "benchmarks" / "scripts" / "footprint_occupancy_score.py")
+benchmark_footprint_kernel = load_module("benchmark_footprint_kernel", ROOT / "benchmarks" / "scripts" / "benchmark_footprint_kernel.py")
 build_tf_feature_table = load_module("build_tf_feature_table", ROOT / "benchmarks" / "scripts" / "build_tf_feature_table.py")
 evaluate_methods = load_module("evaluate_methods", ROOT / "benchmarks" / "scripts" / "evaluate_methods.py")
 plot_method_comparison = load_optional_module("plot_method_comparison", ROOT / "manuscript" / "scripts" / "plot_method_comparison.py")
@@ -83,6 +84,51 @@ class EngineeringBenchmarkHelperTest(unittest.TestCase):
             self.assertEqual(table.loc[0, "label"], "python-smoke")
             self.assertIn("wall_seconds", table.columns)
             self.assertIn("peak_rss_kb", table.columns)
+
+    def test_footprint_kernel_benchmark_compares_fast_and_legacy_outputs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = pathlib.Path(tmpdir)
+            regions = tmp / "small_regions.bed"
+            rows = [
+                line
+                for line in (ROOT / "test_data" / "merged_peaks.bed").read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.startswith("#")
+            ][:8]
+            regions.write_text("\n".join(rows) + "\n", encoding="utf-8")
+            args = type(
+                "Args",
+                (),
+                {
+                    "signal": ROOT / "test_data" / "Bcell_corrected.bw",
+                    "regions": regions,
+                    "outdir": tmp / "kernel_benchmark",
+                    "call_footprints": str(ROOT / ".venv" / "bin" / "call-footprints"),
+                    "cores": 1,
+                    "chunk_size": 1_000_000,
+                    "verbosity": 1,
+                    "workflow_second_signal": None,
+                    "workflow_first_name": "Bcell",
+                    "workflow_second_name": "Tcell",
+                    "workflow_first_condition": "Bcell",
+                    "workflow_second_condition": "Tcell",
+                    "genome": None,
+                    "motifs": None,
+                    "motif_db": None,
+                    "match_motifs": str(ROOT / ".venv" / "bin" / "match-motifs"),
+                    "diff_footprints": str(ROOT / ".venv" / "bin" / "diff-footprints"),
+                },
+            )()
+            summary = benchmark_footprint_kernel.run_kernel_benchmark(args)
+            benchmark_footprint_kernel.write_summary(summary, args.outdir)
+
+            self.assertGreater(summary["legacy_seconds"], 0)
+            self.assertGreater(summary["fast_seconds"], 0)
+            self.assertGreater(summary["speedup"], 0)
+            self.assertLessEqual(summary["bigwig_max_abs_diff"], 2e-5)
+            self.assertLessEqual(summary["bigwig_mean_abs_diff"], 1e-6)
+            self.assertGreaterEqual(summary["bed_coordinate_jaccard"], 0.999)
+            self.assertTrue((args.outdir / "kernel_benchmark_summary.tsv").exists())
+            self.assertTrue((args.outdir / "kernel_benchmark_summary.json").exists())
 
 
 class FeatureTableAndMethodsTest(unittest.TestCase):

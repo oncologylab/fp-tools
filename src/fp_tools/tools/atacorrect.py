@@ -370,11 +370,13 @@ def _run_atacorrect_single(args):
 			output_bws[track][strand] = {"fn": os.path.join(args.outdir, "{0}.bw".format("_".join(elements)))}
 
 	#Set all output files
-	bam_out = os.path.join(args.outdir, args.prefix + "_atacorrect.bam") 
+	bam_out = os.path.join(args.outdir, args.prefix + "_atacorrect.bam")
 	bigwigs = [output_bws[track][strand]["fn"] for (track, strand) in itertools.product(tracks, strands)]
 	figures_f = os.path.join(args.outdir, "{0}_atacorrect.pdf".format(args.prefix))
-	
-	output_files = bigwigs + [figures_f]
+
+	output_files = list(bigwigs)
+	if not getattr(args, "skip_qc", False):
+		output_files.append(figures_f)
 	output_files = list(OrderedDict.fromkeys(output_files)) 	#remove duplicates due to "both" option
 
 	strands = ["forward", "reverse"]
@@ -406,7 +408,7 @@ def _run_atacorrect_single(args):
 	check_files(output_files, "w")
 
 	#Open pdf for figures
-	figure_pdf = PdfPages(figures_f, keep_empty=False)
+	figure_pdf = None if getattr(args, "skip_qc", False) else PdfPages(figures_f, keep_empty=False)
 
 	#----------------------------------------------------------------------------------------------------#
 	# Read information in bam/fasta
@@ -626,10 +628,11 @@ def _run_atacorrect_single(args):
 	logger.info("Finalizing bias motif for scoring")
 	for strand in strands:
 		bias_obj.bias[strand].prepare_mat()
-		
-		logger.debug("Saving pssm to figure pdf")
-		fig = plot_pssm(bias_obj.bias[strand].pssm, "Tn5 insertion bias of reads ({0})".format(strand))
-		figure_pdf.savefig(fig)
+
+		if figure_pdf is not None:
+			logger.debug("Saving pssm to figure pdf")
+			fig = plot_pssm(bias_obj.bias[strand].pssm, "Tn5 insertion bias of reads ({0})".format(strand))
+			figure_pdf.savefig(fig)
 
 	
 	#Write bias motif to pickle
@@ -696,16 +699,20 @@ def _run_atacorrect_single(args):
 	monitor_progress(task_list, logger, "Correction progress:")	#does not exit until tasks in task_list finished
 	results = [task.get() for task in task_list]
 
-	#Get all results 
-	pre_bias = results[0][0]	#initialize with first result
-	post_bias = results[0][1]	#initialize with first result
-	for result in results[1:]:
-		pre_bias_chunk = result[0]
-		post_bias_chunk = result[1]
+	#Get all results
+	if getattr(args, "skip_qc", False):
+		pre_bias = None
+		post_bias = None
+	else:
+		pre_bias = results[0][0]	#initialize with first result
+		post_bias = results[0][1]	#initialize with first result
+		for result in results[1:]:
+			pre_bias_chunk = result[0]
+			post_bias_chunk = result[1]
 
-		for direction in strands:
-			pre_bias[direction].add_counts(pre_bias_chunk[direction])
-			post_bias[direction].add_counts(post_bias_chunk[direction])
+			for direction in strands:
+				pre_bias[direction].add_counts(pre_bias_chunk[direction])
+				post_bias[direction].add_counts(post_bias_chunk[direction])
 
 	#Stop all queues for writing
 	logger.debug("Stop all queues by inserting None")
@@ -736,30 +743,33 @@ def _run_atacorrect_single(args):
 	# Information and verification of corrected read frequencies
 	#----------------------------------------------------------------------------------------------------#		
 
-	logger.comment("")
-	logger.info("Verifying bias correction")
+	if getattr(args, "skip_qc", False):
+		logger.info("Skipped atac-correct diagnostic PDF and bias-correction verification counts (--skip-qc)")
+	else:
+		logger.comment("")
+		logger.info("Verifying bias correction")
 
-	#Calculating variance per base
-	for strand in strands:
+		#Calculating variance per base
+		for strand in strands:
 
-		#Invert negative counts
-		abssum = np.abs(np.sum(post_bias[strand].neg_counts, axis=0))
-		post_bias[strand].neg_counts = post_bias[strand].neg_counts + abssum
-		
-		#Join negative/positive counts
-		post_bias[strand].counts += post_bias[strand].neg_counts	#now pos
+			#Invert negative counts
+			abssum = np.abs(np.sum(post_bias[strand].neg_counts, axis=0))
+			post_bias[strand].neg_counts = post_bias[strand].neg_counts + abssum
 
-		pre_bias[strand].prepare_mat()
-		post_bias[strand].prepare_mat()
+			#Join negative/positive counts
+			post_bias[strand].counts += post_bias[strand].neg_counts	#now pos
 
-		pre_var = np.mean(np.var(pre_bias[strand].bias_pwm, axis=1)[:4])   #mean of variance per nucleotide
-		post_var = np.mean(np.var(post_bias[strand].bias_pwm, axis=1)[:4])
-		logger.stats("BIAS\tpre-bias variance {0}:\t{1:.7f}".format(strand, pre_var))
-		logger.stats("BIAS\tpost-bias variance {0}:\t{1:.7f}".format(strand, post_var))
+			pre_bias[strand].prepare_mat()
+			post_bias[strand].prepare_mat()
 
-		#Plot figure
-		fig_title = "Nucleotide frequencies in corrected reads\n({0} strand)".format(strand)
-		figure_pdf.savefig(plot_correction(pre_bias[strand].bias_pwm, post_bias[strand].bias_pwm, fig_title))
+			pre_var = np.mean(np.var(pre_bias[strand].bias_pwm, axis=1)[:4])   #mean of variance per nucleotide
+			post_var = np.mean(np.var(post_bias[strand].bias_pwm, axis=1)[:4])
+			logger.stats("BIAS\tpre-bias variance {0}:\t{1:.7f}".format(strand, pre_var))
+			logger.stats("BIAS\tpost-bias variance {0}:\t{1:.7f}".format(strand, post_var))
+
+			#Plot figure
+			fig_title = "Nucleotide frequencies in corrected reads\n({0} strand)".format(strand)
+			figure_pdf.savefig(plot_correction(pre_bias[strand].bias_pwm, post_bias[strand].bias_pwm, fig_title))
 
 	
 	#----------------------------------------------------------------------------------------------------#
@@ -767,7 +777,8 @@ def _run_atacorrect_single(args):
 	#----------------------------------------------------------------------------------------------------#
 
 	plt.close('all')
-	figure_pdf.close()
+	if figure_pdf is not None:
+		figure_pdf.close()
 	corrected_bigwigs = []
 	if "corrected" in output_bws:
 		corrected_bigwigs = [output_bws["corrected"][strand]["fn"] for strand in output_bws["corrected"]]

@@ -9,6 +9,7 @@ Planned helpers from `DEV_PLAN.md`:
 - `build_label_overlap_benchmark.py`: convert scored BED-like prediction intervals plus ChIP/CUT&RUN label BEDs into metrics-ready binary label/score tables.
 - `build_motif_removal_benchmark.py`: create long-form motif-removal recovery benchmark tables from baseline, motif-free, supervised, or reranked site scores.
 - `run_benchmark_pipeline.py`: combine labeled prediction TSVs, compute metrics/calibration/bootstrap summaries, and write PDF/SVG/PNG benchmark figures.
+- `benchmark_footprint_kernel.py`: run `call-footprints` with the legacy and fast footprint kernels, measure wall time, and compare output bigWigs and candidate BEDs.
 - `manuscript/scripts/plot_benchmark_panels.py`: PDF/SVG/PNG multi-panel benchmark figures for the BioMedInformatics manuscript.
 - `manuscript/scripts/plot_calibration_panels.py`: PDF/SVG/PNG reliability curves and ECE panels.
 - `manuscript/scripts/plot_multiscale_npz.py`: PDF/SVG/PNG multiscale tensor summary figures from `call-footprints --output-multiscale-npz`.
@@ -46,6 +47,39 @@ python benchmarks/scripts/run_benchmark_pipeline.py \
 ```
 
 The figure outputs are written under `<outdir>/figures/` as PDF, SVG, and PNG files, and `<outdir>/benchmark_run_summary.md` lists every generated artifact.
+
+## Footprint Kernel Speed and Consistency
+
+Use this helper after changing the Cython footprint-scoring path. It runs the same corrected bigWig and BED regions through `call-footprints --footprint-kernel legacy` and `--footprint-kernel fast`, then writes timing and output-difference summaries.
+
+```bash
+python benchmarks/scripts/benchmark_footprint_kernel.py \
+  --signal test_data/Bcell_corrected.bw \
+  --regions test_data/merged_peaks.bed \
+  --outdir /tmp/fptools_footprint_kernel_benchmark \
+  --cores 1
+```
+
+The output directory contains the two bigWigs, two candidate BEDs, command logs, `kernel_benchmark_summary.tsv`, and `kernel_benchmark_summary.json`. For the full B-cell fixture used during development, the fast kernel ran about 3.6x faster than the legacy kernel while keeping bigWig differences below `2e-5` absolute error and candidate BED overlap above 99.99%.
+
+To carry the comparison through motif matching and differential footprinting, provide a second corrected signal plus genome and motif inputs:
+
+```bash
+python benchmarks/scripts/benchmark_footprint_kernel.py \
+  --signal test_data/Bcell_corrected.bw \
+  --workflow-second-signal test_data/Tcell_corrected.bw \
+  --workflow-first-name Bcell \
+  --workflow-second-name Tcell \
+  --workflow-first-condition Bcell \
+  --workflow-second-condition Tcell \
+  --regions test_data/merged_peaks.bed \
+  --genome test_data/genome.fa.gz \
+  --motifs test_data/individual_motifs/MA0050.2.jaspar \
+  --outdir /tmp/fptools_footprint_kernel_workflow_check \
+  --cores 4
+```
+
+This optional mode writes separate fast and legacy `match-motifs` and `diff-footprints` folders and reports the final motif-table row and numeric differences in the summary files.
 
 ## Motif-Removal Recovery Benchmark
 

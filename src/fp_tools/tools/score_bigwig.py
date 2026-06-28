@@ -22,21 +22,22 @@ from contextlib import closing
 # Internal functions and classes (fp_tools namespace)
 from fp_tools.parsers import add_scorebigwig_arguments
 from fp_tools.utils.utilities import (
-    check_required, check_files, bigwig_writer, check_cores, monitor_progress
+    check_required, check_files, bigwig_writer, check_cores, monitor_progress,
 )
 from fp_tools.utils.regions import OneRegion, RegionList
 from fp_tools.utils.sequences import *          # kept for parity (even if not used here directly)
 from fp_tools.utils.signals import *            # fast_rolling_math, footprint_score_array, FOS_score
+from fp_tools.utils.signals import local_maxima_indices
 from fp_tools.utils.multiscale import (
     multiscale_depletion, parse_scales, summarize_multiscale,
     trim_multiscale_features, write_multiscale_npz,
 )
 from fp_tools.utils.logger import FpToolsLogger
 from fp_tools.utils.project_layout import (
-    analysis_peaks_path,
     corrected_bigwig_path,
     is_project_layout,
     normalized_bigwig_path,
+    project_analysis_peaks,
     project_root,
     read_sample_table,
     samples_root,
@@ -103,8 +104,7 @@ def _scorebigwig_batch_items(args):
             else str(corrected_bigwig_path(project, row.sample))
             for row in samples
         ]
-        if not getattr(args, "regions", None):
-            args.regions = str(analysis_peaks_path(project))
+        args.regions = str(project_analysis_peaks(project, getattr(args, "regions", None)))
 
     signals = _as_list(getattr(args, "signals", None))
     if not signals and getattr(args, "signal", None):
@@ -197,7 +197,6 @@ def _run_scorebigwig_batch_item(single_args):
 def calculate_scores(regions, args):
 
     logger = FpToolsLogger("", args.verbosity, args.log_q)
-
     pybw_signal = pyBigWig.open(args.signal)        # cutsites signal
     pybw_header = pybw_signal.chroms()
     chrom_lengths = {chrom: int(pybw_header[chrom]) for chrom in pybw_header}
@@ -237,7 +236,10 @@ def calculate_scores(regions, args):
             scores = fast_rolling_math(signal, args.window, "mean")
 
         elif args.score == "footprint":
-            scores = footprint_score_array(signal, args.flank_min, args.flank_max, args.fp_min, args.fp_max)
+            if getattr(args, "footprint_kernel", "fast") == "legacy":
+                scores = footprint_score_array(signal, args.flank_min, args.flank_max, args.fp_min, args.fp_max)
+            else:
+                scores = footprint_score_array_fast(signal, args.flank_min, args.flank_max, args.fp_min, args.fp_max)
 
         elif args.score == "multiscale":
             features = multiscale_depletion(signal, args.scales)
@@ -278,19 +280,7 @@ def _local_maxima(values):
     """Yield 0-based offsets that are local maxima in a one-dimensional score array."""
 
     values = np.asarray(values, dtype=float)
-    if values.size == 0:
-        return iter(())
-    if values.size == 1:
-        return iter([0] if np.isfinite(values[0]) else [])
-
-    left = np.empty_like(values)
-    right = np.empty_like(values)
-    left[0] = -np.inf
-    left[1:] = values[:-1]
-    right[-1] = -np.inf
-    right[:-1] = values[1:]
-    mask = np.isfinite(values) & (values >= left) & (values >= right) & ((values > left) | (values > right))
-    return iter(np.flatnonzero(mask).tolist())
+    return iter(local_maxima_indices(values.astype("float64", copy=False)))
 
 
 def _write_candidate_bed(score_bigwig, regions, output_bed, args, chrom_info, logger):
@@ -463,10 +453,10 @@ def _run_scorebigwig_single(args):
     # Start bigwig writer
     q = manager.Queue()
     writer_pool = mp.Pool(processes=1)
-    writer_result = writer_pool.apply_async(bigwig_writer, args=(q, {"scores": args.output}, header, regions, args))
+    writer_args = copy.copy(args)
+    writer_result = writer_pool.apply_async(bigwig_writer, args=(q, {"scores": args.output}, header, regions, writer_args))
     writer_pool.close()  # no more jobs to writer_pool
     writer_qs = {"scores": q}
-    args.writer_qs = writer_qs
 
     try:
         # Start workers. Each task receives its own shallow argument snapshot;
