@@ -90,6 +90,12 @@ The preferred publish path is the manual GitHub Actions `Publish` workflow. It
 uses PyPI Trusted Publishing, repairs the Linux wheel, checks metadata, and
 smoke-tests the repaired wheel before upload.
 
+PyPI Trusted Publishing must be configured on the `fp-tools-bio` PyPI project
+with repository `oncologylab/fp-tools`, workflow `.github/workflows/publish.yml`,
+and environment `pypi`. If the publish job reports `invalid-publisher`, the
+package build is not the problem; update the PyPI trusted publisher entry or add
+a GitHub Actions secret such as `PYPI_API_TOKEN` and wire the workflow to use it.
+
 ## 5. Metadata And Docs
 
 - Confirm `pyproject.toml` version is correct.
