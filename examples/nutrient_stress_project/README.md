@@ -11,7 +11,6 @@ CHECK_ONLY=1 bash run_ctrl_vs_10fbs.sh
 CORES=16 bash run_ctrl_vs_10fbs.sh
 ```
 
-The script prepares clean `metadata/samples.tsv` and
-`metadata/comparisons.tsv` from an `ATAC_Nutrients_hg38_*.txt` table by
-removing TGFB rows, keeping high-confidence ATAC Ctrl rows, normalizing condition
-names, and comparing every non-control condition against `10_FBS_Ctrl`.
+The script documents how to prepare clean `metadata/samples.tsv` and
+`metadata/comparisons.tsv` files from an `ATAC_Nutrients_hg38_*.txt` table, then
+validates those files with `CHECK_ONLY=1` before running the full workflow.

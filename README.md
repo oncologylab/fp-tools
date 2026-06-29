@@ -103,9 +103,9 @@ After `match-motifs`, project-mode `diff-footprints` reuses each sample folder's
 
 For a portable multi-condition project script, see
 `examples/nutrient_stress_project/run_ctrl_vs_10fbs.sh`. It documents the
-expected raw-data layout, prepares clean `samples.tsv` and `comparisons.tsv`
-files from an `ATAC_Nutrients_hg38_*.txt` table, supports `CHECK_ONLY=1`
-input validation, and then runs the full project workflow.
+expected raw-data layout, explains how to prepare clean `samples.tsv` and
+`comparisons.tsv` files from an `ATAC_Nutrients_hg38_*.txt` table, supports
+`CHECK_ONLY=1` input validation, and then runs the full project workflow.
 
 ## Methodological Improvements
 

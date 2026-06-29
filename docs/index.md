@@ -116,10 +116,10 @@ fp-tools preserves the interpretable TOBIAS-style center-versus-flank footprint 
 
 For a complete multi-condition shell-script template, see
 `examples/nutrient_stress_project/run_ctrl_vs_10fbs.sh` in the GitHub
-repository. It documents the expected raw-data layout, prepares portable
-`samples.tsv` and `comparisons.tsv` files from an `ATAC_Nutrients_hg38_*.txt`
-table, supports `CHECK_ONLY=1` input validation, and then runs the full project
-workflow.
+repository. It documents the expected raw-data layout, explains how to prepare
+portable `samples.tsv` and `comparisons.tsv` files from an
+`ATAC_Nutrients_hg38_*.txt` table, supports `CHECK_ONLY=1` input validation, and
+then runs the full project workflow.
 
 ### 5. Plot Aggregate
 
