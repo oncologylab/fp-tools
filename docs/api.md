@@ -13,6 +13,7 @@ The public interface of `fp-tools` is command-first. Each command below includes
 | [`normalize-bigwig`](#normalize-bigwig) | Normalize bigWig tracks with a shared background-region scale estimate. |
 | [`plot-aggregate`](#plot-aggregate) | Plot aggregate signal around motif sites or region sets as static output or HTML. |
 | [`review-multi-comparisons`](#review-multi-comparisons) | Review multiple differential-footprint HTML reports in one page. |
+| [`plot-motif-aggregate-grid`](#plot-motif-aggregate-grid) | Export multi-page motif-by-comparison aggregate PDFs from review reports. |
 | [`run-workflow`](#run-workflow) | Run a saved YAML workflow configuration. |
 | [`fp-tools-gui`](#fp-tools-gui) | Launch the optional browser GUI for command-compatible workflows. |
 | [`motif-discovery`](#motif-discovery) | Prepare or run de novo motif discovery from candidate footprint intervals or FASTA. |
@@ -1006,6 +1007,84 @@ options:
                         --outdir (default: project when only --outdir is
                         provided).
   --title TITLE
+```
+
+</div>
+
+### `plot-motif-aggregate-grid`
+
+<div class="fp-api-card" markdown="1">
+
+Create a multi-page motif-by-comparison aggregate PDF from a `review-multi-comparisons` HTML report.
+
+**Input parameters**
+
+- A completed `review_multi_comparisons.html` report with embedded comparison payloads, or a project directory containing `reports/review_multi_comparisons.html`.
+- Optional output paths, page density, flank size, shared motif-order HTMLs, fast missing-profile filling, optional bigWig recomputation, and title.
+
+**Output**
+
+- A multi-page PDF where each column is a comparison, each row is a motif, and each square subplot shows aggregate profiles for that motif/comparison.
+- A source TSV containing motif labels, comparison labels, `delta_fp` values from the waterfall/bar report, p-values/FDR when present, profile availability, profile source (`html`, `assembled`, `recomputed`, or `missing`), and site counts.
+
+**Example commands**
+
+```bash
+plot-motif-aggregate-grid \
+  --outdir project \
+  --output project/reports/all_motif_aggregate_grid.pdf \
+  --source-tsv project/reports/all_motif_aggregate_grid_source.tsv \
+  --rows-per-page 16 \
+  --fill-missing-profiles
+```
+
+**Options**
+
+This option reference is generated from `plot-motif-aggregate-grid --help` and lists every accepted option for the command.
+
+```text
+usage: plot-motif-aggregate-grid [-h] [--input-html INPUT_HTML]
+                                 [--order-htmls [ORDER_HTMLS ...]]
+                                 [--outdir OUTDIR] [--layout {project,custom}]
+                                 [--output OUTPUT] [--source-tsv SOURCE_TSV]
+                                 [--rows-per-page ROWS_PER_PAGE]
+                                 [--flank FLANK] [--fill-missing-profiles]
+                                 [--recompute-missing-profiles]
+                                 [--title TITLE]
+
+Create a multi-page motif-by-comparison aggregate PDF from review-multi-
+comparisons HTML.
+
+options:
+  -h, --help            show this help message and exit
+  --input-html INPUT_HTML
+                        review_multi_comparisons.html with embedded comparison
+                        payloads.
+  --order-htmls [ORDER_HTMLS ...]
+                        Optional review HTML files used only to build one
+                        shared motif row order by max |delta FP|.
+  --outdir OUTDIR       Project directory used with --layout project.
+  --layout {project,custom}
+                        Use fp-tools project layout under --outdir (default:
+                        project).
+  --output OUTPUT       Output multi-page PDF. In project mode, defaults to
+                        reports/motif_aggregate_grid.pdf.
+  --source-tsv SOURCE_TSV
+                        Output source TSV. Defaults to <output
+                        stem>_source.tsv.
+  --rows-per-page ROWS_PER_PAGE
+                        Motif rows per PDF page (default: 16).
+  --flank FLANK         Distance from motif center shown in each subplot
+                        (default: 60 bp).
+  --fill-missing-profiles
+                        Fill missing motif aggregate panels from condition
+                        profiles already embedded elsewhere in the review
+                        report.
+  --recompute-missing-profiles
+                        Slower fallback: recompute still-missing motif
+                        aggregate profiles from project sample bigWigs and
+                        motif BEDs.
+  --title TITLE         PDF title.
 ```
 
 </div>

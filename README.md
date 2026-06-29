@@ -183,6 +183,7 @@ diff-footprints \
 | [`normalize-bigwig`](https://oncologylab.github.io/fp-tools/api/#normalize-bigwig) | Scale bigWigs before aggregate plotting. |
 | [`plot-aggregate`](https://oncologylab.github.io/fp-tools/api/#plot-aggregate) | Make aggregate footprint plots as PDF/SVG-style output or HTML. |
 | [`review-multi-comparisons`](https://oncologylab.github.io/fp-tools/api/#review-multi-comparisons) | Review multiple differential-footprint HTML reports in one page. |
+| [`plot-motif-aggregate-grid`](https://oncologylab.github.io/fp-tools/api/#plot-motif-aggregate-grid) | Export multi-page motif-by-comparison aggregate PDFs from review reports. |
 | [`motif-discovery`](https://oncologylab.github.io/fp-tools/api/#motif-discovery) | Prepare candidate-centered de novo motif discovery. |
 | [`motif-summary`](https://oncologylab.github.io/fp-tools/api/#motif-summary) | Summarize motif discovery outputs. |
 | [`pseudobulk-fragments`](https://oncologylab.github.io/fp-tools/api/#pseudobulk-fragments) | Group single-cell fragments by annotation. |
@@ -202,6 +203,7 @@ diff-footprints --help
 normalize-bigwig --help
 plot-aggregate --help
 review-multi-comparisons --help
+plot-motif-aggregate-grid --help
 run-workflow --help
 fp-tools-gui --help
 motif-discovery --help
