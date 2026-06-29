@@ -563,6 +563,26 @@ def _fig_rect(fig, x0: float, y0: float, width: float, height: float, **kwargs) 
     fig.add_artist(Rectangle((x0, y0), width, height, transform=fig.transFigure, **kwargs))
 
 
+def _add_trace_legend(fig, comparisons: list[ComparisonView], page_width: float, page_height: float) -> None:
+    if not comparisons:
+        return
+    first = comparisons[0]
+    conditions = list((first.payload.get("conditions") or [])[:2])
+    stress_label = "Column condition"
+    ctrl_label = conditions[1] if len(conditions) > 1 else "Control"
+    stress_color = _condition_color(first.payload, conditions[0] if conditions else first.condition, 0)
+    ctrl_color = _condition_color(first.payload, ctrl_label, 1)
+    x0 = 0.70
+    y = 1 - 0.18 / page_height
+    line_w = 0.026
+    text_dx = 0.006
+    _add_fig_line(fig, [x0, x0 + line_w], [y, y], color=stress_color, lw=1.4)
+    _add_fig_text(fig, x0 + line_w + text_dx, y, f"{stress_label} (nutrient stress)", ha="left", va="center", fontsize=5.8, fontweight="bold")
+    x1 = x0 + 0.17
+    _add_fig_line(fig, [x1, x1 + line_w], [y, y], color=ctrl_color, lw=1.4)
+    _add_fig_text(fig, x1 + line_w + text_dx, y, ctrl_label, ha="left", va="center", fontsize=5.8, fontweight="bold")
+
+
 def _domain_for_row(comparisons: list[ComparisonView], motif: MotifView, aggregate_maps: dict[tuple[int, str], tuple[dict | None, str]], flank: int) -> tuple[float, float]:
     values = []
     for comparison in comparisons:
@@ -646,6 +666,7 @@ def plot_grid_pdf(review_payload: dict, output: str | Path, rows_per_page: int =
             fig = plt.figure(figsize=(page_width, page_height), constrained_layout=False)
             _add_fig_text(fig, left_margin / page_width, 1 - 0.18 / page_height, title or str(review_payload.get("title") or "Motif aggregate grid"), ha="left", va="center", fontsize=8, fontweight="bold")
             _add_fig_text(fig, 0.5, 1 - 0.18 / page_height, "Corrected cut-site signal; all motif sites; global order by max |dFP|" if motif_order else "Corrected cut-site signal; all motif sites; order by max |dFP|", ha="center", va="center", fontsize=6, fontweight="bold")
+            _add_trace_legend(fig, comparisons, page_width, page_height)
             _add_fig_text(fig, left_margin / page_width, 1 - (top_margin + header_height * 0.45) / page_height, f"Page {page_idx}", ha="left", va="center", fontsize=6, fontweight="bold")
             header_y = page_height - top_margin - header_height * 0.55
             for col_idx, comparison in enumerate(comparisons):
