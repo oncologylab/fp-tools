@@ -101,6 +101,12 @@ With a sample table and `--outdir project`, fp-tools uses the recommended projec
 
 After `match-motifs`, project-mode `diff-footprints` reuses each sample folder's motif-site and background-score caches instead of rescanning motifs or rereading footprint bigWigs. The first cached comparison may create internal per-motif shard caches for faster reuse; later comparisons with the same sample folders reuse those shards. In project mode, `match-motifs` uses one shared motif scan across samples by default and then writes standard per-sample folders. Repeated samples with the same `condition` are treated as biological replicates. Per-motif BED folders are written by default in the background after report-ready outputs; use `match-motifs --motif-outputs summary` only when you want cache-only output. HTML aggregate profiles in `sig` and `top` modes are capped by `--plot-aggregate-top-n`; increase this value to show more motif profiles.
 
+For a portable multi-condition project script, see
+`examples/nutrient_stress_project/run_ctrl_vs_10fbs.sh`. It documents the
+expected raw-data layout, prepares clean `samples.tsv` and `comparisons.tsv`
+files from an `ATAC_Nutrients_hg38_*.txt` table, supports `CHECK_ONLY=1`
+input validation, and then runs the full project workflow.
+
 ## Methodological Improvements
 
 fp-tools keeps the interpretable TOBIAS-style center-versus-flank footprint score, but improves the workflow around it. Multi-sample projects can q95-scale corrected cut-site tracks over shared background regions before footprint scoring, reducing sample-level signal shifts without forcing full distributions to match. Footprint scoring and candidate detection use optimized Cython-backed kernels by default, with a legacy kernel available for exact historical comparisons. Known-motif analysis uses one shared motif scan across project samples, writes compact motif-site/background caches, and lets `diff-footprints` reuse those caches for replicate-aware comparisons and interactive reports instead of rescanning motifs for every contrast.

@@ -114,6 +114,13 @@ diff-footprints \
 
 fp-tools preserves the interpretable TOBIAS-style center-versus-flank footprint score while improving the multi-sample workflow. q95 scaling can align corrected cut-site tracks over shared background regions before scoring. The default footprint-scoring path uses optimized Cython-backed kernels, and project-mode motif analysis uses one shared motif scan plus compact caches that `diff-footprints` reuses for replicate-aware comparisons and HTML/SVG reports.
 
+For a complete multi-condition shell-script template, see
+`examples/nutrient_stress_project/run_ctrl_vs_10fbs.sh` in the GitHub
+repository. It documents the expected raw-data layout, prepares portable
+`samples.tsv` and `comparisons.tsv` files from an `ATAC_Nutrients_hg38_*.txt`
+table, supports `CHECK_ONLY=1` input validation, and then runs the full project
+workflow.
+
 ### 5. Plot Aggregate
 
 ```bash
