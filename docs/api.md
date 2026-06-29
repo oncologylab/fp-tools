@@ -1020,12 +1020,12 @@ Create a multi-page motif-by-comparison aggregate PDF from a `review-multi-compa
 **Input parameters**
 
 - A completed `review_multi_comparisons.html` report with embedded comparison payloads, or a project directory containing `reports/review_multi_comparisons.html`.
-- Optional output paths, page density, flank size, shared motif-order HTMLs, fast missing-profile filling, optional bigWig recomputation, and title.
+- Optional output paths, page density, flank size, shared motif-order HTMLs, fast missing-profile filling, optional bigWig recomputation, RNA expression matrices, motif-to-gene mapping, and title.
 
 **Output**
 
 - A multi-page PDF where each column is a comparison, each row is a motif, and each square subplot shows aggregate profiles for that motif/comparison.
-- A source TSV containing motif labels, comparison labels, `delta_fp` values from the waterfall/bar report, p-values/FDR when present, profile availability, profile source (`html`, `assembled`, `recomputed`, or `missing`), and site counts.
+- A source TSV containing motif labels, comparison labels, `delta_fp` values from the waterfall/bar report, p-values/FDR when present, profile availability, profile source (`html`, `assembled`, `recomputed`, or `missing`), site counts, and optional RNA TF log2FC values.
 
 **Example commands**
 
@@ -1035,7 +1035,10 @@ plot-motif-aggregate-grid \
   --output project/reports/all_motif_aggregate_grid.pdf \
   --source-tsv project/reports/all_motif_aggregate_grid_source.tsv \
   --rows-per-page 16 \
-  --fill-missing-profiles
+  --fill-missing-profiles \
+  --rna-log2norm nutrient_rna_deseq2_log2norm_ruvr_k20.tsv.gz \
+  --rna-raw-counts nutrient_rna_raw_counts_ruvr_k20_gene_universe.tsv.gz \
+  --motif-gene-map JASPAR2024_hg38.txt
 ```
 
 **Options**
@@ -1051,6 +1054,10 @@ usage: plot-motif-aggregate-grid [-h] [--input-html INPUT_HTML]
                                  [--flank FLANK] [--fill-missing-profiles]
                                  [--recompute-missing-profiles]
                                  [--cores CORES]
+                                 [--rna-log2norm RNA_LOG2NORM]
+                                 [--rna-raw-counts RNA_RAW_COUNTS]
+                                 [--motif-gene-map MOTIF_GENE_MAP]
+                                 [--rna-min-raw-mean RNA_MIN_RAW_MEAN]
                                  [--title TITLE]
 
 Create a multi-page motif-by-comparison aggregate PDF from review-multi-
@@ -1087,6 +1094,18 @@ options:
                         motif BEDs.
   --cores CORES         Worker processes for --recompute-missing-profiles
                         (default: all available cores).
+  --rna-log2norm RNA_LOG2NORM
+                        Optional DESeq2/RUVr log2-normalized RNA matrix with
+                        gene_key and sample columns.
+  --rna-raw-counts RNA_RAW_COUNTS
+                        Optional raw RNA count matrix used to filter
+                        unexpressed TFs.
+  --motif-gene-map MOTIF_GENE_MAP
+                        Optional motif-to-gene map with motif and gene_symbol
+                        columns.
+  --rna-min-raw-mean RNA_MIN_RAW_MEAN
+                        Minimum mean raw count in either compared condition
+                        for a TF to be shown (default: 1.0).
   --title TITLE         PDF title.
 ```
 

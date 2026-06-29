@@ -7,6 +7,7 @@ from fp_tools.tools.motif_aggregate_grid import (
     SampleView,
     collect_motifs,
     collect_motifs_from_payloads,
+    compute_rna_fc_map,
     nutrient_sort_key,
     ordered_comparisons,
     plot_grid_pdf,
@@ -121,6 +122,41 @@ class MotifAggregateGridTest(unittest.TestCase):
         self.assertEqual(source, "recomputed")
         self.assertEqual(aggregate["x"], [-2, -1, 0, 1])
         self.assertEqual([condition["name"] for condition in aggregate["conditions"]], ["0_FBS", "10_FBS_Ctrl"])
+
+    def test_compute_rna_fc_map_uses_motif_gene_map_and_expression_filter(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project = root / "project"
+            (project / "metadata").mkdir(parents=True)
+            (project / "metadata" / "samples.tsv").write_text(
+                "sample\tcondition\ncase1\t0_FBS\ncase2\t0_FBS\nctrl1\t10_FBS_Ctrl\nctrl2\t10_FBS_Ctrl\n",
+                encoding="utf-8",
+            )
+            log2norm = root / "rna.tsv"
+            log2norm.write_text(
+                "gene_key\tcase1\tcase2\tctrl1\tctrl2\n"
+                "TF1\t5\t7\t3\t3\n"
+                "TF2\t4\t4\t6\t8\n"
+                "LOW\t9\t9\t2\t2\n",
+                encoding="utf-8",
+            )
+            raw = root / "raw.tsv"
+            raw.write_text(
+                "gene_key\tensembl_gene_id\tHGNC\tcase1\tcase2\tctrl1\tctrl2\n"
+                "TF1\tENSG1\tTF1\t10\t12\t8\t9\n"
+                "TF2\tENSG2\tTF2\t20\t18\t30\t32\n"
+                "LOW\tENSG3\tLOW\t0\t0\t0\t0\n",
+                encoding="utf-8",
+            )
+            motif_map = root / "motifs.tsv"
+            motif_map.write_text("motif\tgene_symbol\nTF1_M1\tTF1::LOW\nTF2_M2\tTF2\n", encoding="utf-8")
+            payload = _review_payload()
+            rna = compute_rna_fc_map(payload, project, None, log2norm, raw, motif_map, min_raw_mean=1.0)
+            comparison = next(comp for comp in ordered_comparisons(payload) if comp.condition == "0_FBS")
+            tf1 = rna[(comparison.index, "TF1_M1")]
+            tf2 = rna[(comparison.index, "TF2_M2")]
+            self.assertEqual(tf1.label, "RNA TF1=+3.00")
+            self.assertEqual(tf2.label, "RNA TF2=-3.00")
 
 
 if __name__ == "__main__":
