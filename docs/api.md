@@ -1050,6 +1050,7 @@ usage: plot-motif-aggregate-grid [-h] [--input-html INPUT_HTML]
                                  [--rows-per-page ROWS_PER_PAGE]
                                  [--flank FLANK] [--fill-missing-profiles]
                                  [--recompute-missing-profiles]
+                                 [--cores CORES]
                                  [--title TITLE]
 
 Create a multi-page motif-by-comparison aggregate PDF from review-multi-
@@ -1084,6 +1085,8 @@ options:
                         Slower fallback: recompute still-missing motif
                         aggregate profiles from project sample bigWigs and
                         motif BEDs.
+  --cores CORES         Worker processes for --recompute-missing-profiles
+                        (default: all available cores).
   --title TITLE         PDF title.
 ```
 

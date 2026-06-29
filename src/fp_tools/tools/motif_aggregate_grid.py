@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import csv
 import math
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -380,19 +382,119 @@ def _recompute_aggregate_motif(
     }
 
 
+def _wanted_conditions(comparison: ComparisonView) -> list[str]:
+    wanted_conditions = list((comparison.payload.get("conditions") or [])[:2])
+    if len(wanted_conditions) < 2:
+        wanted_conditions = [comparison.condition, "10_FBS_Ctrl"]
+    return wanted_conditions
+
+
+def _compute_condition_profile_worker(task: tuple[str, str, list[tuple[str, str, str]], int]) -> tuple[str, str, dict | None]:
+    prefix, condition, sample_rows, flank = task
+    samples = []
+    condition_profiles = []
+    condition_centers = []
+    seen_centers = set()
+    for sample_name, corrected_bigwig, match_dir in sample_rows:
+        bed = _motif_all_bed(Path(match_dir), prefix)
+        if bed is None or not Path(corrected_bigwig).exists():
+            continue
+        centers = _read_bed_centers(str(bed))
+        if not centers:
+            continue
+        unique_centers = []
+        for center in centers:
+            if center not in seen_centers:
+                seen_centers.add(center)
+                unique_centers.append(center)
+        condition_centers.extend(unique_centers)
+        profile = _mean_profile(str(corrected_bigwig), unique_centers, flank)
+        condition_profiles.append(profile)
+        samples.append({"name": sample_name, "profile": profile, "fp_score": round(float(_aggregate_fp_score(profile)), 6), "source": "recomputed"})
+    if not condition_profiles:
+        return prefix, condition, None
+    mean_profile = [round(float(v), 6) for v in np.nanmean(np.asarray(condition_profiles, dtype=float), axis=0)]
+    record = {
+        "name": condition,
+        "profile": mean_profile,
+        "samples": samples,
+        "n_sites": len(condition_centers),
+        "fp_score": round(float(_aggregate_fp_score(mean_profile)), 6),
+    }
+    return prefix, condition, record
+
+
+def _compute_missing_condition_profiles(
+    missing_pairs: set[tuple[str, str]],
+    project_samples: list[SampleView],
+    flank: int,
+    cores: int | None = None,
+) -> dict[tuple[str, str], dict]:
+    if not missing_pairs or not project_samples:
+        return {}
+    by_condition: dict[str, list[tuple[str, str, str]]] = {}
+    for sample in project_samples:
+        by_condition.setdefault(sample.condition, []).append((sample.sample, str(sample.corrected_bigwig), str(sample.match_dir)))
+    tasks = []
+    for prefix, condition in sorted(missing_pairs):
+        sample_rows = by_condition.get(condition) or []
+        if sample_rows:
+            tasks.append((prefix, condition, sample_rows, flank))
+    if not tasks:
+        return {}
+    workers = cores or (os.cpu_count() or 1)
+    workers = max(1, min(workers, len(tasks)))
+    out: dict[tuple[str, str], dict] = {}
+    if workers == 1:
+        iterator = map(_compute_condition_profile_worker, tasks)
+    else:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as pool:
+            iterator = pool.map(_compute_condition_profile_worker, tasks)
+            for prefix, condition, record in iterator:
+                if record:
+                    out[(prefix, condition)] = record
+            return out
+    for prefix, condition, record in iterator:
+        if record:
+            out[(prefix, condition)] = record
+    return out
+
+
+def _assemble_recomputed_aggregate(prefix: str, point: dict, conditions: list[str], condition_profiles: dict[tuple[str, str], dict], flank: int) -> dict | None:
+    records = []
+    for condition in conditions:
+        record = condition_profiles.get((prefix, condition))
+        if not record:
+            return None
+        records.append(record)
+    return {
+        "prefix": prefix,
+        "name": str(point.get("name") or prefix),
+        "motif_id": str(point.get("motif_id") or ""),
+        "change": _as_float(point.get("change")),
+        "pvalue": _as_float(point.get("pvalue"), 1.0),
+        "fdr": point.get("fdr", ""),
+        "n_sites": sum(int(record.get("n_sites") or 0) for record in records),
+        "site_set": "all",
+        "x": list(range(-flank, flank)),
+        "conditions": records,
+        "profile_source": "recomputed",
+    }
+
+
 def prepare_aggregate_maps(
     review_payload: dict,
     project: str | Path | None = None,
     fill_missing: bool = False,
     recompute_missing: bool = False,
     flank: int = 60,
+    cores: int | None = None,
 ) -> dict[tuple[int, str], tuple[dict | None, str]]:
     project_samples = _read_project_samples(project) if project and recompute_missing else []
     condition_cache = _profile_cache_from_payload(review_payload) if fill_missing else {}
-    bed_cache: dict[tuple[str, str], Path | None] = {}
-    centers_cache: dict[str, list] = {}
-    profile_cache: dict[tuple[str, str], list[float]] = {}
     prepared = {}
+    pending: list[tuple[ComparisonView, str, dict, list[str]]] = []
+    missing_condition_pairs: set[tuple[str, str]] = set()
     for comparison in ordered_comparisons(review_payload):
         points = _point_map(comparison.payload)
         aggregates = _aggregate_map(comparison.payload)
@@ -405,12 +507,16 @@ def prepare_aggregate_maps(
             if assembled:
                 prepared[(comparison.index, prefix)] = (assembled, "assembled")
                 continue
-            recomputed = (
-                _recompute_aggregate_motif(prefix, point, comparison, project_samples, flank, bed_cache=bed_cache, centers_cache=centers_cache, profile_cache=profile_cache)
-                if project_samples
-                else None
-            )
-            prepared[(comparison.index, prefix)] = (recomputed, "recomputed" if recomputed else "missing")
+            conditions = _wanted_conditions(comparison)
+            if project_samples:
+                pending.append((comparison, prefix, point, conditions))
+                missing_condition_pairs.update((prefix, condition) for condition in conditions)
+            else:
+                prepared[(comparison.index, prefix)] = (None, "missing")
+    recomputed_profiles = _compute_missing_condition_profiles(missing_condition_pairs, project_samples, flank, cores=cores) if pending else {}
+    for comparison, prefix, point, conditions in pending:
+        recomputed = _assemble_recomputed_aggregate(prefix, point, conditions, recomputed_profiles, flank)
+        prepared[(comparison.index, prefix)] = (recomputed, "recomputed" if recomputed else "missing")
     return prepared
 
 
@@ -599,6 +705,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--flank", type=int, default=60, help="Distance from motif center shown in each subplot (default: 60 bp).")
     parser.add_argument("--fill-missing-profiles", action="store_true", help="Fill missing motif aggregate panels from condition profiles already embedded elsewhere in the review report.")
     parser.add_argument("--recompute-missing-profiles", action="store_true", help="Slower fallback: recompute still-missing motif aggregate profiles from project sample bigWigs and motif BEDs.")
+    parser.add_argument("--cores", type=int, default=None, help="Worker processes for --recompute-missing-profiles (default: all available cores).")
     parser.add_argument("--title", help="PDF title.")
     return parser
 
@@ -634,7 +741,7 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(f"{html} is not a review-multi-comparisons HTML payload")
         order_payloads.append(order_payload)
     motif_order = collect_motifs_from_payloads(order_payloads) if order_payloads else None
-    aggregate_maps = prepare_aggregate_maps(payload, project=project, fill_missing=args.fill_missing_profiles or args.recompute_missing_profiles, recompute_missing=args.recompute_missing_profiles, flank=args.flank)
+    aggregate_maps = prepare_aggregate_maps(payload, project=project, fill_missing=args.fill_missing_profiles or args.recompute_missing_profiles, recompute_missing=args.recompute_missing_profiles, flank=args.flank, cores=args.cores)
     output = Path(args.output)
     source_tsv = Path(args.source_tsv) if args.source_tsv else output.with_name(f"{output.stem}_source.tsv")
     motifs, pages = plot_grid_pdf(payload, output, rows_per_page=args.rows_per_page, flank=args.flank, title=args.title, motif_order=motif_order, aggregate_maps=aggregate_maps)

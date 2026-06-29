@@ -115,7 +115,7 @@ class MotifAggregateGridTest(unittest.TestCase):
             patch("fp_tools.tools.motif_aggregate_grid._read_bed_centers", return_value=[("chr1", 100)]),
             patch("fp_tools.tools.motif_aggregate_grid._mean_profile", return_value=[0.2, 0.1, 0.3, 0.2]),
         ):
-            maps = prepare_aggregate_maps(payload, project="/tmp/project", fill_missing=True, recompute_missing=True, flank=2)
+            maps = prepare_aggregate_maps(payload, project="/tmp/project", fill_missing=True, recompute_missing=True, flank=2, cores=1)
         comparison = next(comp for comp in ordered_comparisons(payload) if comp.condition == "0_FBS")
         aggregate, source = maps[(comparison.index, "TF1_M1")]
         self.assertEqual(source, "recomputed")
