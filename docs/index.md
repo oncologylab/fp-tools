@@ -8,10 +8,6 @@
 pip install fp-tools-bio
 ```
 
-Supported and tested platform: Linux x86_64 with Python 3.12. macOS source
-builds may work in compatible bioinformatics environments, but macOS wheels are
-not published yet. Windows is not currently supported.
-
 For the browser GUI:
 
 ```bash
