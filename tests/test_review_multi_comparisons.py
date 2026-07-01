@@ -117,6 +117,8 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertIn("bits", html)
         self.assertIn("1 selected motif", html)
         self.assertIn("Group autoscale", html)
+        self.assertIn("aggregate-tile-label", html)
+        self.assertIn("Comparison ${slot+1}", html)
         self.assertIn("downloadLogoPanel", html)
         self.assertIn("review_multi_comparisons_motif_logo_panel.svg", html)
         self.assertIn("review_multi_comparisons_panel.svg", html)
@@ -146,6 +148,9 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertIn("function setPanelCount", html)
         self.assertIn("--comparison-cols", html)
         self.assertIn("--aggregate-cols", html)
+        self.assertIn("function panelColumnCount", html)
+        self.assertIn("Math.ceil(n/2)", html)
+        self.assertIn("compact-panels", html)
         self.assertIn("${slotComparisons.length} displayed panels", html)
         self.assertNotIn("slotComparisons=[0,1,2,3]", html)
 
