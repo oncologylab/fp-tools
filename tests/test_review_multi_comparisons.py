@@ -5,6 +5,7 @@ from pathlib import Path
 from fp_tools.tools.review_multi_comparisons import (
     _compressed_json_b64,
     build_review_payload,
+    build_parser,
     discover_input_htmls,
     read_diff_html_payload,
     write_review_html,
@@ -125,6 +126,33 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertNotIn("motifDetail", html)
         self.assertNotIn("&#916;FP", html)
         self.assertNotIn("FDR =", html)
+
+    def test_writes_eight_panel_review_html(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            inputs = []
+            for idx in range(8):
+                path = root / f"diff_footprints_C{idx}_D{idx}.html"
+                _write_diff_html(path, _diff_payload(f"C{idx} vs D{idx}"))
+                inputs.append(path)
+
+            payload = build_review_payload(inputs, title="Review")
+            out = root / "review_8.html"
+            write_review_html(payload, out, display_panels=8)
+            html = out.read_text(encoding="utf-8")
+
+        self.assertIn("initialDisplayPanels=8", html)
+        self.assertIn('id="panel-count"', html)
+        self.assertIn("function setPanelCount", html)
+        self.assertIn("--comparison-cols", html)
+        self.assertIn("--aggregate-cols", html)
+        self.assertIn("${slotComparisons.length} displayed panels", html)
+        self.assertNotIn("slotComparisons=[0,1,2,3]", html)
+
+    def test_parser_accepts_display_panels_option(self):
+        parser = build_parser()
+        args = parser.parse_args(["--inputs", "a.html", "--output", "review.html", "--display-panels", "8"])
+        self.assertEqual(args.display_panels, 8)
 
 
 if __name__ == "__main__":

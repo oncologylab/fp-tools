@@ -806,11 +806,14 @@ def plot_grid_pdf(
     motif_order: list[MotifView] | None = None,
     aggregate_maps: dict[tuple[int, str], tuple[dict | None, str]] | None = None,
     rna_fc_map: dict[tuple[int, str], RnaFcView] | None = None,
+    repeat_column_labels: str = "none",
 ) -> tuple[int, int]:
     comparisons = ordered_comparisons(review_payload)
     motifs = _ordered_motifs_for_payload(review_payload, motif_order)
     aggregate_maps = aggregate_maps or prepare_aggregate_maps(review_payload, flank=flank)
     rna_fc_map = rna_fc_map or {}
+    if repeat_column_labels not in {"none", "row"}:
+        raise ValueError("repeat_column_labels must be 'none' or 'row'")
     if not comparisons:
         raise ValueError("No comparisons were found in the review payload")
     if not motifs:
@@ -829,7 +832,8 @@ def plot_grid_pdf(
     bottom_margin = 0.18
     plot_left = 0.22
     plot_right = 0.045
-    plot_top = 0.055
+    row_column_labels = repeat_column_labels == "row"
+    plot_top = 0.16 if row_column_labels else 0.055
     plot_bottom = 0.16
     page_width = left_margin + label_width + n_cols * panel + (n_cols - 1) * gap + right_margin
     page_height = top_margin + header_height + rows_per_page * panel + (rows_per_page - 1) * gap + bottom_margin
@@ -853,6 +857,29 @@ def plot_grid_pdf(
                 _add_fig_text(fig, (left_margin + label_width - 0.05) / page_width, (panel_y + panel / 2) / page_height, _motif_label(motif), ha="right", va="center", fontsize=5.6, fontweight="bold")
                 for col_idx, comparison in enumerate(comparisons):
                     panel_x = left_margin + label_width + col_idx * (panel + gap)
+                    if row_column_labels:
+                        label_y = panel_y + panel - 0.055
+                        _fig_rect(
+                            fig,
+                            (panel_x + 0.055) / page_width,
+                            (label_y - 0.035) / page_height,
+                            (panel - 0.11) / page_width,
+                            0.07 / page_height,
+                            facecolor="white",
+                            edgecolor="#d7dee8",
+                            linewidth=0.28,
+                        )
+                        _add_fig_text(
+                            fig,
+                            (panel_x + panel / 2) / page_width,
+                            label_y / page_height,
+                            comparison.condition,
+                            ha="center",
+                            va="center",
+                            fontsize=5.2,
+                            fontweight="bold",
+                            color="#111827",
+                        )
                     plot_x0 = panel_x + plot_left
                     plot_y0 = panel_y + plot_bottom
                     plot_w = panel - plot_left - plot_right
@@ -907,6 +934,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rna-raw-counts", help="Optional raw RNA count matrix used to filter unexpressed TFs.")
     parser.add_argument("--motif-gene-map", help="Optional motif-to-gene map with motif and gene_symbol columns.")
     parser.add_argument("--rna-min-raw-mean", type=float, default=1.0, help="Minimum mean raw count in either compared condition for a TF to be shown (default: 1.0).")
+    parser.add_argument("--repeat-column-labels", choices=["none", "row"], default="none", help="Repeat comparison labels inside each motif row panel instead of showing them only in the page header (default: none).")
     parser.add_argument("--title", help="PDF title.")
     return parser
 
@@ -950,7 +978,7 @@ def main(argv: list[str] | None = None) -> int:
     rna_fc_map = compute_rna_fc_map(payload, project, motif_order, args.rna_log2norm, args.rna_raw_counts, args.motif_gene_map, min_raw_mean=args.rna_min_raw_mean)
     output = Path(args.output)
     source_tsv = Path(args.source_tsv) if args.source_tsv else output.with_name(f"{output.stem}_source.tsv")
-    motifs, pages = plot_grid_pdf(payload, output, rows_per_page=args.rows_per_page, flank=args.flank, title=args.title, motif_order=motif_order, aggregate_maps=aggregate_maps, rna_fc_map=rna_fc_map)
+    motifs, pages = plot_grid_pdf(payload, output, rows_per_page=args.rows_per_page, flank=args.flank, title=args.title, motif_order=motif_order, aggregate_maps=aggregate_maps, rna_fc_map=rna_fc_map, repeat_column_labels=args.repeat_column_labels)
     row_count = write_source_table(payload, source_tsv, flank=args.flank, motif_order=motif_order, aggregate_maps=aggregate_maps, rna_fc_map=rna_fc_map)
     print(f"Wrote {output} ({motifs} motifs, {pages} pages)")
     print(f"Wrote {source_tsv} ({row_count} rows)")

@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fp-tools-bio"
-version = "0.1.12"
+version = "0.1.13"
 description = "Standalone footprint tools with vendored Cython internals"
 readme = "README.md"
 license = "MIT"
@@ -102,7 +102,7 @@ include = ["fp_tools*"]
 # --- Poetry mirror of the important bits so `poetry build` works too ---
 [tool.poetry]
 name = "fp-tools-bio"
-version = "0.1.12"
+version = "0.1.13"
 description = "Standalone footprint tools with vendored Cython internals"
 authors = ["Yaoxiang Li"]
 readme = "README.md"

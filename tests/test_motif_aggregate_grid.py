@@ -14,6 +14,7 @@ from fp_tools.tools.motif_aggregate_grid import (
     prepare_aggregate_maps,
     write_source_table,
 )
+from fp_tools.tools import motif_aggregate_grid as motif_grid_module
 from fp_tools.tools.review_multi_comparisons import write_review_html
 from fp_tools.tools.plot_aggregate_batch import read_embedded_payload
 
@@ -94,6 +95,25 @@ class MotifAggregateGridTest(unittest.TestCase):
             self.assertIn("delta_fp", text)
             self.assertIn("0_FBS vs 10_FBS_Ctrl", text)
             self.assertIn("False", text)
+
+    def test_row_column_labels_repeat_comparison_names_inside_panels(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            pdf = root / "grid_row_labels.pdf"
+            labels = []
+            original_add_text = motif_grid_module._add_fig_text
+
+            def capture_text(fig, x, y, text, **kwargs):
+                labels.append(str(text))
+                return original_add_text(fig, x, y, text, **kwargs)
+
+            with patch("fp_tools.tools.motif_aggregate_grid._add_fig_text", side_effect=capture_text):
+                motif_count, page_count = plot_grid_pdf(_review_payload(), pdf, rows_per_page=1, flank=60, title="Test", repeat_column_labels="row")
+
+            self.assertEqual(motif_count, 2)
+            self.assertEqual(page_count, 2)
+            self.assertGreater(pdf.stat().st_size, 1000)
+            self.assertGreaterEqual(labels.count("0_Lys"), 4)
 
     def test_collects_global_motif_order_from_multiple_review_payloads(self):
         payload1 = _review_payload()

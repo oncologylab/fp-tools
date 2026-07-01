@@ -968,6 +968,7 @@ Review multiple diff-footprints HTML reports in one interactive HTML file.
 
 - One or more `diff_footprints_*.html` files, or directories containing those files.
 - Optional labels for the resolved comparisons.
+- Optional initial panel count from 4 to 8 for reviewing more comparisons at once.
 
 **Output**
 
@@ -977,7 +978,8 @@ Review multiple diff-footprints HTML reports in one interactive HTML file.
 
 ```bash
 review-multi-comparisons \
-  --outdir project
+  --outdir project \
+  --display-panels 8
 ```
 
 **Options**
@@ -988,6 +990,7 @@ This option reference is generated from `review-multi-comparisons --help` and li
 usage: review-multi-comparisons [-h] [--inputs INPUTS [INPUTS ...]]
                                 [--labels [LABELS ...]] [--output OUTPUT]
                                 [--outdir OUTDIR] [--layout {custom,project}]
+                                [--display-panels DISPLAY_PANELS]
                                 [--title TITLE]
 
 Review multiple diff-footprints HTML reports in one interactive HTML file.
@@ -1006,6 +1009,9 @@ options:
                         Use fp-tools standard project output layout under
                         --outdir (default: project when only --outdir is
                         provided).
+  --display-panels DISPLAY_PANELS
+                        Initial number of comparison panels to display in the
+                        HTML report, from 4 to 8 (default: 4).
   --title TITLE
 ```
 
@@ -1021,6 +1027,7 @@ Create a multi-page motif-by-comparison aggregate PDF from a `review-multi-compa
 
 - A completed `review_multi_comparisons.html` report with embedded comparison payloads, or a project directory containing `reports/review_multi_comparisons.html`.
 - Optional output paths, page density, flank size, shared motif-order HTMLs, fast missing-profile filling, optional bigWig recomputation, RNA expression matrices, motif-to-gene mapping, and title.
+- Use `--repeat-column-labels row` when each motif row should repeat the comparison label inside every subplot.
 
 **Output**
 
@@ -1038,7 +1045,8 @@ plot-motif-aggregate-grid \
   --fill-missing-profiles \
   --rna-log2norm nutrient_rna_deseq2_log2norm_ruvr_k20.tsv.gz \
   --rna-raw-counts nutrient_rna_raw_counts_ruvr_k20_gene_universe.tsv.gz \
-  --motif-gene-map JASPAR2024_hg38.txt
+  --motif-gene-map JASPAR2024_hg38.txt \
+  --repeat-column-labels row
 ```
 
 **Options**
@@ -1058,6 +1066,7 @@ usage: plot-motif-aggregate-grid [-h] [--input-html INPUT_HTML]
                                  [--rna-raw-counts RNA_RAW_COUNTS]
                                  [--motif-gene-map MOTIF_GENE_MAP]
                                  [--rna-min-raw-mean RNA_MIN_RAW_MEAN]
+                                 [--repeat-column-labels {none,row}]
                                  [--title TITLE]
 
 Create a multi-page motif-by-comparison aggregate PDF from review-multi-
@@ -1106,6 +1115,10 @@ options:
   --rna-min-raw-mean RNA_MIN_RAW_MEAN
                         Minimum mean raw count in either compared condition
                         for a TF to be shown (default: 1.0).
+  --repeat-column-labels {none,row}
+                        Repeat comparison labels inside each motif row panel
+                        instead of showing them only in the page header
+                        (default: none).
   --title TITLE         PDF title.
 ```
 
