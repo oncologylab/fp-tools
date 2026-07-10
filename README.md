@@ -19,6 +19,16 @@ fp-tools-gui
 
 The GUI opens in a browser and writes the same YAML configs that can be run from the command line.
 
+Raw-read preprocessing also needs standard genomics executables. The turnkey
+installation is the repository's Conda environment or Docker image; a PyPI
+installation can use executables already available on `PATH`.
+
+```bash
+micromamba create -n fp-tools -f environment.yml
+micromamba activate fp-tools
+prepare-atac --doctor
+```
+
 ## What You Can Do
 
 - Correct ATAC-seq cut-site signal for Tn5 sequence bias.
@@ -32,6 +42,8 @@ The GUI opens in a browser and writes the same YAML configs that can be run from
 
 ## Typical Workflow
 
+[`prepare-atac`](https://oncologylab.github.io/fp-tools/api/#prepare-atac) (when starting from FASTQ/SRA)
+->
 [`atac-correct`](https://oncologylab.github.io/fp-tools/api/#atac-correct)
 -> [`call-footprints`](https://oncologylab.github.io/fp-tools/api/#call-footprints)
 -> [`match-motifs`](https://oncologylab.github.io/fp-tools/api/#match-motifs) or [`motif-discovery`](https://oncologylab.github.io/fp-tools/api/#motif-discovery)
@@ -42,7 +54,43 @@ Use [`match-motifs`](https://oncologylab.github.io/fp-tools/api/#match-motifs) t
 
 ## Minimal Example
 
-Create a simple sample table:
+When starting from archive accessions, a metadata table can be as small as:
+
+```text
+ID	Sample	Condition
+SRR17296534	BATF_IRF4_Tbet_rep1	BATF_IRF4_Tbet
+```
+
+```bash
+prepare-atac \
+  --samples metadata.tsv \
+  --genome mm10 \
+  --outdir project/raw
+```
+
+This downloads verified compressed FASTQs, runs read/alignment/peak QC,
+produces filtered BAM, narrowPeak, and RP10M bigWig files, and writes
+`project/raw/metadata/samples.tsv` plus a downstream `atac_correct.yml`.
+Local or HTTPS `fastq_1` and optional `fastq_2` columns are also accepted.
+Use `--write-default-config prepare_atac.yml` to customize every processing
+stage and `--dry-run` to validate metadata without downloading data.
+
+To reproduce the historical ATAC-only nutrient preprocessing route, select the
+legacy profile. It uses Trim Galore, the original Bowtie2/duplicate/`XS:i:`
+filtering parameters, and HOMER RP10M tracks and factor peaks. It does not run
+the CUT&Tag histone or broad-peak branches found elsewhere in the old scripts.
+
+```bash
+prepare-atac \
+  --profile legacy-atac \
+  --samples metadata.tsv \
+  --genome hg38 \
+  --outdir project/legacy_atac \
+  --cores "$(nproc)" \
+  --memory-gb 24
+```
+
+For already processed BAM and peak inputs, create a simple sample table:
 
 ```text
 sample	condition	bam	peaks
@@ -172,6 +220,7 @@ diff-footprints \
 
 | Command | Use |
 | --- | --- |
+| [`prepare-atac`](https://oncologylab.github.io/fp-tools/api/#prepare-atac) | Download, trim, align, QC, and peak-call raw ATAC-seq reads. |
 | [`atac-correct`](https://oncologylab.github.io/fp-tools/api/#atac-correct) | Bias-correct ATAC-seq cut-site signal. |
 | [`call-footprints`](https://oncologylab.github.io/fp-tools/api/#call-footprints) | Create footprint score tracks from one or more bigWigs. |
 | [`match-motifs`](https://oncologylab.github.io/fp-tools/api/#match-motifs) | Scan motifs for one or more footprint tracks. |
@@ -192,6 +241,7 @@ diff-footprints \
 Check any command with `--help`:
 
 ```bash
+prepare-atac --help
 atac-correct --help
 call-footprints --help
 match-motifs --help

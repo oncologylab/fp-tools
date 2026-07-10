@@ -9,7 +9,15 @@ dependencies:
   - samtools>=1.23
   - bowtie2>=2.5
   - fastp>=1.0
+  - fastqc>=0.12
+  - trim-galore>=0.6
+  - picard>=2.26
+  - homer>=4.11
   - macs3>=3.0
+  - multiqc>=1.25
+  - sra-tools>=3.1
+  - aria2>=1.37
+  - pigz>=2.8
   - meme>=5.5
   - ucsc-bedgraphtobigwig
   - pip:

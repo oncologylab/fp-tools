@@ -18,8 +18,30 @@ fp-tools-gui
 ## Standard Workflow
 
 <div class="fp-command-chain">
-  <a href="api/#atac-correct">atac-correct</a> -> <a href="api/#call-footprints">call-footprints</a> -> <a href="api/#match-motifs">match-motifs</a> / <a href="api/#motif-discovery">motif-discovery</a> -> <a href="api/#diff-footprints">diff-footprints</a> -> <a href="api/#plot-aggregate">plot-aggregate</a>
+  <a href="api/#prepare-atac">prepare-atac</a> -> <a href="api/#atac-correct">atac-correct</a> -> <a href="api/#call-footprints">call-footprints</a> -> <a href="api/#match-motifs">match-motifs</a> / <a href="api/#motif-discovery">motif-discovery</a> -> <a href="api/#diff-footprints">diff-footprints</a> -> <a href="api/#plot-aggregate">plot-aggregate</a>
 </div>
+
+### 0. Prepare Raw Reads
+
+```bash
+prepare-atac \
+  --samples metadata.tsv \
+  --genome hg38 \
+  --outdir project/raw
+```
+
+The table needs an `ID`/`run_accession` column for SRR, ERR, or DRR data, or a
+`fastq_1` column and optional `fastq_2` for local/HTTPS reads. fp-tools uses
+ENA-verified compressed FASTQs first and NCBI SRA Toolkit as a fallback. It
+writes per-sample filtered BAMs, narrow peaks, RP10M tracks, FastQC/fastp and
+alignment QC, merged peaks, compatibility filenames, and a downstream
+`metadata/samples.tsv`. Named `hg38` and `mm10` references are cached; custom
+FASTA/index/blacklist files are supported. Run `prepare-atac --doctor` before a
+production job and use `--write-default-config` for full YAML customization.
+Use `--profile legacy-atac` for the historical ATAC-only Trim Galore, Bowtie2,
+Picard, and HOMER route used for the nutrient datasets. Thread counts scale to
+`--cores`; `--memory-gb` enforces a host-memory preflight and sample scheduler
+budget. CUT&Tag-specific broad peak parameters are intentionally excluded.
 
 ### 1. Correct ATAC Signal
 

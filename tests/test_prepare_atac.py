@@ -1,0 +1,302 @@
+import argparse
+import hashlib
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+import pyBigWig
+import pysam
+
+from fp_tools.tools.prepare_atac import (
+    DEFAULTS,
+    PROFILE_DEFAULTS,
+    ReferenceBundle,
+    _bedgraph_to_bigwig,
+    _fragment_metrics,
+    _relative_link,
+    _tss_enrichment,
+    _write_project_metadata,
+    build_parser,
+    download_file,
+    load_settings,
+    prepare_reference,
+    read_preprocess_metadata,
+    resolve_ena_fastqs,
+    write_default_config,
+)
+from fp_tools.tools.prepare_atac_legacy import _ensure_bigwig, _remove_xs
+
+
+class PrepareAtacMetadataTest(unittest.TestCase):
+    def test_reads_existing_gse_style_table(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            table = Path(tmp) / "samples.txt"
+            table.write_text(
+                "ID\tAntibody\tCell\tSample\n"
+                "SRR1\tATAC\tNIH3T3\tDox_BATF_1\n"
+                "SRR2\tATAC\tNIH3T3\tDox_BATF_2\n",
+                encoding="utf-8",
+            )
+            samples = read_preprocess_metadata(table)
+            self.assertEqual(
+                [row.sample for row in samples], ["Dox_BATF_1", "Dox_BATF_2"]
+            )
+            self.assertEqual(samples[0].condition, "Dox_BATF_1")
+            self.assertEqual(samples[0].runs[0].accession, "SRR1")
+
+    def test_groups_technical_runs_and_accepts_csv_fastqs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            table = Path(tmp) / "samples.csv"
+            table.write_text(
+                "run_accession,sample,condition,replicate,fastq_1,fastq_2\n"
+                "lane1,A,treated,2,/x/a1.fq.gz,/x/a2.fq.gz\n"
+                "lane2,A,treated,2,/x/b1.fq.gz,/x/b2.fq.gz\n",
+                encoding="utf-8",
+            )
+            samples = read_preprocess_metadata(table)
+            self.assertEqual(len(samples), 1)
+            self.assertEqual(len(samples[0].runs), 2)
+            self.assertEqual(samples[0].replicate, "2")
+
+    def test_rejects_duplicate_accessions_and_conflicting_groups(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            table = Path(tmp) / "samples.tsv"
+            table.write_text(
+                "ID\tSample\tCondition\nSRR1\tA\tx\nSRR1\tB\ty\n", encoding="utf-8"
+            )
+            with self.assertRaisesRegex(ValueError, "Duplicate run accession"):
+                read_preprocess_metadata(table)
+            table.write_text(
+                "ID\tSample\tCondition\nSRR1\tA\tx\nSRR2\tA\ty\n", encoding="utf-8"
+            )
+            with self.assertRaisesRegex(ValueError, "disagree"):
+                read_preprocess_metadata(table)
+
+
+class PrepareAtacConfigTest(unittest.TestCase):
+    def test_defaults_config_and_override_precedence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "defaults.yml"
+            write_default_config(path)
+            loaded = load_settings(
+                path, {"resources": {"cores": 3}, "peaks": {"qvalue": 0.05}}
+            )
+            self.assertEqual(loaded["resources"]["cores"], 3)
+            self.assertEqual(loaded["peaks"]["qvalue"], 0.05)
+            self.assertEqual(loaded["align"]["mapq"], DEFAULTS["align"]["mapq"])
+
+    def test_unknown_config_section_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bad.yml"
+            path.write_text("mystery: true\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Unknown"):
+                load_settings(path)
+
+    def test_legacy_profile_has_exact_atac_defaults_and_all_cores(self):
+        settings = load_settings(overrides={"profile": "legacy-atac"})
+        self.assertEqual(settings["profile"], "legacy-atac")
+        self.assertEqual(settings["align"]["max_insert"], 1000)
+        self.assertEqual(settings["align"]["mapq"], 0)
+        self.assertIn("--very-sensitive-local", settings["align"]["extra_args"])
+        self.assertFalse(settings["filter"]["remove_mito"])
+        self.assertEqual(settings["peaks"]["homer_local_fold"], 15)
+        self.assertEqual(
+            settings["resources"]["cores"],
+            PROFILE_DEFAULTS["legacy-atac"]["resources"]["cores"],
+        )
+
+    def test_yaml_profile_and_cli_override_precedence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "legacy.yml"
+            path.write_text(
+                "profile: legacy-atac\nalign:\n  max_insert: 750\n", encoding="utf-8"
+            )
+            settings = load_settings(path, {"align": {"max_insert": 900}})
+            self.assertEqual(settings["profile"], "legacy-atac")
+            self.assertEqual(settings["align"]["max_insert"], 900)
+
+    def test_writes_profile_specific_config(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "legacy.yml"
+            write_default_config(path, "legacy-atac")
+            text = path.read_text(encoding="utf-8")
+            self.assertIn("profile: legacy-atac", text)
+            self.assertIn("homer_local_size: 150000", text)
+
+    def test_parser_has_simple_run_and_management_options(self):
+        parser = build_parser()
+        args = parser.parse_args(
+            ["--samples", "s.tsv", "--genome", "mm10", "--outdir", "out", "--dry-run"]
+        )
+        self.assertTrue(args.dry_run)
+        self.assertEqual(args.genome, "mm10")
+        legacy = parser.parse_args(["--profile", "legacy-atac", "--doctor"])
+        self.assertEqual(legacy.profile, "legacy-atac")
+        self.assertIsInstance(parser, argparse.ArgumentParser)
+
+
+class PrepareAtacDownloadTest(unittest.TestCase):
+    @mock.patch("urllib.request.urlopen")
+    def test_resolves_ena_paired_fastqs_and_checksums(self, urlopen):
+        text = (
+            "run_accession\tfastq_ftp\tfastq_md5\tfastq_bytes\tlibrary_layout\n"
+            "SRR1\tftp.sra.ebi.ac.uk/a_1.fastq.gz;ftp.sra.ebi.ac.uk/a_2.fastq.gz\tmd51;md52\t10;11\tPAIRED\n"
+        )
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = text.encode()
+        urlopen.return_value = response
+        result = resolve_ena_fastqs("SRR1")
+        self.assertEqual(len(result), 2)
+        self.assertEqual(
+            result[0], ("https://ftp.sra.ebi.ac.uk/a_1.fastq.gz", "md51", 10)
+        )
+
+    def test_existing_download_is_reused_only_when_md5_matches(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "reads.fastq.gz"
+            output.write_bytes(b"reads")
+            digest = hashlib.md5(b"reads").hexdigest()
+            with (
+                mock.patch("shutil.which", return_value=None),
+                mock.patch("urllib.request.urlopen") as urlopen,
+            ):
+                result = download_file("https://example.invalid/reads", output, digest)
+            self.assertEqual(result, output)
+            urlopen.assert_not_called()
+
+
+class PrepareAtacOutputTest(unittest.TestCase):
+    def test_legacy_homer_bedgraph_fallback_becomes_bigwig(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sizes = root / "sizes"
+            sizes.write_text("chr1\t20\n", encoding="utf-8")
+            output = root / "signal.bw"
+            output.write_text("chr1\t2\t5\t3.5\n", encoding="utf-8")
+
+            def fake_sort(command, check, stdout):
+                stdout.write(Path(command[-1]).read_text(encoding="utf-8"))
+                return mock.MagicMock(returncode=0)
+
+            with mock.patch(
+                "fp_tools.tools.prepare_atac_legacy.subprocess.run",
+                side_effect=fake_sort,
+            ):
+                _ensure_bigwig(output, sizes)
+            with pyBigWig.open(str(output)) as bw:
+                self.assertEqual(bw.values("chr1", 2, 5), [3.5, 3.5, 3.5])
+
+    def test_legacy_xs_filter_retains_only_unique_alignments(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.bam"
+            output = root / "unique.bam"
+            header = {"HD": {"VN": "1.6"}, "SQ": [{"SN": "chr1", "LN": 100}]}
+            with pysam.AlignmentFile(source, "wb", header=header) as bam:
+                for idx in range(2):
+                    read = pysam.AlignedSegment()
+                    read.query_name = f"read{idx}"
+                    read.query_sequence = "A" * 20
+                    read.flag = 0
+                    read.reference_id = 0
+                    read.reference_start = idx
+                    read.mapping_quality = 30
+                    read.cigar = [(0, 20)]
+                    read.query_qualities = pysam.qualitystring_to_array("I" * 20)
+                    if idx:
+                        read.set_tag("XS", 10)
+                    bam.write(read)
+            self.assertEqual(_remove_xs(source, output), 1)
+            with pysam.AlignmentFile(output, "rb") as bam:
+                self.assertEqual(sum(1 for _ in bam.fetch(until_eof=True)), 1)
+
+    def test_tss_enrichment_uses_shifted_cut_sites(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            bam_path = root / "reads.bam"
+            header = {
+                "HD": {"VN": "1.6", "SO": "coordinate"},
+                "SQ": [{"SN": "chr1", "LN": 5000}],
+            }
+            with pysam.AlignmentFile(bam_path, "wb", header=header) as bam:
+                starts = [546] + [2496] * 10 + [4446]
+                for idx, start in enumerate(starts):
+                    read = pysam.AlignedSegment()
+                    read.query_name = f"read{idx}"
+                    read.query_sequence = "A" * 30
+                    read.flag = 0
+                    read.reference_id = 0
+                    read.reference_start = start
+                    read.mapping_quality = 60
+                    read.cigar = [(0, 30)]
+                    read.query_qualities = pysam.qualitystring_to_array("I" * 30)
+                    bam.write(read)
+            pysam.index(str(bam_path))
+            tss = root / "tss.bed"
+            tss.write_text("chr1\t2500\t2501\tgene\t0\t+\n", encoding="utf-8")
+            score = _tss_enrichment(bam_path, tss)
+            self.assertIsNotNone(score)
+            self.assertGreater(score, 100)
+            fragment_metrics = _fragment_metrics(
+                bam_path, root / "fragment_lengths.tsv"
+            )
+            self.assertEqual(fragment_metrics["median_fragment_length"], 30)
+            self.assertEqual(fragment_metrics["nucleosome_free_fraction"], 1.0)
+
+    def test_custom_reference_dry_run_does_not_require_download_or_index(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fasta = Path(tmp) / "custom.fa"
+            fasta.write_text(">chr1\nACGT\n", encoding="utf-8")
+            bundle = prepare_reference(
+                "custom1",
+                Path(tmp) / "refs",
+                fasta=fasta,
+                bowtie2_index=Path(tmp) / "idx" / "custom1",
+                macs_genome_size="1000",
+                dry_run=True,
+            )
+            self.assertEqual(bundle.assembly, "custom1")
+            self.assertEqual(bundle.macs_genome_size, "1000")
+
+    def test_bedgraph_conversion_and_relative_compatibility_link(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            sizes = root / "sizes"
+            sizes.write_text("chr1\t10\n", encoding="utf-8")
+            bedgraph = root / "signal.bedgraph"
+            bedgraph.write_text("chr1\t1\t3\t5\n", encoding="utf-8")
+            bigwig = root / "signal.bw"
+            _bedgraph_to_bigwig(bedgraph, sizes, bigwig)
+            with pyBigWig.open(str(bigwig)) as bw:
+                self.assertEqual(bw.values("chr1", 1, 3), [5.0, 5.0])
+            link = root / "legacy" / "sample.rp10m.bw"
+            _relative_link(bigwig, link)
+            self.assertEqual(link.resolve(), bigwig.resolve())
+
+    def test_writes_downstream_sample_table_and_runnable_config(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.tsv"
+            source.write_text("ID\nSRR1\n", encoding="utf-8")
+            ref = ReferenceBundle(
+                "mm10", root / "mm10.fa", root / "idx", None, root / "sizes", None, "mm"
+            )
+            result = {
+                "sample": "S1",
+                "condition": "C1",
+                "bam": "/b.bam",
+                "peaks": "/p.bed",
+                "bigwig": "/s.bw",
+            }
+            _write_project_metadata([result], source, root, ref, load_settings())
+            table = (root / "metadata" / "samples.tsv").read_text(encoding="utf-8")
+            self.assertIn("S1\tC1\t/b.bam\t/p.bed\t/s.bw", table)
+            config = (root / "metadata" / "atac_correct.yml").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("tool: atac-correct", config)
+
+
+if __name__ == "__main__":
+    unittest.main()

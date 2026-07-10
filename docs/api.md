@@ -6,6 +6,7 @@ The public interface of `fp-tools` is command-first. Each command below includes
 
 | Command | Purpose |
 | --- | --- |
+| [`prepare-atac`](#prepare-atac) | Download and preprocess raw ATAC-seq reads into filtered BAM, peak, bigWig, and QC outputs. |
 | [`atac-correct`](#atac-correct) | Bias-correct ATAC-seq cut-site signal. |
 | [`call-footprints`](#call-footprints) | Create footprint score tracks from one or more corrected bigWig signals. |
 | [`match-motifs`](#match-motifs) | Scan motifs for one or more footprint tracks and write per-sample bound/unbound motif-site calls. |
@@ -24,6 +25,109 @@ The public interface of `fp-tools` is command-first. Each command below includes
 | [`pseudobulk-footprints`](#pseudobulk-footprints) | Run grouping, correction, footprint scoring, motif reports, aggregate plots, and optional signature reporting for single-cell ATAC pseudobulk analyses. |
 
 ## Command Manuals
+
+### `prepare-atac`
+
+<div class="fp-api-card" markdown="1">
+
+Download, trim, align, filter, QC, and peak-call ATAC-seq reads while keeping
+raw-data preparation separate from footprint analysis.
+
+**Input parameters**
+
+- TSV/CSV metadata containing `ID`/`run_accession`, or local/HTTPS `fastq_1`
+  and optional `fastq_2` columns.
+- Named `hg38`/`mm10` reference or a custom FASTA, Bowtie2 index, blacklist,
+  chromosome sizes, TSS BED, and MACS3 genome size.
+- Optional YAML customization for download, trimming, alignment, filtering,
+  peaks, tracks, QC, and resources.
+- Optional `legacy-atac` profile for the historical ATAC-only Trim Galore,
+  Bowtie2/Picard/`XS:i:` filtering, and HOMER route. CUT&Tag branches are not
+  part of this profile.
+
+**Output**
+
+- Canonical per-sample alignment, peak, track, QC, logs, and resumable state.
+- Legacy-compatible `<sample>.<assembly>.filtered.bam`, BAI, RP10M bigWig,
+  and narrowPeak links without duplicating large files.
+- Project merged peaks, resolved settings/reference provenance,
+  `metadata/samples.tsv`, and a downstream `atac_correct.yml`.
+
+**Example command**
+
+```bash
+prepare-atac \
+  --profile legacy-atac \
+  --samples GSE192390_NIH3T3_samples.txt \
+  --genome mm10 \
+  --outdir gse192390_atac
+```
+
+**Options**
+
+```text
+usage: prepare-atac [-h] [--samples SAMPLES] [--genome GENOME]
+                    [--outdir OUTDIR] [--config CONFIG]
+                    [--profile {legacy-atac,modern}]
+                    [--id-column ID_COLUMN] [--sample-column SAMPLE_COLUMN]
+                    [--condition-column CONDITION_COLUMN]
+                    [--include INCLUDE [INCLUDE ...]]
+                    [--reference-dir REFERENCE_DIR] [--fasta FASTA]
+                    [--bowtie2-index BOWTIE2_INDEX] [--blacklist BLACKLIST]
+                    [--tss TSS] [--macs-genome-size MACS_GENOME_SIZE]
+                    [--cores CORES]
+                    [--max-parallel-samples MAX_PARALLEL_SAMPLES]
+                    [--memory-gb MEMORY_GB] [--keep-intermediates]
+                    [--no-resume] [--fail-fast] [--dry-run]
+                    [--doctor] [--write-default-config PATH]
+
+Download and preprocess ATAC-seq reads into fp-tools-ready BAM, peak, bigWig,
+and QC outputs.
+
+options:
+  -h, --help            show this help message and exit
+  --samples SAMPLES     TSV/CSV sample metadata with an ID/run_accession or
+                        fastq_1 column.
+  --genome GENOME       Named genome (hg38/mm10) or custom genome label.
+  --outdir OUTDIR       Output project directory.
+  --config CONFIG       Optional preprocessing YAML; CLI values override
+                        packaged defaults.
+  --profile {legacy-atac,modern}
+                        Preprocessing profile (default: modern, or YAML value).
+  --id-column ID_COLUMN
+                        Explicit accession column name.
+  --sample-column SAMPLE_COLUMN
+                        Explicit sample-name column.
+  --condition-column CONDITION_COLUMN
+                        Explicit condition column.
+  --include INCLUDE [INCLUDE ...]
+                        Only process these sample names or accessions.
+  --reference-dir REFERENCE_DIR
+                        Reference cache root.
+  --fasta FASTA         Custom reference FASTA.
+  --bowtie2-index BOWTIE2_INDEX
+                        Existing Bowtie2 index prefix.
+  --blacklist BLACKLIST
+                        Custom blacklist BED.
+  --tss TSS             Optional TSS BED for enrichment QC.
+  --macs-genome-size MACS_GENOME_SIZE
+                        MACS3 genome size or hs/mm shorthand for custom genomes.
+  --cores CORES         Total core budget.
+  --max-parallel-samples MAX_PARALLEL_SAMPLES
+                        Maximum samples processed concurrently.
+  --memory-gb MEMORY_GB
+                        Enforce this total memory budget and reserve 8 GiB for
+                        the host.
+  --keep-intermediates  Keep trimmed reads and intermediate alignment files.
+  --no-resume           Recompute completed samples even when fingerprints match.
+  --fail-fast           Stop after the first failed sample.
+  --dry-run             Validate and list planned samples without processing.
+  --doctor              Report external preprocessing dependencies and exit.
+  --write-default-config PATH
+                        Write the documented default YAML and exit.
+```
+
+</div>
 
 ### `atac-correct`
 

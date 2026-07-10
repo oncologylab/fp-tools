@@ -1,0 +1,48 @@
+# Historical ATAC-only preprocessing route used for the nutrient datasets.
+# Thread counts default to all CPUs available to the process.
+profile: legacy-atac
+download:
+  provider: auto
+  retries: 5
+  keep_fastq: true
+trim:
+  enabled: true
+  min_length: 20
+  extra_args: []
+align:
+  mapq: 0
+  max_insert: 1000
+  extra_args:
+    - --very-sensitive-local
+    - --no-mixed
+    - --dovetail
+    - --phred33
+filter:
+  remove_duplicates: true
+  remove_mito: false
+  extra_args: []
+peaks:
+  qvalue: 0.00001
+  single_end_shift: -75
+  single_end_extsize: 150
+  extra_args: []
+  homer_style: factor
+  homer_local_fold: 15
+  homer_local_size: 150000
+tracks:
+  normalization_reads: 10000000
+  extra_args: []
+qc:
+  fastqc: true
+  multiqc: true
+  warn_frip_below: 0.2
+  warn_tss_below:
+    hg38: 5.0
+    mm10: 10.0
+  fail_on_warning: false
+cleanup:
+  keep_intermediates: false
+resources:
+  max_parallel_samples: 1
+  memory_gb: 24
+  legacy_sample_memory_gb: 16

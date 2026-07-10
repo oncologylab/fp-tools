@@ -1,0 +1,45 @@
+# Full prepare-atac defaults. Common values such as --cores can be overridden
+# directly on the command line.
+profile: modern
+download:
+  provider: auto
+  retries: 5
+  keep_fastq: true
+trim:
+  enabled: true
+  min_length: 20
+  extra_args: []
+align:
+  mapq: 30
+  max_insert: 2000
+  extra_args:
+    - --very-sensitive
+    - --no-mixed
+    - --no-discordant
+    - --dovetail
+filter:
+  remove_duplicates: true
+  remove_mito: true
+  extra_args: []
+peaks:
+  qvalue: 0.01
+  single_end_shift: -75
+  single_end_extsize: 150
+  extra_args: []
+tracks:
+  normalization_reads: 10000000
+  extra_args: []
+qc:
+  fastqc: true
+  multiqc: true
+  warn_frip_below: 0.2
+  warn_tss_below:
+    hg38: 5.0
+    mm10: 10.0
+  fail_on_warning: false
+cleanup:
+  keep_intermediates: false
+resources:
+  cores: 8
+  max_parallel_samples: 1
+  memory_gb: null

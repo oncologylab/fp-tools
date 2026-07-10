@@ -34,6 +34,7 @@ Required coverage before release:
 Primary current API checks:
 
 ```bash
+.venv/bin/prepare-atac --help
 .venv/bin/atac-correct --help
 .venv/bin/call-footprints --help
 .venv/bin/match-motifs --help

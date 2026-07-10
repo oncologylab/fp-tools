@@ -26,6 +26,7 @@ TOOL_ALIASES = {
     "plot-aggregate": "plot-aggregate",
     "review-multi-comparisons": "review-multi-comparisons",
     "plot-motif-aggregate-grid": "plot-motif-aggregate-grid",
+    "prepare-atac": "prepare-atac",
     "run-workflow": "run-workflow",
     "motif-discovery": "motif-discovery",
     "motif-summary": "motif-summary",
@@ -81,6 +82,7 @@ REQUIRED_FIELDS = {
     "pseudobulk-fragments": ("fragments", "annotations", "group_by", "outdir"),
     "find-signature-fp": ("annotations", "fragments", "h5ad", "tf_site_dir", "outdir"),
     "pseudobulk-footprints": ("annotations", "group_by", "outdir", "genome", "peaks"),
+    "prepare-atac": ("samples", "genome", "outdir"),
 }
 
 FLAG_NAME_MAP = {
