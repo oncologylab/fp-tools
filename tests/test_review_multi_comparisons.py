@@ -1,12 +1,15 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from fp_tools.tools.review_multi_comparisons import (
     _compressed_json_b64,
     build_review_payload,
     build_parser,
+    count_missing_aggregate_profiles,
     discover_input_htmls,
+    fill_missing_aggregate_profiles,
     read_diff_html_payload,
     write_review_html,
 )
@@ -129,6 +132,35 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertNotIn("&#916;FP", html)
         self.assertNotIn("FDR =", html)
 
+    def test_can_fill_missing_aggregate_profiles_before_writing_review(self):
+        payload = {
+            "schema": "fp-tools.review-multi-comparisons.v1",
+            "title": "Review",
+            "comparisons": [{"label": "A vs B", "payload": _diff_payload("A vs B")}],
+        }
+        self.assertEqual(count_missing_aggregate_profiles(payload), (1, 2))
+        filled_tf2 = {
+            "prefix": "TF2",
+            "name": "TF2",
+            "motif_id": "M2",
+            "n_sites": 6,
+            "x": [-1, 1],
+            "conditions": [
+                {"name": "A", "samples": [{"name": "A_rep1", "profile": [0.3, 0.4]}]},
+                {"name": "B", "samples": [{"name": "B_rep1", "profile": [0.1, 0.2]}]},
+            ],
+        }
+        with patch("fp_tools.tools.motif_aggregate_grid.prepare_aggregate_maps", return_value={(0, "TF2"): (filled_tf2, "assembled")}):
+            stats = fill_missing_aggregate_profiles(payload, fill_missing=True, recompute_missing=False, aggregate_flank="auto")
+
+        self.assertEqual(stats["filled"], 1)
+        self.assertEqual(stats["after_missing"], 0)
+        aggregate_prefixes = {m["prefix"] for m in payload["comparisons"][0]["payload"]["aggregate"]["motifs"]}
+        self.assertEqual(aggregate_prefixes, {"TF1", "TF2"})
+        tf2 = next(m for m in payload["comparisons"][0]["payload"]["aggregate"]["motifs"] if m["prefix"] == "TF2")
+        self.assertEqual(tf2["profile_source"], "assembled")
+        self.assertEqual(tf2["conditions"][0]["samples"][0]["profile"], [0.3, 0.4])
+
     def test_writes_eight_panel_review_html(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -140,24 +172,50 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
 
             payload = build_review_payload(inputs, title="Review")
             out = root / "review_8.html"
-            write_review_html(payload, out, display_panels=8)
+            write_review_html(payload, out, display_panels=8, aggregate_legends="hide")
             html = out.read_text(encoding="utf-8")
 
         self.assertIn("initialDisplayPanels=8", html)
+        self.assertIn('initialAggregateLegends="hide"', html)
         self.assertIn('id="panel-count"', html)
+        self.assertIn('id="aggregate-legends"', html)
         self.assertIn("function setPanelCount", html)
         self.assertIn("--comparison-cols", html)
         self.assertIn("--aggregate-cols", html)
+        self.assertIn("hide-legends", html)
+        self.assertIn("showAggregateLegends", html)
         self.assertIn("function panelColumnCount", html)
         self.assertIn("Math.ceil(n/2)", html)
+        self.assertIn("aggregateGrid.style.setProperty('--aggregate-cols',n)", html)
+        self.assertIn("cols=tileData.length", html)
         self.assertIn("compact-panels", html)
         self.assertIn("${slotComparisons.length} displayed panels", html)
         self.assertNotIn("slotComparisons=[0,1,2,3]", html)
 
     def test_parser_accepts_display_panels_option(self):
         parser = build_parser()
-        args = parser.parse_args(["--inputs", "a.html", "--output", "review.html", "--display-panels", "8"])
+        args = parser.parse_args(["--inputs", "a.html", "--output", "review.html", "--display-panels", "8", "--aggregate-legends", "hide"])
         self.assertEqual(args.display_panels, 8)
+        self.assertEqual(args.aggregate_legends, "hide")
+
+    def test_parser_accepts_missing_aggregate_profile_options(self):
+        parser = build_parser()
+        args = parser.parse_args(
+            [
+                "--outdir",
+                "project",
+                "--recompute-missing-aggregate-profiles",
+                "--fill-missing-aggregate-profiles",
+                "--aggregate-flank",
+                "100",
+                "--cores",
+                "4",
+            ]
+        )
+        self.assertTrue(args.recompute_missing_aggregate_profiles)
+        self.assertTrue(args.fill_missing_aggregate_profiles)
+        self.assertEqual(args.aggregate_flank, "100")
+        self.assertEqual(args.cores, 4)
 
 
 if __name__ == "__main__":

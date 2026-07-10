@@ -24,7 +24,7 @@ from matplotlib.patches import Rectangle
 
 from fp_tools.tools.diff_footprint_helpers import _aggregate_fp_score, _mean_profile, _read_bed_centers
 from fp_tools.tools.plot_aggregate_batch import read_embedded_payload
-from fp_tools.utils.project_layout import corrected_bigwig_path, is_project_layout, match_motifs_dir, project_root, reports_dir
+from fp_tools.utils.project_layout import corrected_bigwig_path, is_project_layout, match_motifs_dir, project_root, read_sample_table, reports_dir
 
 
 NUTRIENT_GROUP_ORDER = {
@@ -295,28 +295,34 @@ def _samples_for_motif(payload: dict, motif: dict, flank: int) -> list[dict]:
 
 def _read_project_samples(project: str | Path) -> list[SampleView]:
     project = Path(project)
-    sample_table = project / "metadata" / "samples.tsv"
-    if not sample_table.exists():
+    sample_table = _project_sample_table(project)
+    if sample_table is None:
         return []
     rows = []
-    with sample_table.open(encoding="utf-8") as handle:
-        reader = csv.DictReader(handle, delimiter="\t")
-        for record in reader:
-            sample = str(record.get("sample") or "").strip()
-            condition = str(record.get("condition") or "").strip()
-            if not sample or not condition:
-                continue
-            rows.append(SampleView(sample=sample, condition=condition, corrected_bigwig=corrected_bigwig_path(project, sample), match_dir=match_motifs_dir(project, sample)))
+    for record in read_sample_table(sample_table):
+        rows.append(SampleView(sample=record.sample, condition=record.condition, corrected_bigwig=corrected_bigwig_path(project, record.sample), match_dir=match_motifs_dir(project, record.sample)))
     return rows
 
 
+def _project_sample_table(project: str | Path) -> Path | None:
+    project = Path(project)
+    candidates = [
+        project / "metadata" / "samples.tsv",
+        project / "metadata" / "sample_table.tsv",
+        project / "samples.tsv",
+        project / "sample_table.tsv",
+    ]
+    for path in candidates:
+        if path.exists() and path.stat().st_size > 0:
+            return path
+    return None
+
+
 def _read_sample_conditions(project: str | Path) -> dict[str, str]:
-    table = Path(project) / "metadata" / "samples.tsv"
-    if not table.exists():
+    table = _project_sample_table(project)
+    if table is None:
         return {}
-    with table.open(encoding="utf-8") as handle:
-        reader = csv.DictReader(handle, delimiter="\t")
-        return {str(row.get("sample") or "").strip(): str(row.get("condition") or "").strip() for row in reader if row.get("sample") and row.get("condition")}
+    return {record.sample: record.condition for record in read_sample_table(table)}
 
 
 def _mean_by_condition(matrix: pd.DataFrame, sample_conditions: dict[str, str], samples: list[str]) -> dict[str, pd.Series]:

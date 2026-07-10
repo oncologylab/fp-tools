@@ -178,6 +178,21 @@ class MotifAggregateGridTest(unittest.TestCase):
             self.assertEqual(tf1.label, "RNA TF1=+3.00")
             self.assertEqual(tf2.label, "RNA TF2=-3.00")
 
+    def test_project_sample_reader_accepts_sample_table_tsv_fallback(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project = root / "project"
+            (project / "metadata").mkdir(parents=True)
+            (project / "metadata" / "sample_table.tsv").write_text(
+                "sample\tcondition\tbam\tpeaks\n"
+                "case1\tA\tcase.bam\tcase.bed\n"
+                "ctrl1\tB\tctrl.bam\tctrl.bed\n",
+                encoding="utf-8",
+            )
+            samples = motif_grid_module._read_project_samples(project)
+            self.assertEqual([(s.sample, s.condition) for s in samples], [("case1", "A"), ("ctrl1", "B")])
+            self.assertEqual(motif_grid_module._read_sample_conditions(project), {"case1": "A", "ctrl1": "B"})
+
 
 if __name__ == "__main__":
     unittest.main()

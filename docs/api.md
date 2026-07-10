@@ -969,6 +969,8 @@ Review multiple diff-footprints HTML reports in one interactive HTML file.
 - One or more `diff_footprints_*.html` files, or directories containing those files.
 - Optional labels for the resolved comparisons.
 - Optional initial panel count from 4 to 8 for reviewing more comparisons at once.
+- Optional aggregate-legend visibility; hiding legends lets the motif aggregate review fit 4 to 8 selected comparison panels in one row.
+- Optional aggregate-profile completion from the standard project layout, so motifs present in the differential statistics can still be plotted when their profiles were not embedded in the original comparison HTML.
 
 **Output**
 
@@ -979,7 +981,10 @@ Review multiple diff-footprints HTML reports in one interactive HTML file.
 ```bash
 review-multi-comparisons \
   --outdir project \
-  --display-panels 8
+  --display-panels 8 \
+  --aggregate-legends hide \
+  --recompute-missing-aggregate-profiles \
+  --cores 16
 ```
 
 **Options**
@@ -991,6 +996,11 @@ usage: review-multi-comparisons [-h] [--inputs INPUTS [INPUTS ...]]
                                 [--labels [LABELS ...]] [--output OUTPUT]
                                 [--outdir OUTDIR] [--layout {custom,project}]
                                 [--display-panels DISPLAY_PANELS]
+                                [--aggregate-legends {show,hide}]
+                                [--fill-missing-aggregate-profiles]
+                                [--recompute-missing-aggregate-profiles]
+                                [--aggregate-flank AGGREGATE_FLANK]
+                                [--cores CORES]
                                 [--title TITLE]
 
 Review multiple diff-footprints HTML reports in one interactive HTML file.
@@ -1012,6 +1022,22 @@ options:
   --display-panels DISPLAY_PANELS
                         Initial number of comparison panels to display in the
                         HTML report, from 4 to 8 (default: 4).
+  --aggregate-legends {show,hide}
+                        Initial visibility for legends beside motif aggregate
+                        subplots (default: show). Use hide to fit 4-8 aggregate
+                        panels in one row.
+  --fill-missing-aggregate-profiles
+                        Fill missing motif aggregate panels from profiles
+                        embedded elsewhere in the combined review payload.
+  --recompute-missing-aggregate-profiles
+                        Recompute still-missing motif aggregate panels from
+                        project sample bigWigs and match-motifs BEDs.
+  --aggregate-flank AGGREGATE_FLANK
+                        Flank used when recomputing missing aggregate profiles,
+                        or 'auto' to match the existing report axis (default:
+                        auto).
+  --cores CORES         Worker processes for --recompute-missing-aggregate-
+                        profiles (default: all available cores).
   --title TITLE
 ```
 
