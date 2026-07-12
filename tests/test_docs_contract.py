@@ -55,7 +55,9 @@ class DocsEntryPointContractTest(unittest.TestCase):
     def test_primary_entry_points_are_documented_in_readme_and_manual(self):
         for command in self.project_scripts:
             self.assertIn(command, self.readme, f"{command} is missing from README.md")
-            self.assertIn(command, self.site_docs, f"{command} is missing from MkDocs pages")
+            self.assertIn(
+                command, self.site_docs, f"{command} is missing from MkDocs pages"
+            )
 
     def test_help_block_exactly_covers_non_alias_commands(self):
         documented = _verify_help_commands(self.readme)
@@ -81,7 +83,9 @@ class DocsEntryPointContractTest(unittest.TestCase):
 
     def test_gui_extra_is_declared_and_documented(self):
         extras = self.data["project"].get("optional-dependencies", {})
-        self.assertIn("gui", extras, "Expected a [project.optional-dependencies] gui extra.")
+        self.assertIn(
+            "gui", extras, "Expected a [project.optional-dependencies] gui extra."
+        )
         self.assertTrue(
             any("streamlit" in dep for dep in extras["gui"]),
             "The gui extra should provide streamlit.",
@@ -91,7 +95,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "\n".join(self.data["project"]["dependencies"]),
             "streamlit should be an optional extra, not a core dependency.",
         )
-        self.assertIn('fp-tools-bio[gui]', self.readme)
+        self.assertIn("fp-tools-bio[gui]", self.readme)
 
     def test_api_reference_is_command_manual(self):
         for command in self.project_scripts:
@@ -121,6 +125,29 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "ATACCorrect",
         ]:
             self.assertNotIn(stale, public_docs)
+
+    def test_prepare_atac_profiles_are_explained_in_plain_language(self):
+        public_atac_docs = "\n".join(
+            (ROOT / path).read_text(encoding="utf-8")
+            for path in ["README.md", "docs/index.md", "docs/api.md"]
+        )
+        for required in [
+            "fastp",
+            "mapping quality 30",
+            "MACS3",
+            "Trim Galore",
+            "Picard",
+            "HOMER",
+            "reads Bowtie2 reports at more than one genomic location",
+        ]:
+            self.assertIn(required, public_atac_docs)
+        for rejected in [
+            "CUT&Tag branches",
+            "`XS:i:` filtering",
+            "legacy-compatible",
+            "Bowtie2/Picard",
+        ]:
+            self.assertNotIn(rejected, public_atac_docs)
 
 
 if __name__ == "__main__":

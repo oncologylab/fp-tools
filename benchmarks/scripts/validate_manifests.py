@@ -32,6 +32,26 @@ FULL_MANIFEST_COLUMNS = [
 COMPACT_MANIFEST_SCHEMAS = {
     "a549_tasks.tsv": ["cell", "tf", "assay", "experiment", "file_accession", "url"],
     "10x_pbmc_pseudobulk.tsv": ["dataset", "asset", "url"],
+    "lcmv_cd8_libraries.tsv": [
+        "author",
+        "year",
+        "series",
+        "subseries",
+        "gsm_accession",
+        "assay",
+        "collection",
+        "infection",
+        "day",
+        "tissue",
+        "original_condition",
+        "harmonized_condition",
+        "broader_state",
+        "replicate",
+        "technical_partition",
+        "condition_pair_id",
+        "rna_match_status",
+        "include_in_primary_paired_analysis",
+    ],
 }
 
 

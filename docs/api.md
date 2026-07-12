@@ -6,7 +6,7 @@ The public interface of `fp-tools` is command-first. Each command below includes
 
 | Command | Purpose |
 | --- | --- |
-| [`prepare-atac`](#prepare-atac) | Download and preprocess raw ATAC-seq reads into filtered BAM, peak, bigWig, and QC outputs. |
+| [`prepare-atac`](#prepare-atac) | Prepare single- or paired-end ATAC-seq reads as filtered BAM, peak BED, RP10M bigWig, and QC files. |
 | [`atac-correct`](#atac-correct) | Bias-correct ATAC-seq cut-site signal. |
 | [`call-footprints`](#call-footprints) | Create footprint score tracks from one or more corrected bigWig signals. |
 | [`match-motifs`](#match-motifs) | Scan motifs for one or more footprint tracks and write per-sample bound/unbound motif-site calls. |
@@ -30,38 +30,55 @@ The public interface of `fp-tools` is command-first. Each command below includes
 
 <div class="fp-api-card" markdown="1">
 
-Download, trim, align, filter, QC, and peak-call ATAC-seq reads while keeping
-raw-data preparation separate from footprint analysis.
+Turn single- or paired-end ATAC-seq reads into the BAM, peak, coverage, and QC files needed
+for footprint analysis. The command can download public runs or use FASTQs that
+are already available locally.
 
 **Input parameters**
 
-- TSV/CSV metadata containing `ID`/`run_accession`, or local/HTTPS `fastq_1`
-  and optional `fastq_2` columns.
-- Named `hg38`/`mm10` reference or a custom FASTA, Bowtie2 index, blacklist,
-  chromosome sizes, TSS BED, and MACS3 genome size.
-- Optional YAML customization for download, trimming, alignment, filtering,
-  peaks, tracks, QC, and resources.
-- Optional `legacy-atac` profile for the historical ATAC-only Trim Galore,
-  Bowtie2/Picard/`XS:i:` filtering, and HOMER route. CUT&Tag branches are not
-  part of this profile.
+- A TSV or CSV file with an `ID` or `run_accession` column for public data.
+  Local files and HTTPS links can be supplied in `fastq_1` and `fastq_2`
+  columns.
+- A named `hg38` or `mm10` reference, or a custom FASTA with a Bowtie2 index,
+  blacklist BED, and genome-size value.
+- An optional YAML file for changing trimming, alignment, filtering, peak
+  calling, coverage, QC, and compute settings.
+
+**Processing profiles**
+
+| Stage | Default profile | `legacy-atac` profile |
+|---|---|---|
+| Read preparation | fastp detects adapters, trims low-quality sequence, and discards reads shorter than 20 bases. FastQC can be run before trimming. | Trim Galore performs adapter and quality trimming and runs FastQC on the trimmed reads. |
+| Alignment | Bowtie2 uses its very-sensitive end-to-end mode and accepts fragments up to 2,000 bp. | Bowtie2 uses very-sensitive local alignment and accepts fragments up to 1,000 bp. |
+| Read filtering | Keeps proper pairs with mapping quality 30 or higher. Secondary, supplementary, failed-QC, mitochondrial, duplicate, and blacklist-overlapping reads are removed. | Picard marks PCR duplicates. Duplicate reads, blacklist overlaps, and reads Bowtie2 reports at more than one genomic location are removed. No mapping-quality cutoff is added, and mitochondrial reads are retained. |
+| Peak calling | MACS3 calls paired-end fragments directly or uses the configured shift and extension for single-end reads, at q-value 0.01. | HOMER calls factor-style peaks with local enrichment 15, a 150,000 bp local window, and FDR 0.00001. Single-end libraries use HOMER's single-read tag mode. |
+| Coverage track | bedtools calculates coverage and scales it to 10 million reads or fragments. | HOMER creates a coverage track scaled to 10 million tags. |
+
+Use the default profile for new projects. Use `legacy-atac` when results need to
+be compared with ATAC-seq data processed using the nutrient-dataset method.
 
 **Output**
 
-- Canonical per-sample alignment, peak, track, QC, logs, and resumable state.
-- Legacy-compatible `<sample>.<assembly>.filtered.bam`, BAI, RP10M bigWig,
-  and narrowPeak links without duplicating large files.
-- Project merged peaks, resolved settings/reference provenance,
-  `metadata/samples.tsv`, and a downstream `atac_correct.yml`.
+- One folder per sample containing a filtered BAM and BAI, peak BED, RP10M
+  bigWig, QC metrics, fragment-length summary, and command log.
+- Convenient links named `<sample>.<assembly>.filtered.bam`,
+  `<sample>.<assembly>.rp10m.bw`, and
+  `<sample>.<assembly>.rp10m.narrowpeaks.bed` without copying large files.
+- Merged project peaks, the resolved settings and reference information,
+  software versions, `metadata/samples.tsv`, and a ready-to-run
+  `atac_correct.yml`.
 
 **Example command**
 
 ```bash
 prepare-atac \
-  --profile legacy-atac \
   --samples GSE192390_NIH3T3_samples.txt \
   --genome mm10 \
   --outdir gse192390_atac
 ```
+
+To use the nutrient-dataset processing method, add
+`--profile legacy-atac` and choose a different output directory.
 
 **Options**
 
@@ -81,8 +98,8 @@ usage: prepare-atac [-h] [--samples SAMPLES] [--genome GENOME]
                     [--no-resume] [--fail-fast] [--dry-run]
                     [--doctor] [--write-default-config PATH]
 
-Download and preprocess ATAC-seq reads into fp-tools-ready BAM, peak, bigWig,
-and QC outputs.
+Download single- or paired-end ATAC-seq reads and prepare filtered BAM, peak BED, RP10M
+bigWig, and QC files.
 
 options:
   -h, --help            show this help message and exit
@@ -93,7 +110,9 @@ options:
   --config CONFIG       Optional preprocessing YAML; CLI values override
                         packaged defaults.
   --profile {legacy-atac,modern}
-                        Preprocessing profile (default: modern, or YAML value).
+                        Processing method: modern uses fastp, samtools, and
+                        MACS3; legacy-atac uses Trim Galore, Picard, and HOMER
+                        (default: modern).
   --id-column ID_COLUMN
                         Explicit accession column name.
   --sample-column SAMPLE_COLUMN

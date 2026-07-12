@@ -34,6 +34,67 @@ def _remove_xs(input_bam: Path, output_bam: Path) -> int:
     return kept
 
 
+def _trim_command(
+    sample: str,
+    r1: Path,
+    r2: Path | None,
+    work: Path,
+    threads: str,
+    extra_args: list[Any],
+) -> list[str]:
+    command = ["trim_galore"]
+    if r2 is not None:
+        command.append("--paired")
+    command.extend(
+        [
+            "--fastqc",
+            "--cores",
+            threads,
+            "-o",
+            str(work),
+            str(r1),
+            *([str(r2)] if r2 else []),
+            "--basename",
+            sample,
+        ]
+    )
+    command.extend(str(value) for value in extra_args)
+    return command
+
+
+def _bowtie_command(
+    index_prefix: Path,
+    r1: Path,
+    r2: Path | None,
+    threads: str,
+    settings: dict[str, Any],
+) -> list[str]:
+    command = ["bowtie2", "-p", threads, "-x", str(index_prefix)]
+    if r2 is not None:
+        command.extend(["-1", str(r1), "-2", str(r2)])
+        command.extend(str(value) for value in settings["align"].get("extra_args", []))
+        command.extend(
+            ["-X", str(settings["align"]["max_insert"]), "--interleaved", "-"]
+        )
+    else:
+        command.extend(["-U", str(r1)])
+        paired_only = {"--no-mixed", "--no-discordant", "--dovetail"}
+        command.extend(
+            str(value)
+            for value in settings["align"].get("extra_args", [])
+            if str(value) not in paired_only
+        )
+    return command
+
+
+def _tag_directory_command(tag_directory: Path, bam: Path, paired: bool) -> list[str]:
+    command = ["makeTagDirectory", str(tag_directory)]
+    if paired:
+        command.append("-sspe")
+    command.append(str(bam))
+    return command
+
+
 def _ensure_bigwig(output: Path, chrom_sizes: Path) -> None:
     """Convert HOMER's fallback bedGraph when its UCSC converter is unavailable."""
     from fp_tools.tools.prepare_atac import _bedgraph_to_bigwig
@@ -68,7 +129,7 @@ def _ensure_bigwig(output: Path, chrom_sizes: Path) -> None:
 def process_legacy_sample(
     sample, root: Path, reference, settings: dict[str, Any], resume: bool = True
 ) -> dict[str, str]:
-    """Run the paired-end legacy ATAC route while retaining modern project metadata."""
+    """Run the legacy ATAC route while retaining modern project metadata."""
     from fp_tools.tools.prepare_atac import (
         MITO_CHROMS,
         _bam_count,
@@ -78,6 +139,7 @@ def process_legacy_sample(
         _relative_link,
         _run,
         _run_pipeline,
+        _samtools_sort_memory,
         _tss_enrichment,
         materialize_run_fastqs,
     )
@@ -93,10 +155,13 @@ def process_legacy_sample(
         directory.mkdir(parents=True, exist_ok=True)
 
     fastqs = [materialize_run_fastqs(run, fastq_dir, settings) for run in sample.runs]
-    if not fastqs or any(r2 is None for _, r2 in fastqs):
+    if not fastqs:
         raise ValueError(
-            f"legacy-atac requires paired-end FASTQs for sample {sample.sample}"
+            f"legacy-atac did not resolve FASTQs for sample {sample.sample}"
         )
+    paired = all(r2 is not None for _, r2 in fastqs)
+    if not paired and any(r2 is not None for _, r2 in fastqs):
+        raise ValueError(f"Sample {sample.sample} mixes paired- and single-end runs")
 
     final_bam = alignment / f"{sample.sample}.filtered.bam"
     final_bai = Path(str(final_bam) + ".bai")
@@ -129,60 +194,57 @@ def process_legacy_sample(
 
     cores = max(1, int(settings["resources"]["cores"]))
     threads = str(cores)
+    sort_memory = _samtools_sort_memory(settings)
     log = qc / "commands.log"
     combined_r1 = _concatenate(
         [r1 for r1, _ in fastqs], work / f"{sample.sample}.R1.fastq.gz"
     )
-    combined_r2 = _concatenate(
-        [r2 for _, r2 in fastqs if r2], work / f"{sample.sample}.R2.fastq.gz"
+    combined_r2 = (
+        _concatenate(
+            [r2 for _, r2 in fastqs if r2], work / f"{sample.sample}.R2.fastq.gz"
+        )
+        if paired
+        else None
     )
 
     if settings["trim"].get("enabled"):
-        trim_command = [
-            "trim_galore",
-            "--paired",
-            "--fastqc",
-            "--cores",
-            threads,
-            "-o",
-            str(work),
-            str(combined_r1),
-            str(combined_r2),
-            "--basename",
+        trim_command = _trim_command(
             sample.sample,
-        ]
-        trim_command.extend(
-            str(value) for value in settings["trim"].get("extra_args", [])
+            combined_r1,
+            combined_r2,
+            work,
+            threads,
+            list(settings["trim"].get("extra_args", [])),
         )
         _run(trim_command, log)
-        trimmed_r1 = work / f"{sample.sample}_val_1.fq.gz"
-        trimmed_r2 = work / f"{sample.sample}_val_2.fq.gz"
+        if paired:
+            trimmed_r1 = work / f"{sample.sample}_val_1.fq.gz"
+            trimmed_r2 = work / f"{sample.sample}_val_2.fq.gz"
+        else:
+            trimmed_r1 = work / f"{sample.sample}_trimmed.fq.gz"
+            trimmed_r2 = None
     else:
         trimmed_r1, trimmed_r2 = combined_r1, combined_r2
 
     initial = work / f"{sample.sample}.{reference.assembly}_alignment.bam"
-    bowtie = [
-        "bowtie2",
-        "-p",
-        threads,
-        "-x",
-        str(reference.index_prefix),
-        "-1",
-        str(trimmed_r1),
-        "-2",
-        str(trimmed_r2),
-        *[str(value) for value in settings["align"].get("extra_args", [])],
-        "-X",
-        str(settings["align"]["max_insert"]),
-        "--interleaved",
-        "-",
-    ]
+    bowtie = _bowtie_command(
+        reference.index_prefix, trimmed_r1, trimmed_r2, threads, settings
+    )
     _run_pipeline(
         bowtie, ["samtools", "view", "-@", threads, "-bh", "-o", str(initial), "-"], log
     )
     with (qc / "mapped.txt").open("w", encoding="utf-8") as output:
         _run(
-            ["samtools", "view", "-@", threads, "-c", "-F", "12", str(initial)],
+            [
+                "samtools",
+                "view",
+                "-@",
+                threads,
+                "-c",
+                "-F",
+                "12" if paired else "4",
+                str(initial),
+            ],
             log,
             stdout=output,
         )
@@ -198,7 +260,7 @@ def process_legacy_sample(
             "-@",
             threads,
             "-m",
-            "384M",
+            sort_memory,
             "-o",
             str(sorted_bam),
             str(initial),
@@ -257,7 +319,7 @@ def process_legacy_sample(
             "-@",
             threads,
             "-m",
-            "384M",
+            sort_memory,
             "-o",
             str(unique_sorted),
             str(unique),
@@ -288,7 +350,7 @@ def process_legacy_sample(
                 "-@",
                 threads,
                 "-m",
-                "384M",
+                sort_memory,
                 "-o",
                 str(final_bam),
                 str(blacklist_unsorted),
@@ -315,7 +377,7 @@ def process_legacy_sample(
             if read.reference_name != "chrEBV":
                 target.write(read)
     tag_directory = work / "TagDirectory"
-    _run(["makeTagDirectory", str(tag_directory), "-sspe", str(homer_bam)], log)
+    _run(_tag_directory_command(tag_directory, homer_bam, paired), log)
     _run(
         [
             "makeUCSCfile",
@@ -367,8 +429,8 @@ def process_legacy_sample(
         "sample": sample.sample,
         "condition": sample.condition,
         "profile": "legacy-atac",
-        "paired_end": True,
-        "usable_reads": max(1, _bam_count(final_bam) // 2),
+        "paired_end": paired,
+        "usable_reads": max(1, _bam_count(final_bam) // (2 if paired else 1)),
         "peaks": sum(
             1
             for line in peak_bed.open(encoding="utf-8")

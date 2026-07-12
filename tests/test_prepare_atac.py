@@ -15,7 +15,9 @@ from fp_tools.tools.prepare_atac import (
     _bedgraph_to_bigwig,
     _fragment_metrics,
     _relative_link,
+    _samtools_sort_memory,
     _tss_enrichment,
+    _write_chromosome_subset,
     _write_project_metadata,
     build_parser,
     download_file,
@@ -25,7 +27,13 @@ from fp_tools.tools.prepare_atac import (
     resolve_ena_fastqs,
     write_default_config,
 )
-from fp_tools.tools.prepare_atac_legacy import _ensure_bigwig, _remove_xs
+from fp_tools.tools.prepare_atac_legacy import (
+    _bowtie_command,
+    _ensure_bigwig,
+    _remove_xs,
+    _tag_directory_command,
+    _trim_command,
+)
 
 
 class PrepareAtacMetadataTest(unittest.TestCase):
@@ -106,6 +114,14 @@ class PrepareAtacConfigTest(unittest.TestCase):
             PROFILE_DEFAULTS["legacy-atac"]["resources"]["cores"],
         )
 
+    def test_sort_memory_is_bounded_by_total_run_budget(self):
+        settings = load_settings(
+            overrides={"resources": {"cores": 32, "memory_gb": 24}}
+        )
+        self.assertEqual(_samtools_sort_memory(settings), "384M")
+        settings = load_settings(overrides={"resources": {"cores": 8, "memory_gb": 8}})
+        self.assertEqual(_samtools_sort_memory(settings), "512M")
+
     def test_yaml_profile_and_cli_override_precedence(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "legacy.yml"
@@ -167,6 +183,58 @@ class PrepareAtacDownloadTest(unittest.TestCase):
 
 
 class PrepareAtacOutputTest(unittest.TestCase):
+    def test_legacy_commands_adapt_to_single_end_without_paired_flags(self):
+        settings = load_settings(overrides={"profile": "legacy-atac"})
+        trim = _trim_command("SRR1", Path("reads.fq.gz"), None, Path("work"), "32", [])
+        align = _bowtie_command(
+            Path("index/mm10"), Path("trimmed.fq.gz"), None, "32", settings
+        )
+        tags = _tag_directory_command(Path("tags"), Path("reads.bam"), False)
+        self.assertNotIn("--paired", trim)
+        self.assertIn("-U", align)
+        self.assertIn("--very-sensitive-local", align)
+        for flag in ("--no-mixed", "--no-discordant", "--dovetail", "-X"):
+            self.assertNotIn(flag, align)
+        self.assertNotIn("-sspe", tags)
+
+    def test_legacy_paired_commands_retain_historical_flags(self):
+        settings = load_settings(overrides={"profile": "legacy-atac"})
+        trim = _trim_command(
+            "SRR1",
+            Path("r1.fq.gz"),
+            Path("r2.fq.gz"),
+            Path("work"),
+            "32",
+            [],
+        )
+        align = _bowtie_command(
+            Path("index/mm10"),
+            Path("r1.fq.gz"),
+            Path("r2.fq.gz"),
+            "32",
+            settings,
+        )
+        tags = _tag_directory_command(Path("tags"), Path("reads.bam"), True)
+        self.assertIn("--paired", trim)
+        for flag in ("-1", "-2", "--no-mixed", "--dovetail", "-X", "--interleaved"):
+            self.assertIn(flag, align)
+        self.assertIn("-sspe", tags)
+
+    def test_chromosome_filter_indexes_source_bam_before_region_view(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.bam"
+            output = root / "subset.bam"
+            log = root / "commands.log"
+            with mock.patch("fp_tools.tools.prepare_atac._run") as run:
+                _write_chromosome_subset(source, output, ["chr1", "chr2"], "4", log)
+            self.assertEqual(run.call_count, 2)
+            self.assertEqual(
+                run.call_args_list[0].args[0],
+                ["samtools", "index", "-@", "4", str(source)],
+            )
+            self.assertEqual(run.call_args_list[1].args[0][-2:], ["chr1", "chr2"])
+
     def test_legacy_homer_bedgraph_fallback_becomes_bigwig(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

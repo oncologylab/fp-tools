@@ -14,8 +14,6 @@ from pathlib import Path
 import pyBigWig
 import pysam
 
-from fp_tools.tools.prepare_atac import _bedgraph_to_bigwig
-
 
 def bam_metrics(path: Path) -> dict[str, float | int]:
     metrics = {
@@ -178,43 +176,17 @@ def peak_metrics(left: Path, right: Path) -> dict[str, float | int]:
     widths_a = sorted(end - start for _, start, end in a)
     widths_b = sorted(end - start for _, start, end in b)
     return {
-        "baseline_peak_count": len(a),
-        "legacy_peak_count": len(b),
-        "baseline_peak_bp": bp_a,
-        "legacy_peak_bp": bp_b,
-        "baseline_median_width": widths_a[len(widths_a) // 2] if widths_a else 0,
-        "legacy_median_width": widths_b[len(widths_b) // 2] if widths_b else 0,
+        "left_peak_count": len(a),
+        "right_peak_count": len(b),
+        "left_peak_bp": bp_a,
+        "right_peak_bp": bp_b,
+        "left_median_width": widths_a[len(widths_a) // 2] if widths_a else 0,
+        "right_median_width": widths_b[len(widths_b) // 2] if widths_b else 0,
         "peak_overlap_bp": overlap,
         "peak_bp_jaccard": overlap / max(1, bp_a + bp_b - overlap),
-        "baseline_bp_recovered": overlap / max(1, bp_a),
-        "legacy_bp_recovered": overlap / max(1, bp_b),
+        "left_bp_recovered": overlap / max(1, bp_a),
+        "right_bp_recovered": overlap / max(1, bp_b),
     }
-
-
-def make_rp10m(bam: Path, chrom_sizes: Path, output: Path) -> Path:
-    records = int(
-        subprocess.check_output(["samtools", "view", "-c", str(bam)], text=True)
-    )
-    scale = 10_000_000 / max(1, records // 2)
-    bedgraph = output.with_suffix(".bedgraph")
-    with bedgraph.open("w") as handle:
-        subprocess.run(
-            [
-                "bedtools",
-                "genomecov",
-                "-ibam",
-                str(bam),
-                "-bg",
-                "-pc",
-                "-scale",
-                str(scale),
-            ],
-            check=True,
-            stdout=handle,
-        )
-    _bedgraph_to_bigwig(bedgraph, chrom_sizes, output)
-    bedgraph.unlink()
-    return output
 
 
 def bigwig_metrics(
@@ -258,34 +230,38 @@ def bigwig_metrics(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--baseline-bam", type=Path, required=True)
-    parser.add_argument("--baseline-peaks", type=Path, required=True)
-    parser.add_argument("--legacy-bam", type=Path, required=True)
-    parser.add_argument("--legacy-peaks", type=Path, required=True)
-    parser.add_argument("--legacy-bigwig", type=Path, required=True)
-    parser.add_argument("--baseline-bigwig", type=Path)
-    parser.add_argument("--chrom-sizes", type=Path, required=True)
+    parser = argparse.ArgumentParser(
+        description="Compare two processed ATAC-seq samples without loading whole BAMs or bigWigs into memory."
+    )
+    parser.add_argument("--left-label", default="left")
+    parser.add_argument("--right-label", default="right")
+    parser.add_argument("--left-bam", type=Path, required=True)
+    parser.add_argument("--left-peaks", type=Path, required=True)
+    parser.add_argument("--left-bigwig", type=Path)
+    parser.add_argument("--right-bam", type=Path, required=True)
+    parser.add_argument("--right-peaks", type=Path, required=True)
+    parser.add_argument("--right-bigwig", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--cores", type=int, default=1)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    baseline_bw = args.baseline_bigwig or make_rp10m(
-        args.baseline_bam, args.chrom_sizes, args.output_dir / "baseline.rp10m.bw"
-    )
     report = {
-        "baseline_bam": bam_metrics(args.baseline_bam),
-        "legacy_bam": bam_metrics(args.legacy_bam),
+        "labels": {"left": args.left_label, "right": args.right_label},
+        "left_bam": bam_metrics(args.left_bam),
+        "right_bam": bam_metrics(args.right_bam),
     }
-    report["baseline_frip"] = frip(args.baseline_bam, args.baseline_peaks)
-    report["legacy_frip"] = frip(args.legacy_bam, args.legacy_peaks)
-    report.update(peak_metrics(args.baseline_peaks, args.legacy_peaks))
+    report["left_frip"] = frip(args.left_bam, args.left_peaks)
+    report["right_frip"] = frip(args.right_bam, args.right_peaks)
+    report.update(peak_metrics(args.left_peaks, args.right_peaks))
     with tempfile.TemporaryDirectory(dir=args.output_dir) as temp:
         temp = Path(temp)
-        left = sorted_hashes(args.baseline_bam, temp / "baseline.hashes", args.cores)
-        right = sorted_hashes(args.legacy_bam, temp / "legacy.hashes", args.cores)
+        left = sorted_hashes(args.left_bam, temp / "left.hashes", args.cores)
+        right = sorted_hashes(args.right_bam, temp / "right.hashes", args.cores)
         report.update(hash_overlap(left, right))
-    report.update(bigwig_metrics(baseline_bw, args.legacy_bigwig))
+    if args.left_bigwig and args.right_bigwig:
+        report.update(bigwig_metrics(args.left_bigwig, args.right_bigwig))
+    else:
+        report["bigwig_comparison"] = "not run; both input bigWigs are required"
     (args.output_dir / "comparison.json").write_text(
         json.dumps(report, indent=2), encoding="utf-8"
     )
@@ -297,7 +273,12 @@ def main() -> None:
                     handle.write(f"{key}.{nested}\t{nested_value}\n")
             else:
                 handle.write(f"{key}\t{value}\n")
-    lines = ["# ATAC profile comparison", "", "| Metric | Value |", "|---|---:|"]
+    lines = [
+        f"# ATAC comparison: {args.left_label} and {args.right_label}",
+        "",
+        "| Metric | Value |",
+        "|---|---:|",
+    ]
     for key, value in report.items():
         if not isinstance(value, dict):
             lines.append(f"| {key} | {value} |")

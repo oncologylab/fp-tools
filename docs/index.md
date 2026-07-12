@@ -30,18 +30,26 @@ prepare-atac \
   --outdir project/raw
 ```
 
-The table needs an `ID`/`run_accession` column for SRR, ERR, or DRR data, or a
-`fastq_1` column and optional `fastq_2` for local/HTTPS reads. fp-tools uses
-ENA-verified compressed FASTQs first and NCBI SRA Toolkit as a fallback. It
-writes per-sample filtered BAMs, narrow peaks, RP10M tracks, FastQC/fastp and
-alignment QC, merged peaks, compatibility filenames, and a downstream
-`metadata/samples.tsv`. Named `hg38` and `mm10` references are cached; custom
-FASTA/index/blacklist files are supported. Run `prepare-atac --doctor` before a
-production job and use `--write-default-config` for full YAML customization.
-Use `--profile legacy-atac` for the historical ATAC-only Trim Galore, Bowtie2,
-Picard, and HOMER route used for the nutrient datasets. Thread counts scale to
-`--cores`; `--memory-gb` enforces a host-memory preflight and sample scheduler
-budget. CUT&Tag-specific broad peak parameters are intentionally excluded.
+The table needs an `ID` or `run_accession` column for SRR, ERR, or DRR data. It
+can instead provide `fastq_1` and `fastq_2` paths or HTTPS URLs. fp-tools first
+looks for checksum-verified compressed FASTQs at ENA and can fall back to the
+NCBI SRA Toolkit.
+
+The default pipeline trims adapters with fastp, aligns reads with Bowtie2,
+keeps confidently mapped alignments, removes PCR duplicates, mitochondrial
+reads, and blacklist regions, and calls peaks with MACS3. The `legacy-atac`
+profile uses Trim Galore, Bowtie2 local alignment, Picard duplicate marking,
+and HOMER coverage and peak calling. It accepts paired-end libraries and older
+single-end ATAC libraries using the corresponding single-read command forms.
+Both profiles write filtered
+BAM/BAI files, peak BED files, RP10M bigWigs, QC summaries, command logs, merged
+peaks, and a downstream `metadata/samples.tsv`.
+
+Named `hg38` and `mm10` references are cached; custom FASTA, Bowtie2 index, and
+blacklist files are also supported. Run `prepare-atac --doctor` before a
+production job. Thread counts scale to `--cores`, and `--memory-gb` controls the
+memory-aware sample scheduler and sort settings. Use `--write-default-config`
+to create an editable YAML file with every processing option.
 
 ### 1. Correct ATAC Signal
 

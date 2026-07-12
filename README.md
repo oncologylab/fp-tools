@@ -68,23 +68,31 @@ prepare-atac \
   --outdir project/raw
 ```
 
-This downloads verified compressed FASTQs, runs read/alignment/peak QC,
-produces filtered BAM, narrowPeak, and RP10M bigWig files, and writes
-`project/raw/metadata/samples.tsv` plus a downstream `atac_correct.yml`.
-Local or HTTPS `fastq_1` and optional `fastq_2` columns are also accepted.
-Use `--write-default-config prepare_atac.yml` to customize every processing
-stage and `--dry-run` to validate metadata without downloading data.
+The default pipeline checks and trims the reads with fastp, aligns paired reads
+with Bowtie2, removes low-confidence alignments, PCR duplicates, mitochondrial
+reads, and blacklist regions, and calls peaks with MACS3. It also writes a
+fragment-coverage bigWig scaled to 10 million fragments. Use this profile for
+new analyses.
 
-To reproduce the historical ATAC-only nutrient preprocessing route, select the
-legacy profile. It uses Trim Galore, the original Bowtie2/duplicate/`XS:i:`
-filtering parameters, and HOMER RP10M tracks and factor peaks. It does not run
-the CUT&Tag histone or broad-peak branches found elsewhere in the old scripts.
+Local or HTTPS `fastq_1` and `fastq_2` columns are accepted in place of archive
+accessions. The output includes filtered BAM/BAI files, peak BED files, RP10M
+bigWigs, QC summaries, command logs, `metadata/samples.tsv`, and a ready-to-run
+`atac_correct.yml`. Use `--write-default-config prepare_atac.yml` to inspect or
+change the processing settings, and `--dry-run` to validate the metadata
+without downloading reads.
+
+The `legacy-atac` profile follows the preprocessing method used for the
+nutrient ATAC-seq datasets. It trims with Trim Galore, uses Bowtie2 local
+alignment, marks PCR duplicates with Picard, removes duplicate and ambiguously
+placed reads, and creates RP10M coverage and factor-style peaks with HOMER.
+Paired-end inputs retain the historical parameters; single-end inputs use the
+corresponding single-read forms of Trim Galore, Bowtie2, and HOMER.
 
 ```bash
 prepare-atac \
   --profile legacy-atac \
   --samples metadata.tsv \
-  --genome hg38 \
+  --genome mm10 \
   --outdir project/legacy_atac \
   --cores "$(nproc)" \
   --memory-gb 24

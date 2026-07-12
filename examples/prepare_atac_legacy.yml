@@ -1,4 +1,5 @@
-# Historical ATAC-only preprocessing route used for the nutrient datasets.
+# Nutrient-dataset pipeline: Trim Galore, Bowtie2 local alignment, Picard
+# duplicate marking, and HOMER coverage and peak calling.
 # Thread counts default to all CPUs available to the process.
 profile: legacy-atac
 download:

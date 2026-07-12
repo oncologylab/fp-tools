@@ -15,7 +15,7 @@ class CompareAtacProfilesTest(unittest.TestCase):
             right.write_text("chr1\t5\t15\nchr1\t20\t25\n", encoding="utf-8")
             metrics = peak_metrics(left, right)
             self.assertEqual(metrics["peak_overlap_bp"], 10)
-            self.assertEqual(metrics["baseline_peak_count"], 2)
+            self.assertEqual(metrics["left_peak_count"], 2)
             self.assertAlmostEqual(metrics["peak_bp_jaccard"], 0.4)
 
     def test_streaming_hash_overlap(self):

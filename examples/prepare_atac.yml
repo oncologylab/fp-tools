@@ -1,5 +1,6 @@
-# Full prepare-atac defaults. Common values such as --cores can be overridden
-# directly on the command line.
+# Default pipeline: fastp trimming, Bowtie2 alignment, samtools filtering and
+# duplicate removal, MACS3 peaks, and fragment-based RP10M coverage.
+# Command-line values such as --cores override this file.
 profile: modern
 download:
   provider: auto

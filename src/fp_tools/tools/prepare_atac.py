@@ -871,6 +871,37 @@ def _bam_count(path: Path) -> int:
         return sum(1 for _ in bam.fetch(until_eof=True))
 
 
+def _samtools_sort_memory(settings: dict[str, Any]) -> str:
+    """Divide half of the run memory budget across samtools sort threads."""
+    cores = max(1, int(settings["resources"].get("cores") or 1))
+    configured = settings["resources"].get("memory_gb")
+    if configured is None:
+        configured = max(2.0, min(24.0, _available_memory_gb() - 8.0))
+    per_thread_mb = int(float(configured) * 1024 * 0.5 / cores)
+    return f"{max(64, min(768, per_thread_mb))}M"
+
+
+def _write_chromosome_subset(
+    source: Path, output: Path, chromosomes: list[str], cores: str, log: Path
+) -> None:
+    """Index a BAM before asking samtools to extract named chromosomes."""
+    _run(["samtools", "index", "-@", cores, str(source)], log)
+    _run(
+        [
+            "samtools",
+            "view",
+            "-@",
+            cores,
+            "-b",
+            "-o",
+            str(output),
+            str(source),
+            *chromosomes,
+        ],
+        log,
+    )
+
+
 def _fragment_metrics(
     bam_path: Path, output: Path, max_length: int = 1000
 ) -> dict[str, float | int | None]:
@@ -1058,6 +1089,7 @@ def process_sample(
                 "status": "cached",
             }
     cores = str(max(1, int(settings["resources"]["cores"])))
+    sort_memory = _samtools_sort_memory(settings)
     log = qc / "commands.log"
     trimmed: list[tuple[Path, Path | None]] = []
     for idx, (r1, r2) in enumerate(fastqs, start=1):
@@ -1146,13 +1178,37 @@ def process_sample(
     coord = work / "coord.bam"
     dedup = work / "dedup.bam"
     _run(
-        ["samtools", "sort", "-@", cores, "-n", "-o", str(name_sorted), str(initial)],
+        [
+            "samtools",
+            "sort",
+            "-@",
+            cores,
+            "-m",
+            sort_memory,
+            "-n",
+            "-o",
+            str(name_sorted),
+            str(initial),
+        ],
         log,
     )
     _run(
         ["samtools", "fixmate", "-@", cores, "-m", str(name_sorted), str(fixmate)], log
     )
-    _run(["samtools", "sort", "-@", cores, "-o", str(coord), str(fixmate)], log)
+    _run(
+        [
+            "samtools",
+            "sort",
+            "-@",
+            cores,
+            "-m",
+            sort_memory,
+            "-o",
+            str(coord),
+            str(fixmate),
+        ],
+        log,
+    )
     markdup = ["samtools", "markdup", "-@", cores]
     if settings["filter"].get("remove_duplicates"):
         markdup.append("-r")
@@ -1165,20 +1221,7 @@ def process_sample(
         if not (settings["filter"].get("remove_mito") and chrom in MITO_CHROMS)
     ]
     nomito = work / "nomito.bam"
-    _run(
-        [
-            "samtools",
-            "view",
-            "-@",
-            cores,
-            "-b",
-            "-o",
-            str(nomito),
-            str(dedup),
-            *keep_chroms,
-        ],
-        log,
-    )
+    _write_chromosome_subset(dedup, nomito, keep_chroms, cores, log)
     dedup_reads = _bam_count(dedup)
     nomito_reads = _bam_count(nomito)
     if reference.blacklist and reference.blacklist.exists():
@@ -1198,7 +1241,17 @@ def process_sample(
                 stdout=output,
             )
         _run(
-            ["samtools", "sort", "-@", cores, "-o", str(final_bam), str(unfiltered)],
+            [
+                "samtools",
+                "sort",
+                "-@",
+                cores,
+                "-m",
+                sort_memory,
+                "-o",
+                str(final_bam),
+                str(unfiltered),
+            ],
             log,
         )
     else:
@@ -1624,7 +1677,7 @@ def run_preprocessing(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="prepare-atac",
-        description="Download and preprocess ATAC-seq reads into fp-tools-ready BAM, peak, bigWig, and QC outputs.",
+        description="Download single- or paired-end ATAC-seq reads and prepare filtered BAM, peak BED, RP10M bigWig, and QC files.",
     )
     parser.add_argument(
         "--samples",
@@ -1641,7 +1694,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--profile",
         choices=sorted(PROFILE_DEFAULTS),
-        help="Preprocessing profile (default: modern, or the value in YAML).",
+        help="Processing method: modern uses fastp, samtools, and MACS3; legacy-atac uses Trim Galore, Picard, and HOMER (default: modern).",
     )
     parser.add_argument("--id-column", help="Explicit accession column name.")
     parser.add_argument("--sample-column", help="Explicit sample-name column.")
