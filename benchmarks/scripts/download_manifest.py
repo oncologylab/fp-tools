@@ -185,11 +185,33 @@ def main() -> int:
         "--force", action="store_true", help="Overwrite existing files."
     )
     parser.add_argument(
+        "--include",
+        action="append",
+        default=[],
+        help="Download only matching file or run accessions; repeat as needed.",
+    )
+    parser.add_argument(
         "--downloader", choices=["auto", "aria2c", "wget", "urllib"], default="auto"
     )
     args = parser.parse_args()
 
     rows = read_manifest(args.manifest)
+    if args.include:
+        wanted = set(args.include)
+        rows = [
+            row
+            for row in rows
+            if row.get("file_accession") in wanted or row.get("run_accession") in wanted
+        ]
+        found = {
+            value
+            for row in rows
+            for value in (row.get("file_accession"), row.get("run_accession"))
+            if value in wanted
+        }
+        missing = sorted(wanted - found)
+        if missing:
+            parser.error(f"unknown requested accession(s): {', '.join(missing)}")
     results = [
         download_one(
             row, dry_run=args.dry_run, force=args.force, downloader=args.downloader
