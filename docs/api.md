@@ -1194,6 +1194,7 @@ plot-motif-aggregate-grid \
   --fill-missing-profiles \
   --rna-log2norm nutrient_rna_deseq2_log2norm_ruvr_k20.tsv.gz \
   --rna-raw-counts nutrient_rna_raw_counts_ruvr_k20_gene_universe.tsv.gz \
+  --rna-sample-table nutrient_rna_sample_metadata.tsv \
   --motif-gene-map JASPAR2024_hg38.txt \
   --repeat-column-labels row
 ```
@@ -1213,6 +1214,7 @@ usage: plot-motif-aggregate-grid [-h] [--input-html INPUT_HTML]
                                  [--cores CORES]
                                  [--rna-log2norm RNA_LOG2NORM]
                                  [--rna-raw-counts RNA_RAW_COUNTS]
+                                 [--rna-sample-table RNA_SAMPLE_TABLE]
                                  [--motif-gene-map MOTIF_GENE_MAP]
                                  [--rna-min-raw-mean RNA_MIN_RAW_MEAN]
                                  [--repeat-column-labels {none,row}]
@@ -1258,6 +1260,10 @@ options:
   --rna-raw-counts RNA_RAW_COUNTS
                         Optional raw RNA count matrix used to filter
                         unexpressed TFs.
+  --rna-sample-table RNA_SAMPLE_TABLE
+                        Optional RNA sample table with sample and condition
+                        columns. Use this when RNA and ATAC sample identifiers
+                        differ.
   --motif-gene-map MOTIF_GENE_MAP
                         Optional motif-to-gene map with motif and gene_symbol
                         columns.

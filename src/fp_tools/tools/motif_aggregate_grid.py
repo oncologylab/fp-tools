@@ -325,6 +325,24 @@ def _read_sample_conditions(project: str | Path) -> dict[str, str]:
     return {record.sample: record.condition for record in read_sample_table(table)}
 
 
+def _read_rna_sample_conditions(path: str | Path | None) -> dict[str, str]:
+    """Read an optional RNA-specific sample-to-condition mapping."""
+    if not path:
+        return {}
+    table = pd.read_csv(path, sep="\t", dtype=str).fillna("")
+    missing = {"sample", "condition"} - set(table.columns)
+    if missing:
+        raise ValueError(f"RNA sample table missing columns: {sorted(missing)}")
+    table["sample"] = table["sample"].str.strip()
+    table["condition"] = table["condition"].str.strip()
+    if (table["sample"] == "").any() or (table["condition"] == "").any():
+        raise ValueError("RNA sample table contains empty sample or condition values")
+    duplicates = table.loc[table["sample"].duplicated(keep=False), "sample"].unique()
+    if len(duplicates):
+        raise ValueError(f"RNA sample table contains duplicate samples: {sorted(duplicates)}")
+    return dict(zip(table["sample"], table["condition"]))
+
+
 def _mean_by_condition(matrix: pd.DataFrame, sample_conditions: dict[str, str], samples: list[str]) -> dict[str, pd.Series]:
     available = [sample for sample in samples if sample in matrix.columns and sample in sample_conditions]
     out = {}
@@ -343,10 +361,11 @@ def compute_rna_fc_map(
     rna_raw_counts: str | Path | None,
     motif_gene_map: str | Path | None,
     min_raw_mean: float = 1.0,
+    rna_sample_table: str | Path | None = None,
 ) -> dict[tuple[int, str], RnaFcView]:
     if not project or not rna_log2norm or not motif_gene_map:
         return {}
-    sample_conditions = _read_sample_conditions(project)
+    sample_conditions = _read_rna_sample_conditions(rna_sample_table) or _read_sample_conditions(project)
     if not sample_conditions:
         return {}
     expr = pd.read_csv(rna_log2norm, sep="\t")
@@ -938,6 +957,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--cores", type=int, default=None, help="Worker processes for --recompute-missing-profiles (default: all available cores).")
     parser.add_argument("--rna-log2norm", help="Optional DESeq2/RUVr log2-normalized RNA matrix with gene_key and sample columns.")
     parser.add_argument("--rna-raw-counts", help="Optional raw RNA count matrix used to filter unexpressed TFs.")
+    parser.add_argument("--rna-sample-table", help="Optional RNA sample table with sample and condition columns. Use this when RNA and ATAC sample identifiers differ.")
     parser.add_argument("--motif-gene-map", help="Optional motif-to-gene map with motif and gene_symbol columns.")
     parser.add_argument("--rna-min-raw-mean", type=float, default=1.0, help="Minimum mean raw count in either compared condition for a TF to be shown (default: 1.0).")
     parser.add_argument("--repeat-column-labels", choices=["none", "row"], default="none", help="Repeat comparison labels inside each motif row panel instead of showing them only in the page header (default: none).")
@@ -970,6 +990,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--rna-log2norm requires --motif-gene-map")
     if args.rna_raw_counts and not args.rna_log2norm:
         parser.error("--rna-raw-counts requires --rna-log2norm")
+    if args.rna_sample_table and not args.rna_log2norm:
+        parser.error("--rna-sample-table requires --rna-log2norm")
     payload = read_embedded_payload(args.input_html)
     if payload.get("schema") != "fp-tools.review-multi-comparisons.v1":
         raise SystemExit(f"{args.input_html} is not a review-multi-comparisons HTML payload")
@@ -981,7 +1003,16 @@ def main(argv: list[str] | None = None) -> int:
         order_payloads.append(order_payload)
     motif_order = collect_motifs_from_payloads(order_payloads) if order_payloads else None
     aggregate_maps = prepare_aggregate_maps(payload, project=project, fill_missing=args.fill_missing_profiles or args.recompute_missing_profiles, recompute_missing=args.recompute_missing_profiles, flank=args.flank, cores=args.cores)
-    rna_fc_map = compute_rna_fc_map(payload, project, motif_order, args.rna_log2norm, args.rna_raw_counts, args.motif_gene_map, min_raw_mean=args.rna_min_raw_mean)
+    rna_fc_map = compute_rna_fc_map(
+        payload,
+        project,
+        motif_order,
+        args.rna_log2norm,
+        args.rna_raw_counts,
+        args.motif_gene_map,
+        min_raw_mean=args.rna_min_raw_mean,
+        rna_sample_table=args.rna_sample_table,
+    )
     output = Path(args.output)
     source_tsv = Path(args.source_tsv) if args.source_tsv else output.with_name(f"{output.stem}_source.tsv")
     motifs, pages = plot_grid_pdf(payload, output, rows_per_page=args.rows_per_page, flank=args.flank, title=args.title, motif_order=motif_order, aggregate_maps=aggregate_maps, rna_fc_map=rna_fc_map, repeat_column_labels=args.repeat_column_labels)

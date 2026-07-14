@@ -178,6 +178,51 @@ class MotifAggregateGridTest(unittest.TestCase):
             self.assertEqual(tf1.label, "RNA TF1=+3.00")
             self.assertEqual(tf2.label, "RNA TF2=-3.00")
 
+    def test_compute_rna_fc_map_accepts_independent_rna_sample_table(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            project = root / "project"
+            (project / "metadata").mkdir(parents=True)
+            (project / "metadata" / "samples.tsv").write_text(
+                "sample\tcondition\natac_case\tcase\natac_ctrl\tctrl\n",
+                encoding="utf-8",
+            )
+            rna_samples = root / "rna_samples.tsv"
+            rna_samples.write_text(
+                "sample\tcondition\nrna_case_1\tcase\nrna_case_2\tcase\nrna_ctrl\tctrl\n",
+                encoding="utf-8",
+            )
+            log2norm = root / "rna.tsv"
+            log2norm.write_text(
+                "gene_key\trna_case_1\trna_case_2\trna_ctrl\nTF1\t7\t5\t3\n",
+                encoding="utf-8",
+            )
+            raw = root / "raw.tsv"
+            raw.write_text(
+                "gene_key\trna_case_1\trna_case_2\trna_ctrl\nTF1\t12\t10\t9\n",
+                encoding="utf-8",
+            )
+            motif_map = root / "motifs.tsv"
+            motif_map.write_text("motif\tgene_symbol\nTF1_M1\tTF1\n", encoding="utf-8")
+            payload = {
+                "schema": "fp-tools.review-multi-comparisons.v1",
+                "title": "Review",
+                "comparisons": [{"label": "case vs ctrl", "payload": _payload("case vs ctrl", "case", 0.2)}],
+            }
+            payload["comparisons"][0]["payload"]["conditions"] = ["case", "ctrl"]
+            payload["comparisons"][0]["payload"]["aggregate"]["motifs"][0]["conditions"][1]["name"] = "ctrl"
+            rna = compute_rna_fc_map(
+                payload,
+                project,
+                None,
+                log2norm,
+                raw,
+                motif_map,
+                rna_sample_table=rna_samples,
+            )
+            comparison = ordered_comparisons(payload)[0]
+            self.assertEqual(rna[(comparison.index, "TF1_M1")].label, "RNA TF1=+3.00")
+
     def test_project_sample_reader_accepts_sample_table_tsv_fallback(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

@@ -28,3 +28,29 @@ Use `scripts/build_label_overlap_benchmark.py` to convert scored prediction inte
 ## Benchmark Result Folders
 
 Use `scripts/run_benchmark_pipeline.py` after label-overlap table creation to combine one or more labeled prediction TSVs into a reproducible result folder containing metrics, calibration reports, optional bootstrap confidence intervals, and PDF/SVG/PNG multi-panel figures.
+
+## LCMV CD8 multimodal collection
+
+`manifests/compact/lcmv_cd8_libraries.tsv` is the curated GSM-level selection
+for the four LCMV CD8 studies. The associated helpers deliberately keep bulky
+FASTQs and results under ignored `data/public/` directories:
+
+```bash
+python benchmarks/scripts/resolve_lcmv_cd8_collection.py
+python benchmarks/scripts/build_lcmv_cd8_downstream.py
+python benchmarks/scripts/summarize_lcmv_rna.py \
+  --project data/public/processed/lcmv_cd8_bulk_fp_rna \
+  --gtf data/public/raw/lcmv_cd8_bulk/reference/mm10/gencode_m25/gencode.vM25.annotation.gtf
+Rscript benchmarks/scripts/analyze_lcmv_rna.R \
+  data/public/processed/lcmv_cd8_bulk_fp_rna
+python benchmarks/scripts/validate_lcmv_outputs.py --verify-checksums
+```
+
+ATAC and RNA entries are matched at the study/condition level, not as aliquots
+from the same mouse. The primary RNA contrasts use the paper-specific Kallisto
+layer within each study. Beltra contrasts also include TMM/voom/limma results.
+The uniform 21-mer Kallisto layer accommodates Milner's 25-base reads and is
+reserved for cross-study visualization and explicitly exploratory RUVr
+comparisons. The validator checks accessions, ENA checksums, BAM/BED/bigWig
+integrity, motif and comparison completeness, count matrices, and DE tables;
+its QC flags require review rather than automatic sample removal.

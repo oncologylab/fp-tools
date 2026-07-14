@@ -29,6 +29,8 @@ class ReleaseMetadataTest(unittest.TestCase):
             "benchmarks/results/",
         ]:
             self.assertIn(phrase, checklist)
+        self.assertIn("examples/gui_configs/call_footprints_single.yml", checklist)
+        self.assertTrue((ROOT / "examples/gui_configs/call_footprints_single.yml").is_file())
 
     def test_release_script_can_clean_missing_dist_directory(self):
         script = (ROOT / "scripts" / "build_release.sh").read_text(encoding="utf-8")

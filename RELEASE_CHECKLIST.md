@@ -50,7 +50,7 @@ Primary current API checks:
 .venv/bin/pseudobulk-fragments --help
 .venv/bin/find-signature-fp --help
 .venv/bin/pseudobulk-footprints --help
-.venv/bin/run-workflow --config examples/gui_configs/plotaggregate_single.yml --dry-run
+.venv/bin/run-workflow --config examples/gui_configs/call_footprints_single.yml --dry-run
 ```
 
 ## 4. Build Artifacts

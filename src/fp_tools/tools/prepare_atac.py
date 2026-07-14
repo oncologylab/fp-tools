@@ -732,7 +732,12 @@ def dependency_report(profile: str = "modern") -> list[dict[str, str]]:
 def _tool_version(path: str) -> str:
     try:
         result = subprocess.run(
-            [path, "--version"], capture_output=True, text=True, timeout=10
+            [path, "--version"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
         )
         text = (result.stdout or result.stderr).strip().splitlines()
         return text[0] if text else "unknown"

@@ -16,6 +16,7 @@ from fp_tools.tools.prepare_atac import (
     _fragment_metrics,
     _relative_link,
     _samtools_sort_memory,
+    _tool_version,
     _tss_enrichment,
     _write_chromosome_subset,
     _write_project_metadata,
@@ -37,6 +38,13 @@ from fp_tools.tools.prepare_atac_legacy import (
 
 
 class PrepareAtacMetadataTest(unittest.TestCase):
+    def test_tool_version_replaces_invalid_utf8(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tool = Path(tmp) / "invalid-version"
+            tool.write_bytes(b"#!/bin/sh\nprintf '\\377tool 1.0\\n'\n")
+            tool.chmod(0o755)
+            self.assertEqual(_tool_version(str(tool)), "�tool 1.0")
+
     def test_reads_existing_gse_style_table(self):
         with tempfile.TemporaryDirectory() as tmp:
             table = Path(tmp) / "samples.txt"
