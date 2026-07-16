@@ -7,7 +7,7 @@ authors:
     given-names: Yaoxiang
   - family-names: Yi
     given-names: Chunling
-version: 0.1.10
+version: 0.1.15
 license: MIT
 repository-code: "https://github.com/oncologylab/fp-tools"
 url: "https://github.com/oncologylab/fp-tools"

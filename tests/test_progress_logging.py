@@ -1,9 +1,23 @@
 import unittest
+import argparse
+from unittest import mock
 
+from fp_tools.utils.logger import FpToolsLogger
 from fp_tools.utils import utilities
 
 
 class ProgressLoggingTest(unittest.TestCase):
+    def test_arguments_overview_logs_shared_dest_once(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--time-series", dest="time_series", action="store_true")
+        parser.add_argument("--time-course", dest="time_series", action="store_true")
+        args = parser.parse_args([])
+        logger = FpToolsLogger(level=0)
+        with mock.patch.object(logger, "comment") as comment:
+            logger.arguments_overview(parser, args)
+        output = comment.call_args.args[0]
+        self.assertEqual(output.count("# time_series:"), 1)
+
     def test_progress_milestones_are_coarse_and_include_completion(self):
         seen = []
         for done in range(0, 101):

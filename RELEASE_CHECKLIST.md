@@ -18,6 +18,7 @@ Run the full local test suite:
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python scripts/smoke_console_scripts.py
 ```
 
 Required coverage before release:
@@ -42,6 +43,7 @@ Primary current API checks:
 .venv/bin/normalize-bigwig --help
 .venv/bin/plot-aggregate --help
 .venv/bin/review-multi-comparisons --help
+.venv/bin/plot-motif-aggregate-grid --help
 .venv/bin/run-workflow --help
 .venv/bin/fp-tools-gui --help
 .venv/bin/motif-discovery --help
@@ -83,27 +85,23 @@ python -m venv /tmp/fp-tools-pypi-smoke
 /tmp/fp-tools-pypi-smoke/bin/fp-tools-gui --help >/dev/null
 ```
 
-Prefer PyPI Trusted Publishing or a GitHub Actions secret for publishing
-credentials. Do not paste PyPI tokens into chat, shell history, or committed
-files. Rotate any token that was exposed outside a secret manager.
+The manual GitHub Actions `Publish` workflow uses the repository
+`PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or
+committed files. Rotate any token that was exposed outside a secret manager.
 
 The preferred publish path is the manual GitHub Actions `Publish` workflow. It
-uses PyPI Trusted Publishing, repairs the Linux wheel, checks metadata, and
-smoke-tests the repaired wheel before upload.
-
-PyPI Trusted Publishing must be configured on the `fp-tools-bio` PyPI project
-with repository `oncologylab/fp-tools`, workflow `.github/workflows/publish.yml`,
-and environment `pypi`. If the publish job reports `invalid-publisher`, the
-package build is not the problem; update the PyPI trusted publisher entry or add
-a GitHub Actions secret such as `PYPI_API_TOKEN` and wire the workflow to use it.
+repairs the Linux wheel, checks metadata, smoke-tests every declared console
+script, and uploads with the configured token.
 
 ## 5. Metadata And Docs
 
 - Confirm `pyproject.toml` version is correct.
 - Confirm `project.urls` point to `https://github.com/oncologylab/fp-tools`.
-- Confirm README renders on GitHub, especially the feature comparison table.
+- Confirm README renders correctly on GitHub.
 - Validate the MkDocs site locally with `.venv/bin/mkdocs build --clean --strict`, then push documentation changes to `main`. The GitHub Actions `Docs` workflow deploys GitHub Pages from `main`; do not use `mkdocs gh-deploy` or create a `gh-pages` branch for this repository.
 - Confirm `LICENSE`, `CITATION.cff`, `environment.yml`, and `Dockerfile` are present and current.
+- Confirm `pyproject.toml`, `src/fp_tools/__init__.py`, `CITATION.cff`, release
+  tag, and example version pins agree.
 
 ## 6. Data Hygiene
 

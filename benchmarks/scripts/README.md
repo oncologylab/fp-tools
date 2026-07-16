@@ -1,6 +1,6 @@
 # Benchmark Scripts
 
-Planned helpers from `DEV_PLAN.md`:
+Benchmark and validation helpers:
 
 - `build_encode_manifest.py`: query ENCODE and write a public-data manifest without downloading files.
 - `download_manifest.py`: resumable downloads plus checksum and path reports.

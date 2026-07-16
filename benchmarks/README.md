@@ -17,9 +17,8 @@ Start with released human GRCh38 ENCODE bulk ATAC-seq experiments matched to TF 
 ## Deferred Benchmark Scaffolds
 
 Motif-relaxed/motif-free recovery and supervised calibration scripts remain in
-this directory as development scaffolds, but they are not first-version paper
-requirements. See `../docs/FUTURE_PLANS.md` for the validation work needed before
-those workflows are presented as supported capabilities.
+this directory as development scaffolds, but they are not primary supported
+workflows. See `../DEV_PLAN.md` for the validation boundary.
 
 ## Public-Label Benchmark Tables
 

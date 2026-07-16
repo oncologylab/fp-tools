@@ -44,6 +44,19 @@ def _positive_values(arr):
     return arr if arr.size else np.array([0.0], dtype=float)
 
 
+def _collapse_duplicate_x(xdata, ydata):
+    """Average y values for repeated x coordinates before interpolation."""
+
+    unique_x, inverse = np.unique(xdata, return_inverse=True)
+    if unique_x.size == xdata.size:
+        return xdata, ydata
+    sums = np.zeros(unique_x.size, dtype=float)
+    counts = np.zeros(unique_x.size, dtype=int)
+    np.add.at(sums, inverse, ydata)
+    np.add.at(counts, inverse, 1)
+    return unique_x, sums / counts
+
+
 def fit_quantile_normalizers(list_of_arrays, names, logger=None, quantiles=None):
     """Fit diff-footprints-style multiplicative quantile normalizers."""
 
@@ -66,6 +79,7 @@ def fit_quantile_normalizers(list_of_arrays, names, logger=None, quantiles=None)
         finite = np.isfinite(xdata) & np.isfinite(ydata)
         xdata = xdata[finite]
         ydata = ydata[finite]
+        xdata, ydata = _collapse_duplicate_x(xdata, ydata)
         if xdata.size < 4 or np.isclose(np.max(xdata), np.min(xdata)):
             factor = 1.0 if not np.any(np.isfinite(ydata)) else float(np.nanmean(ydata))
             if not np.isfinite(factor) or factor <= 0:
@@ -90,6 +104,8 @@ def fit_quantile_normalizers(list_of_arrays, names, logger=None, quantiles=None)
             func = "sigmoid"
         except Exception as exc:
             popt = float(np.mean(y_inter))
+            if not np.isfinite(popt) or popt <= 0:
+                popt = 1.0
             if logger is not None:
                 logger.warning(
                     f"Curve-fitting quantile normalization failed for '{name}'. "

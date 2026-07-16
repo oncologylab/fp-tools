@@ -1,6 +1,8 @@
 # fp-tools
 
-`fp-tools` is a Python package for ATAC-seq footprint analysis. It helps users turn ATAC-seq data into bias-corrected cut-site tracks, footprint scores, motif-centered comparisons, aggregate plots, and static HTML reports.
+`fp-tools` is a command-first Python package for ATAC-seq footprint analysis.
+It turns ATAC-seq data into bias-corrected cut-site tracks, footprint scores,
+motif-centered comparisons, aggregate plots, and standalone HTML reports.
 
 Documentation: <https://oncologylab.github.io/fp-tools/>
 

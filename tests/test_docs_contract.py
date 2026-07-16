@@ -149,6 +149,24 @@ class DocsEntryPointContractTest(unittest.TestCase):
         ]:
             self.assertNotIn(rejected, public_atac_docs)
 
+    def test_local_markdown_links_exist(self):
+        markdown_files = [
+            ROOT / "README.md",
+            ROOT / "AGENTS.md",
+            ROOT / "DEV_PLAN.md",
+            ROOT / "RELEASE_CHECKLIST.md",
+            *sorted((ROOT / "docs").glob("*.md")),
+            *sorted((ROOT / "benchmarks").glob("*.md")),
+        ]
+        pattern = re.compile(r"\[[^\]]+\]\((?!https?://|mailto:|#)([^)#]+)")
+        missing = []
+        for source in markdown_files:
+            for target in pattern.findall(source.read_text(encoding="utf-8")):
+                path = (source.parent / target).resolve()
+                if not path.exists():
+                    missing.append(f"{source.relative_to(ROOT)} -> {target}")
+        self.assertEqual(missing, [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -150,14 +150,16 @@ class FpToolsLogger(logging.Logger):
         """Print a simple overview of parsed CLI arguments."""
         content = ""
         content += "# ----- Input parameters -----\n"
+        seen = set()
         for group in parser._action_groups:
             group_actions = group._group_actions
             if len(group_actions) > 0:
                 for option in group_actions:
-                    if option.help != "==SUPPRESS==":
+                    if option.help != "==SUPPRESS==" and option.dest not in seen:
                         name = option.dest
                         attr = getattr(args, name, None)
                         content += f"# {name}:\t{attr}\n"
+                        seen.add(name)
         self.comment(content + "\n")
 
     def output_files(self, outfiles):

@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 import numpy as np
 
@@ -29,6 +30,19 @@ class SharedNormalizationTest(unittest.TestCase):
         out = objects["a"].normalize(np.array([1.0, 1.0]))
         self.assertTrue(np.isfinite(out).all())
         self.assertGreater(float(out[0]), 0.0)
+
+    def test_discrete_arrays_do_not_emit_interpolation_warnings(self):
+        arrays = [
+            np.repeat([1.0, 2.0, 3.0], [50, 25, 25]),
+            np.repeat([2.0, 4.0, 6.0], [50, 25, 25]),
+        ]
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            normalized, objects, _ = normalize_arrays(
+                arrays, ["first", "second"], mode="sample-quantile"
+            )
+        self.assertEqual(set(objects), {"first", "second"})
+        self.assertTrue(all(np.isfinite(arr).all() for arr in normalized))
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 .DS_Store
-DEV_PLAN.md
 
 # Local environment and editor state
 .venv/
@@ -10,7 +9,6 @@ DEV_PLAN.md
 .claude/
 CLAUDE.md
 CLAUDE.local.md
-AGENTS.md
 .cursor/
 .aider*
 .github/copilot-instructions.md
