@@ -84,6 +84,26 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertIn("PYPI_API_TOKEN", workflow)
         self.assertNotIn("id-token: write", workflow)
 
+    def test_workflows_use_node24_compatible_action_versions(self):
+        workflows = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in sorted((ROOT / ".github/workflows").glob("*.yml"))
+        )
+        for stale in [
+            "actions/checkout@v4",
+            "actions/setup-python@v5",
+            "actions/upload-pages-artifact@v3",
+            "actions/deploy-pages@v4",
+        ]:
+            self.assertNotIn(stale, workflows)
+        for current in [
+            "actions/checkout@v7",
+            "actions/setup-python@v6",
+            "actions/upload-pages-artifact@v5",
+            "actions/deploy-pages@v5",
+        ]:
+            self.assertIn(current, workflows)
+
     def test_console_script_smoke_helper_covers_declared_scripts(self):
         helper = ROOT / "scripts" / "smoke_console_scripts.py"
         self.assertTrue(helper.is_file())
