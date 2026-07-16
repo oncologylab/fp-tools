@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import http.server
+import re
 import socketserver
 import threading
 from pathlib import Path
@@ -53,6 +54,10 @@ def audit(site_dir: Path) -> None:
             for width, height in VIEWPORTS:
                 for scheme in schemes:
                     page = browser.new_page(viewport={"width": width, "height": height})
+                    page.route(
+                        re.compile(r"^https?://(?!127\.0\.0\.1)"),
+                        lambda route: route.fulfill(status=204, body=""),
+                    )
                     console_errors: list[str] = []
                     failed_requests: list[str] = []
                     page.on(
