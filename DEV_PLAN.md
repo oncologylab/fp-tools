@@ -30,6 +30,8 @@ a separately planned breaking release explicitly changes the contract.
   cross-study exploratory summaries, and output validation.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
   PyPI publication.
+- Branded GitHub and MkDocs presentation with responsive standalone report and
+  GUI demos plus automated desktop/mobile browser audits.
 
 ## Near-Term Priorities
 
@@ -42,6 +44,8 @@ a separately planned breaking release explicitly changes the contract.
    and YAML interfaces.
 5. Keep benchmark claims proportional to validated public data and recorded
    metrics.
+6. Keep public pages free of broken assets, browser errors, responsive
+   overflow, inaccessible navigation, and stale screenshots.
 
 ## Deferred or Experimental Work
 

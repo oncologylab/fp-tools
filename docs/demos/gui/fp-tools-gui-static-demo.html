@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>fp-tools GUI static preview</title>
+  <link rel="icon" href="../../assets/fp_tools_logo_icon.svg">
   <style>
     :root {
       --bg: #f3f6fa;
@@ -30,6 +31,9 @@
       display: grid;
       grid-template-columns: 304px minmax(0, 1fr);
       min-height: 100vh;
+    }
+    .menu-button {
+      display: none;
     }
     aside {
       background: var(--nav);
@@ -243,14 +247,57 @@
         grid-template-columns: 1fr;
       }
       aside {
-        min-height: auto;
+        bottom: 0;
+        left: 0;
+        min-height: 100vh;
+        overflow-y: auto;
+        position: fixed;
+        top: 0;
+        transform: translateX(-100%);
+        transition: transform 160ms ease;
+        width: min(86vw, 320px);
+        z-index: 20;
+      }
+      body.menu-open aside {
+        transform: translateX(0);
+      }
+      .menu-button {
+        align-items: center;
+        background: var(--nav);
+        border: 0;
+        border-radius: 0 0 8px 0;
+        color: #ffffff;
+        cursor: pointer;
+        display: inline-flex;
+        font: inherit;
+        gap: 8px;
+        left: 0;
+        padding: 12px 15px;
+        position: sticky;
+        top: 0;
+        z-index: 15;
+      }
+      main {
+        padding: 18px;
+      }
+      .hero {
+        margin-top: 8px;
+      }
+      body.menu-open::after {
+        background: rgba(15, 23, 42, 0.56);
+        content: "";
+        inset: 0;
+        position: fixed;
+        z-index: 19;
       }
     }
   </style>
 </head>
 <body>
+  <button class="menu-button" type="button" aria-controls="preview-navigation"
+          aria-expanded="false">☰ Menu</button>
   <div class="app">
-    <aside>
+    <aside id="preview-navigation" aria-label="Preview navigation">
       <div class="brand">
         <h1>fp-tools</h1>
         <p>Command-ready footprint workflows</p>
@@ -590,6 +637,11 @@ plot_aggregate: sig</pre>
       const page = pages[pageKey] || pages.home;
       document.querySelectorAll(".nav-item").forEach((item) => {
         item.classList.toggle("active", item.dataset.page === pageKey);
+        if (item.dataset.page === pageKey) {
+          item.setAttribute("aria-current", "page");
+        } else {
+          item.removeAttribute("aria-current");
+        }
       });
       document.getElementById("main-content").innerHTML = `
         <section class="hero">
@@ -601,6 +653,12 @@ plot_aggregate: sig</pre>
       `;
       if (pushHash && window.location.hash !== `#${pageKey}`) {
         history.pushState(null, "", `#${pageKey}`);
+      }
+      document.title = `${page.heading} · fp-tools GUI preview`;
+      document.body.classList.remove("menu-open");
+      document.querySelector(".menu-button").setAttribute("aria-expanded", "false");
+      if (pushHash) {
+        document.getElementById("main-content").focus({ preventScroll: true });
       }
     }
 
@@ -622,6 +680,23 @@ plot_aggregate: sig</pre>
       renderPage((window.location.hash || "#home").slice(1), false);
     });
 
+    const menuButton = document.querySelector(".menu-button");
+    menuButton.addEventListener("click", () => {
+      const open = document.body.classList.toggle("menu-open");
+      menuButton.setAttribute("aria-expanded", String(open));
+    });
+    document.addEventListener("click", (event) => {
+      if (
+        document.body.classList.contains("menu-open")
+        && !event.target.closest("aside")
+        && !event.target.closest(".menu-button")
+      ) {
+        document.body.classList.remove("menu-open");
+        menuButton.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.getElementById("main-content").setAttribute("tabindex", "-1");
     renderPage((window.location.hash || "#home").slice(1), false);
   </script>
 </body>

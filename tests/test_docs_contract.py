@@ -126,6 +126,28 @@ class DocsEntryPointContractTest(unittest.TestCase):
         ]:
             self.assertNotIn(stale, public_docs)
 
+    def test_public_site_uses_branded_assets_and_responsive_demo_contracts(self):
+        reports = (ROOT / "docs" / "reports.md").read_text(encoding="utf-8")
+        gui = (ROOT / "docs" / "gui.md").read_text(encoding="utf-8")
+        gui_demo = (
+            ROOT / "docs" / "demos" / "gui" / "fp-tools-gui-static-demo.html"
+        ).read_text(encoding="utf-8")
+        report_demo = (
+            ROOT
+            / "docs"
+            / "demos"
+            / "reports"
+            / "diff_footprints_K562_HepG2.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn("fp_tools_logo_horizontal.svg", self.readme)
+        self.assertIn("interface_diff_footprints_html.png", reports)
+        self.assertIn("interface_plot_aggregate_batch_html.png", reports)
+        self.assertIn("interface_gui_home.png", gui)
+        self.assertIn('class="menu-button"', gui_demo)
+        self.assertIn("aria-current", gui_demo)
+        self.assertIn('rel="icon"', gui_demo)
+        self.assertIn('rel="icon"', report_demo)
+
     def test_prepare_atac_profiles_are_explained_in_plain_language(self):
         public_atac_docs = "\n".join(
             (ROOT / path).read_text(encoding="utf-8")

@@ -65,7 +65,20 @@ class ReleaseMetadataTest(unittest.TestCase):
 
 
     def test_release_metadata_files_exist(self):
-        for relative in ["LICENSE", "CITATION.cff", "environment.yml", "Dockerfile", "Makefile"]:
+        for relative in [
+            "LICENSE",
+            "CITATION.cff",
+            "environment.yml",
+            "Dockerfile",
+            "Makefile",
+            "CONTRIBUTING.md",
+            "SECURITY.md",
+            "CODE_OF_CONDUCT.md",
+            ".github/PULL_REQUEST_TEMPLATE.md",
+            ".github/ISSUE_TEMPLATE/bug_report.yml",
+            ".github/ISSUE_TEMPLATE/feature_request.yml",
+            ".github/ISSUE_TEMPLATE/config.yml",
+        ]:
             self.assertTrue((ROOT / relative).exists(), f"Missing {relative}")
         citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
         self.assertIn('repository-code: "https://github.com/oncologylab/fp-tools"', citation)
@@ -105,6 +118,13 @@ class ReleaseMetadataTest(unittest.TestCase):
             "actions/deploy-pages@v5",
         ]:
             self.assertIn(current, workflows)
+
+    def test_docs_workflow_runs_browser_audit(self):
+        workflow = (ROOT / ".github" / "workflows" / "docs.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("playwright install --with-deps chromium", workflow)
+        self.assertIn("scripts/audit_docs.py", workflow)
 
     def test_console_script_smoke_helper_covers_declared_scripts(self):
         helper = ROOT / "scripts" / "smoke_console_scripts.py"

@@ -417,17 +417,34 @@ def _run_pipeline(first: list[str], second: list[str], log: Path) -> None:
 
 
 def download_file(
-    url: str, output: Path, expected_md5: str = "", retries: int = 5
+    url: str,
+    output: Path,
+    expected_md5: str = "",
+    retries: int = 5,
+    *,
+    expected_size: int = 0,
 ) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
-    if (
-        output.exists()
-        and output.stat().st_size
-        and (not expected_md5 or _md5(output) == expected_md5)
-    ):
+    expected_size = max(0, int(expected_size or 0))
+
+    def is_valid(path: Path) -> bool:
+        if not path.is_file() or path.stat().st_size == 0:
+            return False
+        if expected_size and path.stat().st_size != expected_size:
+            return False
+        if expected_md5 and _md5(path) != expected_md5:
+            return False
+        return bool(expected_size or expected_md5)
+
+    if is_valid(output):
         return output
-    if output.exists() and expected_md5:
-        output.unlink()
+
+    partial = output.with_suffix(output.suffix + ".partial")
+    if output.exists():
+        if partial.exists():
+            partial.unlink()
+        output.replace(partial)
+
     if shutil.which("aria2c"):
         _run(
             [
@@ -436,9 +453,9 @@ def download_file(
                 f"--max-tries={retries}",
                 "--file-allocation=none",
                 "--dir",
-                str(output.parent),
+                str(partial.parent),
                 "--out",
-                output.name,
+                partial.name,
                 url,
             ]
         )
@@ -453,21 +470,29 @@ def download_file(
                 "--retry",
                 str(retries),
                 "--output",
-                str(output),
+                str(partial),
                 url,
             ]
         )
     else:
-        partial = output.with_suffix(output.suffix + ".partial")
         with (
             urllib.request.urlopen(url, timeout=120) as response,
             partial.open("wb") as handle,
         ):
             shutil.copyfileobj(response, handle)
-        partial.replace(output)
-    if expected_md5 and _md5(output) != expected_md5:
-        output.unlink(missing_ok=True)
+
+    if expected_size and partial.stat().st_size != expected_size:
+        partial.unlink(missing_ok=True)
+        raise RuntimeError(
+            f"Size mismatch for {output}: expected {expected_size} bytes"
+        )
+    if expected_md5 and _md5(partial) != expected_md5:
+        partial.unlink(missing_ok=True)
         raise RuntimeError(f"MD5 mismatch for {output}")
+    if not partial.is_file() or partial.stat().st_size == 0:
+        partial.unlink(missing_ok=True)
+        raise RuntimeError(f"Download produced an empty file for {output}")
+    partial.replace(output)
     return output
 
 
@@ -524,8 +549,9 @@ def materialize_run_fastqs(
                     target / Path(urllib.parse.urlparse(url).path).name,
                     md5,
                     int(settings["download"]["retries"]),
+                    expected_size=size,
                 )
-                for url, md5, _ in resolved
+                for url, md5, size in resolved
             ]
             return files[0], files[1] if len(files) > 1 else None
         except Exception:

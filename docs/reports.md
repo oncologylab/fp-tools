@@ -10,6 +10,15 @@
   <a class="fp-button primary" href="../demos/reports/diff_footprints_K562_HepG2.html">Open report demo</a>
 </div>
 
+<figure class="fp-wide-image">
+  <a href="../demos/reports/diff_footprints_K562_HepG2.html">
+    <img src="../assets/interface_diff_footprints_html.png"
+         alt="Interactive differential footprint report with motif statistics, volcano plot, and aggregate profile">
+  </a>
+  <figcaption>Interactive motif selection, differential evidence, aggregate
+  profiles, and editable SVG export in one portable report.</figcaption>
+</figure>
+
 ## Typical Report Contents
 
 <div class="fp-grid">
@@ -28,3 +37,12 @@
 </div>
 
 These reports do not need a Python server after they are created.
+
+## Aggregate Browser
+
+<figure class="fp-wide-image">
+  <img src="../assets/interface_plot_aggregate_batch_html.png"
+       alt="Multi-panel aggregate footprint browser comparing B-cell and T-cell profiles">
+  <figcaption>Multi-sample aggregate reports support selectable panels,
+  condition means, individual replicates, and editable SVG export.</figcaption>
+</figure>

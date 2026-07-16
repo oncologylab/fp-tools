@@ -6,6 +6,7 @@ repo_name: oncologylab/fp-tools
 
 theme:
   name: material
+  logo: assets/fp_tools_logo_icon.svg
   favicon: assets/fp_tools_logo_icon.svg
   features:
     - navigation.instant
@@ -60,3 +61,10 @@ plugins:
 
 extra:
   generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/oncologylab/fp-tools
+      name: fp-tools on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/fp-tools-bio/
+      name: fp-tools-bio on PyPI

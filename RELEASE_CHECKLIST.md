@@ -99,6 +99,9 @@ script, and uploads with the configured token.
 - Confirm `project.urls` point to `https://github.com/oncologylab/fp-tools`.
 - Confirm README renders correctly on GitHub.
 - Validate the MkDocs site locally with `.venv/bin/mkdocs build --clean --strict`, then push documentation changes to `main`. The GitHub Actions `Docs` workflow deploys GitHub Pages from `main`; do not use `mkdocs gh-deploy` or create a `gh-pages` branch for this repository.
+- When Playwright is installed, run
+  `.venv/bin/python scripts/audit_docs.py --site-dir site` to check every
+  documentation and demo page at desktop and mobile widths.
 - Confirm `LICENSE`, `CITATION.cff`, `environment.yml`, and `Dockerfile` are present and current.
 - Confirm `pyproject.toml`, `src/fp_tools/__init__.py`, `CITATION.cff`, release
   tag, and example version pins agree.

@@ -1,6 +1,22 @@
-# Get Started
+<section class="fp-hero">
+  <div class="fp-hero-copy">
+    <p class="fp-eyebrow">Reproducible regulatory genomics</p>
+    <h1>ATAC-seq footprints, motifs, and reports from one command-first toolkit</h1>
+    <p>Turn raw reads or processed tracks into bias-corrected signal,
+    footprint scores, motif-aware comparisons, aggregate profiles, and
+    portable HTML reports.</p>
+    <div class="fp-actions">
+      <a class="fp-button primary" href="#install">Install fp-tools</a>
+      <a class="fp-button" href="reports/">Explore reports</a>
+      <a class="fp-button" href="api/">Command reference</a>
+    </div>
+  </div>
+  <img src="assets/fp_tools_logo_icon.svg" alt="" role="presentation">
+</section>
 
-`fp-tools` runs ATAC-seq footprint workflows from the command line or the optional browser GUI. The same YAML configuration can be saved from the GUI and rerun with [run-workflow](api.md#run-workflow).
+`fp-tools` runs ATAC-seq footprint workflows from the command line or the
+optional browser GUI. The same YAML configuration can be saved from the GUI
+and rerun with [run-workflow](api.md#run-workflow).
 
 ## Install
 

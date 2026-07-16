@@ -1,10 +1,33 @@
-# fp-tools
+<p align="center">
+  <img src="docs/assets/fp_tools_logo_horizontal.svg" alt="fp-tools — regulatory footprinting" width="620">
+</p>
 
-`fp-tools` is a command-first Python package for ATAC-seq footprint analysis.
-It turns ATAC-seq data into bias-corrected cut-site tracks, footprint scores,
-motif-centered comparisons, aggregate plots, and standalone HTML reports.
+<p align="center">
+  <strong>Command-first ATAC-seq footprinting, motif analysis, and reproducible interactive reports.</strong>
+</p>
 
-Documentation: <https://oncologylab.github.io/fp-tools/>
+<p align="center">
+  <a href="https://pypi.org/project/fp-tools-bio/"><img alt="PyPI" src="https://img.shields.io/pypi/v/fp-tools-bio?color=1f9d55"></a>
+  <a href="https://github.com/oncologylab/fp-tools/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/oncologylab/fp-tools/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/oncologylab/fp-tools/actions/workflows/docs.yml"><img alt="Docs" src="https://github.com/oncologylab/fp-tools/actions/workflows/docs.yml/badge.svg"></a>
+  <a href="https://github.com/oncologylab/fp-tools/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1967b3"></a>
+  <a href="https://github.com/oncologylab/fp-tools"><img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-103a5c"></a>
+</p>
+
+<p align="center">
+  <a href="https://oncologylab.github.io/fp-tools/"><strong>Documentation</strong></a>
+  ·
+  <a href="https://oncologylab.github.io/fp-tools/reports/"><strong>Report demo</strong></a>
+  ·
+  <a href="https://oncologylab.github.io/fp-tools/gui/"><strong>GUI demo</strong></a>
+  ·
+  <a href="https://pypi.org/project/fp-tools-bio/"><strong>PyPI</strong></a>
+</p>
+
+`fp-tools` turns ATAC-seq data into bias-corrected cut-site tracks, footprint
+scores, motif-centered comparisons, aggregate plots, and standalone HTML
+reports. Direct CLI use is primary; YAML and the optional browser GUI run the
+same stable command interfaces.
 
 ## Install
 

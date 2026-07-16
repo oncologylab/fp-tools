@@ -42,6 +42,15 @@ Open the printed URL in a browser. Public access also requires the port to be al
   <a class="fp-button primary" href="../demos/gui/fp-tools-gui-static-demo.html">Open GUI preview</a>
 </div>
 
+<figure class="fp-wide-image">
+  <a href="../demos/gui/fp-tools-gui-static-demo.html">
+    <img src="../assets/interface_gui_home.png"
+         alt="fp-tools browser GUI with command navigation, guided workflow, and YAML-ready controls">
+  </a>
+  <figcaption>The optional GUI keeps commands visible, previews reusable YAML,
+  and records outputs without moving workflow logic out of the CLI.</figcaption>
+</figure>
+
 ## Example Configs
 
 Bundled configs are in `examples/gui_configs/`. The same file can be loaded in the GUI or run directly with [run-workflow](api.md#run-workflow):

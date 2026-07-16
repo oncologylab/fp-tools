@@ -1,0 +1,40 @@
+name: Bug report
+description: Report incorrect behavior or a reproducible failure.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for helping improve fp-tools.
+  - type: input
+    id: version
+    attributes:
+      label: fp-tools version
+      placeholder: "0.1.16"
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command or YAML
+      description: Remove secrets and private paths.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and relevant logs
+      description: Include operating system, Python version, and concise logs.

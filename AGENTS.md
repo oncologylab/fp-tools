@@ -87,6 +87,10 @@ For release, package-build, full-test, GitHub Actions, website-deployment, and
 PyPI procedures, use `RELEASE_CHECKLIST.md` as the source of truth. Do not
 duplicate those steps here.
 
+For documentation changes, preserve the existing four-page MkDocs navigation
+and the two standalone demos. Run the strict MkDocs build and, when Playwright
+is installed, `python scripts/audit_docs.py --site-dir site`.
+
 ## Coding Style
 
 Follow the existing codebase style before introducing new patterns. Python

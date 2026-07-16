@@ -189,6 +189,72 @@ class PrepareAtacDownloadTest(unittest.TestCase):
             self.assertEqual(result, output)
             urlopen.assert_not_called()
 
+    def test_existing_download_is_reused_when_size_matches_without_md5(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "reads.fastq.gz"
+            output.write_bytes(b"reads")
+            with (
+                mock.patch("shutil.which", return_value=None),
+                mock.patch("urllib.request.urlopen") as urlopen,
+            ):
+                result = download_file(
+                    "https://example.invalid/reads",
+                    output,
+                    expected_size=5,
+                )
+            self.assertEqual(result, output)
+            urlopen.assert_not_called()
+
+    def test_truncated_download_is_replaced_when_expected_size_is_known(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "reads.fastq.gz"
+            output.write_bytes(b"bad")
+            response = mock.MagicMock()
+            response.__enter__.return_value.read.side_effect = [b"reads", b""]
+            with (
+                mock.patch("shutil.which", return_value=None),
+                mock.patch("urllib.request.urlopen", return_value=response),
+            ):
+                result = download_file(
+                    "https://example.invalid/reads",
+                    output,
+                    expected_size=5,
+                )
+            self.assertEqual(result.read_bytes(), b"reads")
+            self.assertFalse(output.with_suffix(".gz.partial").exists())
+
+    def test_unvalidated_existing_download_is_not_trusted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "reads.fastq.gz"
+            output.write_bytes(b"possibly-partial")
+            response = mock.MagicMock()
+            response.__enter__.return_value.read.side_effect = [b"complete", b""]
+            with (
+                mock.patch("shutil.which", return_value=None),
+                mock.patch("urllib.request.urlopen", return_value=response) as urlopen,
+            ):
+                result = download_file("https://example.invalid/reads", output)
+            self.assertEqual(result.read_bytes(), b"complete")
+            urlopen.assert_called_once()
+
+    def test_size_mismatch_removes_invalid_partial_and_preserves_no_final(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "reads.fastq.gz"
+            response = mock.MagicMock()
+            response.__enter__.return_value.read.side_effect = [b"short", b""]
+            with (
+                mock.patch("shutil.which", return_value=None),
+                mock.patch("urllib.request.urlopen", return_value=response),
+            ):
+                with self.assertRaisesRegex(RuntimeError, "Size mismatch"):
+                    download_file(
+                        "https://example.invalid/reads",
+                        output,
+                        expected_size=10,
+                    )
+            self.assertFalse(output.exists())
+            self.assertFalse(output.with_suffix(".gz.partial").exists())
+
 
 class PrepareAtacOutputTest(unittest.TestCase):
     def test_legacy_commands_adapt_to_single_end_without_paired_flags(self):

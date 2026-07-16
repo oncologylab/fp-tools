@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://oncologylab.github.io/fp-tools/
+    about: Check the command manuals and examples before filing an issue.
