@@ -40,6 +40,7 @@ jobs:
           .venv/bin/python scripts/smoke_console_scripts.py --bin-dir /tmp/fp-tools-publish-smoke/bin
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: .venv/bin/python -m twine upload dist/*

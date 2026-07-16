@@ -76,12 +76,14 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertTrue((ROOT / "DEV_PLAN.md").is_file())
         self.assertFalse((ROOT / "GUI_PLAN.md").exists())
 
-    def test_publish_workflow_uses_trusted_publishing_and_repaired_wheels(self):
+    def test_publish_workflow_uses_token_and_repaired_wheels(self):
         workflow = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
         self.assertIn("auditwheel", workflow)
         self.assertIn("twine check", workflow)
-        self.assertIn("pypa/gh-action-pypi-publish", workflow)
+        self.assertIn("twine upload", workflow)
+        self.assertIn("TWINE_USERNAME: __token__", workflow)
         self.assertIn("PYPI_API_TOKEN", workflow)
+        self.assertNotIn("pypa/gh-action-pypi-publish", workflow)
         self.assertNotIn("id-token: write", workflow)
 
     def test_workflows_use_node24_compatible_action_versions(self):
