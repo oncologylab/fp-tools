@@ -4,8 +4,6 @@ suppressPackageStartupMessages({
   library(tximport)
   library(edgeR)
   library(limma)
-  library(RUVSeq)
-  library(Biobase)
 })
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -62,6 +60,14 @@ dds_all <- estimateSizeFactors(dds_all)
 write_matrix(counts(dds_all, normalized = TRUE), file.path(out, "uniform_normalized_counts.tsv"))
 vst_all <- vst(dds_all, blind = TRUE)
 write_matrix(assay(vst_all), file.path(out, "uniform_vst.tsv"))
+write.table(
+  cor(assay(vst_all), method = "pearson"),
+  file.path(out, "descriptive_sample_correlations.tsv"),
+  sep = "\t", quote = FALSE, col.names = NA
+)
+pca <- prcomp(t(assay(vst_all)))
+pca_rows <- cbind(meta[rownames(pca$x), c("sample", "author", "condition", "broad_condition", "collection")], pca$x[, 1:5, drop = FALSE])
+write.table(pca_rows, file.path(out, "descriptive_pca.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
 
 # Paper-specific k=31 Kallisto layer for the Guan and Beltra studies.
 paper_counts <- list()
@@ -74,6 +80,20 @@ for (author in c("Guan", "Beltra")) {
   storage.mode(matrix) <- "integer"
   paper_counts[[author]] <- matrix
   write_matrix(matrix, file.path(paper_count_dir, paste0(tolower(author), "_gene_counts_tximport_length_scaled.tsv")))
+}
+
+# Paper-specific TopHat2/HTSeq counts for the two short-read studies.
+for (author in c("Milner", "Scott-Browne")) {
+  key <- tolower(gsub("-", "_", author))
+  path <- file.path(project, "rna/counts/paper_specific", paste0(key, "_gene_counts.tsv"))
+  table <- read.delim(path, check.names = FALSE, stringsAsFactors = FALSE)
+  rownames(table) <- table$gene_id
+  samples <- meta$sample[meta$author == author]
+  missing <- setdiff(samples, colnames(table))
+  if (length(missing)) stop("Missing paper-specific HTSeq samples: ", paste(missing, collapse = ", "))
+  matrix <- round(as.matrix(table[, samples, drop = FALSE]))
+  storage.mode(matrix) <- "integer"
+  paper_counts[[author]] <- matrix
 }
 
 # Primary inference: paper-specific counts and only within-study contrasts.
@@ -93,6 +113,25 @@ for (i in seq_len(nrow(comparisons))) {
   result <- as.data.frame(results(dds, contrast = c("condition", item$cond1, item$cond2)))
   result <- cbind(gene_key(rownames(result)), result)
   write.table(result, file.path(fine_dir, paste0(item$comparison, ".tsv")), sep = "\t", quote = FALSE, row.names = FALSE)
+}
+
+# Supporting RNA-only contrasts remain separate from paired inference.
+supporting <- read.delim(file.path(project, "metadata/supporting_rna_comparisons.tsv"), stringsAsFactors = FALSE)
+supporting_dir <- file.path(out, "supporting_rna_only")
+dir.create(supporting_dir, recursive = TRUE, showWarnings = FALSE)
+for (i in seq_len(nrow(supporting))) {
+  item <- supporting[i, ]
+  selected <- meta$condition %in% c(item$cond1, item$cond2)
+  submeta <- droplevels(meta[selected, , drop = FALSE])
+  author <- unique(submeta$author)
+  if (length(author) != 1 || !author %in% names(paper_counts)) stop("Invalid supporting comparison: ", item$comparison)
+  subcounts <- paper_counts[[author]][, submeta$sample, drop = FALSE]
+  subkeep <- rowSums(subcounts >= 10) >= 2
+  dds <- DESeqDataSetFromMatrix(subcounts[subkeep, , drop = FALSE], submeta, design = ~ condition)
+  dds <- DESeq(dds, quiet = TRUE)
+  result <- as.data.frame(results(dds, contrast = c("condition", item$cond1, item$cond2)))
+  result <- cbind(gene_key(rownames(result)), result)
+  write.table(result, file.path(supporting_dir, paste0(item$comparison, ".tsv")), sep = "\t", quote = FALSE, row.names = FALSE)
 }
 
 # Guan sensitivity analysis excluding the naïve library with <50% k=31
@@ -134,39 +173,12 @@ for (i in which(startsWith(comparisons$comparison, "beltra_"))) {
   write.table(result, file.path(limma_dir, paste0(item$comparison, ".tsv")), sep = "\t", quote = FALSE, row.names = FALSE)
 }
 
-# Exploratory cross-study state atlas. Study cannot be added to the model because
-# several states are perfectly confounded with study; RUVr mitigates but cannot
-# remove that limitation.
-meta$state <- factor(meta$broad_condition)
-design <- model.matrix(~ state, meta)
-y <- calcNormFactors(DGEList(counts = counts), method = "upperquartile")
-y <- estimateDisp(y, design, robust = TRUE)
-fit <- glmFit(y, design)
-residuals_ruv <- residuals(fit, type = "deviance")
-set <- newSeqExpressionSet(counts, phenoData = AnnotatedDataFrame(meta))
-ruv <- RUVr(set, rownames(counts), k = 1, residuals_ruv)
-ruv_meta <- pData(ruv)
-if (!"sample" %in% colnames(ruv_meta)) ruv_meta$sample <- rownames(ruv_meta)
-write.table(ruv_meta, file.path(out, "ruvr_sample_factors.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
-
-ruv_meta$state <- factor(ruv_meta$broad_condition)
-dds_ruv <- DESeqDataSetFromMatrix(counts, ruv_meta, design = ~ W_1 + state)
-dds_ruv <- DESeq(dds_ruv, quiet = TRUE)
-write_matrix(counts(dds_ruv, normalized = TRUE), file.path(out, "ruvr_normalized_counts.tsv"))
-broad <- read.delim(file.path(project, "metadata/comparisons_broad.tsv"), stringsAsFactors = FALSE)
-broad_dir <- file.path(out, "exploratory_broad_state")
-dir.create(broad_dir, recursive = TRUE, showWarnings = FALSE)
-for (i in seq_len(nrow(broad))) {
-  item <- broad[i, ]
-  result <- as.data.frame(results(dds_ruv, contrast = c("state", item$cond1, item$cond2)))
-  result <- cbind(gene_key(rownames(result)), result)
-  write.table(result, file.path(broad_dir, paste0(item$comparison, ".tsv")), sep = "\t", quote = FALSE, row.names = FALSE)
-}
-
 writeLines(c(
-  "Primary RNA differential-expression results use each study's paper-specific k=31 Kallisto layer and within-study DESeq2 contrasts.",
+  "Primary RNA differential-expression results use paper-specific within-study count layers and DESeq2 contrasts.",
+  "Guan and Beltra use k=31 Kallisto with tximport lengthScaledTPM counts; Milner and Scott-Browne use TopHat2/HTSeq gene counts.",
   "Beltra contrasts are also reported using the paper-style TMM/voom/limma route.",
-  "The uniform k=21 Kallisto layer is required by the 25-bp Milner reads and supports cross-study visualization and ATAC/RNA correlation.",
+  "The uniform k=21 Kallisto layer is required by the 25-bp Milner reads and supports descriptive PCA, correlations, and ATAC/RNA integration only.",
   "Guan sensitivity results exclude GSM3045265, whose paper-specific k=31 pseudoalignment rate was 37.4%.",
-  "The broad-state RUVr results are exploratory because study and state are partly or perfectly confounded."
+  "No pooled cross-study differential test is produced because study and state are partly or perfectly confounded.",
+  "Supporting RNA-only contrasts are written separately and are not paired ATAC/RNA evidence."
 ), file.path(out, "INTERPRETATION.txt"))

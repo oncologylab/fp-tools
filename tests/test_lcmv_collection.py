@@ -6,6 +6,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SELECTION = ROOT / "benchmarks/manifests/compact/lcmv_cd8_libraries.tsv"
+SELECTION_V2 = ROOT / "benchmarks/manifests/compact/lcmv_cd8_libraries_v2.tsv"
+COMPARISONS_V2 = ROOT / "benchmarks/manifests/compact/lcmv_cd8_comparisons_v2.tsv"
 RESOLVER = ROOT / "benchmarks/scripts/resolve_lcmv_cd8_collection.py"
 DOWNSTREAM = ROOT / "benchmarks/scripts/build_lcmv_cd8_downstream.py"
 SUMMARIZER = ROOT / "benchmarks/scripts/summarize_lcmv_rna.py"
@@ -71,15 +73,49 @@ def test_supplemental_atac_is_never_marked_as_rna_paired():
     )
 
 
-def test_lcmv_downstream_comparison_contract():
+def test_lcmv_v2_selection_and_comparison_contract():
+    with SELECTION_V2.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    _load_resolver().validate_selection(rows)
+    assert len(rows) == 87
+    assert sum(row["assay"] == "ATAC" for row in rows) == 50
+    assert sum(row["assay"] == "RNA" for row in rows) == 37
+    assert sum(row["collection"] == "primary" and row["assay"] == "ATAC" for row in rows) == 39
+    assert sum(row["collection"] == "primary" and row["assay"] == "RNA" for row in rows) == 35
+    assert len({row["condition_pair_id"] for row in rows if row["collection"] == "primary"}) == 14
+
+    with COMPARISONS_V2.open(encoding="utf-8", newline="") as handle:
+        comparisons = list(csv.DictReader(handle, delimiter="\t"))
+    assert len(comparisons) == 28
+    assert sum(row["analysis_tier"].startswith("primary_") for row in comparisons) == 18
+    assert sum(row["analysis_tier"] == "primary_matched_context" for row in comparisons) == 8
+    assert sum(row["analysis_tier"] == "primary_contextual_trajectory" for row in comparisons) == 10
+    assert sum(row["analysis_tier"] == "supporting_atac_only" for row in comparisons) == 7
+    assert sum(row["analysis_tier"] == "supporting_rna_only" for row in comparisons) == 3
+
     spec = importlib.util.spec_from_file_location("build_lcmv_cd8_downstream", DOWNSTREAM)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
-    assert len(module.FINE_COMPARISONS) == 12
-    assert len(module.RNA_FINE_COMPARISONS) == 9
-    assert len(module.BROAD_STATES) == 7
-    assert len(list(__import__("itertools").combinations(module.BROAD_STATES, 2))) == 21
+    module.validate_comparisons(comparisons, rows)
+
+
+def test_lcmv_v2_exact_added_accessions():
+    with SELECTION.open(encoding="utf-8", newline="") as handle:
+        v1 = {row["gsm_accession"] for row in csv.DictReader(handle, delimiter="\t")}
+    with SELECTION_V2.open(encoding="utf-8", newline="") as handle:
+        v2 = {row["gsm_accession"] for row in csv.DictReader(handle, delimiter="\t")}
+    assert v1 < v2
+    assert v2 - v1 == {
+        "GSM2889446", "GSM2889447", "GSM2889448", "GSM2889449",
+        "GSM2863680", "GSM2863681", "GSM2863682", "GSM2863683",
+        "GSM2356780", "GSM2356781", "GSM2356782", "GSM2356784",
+        "GSM2356785", "GSM2356786", "GSM2356787", "GSM2356788",
+        "GSM2356818", "GSM2356819", "GSM2356820", "GSM2356821",
+        "GSM2356822", "GSM2356823", "GSM2865601", "GSM2865602",
+        "GSM2865605", "GSM2865606", "GSM2863678", "GSM2863679",
+        "GSM2356783",
+    }
 
 
 def test_lcmv_tx2gene_keeps_versioned_transcript_ids():
@@ -107,21 +143,14 @@ def test_lcmv_tx2gene_keeps_versioned_transcript_ids():
         ]
 
 
-def test_lcmv_output_validator_contract_counts():
-    spec = importlib.util.spec_from_file_location("validate_lcmv_outputs", VALIDATOR)
+def test_lcmv_analysis_units_merge_only_technical_partitions():
+    spec = importlib.util.spec_from_file_location("build_lcmv_cd8_downstream", DOWNSTREAM)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
-    assert module.EXPECTED == {
-        "libraries": 58,
-        "runs": 60,
-        "fastqs": 105,
-        "atac_runs": 33,
-        "atac_units": 32,
-        "rna_samples": 25,
-        "motifs": 1019,
-        "fine_atac": 12,
-        "broad_atac": 21,
-        "fine_rna": 9,
-        "broad_rna": 21,
-    }
+    with SELECTION_V2.open(encoding="utf-8", newline="") as handle:
+        atac = [row for row in csv.DictReader(handle, delimiter="\t") if row["assay"] == "ATAC"]
+    units = module.analysis_units(atac)
+    assert len(units) == 48
+    merged = [{row["gsm_accession"] for row in group} for group in units if len(group) > 1]
+    assert merged == [{"GSM2356780", "GSM2356781"}, {"GSM2356795", "GSM2356796"}]

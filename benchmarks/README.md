@@ -30,26 +30,28 @@ Use `scripts/run_benchmark_pipeline.py` after label-overlap table creation to co
 
 ## LCMV CD8 multimodal collection
 
-`manifests/compact/lcmv_cd8_libraries.tsv` is the curated GSM-level selection
-for the four LCMV CD8 studies. The associated helpers deliberately keep bulky
-FASTQs and results under ignored `data/public/` directories:
+The audited v1 selection remains in `manifests/compact/lcmv_cd8_libraries.tsv`.
+The expanded v2 selection and its explicit evidence tiers are in
+`manifests/compact/lcmv_cd8_libraries_v2.tsv` and
+`manifests/compact/lcmv_cd8_comparisons_v2.tsv`. Bulky FASTQs and results remain
+under ignored `data/public/` directories.
 
 ```bash
-python benchmarks/scripts/resolve_lcmv_cd8_collection.py
-python benchmarks/scripts/build_lcmv_cd8_downstream.py
-python benchmarks/scripts/summarize_lcmv_rna.py \
-  --project data/public/processed/lcmv_cd8_bulk_fp_rna \
-  --gtf data/public/raw/lcmv_cd8_bulk/reference/mm10/gencode_m25/gencode.vM25.annotation.gtf
-Rscript benchmarks/scripts/analyze_lcmv_rna.R \
-  data/public/processed/lcmv_cd8_bulk_fp_rna
-python benchmarks/scripts/validate_lcmv_outputs.py --verify-checksums
+python benchmarks/scripts/run_lcmv_v2.py --dry-run --stage resolve
+python benchmarks/scripts/run_lcmv_v2.py
 ```
 
-ATAC and RNA entries are matched at the study/condition level, not as aliquots
-from the same mouse. The primary RNA contrasts use the paper-specific Kallisto
-layer within each study. Beltra contrasts also include TMM/voom/limma results.
-The uniform 21-mer Kallisto layer accommodates Milner's 25-base reads and is
-reserved for cross-study visualization and explicitly exploratory RUVr
-comparisons. The validator checks accessions, ENA checksums, BAM/BED/bigWig
-integrity, motif and comparison completeness, count matrices, and DE tables;
-its QC flags require review rather than automatic sample removal.
+V2 contains 87 GSM libraries, including 14 primary condition-level ATAC/RNA
+pairs and a separate assay-only supporting layer. Pairing never implies the
+same mouse or aliquot. The 18 primary comparisons are strictly within-study;
+eight are matched-context comparisons and ten carry explicit time, tissue, or
+infection caveats. Guan and Beltra use paper-specific k=31 Kallisto count
+layers, while Milner and Scott-Browne use TopHat2/HTSeq counts. Uniform k=21
+Kallisto supports descriptive integration only. Pooled cross-study
+differential testing is intentionally absent from v2.
+
+The runner is restartable and fingerprints every stage. The validator checks
+accessions, ENA byte counts and MD5s, BAM/BED/bigWig structure, motif and
+comparison completeness, count matrices, and differential tables. QC warnings
+are reported rather than silently excluding samples. See the public
+[LCMV data page](../docs/lcmv.md) for the condition matrix and transfer layout.

@@ -13,6 +13,7 @@ import csv
 import hashlib
 import shutil
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.request import urlretrieve
@@ -66,6 +67,7 @@ def download_one(
         )
 
     path = Path(local_path)
+    partial = path.with_name(path.name + ".partial")
     if dry_run:
         return DownloadResult(
             accession, url, str(path), "dry_run", "planned", 0, "not_checked"
@@ -102,15 +104,17 @@ def download_one(
                     "-d",
                     str(path.parent),
                     "-o",
-                    path.name,
+                    partial.name,
                     url,
                 ],
                 check=True,
             )
         elif downloader == "wget" or (downloader == "auto" and shutil.which("wget")):
-            subprocess.run(["wget", "-c", "-O", str(path), url], check=True)
+            subprocess.run(
+                ["wget", "--quiet", "-c", "-O", str(partial), url], check=True
+            )
         else:
-            urlretrieve(url, path)
+            urlretrieve(url, partial)
     except Exception as exc:
         return DownloadResult(
             accession,
@@ -118,14 +122,14 @@ def download_one(
             str(path),
             "failed",
             str(exc),
-            path.stat().st_size if path.exists() else 0,
+            partial.stat().st_size if partial.exists() else 0,
             "not_checked",
         )
 
     checksum_ok = "not_checked"
-    if expected_bytes and path.stat().st_size != expected_bytes:
-        observed = path.stat().st_size
-        path.unlink(missing_ok=True)
+    if expected_bytes and partial.stat().st_size != expected_bytes:
+        observed = partial.stat().st_size
+        partial.unlink(missing_ok=True)
         return DownloadResult(
             accession,
             url,
@@ -136,10 +140,10 @@ def download_one(
             checksum_ok,
         )
     if expected_md5:
-        checksum_ok = str(md5sum(path) == expected_md5).lower()
+        checksum_ok = str(md5sum(partial) == expected_md5).lower()
         if checksum_ok == "false":
-            observed = path.stat().st_size
-            path.unlink(missing_ok=True)
+            observed = partial.stat().st_size
+            partial.unlink(missing_ok=True)
             return DownloadResult(
                 accession,
                 url,
@@ -149,6 +153,7 @@ def download_one(
                 observed,
                 checksum_ok,
             )
+    partial.replace(path)
     return DownloadResult(
         accession, url, str(path), "downloaded", "ok", path.stat().st_size, checksum_ok
     )
@@ -193,6 +198,9 @@ def main() -> int:
     parser.add_argument(
         "--downloader", choices=["auto", "aria2c", "wget", "urllib"], default="auto"
     )
+    parser.add_argument(
+        "--workers", type=int, default=1, help="Concurrent file downloads."
+    )
     args = parser.parse_args()
 
     rows = read_manifest(args.manifest)
@@ -212,12 +220,20 @@ def main() -> int:
         missing = sorted(wanted - found)
         if missing:
             parser.error(f"unknown requested accession(s): {', '.join(missing)}")
-    results = [
-        download_one(
-            row, dry_run=args.dry_run, force=args.force, downloader=args.downloader
+    if args.workers < 1:
+        parser.error("--workers must be at least 1")
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        results = list(
+            pool.map(
+                lambda row: download_one(
+                    row,
+                    dry_run=args.dry_run,
+                    force=args.force,
+                    downloader=args.downloader,
+                ),
+                rows,
+            )
         )
-        for row in rows
-    ]
     write_report(results, args.report)
     failed = sum(result.status == "failed" for result in results)
     print(f"wrote {len(results)} download records to {args.report}; failed={failed}")

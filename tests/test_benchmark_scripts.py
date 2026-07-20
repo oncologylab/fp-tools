@@ -338,6 +338,24 @@ class BenchmarkScriptsTest(unittest.TestCase):
             self.assertIn("dry_run", text)
             self.assertIn("FILE1", text)
 
+    def test_download_manifest_uses_validated_atomic_partial(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = pathlib.Path(tmpdir)
+            source = tmp / "source.fastq.gz"
+            source.write_bytes(b"validated-fastq")
+            output = tmp / "downloads" / "sample.fastq.gz"
+            row = {
+                "file_accession": "SRR_TEST_1",
+                "url": source.as_uri(),
+                "local_path": str(output),
+                "checksum": download_manifest.md5sum(source),
+                "expected_bytes": str(source.stat().st_size),
+            }
+            result = download_manifest.download_one(row, downloader="urllib")
+            self.assertEqual(result.status, "downloaded")
+            self.assertEqual(output.read_bytes(), source.read_bytes())
+            self.assertFalse(output.with_name(output.name + ".partial").exists())
+
     def test_compute_binary_metrics_global_and_grouped(self):
         df = pd.DataFrame(
             {

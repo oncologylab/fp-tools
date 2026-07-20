@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-07-16
+Last updated: 2026-07-20
 
 ## Current Baseline
 
@@ -26,8 +26,9 @@ a separately planned breaking release explicitly changes the contract.
 - Replicate-aware differential footprint reports and multi-comparison reviews.
 - Pseudobulk fragment/BAM generation and single-cell signature reporting.
 - Optional Streamlit GUI whose saved YAML runs through `run-workflow`.
-- Validated LCMV CD8 ATAC/RNA collection helpers, within-study contrasts,
-  cross-study exploratory summaries, and output validation.
+- Versioned LCMV CD8 ATAC/RNA collection helpers with an immutable v1,
+  expanded paired v2, evidence-tiered within-study contrasts, descriptive
+  integration, transfer manifests, and output validation.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
   PyPI publication.
 - Branded GitHub and MkDocs presentation with responsive standalone report and
@@ -55,6 +56,8 @@ a separately planned breaking release explicitly changes the contract.
 - Footprint competition or nucleosome-decomposition claims.
 - Cross-study RNA/ATAC causal interpretation where study and cell state are
   confounded.
+- Pooled LCMV cross-study differential testing; v2 restricts this layer to
+  descriptive PCA, correlations, heatmaps, and linked condition summaries.
 
 These areas may have scaffolding under `benchmarks/` or internal tool modules,
 but they are not promoted as primary package workflows until their datasets,

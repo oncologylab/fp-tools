@@ -13,15 +13,6 @@ from collections import defaultdict
 from pathlib import Path
 
 
-EXPECTED = {
-    "libraries": 58,
-    "primary_atac": 27,
-    "supplemental_atac": 6,
-    "rna": 25,
-    "condition_pairs": 9,
-}
-
-
 def read_tsv(path: Path) -> list[dict[str, str]]:
     with path.open(encoding="utf-8", newline="") as handle:
         return list(csv.DictReader(handle, delimiter="\t"))
@@ -38,30 +29,21 @@ def write_tsv(path: Path, rows: list[dict[str, str]], fields: list[str]) -> None
 
 
 def validate_selection(rows: list[dict[str, str]]) -> None:
-    if len(rows) != EXPECTED["libraries"]:
-        raise ValueError(f"Expected 58 curated GSM libraries, found {len(rows)}")
+    if not rows:
+        raise ValueError("The curated selection is empty")
     gsms = [row["gsm_accession"] for row in rows]
     if len(set(gsms)) != len(gsms):
         raise ValueError("The curated selection contains duplicate GSM accessions")
-    primary_atac = [
-        row for row in rows if row["assay"] == "ATAC" and row["collection"] == "primary"
-    ]
-    supplemental_atac = [
-        row
-        for row in rows
-        if row["assay"] == "ATAC" and row["collection"] == "supplemental"
-    ]
-    rna = [row for row in rows if row["assay"] == "RNA"]
-    observed = {
-        "primary_atac": len(primary_atac),
-        "supplemental_atac": len(supplemental_atac),
-        "rna": len(rna),
-    }
-    for key, expected in EXPECTED.items():
-        if key in observed and observed[key] != expected:
-            raise ValueError(
-                f"Expected {expected} {key} libraries, found {observed[key]}"
-            )
+    invalid_assays = sorted({row["assay"] for row in rows} - {"ATAC", "RNA"})
+    if invalid_assays:
+        raise ValueError(f"Unsupported assays: {', '.join(invalid_assays)}")
+    invalid_collections = sorted(
+        {row["collection"] for row in rows} - {"primary", "supplemental"}
+    )
+    if invalid_collections:
+        raise ValueError(
+            f"Unsupported collection tiers: {', '.join(invalid_collections)}"
+        )
     groups: dict[str, set[str]] = defaultdict(set)
     for row in rows:
         if row["collection"] == "primary":
@@ -70,8 +52,6 @@ def validate_selection(rows: list[dict[str, str]]) -> None:
             raise ValueError(
                 "Supplemental libraries must be excluded from paired analysis"
             )
-    if len(groups) != EXPECTED["condition_pairs"]:
-        raise ValueError(f"Expected 9 primary condition pairs, found {len(groups)}")
     missing = [group for group, assays in groups.items() if assays != {"ATAC", "RNA"}]
     if missing:
         raise ValueError(
@@ -164,6 +144,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--root", type=Path, default=Path("data/public/raw/lcmv_cd8_bulk")
     )
+    parser.add_argument(
+        "--metadata-dir",
+        type=Path,
+        help="Versioned metadata output directory (default: ROOT/metadata).",
+    )
     args = parser.parse_args(argv)
     selection = read_tsv(args.selection)
     validate_selection(selection)
@@ -234,11 +219,9 @@ def main(argv: list[str] | None = None) -> int:
                     }
                 )
 
-    if len(resolved_rows) != 60 or len(download_rows) != 105:
-        raise RuntimeError(
-            f"Expected 60 runs/105 FASTQs, found {len(resolved_rows)}/{len(download_rows)}"
-        )
-    metadata = args.root / "metadata"
+    if len({row["run_accession"] for row in resolved_rows}) != len(resolved_rows):
+        raise RuntimeError("Resolved collection contains duplicate run accessions")
+    metadata = args.metadata_dir or args.root / "metadata"
     resolved_fields = list(selection[0]) + [
         "run_accession",
         "run_index_within_gsm",
