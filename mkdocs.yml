@@ -41,7 +41,6 @@ extra_css:
 nav:
   - Get Started: index.md
   - Reports: reports.md
-  - LCMV Public Data: lcmv.md
   - GUI Demo: gui.md
   - API Reference: api.md
 

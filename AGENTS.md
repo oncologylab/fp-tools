@@ -124,12 +124,3 @@ examples, benchmark scripts, and website docs. Store manual-run outputs in
 ignored example directories, `benchmarks/results/`, `data/public/`, or `/tmp`.
 Do not commit bulky public data, manuscript drafts, generated paper files, or
 local GUI run outputs unless explicitly requested.
-
-The LCMV CD8 collection is local under
-`data/public/raw/lcmv_cd8_bulk/`. The audited v1 project remains under
-`data/public/processed/lcmv_cd8_bulk_fp_rna/`; the expanded project belongs
-under `data/public/processed/lcmv_cd8_bulk_fp_rna_v2/`, with versioned raw
-metadata under `data/public/raw/lcmv_cd8_bulk/metadata/v2/`. Keep those datasets
-ignored; commit only curated manifests, reproducibility scripts, tests, and
-documentation. Do not overwrite the v1 metadata snapshot or present v2
-supporting assay-only results as paired evidence.
