@@ -19,6 +19,8 @@ import pandas as pd
 import pyBigWig
 
 from fp_tools.utils.empirical_bayes import fit_moderated_contrast
+from fp_tools.utils.motif_databases import motif_db_path
+from fp_tools.utils.motifs import MotifList
 from fp_tools.utils.project_layout import normalized_bigwig_path
 
 
@@ -637,6 +639,25 @@ def build_site(
         with gzip.open(path, "rt", encoding="utf-8") as handle:
             profiles_by_sample[sample] = json.load(handle)["motifs"]
     motif_prefixes = sorted(set(combined["prefix"]))
+    motif_matrices = MotifList().from_file(str(motif_db_path("jaspar2026_vertebrates")))
+    matrix_payload = {}
+    for motif in motif_matrices:
+        motif.set_prefix("name_id")
+        matrix_payload[motif.prefix] = [
+            [round(float(value), 4) for value in row]
+            for row in motif.counts
+        ]
+    if set(matrix_payload) != set(motif_prefixes):
+        missing = sorted(set(motif_prefixes).difference(matrix_payload))
+        extra = sorted(set(matrix_payload).difference(motif_prefixes))
+        raise ValueError(
+            "JASPAR motif matrices do not match browser motifs: "
+            f"missing={missing[:3]}, extra={extra[:3]}"
+        )
+    _write_json(
+        data_dir / "motif_matrices.json",
+        {"schema": "fp-tools.motif-matrices.v1", "motifs": matrix_payload},
+    )
     shards: dict[str, dict] = {f"{idx:02x}": {} for idx in range(32)}
     motif_index = {}
     for prefix in motif_prefixes:
