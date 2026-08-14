@@ -54,6 +54,7 @@ test_data/*.bam.bai
 # Public benchmark data and local manuscript artifacts
 /data/public/raw/
 /data/public/processed/
+/data/public/scratch/
 /benchmarks/results/
 /benchmarks/download_reports/
 /manuscript/

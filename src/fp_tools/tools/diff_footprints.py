@@ -81,6 +81,7 @@ from fp_tools.utils.project_layout import (
     samples_root,
 )
 from fp_tools.utils.plotting_style import PDF_FONT_SIZE, apply_pdf_style, apply_ascii_minus_to_figure
+from fp_tools.utils.empirical_bayes import fit_moderated_contrast
 
 # tame some noisy warnings during curve fitting
 from scipy.optimize import OptimizeWarning
@@ -105,6 +106,68 @@ def _benjamini_hochberg(pvalues):
     unsorted[order] = adjusted
     qvals[finite] = unsorted
     return qvals
+
+
+def _apply_replicate_empirical_bayes(info_table, args):
+    """Add replicate-level moderated contrasts and write their source matrix."""
+
+    sample_columns = {
+        sample: f"{sample}_mean_score"
+        for sample in args.sample_names
+        if f"{sample}_mean_score" in info_table.columns
+    }
+    if len(sample_columns) != len(args.sample_names):
+        return info_table
+
+    matrix = pd.DataFrame(index=info_table.index)
+    matrix.index.name = "motif"
+    matrix["n_sites"] = pd.to_numeric(info_table["total_tfbs"], errors="coerce")
+    for sample, column in sample_columns.items():
+        matrix[sample] = pd.to_numeric(info_table[column], errors="coerce")
+    matrix_out = os.path.join(args.outdir, args.prefix + "_replicate_motif_score_matrix.tsv")
+    matrix.reset_index().to_csv(matrix_out, sep="\t", index=False, na_rep="NA")
+
+    derived_columns = {}
+    for condition_1, condition_2 in args.comparisons:
+        if min(
+            args.condition_replicates.get(condition_1, 0),
+            args.condition_replicates.get(condition_2, 0),
+        ) < 2:
+            continue
+        try:
+            model = fit_moderated_contrast(
+                matrix[list(sample_columns)],
+                args.sample_to_condition,
+                condition_1,
+                condition_2,
+            )
+        except ValueError:
+            continue
+        base = f"{condition_1}_{condition_2}_ebayes"
+        for field in (
+            "effect",
+            "residual_variance",
+            "prior_variance",
+            "prior_df",
+            "posterior_variance",
+            "moderated_se",
+            "moderated_t",
+            "moderated_df",
+            "pvalue",
+            "qvalue_bh",
+            "ci_lower",
+            "ci_upper",
+            "significant_fdr05",
+        ):
+            derived_columns[f"{base}_{field}"] = (
+                model[field].reindex(info_table.index).to_numpy()
+            )
+    if not derived_columns:
+        return info_table
+    return pd.concat(
+        [info_table, pd.DataFrame(derived_columns, index=info_table.index)],
+        axis=1,
+    )
 
 
 def _estimate_bound_threshold(bg_values, bound_pvalue):
@@ -410,10 +473,13 @@ def _run_match_motifs_shared_project(args, sample_args_list):
                 shared_results,
                 stats_by_sample[sample_args.sample_names[0]],
             )
-        requested_cores = getattr(args, "cores", None)
-        total_cores = int(requested_cores) if requested_cores is not None else (os.cpu_count() or 1)
-        _shared_match_status(args, "starting background BED materialization")
-        _launch_async_match_motif_bed_materialization(sample_args_list, total_cores)
+        if getattr(args, "motif_outputs", "auto") != "summary":
+            requested_cores = getattr(args, "cores", None)
+            total_cores = int(requested_cores) if requested_cores is not None else (os.cpu_count() or 1)
+            _shared_match_status(args, "starting background BED materialization")
+            _launch_async_match_motif_bed_materialization(sample_args_list, total_cores)
+        else:
+            _shared_match_status(args, "summary output requested; skipping background BED materialization")
         return [sample_args.outdir for sample_args in sample_args_list]
     finally:
         _shared_match_status(args, "scheduling temporary-file cleanup")
@@ -2415,6 +2481,7 @@ def run_diff_footprints(args):
     logger.info("Processing scanned TFBS individually")
 
     info_columns = ["total_tfbs"]
+    info_columns += [f"{sample}_mean_score" for sample in args.sample_names]
     info_columns += [f"{cond}_{metric}" for cond, metric in itertools.product(args.cond_names, ["threshold", "bound", "n_replicates", "score_sd"])]
     info_columns += [f"{c1}_{c2}_{metric}" for (c1, c2), metric in itertools.product(comparisons, ["change", "pvalue", "mean_delta_fp", "mean_log2fc", "delta_fp_se", "log2fc_se"])]
     info_table = pd.DataFrame(np.zeros((len(motif_names), len(info_columns))),
@@ -2495,6 +2562,9 @@ def run_diff_footprints(args):
             else:
                 cluster_names.append(str(name))
     info_table.insert(3, "cluster", cluster_names)
+
+    if any(count >= 2 for count in args.condition_replicates.values()):
+        info_table = _apply_replicate_empirical_bayes(info_table, args)
 
     info_table_clustered = info_table.groupby("cluster").mean(numeric_only=True).reset_index()
 

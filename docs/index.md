@@ -150,11 +150,11 @@ diff-footprints \
   --outdir project
 ```
 
-`metadata/comparisons.tsv` uses generic columns: `comparison`, `cond1`, and `cond2`. Project-mode `diff-footprints` reuses compact motif-site tables and background scores from prior `match-motifs` runs, and samples with the same condition are treated as replicates. Output includes motif tables, volcano-style results, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html). Aggregate profiles in the report are capped by `--plot-aggregate-top-n` in `sig` and `top` modes; increase this value when you want more motif profiles in the HTML.
+`metadata/comparisons.tsv` uses generic columns: `comparison`, `cond1`, and `cond2`. Project-mode `diff-footprints` reuses compact motif-site tables and background scores from prior `match-motifs` runs, and samples with the same condition are treated as biological replicates. With at least two replicates per condition, the command writes a per-sample motif-score matrix and fits empirical-Bayes moderated condition contrasts using samples—not motif sites—as the inferential units. Output includes motif tables, volcano-style results, replicate diagnostics, and [a standalone HTML report](demos/reports/diff_footprints_K562_HepG2.html). Aggregate profiles in the report are capped by `--plot-aggregate-top-n` in `sig` and `top` modes; increase this value when you want more motif profiles in the HTML.
 
 ### Workflow Improvements
 
-fp-tools preserves the interpretable TOBIAS-style center-versus-flank footprint score while improving the multi-sample workflow. q95 scaling can align corrected cut-site tracks over shared background regions before scoring. The default footprint-scoring path uses optimized Cython-backed kernels, and project-mode motif analysis uses one shared motif scan plus compact caches that `diff-footprints` reuses for replicate-aware comparisons and HTML/SVG reports.
+fp-tools preserves the interpretable TOBIAS-style center-versus-flank footprint score while improving the multi-sample workflow. q95 scaling can align corrected cut-site tracks over shared reference regions before scoring. The default footprint-scoring path uses optimized Cython-backed kernels, and project-mode motif analysis uses one shared motif scan plus compact caches that `diff-footprints` reuses for biological-replicate empirical-Bayes comparisons and HTML/SVG reports.
 
 For a complete multi-condition shell-script template, see
 `examples/nutrient_stress_project/run_ctrl_vs_10fbs.sh` in the GitHub

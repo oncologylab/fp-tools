@@ -24,6 +24,7 @@ from sklearn.neighbors import NearestNeighbors
 
 
 SANS_SERIF_FONTS = ["Arial", "Helvetica", "Liberation Sans", "Nimbus Sans", "DejaVu Sans"]
+DEFAULT_KNN_NEIGHBORS = 150
 
 plt.rcParams.update(
     {
@@ -1590,7 +1591,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--outdir", required=True, help="Output directory for signature score tables, heatmaps, and UMAP reports.")
     parser.add_argument("--markers", default=",".join(MARKERS), help=f"Comma-separated marker TFs to score and plot (default: {','.join(MARKERS)}).")
     parser.add_argument("--max-sites-per-tf", type=int, default=1500, help="Maximum marker motif sites per TF for selected-marker UMAP scoring (default: 1500).")
-    parser.add_argument("--knn", type=int, default=75, help="Number of nearest neighbors used to smooth per-cell cut-site profiles (default: 75).")
+    parser.add_argument(
+        "--knn",
+        type=int,
+        default=DEFAULT_KNN_NEIGHBORS,
+        help=f"Number of nearest neighbors used to smooth per-cell cut-site profiles (default: {DEFAULT_KNN_NEIGHBORS}).",
+    )
     parser.add_argument("--flank", type=int, default=100, help="Motif-centered half-window in bp for fragment counting (default: 100).")
     parser.add_argument("--center-half-width", type=int, default=10, help="Half-width in bp of the protected center window (default: 10).")
     parser.add_argument("--flank-inner", type=int, default=25, help="Inner flank distance from motif center in bp (default: 25).")

@@ -1,0 +1,25 @@
+{
+  "project_id": "encode_atac_8cell_20260813",
+  "conditions": {
+    "GM12878": ["GM12878_rep1", "GM12878_rep2"],
+    "HCT116": ["HCT116_rep1", "HCT116_rep2"],
+    "HepG2": ["HepG2_rep1", "HepG2_rep2"],
+    "IMR-90": ["IMR90_rep1", "IMR90_rep2"],
+    "K562": ["K562_rep1", "K562_rep2"],
+    "MCF-7": ["MCF7_rep1", "MCF7_rep2"],
+    "PC-3": ["PC3_rep1", "PC3_rep2"],
+    "Panc1": ["Panc1_rep1", "Panc1_rep2"]
+  },
+  "selected_biosamples": [
+    "ENCBS110BUW", "ENCBS978MLY", "ENCBS831RKD", "ENCBS851BDM",
+    "ENCBS193JTP", "ENCBS041EUO", "ENCBS597AKG", "ENCBS611WWO",
+    "ENCBS327ZDR", "ENCBS708GCD", "ENCBS820EFY", "ENCBS986JFA",
+    "ENCBS533AYC", "ENCBS388XJL", "ENCBS378LMT", "ENCBS254ODH"
+  ],
+  "motifs_per_sample": 1019,
+  "peak_universe": {
+    "regions": 229924,
+    "covered_bp": 183445261,
+    "md5": "83a7b7f59a50b899b0471ae5bfc20f8f"
+  }
+}

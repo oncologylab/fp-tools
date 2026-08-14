@@ -662,7 +662,9 @@ Compare motif-associated footprint scores across conditions or biological replic
 - Optional per-motif overview tables and bound/unbound BED files when `--motif-outputs full` is used.
 - Standalone interactive HTML report with volcano summaries and aggregate profiles.
 - Optional static volcano/cluster PDFs with `--static-plots`, optional per-motif diagnostic PDFs with `--per-motif-plots`, and optional skew/shift PDF with `--skew-report`.
-- Replicate diagnostic tables when replicate groups are present.
+- A per-sample motif-score matrix and replicate diagnostic tables when replicate groups are present. Comparisons with at least two biological replicates per condition also include empirical-Bayes moderated effect, standard-error, t, confidence-interval, p-value, and BH q-value columns in the main result table.
+
+For replicate-supported contrasts, biological samples are the inferential units. `diff-footprints` first averages the common motif-site scores within each sample, fits the condition difference across replicate means, and moderates residual variances across motifs. Native standardized motif-versus-background columns remain separate for compatibility and interpretation.
 
 **Example commands**
 
@@ -720,6 +722,8 @@ diff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --
 
 Output files:
 - <outdir>/<prefix>_results.{txt,xlsx}
+- <outdir>/<prefix>_replicate_motif_score_matrix.tsv when repeated conditions are present
+- <outdir>/<prefix>_replicate_report.tsv, <prefix>_replicate_summary.tsv, and <prefix>_replicate_report.png when replicate reporting is enabled
 - <outdir>/<prefix>_distances.txt
 - <outdir>/<prefix>_<condition1>_<condition2>.html
 - optional <outdir>/<prefix>_figures.pdf with --static-plots
@@ -1726,7 +1730,7 @@ options:
                         Maximum marker motif sites per TF for selected-marker
                         UMAP scoring (default: 1500).
   --knn KNN             Number of nearest neighbors used to smooth per-cell
-                        cut-site profiles (default: 75).
+                        cut-site profiles (default: 150).
   --flank FLANK         Motif-centered half-window in bp for fragment counting
                         (default: 100).
   --center-half-width CENTER_HALF_WIDTH
@@ -1972,7 +1976,7 @@ options:
                         for top heatmap rows (default: 0.5).
   --single-cell-signature-knn SINGLE_CELL_SIGNATURE_KNN
                         KNN size for optional per-cell footprint-signature
-                        smoothing (default: 75).
+                        smoothing (default: 150).
   --single-cell-signature-max-sites-per-motif SINGLE_CELL_SIGNATURE_MAX_SITES_PER_MOTIF
                         Maximum motif instances per motif for optional all-
                         motif per-cell heatmap scoring; use 0 for all sites

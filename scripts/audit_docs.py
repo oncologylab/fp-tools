@@ -21,8 +21,9 @@ PAGES = (
     "reports/",
     "demos/reports/diff_footprints_K562_HepG2.html",
     "demos/gui/fp-tools-gui-static-demo.html",
+    "ENCODE-Cancer-Cell-lines-Footprinting/",
 )
-VIEWPORTS = ((1440, 1000), (390, 844))
+VIEWPORTS = ((1440, 1000), (1280, 720), (390, 844))
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -74,10 +75,16 @@ def audit(site_dir: Path) -> None:
                         base_url + relative, wait_until="networkidle", timeout=60_000
                     )
                     if scheme == "dark":
-                        page.locator('label[for^="__palette"]:visible').first.click()
+                        page.locator('label[for^="__palette"]:visible').first.evaluate(
+                            "element => element.click()"
+                        )
                         page.wait_for_timeout(100)
                     if relative.endswith("diff_footprints_K562_HepG2.html"):
                         page.locator(".selected-motif").first.wait_for(
+                            state="visible", timeout=60_000
+                        )
+                    if relative == "ENCODE-Cancer-Cell-lines-Footprinting/":
+                        page.locator(".motif-row").first.wait_for(
                             state="visible", timeout=60_000
                         )
                     label = f"{relative or '/'} at {width}x{height} ({scheme})"
@@ -90,6 +97,8 @@ def audit(site_dir: Path) -> None:
                           h1: document.querySelectorAll("h1").length,
                           scrollWidth: document.documentElement.scrollWidth,
                           clientWidth: document.documentElement.clientWidth,
+                          scrollHeight: document.documentElement.scrollHeight,
+                          clientHeight: document.documentElement.clientHeight,
                           brokenImages: [...document.images].filter(
                             image => !image.complete || image.naturalWidth === 0
                           ).map(image => image.src),
@@ -104,6 +113,15 @@ def audit(site_dir: Path) -> None:
                         failures.append(
                             f"{label}: horizontal overflow "
                             f"{metrics['scrollWidth']}>{metrics['clientWidth']}"
+                        )
+                    if (
+                        relative == "ENCODE-Cancer-Cell-lines-Footprinting/"
+                        and width >= 1050
+                        and metrics["scrollHeight"] > metrics["clientHeight"]
+                    ):
+                        failures.append(
+                            f"{label}: desktop document scroll "
+                            f"{metrics['scrollHeight']}>{metrics['clientHeight']}"
                         )
                     if metrics["brokenImages"]:
                         failures.append(
@@ -135,6 +153,16 @@ def audit(site_dir: Path) -> None:
                                 failures.append(
                                     f"{label}: GUI route {route} lacks aria-current"
                                 )
+                    if relative == "ENCODE-Cancer-Cell-lines-Footprinting/":
+                        before = page.locator("#condition-1").input_value()
+                        page.locator("#swap").evaluate("element => element.click()")
+                        page.locator(".motif-row").first.wait_for(state="visible")
+                        after = page.locator("#condition-2").input_value()
+                        if before != after:
+                            failures.append(f"{label}: comparison direction did not swap")
+                        page.locator("#search").fill("CTCF")
+                        if page.locator(".motif-row").count() < 1:
+                            failures.append(f"{label}: motif search returned no CTCF entries")
                     page.close()
         browser.close()
     if failures:

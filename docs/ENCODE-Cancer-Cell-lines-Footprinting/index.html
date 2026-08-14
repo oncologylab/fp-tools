@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Pairwise fp-tools differential-footprinting results across seven ENCODE-profiled cancer cell lines included in this analysis.">
+  <title>ENCODE cancer cell-line footprinting</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="toolbar">
+    <div class="title-block">
+      <h1>ENCODE cancer cell-line footprinting</h1>
+      <span id="release" class="muted">Loading data...</span>
+    </div>
+    <label>First cell line<select id="condition-1" aria-label="First cell line"></select></label>
+    <button id="swap" type="button" aria-label="Swap comparison direction">Swap</button>
+    <label>Second cell line<select id="condition-2" aria-label="Second cell line"></select></label>
+    <label class="search-label">Motif<input id="search" type="search" placeholder="Search TF or motif ID"></label>
+    <label class="check-label"><input id="significant-only" type="checkbox">q &lt; 0.05 only</label>
+    <label>Figure format<select id="figure-format" aria-label="Figure export format"><option value="svg">SVG</option><option value="png">PNG</option><option value="pdf">Print / PDF</option></select></label>
+    <button id="save-figure" type="button">Save figure</button>
+    <button id="download-tsv" type="button">Download TSV</button>
+    <a id="download-all" class="button-link" href="data/all_pairwise_results.tsv.gz" download>All results</a>
+  </header>
+  <main class="workspace">
+    <aside class="motif-panel panel">
+      <div class="panel-head"><h2>Motifs</h2><span id="motif-count" class="muted"></span></div>
+      <div class="table-head"><span>Motif</span><span>Effect</span><span>q</span></div>
+      <div id="motif-table" class="motif-table" role="listbox" aria-label="Motif results"></div>
+    </aside>
+    <section class="visuals">
+      <article class="panel plot-panel">
+        <div class="panel-head"><h2>Moderated differential footprinting</h2><span id="comparison-summary" class="muted"></span></div>
+        <div id="volcano" class="plot"></div>
+      </article>
+      <article class="panel plot-panel">
+        <div class="panel-head"><h2>Largest effects</h2><span class="muted">Condition 1 minus condition 2</span></div>
+        <div id="rank" class="plot"></div>
+      </article>
+      <article class="panel profile-panel">
+        <div class="panel-head"><h2>Bias-corrected ATAC cut-site aggregate</h2><span id="selected-detail" class="muted"></span></div>
+        <div id="profile" class="profile-plot"></div>
+      </article>
+      <article class="panel detail-panel">
+        <div class="panel-head"><h2>Selected motif</h2><span id="selected-label" class="muted"></span></div>
+        <dl id="statistics" class="statistics"></dl>
+        <p class="note">Effects and confidence intervals use sample-quantile-normalized scores and the biological-replicate empirical-Bayes model. Benjamini-Hochberg correction is applied within each pairwise comparison.</p>
+      </article>
+    </section>
+  </main>
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+  <noscript>This browser requires JavaScript to render the static result files.</noscript>
+  <script src="app.js" defer></script>
+</body>
+</html>

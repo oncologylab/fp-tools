@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-07-21
+Last updated: 2026-08-14
 
 ## Current Baseline
 
@@ -23,26 +23,39 @@ a separately planned breaking release explicitly changes the contract.
 - Raw-read ATAC preparation with modern and legacy processing profiles.
 - Tn5 bias correction, background scaling, footprint scoring, candidate calls,
   known-motif matching, de novo motif preparation, and aggregate plotting.
-- Replicate-aware differential footprint reports and multi-comparison reviews.
+- Replicate-aware differential footprint reports, including per-sample motif
+  matrices and empirical-Bayes residual-variance moderation with biological
+  samples as the inferential units, plus multi-comparison reviews.
 - Pseudobulk fragment/BAM generation and single-cell signature reporting.
 - Optional Streamlit GUI whose saved YAML runs through `run-workflow`.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
   PyPI publication.
 - Branded GitHub and MkDocs presentation with responsive standalone report and
   GUI demos plus automated desktop/mobile browser audits.
+- A manifest-pinned, storage-conscious ENCODE footprint resource for 15
+  biological replicates from seven cancer cell lines. Its reproducible runner
+  processes one source BAM at a time, deletes verified temporary BAMs after
+  correction, uses one locked cancer-only peak and motif-site universe, and
+  exports all 21 pairwise empirical-Bayes comparisons to a dependency-free
+  static browser under the project documentation.
 
 ## Near-Term Priorities
 
-1. Keep README, MkDocs, examples, CLI help, and package metadata synchronized.
-2. Add focused regression tests for every user-visible bug or command-contract
+1. Keep the completed seven-line ENCODE cancer resource reproducible and
+   storage-conscious. Preserve all 1,019 motifs, 15 biological replicates, and
+   21 prespecified contrasts; resource membership remains independent of
+   observed differential results.
+2. Keep README, MkDocs, examples, CLI help, package metadata, and the static
+   cancer-cell-line browser synchronized.
+3. Add focused regression tests for every user-visible bug or command-contract
    change.
-3. Reduce avoidable warnings and multiprocessing fragility without changing
+4. Reduce avoidable warnings and multiprocessing fragility without changing
    scientific output.
-4. Improve GUI cancellation and output previews only through existing command
+5. Improve GUI cancellation and output previews only through existing command
    and YAML interfaces.
-5. Keep benchmark claims proportional to validated public data and recorded
+6. Keep benchmark claims proportional to validated public data and recorded
    metrics.
-6. Keep public pages free of broken assets, browser errors, responsive
+7. Keep public pages free of broken assets, browser errors, responsive
    overflow, inaccessible navigation, and stale screenshots.
 
 ## Deferred or Experimental Work

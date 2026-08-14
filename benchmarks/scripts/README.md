@@ -138,3 +138,55 @@ python manuscript/scripts/plot_calibration_panels.py \
   --summary benchmarks/results/ctcf_calibration_summary.tsv \
   --out-prefix manuscript/figures/figure_ctcf_calibration
 ```
+### Eight-cell ENCODE ATAC project
+
+`run_encode_atac_project.py` prepares the complete two-replicate ENCODE ATAC
+design for GM12878, HCT116, HepG2, IMR-90, K562, MCF-7, PC-3, and Panc1. It
+streams released GRCh38 alignment BAMs one at a time, retains compact
+differential-ready outputs, and independently verifies the exact 16-sample set.
+
+```bash
+.venv/bin/python benchmarks/scripts/run_encode_atac_project.py preflight
+.venv/bin/python benchmarks/scripts/run_encode_atac_project.py run
+.venv/bin/python benchmarks/scripts/run_encode_atac_project.py verify
+```
+
+### Seven-line ENCODE cancer-cell project
+
+The same manifest-pinned runner supports the harmonized cancer-cell resource.
+This design includes all 15 biological replicates from A549, HCT116, HepG2,
+K562, MCF-7, PC-3, and Panc1. It uses a cancer-only conservative-IDR peak
+universe, scans the full JASPAR 2026 vertebrate collection, and does not retain
+temporary downloaded BAMs.
+
+```bash
+.venv/bin/python benchmarks/scripts/run_encode_atac_project.py preflight \
+  --manifest benchmarks/manifests/encode_cancer_7line_20260814.tsv \
+  --spec benchmarks/manifests/encode_cancer_7line_20260814.spec.json \
+  --project data/public/processed/encode_cancer_7line_20260814 \
+  --scratch data/public/scratch/encode_cancer_7line_20260814
+
+.venv/bin/python benchmarks/scripts/run_encode_atac_project.py run \
+  --manifest benchmarks/manifests/encode_cancer_7line_20260814.tsv \
+  --spec benchmarks/manifests/encode_cancer_7line_20260814.spec.json \
+  --project data/public/processed/encode_cancer_7line_20260814 \
+  --scratch data/public/scratch/encode_cancer_7line_20260814
+```
+
+After the project verifies, the 21 prespecified pairwise comparisons can be run
+from `encode_cancer_7line_20260814_comparisons.tsv` with project-layout
+`diff-footprints`. The joint analysis uses sample-quantile normalization
+against the shared background-score distributions before replicate
+summarization. Comparison membership is fixed before statistical analysis.
+
+```bash
+.venv/bin/python benchmarks/scripts/build_encode_cancer_browser.py comparisons
+.venv/bin/python benchmarks/scripts/build_encode_cancer_browser.py profiles \
+  --profile-workers 4 --max-profile-sites-per-motif 1500
+.venv/bin/python benchmarks/scripts/build_encode_cancer_browser.py site
+.venv/bin/python benchmarks/scripts/build_encode_cancer_browser.py verify
+```
+
+The browser contains every motif-level result. Aggregate plots use up to 1,500
+deterministically selected, strand-oriented sites per motif, while the
+replicate-aware statistical comparisons use the complete motif-site set.

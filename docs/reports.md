@@ -2,6 +2,13 @@
 
 `fp-tools` writes standalone HTML reports. They can be opened locally, shared with collaborators, or hosted on GitHub Pages.
 
+## ENCODE Cancer Cell-line Footprinting
+
+The [browser for seven ENCODE-profiled cancer cell lines included in this analysis](https://oncologylab.github.io/fp-tools/ENCODE-Cancer-Cell-lines-Footprinting/)
+contains all 21 replicate-aware pairwise comparisons and all 1,019 JASPAR 2026
+vertebrate motifs included in the harmonized, sample-quantile-normalized
+analysis.
+
 ## Differential Footprint Demo
 
 <div class="fp-demo-callout">
