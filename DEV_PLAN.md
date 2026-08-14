@@ -37,7 +37,9 @@ a separately planned breaking release explicitly changes the contract.
   processes one source BAM at a time, deletes verified temporary BAMs after
   correction, uses one locked cancer-only peak and motif-site universe, and
   exports all 21 pairwise empirical-Bayes comparisons to a dependency-free
-  static browser under the project documentation.
+  static browser under the project documentation. The browser uses the
+  standalone differential-report layout with two directional condition
+  selectors, compact JASPAR motif matrices, and lazy-loaded aggregate profiles.
 
 ## Near-Term Priorities
 

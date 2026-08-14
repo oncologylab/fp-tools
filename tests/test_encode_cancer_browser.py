@@ -26,11 +26,34 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         source = "\n".join((browser / name).read_text(encoding="utf-8") for name in ("index.html", "styles.css", "app.js"))
         self.assertIsNone(re.search(r"(?:src|href)=[\"']https?://", source))
         self.assertIn("Arial,Helvetica,sans-serif", source)
-        self.assertIn("All results", source)
+        self.assertIn("Download all results", source)
         self.assertIn('value="svg"', source)
         self.assertIn('value="png"', source)
         self.assertIn('value="pdf"', source)
-        self.assertIn("Normal limit", source)
+        self.assertIn('id="condition-1"', source)
+        self.assertIn('id="condition-2"', source)
+        self.assertIn('id="selected-grid"', source)
+        self.assertIn('id="rank-chart"', source)
+        self.assertIn('id="aggregate-grid"', source)
+        self.assertNotIn('id="motif-table"', source)
+
+    def test_browser_motif_matrices_match_every_report_motif(self):
+        browser = ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting"
+        matrices = json.loads((browser / "data/motif_matrices.json").read_text(encoding="utf-8"))
+        comparison = json.loads(
+            (browser / "data/comparisons/K562_vs_MCF-7.json").read_text(encoding="utf-8")
+        )
+        matrix_map = matrices["motifs"]
+        prefixes = {motif["prefix"] for motif in comparison["motifs"]}
+        self.assertEqual(matrices["schema"], "fp-tools.motif-matrices.v1")
+        self.assertEqual(len(matrix_map), 1019)
+        self.assertEqual(set(matrix_map), prefixes)
+        self.assertTrue(all(len(matrix) == 4 for matrix in matrix_map.values()))
+
+    def test_static_browser_stays_within_documented_size_budget(self):
+        browser = ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting"
+        size = sum(path.stat().st_size for path in browser.rglob("*") if path.is_file())
+        self.assertLessEqual(size, 50 * 1024 * 1024)
 
     def test_design_is_exactly_seven_lines_15_replicates_and_21_pairs(self):
         manifest, comparisons, spec = MODULE.read_design(

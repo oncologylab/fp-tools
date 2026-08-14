@@ -84,7 +84,7 @@ def audit(site_dir: Path) -> None:
                             state="visible", timeout=60_000
                         )
                     if relative == "ENCODE-Cancer-Cell-lines-Footprinting/":
-                        page.locator(".motif-row").first.wait_for(
+                        page.locator(".aggregate-panel").first.wait_for(
                             state="visible", timeout=60_000
                         )
                     label = f"{relative or '/'} at {width}x{height} ({scheme})"
@@ -154,15 +154,30 @@ def audit(site_dir: Path) -> None:
                                     f"{label}: GUI route {route} lacks aria-current"
                                 )
                     if relative == "ENCODE-Cancer-Cell-lines-Footprinting/":
-                        before = page.locator("#condition-1").input_value()
-                        page.locator("#swap").evaluate("element => element.click()")
-                        page.locator(".motif-row").first.wait_for(state="visible")
-                        after = page.locator("#condition-2").input_value()
-                        if before != after:
-                            failures.append(f"{label}: comparison direction did not swap")
-                        page.locator("#search").fill("CTCF")
-                        if page.locator(".motif-row").count() < 1:
-                            failures.append(f"{label}: motif search returned no CTCF entries")
+                        first = page.locator("#condition-1")
+                        second = page.locator("#condition-2")
+                        if first.input_value() != "K562" or second.input_value() != "HepG2":
+                            failures.append(f"{label}: unexpected default comparison")
+                        first.select_option("A549")
+                        second.select_option("HCT116")
+                        page.wait_for_timeout(3_000)
+                        if "A549 vs HCT116" not in page.title():
+                            failures.append(f"{label}: dropdown comparison did not load")
+                        first.select_option("HCT116")
+                        page.wait_for_timeout(3_000)
+                        if second.input_value() != "A549":
+                            failures.append(f"{label}: duplicate selection did not reverse direction")
+                        if page.locator(".selected-motif").count() != 4:
+                            failures.append(f"{label}: expected four selected motif cards")
+                        if page.locator(".aggregate-panel").count() != 4:
+                            failures.append(f"{label}: expected four aggregate panels")
+                        if width == 1440 and height == 1000:
+                            with page.expect_download(timeout=30_000) as download_info:
+                                page.locator("#download-volcano").evaluate(
+                                    "element => element.click()"
+                                )
+                            if not download_info.value.suggested_filename.endswith("_volcano.svg"):
+                                failures.append(f"{label}: unexpected SVG export filename")
                     page.close()
         browser.close()
     if failures:
