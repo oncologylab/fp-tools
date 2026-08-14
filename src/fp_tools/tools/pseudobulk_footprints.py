@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from fp_tools.tools.find_signature_fp import DEFAULT_KNN_NEIGHBORS
 from fp_tools.tools.pseudobulk import _parse_chrom_list, _truthy, group_bam_by_tag, group_fragments
 from fp_tools.utils.motif_databases import motif_db_table, resolve_motif_inputs
 
@@ -523,7 +524,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--single-cell-signature-marker-score-table", help="Existing KNN marker score TSV used for marker rows and UMAP plots.")
     parser.add_argument("--single-cell-signature-top-per-cell-type", type=int, default=40, help="Top all-motif signatures to keep per cell type in the signature heatmap (default: 40).")
     parser.add_argument("--single-cell-signature-top-min-specificity", type=float, default=0.5, help="Minimum dominant-vs-next cell-type z-score difference for top heatmap rows (default: 0.5).")
-    parser.add_argument("--single-cell-signature-knn", type=int, default=75, help="KNN size for optional per-cell footprint-signature smoothing (default: 75).")
+    parser.add_argument(
+        "--single-cell-signature-knn",
+        type=int,
+        default=DEFAULT_KNN_NEIGHBORS,
+        help=f"KNN size for optional per-cell footprint-signature smoothing (default: {DEFAULT_KNN_NEIGHBORS}).",
+    )
     parser.add_argument("--single-cell-signature-max-sites-per-motif", type=int, default=200, help="Maximum motif instances per motif for optional all-motif per-cell heatmap scoring; use 0 for all sites (default: 200).")
     parser.add_argument("--single-cell-signature-max-motifs", type=int, help="Optional smoke-test limit for all-motif per-cell heatmap scoring.")
     parser.add_argument("--cores", type=int, default=1, help="Cores for grouping, atac-correct, and footprint scoring (default: 1).")

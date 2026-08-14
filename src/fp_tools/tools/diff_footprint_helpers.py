@@ -385,11 +385,27 @@ def process_tfbs(TF_name, args, log2fc_params, bed_rows=None):
 
     # global summary row
     info_columns = ["total_tfbs"]
+    info_columns += [f"{sample}_mean_score" for sample in args.sample_names]
     info_columns += [f"{cond}_{metric}" for cond, metric in itertools.product(args.cond_names, ["mean_score", "score_sd", "n_replicates", "bound"])]
     info_columns += [f"{c1}_{c2}_{metric}" for (c1, c2), metric in itertools.product(comparisons, ["change", "pvalue", "mean_delta_fp", "mean_log2fc", "delta_fp_se", "log2fc_se"])]
+    # A single-replicate workflow may deliberately use the same sample and
+    # condition label. Keep one shared mean-score field in that case.
+    info_columns = list(dict.fromkeys(info_columns))
     info_table = pd.DataFrame(np.nan, columns=info_columns, index=[TF_name])
 
     info_table.at[TF_name, "total_tfbs"] = n_rows
+    for sample_name in args.sample_names:
+        # Read from the row dictionaries rather than ``bed_table``. A valid
+        # single-replicate invocation can use the same label for the sample and
+        # condition, which gives the DataFrame duplicate ``*_score`` columns
+        # and makes column selection two-dimensional.
+        sample_values = pd.to_numeric(
+            pd.Series([row.get(sample_name + "_score", np.nan) for row in bedlines]),
+            errors="coerce",
+        )
+        info_table.at[TF_name, sample_name + "_mean_score"] = (
+            round(float(sample_values.mean()), 8) if len(sample_values.dropna()) else np.nan
+        )
     for condition in args.cond_names:
         info_table.at[TF_name, condition + "_mean_score"] = round(float(np.mean(bed_table[condition + "_score"])), 5) if n_rows > 0 else np.nan
         sd_values = pd.to_numeric(bed_table[condition + "_score_sd"], errors="coerce") if n_rows > 0 else pd.Series(dtype=float)

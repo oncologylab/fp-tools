@@ -485,6 +485,52 @@ class CliGoldenRegressionTest(unittest.TestCase):
                         (per_dir / "IRF1_MA0050.2" / "beds" / name).read_text(encoding="utf-8"),
                     )
 
+    def test_match_motifs_shared_project_summary_skips_per_motif_beds(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project = pathlib.Path(tmpdir) / "summary"
+            (project / "peaks").mkdir(parents=True)
+            (project / "peaks" / "merged_peaks_filtered.bed").write_text(
+                (ROOT / "test_data" / "merged_peaks.bed").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            (project / "samples.tsv").write_text("sample\tcondition\nA\tA\nB\tB\n", encoding="utf-8")
+            for sample, fixture in [("A", "Bcell_footprints.bw"), ("B", "Tcell_footprints.bw")]:
+                footprint_dir = project / "samples" / sample / "footprints"
+                footprint_dir.mkdir(parents=True)
+                os.symlink(ROOT / "test_data" / fixture, footprint_dir / f"{sample}_footprints.bw")
+
+            run_command(
+                [
+                    BIN / "match-motifs",
+                    "--sample-table",
+                    project / "samples.tsv",
+                    "--genome",
+                    "test_data/genome.fa.gz",
+                    "--peaks",
+                    project / "peaks" / "merged_peaks_filtered.bed",
+                    "--motifs",
+                    "test_data/individual_motifs/MA0050.2.jaspar",
+                    "--outdir",
+                    project,
+                    "--motif-outputs",
+                    "summary",
+                    "--cores",
+                    "4",
+                    "--skip-excel",
+                    "--verbosity",
+                    "1",
+                ],
+                timeout=120,
+                env={"FP_TOOLS_SYNC_MATCH_BEDS": "1"},
+            )
+
+            for sample in ["A", "B"]:
+                match_dir = project / "samples" / sample / "match_motifs"
+                self.assertTrue((match_dir / "motif_matches_results.txt").is_file())
+                self.assertTrue((match_dir / "cache" / "motif_sites.tsv.gz").is_file())
+                self.assertTrue((match_dir / "cache" / "background_scores.tsv.gz").is_file())
+                self.assertFalse((match_dir / "IRF1_MA0050.2").exists())
+
     def test_diff_footprints_replicate_grouping_writes_diagnostics(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             outdir = pathlib.Path(tmpdir) / "diff_footprints_reps"
@@ -525,6 +571,9 @@ class CliGoldenRegressionTest(unittest.TestCase):
             )
             results = pd.read_csv(outdir / "diff_footprints_probe_results.txt", sep="	")
             report = pd.read_csv(outdir / "diff_footprints_probe_replicate_report.tsv", sep="	")
+            replicate_matrix_exists = (
+                outdir / "diff_footprints_probe_replicate_motif_score_matrix.tsv"
+            ).exists()
 
         row = results.iloc[0]
         for column in (
@@ -546,7 +595,8 @@ class CliGoldenRegressionTest(unittest.TestCase):
         self.assertGreater(float(row["Bcell_mean_score"]), float(row["Tcell_mean_score"]))
         self.assertGreater(float(row["Bcell_Tcell_mean_delta_fp"]), 0.0)
         self.assertGreater(float(row["Bcell_Tcell_mean_log2fc"]), 0.0)
-        self.assertTrue((report["replicate_support"] == "replicate-supported").all())
+        self.assertTrue((report["replicate_support"] == "replicate-counts-only").all())
+        self.assertTrue(replicate_matrix_exists)
 
     @unittest.skipUnless(os.environ.get("FP_TOOLS_RUN_SLOW_REGRESSIONS") == "1", "slow atac-correct regression is opt-in")
     def test_atacorrect_fixture_smoke_outputs_corrected_bigwig(self):

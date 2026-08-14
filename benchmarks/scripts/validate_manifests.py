@@ -34,6 +34,46 @@ COMPACT_MANIFEST_SCHEMAS = {
     "10x_pbmc_pseudobulk.tsv": ["dataset", "asset", "url"],
 }
 
+SPECIALIZED_MANIFEST_SCHEMAS = {
+    "encode_atac_8cell_20260813.tsv": [
+        "condition",
+        "sample",
+        "biological_replicate",
+        "selected_biosample",
+        "biosample",
+        "library",
+        "experiment",
+        "bam_accession",
+        "bam_size",
+        "bam_md5",
+        "peak_accession",
+        "peak_size",
+        "peak_md5",
+        "note",
+    ],
+    "encode_cancer_7line_20260814.tsv": [
+        "condition",
+        "sample",
+        "biological_replicate",
+        "selected_biosample",
+        "biosample",
+        "library",
+        "experiment",
+        "bam_accession",
+        "bam_size",
+        "bam_md5",
+        "peak_accession",
+        "peak_size",
+        "peak_md5",
+        "note",
+    ],
+    "encode_cancer_7line_20260814_comparisons.tsv": [
+        "comparison",
+        "cond1",
+        "cond2",
+    ],
+}
+
 
 def read_header(path: Path) -> list[str]:
     return list(pd.read_csv(path, sep="\t", nrows=0).columns)
@@ -42,6 +82,13 @@ def read_header(path: Path) -> list[str]:
 def validate_manifest(path: Path, compact_root: Path | None = None) -> list[str]:
     errors: list[str] = []
     header = read_header(path)
+    specialized = SPECIALIZED_MANIFEST_SCHEMAS.get(path.name)
+    if specialized is not None:
+        if header != specialized:
+            errors.append(
+                f"{path}: expected specialized columns {specialized}, found {header}"
+            )
+        return errors
     if compact_root is not None and compact_root in path.parents:
         expected = COMPACT_MANIFEST_SCHEMAS.get(path.name)
         if expected is None:

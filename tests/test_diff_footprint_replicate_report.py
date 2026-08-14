@@ -9,7 +9,6 @@ from fp_tools.tools.diff_footprint_replicate_report import (
     infer_comparisons,
     infer_conditions,
     read_replicate_map,
-    replicate_uncertainty,
 )
 
 
@@ -78,28 +77,6 @@ class ComparisonInferenceTest(unittest.TestCase):
                 build_replicate_report(path, tmp / "out.tsv")
 
 
-class ReplicateUncertaintyTest(unittest.TestCase):
-    def test_se_and_shrinkage(self):
-        result = replicate_uncertainty(change=0.5, pvalue=0.0001, n_min=3)
-        self.assertGreater(result["z_score"], 0)
-        self.assertGreater(result["effect_se"], 0)
-        self.assertAlmostEqual(result["shrinkage_weight"], 0.75)
-        self.assertAlmostEqual(result["shrunk_change"], 0.5 * 0.75)
-        self.assertLess(result["ci_lower"], 0.5)
-        self.assertGreater(result["ci_upper"], 0.5)
-
-    def test_more_replicates_weight_closer_to_one(self):
-        low = replicate_uncertainty(0.5, 0.01, 1)["shrinkage_weight"]
-        high = replicate_uncertainty(0.5, 0.01, 10)["shrinkage_weight"]
-        self.assertLess(low, high)
-
-    def test_missing_values_return_nan(self):
-        result = replicate_uncertainty(change=float("nan"), pvalue=0.01, n_min=2)
-        self.assertNotEqual(result["shrinkage_weight"], 0.0)
-        import math
-        self.assertTrue(math.isnan(result["effect_se"]))
-
-
 class ReportOutputTest(unittest.TestCase):
     def test_report_summary_and_figure(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -127,7 +104,7 @@ class ReportOutputTest(unittest.TestCase):
             self.assertTrue(figure_out.exists())
 
             self.assertEqual(len(report), 3)
-            self.assertTrue((report["replicate_support"] == "replicate-supported").all())
+            self.assertTrue((report["replicate_support"] == "replicate-counts-only").all())
             sig = report.loc[report["name"] == "MA0001"].iloc[0]
             self.assertTrue(bool(sig["significant"]))
             self.assertTrue(bool(sig["significant_fdr05"]))
@@ -137,13 +114,13 @@ class ReportOutputTest(unittest.TestCase):
             self.assertFalse(bool(nonsig["significant"]))
             self.assertEqual(nonsig["direction"], "control")
 
-            for column in ("effect_se", "z_score", "shrinkage_weight", "shrunk_change", "ci_lower", "ci_upper"):
+            for column in ("effect_se", "moderated_t", "moderated_df", "ci_lower", "ci_upper"):
                 self.assertIn(column, report.columns)
-            self.assertTrue((report["shrinkage_weight"] > 0).all())
+            self.assertTrue(report["effect_se"].isna().all())
 
             on_disk = pd.read_csv(out, sep="\t")
             self.assertEqual(len(on_disk), 3)
-            row = summary.loc[summary["replicate_support"] == "replicate-supported"].iloc[0]
+            row = summary.loc[summary["replicate_support"] == "replicate-counts-only"].iloc[0]
             self.assertEqual(int(row["n_motifs"]), 3)
             self.assertEqual(int(row["significant"]), 1)
             self.assertEqual(int(row["significant_fdr05"]), 1)
@@ -155,6 +132,29 @@ class ReportOutputTest(unittest.TestCase):
             out = tmp / "report.tsv"
             report, _ = build_replicate_report(results, out)
             self.assertTrue((report["replicate_support"] == "single-replicate").all())
+
+    def test_report_prefers_empirical_bayes_fields(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            frame = pd.read_csv(pd.io.common.StringIO(RESULTS), sep="\t")
+            frame["treated_control_ebayes_effect"] = [0.45, -0.10, 0.01]
+            frame["treated_control_ebayes_moderated_se"] = [0.10, 0.12, 0.11]
+            frame["treated_control_ebayes_moderated_t"] = [4.5, -0.83, 0.09]
+            frame["treated_control_ebayes_moderated_df"] = [8.0, 8.0, 8.0]
+            frame["treated_control_ebayes_pvalue"] = [0.002, 0.43, 0.93]
+            frame["treated_control_ebayes_qvalue_bh"] = [0.006, 0.60, 0.93]
+            frame["treated_control_ebayes_ci_lower"] = [0.22, -0.38, -0.24]
+            frame["treated_control_ebayes_ci_upper"] = [0.68, 0.18, 0.26]
+            frame["treated_control_ebayes_significant_fdr05"] = [True, False, False]
+            results = tmp / "Atest_results.txt"
+            frame.to_csv(results, sep="\t", index=False)
+            report, _ = build_replicate_report(results, tmp / "report.tsv")
+            row = report.loc[report["name"] == "MA0001"].iloc[0]
+            self.assertEqual(row["replicate_support"], "replicate-model")
+            self.assertEqual(row["statistical_method"], "empirical-Bayes moderated t")
+            self.assertAlmostEqual(row["change"], 0.45)
+            self.assertAlmostEqual(row["native_change"], 0.5)
+            self.assertAlmostEqual(row["effect_se"], 0.10)
 
 
 if __name__ == "__main__":
