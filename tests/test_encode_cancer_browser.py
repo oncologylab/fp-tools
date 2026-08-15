@@ -133,7 +133,27 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         self.assertIn('"--plot-aggregate", "all"', source)
         self.assertIn("shutil.rmtree(work)", source)
         self.assertIn('keep = {"report_payload.json.gz", "diff_footprints_results.txt"}', source)
+        self.assertIn('temporary_bins = bins.with_name(bins.name + ".part")', source)
         self.assertNotIn("unlink(missing_ok=True)  # downloaded BAM", source)
+
+    def test_runner_rejects_partial_differential_outputs(self):
+        expected_samples = [
+            "K562_rep1", "K562_rep2", "K562_rep3",
+            "HepG2_rep1", "HepG2_rep2", "HepG2_rep3",
+        ]
+        self.assertTrue(
+            RUNNER.report_outputs_valid(
+                RUNNER.REFERENCE_REPORT,
+                RUNNER.REFERENCE_RESULTS,
+                expected_samples,
+            )
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            partial = Path(tmpdir) / "partial.html"
+            partial.write_text("<html>interrupted", encoding="utf-8")
+            self.assertFalse(
+                RUNNER.report_outputs_valid(partial, RUNNER.REFERENCE_RESULTS, expected_samples)
+            )
 
 
 if __name__ == "__main__":

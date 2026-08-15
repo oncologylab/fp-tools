@@ -324,6 +324,17 @@ def validate_payload(payload: dict, expected_samples: list[str] | None = None) -
         )
 
 
+def report_outputs_valid(report: Path, result_table: Path, expected_samples: list[str]) -> bool:
+    """Return whether a differential run reached both validated final outputs."""
+    try:
+        payload, _source_digest = extract_payload(report)
+        validate_payload(payload, expected_samples)
+        validate_result_table(result_table)
+    except (KeyError, OSError, TypeError, ValueError):
+        return False
+    return True
+
+
 def seed_reference(project: Path = PROJECT) -> Path:
     pair = project / "pairs/HepG2_vs_K562"
     pair.mkdir(parents=True, exist_ok=True)
@@ -401,8 +412,10 @@ def merge_pair_peaks(pair_dir: Path, conditions: tuple[str, str], peaks: pd.Data
     with temporary.open("wb") as output:
         run([str(BEDTOOLS), "merge", "-i", str(sorted_bed)], pair_dir / "logs/peaks.log", stdout=output)
     temporary.replace(merged)
-    with bins.open("wb") as output:
+    temporary_bins = bins.with_name(bins.name + ".part")
+    with temporary_bins.open("wb") as output:
         run([str(BEDTOOLS), "makewindows", "-b", str(merged), "-w", "50"], pair_dir / "logs/peaks.log", stdout=output)
+    temporary_bins.replace(bins)
     unsorted.unlink()
     sorted_bed.unlink()
     return merged, bins
@@ -479,7 +492,13 @@ def run_pair(comparison: str, *, cores: int, allow_download: bool, keep_work: bo
     results = pair_dir / "results"
     results.mkdir(parents=True, exist_ok=True)
     report = results / f"diff_footprints_{conditions[0]}_{conditions[1]}.html"
-    if not report.is_file() or not report.stat().st_size:
+    result_table = results / "diff_footprints_results.txt"
+    if not report_outputs_valid(report, result_table, sample_names):
+        for stale in results.iterdir():
+            if stale.is_dir():
+                shutil.rmtree(stale)
+            else:
+                stale.unlink()
         run([
             str(ROOT / ".venv/bin/diff-footprints"), "--motif-db", "jaspar2026_vertebrates",
             "--signals", *map(str, footprints), "--sample-names", *sample_names,
@@ -492,7 +511,6 @@ def run_pair(comparison: str, *, cores: int, allow_download: bool, keep_work: bo
         ], pair_dir / "logs/diff_footprints.log")
     payload, source_digest = extract_payload(report)
     validate_payload(payload, sample_names)
-    result_table = results / "diff_footprints_results.txt"
     validate_result_table(result_table)
     metrics = compact_payload(payload, payload_path)
     marker = {
