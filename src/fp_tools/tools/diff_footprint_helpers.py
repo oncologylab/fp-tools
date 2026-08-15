@@ -1098,9 +1098,10 @@ def build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args)
     max_centers = getattr(args, "aggregate_max_sites", None)
     cond_groups = {cond: list(indices) for cond, indices in getattr(args, "cond_groups", {}).items()}
     aggregate_site_maps = getattr(args, "aggregate_site_maps", None)
+    aggregate_bed_root = getattr(args, "tmp_tfbs_root", None) or args.outdir
     aggregate_norm_spec = _fit_aggregate_normalizers(
         selected,
-        args.outdir,
+        aggregate_bed_root,
         list(args.aggregate_signals),
         cond_groups,
         (c1, c2),
@@ -1112,7 +1113,7 @@ def build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args)
         aggregate_site_maps=aggregate_site_maps,
     )
     sample_names = list(getattr(args, "sample_names", []) or [f"sample_{idx + 1}" for idx in range(len(args.aggregate_signals))])
-    tasks = [(row.to_dict(), (c1, c2), args.outdir, list(args.aggregate_signals), cond_groups, flank, len(x), base, normalization, aggregate_norm_spec, sample_names, site_set, max_centers, aggregate_site_maps) for _, row in selected.iterrows()]
+    tasks = [(row.to_dict(), (c1, c2), aggregate_bed_root, list(args.aggregate_signals), cond_groups, flank, len(x), base, normalization, aggregate_norm_spec, sample_names, site_set, max_centers, aggregate_site_maps) for _, row in selected.iterrows()]
 
     cores = max(1, int(getattr(args, "cores", 1) or 1))
     if cores > 1 and len(tasks) > 1:

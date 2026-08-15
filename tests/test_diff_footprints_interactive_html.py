@@ -362,6 +362,42 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
             payload = diff_footprint_helpers.build_diff_footprint_aggregate_payload([], info_table, ["Bcell", "Tcell"], args)
         self.assertEqual([motif["prefix"] for motif in payload["motifs"]], ["TF1", "TF2"])
 
+    def test_summary_mode_aggregate_reads_temporary_motif_beds(self):
+        info_table = pd.DataFrame(
+            [{
+                "output_prefix": "TF1",
+                "name": "TF1",
+                "motif_id": "M1",
+                "Bcell_Tcell_change": 1.0,
+                "Bcell_Tcell_pvalue": 0.001,
+            }]
+        )
+        args = SimpleNamespace(
+            aggregate_signals=["B.bw", "T.bw"],
+            signals=["B.fp.bw", "T.fp.bw"],
+            plot_aggregate="all",
+            aggregate_flank=1,
+            aggregate_normalization="none",
+            aggregate_site_set="bound",
+            outdir="/final/results",
+            tmp_tfbs_root="/tmp/summary-sites",
+            cond_groups={"Bcell": [0], "Tcell": [1]},
+            sample_names=["B_rep1", "T_rep1"],
+            cores=1,
+        )
+        observed_roots = []
+
+        def fake_row_worker(task):
+            observed_roots.append(task[2])
+            return {"prefix": task[0]["output_prefix"], "conditions": []}
+
+        with patch.object(diff_footprint_helpers, "_aggregate_payload_for_row", side_effect=fake_row_worker):
+            payload = diff_footprint_helpers.build_diff_footprint_aggregate_payload(
+                [], info_table, ["Bcell", "Tcell"], args
+            )
+        self.assertEqual(observed_roots, ["/tmp/summary-sites"])
+        self.assertEqual(payload["motifs"][0]["prefix"], "TF1")
+
     def test_cached_match_dirs_provide_aggregate_centers_without_comparison_beds(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
