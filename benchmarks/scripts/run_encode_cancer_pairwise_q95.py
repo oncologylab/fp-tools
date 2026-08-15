@@ -110,6 +110,13 @@ def load_design() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     observed = samples.groupby("condition")["sample"].count().to_dict()
     if observed != EXPECTED_REPLICATES:
         raise ValueError(f"Unexpected replicate design: {observed}")
+    for condition, count in EXPECTED_REPLICATES.items():
+        subset = samples.loc[samples["condition"].eq(condition)]
+        expected_numbers = {str(value) for value in range(1, count + 1)}
+        if set(subset["display_order"]) != expected_numbers:
+            raise ValueError(f"Unexpected display order for {condition}")
+        if set(subset["biological_replicate"]) != expected_numbers:
+            raise ValueError(f"Unexpected ENCODE biological replicates for {condition}")
     if tuple(sorted(samples["condition"].unique())) != tuple(sorted(EXPECTED_CONDITIONS)):
         raise ValueError("The sample manifest does not contain the exact seven cancer cell lines")
     if len(peaks) != 30 or peaks["peak_accession"].duplicated().any():
@@ -436,7 +443,7 @@ def run_pair(comparison: str, *, cores: int, allow_download: bool, keep_work: bo
         if not keep_work:
             clean_pair_outputs(pair_dir / "results", pair_dir / "work")
         return payload_path
-    pair_samples = samples[samples["condition"].isin(conditions)].sort_values(["condition", "biological_replicate"])
+    pair_samples = samples[samples["condition"].isin(conditions)].sort_values(["condition", "display_order"])
     bam_paths = [ensure_bam(sample, allow_download=allow_download) for sample in pair_samples.itertuples(index=False)]
     merged, bins = merge_pair_peaks(pair_dir, conditions, peaks, allow_download=allow_download)
     work = pair_dir / "work"

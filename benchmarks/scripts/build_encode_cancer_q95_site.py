@@ -126,7 +126,7 @@ def build(*, project: Path, site: Path, allow_partial: bool) -> None:
     conditions = [
         {
             "name": condition,
-            "samples": group.sort_values("biological_replicate")["sample"].tolist(),
+            "samples": group.sort_values("display_order")["sample"].tolist(),
             "experiment": group["experiment"].iloc[0],
         }
         for condition, group in samples.groupby("condition", sort=True)

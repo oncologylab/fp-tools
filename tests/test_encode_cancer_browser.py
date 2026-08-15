@@ -28,6 +28,14 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         samples, peaks, comparisons = RUNNER.load_design()
         self.assertEqual(len(samples), 17)
         self.assertEqual(samples.groupby("condition")["sample"].count().to_dict(), RUNNER.EXPECTED_REPLICATES)
+        self.assertEqual(
+            samples.loc[samples.condition.eq("HepG2"), "biological_replicate"].tolist(),
+            ["2", "3", "1"],
+        )
+        self.assertEqual(
+            samples.loc[samples.condition.eq("K562"), "biological_replicate"].tolist(),
+            ["3", "2", "1"],
+        )
         self.assertEqual(len(peaks), 30)
         self.assertEqual(len(comparisons), 21)
         self.assertEqual(

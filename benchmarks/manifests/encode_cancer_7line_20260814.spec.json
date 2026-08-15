@@ -9,6 +9,7 @@
     "PC-3": ["PC3_rep1", "PC3_rep2"],
     "Panc1": ["Panc1_rep1", "Panc1_rep2"]
   },
+  "sample_label_note": "display_order preserves the sample labels in the K562-versus-HepG2 reference report; biological_replicate records the official ENCODE file metadata",
   "selected_biosamples": [
     "ENCBS049MEE", "ENCBS024PJA", "ENCBS003HWJ",
     "ENCBS831RKD", "ENCBS851BDM", "ENCBS710QMG", "ENCBS827CSM", "ENCBS353INV",

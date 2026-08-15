@@ -54,6 +54,7 @@ SPECIALIZED_MANIFEST_SCHEMAS = {
     "encode_cancer_7line_20260814.tsv": [
         "condition",
         "sample",
+        "display_order",
         "biological_replicate",
         "selected_biosample",
         "biosample",
