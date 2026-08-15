@@ -72,6 +72,14 @@ SPECIALIZED_MANIFEST_SCHEMAS = {
         "cond1",
         "cond2",
     ],
+    "encode_cancer_7line_20260814_peaks.tsv": [
+        "condition",
+        "experiment",
+        "peak_accession",
+        "peak_size",
+        "peak_md5",
+        "output_type",
+    ],
 }
 
 

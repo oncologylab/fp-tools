@@ -153,40 +153,32 @@ differential-ready outputs, and independently verifies the exact 16-sample set.
 
 ### Seven-line ENCODE cancer-cell project
 
-The same manifest-pinned runner supports the harmonized cancer-cell resource.
-This design includes all 15 biological replicates from A549, HCT116, HepG2,
-K562, MCF-7, PC-3, and Panc1. It uses a cancer-only conservative-IDR peak
-universe, scans the full JASPAR 2026 vertebrate collection, and does not retain
-temporary downloaded BAMs.
+The pairwise Q95 runner builds the cancer-cell resource from 17 biological
+replicates in A549, HCT116, HepG2, K562, MCF-7, PC-3, and Panc1. K562 and
+HepG2 use the same three-replicate ENCODE experiments as the preserved
+standalone demonstration. Each comparison uses its own union of every released
+GRCh38 IDR-thresholded peak file from the two selected experiments.
 
 ```bash
-.venv/bin/python benchmarks/scripts/run_encode_atac_project.py preflight \
-  --manifest benchmarks/manifests/encode_cancer_7line_20260814.tsv \
-  --spec benchmarks/manifests/encode_cancer_7line_20260814.spec.json \
-  --project data/public/processed/encode_cancer_7line_20260814 \
-  --scratch data/public/scratch/encode_cancer_7line_20260814
-
-.venv/bin/python benchmarks/scripts/run_encode_atac_project.py run \
-  --manifest benchmarks/manifests/encode_cancer_7line_20260814.tsv \
-  --spec benchmarks/manifests/encode_cancer_7line_20260814.spec.json \
-  --project data/public/processed/encode_cancer_7line_20260814 \
-  --scratch data/public/scratch/encode_cancer_7line_20260814
+.venv/bin/python benchmarks/scripts/run_encode_cancer_pairwise_q95.py preflight
+.venv/bin/python benchmarks/scripts/run_encode_cancer_pairwise_q95.py download-inputs --workers 3
+.venv/bin/python benchmarks/scripts/run_encode_cancer_pairwise_q95.py run --download --cores 16
+.venv/bin/python benchmarks/scripts/run_encode_cancer_pairwise_q95.py verify
 ```
 
-After the project verifies, the 21 prespecified pairwise comparisons can be run
-from `encode_cancer_7line_20260814_comparisons.tsv` with project-layout
-`diff-footprints`. The joint analysis uses sample-quantile normalization
-against the shared background-score distributions before replicate
-summarization. Comparison membership is fixed before statistical analysis.
+The workflow scales corrected cut-site tracks to the across-sample median q95,
+scores footprints from those scaled tracks, and runs differential analysis
+without an additional normalization step. The preserved K562-HepG2 payload is
+copied exactly; the remaining 20 unordered comparisons use the same method.
+Pair-local generated bigWigs are removed only after the compact report payload
+and result table validate. Downloaded BAMs are retained for the separate Box
+archive and are never deleted by the runner.
 
 ```bash
-.venv/bin/python benchmarks/scripts/build_encode_cancer_browser.py comparisons
-.venv/bin/python benchmarks/scripts/build_encode_cancer_browser.py profiles \
-  --profile-workers 4 --max-profile-sites-per-motif 1500
-.venv/bin/python benchmarks/scripts/build_encode_cancer_browser.py site
-.venv/bin/python benchmarks/scripts/build_encode_cancer_browser.py verify
+.venv/bin/python benchmarks/scripts/build_encode_cancer_q95_site.py build
+.venv/bin/python benchmarks/scripts/build_encode_cancer_q95_site.py verify
 ```
 
-The browser contains every motif-level result. Aggregate plots use up to 1,500
-deterministically selected, strand-oriented sites per motif, while the
-replicate-aware statistical comparisons use the complete motif-site set.
+The dependency-free browser reads compact gzip payloads using the same report
+schema as `diff-footprints`. It contains every motif-level result and supports
+both directions of all 21 unordered comparisons through two selectors.

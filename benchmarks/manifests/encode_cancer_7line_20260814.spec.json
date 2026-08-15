@@ -3,22 +3,27 @@
   "conditions": {
     "A549": ["A549_rep1", "A549_rep2", "A549_rep3"],
     "HCT116": ["HCT116_rep1", "HCT116_rep2"],
-    "HepG2": ["HepG2_rep1", "HepG2_rep2"],
-    "K562": ["K562_rep1", "K562_rep2"],
+    "HepG2": ["HepG2_rep1", "HepG2_rep2", "HepG2_rep3"],
+    "K562": ["K562_rep1", "K562_rep2", "K562_rep3"],
     "MCF-7": ["MCF7_rep1", "MCF7_rep2"],
     "PC-3": ["PC3_rep1", "PC3_rep2"],
     "Panc1": ["Panc1_rep1", "Panc1_rep2"]
   },
   "selected_biosamples": [
     "ENCBS049MEE", "ENCBS024PJA", "ENCBS003HWJ",
-    "ENCBS831RKD", "ENCBS851BDM", "ENCBS193JTP", "ENCBS041EUO",
-    "ENCBS327ZDR", "ENCBS708GCD", "ENCBS820EFY", "ENCBS986JFA",
+    "ENCBS831RKD", "ENCBS851BDM", "ENCBS710QMG", "ENCBS827CSM", "ENCBS353INV",
+    "ENCBS254OQS", "ENCBS030HJI", "ENCBS049FLD", "ENCBS820EFY", "ENCBS986JFA",
     "ENCBS533AYC", "ENCBS388XJL", "ENCBS378LMT", "ENCBS254ODH"
   ],
-  "motifs_per_sample": 1019,
-  "peak_universe": {
-    "regions": 190084,
-    "covered_bp": 158994132,
-    "md5": "a4ab651d5086a337db3b6fadb5ecd499"
-  }
+  "motifs_per_comparison": 1019,
+  "peak_universe": null,
+  "pair_peak_universe": "pair-specific union of every released GRCh38 IDR thresholded peak file from the two selected experiments",
+  "reference_peak_universe": {
+    "comparison": "K562_vs_HepG2",
+    "merged_bed_md5": "bc6ab7865e946f43509b36054902e45e",
+    "background_50bp_bins_md5": "059d2d6bed8a62b9382c043125b5a620"
+  },
+  "normalization": "background-scale q95 to the across-sample median",
+  "differential_normalization": "none",
+  "aggregate_site_set": "bound"
 }

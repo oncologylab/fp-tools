@@ -32,21 +32,20 @@ a separately planned breaking release explicitly changes the contract.
   PyPI publication.
 - Branded GitHub and MkDocs presentation with responsive standalone report and
   GUI demos plus automated desktop/mobile browser audits.
-- A manifest-pinned, storage-conscious ENCODE footprint resource for 15
-  biological replicates from seven cancer cell lines. Its reproducible runner
-  processes one source BAM at a time, deletes verified temporary BAMs after
-  correction, uses one locked cancer-only peak and motif-site universe, and
-  exports all 21 pairwise empirical-Bayes comparisons to a dependency-free
-  static browser under the project documentation. The browser uses the
-  standalone differential-report layout with two directional condition
-  selectors, compact JASPAR motif matrices, and lazy-loaded aggregate profiles.
+- A manifest-pinned, storage-conscious ENCODE footprint resource for 17
+  biological replicates from seven cancer cell lines. Its resumable runner uses
+  a pair-specific union of released IDR-thresholded peaks, peak-q95 scaling, and
+  the same differential workflow as the preserved three-replicate K562-HepG2
+  report. Compact canonical report payloads power all 21 pairwise comparisons
+  in a dependency-free static browser with two directional selectors.
 
 ## Near-Term Priorities
 
-1. Keep the completed seven-line ENCODE cancer resource reproducible and
-   storage-conscious. Preserve all 1,019 motifs, 15 biological replicates, and
+1. Keep the seven-line ENCODE cancer resource reproducible and
+   storage-conscious. Preserve all 1,019 motifs, 17 biological replicates, and
    21 prespecified contrasts; resource membership remains independent of
-   observed differential results.
+   observed differential results, and the K562-HepG2 comparison must retain its
+   exact preserved scientific payload.
 2. Keep README, MkDocs, examples, CLI help, package metadata, and the static
    cancer-cell-line browser synchronized.
 3. Add focused regression tests for every user-visible bug or command-contract
