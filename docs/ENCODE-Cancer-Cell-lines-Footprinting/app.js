@@ -3,6 +3,7 @@
 const $ = (id) => document.getElementById(id);
 const state = {
   metadata: null,
+  entry: null,
   payload: null,
   motifs: [],
   aggregate: new Map(),
@@ -11,9 +12,9 @@ const state = {
   second: "HepG2",
   selected: [],
   active: 0,
-  motifMatrices: {},
-  sharedMotifMatrices: {},
   sampleStyles: new Map(),
+  payloadCache: new Map(),
+  logoDataCache: new Map(),
   colors: { first: "#dc2626", second: "#2563eb", neutral: "#8a94a6" },
   request: 0,
   renderRequest: 0,
@@ -111,6 +112,16 @@ async function fetchGzipJson(path) {
     );
   const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
   return JSON.parse(await new Response(stream).text());
+}
+
+function fetchGzipJsonCached(path) {
+  if (state.payloadCache.has(path)) return state.payloadCache.get(path);
+  const request = fetchGzipJson(path).catch((error) => {
+    state.payloadCache.delete(path);
+    throw error;
+  });
+  state.payloadCache.set(path, request);
+  return request;
 }
 
 function comparisonEntry(first, second) {
@@ -318,53 +329,38 @@ function renderSampleStyles() {
   );
 }
 
-function motifLogoSvg(prefix) {
-  const counts = state.motifMatrices[prefix];
-  if (!counts || !counts.length)
-    return `<span class="logo-empty">Motif logo unavailable</span>`;
-  const width = 220,
-    height = 74,
-    left = 5,
-    top = 2,
-    bottom = 5,
-    plotHeight = height - top - bottom,
-    columnWidth = (width - left * 2) / counts[0].length,
-    bases = ["A", "C", "G", "T"],
-    colors = { A: "#16a34a", C: "#2563eb", G: "#f59e0b", T: "#dc2626" },
-    parts = [
-      `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(prefix)} sequence logo">`,
-    ];
-  for (let position = 0; position < counts[0].length; position++) {
-    const column = counts.map((row) => finite(row[position])),
-      total = column.reduce((sum, value) => sum + value, 0) || 1,
-      probabilities = column.map((value) => value / total),
-      information = Math.max(
-        0,
-        2 +
-          probabilities.reduce(
-            (sum, p) => sum + (p > 0 ? p * Math.log2(p) : 0),
-            0,
-          ),
-      ),
-      stack = probabilities
-        .map((p, index) => ({
-          base: bases[index],
-          height: ((p * information) / 2) * plotHeight,
-        }))
-        .sort((a, b) => a.height - b.height);
-    let cursor = top + plotHeight;
-    stack.forEach((item) => {
-      if (item.height < 1.2) return;
-      const fontSize = Math.max(7, item.height * 1.25),
-        x = left + position * columnWidth + columnWidth / 2;
-      cursor -= item.height;
-      parts.push(
-        `<text x="${x.toFixed(2)}" y="${(cursor + item.height * 0.88).toFixed(2)}" text-anchor="middle" font-family="Arial Black,Arial,Helvetica,sans-serif" font-size="${fontSize.toFixed(2)}" font-weight="900" fill="${colors[item.base]}">${item.base}</text>`,
-      );
+function logoPath(prefix) {
+  const base = state.metadata?.logos?.base || "data/logos";
+  return `${base}/${encodeURIComponent(prefix)}.png`;
+}
+
+function motifLogoHtml(prefix) {
+  return `<img alt="${esc(prefix)} motif logo" src="${esc(logoPath(prefix))}" width="1000" height="250" style="display:block;max-width:100%;max-height:60px;width:auto;height:auto;object-fit:contain">`;
+}
+
+function logoDataUri(prefix) {
+  if (state.logoDataCache.has(prefix)) return state.logoDataCache.get(prefix);
+  const request = fetch(logoPath(prefix))
+    .then((response) => {
+      if (!response.ok)
+        throw new Error(`Motif logo ${prefix}: HTTP ${response.status}`);
+      return response.blob();
+    })
+    .then(
+      (blob) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        }),
+    )
+    .catch((error) => {
+      state.logoDataCache.delete(prefix);
+      throw error;
     });
-  }
-  parts.push("</svg>");
-  return parts.join("");
+  state.logoDataCache.set(prefix, request);
+  return request;
 }
 
 function renderSelectedCards() {
@@ -381,7 +377,7 @@ function renderSelectedCards() {
           )
           .join(""),
         group = groupFor(motif);
-      return `<article class="selected-motif${index === state.active ? " active" : ""}" data-selected-panel="${index}"><div class="selected-head"><select class="panel-tf" data-panel-tf="${index}" aria-label="Motif for aggregate plot ${index + 1}">${options}</select></div><div class="motif-logo">${motifLogoSvg(prefix)}</div><div class="detail-grid"><p class="motif-group" style="color:${colorFor(motif)}">${esc(group)}</p><p class="metric-line">ΔFP = ${fmt(motif.effect, 4)}</p><p class="metric-line">FDR = ${fmtSci(motif.qvalue)}</p></div></article>`;
+      return `<article class="selected-motif${index === state.active ? " active" : ""}" data-selected-panel="${index}"><div class="selected-head"><select class="panel-tf" data-panel-tf="${index}" aria-label="Motif for aggregate plot ${index + 1}">${options}</select></div><div class="motif-logo">${motifLogoHtml(prefix)}</div><div class="detail-grid"><p class="motif-group" style="color:${colorFor(motif)}">${esc(group)}</p><p class="metric-line">ΔFP = ${fmt(motif.effect, 4)}</p><p class="metric-line">FDR = ${fmtSci(motif.qvalue)}</p></div></article>`;
     })
     .join("");
   $("selected-grid")
@@ -419,7 +415,8 @@ function renderVolcano() {
     xLimit = niceLimit(
       Math.max(...xValues.map((value) => Math.abs(value)), 1e-9) * 1.05,
     ),
-    yMax = niceLimit(Math.max(...yValues, 1) * 1.03),
+    rawYMax = Math.max(...yValues, 0),
+    yMax = rawYMax > 0 ? rawYMax * 1.05 : 1,
     sx = (value) =>
       margin.left + ((value + xLimit) / (2 * xLimit)) * innerWidth,
     sy = (value) => margin.top + innerHeight - (value / yMax) * innerHeight,
@@ -536,8 +533,20 @@ function drawRank() {
 }
 
 async function profileRecord(prefix) {
-  const motif = state.aggregate.get(prefix);
+  let motif = state.aggregate.get(prefix);
   if (!motif) throw new Error(`No aggregate profile for ${prefix}`);
+  const hasProfiles = motif.conditions?.some((condition) =>
+    condition.samples?.some((sample) => Array.isArray(sample.profile)),
+  );
+  if (!hasProfiles) {
+    const shard = state.entry?.profile_shards?.find(
+      (item) => Number(item.id) === Number(motif.profile_shard),
+    );
+    if (!shard) throw new Error(`No profile shard for ${prefix}`);
+    const shardPayload = await fetchGzipJsonCached(shard.file);
+    motif = shardPayload.motifs.find((item) => item.prefix === prefix);
+    if (!motif) throw new Error(`Profile shard does not contain ${prefix}`);
+  }
   const samples = {},
     sampleMeta = {};
   motif.conditions.forEach((condition) =>
@@ -727,17 +736,14 @@ async function loadComparison(reset = true) {
   const token = ++state.request;
   $("status").textContent = `Loading ${first} vs ${second}…`;
   const { entry } = comparisonEntry(first, second),
-    payload = await fetchGzipJson(entry.file);
+    payload = await fetchGzipJsonCached(entry.file);
   if (token !== state.request) return;
+  state.entry = entry;
   state.payload = payload;
   state.aggregate = new Map(
     (payload.aggregate?.motifs || []).map((item) => [item.prefix, item]),
   );
   state.profileAxis = payload.aggregate?.x || [];
-  state.motifMatrices = {
-    ...state.sharedMotifMatrices,
-    ...(payload.motif_matrices || {}),
-  };
   const reversed = payload.conditions[0] !== first;
   if (
     new Set(payload.conditions).size !== 2 ||
@@ -813,27 +819,25 @@ function serializeSvg(node) {
   return new XMLSerializer().serializeToString(styledClone(node));
 }
 
-function logoPanelSvg() {
+async function logoPanelSvg() {
   const cards = [...$("selected-grid").querySelectorAll(".selected-motif")],
     cardWidth = 240,
-    cardHeight = 160,
+    cardHeight = 220,
     gap = 10,
     columns = Math.max(1, Math.min(4, cards.length)),
     rows = Math.ceil(cards.length / columns),
     byPrefix = new Map(state.motifs.map((item) => [item.prefix, item])),
+    prefixes = state.selected.slice(0, plotCount()),
+    images = await Promise.all(prefixes.map(logoDataUri)),
     parts = [
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${columns * cardWidth + (columns - 1) * gap} ${rows * cardHeight + (rows - 1) * gap}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${columns * cardWidth + (columns - 1) * gap} ${rows * cardHeight + (rows - 1) * gap}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}.motif-card-title{font-size:13px;font-weight:900;fill:#172033}.motif-card-metric{font-size:12px;font-weight:800;fill:#334155}</style><rect width="100%" height="100%" fill="#fff"/>`,
     ];
-  state.selected.slice(0, plotCount()).forEach((prefix, index) => {
+  prefixes.forEach((prefix, index) => {
     const motif = byPrefix.get(prefix),
       x = (index % columns) * (cardWidth + gap),
-      y = Math.floor(index / columns) * (cardHeight + gap),
-      logo = motifLogoSvg(prefix).replace(
-        /^<svg[^>]*>/,
-        `<svg x="10" y="30" width="${cardWidth - 20}" height="72" viewBox="0 0 220 74">`,
-      );
+      y = Math.floor(index / columns) * (cardHeight + gap);
     parts.push(
-      `<g transform="translate(${x},${y})"><rect width="${cardWidth}" height="${cardHeight}" rx="7" fill="#fff" stroke="${index === state.active ? "#93c5fd" : "#d8e2ef"}" stroke-width="${index === state.active ? 3 : 1}"/><text x="10" y="20" class="plot-title">${esc(motifLabel(motif)).slice(0, 34)}</text>${logo}<text x="10" y="119" font-size="12" font-weight="900" fill="${colorFor(motif)}">${esc(groupFor(motif))}</text><text x="10" y="138" class="axis-label">ΔFP = ${fmt(motif.effect, 4)}</text><text x="122" y="138" class="axis-label">FDR = ${fmtSci(motif.qvalue)}</text></g>`,
+      `<g transform="translate(${x},${y})"><rect width="${cardWidth}" height="${cardHeight}" rx="7" fill="#fff" stroke="${index === state.active ? "#93c5fd" : "#d8e2ef"}" stroke-width="${index === state.active ? 3 : 1}"/><text x="10" y="20" class="motif-card-title">${esc(motifLabel(motif)).slice(0, 32)}</text><image x="24" y="34" width="${cardWidth - 48}" height="96" preserveAspectRatio="xMidYMid meet" href="${images[index]}"/><text x="10" y="150" font-size="13" font-weight="900" fill="${colorFor(motif)}">${esc(groupFor(motif))}</text><text x="10" y="171" class="motif-card-metric">ΔFP = ${fmt(motif.effect, 4)}</text><text x="10" y="192" class="motif-card-metric">FDR = ${fmtSci(motif.qvalue)}</text></g>`,
     );
   });
   parts.push("</svg>");
@@ -975,9 +979,13 @@ function exportName(suffix) {
   );
 }
 function bindExports() {
-  $("download-logo").addEventListener("click", () =>
-    exportSvg(logoPanelSvg(), exportName("motif_logos")),
-  );
+  $("download-logo").addEventListener("click", async () => {
+    try {
+      exportSvg(await logoPanelSvg(), exportName("motif_logos"));
+    } catch (error) {
+      showError(error);
+    }
+  });
   $("download-rank").addEventListener("click", () =>
     exportSvg(serializeSvg($("rank-chart")), exportName("barplot")),
   );
@@ -1016,12 +1024,8 @@ function showError(error) {
 
 async function init() {
   try {
-    const [metadata, matrixPayload] = await Promise.all([
-      fetchJson("data/metadata.json"),
-      fetchJson("data/motif_matrices.json"),
-    ]);
+    const metadata = await fetchJson("data/metadata.json");
     state.metadata = metadata;
-    state.sharedMotifMatrices = matrixPayload.motifs || matrixPayload;
     const names = metadata.conditions.map((item) => item.name),
       options = names
         .map((name) => `<option value="${esc(name)}">${esc(name)}</option>`)

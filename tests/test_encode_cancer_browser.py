@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 import tempfile
 import unittest
+from itertools import combinations
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -112,18 +113,52 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         self.assertIn('value="pdf"', source)
         self.assertNotIn("data/profiles/", source)
         self.assertNotIn("data/motif_index.json", source)
+        self.assertNotIn("data/motif_matrices.json", source)
+
+    def test_static_browser_caches_compact_payloads_and_loads_profile_shards(self):
+        app = (ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/app.js").read_text(encoding="utf-8")
+        self.assertIn("fetchGzipJsonCached(entry.file)", app)
+        self.assertIn("state.entry?.profile_shards?.find", app)
+        self.assertIn("fetchGzipJsonCached(shard.file)", app)
+
+    def test_volcano_y_axis_uses_comparison_specific_headroom(self):
+        app = (ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/app.js").read_text(encoding="utf-8")
+        self.assertIn("rawYMax = Math.max(...yValues, 0)", app)
+        self.assertIn("yMax = rawYMax > 0 ? rawYMax * 1.05 : 1", app)
+        self.assertNotIn("yMax = niceLimit(Math.max(...yValues", app)
 
     def test_static_reference_payload_matches_preserved_scientific_digest(self):
         browser = ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting"
-        payload = BUILDER.read_payload(browser / "data/reports/HepG2_vs_K562.json.gz")
-        self.assertEqual(BUILDER.scientific_digest(payload), BUILDER.REFERENCE_SCIENTIFIC_SHA256)
         metadata = json.loads((browser / "data/metadata.json").read_text(encoding="utf-8"))
+        record = next(item for item in metadata["comparisons"] if item["comparison"] == "HepG2_vs_K562")
+        payload = BUILDER.reconstruct_browser_payload(browser, record)
+        self.assertEqual(BUILDER.scientific_digest(payload), BUILDER.REFERENCE_SCIENTIFIC_SHA256)
         self.assertEqual(sum(len(item["samples"]) for item in metadata["conditions"]), 17)
 
+    def test_static_logos_are_identical_to_the_preserved_report(self):
+        browser = ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting"
+        expected = BUILDER.reference_logo_pngs()
+        self.assertEqual(len(expected), 1019)
+        for prefix in ("GATA2_MA0036.4", "GATA5_MA0766.3", "HNF4A_MA1494.2", "ONECUT2_MA0756.3"):
+            self.assertEqual((browser / f"data/logos/{prefix}.png").read_bytes(), expected[prefix])
+
+    def test_static_metadata_supports_every_pair_in_both_directions(self):
+        browser = ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting"
+        metadata = json.loads((browser / "data/metadata.json").read_text(encoding="utf-8"))
+        names = [item["name"] for item in metadata["conditions"]]
+        observed = {
+            frozenset((item["condition1"], item["condition2"]))
+            for item in metadata["comparisons"]
+        }
+        self.assertEqual(observed, {frozenset(pair) for pair in combinations(names, 2)})
+        self.assertEqual(len(observed) * 2, 42)
+
     def test_each_static_payload_is_bounded(self):
-        browser = ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/data/reports"
-        for path in browser.glob("*.json.gz"):
-            self.assertLess(path.stat().st_size, 10 * 1024 * 1024, path.name)
+        data = ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/data"
+        for path in (data / "reports").glob("*.json.gz"):
+            self.assertLess(path.stat().st_size, 512 * 1024, path.name)
+        for path in (data / "profiles").glob("*/*.json.gz"):
+            self.assertLess(path.stat().st_size, 1024 * 1024, path.name)
 
     def test_runner_is_pair_specific_q95_and_storage_bounded(self):
         source = RUNNER_PATH.read_text(encoding="utf-8")

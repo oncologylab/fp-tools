@@ -340,6 +340,14 @@ a {
   width: 100%;
   height: 100%;
 }
+.motif-logo img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 60px;
+  object-fit: contain;
+}
 .logo-empty {
   color: #94a3b8;
   font-size: 10px;

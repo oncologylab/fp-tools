@@ -1,1 +1,2351 @@
-{"schema":"fp-tools.encode-cancer-browser.v1","release_date":"2026-08-14","genome":"GRCh38","motif_database":"JASPAR 2026 CORE vertebrates non-redundant","differential_normalization":"Sample-quantile normalization against shared background-score distributions","motif_count":1019,"comparison_count":21,"sample_count":15,"profile_axis":[-100,-99,-98,-97,-96,-95,-94,-93,-92,-91,-90,-89,-88,-87,-86,-85,-84,-83,-82,-81,-80,-79,-78,-77,-76,-75,-74,-73,-72,-71,-70,-69,-68,-67,-66,-65,-64,-63,-62,-61,-60,-59,-58,-57,-56,-55,-54,-53,-52,-51,-50,-49,-48,-47,-46,-45,-44,-43,-42,-41,-40,-39,-38,-37,-36,-35,-34,-33,-32,-31,-30,-29,-28,-27,-26,-25,-24,-23,-22,-21,-20,-19,-18,-17,-16,-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99],"max_profile_sites_per_motif":1500,"profile_site_selection":"Deterministic evenly spaced sites in genomic scan order; negative-strand windows are reverse-oriented.","peak_universe":{"regions":190084,"covered_bp":158994132,"md5":"a4ab651d5086a337db3b6fadb5ecd499","merge_touching":true},"conditions":[{"name":"A549","samples":["A549_rep1","A549_rep2","A549_rep3"],"experiment":"ENCSR032RGS"},{"name":"HCT116","samples":["HCT116_rep1","HCT116_rep2"],"experiment":"ENCSR872WGW"},{"name":"HepG2","samples":["HepG2_rep1","HepG2_rep2"],"experiment":"ENCSR042AWH"},{"name":"K562","samples":["K562_rep1","K562_rep2"],"experiment":"ENCSR483RKN"},{"name":"MCF-7","samples":["MCF7_rep1","MCF7_rep2"],"experiment":"ENCSR422SUG"},{"name":"PC-3","samples":["PC3_rep1","PC3_rep2"],"experiment":"ENCSR499ASS"},{"name":"Panc1","samples":["Panc1_rep1","Panc1_rep2"],"experiment":"ENCSR591PIX"}],"comparisons":[{"id":"A549_vs_HCT116","condition1":"A549","condition2":"HCT116","file":"data/comparisons/A549_vs_HCT116.json"},{"id":"A549_vs_HepG2","condition1":"A549","condition2":"HepG2","file":"data/comparisons/A549_vs_HepG2.json"},{"id":"A549_vs_K562","condition1":"A549","condition2":"K562","file":"data/comparisons/A549_vs_K562.json"},{"id":"A549_vs_MCF-7","condition1":"A549","condition2":"MCF-7","file":"data/comparisons/A549_vs_MCF-7.json"},{"id":"A549_vs_PC-3","condition1":"A549","condition2":"PC-3","file":"data/comparisons/A549_vs_PC-3.json"},{"id":"A549_vs_Panc1","condition1":"A549","condition2":"Panc1","file":"data/comparisons/A549_vs_Panc1.json"},{"id":"HCT116_vs_HepG2","condition1":"HCT116","condition2":"HepG2","file":"data/comparisons/HCT116_vs_HepG2.json"},{"id":"HCT116_vs_K562","condition1":"HCT116","condition2":"K562","file":"data/comparisons/HCT116_vs_K562.json"},{"id":"HCT116_vs_MCF-7","condition1":"HCT116","condition2":"MCF-7","file":"data/comparisons/HCT116_vs_MCF-7.json"},{"id":"HCT116_vs_PC-3","condition1":"HCT116","condition2":"PC-3","file":"data/comparisons/HCT116_vs_PC-3.json"},{"id":"HCT116_vs_Panc1","condition1":"HCT116","condition2":"Panc1","file":"data/comparisons/HCT116_vs_Panc1.json"},{"id":"HepG2_vs_K562","condition1":"HepG2","condition2":"K562","file":"data/comparisons/HepG2_vs_K562.json"},{"id":"HepG2_vs_MCF-7","condition1":"HepG2","condition2":"MCF-7","file":"data/comparisons/HepG2_vs_MCF-7.json"},{"id":"HepG2_vs_PC-3","condition1":"HepG2","condition2":"PC-3","file":"data/comparisons/HepG2_vs_PC-3.json"},{"id":"HepG2_vs_Panc1","condition1":"HepG2","condition2":"Panc1","file":"data/comparisons/HepG2_vs_Panc1.json"},{"id":"K562_vs_MCF-7","condition1":"K562","condition2":"MCF-7","file":"data/comparisons/K562_vs_MCF-7.json"},{"id":"K562_vs_PC-3","condition1":"K562","condition2":"PC-3","file":"data/comparisons/K562_vs_PC-3.json"},{"id":"K562_vs_Panc1","condition1":"K562","condition2":"Panc1","file":"data/comparisons/K562_vs_Panc1.json"},{"id":"MCF-7_vs_PC-3","condition1":"MCF-7","condition2":"PC-3","file":"data/comparisons/MCF-7_vs_PC-3.json"},{"id":"MCF-7_vs_Panc1","condition1":"MCF-7","condition2":"Panc1","file":"data/comparisons/MCF-7_vs_Panc1.json"},{"id":"PC-3_vs_Panc1","condition1":"PC-3","condition2":"Panc1","file":"data/comparisons/PC-3_vs_Panc1.json"}],"downloads":{"all_results":"data/all_pairwise_results.tsv.gz","comparison_summary":"data/comparison_summary.tsv","samples":"data/samples.tsv"}}
+{
+  "schema": "fp-tools.encode-cancer-static-browser.v2",
+  "release_date": "2026-08-14",
+  "method": "Pair-specific released IDR-peak union; corrected cut-site q95 scaling; fp-tools footprint scoring",
+  "conditions": [
+    {
+      "name": "A549",
+      "samples": [
+        "A549_rep1",
+        "A549_rep2",
+        "A549_rep3"
+      ],
+      "experiment": "ENCSR032RGS"
+    },
+    {
+      "name": "HCT116",
+      "samples": [
+        "HCT116_rep1",
+        "HCT116_rep2"
+      ],
+      "experiment": "ENCSR872WGW"
+    },
+    {
+      "name": "HepG2",
+      "samples": [
+        "HepG2_rep1",
+        "HepG2_rep2",
+        "HepG2_rep3"
+      ],
+      "experiment": "ENCSR291GJU"
+    },
+    {
+      "name": "K562",
+      "samples": [
+        "K562_rep1",
+        "K562_rep2",
+        "K562_rep3"
+      ],
+      "experiment": "ENCSR868FGK"
+    },
+    {
+      "name": "MCF-7",
+      "samples": [
+        "MCF7_rep1",
+        "MCF7_rep2"
+      ],
+      "experiment": "ENCSR422SUG"
+    },
+    {
+      "name": "PC-3",
+      "samples": [
+        "PC3_rep1",
+        "PC3_rep2"
+      ],
+      "experiment": "ENCSR499ASS"
+    },
+    {
+      "name": "Panc1",
+      "samples": [
+        "Panc1_rep1",
+        "Panc1_rep2"
+      ],
+      "experiment": "ENCSR591PIX"
+    }
+  ],
+  "comparisons": [
+    {
+      "comparison": "A549_vs_HCT116",
+      "condition1": "A549",
+      "condition2": "HCT116",
+      "file": "data/reports/A549_vs_HCT116.json.gz",
+      "payload_sha256": "ac0213236a724cf87d6e8856505cdaea28422824b2309ee1eb2be5ceb3035228",
+      "source_payload_sha256": "4ccfb84482b97002042f295868461977ba298e8c200f9e0e830f5cf721ea2c63",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/A549_vs_HCT116/00.json.gz",
+          "sha256": "97b3dc56986f90b73f58e1fdda439c957364e228855b0aaef2c1541a3b16098f",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/A549_vs_HCT116/01.json.gz",
+          "sha256": "f771f6b9dba61fb5239ac1c7b7f1306e6f6cafa764f4b39b6b13c5a963548082",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/A549_vs_HCT116/02.json.gz",
+          "sha256": "5ee82581623ee9dd178ae9e97b490bf99e3d88e6734b4b00de605cf7e5ffce6d",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/A549_vs_HCT116/03.json.gz",
+          "sha256": "db629f0f6b90dbaf0338ec6db9876999070b9309dcd149d7a9750a3a53c6654b",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/A549_vs_HCT116/04.json.gz",
+          "sha256": "fbe048f6f786ab95b8f7937c4e05717482bb52046de973c43e3ad421c1d08c82",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/A549_vs_HCT116/05.json.gz",
+          "sha256": "430ec969a61f2a83dc7a56fa3aa8c2346a6b68ddd57baf31e235e88be52449ac",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/A549_vs_HCT116/06.json.gz",
+          "sha256": "6fb781646e7153e7f818b3c057a5c03cb9ae3e3edd00522e25c3e42b8649d249",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/A549_vs_HCT116/07.json.gz",
+          "sha256": "bae2c92f31825162f9eedc2ed549df0c0198a557eea8b132069e27589f90a21e",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/A549_vs_HCT116/08.json.gz",
+          "sha256": "7c9982f16f325e1a0116401cc4842131afeb7759577bb71a1d7642e6eb67b712",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/A549_vs_HCT116/09.json.gz",
+          "sha256": "f05a80f4d2d1a7e31c0e5b70452d6afc86aade4b50033cfcfb5d6c1b008a0fd9",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/A549_vs_HCT116/0a.json.gz",
+          "sha256": "14215fddb5b6a906ae318fb63ca0fab830749a6c4cfe6f12e243f17629c30339",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/A549_vs_HCT116/0b.json.gz",
+          "sha256": "d46a00f0e612f64df22bec4f2d08522866c7d853fbbc7c8b2348a578c8568329",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/A549_vs_HCT116/0c.json.gz",
+          "sha256": "987ece47b478ed27316135a04840e4dba960113ccdca8f2a0c05a028f19239cf",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/A549_vs_HCT116/0d.json.gz",
+          "sha256": "652f5227326fc239e468aa2ef75ad0c28297a215ba2e8edd2975d3fb6a6c70dd",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/A549_vs_HCT116/0e.json.gz",
+          "sha256": "eae297fed61f0bb978c43b44046462c736d926f17d9d23010c16ff8a083335f5",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/A549_vs_HCT116/0f.json.gz",
+          "sha256": "47c3d3604d6ab8edf517628c4423163c46215ca9f56fcd037b8a58ed916065b6",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "A549_vs_HepG2",
+      "condition1": "A549",
+      "condition2": "HepG2",
+      "file": "data/reports/A549_vs_HepG2.json.gz",
+      "payload_sha256": "525f53a6ddd6e9791dead295fb13e88f7a08f12c4c7fdd0b5434cf3ac8f1569a",
+      "source_payload_sha256": "1075c48188059ff21d49163cf538a59502e2fb7832dac8dc6d8e03ae611a92eb",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/A549_vs_HepG2/00.json.gz",
+          "sha256": "eaff3fff3dc80a27d5ca39bac1fd8f61f5e42eef72119011434f15f390096113",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/A549_vs_HepG2/01.json.gz",
+          "sha256": "d0826500e63556d06eb33c9c4b4564081d60eb85c04a9464bcbcd7facb99c1fa",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/A549_vs_HepG2/02.json.gz",
+          "sha256": "e24e358397b722c1894c5318aa84dbe8deb7c3090e30c55fa82fc17584139b90",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/A549_vs_HepG2/03.json.gz",
+          "sha256": "125a7de1fc10628ccfce84557712c4266bb4175b2f98608004d13ebf321a1e4c",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/A549_vs_HepG2/04.json.gz",
+          "sha256": "5723a52d1186972cc57352065e8dc1bfb958ff2525772d0d8b9fb3be9e766429",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/A549_vs_HepG2/05.json.gz",
+          "sha256": "1eb62336df0ee7894a21c61eedb30e63d975dcef79921feaea86ee93e984adf0",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/A549_vs_HepG2/06.json.gz",
+          "sha256": "093b856f5ab9fe65a00ad1125558ee9c12615b555175ca7e2f5aa29ed4f6d08b",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/A549_vs_HepG2/07.json.gz",
+          "sha256": "d7b8c740d08786f01b04f4327c7b0f5ce382fb22518d5e70f8b480fd1b6400e7",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/A549_vs_HepG2/08.json.gz",
+          "sha256": "a882567dddd986bf0a49a4a5af2b636d73ab6466eb6ba49873a0f9f6a7bfdec1",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/A549_vs_HepG2/09.json.gz",
+          "sha256": "4d20a331fb103e9219701e0bd70a08e602c59ff654c89ba807146c9512051166",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/A549_vs_HepG2/0a.json.gz",
+          "sha256": "7673ca3aa8bc66714c23e1d235aa0267c9c3f8f4c12247f62d5e29aadb243682",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/A549_vs_HepG2/0b.json.gz",
+          "sha256": "be7845e613db11cdc091fa066dd33e09461d5556032c0346cd1b8efd19f63946",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/A549_vs_HepG2/0c.json.gz",
+          "sha256": "f8aaae87fa540d6c83ee0356501c0a6634b3a0e27de4ef23ea8ba8f2724ac9b4",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/A549_vs_HepG2/0d.json.gz",
+          "sha256": "a1755d1d6d41f74c2867a3316b071cbbc2deb1465c915d1f3d229d2aaf7d7e24",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/A549_vs_HepG2/0e.json.gz",
+          "sha256": "83036e32d009d04c0048106edee4f7ce016e846e619e6f7cb7e05ad1e4e25f6d",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/A549_vs_HepG2/0f.json.gz",
+          "sha256": "6a6ca1d6b819f5a32518b586d48bc63db9e26c927a24f040df58705a6ba3fb8c",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "A549_vs_K562",
+      "condition1": "A549",
+      "condition2": "K562",
+      "file": "data/reports/A549_vs_K562.json.gz",
+      "payload_sha256": "17c1216426f47e20612fd9b599d8532248b37908c0b4f630cca08beb66f06d42",
+      "source_payload_sha256": "93317004610ed223b84c5b94079d5cdd5d5f3bccaf4d5cf039eebefc7d45cc8e",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/A549_vs_K562/00.json.gz",
+          "sha256": "e910b93968d9d069daeae68fa75a50bb09330c7a30645a18a546ef68f7f9272f",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/A549_vs_K562/01.json.gz",
+          "sha256": "310f54d41ffc2a44bea168dcafe7c6f06b40e772039e23648514b49e4ee31621",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/A549_vs_K562/02.json.gz",
+          "sha256": "f87464bc3ee0702a43cfc56dc8b985aad0c4c2081cf24014f1cb2fb13840cd1f",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/A549_vs_K562/03.json.gz",
+          "sha256": "fcc8d4622c2610e4156d19118e67d80bc58af95006edeab2a8827253ae67dccc",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/A549_vs_K562/04.json.gz",
+          "sha256": "855463821a01cf0c781e8e5dee8252822427854407b1f3eccc072c02f48cdb4d",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/A549_vs_K562/05.json.gz",
+          "sha256": "fa73611b28056f3444481fd185d65d6092685cb231d75eaef965d4bd7bfe674d",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/A549_vs_K562/06.json.gz",
+          "sha256": "16d66270e5ad219656a9bd96644b5093b6fe3b2c575c6bff79f6753fc3810ecb",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/A549_vs_K562/07.json.gz",
+          "sha256": "2e26f83b91ec96b8833e8cb155182a11af64524b98191e6a3fd2301d47c3c634",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/A549_vs_K562/08.json.gz",
+          "sha256": "b365e2810a2524e8e4b91a53afe201ecfc890490286fef026bbd494de6287d46",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/A549_vs_K562/09.json.gz",
+          "sha256": "6a628fd053b83a1e8d9d06f6ef08a464a47176b24f6c257a07da72d7c8cf7f7d",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/A549_vs_K562/0a.json.gz",
+          "sha256": "c3ca9f5f5da68ff3869f1a3f15e4fa27e195ce6094d4916eb3243b8323fe0eb7",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/A549_vs_K562/0b.json.gz",
+          "sha256": "c32b3cd12f3645463ebefd6c7cef546d9dd72e64df6ec3a5ca79600d144f4909",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/A549_vs_K562/0c.json.gz",
+          "sha256": "6d28fc7486d75be30f621beb0bc5a95110551b1db81a913fdef5cd846497f5d8",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/A549_vs_K562/0d.json.gz",
+          "sha256": "9bca54daea7f8b7f19562e68cf662665ea7cc80f0360fd94f1ad64f57c399249",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/A549_vs_K562/0e.json.gz",
+          "sha256": "d078c4bdb74a55e8c984802feb2eea511f398849066df49e89eb28f7d7023a7c",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/A549_vs_K562/0f.json.gz",
+          "sha256": "47fcd8d0f7f97527bb8c23e914ffc2e8b97a64cecc4cdb3b5bf5358cf0bb6e78",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "A549_vs_MCF-7",
+      "condition1": "A549",
+      "condition2": "MCF-7",
+      "file": "data/reports/A549_vs_MCF-7.json.gz",
+      "payload_sha256": "af56ac137762a42cec69185225bfd15d08f9cc97a9f6646a7ec80ef5fb887986",
+      "source_payload_sha256": "d9887db3fe8ec8e5d0f95d76d40fc01035591d3e751bc5d5f14aadba490be237",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/A549_vs_MCF-7/00.json.gz",
+          "sha256": "18103dad63a663cab86277eaa24458b8961e41a6c307bd43100e4eb9c3fb53dd",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/A549_vs_MCF-7/01.json.gz",
+          "sha256": "891089a13dfb6da5730125a85da0641f18b91e94217d378889221843edee8261",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/A549_vs_MCF-7/02.json.gz",
+          "sha256": "a228484011c14495a865081133d1df2408753ce46e3106484c483375c6e479bf",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/A549_vs_MCF-7/03.json.gz",
+          "sha256": "d2e38107a9f4a2251cbb3afcfadce1a0ab6d7c59ef62299130efa8842215b076",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/A549_vs_MCF-7/04.json.gz",
+          "sha256": "3812c4fe775fa689909a2d7888913a335a792910e4e8ff7ffff17b4cc69f61f6",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/A549_vs_MCF-7/05.json.gz",
+          "sha256": "a7c174756dd015c1a174d1fe979ca65dee4cc8f1527cc0ec10d7dc115549028c",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/A549_vs_MCF-7/06.json.gz",
+          "sha256": "9a6bd0836224030ca76e0d0674a469dff91b76b29eb8e1d520e00aecc3b32b84",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/A549_vs_MCF-7/07.json.gz",
+          "sha256": "3d5e56c64677929e623344b2ba366d6f72f43798598977f04ae62a05ef3ccf18",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/A549_vs_MCF-7/08.json.gz",
+          "sha256": "88b88d261fcc6e5e133bbc3fd8412887763f59e1d96759c2eed5f174eab011be",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/A549_vs_MCF-7/09.json.gz",
+          "sha256": "3535d2875101a3ca54cb1b756942e860aab76ccd1b3cddcf1438a1a0be0c46f5",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/A549_vs_MCF-7/0a.json.gz",
+          "sha256": "0b49b62672750fff5cb5aa4f173ef2aa9a1cc31716018155cabb0aaf641a07b5",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/A549_vs_MCF-7/0b.json.gz",
+          "sha256": "edffcf13aae80f83e8b9da440e242eb583855e23e4d2d632b9c72c74f5e8a0d7",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/A549_vs_MCF-7/0c.json.gz",
+          "sha256": "6b15e929caa9e9f4aa353c405702bfbf6a0cd81fc8be018ca884934047055bfe",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/A549_vs_MCF-7/0d.json.gz",
+          "sha256": "72111391d617fb9f081e4a79a5c1e77f8872a3c5d581b2093529ec01e987402a",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/A549_vs_MCF-7/0e.json.gz",
+          "sha256": "01402be16d536f82d64d8dd5cc94ef39a9a0177494269faebb91df06cfd0d13b",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/A549_vs_MCF-7/0f.json.gz",
+          "sha256": "4627f16d20dedcd8c811f95b3d1b8f7498953e1b78f75febf6ea61d926bcede1",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "A549_vs_PC-3",
+      "condition1": "A549",
+      "condition2": "PC-3",
+      "file": "data/reports/A549_vs_PC-3.json.gz",
+      "payload_sha256": "62f216edfc2832b969069e939d91f44c84e48ecb06b78924b3e6c8af45576009",
+      "source_payload_sha256": "480f386b059b6b953521da4a79447f598969560f969b9fc3af52cc48c2218e6f",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/A549_vs_PC-3/00.json.gz",
+          "sha256": "823b7f0ab422eb853ee38e959f549472342c7f2f823982cb03c254d427b195f7",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/A549_vs_PC-3/01.json.gz",
+          "sha256": "73bc22371535a5d6aa938ad4eb47037dd40a6c22eda1d3a6bf835e33a4c5d945",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/A549_vs_PC-3/02.json.gz",
+          "sha256": "723be04742699e5dadcdf49c1d009fbd44cb1b0eaf39e491648c093548208885",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/A549_vs_PC-3/03.json.gz",
+          "sha256": "e80109bceda9fcb58c7451ef0761d7b5bd60e065eefde719c94695ae67f2b2ed",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/A549_vs_PC-3/04.json.gz",
+          "sha256": "76c591284d9b50b9d32b31401c0ecc1c06b11c2db605e95ba652a694bf52e078",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/A549_vs_PC-3/05.json.gz",
+          "sha256": "7269be0926230ba3a6b38f1d157a163c1ae887fd102723ec45fbd65c21caccfd",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/A549_vs_PC-3/06.json.gz",
+          "sha256": "eb16092357424ff31efac5823b561832f7d26ce287dadc6480cb388c767018fb",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/A549_vs_PC-3/07.json.gz",
+          "sha256": "ca68f204802e042607ef79a2a10ef445c69e9cda0890348b645d7cb7db699d02",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/A549_vs_PC-3/08.json.gz",
+          "sha256": "57fdd6bca640ce370a6ff72c25c367fd9c24f9f30409689fcdf5143c4a20aeb7",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/A549_vs_PC-3/09.json.gz",
+          "sha256": "2ad3a3050c72b8f88e3f0aafea1a0f4450f090f6e48192f51f6cd3bb3022e29a",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/A549_vs_PC-3/0a.json.gz",
+          "sha256": "905ec5ff9d7905aa1e60678601e20dc22b5d66731f226a0896987662a2d261c3",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/A549_vs_PC-3/0b.json.gz",
+          "sha256": "9ff63e845f8ee6b23ef51b358611a37b8b0cc00bc6310811185d7302dbc74d9e",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/A549_vs_PC-3/0c.json.gz",
+          "sha256": "282f7eca145d19c2a62a158c4c7bdfd957958cb0f1e7fa90ae27cd7234b6eefd",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/A549_vs_PC-3/0d.json.gz",
+          "sha256": "3e9a7574ea6b4cb1037eb450336092ebd06076ace9b82c45d0fcab58f77f1c06",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/A549_vs_PC-3/0e.json.gz",
+          "sha256": "fcde86f13204c3dfa550c161b6b758e6ed325e1e95f26271eb488d565d9a8e5d",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/A549_vs_PC-3/0f.json.gz",
+          "sha256": "5b884a5ec2c41fbf3e5fbe96089f3e91ff5d011aed6f934469932d4a93333541",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "A549_vs_Panc1",
+      "condition1": "A549",
+      "condition2": "Panc1",
+      "file": "data/reports/A549_vs_Panc1.json.gz",
+      "payload_sha256": "fb08517563e5ba3948acef202ce40f3fe6595679ae967942d6ccf80afe2b635d",
+      "source_payload_sha256": "adb6e810e5691f3a726ff2df8ef685e635e8ab10b1dda26d28e7ac9624c247ba",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/A549_vs_Panc1/00.json.gz",
+          "sha256": "1a45753e0c1f08b9b7015623fcdc434a9f5a54d58eec77e64c02187f29c763fd",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/A549_vs_Panc1/01.json.gz",
+          "sha256": "c3f2351fed272a077e79fd469cc083f78745da0b2cf43d12f169f77710f4277f",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/A549_vs_Panc1/02.json.gz",
+          "sha256": "a748c3d15429f403eff2414c9e029dfe8fa3013f9f2e8eeb023333ac6962d898",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/A549_vs_Panc1/03.json.gz",
+          "sha256": "4a1aeb957a45ae02b127eb569ae435172aeaee9c1b0a4b02b365277f7e3e2c7d",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/A549_vs_Panc1/04.json.gz",
+          "sha256": "66fdc369d9db3e2e0d146e20a0111fe0e33c4777fbc341022676dfb781b615dd",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/A549_vs_Panc1/05.json.gz",
+          "sha256": "6e3a6fe23325bb7794826765b9934efcdfccc0d544ca65637e5dc28ada33bee4",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/A549_vs_Panc1/06.json.gz",
+          "sha256": "fd6367f9ec30bb99c6ee7925279eca956f1cc168a19e8385dca5c77e0d67c1b8",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/A549_vs_Panc1/07.json.gz",
+          "sha256": "a87072f204e317695a76d9f9dae24ecfb45e39951f419a00cf11a49ff142f3f5",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/A549_vs_Panc1/08.json.gz",
+          "sha256": "1174ba748389f2ab510932cc47732036c3090bc1ff27041ed01093e13e5d3e46",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/A549_vs_Panc1/09.json.gz",
+          "sha256": "96a560a23a9c21085f988256b5a2c797d3500b372f1e2a08e49316c7ae2adda2",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/A549_vs_Panc1/0a.json.gz",
+          "sha256": "624e0a64d006f53a6e07a59f3736c7c459bcde06917d0d1fb7bf682c26d02c2b",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/A549_vs_Panc1/0b.json.gz",
+          "sha256": "d0fc14698f3ac993b3fc48f0975f81d84e46a8e76db3c5d719b666c57b89422b",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/A549_vs_Panc1/0c.json.gz",
+          "sha256": "5749f8283549a095a582b354b4ddce2bce06701f4cc4937ea2e40283d20d2521",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/A549_vs_Panc1/0d.json.gz",
+          "sha256": "7b3922a1888c58cadfd235d3a1fca24cb508bfb0ff50db605f13d9a917aaf338",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/A549_vs_Panc1/0e.json.gz",
+          "sha256": "b9debc255f22897e39ebadbd542d0b8dba9efbd84853d39d74559ae47fcbbdc5",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/A549_vs_Panc1/0f.json.gz",
+          "sha256": "680911c637ee629b95d4283b23056a5b4260f4694ee15cf81ed5a8ade1c40526",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "HCT116_vs_HepG2",
+      "condition1": "HCT116",
+      "condition2": "HepG2",
+      "file": "data/reports/HCT116_vs_HepG2.json.gz",
+      "payload_sha256": "a4da051760013764111cf507d40321dc253717e7c71065cfdd30e5dffcb6a871",
+      "source_payload_sha256": "81e2a76ee023eac7bc50fd73f26df9447c121b41572f31d1514ec21ee21058ae",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/HCT116_vs_HepG2/00.json.gz",
+          "sha256": "edcc55b3e104dfd73a74a5d43c3a5b617ab6d99c73fd41798ac0c5941ffe4631",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/HCT116_vs_HepG2/01.json.gz",
+          "sha256": "8f24d95f25aec0bf07e7acee3ab7909a850fdb2f9409a1d3c26a5adcd3df79e2",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/HCT116_vs_HepG2/02.json.gz",
+          "sha256": "4eb2d5584d38ff0c8ee9e94718a7ad1f67e0e15505a8606afced6dd506e6d51a",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/HCT116_vs_HepG2/03.json.gz",
+          "sha256": "785988b2b447f3de52f76012585209ae5ac8339e4f0e762d39446a3ad359e50c",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/HCT116_vs_HepG2/04.json.gz",
+          "sha256": "e182e75fd253e7e7106ff1a3233321e5b1e8c3e390737cd4f4ad76f0f4ce8474",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/HCT116_vs_HepG2/05.json.gz",
+          "sha256": "b97d106e1cc123598a77858dc6e2a3d1406c85c7e32f4d63fb3156da8d2be58a",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/HCT116_vs_HepG2/06.json.gz",
+          "sha256": "11dd5a00c45e1e87001fece0b7a789853863e2c660fb00ad7582c304b8aeb365",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/HCT116_vs_HepG2/07.json.gz",
+          "sha256": "127999d93db7ba9eebea8dfbd05274a1238545d96be4809d37231d9cad456b6a",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/HCT116_vs_HepG2/08.json.gz",
+          "sha256": "5b9c15ba040dd279a96d5bcd49cd6e9a03b0aa4577d3979c5f9b257797baf737",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/HCT116_vs_HepG2/09.json.gz",
+          "sha256": "0101d97fddbe752c81a3cc65277d343f2481ae80b072fe8b805e6698eeb084de",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/HCT116_vs_HepG2/0a.json.gz",
+          "sha256": "2ced4d2b26d06286e875cf92de63a68ecb27447d4d797049953e0cf6e28d814d",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/HCT116_vs_HepG2/0b.json.gz",
+          "sha256": "0df5b1301bc351bb78c10ddf3f2a63671f591d3eff7b4a5f2924aeedc9d315b5",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/HCT116_vs_HepG2/0c.json.gz",
+          "sha256": "b27d08b1be27fda14e271665bb68a718d94522a2597369108549b478b597f0a0",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/HCT116_vs_HepG2/0d.json.gz",
+          "sha256": "671caa3c6c479c5205f39ecdaea10b31b2107c24830297d32d22e42322a30fd4",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/HCT116_vs_HepG2/0e.json.gz",
+          "sha256": "6177864dff0e008042c48ccd2b2711f6ff3a92a8384c3745a0a0fe6f0cf28555",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/HCT116_vs_HepG2/0f.json.gz",
+          "sha256": "c3b2c5a967ef538de38fc1ff8bcf7b443bd912e34c0681a423d57f912dc04727",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "HCT116_vs_K562",
+      "condition1": "HCT116",
+      "condition2": "K562",
+      "file": "data/reports/HCT116_vs_K562.json.gz",
+      "payload_sha256": "8ca27d9804439662e267c884dd8a19ef26db6a06255377c8f336c581c7f6a9f8",
+      "source_payload_sha256": "9ade90f2aa563dfcee2fb1c45549c4ead86b2aeb1331492e0ea5399ce9c48e08",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/HCT116_vs_K562/00.json.gz",
+          "sha256": "116e643f4a9e05867d70ac2ecfbeb4bfd0428ffe72565660c384566d08f772d7",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/HCT116_vs_K562/01.json.gz",
+          "sha256": "19a8b08656226fe7f870cc965533c07428fc6cf1854b49f385f2567ce9e66f37",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/HCT116_vs_K562/02.json.gz",
+          "sha256": "1da1d16ee7c94fb5dc31dea360c6bb76c2fe69d76b87daebf2aab70e49f70a6c",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/HCT116_vs_K562/03.json.gz",
+          "sha256": "59b7c300a842dbe9877ec4c7fd76f96a55074c28fb0c9a7c05eb6a6a31377167",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/HCT116_vs_K562/04.json.gz",
+          "sha256": "eab2046b769b4538ebe2aba35be3a2ce6fad83424ed0b6e98f7988beadb1e6e0",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/HCT116_vs_K562/05.json.gz",
+          "sha256": "9a515e5dcd475a773f7e1c9d60cce6682d91fdf07e6c0cfaafc52f126dad01c3",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/HCT116_vs_K562/06.json.gz",
+          "sha256": "749f101fa880b7537c6cc5f91ea31910c2598a0b11d6340a1acf01ac5214e2d4",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/HCT116_vs_K562/07.json.gz",
+          "sha256": "04e5ae183ea51d12dd187b456c5098ffa27da8e159f3fdb4e2cd7bca6f8f4277",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/HCT116_vs_K562/08.json.gz",
+          "sha256": "debdb1fadede7176e474f8af66d16009016a4c01652660a4a2316096f06e3ea6",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/HCT116_vs_K562/09.json.gz",
+          "sha256": "073a7b4a9a46c7f2ad5887f8210cc0439af7ae593135b4cc8cc561f70f1b915f",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/HCT116_vs_K562/0a.json.gz",
+          "sha256": "d192a7383a795a5d404db7118892fb9ae95c9537cd50473a8c2ac5c13cc7d994",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/HCT116_vs_K562/0b.json.gz",
+          "sha256": "a1962c463160de663184781603cd22c675769ccdfd188dbd85e6f59d3ffa2204",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/HCT116_vs_K562/0c.json.gz",
+          "sha256": "b7d241907a0798fee0b33dc0ddc3827129cd45b5212b75c93c9d48cbf975da7c",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/HCT116_vs_K562/0d.json.gz",
+          "sha256": "008146d0870ce7735c4254f68f4b914308669fdb835012e032162ccf128a4e0a",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/HCT116_vs_K562/0e.json.gz",
+          "sha256": "e4bb8d1eb027d83279770c77ee8830d5bd1faa29a653cec29624fd9bca95cd5e",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/HCT116_vs_K562/0f.json.gz",
+          "sha256": "de5bedfdd9f786b2679e6447ead0d6b4af5eac4c57d3f7cfd1691449b733f00a",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "HCT116_vs_MCF-7",
+      "condition1": "HCT116",
+      "condition2": "MCF-7",
+      "file": "data/reports/HCT116_vs_MCF-7.json.gz",
+      "payload_sha256": "4a9bc90923c9c363709ae5f8bb76c3c284e497b411b2fbef9e6aa648267fafc2",
+      "source_payload_sha256": "62fdabaad365c65516ce50bcb05fe8d486f36cd114750a906b20590b22b44ebd",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/HCT116_vs_MCF-7/00.json.gz",
+          "sha256": "37804e9c93f8efbdc72116c02f94ba2f4fc4db0f956d6ba171b5f41a2933dd44",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/HCT116_vs_MCF-7/01.json.gz",
+          "sha256": "95e6d22d86d39113ec9900c9735b6a6493a1a49634b361eea2848cb0bbf9a7f1",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/HCT116_vs_MCF-7/02.json.gz",
+          "sha256": "6dc532555d01ef0a25b1e9dbedc0cc4f5eac10cacfb4f6acba6d32f59449d22c",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/HCT116_vs_MCF-7/03.json.gz",
+          "sha256": "3c1d014f48b2cfea21e76f2de1e1dd95ca9ead8446fca3d1d031108ab420b26a",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/HCT116_vs_MCF-7/04.json.gz",
+          "sha256": "8886114b18ece25539ec6c2ee802cbe5c5004b63ea9a0b6aa93be238f54cec02",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/HCT116_vs_MCF-7/05.json.gz",
+          "sha256": "b735f041915d20bea8b7960702238d8e1a70bb1127ecfd9debd51b253897d1ab",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/HCT116_vs_MCF-7/06.json.gz",
+          "sha256": "d4adc29d7506f2378abe64cffd1ac71d3036051938ab90cc364951bbfd3ab606",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/HCT116_vs_MCF-7/07.json.gz",
+          "sha256": "b7927462da4e0bc78e74301f93f91595285cd0ad0b4b9ac15f21a7dae7c7b011",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/HCT116_vs_MCF-7/08.json.gz",
+          "sha256": "c55fdc3c00a84ad1d60e5fbe7650352729277d6a721436383d82e8190663ab18",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/HCT116_vs_MCF-7/09.json.gz",
+          "sha256": "c501f2999072254b30e35eb4230d1b50a8246bd0f9c8ed33a388876fbc941900",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/HCT116_vs_MCF-7/0a.json.gz",
+          "sha256": "4db88fa359682e81fba058f522247205ea5c90dce41b88d5d036bd7c2487d4cc",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/HCT116_vs_MCF-7/0b.json.gz",
+          "sha256": "da86b180704ecebd012cc57af8632248afeae7cbca0428390c692a06c4efa68d",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/HCT116_vs_MCF-7/0c.json.gz",
+          "sha256": "90d77811245abbb9a8809e697e0243923b602a8ada46581d5b2dae80a0b607b8",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/HCT116_vs_MCF-7/0d.json.gz",
+          "sha256": "26f0958c9285feb9d091748bd0320e635877560e0acc5c911433f91d9ab53504",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/HCT116_vs_MCF-7/0e.json.gz",
+          "sha256": "c778720e0f60b1920e21ea3c6000b187a6817c1d7bc3034a9c3610e751c7330f",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/HCT116_vs_MCF-7/0f.json.gz",
+          "sha256": "b51888dd444a54c1f445bdc0c4ce71346bbc23c909245f9a23ff3317366ca76d",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "HCT116_vs_PC-3",
+      "condition1": "HCT116",
+      "condition2": "PC-3",
+      "file": "data/reports/HCT116_vs_PC-3.json.gz",
+      "payload_sha256": "a81f79b6cebacd18d770eb2774f94b2613027bb591e9843dfdb8a8c870fa1dbd",
+      "source_payload_sha256": "1e33e55c64ce480ff7292b44a292395da5a47ef85445df7637c3da55e8c6f4d2",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/HCT116_vs_PC-3/00.json.gz",
+          "sha256": "870a3f74c2601a38ef69e71ac56da3c0b34e6f7c4a3f737ca66abee4215c0305",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/HCT116_vs_PC-3/01.json.gz",
+          "sha256": "207f27de1687471e0fe06e33d774a0531369186b881a9fc8ce47473388ee1b39",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/HCT116_vs_PC-3/02.json.gz",
+          "sha256": "33690aea45e832c336511458ebebbf52ecfdff3c9d0086356ad8a03c84d89ba1",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/HCT116_vs_PC-3/03.json.gz",
+          "sha256": "d2f9f160a250641580b2218345a5fb15ce8905075cc3eea9c6bc5928e3fdaabd",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/HCT116_vs_PC-3/04.json.gz",
+          "sha256": "805ecfbfa4c978caf2d110aaa2357c6d22516567061a9e1d01f699caea707897",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/HCT116_vs_PC-3/05.json.gz",
+          "sha256": "0cae2c760dcf63b8a24c2d0d46b93220a935dc3779d5dc35d23588c135ece2d1",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/HCT116_vs_PC-3/06.json.gz",
+          "sha256": "f8beb68dad98bbf3d04c79e99cd4920c975a4b21e008e95ccf411cae7f54faf0",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/HCT116_vs_PC-3/07.json.gz",
+          "sha256": "c8cc6e50b7b24fa8a2d9d9357b824f676366b9848c14eddfc58f7e69f2fe4c55",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/HCT116_vs_PC-3/08.json.gz",
+          "sha256": "d86f5f9b7196e5dfca2f65736ac8b75bd8d54ce04916d010098557ef89a7c444",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/HCT116_vs_PC-3/09.json.gz",
+          "sha256": "5e7d2ee6f2cbf80ad5baf0c2d9ee493ad4da44bede3ac5d53fb7c02e39e29a33",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/HCT116_vs_PC-3/0a.json.gz",
+          "sha256": "481549dfd5a044480eb59111ca241dde33d60c6b0f730513a05f7e791cecd57a",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/HCT116_vs_PC-3/0b.json.gz",
+          "sha256": "86417f363244cbdef0068b13fb3adf2841719dc49093c17952d4cbff9d96e529",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/HCT116_vs_PC-3/0c.json.gz",
+          "sha256": "70708f7f11e92a01cc992222a08380227beb8a0aadac4831b3260871bf33181f",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/HCT116_vs_PC-3/0d.json.gz",
+          "sha256": "a27f9c83925935363d40c3cf1d20bced3d99187734219fcc81d81a3acbd476da",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/HCT116_vs_PC-3/0e.json.gz",
+          "sha256": "d939f4d3a0b490a98528e01cfa3604641c97b0c61f6f90429ac7203c292431fe",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/HCT116_vs_PC-3/0f.json.gz",
+          "sha256": "4878de0054d22c5e26480a41e6c6eb37a206ed0fd909ae0332fad47042db30b4",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "HCT116_vs_Panc1",
+      "condition1": "HCT116",
+      "condition2": "Panc1",
+      "file": "data/reports/HCT116_vs_Panc1.json.gz",
+      "payload_sha256": "191ce6a9fba3a805414ba36f35d344857bbba232b8c68824a317a9e88f257ff5",
+      "source_payload_sha256": "0c9bfa1ce22fac4409e79e1a000d41442aab82444eb4ad45b0f84469f79434d1",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/HCT116_vs_Panc1/00.json.gz",
+          "sha256": "529143dd51fabd45f4a788ec6234f08f6f01027f88f47ebb0a5e5f02a7255da3",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/HCT116_vs_Panc1/01.json.gz",
+          "sha256": "2274fb2dbf7f079fedf52aad82617ac63968c1afbbb813fade111d7fa7d1652a",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/HCT116_vs_Panc1/02.json.gz",
+          "sha256": "6a5618e031c47bd17f7a1677615e8248aa0a9144522a417f7023adcd50b02777",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/HCT116_vs_Panc1/03.json.gz",
+          "sha256": "5afa2bc4c54203353998d0a436a9a6cca0910752df357572edbc00f5cc7a2b09",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/HCT116_vs_Panc1/04.json.gz",
+          "sha256": "15acdab537fa6bf5d3a6820dbc5fde4129945b4741bf9a7ad8abb4a172455428",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/HCT116_vs_Panc1/05.json.gz",
+          "sha256": "b97634d7e57fe18e91ab005c18b5de7da2f49ae73d69d5f3ecc8376053c1e03d",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/HCT116_vs_Panc1/06.json.gz",
+          "sha256": "3706734b890bf6b4ff3556665dc073fbd1fd83195083c882a90813dd267e45d7",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/HCT116_vs_Panc1/07.json.gz",
+          "sha256": "b603dd14b74a3df6a6cfd65c9687dc9ec271ac12feca49dde30df86975ec7959",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/HCT116_vs_Panc1/08.json.gz",
+          "sha256": "fb751534b663dab5a7ddcf093d8acbca368958c705410f67a635df73118175d5",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/HCT116_vs_Panc1/09.json.gz",
+          "sha256": "04a630ab815b126c7161fc360fb225130b2682cbd01c44188d8be58238c8f9d7",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/HCT116_vs_Panc1/0a.json.gz",
+          "sha256": "9656c06a38b9988cbbcb64dde68331bf2fd81a40f6e17608c594f007e0e06f59",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/HCT116_vs_Panc1/0b.json.gz",
+          "sha256": "c7b92c2a3865c69152c6227e94edf878b7f1653130c2084ebd7d6e30e71508da",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/HCT116_vs_Panc1/0c.json.gz",
+          "sha256": "e3554bc88715a10ac01086ac9ca0e7325a84ef9e7ac8c25149422d196e8fd046",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/HCT116_vs_Panc1/0d.json.gz",
+          "sha256": "55aaa75528df59c384c456a58cfb9fe3ade454cc6762e651297abda3d81e4222",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/HCT116_vs_Panc1/0e.json.gz",
+          "sha256": "8f8c9d667c45b5705ddf7f625bbbe14af27c5c6be95da33433add66c28758d9c",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/HCT116_vs_Panc1/0f.json.gz",
+          "sha256": "798eb0ef8c0fe44eefc8adedd74af7cf1bc8f4649fe00519152fb672076a87cd",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "HepG2_vs_K562",
+      "condition1": "K562",
+      "condition2": "HepG2",
+      "file": "data/reports/HepG2_vs_K562.json.gz",
+      "payload_sha256": "cd523ff8d9457232537e2adc926ff798c1e7e2b0129ac7004e4abfc743f9a63c",
+      "source_payload_sha256": "46b8a954e987247a75ab917d7b59b681340561990d2dd050437d61fc6c8327bf",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/HepG2_vs_K562/00.json.gz",
+          "sha256": "d60ace69206edf2f379c40487ae6994217b4b5ff87c03520ce4ad3384403cfc7",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/HepG2_vs_K562/01.json.gz",
+          "sha256": "474ef8b739db0124da90416e261a2c881540506b58291b97ca3f6553f8d9e42f",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/HepG2_vs_K562/02.json.gz",
+          "sha256": "8d2d61a153ddc52c0966503d76fa81cf3217e4638266b6af57da2f9637339593",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/HepG2_vs_K562/03.json.gz",
+          "sha256": "0f9697c20b97ffc63b8a74280e87fcb245f4b87065194f2ab9477a3bb83f4d9d",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/HepG2_vs_K562/04.json.gz",
+          "sha256": "2a1d9638a90494c46fcec82b9603e94f05c2349776b4baedbff3053215246210",
+          "motifs": 64
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/HepG2_vs_K562/05.json.gz",
+          "sha256": "1670deba95a8e2561edb6f319ac6161c4a95db44dd4316a59fb13944ecb92e52",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/HepG2_vs_K562/06.json.gz",
+          "sha256": "012ce58be8b1cae0f4892d413b1eea51324f50cb182ad71e29bc6a86f33cbd1c",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/HepG2_vs_K562/07.json.gz",
+          "sha256": "9b311f2397f66a851021d78c325d5bbd08cf938c8179cee209d53968152c6153",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/HepG2_vs_K562/08.json.gz",
+          "sha256": "2e5359a02ff279a07816464514e129fa181455720d888cf0e707aa7094506b0c",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/HepG2_vs_K562/09.json.gz",
+          "sha256": "ecb524c29f971864eb54698ac0d7884bd160dfef76366a85951e004ae1c2434b",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/HepG2_vs_K562/0a.json.gz",
+          "sha256": "3e55d7b90fb15ceeb336621013b4ba99e43262879856f0228a798ea5a6cc21e8",
+          "motifs": 65
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/HepG2_vs_K562/0b.json.gz",
+          "sha256": "882cadc2dfce8819f2d1f078509d2084fad9d640cf3606628528cb7d683b1bc4",
+          "motifs": 58
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/HepG2_vs_K562/0c.json.gz",
+          "sha256": "bc12edda4a7f12be2e17ec7e026ceb3822ac32fecc36a27b81cc9e6b2644a5b1",
+          "motifs": 57
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/HepG2_vs_K562/0d.json.gz",
+          "sha256": "5e95b2283f1bcc61587bd48b29f0d9fa4012dada72cdf03bb46cb287f5f91430",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/HepG2_vs_K562/0e.json.gz",
+          "sha256": "73d89c7d6a7fa660d9f3ccd873d345138ac0f63c10d9cabd97095375a35373cd",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/HepG2_vs_K562/0f.json.gz",
+          "sha256": "14cdaab03c77c29cd973770ecfb870e9f9de46f407f907b772ac1fd815729c0a",
+          "motifs": 67
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1009
+    },
+    {
+      "comparison": "HepG2_vs_MCF-7",
+      "condition1": "HepG2",
+      "condition2": "MCF-7",
+      "file": "data/reports/HepG2_vs_MCF-7.json.gz",
+      "payload_sha256": "2e388183df67cf4e3a53aa7538e513ab7b2a61c70c05c7d9a5102a85b58462f9",
+      "source_payload_sha256": "0215779ce92a89ca693116dfe7ae23bed0f9fba56abb289808cda56de8f3bc11",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/HepG2_vs_MCF-7/00.json.gz",
+          "sha256": "e2e9de1249029f933796e86158f975113ea2d36ae0558a867d51ab1f344a499a",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/HepG2_vs_MCF-7/01.json.gz",
+          "sha256": "763a2ce3ba5382176705f3564cd7b4e88343ded2267e9f61ad31efea35d91b9f",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/HepG2_vs_MCF-7/02.json.gz",
+          "sha256": "e4fbb651299a24658e65deb4fdaf48982577c2900387956a09cafbc048e55ee9",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/HepG2_vs_MCF-7/03.json.gz",
+          "sha256": "afd3b42e404268cf4dd26b5969ee6d446aa6e61bb70920e02010d1788d466ae3",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/HepG2_vs_MCF-7/04.json.gz",
+          "sha256": "a9629547cdba13cd560326f6239da5802663dbc8d70397c1871c49983d2ccf4e",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/HepG2_vs_MCF-7/05.json.gz",
+          "sha256": "271c54723c04bca2b7cd744fac566f15c1708530cf8ecf658332ed488e940e0d",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/HepG2_vs_MCF-7/06.json.gz",
+          "sha256": "db6ea1b003f9673a529e5a991e4e3ec13d486933158d633791eaa6ed15fa6e0c",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/HepG2_vs_MCF-7/07.json.gz",
+          "sha256": "d707e6c8573c9ff25e7573a0677116452e613c06f31e1e1d7c34d1ee400a44c5",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/HepG2_vs_MCF-7/08.json.gz",
+          "sha256": "f46578c29c2ca88297ad9139f639f522d446bd1cced1896be50edad73656fa0d",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/HepG2_vs_MCF-7/09.json.gz",
+          "sha256": "698b579c21d0f6e299512f03b6835b566ed20810dbaab4fe70fd395b2b5609b1",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/HepG2_vs_MCF-7/0a.json.gz",
+          "sha256": "b3ba90a0f073c24b4de76cb70d04446f91cc425b614fb26819528b6284071df3",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/HepG2_vs_MCF-7/0b.json.gz",
+          "sha256": "4e9468830947475aadc26e19f6f06b5f61a6ad07036712d5cb77ec670e9451c3",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/HepG2_vs_MCF-7/0c.json.gz",
+          "sha256": "0d7cd6121cbb254120177566d6bf5ecc037fd3faff9dc81016c05837e27d7f55",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/HepG2_vs_MCF-7/0d.json.gz",
+          "sha256": "b1c7c1361fab00415150720f94876a1985f8cfa984b57cf7d598d2e153a141f8",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/HepG2_vs_MCF-7/0e.json.gz",
+          "sha256": "93a578a46bcf6d464e7236bbb67002f6d7f148dd440a79e03339923c2cf4836f",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/HepG2_vs_MCF-7/0f.json.gz",
+          "sha256": "4ad6420fdccbee567064a14c0fb34e8aa0e640550f17005fc5af48578c076030",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "HepG2_vs_PC-3",
+      "condition1": "HepG2",
+      "condition2": "PC-3",
+      "file": "data/reports/HepG2_vs_PC-3.json.gz",
+      "payload_sha256": "a4bb4e89a0bdf5fde3f0a78215546fcb645a28304e78dcf2d67507f6b5ac8c19",
+      "source_payload_sha256": "b178ab04d19ce944e94d382cb91838c450aa72faedc8590dbd8ecc0388a46154",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/HepG2_vs_PC-3/00.json.gz",
+          "sha256": "08cfc5b994e8aa052e573a327e8fdd830b271c9a443bd2250ac7d7ea40685dab",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/HepG2_vs_PC-3/01.json.gz",
+          "sha256": "4f92ede510aa76ae644bfcf4b30d1a547cd023d23a9a4e8562aae9b1afdf840c",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/HepG2_vs_PC-3/02.json.gz",
+          "sha256": "a8e9c0409b6096f4eaae3bd2f8be809ac061505dd06819d45a0fe39b6f88fbc4",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/HepG2_vs_PC-3/03.json.gz",
+          "sha256": "a3770e0f0aa0c23796350a6f292bddb08b08e9a01fd13c183f7b3bed603f9f74",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/HepG2_vs_PC-3/04.json.gz",
+          "sha256": "e6611145db2d009eabae9cab092b217300603bb60b507145099e9149e67c34a3",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/HepG2_vs_PC-3/05.json.gz",
+          "sha256": "61a0d57a942785d4053bb9ca32d10dbacb486ce4b660585d024f529d01ead2cd",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/HepG2_vs_PC-3/06.json.gz",
+          "sha256": "199e1140dfcf2e3d30d1d53ddaa7ccad9bf1cdd8b573cc65057a72b814215409",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/HepG2_vs_PC-3/07.json.gz",
+          "sha256": "764f6cc6b907d39e218ce1c97c798a578fcf699bc6764117180a40e237fff964",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/HepG2_vs_PC-3/08.json.gz",
+          "sha256": "54d6e4f78f58a1a98582d97f74619c4ea13650cae3906f1d3219a6847d443f10",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/HepG2_vs_PC-3/09.json.gz",
+          "sha256": "80baf0dfa88195073a97d2d08185f7c9810cd34476e0f1d0519283267c565557",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/HepG2_vs_PC-3/0a.json.gz",
+          "sha256": "24bcffa708b5e14af72b30dfea41662591ef2b3161ac5c36a4d0b5826eefb3a5",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/HepG2_vs_PC-3/0b.json.gz",
+          "sha256": "90eadca030bea52d0ccc107cde4b452be12d595055fb7270c4111d72b3f7f62e",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/HepG2_vs_PC-3/0c.json.gz",
+          "sha256": "ea2405f469250b01cf17a95c653864ff1b01c278aa4cbf4945ff2af84ffe42a1",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/HepG2_vs_PC-3/0d.json.gz",
+          "sha256": "f05e6e6318db15da774542096888da92e63bfcdd31f940b26b656a84d038a392",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/HepG2_vs_PC-3/0e.json.gz",
+          "sha256": "304639254ee3b8dee703e400492efd4d33417eceddfefb01d0afe104545b4e15",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/HepG2_vs_PC-3/0f.json.gz",
+          "sha256": "4f9aca81c3ec10c536d62de61b39b319942117777442d07dc2f265b58f052132",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "HepG2_vs_Panc1",
+      "condition1": "HepG2",
+      "condition2": "Panc1",
+      "file": "data/reports/HepG2_vs_Panc1.json.gz",
+      "payload_sha256": "b14b2f092de1ce916d8dca12e9290e2737036afb09cc3f4aebf3a1120dbdd26f",
+      "source_payload_sha256": "2160edfe4436dbfacbd6bac97fa120d8d8ee8e5a7a6845279fd74018247e678e",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/HepG2_vs_Panc1/00.json.gz",
+          "sha256": "10c962845beeda400fa034f1e3e0362082b9050efef32e373805f06b8b51ce5f",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/HepG2_vs_Panc1/01.json.gz",
+          "sha256": "69abb414edbe30a019de7bea38b39cb9c85ca8c3bae0c5342f22fc3cc4ae1b9e",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/HepG2_vs_Panc1/02.json.gz",
+          "sha256": "6d3a56ccc28d7d06b4d9f65022fd55bba8891c9338dd14b8d1340dfcb0c7a5e6",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/HepG2_vs_Panc1/03.json.gz",
+          "sha256": "232136c17e33fee96502ba9406495f7fba4c50894dcef63bcd7d1fc79c90e188",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/HepG2_vs_Panc1/04.json.gz",
+          "sha256": "d0b76c2d076a05ef5aee935ec23c3786a8e931280a752ed5fc44f6054bfe3b2e",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/HepG2_vs_Panc1/05.json.gz",
+          "sha256": "7768f457798bfef00a618e54e57db22da2b9f8067012f17ae132ba4047b2705b",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/HepG2_vs_Panc1/06.json.gz",
+          "sha256": "8d11022cfc5b48c4fc587ad7a59ce3ba47b7b2000087cdbda4a737d2e58c1c79",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/HepG2_vs_Panc1/07.json.gz",
+          "sha256": "68a49ecd764668242d270c3022a3a9596ba939b856f0abd375092158b9022e8e",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/HepG2_vs_Panc1/08.json.gz",
+          "sha256": "8b8a0537a62d00a165749bd6d76711aab2b36778213475b87487bc051df6ca4d",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/HepG2_vs_Panc1/09.json.gz",
+          "sha256": "9b3ebbe4122184ca48ddc0ee233d90d91790e77587249c0f1a118ba770ff0bf3",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/HepG2_vs_Panc1/0a.json.gz",
+          "sha256": "8c9d27af8b1774f30378b2771cfc79c6da2f3a12d079b100e9e0cc0eed1fa1b6",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/HepG2_vs_Panc1/0b.json.gz",
+          "sha256": "9655fb7b4c6063aa2c373cd414e95baf62268101a637d5eba3808b73c69a0812",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/HepG2_vs_Panc1/0c.json.gz",
+          "sha256": "07ad3c8f11343aa77ffc8eced0189da909d426eba9cf3836d1b71c9ccf5d7590",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/HepG2_vs_Panc1/0d.json.gz",
+          "sha256": "6f3a088d8c9c40ca4ac4ceaa9e157005f0173650732940b37fc7df3e1eb09d2c",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/HepG2_vs_Panc1/0e.json.gz",
+          "sha256": "6bcbbec69736d1419d5070a371a42055e65dddddb0c975c692407b48f153d1fc",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/HepG2_vs_Panc1/0f.json.gz",
+          "sha256": "4f7f79ed88f83796129879fbc03c809398c7ae830a6b1c71d8a5fa7d6963a53d",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "K562_vs_MCF-7",
+      "condition1": "K562",
+      "condition2": "MCF-7",
+      "file": "data/reports/K562_vs_MCF-7.json.gz",
+      "payload_sha256": "0ce7bf04e231b12b0600d81bd041dd40d8946a4521d91396ad1632852480dbfb",
+      "source_payload_sha256": "d6ae8027bf35ee5e13746295c322d342306ec17ba7e9f9012c63b2912ce0331e",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/K562_vs_MCF-7/00.json.gz",
+          "sha256": "d2b1156c2697e4a850490d9b6df58779bb42333ff6361063044933dd110600d5",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/K562_vs_MCF-7/01.json.gz",
+          "sha256": "3552853aa8100689c3dad253f1e07020f84549ca58ead04cfcee915788112b7c",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/K562_vs_MCF-7/02.json.gz",
+          "sha256": "59d31fb6c1620c0b7171df36a36a2b7b62f18e9dc77cd0c396c2caa3949c7695",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/K562_vs_MCF-7/03.json.gz",
+          "sha256": "9f1c69493273186d7ce883d3e0823950d7becca37ef219e1a000b43c4010a00e",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/K562_vs_MCF-7/04.json.gz",
+          "sha256": "3a947ca2f41ff08828fba8c2e738d94a745ea3c74729aabeb0bc2f7ed916e954",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/K562_vs_MCF-7/05.json.gz",
+          "sha256": "3f08ec7d2adcf0eb47b2ad1895636f92d172b7914f4ea8628ba7c7ef33bd29f1",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/K562_vs_MCF-7/06.json.gz",
+          "sha256": "9379ae170e0a516bf8dc2def73083c72a2f09ec2cc6afa29ccf177177875999f",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/K562_vs_MCF-7/07.json.gz",
+          "sha256": "644dd8961a251113646db5693bbe88bab0688d8c444791d2555b79c789719c77",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/K562_vs_MCF-7/08.json.gz",
+          "sha256": "d2cd803a2c1912f2baf44bfeb3b8a2a17271c44bfc727322c6b6d241b0f88e59",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/K562_vs_MCF-7/09.json.gz",
+          "sha256": "340a65c8b406d6ad2282899300736da2aed4adcc204aeaa6d72444657987799e",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/K562_vs_MCF-7/0a.json.gz",
+          "sha256": "ef6a931657d1a1ec1a365e713861493aede315487ed51cefe8b257155be8a2d7",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/K562_vs_MCF-7/0b.json.gz",
+          "sha256": "fe1154445248be20ed73d7ac6d69340550e22bc6007ebdd4ed3273a8ec5241d0",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/K562_vs_MCF-7/0c.json.gz",
+          "sha256": "333cb597c6291907f9cac00199ec05fe543153d4446501d7373f864fb86cd6ad",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/K562_vs_MCF-7/0d.json.gz",
+          "sha256": "55f893ce88c0d1face9988665a36b15868016397d5e12061cf629025e5c5fe21",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/K562_vs_MCF-7/0e.json.gz",
+          "sha256": "e261f5cafbbc93ba505db09761b797b20c7d873af71d7ec4f06504802cd35154",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/K562_vs_MCF-7/0f.json.gz",
+          "sha256": "56128c301725894183cd4d9e990d8cac7be37a77c7888eb5a56dfb5e43950e14",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "K562_vs_PC-3",
+      "condition1": "K562",
+      "condition2": "PC-3",
+      "file": "data/reports/K562_vs_PC-3.json.gz",
+      "payload_sha256": "217b504eb5ff512b76cf5d7431130432c4f2d1322633a376323466b15091d648",
+      "source_payload_sha256": "f3196134a9478482f776a29e14c120f4ecce38f6c2c52a3fe2adc434651365ff",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/K562_vs_PC-3/00.json.gz",
+          "sha256": "fcb51f66dd759ff86a054aa02f9f1b938b42833878716250c9970042ecbcf09c",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/K562_vs_PC-3/01.json.gz",
+          "sha256": "895134124d214989f595df3b898342934fb3e97532bea7f72b9c6949ce5c9f9a",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/K562_vs_PC-3/02.json.gz",
+          "sha256": "2fc26f7493c7d7db92993a0136819be6938dc14e09a1729a38a3456745a9b4dd",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/K562_vs_PC-3/03.json.gz",
+          "sha256": "92c5517f4ca407be76a98535b7e6d7b65e9c2307bd71725b4343e1c815919849",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/K562_vs_PC-3/04.json.gz",
+          "sha256": "6c605f84387fa1a6044dcfec41ab82f2ddc412e49d573f7c592a5769f800e793",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/K562_vs_PC-3/05.json.gz",
+          "sha256": "c3558fce461cef3781df830bd758507769ff4537b98bd50d7a445990ba308e29",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/K562_vs_PC-3/06.json.gz",
+          "sha256": "bfd8b6c0e13ee4275e2a5d54d23cc7702d7b73b6fd21fd5bbb46a0beb5a39063",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/K562_vs_PC-3/07.json.gz",
+          "sha256": "71938ab3091f458ea6da603c8dcf49c09844317647c5c09fd7f2188624737151",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/K562_vs_PC-3/08.json.gz",
+          "sha256": "471cbda60d0ad65a0208dc23c33ca32b0cb0103a3abe091df078cb0e5cbf4df1",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/K562_vs_PC-3/09.json.gz",
+          "sha256": "e3297718f7fd48d0b43ad3d14aabf35678273b2357ba3f89377974d9f52f13ec",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/K562_vs_PC-3/0a.json.gz",
+          "sha256": "ae1d464fee5adebe73192a941e93ed0d05e80a4c3662e164eb69161ef95e4097",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/K562_vs_PC-3/0b.json.gz",
+          "sha256": "068137ed1cc684746868803d32a0e25d304ec92923c621cf337fe8e1e730b8fe",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/K562_vs_PC-3/0c.json.gz",
+          "sha256": "64ca83492bb7665fbc036979d1365cb24de13531e9aeb11bca196e827374454d",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/K562_vs_PC-3/0d.json.gz",
+          "sha256": "a3413db10e156468be6714927b2ac679d03fdc8265b9c9144b0d4374ce8a6f75",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/K562_vs_PC-3/0e.json.gz",
+          "sha256": "9ab8307e6eee3e0b50751aecd041922252ab23ac9d619a29d38671f73c6ffb1f",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/K562_vs_PC-3/0f.json.gz",
+          "sha256": "2d9ca4c9763af81be3a686fb51d63cc4fd2a56f94c7337a441e272397f860f48",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "K562_vs_Panc1",
+      "condition1": "K562",
+      "condition2": "Panc1",
+      "file": "data/reports/K562_vs_Panc1.json.gz",
+      "payload_sha256": "d792a02173d65f92d7674dfde786bf01a12abb6e1f5fcf7303b24e211966ec15",
+      "source_payload_sha256": "7e96955b0b29273e72a476c15b7ae14a230cf019fdf210f2975da00be3a2863e",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/K562_vs_Panc1/00.json.gz",
+          "sha256": "3f941636934098c03368c659fb1b5aff367df2cbb1c9f8f55f0289b25b2c633c",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/K562_vs_Panc1/01.json.gz",
+          "sha256": "aa9664895e6520c36df2c280210dfea87e79796520b44a51d5b7458da567ff44",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/K562_vs_Panc1/02.json.gz",
+          "sha256": "bd22f8abcc4c3b69997f1c328d6dbb97f43e8b5cdb0a6c29a45dd79417727965",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/K562_vs_Panc1/03.json.gz",
+          "sha256": "fba79ae391e4a4a1fac7b7424cc0b239ea902f63ebf2979ed1640ac83629c6a2",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/K562_vs_Panc1/04.json.gz",
+          "sha256": "67a6a8617fafce36e109d5107114a560a5bbef98b0624e2595680328a38ca0f7",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/K562_vs_Panc1/05.json.gz",
+          "sha256": "b8865f12d50f0afd8dc405ee668b285c7cffcbad9bf4380c984fc5b376ec7de2",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/K562_vs_Panc1/06.json.gz",
+          "sha256": "e1684cd49297d92278f14c6363b3e11ff714e529a94823d7063589ba3d07e07c",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/K562_vs_Panc1/07.json.gz",
+          "sha256": "17367307b1e94438a5d03f6e2c1c544ca7a8bad481146f059cc6a2686000f7a5",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/K562_vs_Panc1/08.json.gz",
+          "sha256": "1bc6ba4e3afae3a77640a99c16974831e95e3b5e82c1a71cfe8d8100c7660c78",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/K562_vs_Panc1/09.json.gz",
+          "sha256": "f9687b1cd6261951038f094fbaa3a14b1903b77c300d525225f52bf212eb45ff",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/K562_vs_Panc1/0a.json.gz",
+          "sha256": "1680f0b5a5cd53301a6ceed7d8e8f2baefd797cce3ef48e90ad887e831984758",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/K562_vs_Panc1/0b.json.gz",
+          "sha256": "4c559105192916b9a37180d763091bee922ad5e4a1fa30fe300c713cba07dc8d",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/K562_vs_Panc1/0c.json.gz",
+          "sha256": "42f76adf1825a0d523013f2d217f27ee97a741447a04f510419437476f207585",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/K562_vs_Panc1/0d.json.gz",
+          "sha256": "96f0de0ec2dc9ecca5e553bba0f115cbb7a1b957c429a504aed7aa7288afec2c",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/K562_vs_Panc1/0e.json.gz",
+          "sha256": "deac2548b0a69f75f37109d6865dcb5c6a9e7a2fabe29da40551c4d47b8b62bf",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/K562_vs_Panc1/0f.json.gz",
+          "sha256": "8743b69fea6ef54b7e9c6695795757da2330d5f69f0abf3c6ad4469d357c8a5b",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "MCF-7_vs_PC-3",
+      "condition1": "MCF-7",
+      "condition2": "PC-3",
+      "file": "data/reports/MCF-7_vs_PC-3.json.gz",
+      "payload_sha256": "73373c5b6528923f03197a7ef5fbe945091bee5054899e0a34cea082905c1f05",
+      "source_payload_sha256": "7c29477154d9fa88bfd7082e80df3bdcf3e272e9926ebc81b779f47367e668e7",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/MCF-7_vs_PC-3/00.json.gz",
+          "sha256": "8afaee2e68d3087d02b85c9a6b176cf17e3040733101c8bdac436f04661a56dc",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/MCF-7_vs_PC-3/01.json.gz",
+          "sha256": "70a3729722e9b7e51e59f817b80d9e78e7a553cd2b4359a5dc8652db68292550",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/MCF-7_vs_PC-3/02.json.gz",
+          "sha256": "eab4beb09cc2e07f66a5e56ad2b4c5221646190175fcd00c6dd870d389ccf771",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/MCF-7_vs_PC-3/03.json.gz",
+          "sha256": "95aa24b6d7bcd2d4214dbffc47ebd78ce88eabeda4720cfe2b216f2d9bae776e",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/MCF-7_vs_PC-3/04.json.gz",
+          "sha256": "be502ec3169d1854cca29d896599584de5d3bf08ab640696e8abcfa630ea2ccd",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/MCF-7_vs_PC-3/05.json.gz",
+          "sha256": "784b5fb77c6eef035f39c83bcf8714e0dfa496f49bb09aa9d21df4cb04b457f2",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/MCF-7_vs_PC-3/06.json.gz",
+          "sha256": "88ea6af453d5a11e27d392ac994643f72ac4c36d1a6a35e439b3027729b3cfb8",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/MCF-7_vs_PC-3/07.json.gz",
+          "sha256": "b2ee446c06e488a594fd66a546b7fe286de8a2850fa1216d3f1935253b06a6be",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/MCF-7_vs_PC-3/08.json.gz",
+          "sha256": "d7a78daa06f8bbc32e527cc3524ae049fce7078351ea960e889d1c67e549bc32",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/MCF-7_vs_PC-3/09.json.gz",
+          "sha256": "bf01bb631b084dcee216ba1bbd15497819a4484607bb8ba28b5d9d8f0ff51a28",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/MCF-7_vs_PC-3/0a.json.gz",
+          "sha256": "7fe4225554208b45cb32930253740e3b2fb3af4c1f2fbdb7237b83efb27b2762",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/MCF-7_vs_PC-3/0b.json.gz",
+          "sha256": "7b1b9e12e17a39a4d32d0d30ed1f38dbe20d29eb9c5d2681882837b6db0e2c1b",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/MCF-7_vs_PC-3/0c.json.gz",
+          "sha256": "53d49a321c16dd6860093ee8b31f03e386efb8fad8282a60113a02fa908ec0a1",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/MCF-7_vs_PC-3/0d.json.gz",
+          "sha256": "2b1860ffd4b2281417af1ab00bb3bd28798535f2036c0910d99996ec9e0c5914",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/MCF-7_vs_PC-3/0e.json.gz",
+          "sha256": "3a7f0eaf6647327c0189d3035b1bf686cab3fa226b2af74bcca08f65fd13b048",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/MCF-7_vs_PC-3/0f.json.gz",
+          "sha256": "4c14fa523fb6a2b7cde01fd97439a3ee04c9db909d66b0dade437fcb72db5b8b",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "MCF-7_vs_Panc1",
+      "condition1": "MCF-7",
+      "condition2": "Panc1",
+      "file": "data/reports/MCF-7_vs_Panc1.json.gz",
+      "payload_sha256": "201228fb3c4ea3de6f613e5f26b969a516d7541654a0a74a84c6c2703ea0d736",
+      "source_payload_sha256": "372ae571f5eb4ffe5540c8e50b37245995ce67b193b37eb119f7c3b856585f08",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/MCF-7_vs_Panc1/00.json.gz",
+          "sha256": "c5cb1330b6861914270c942a2a3e821dbb3946f9608b86b5b5985af4e7213113",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/MCF-7_vs_Panc1/01.json.gz",
+          "sha256": "bc7eebe996475c51f9d4cea7060298991ce4811e2e1a8cf343876cf3ed773aee",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/MCF-7_vs_Panc1/02.json.gz",
+          "sha256": "8bcaec1945f56eb73a75c3a5db42aec6d71d7e588382937de3c1994a3fe55c87",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/MCF-7_vs_Panc1/03.json.gz",
+          "sha256": "9c416c21141360a2ddcd4ef47120954eb8e031ac1277a375eeeb76bb7742e3ee",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/MCF-7_vs_Panc1/04.json.gz",
+          "sha256": "1331b9acc7597ba5f48c94239c631f5dc387c6e3ec48607e569062771c297282",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/MCF-7_vs_Panc1/05.json.gz",
+          "sha256": "2921e2cbd78ccb4de9e8cee28fbf2bb95b6b34c79f627c44525dbe53c9cd77ba",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/MCF-7_vs_Panc1/06.json.gz",
+          "sha256": "9d1cb50e3a5c33431c3f1911ff59a0b9de5171b12ed0cf1810eff416c7681264",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/MCF-7_vs_Panc1/07.json.gz",
+          "sha256": "4836375600537ad6f3992b6aed1e712578faeead0dd784844f09c7ea71b9aa54",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/MCF-7_vs_Panc1/08.json.gz",
+          "sha256": "7e579262b4267b55b9be9361487c0cf2600661045d17892e11cad4f2672bff38",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/MCF-7_vs_Panc1/09.json.gz",
+          "sha256": "baa9b70abedc7c121386fe5fc8f7a82d03bd1a05f045ace75d771c09515f67d5",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/MCF-7_vs_Panc1/0a.json.gz",
+          "sha256": "583fa239b95f77d250a3b786257077953240b4f65334d1f8073885027bfc2fa8",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/MCF-7_vs_Panc1/0b.json.gz",
+          "sha256": "ec8f3e73ffcfb3a8715e6a6c7cd1da4257a599dba218400567d70020749077d2",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/MCF-7_vs_Panc1/0c.json.gz",
+          "sha256": "9767e7a31457ca2bcb209e7158424682599910bd2861980fc5e2139db63423a4",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/MCF-7_vs_Panc1/0d.json.gz",
+          "sha256": "aab8233c16b983037a08ce5bb693a54967c626555f7c2791bc9358121a2efd77",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/MCF-7_vs_Panc1/0e.json.gz",
+          "sha256": "15632b1b97c47b767840240357786013762c1647aeb5e3e07dfedffc31726d70",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/MCF-7_vs_Panc1/0f.json.gz",
+          "sha256": "bbdd8fe7ced86929430934ada2c9dd685d4c71b181275d5bfb757f4c22725d1b",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    },
+    {
+      "comparison": "PC-3_vs_Panc1",
+      "condition1": "PC-3",
+      "condition2": "Panc1",
+      "file": "data/reports/PC-3_vs_Panc1.json.gz",
+      "payload_sha256": "78c96534469f61e1b77001f7d0a6ba4403610d742b818b6971ba5a37d45c1c46",
+      "source_payload_sha256": "49901303b15dd52e567c1ac0ed5e4456e8f7c1f48b3e77e3497803a5a5021b9d",
+      "profile_shards": [
+        {
+          "id": 0,
+          "file": "data/profiles/PC-3_vs_Panc1/00.json.gz",
+          "sha256": "0414afbf113f922db1915078d4e27a74b45c4d46a7fa65927a43143f0bc4355c",
+          "motifs": 63
+        },
+        {
+          "id": 1,
+          "file": "data/profiles/PC-3_vs_Panc1/01.json.gz",
+          "sha256": "e8e0f674d9e8c3f96ff288f92383a9e711f04b40d58c1917ba1687e9dc87082a",
+          "motifs": 48
+        },
+        {
+          "id": 2,
+          "file": "data/profiles/PC-3_vs_Panc1/02.json.gz",
+          "sha256": "ef54b6774da9ca3db3285e4e764d8fe7573cb71db03aa1ec4deaf80c98ec82c4",
+          "motifs": 67
+        },
+        {
+          "id": 3,
+          "file": "data/profiles/PC-3_vs_Panc1/03.json.gz",
+          "sha256": "5dda24534d5584c1ea26c1579f5287a556a2fb0dfba8da057a9953eea8732f7d",
+          "motifs": 61
+        },
+        {
+          "id": 4,
+          "file": "data/profiles/PC-3_vs_Panc1/04.json.gz",
+          "sha256": "420834c08c7d52bf1026511b8e494ab91266cc49a435a612769a1d078826ffc5",
+          "motifs": 65
+        },
+        {
+          "id": 5,
+          "file": "data/profiles/PC-3_vs_Panc1/05.json.gz",
+          "sha256": "d573cff25aae4c0cf5e95ba14fec17ab8ecdffc8ad6f09256414c54594fe1036",
+          "motifs": 65
+        },
+        {
+          "id": 6,
+          "file": "data/profiles/PC-3_vs_Panc1/06.json.gz",
+          "sha256": "6b78810c4366c1cc3d32aeb408cf520a7ec3ff2f81ee05deb50d234c2fc543dc",
+          "motifs": 65
+        },
+        {
+          "id": 7,
+          "file": "data/profiles/PC-3_vs_Panc1/07.json.gz",
+          "sha256": "2396ca32af87651ea4aa06767b1fe2f7a0ef9bc27cb7e58afc61415830bc3b01",
+          "motifs": 51
+        },
+        {
+          "id": 8,
+          "file": "data/profiles/PC-3_vs_Panc1/08.json.gz",
+          "sha256": "a040bf39376c4eb86af61530495ad7fdceb9eeecd8655399daaca42dd41abaee",
+          "motifs": 58
+        },
+        {
+          "id": 9,
+          "file": "data/profiles/PC-3_vs_Panc1/09.json.gz",
+          "sha256": "f01c2f40e99f3b96a679e12249d70c98f910e846808af3b2515b2de3a830faf2",
+          "motifs": 74
+        },
+        {
+          "id": 10,
+          "file": "data/profiles/PC-3_vs_Panc1/0a.json.gz",
+          "sha256": "59028e15e42091326c2e61c3cd29cbb570f6d02d774a2be67926ea0fab12f293",
+          "motifs": 70
+        },
+        {
+          "id": 11,
+          "file": "data/profiles/PC-3_vs_Panc1/0b.json.gz",
+          "sha256": "ecfe32d1577542ac8169a024e1ce142dcca7d2a8cee24f9b0df31dbf1c30957d",
+          "motifs": 59
+        },
+        {
+          "id": 12,
+          "file": "data/profiles/PC-3_vs_Panc1/0c.json.gz",
+          "sha256": "abbe5c2e939b5b311b6425357ca3922461abba3969855a608e79558776049deb",
+          "motifs": 59
+        },
+        {
+          "id": 13,
+          "file": "data/profiles/PC-3_vs_Panc1/0d.json.gz",
+          "sha256": "db355d5a98a21280a7ffaa2930ccd0102fbd88a65b044d9023148e5230bb7354",
+          "motifs": 68
+        },
+        {
+          "id": 14,
+          "file": "data/profiles/PC-3_vs_Panc1/0e.json.gz",
+          "sha256": "84bf264c4c38a421f306d19f72b2426ecaf45ec2eb58d5f988317b69dc4db952",
+          "motifs": 78
+        },
+        {
+          "id": 15,
+          "file": "data/profiles/PC-3_vs_Panc1/0f.json.gz",
+          "sha256": "a806046bb977ab3caab436fbb4690dfe15669ce193959d3ecc9264166a8f3148",
+          "motifs": 68
+        }
+      ],
+      "motifs": 1019,
+      "aggregate_motifs": 1019
+    }
+  ],
+  "downloads": {
+    "all_results": "data/all_pairwise_results.tsv.gz"
+  },
+  "logos": {
+    "base": "data/logos",
+    "format": "png",
+    "count": 1019,
+    "source": "preserved K562 versus HepG2 report"
+  },
+  "reference": {
+    "comparison": "K562 vs HepG2",
+    "uncompressed_scientific_sha256": "72e545e4a1324edc5b172b3206105e60f8d5b77c7fca5032addcf81b9466a6ff",
+    "points": 1019,
+    "aggregate_motifs": 1009
+  }
+}
