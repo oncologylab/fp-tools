@@ -42,13 +42,13 @@ class EncodeAtacProjectTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "selected-biosample set"):
                 MODULE.read_manifest(path)
 
-    def test_seven_line_manifest_contains_all_15_requested_replicates(self):
+    def test_seven_line_manifest_contains_all_17_requested_replicates(self):
         spec = MODULE.load_project_spec(SEVEN_SPEC)
         frame = MODULE.read_manifest(SEVEN_MANIFEST, spec)
-        self.assertEqual(len(frame), 15)
+        self.assertEqual(len(frame), 17)
         self.assertEqual(
             spec.replicate_counts,
-            {"A549": 3, "HCT116": 2, "HepG2": 2, "K562": 2, "MCF-7": 2, "PC-3": 2, "Panc1": 2},
+            {"A549": 3, "HCT116": 2, "HepG2": 3, "K562": 3, "MCF-7": 2, "PC-3": 2, "Panc1": 2},
         )
         self.assertEqual(set(frame["condition"]), set(spec.conditions))
         self.assertNotIn("GM12878", set(frame["condition"]))
@@ -63,7 +63,7 @@ class EncodeAtacProjectTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "missing.tsv"
             frame.to_csv(path, sep="\t", index=False)
-            with self.assertRaisesRegex(ValueError, "exactly 15"):
+            with self.assertRaisesRegex(ValueError, "exactly 17"):
                 MODULE.read_manifest(path, spec)
 
     def test_seven_line_comparisons_are_all_21_unordered_pairs(self):

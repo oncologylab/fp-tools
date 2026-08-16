@@ -6,9 +6,11 @@
 
 The [browser for seven ENCODE-profiled cancer cell lines included in this analysis](https://oncologylab.github.io/fp-tools/ENCODE-Cancer-Cell-lines-Footprinting/)
 contains all 21 replicate-aware pairwise comparisons and all 1,019 JASPAR 2026
-vertebrate motifs included in the harmonized, sample-quantile-normalized
-analysis. Two condition selectors open each comparison in the same report layout
-used by the standalone `diff-footprints` output.
+vertebrate motifs. Each pair uses its own union of released IDR-thresholded
+peaks and peak-q95-scaled corrected cut-site tracks. Two condition selectors
+open each comparison in the same report layout used by the standalone
+`diff-footprints` output; K562 versus HepG2 is the exact preserved
+three-replicate demonstration.
 
 ## Differential Footprint Demo
 

@@ -1,99 +1,166 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Interactive pairwise fp-tools differential-footprinting reports across seven ENCODE-profiled cancer cell lines.">
-  <title>Differential footprint report</title>
-  <link rel="icon" href="../assets/fp_tools_logo_icon.svg">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div class="wrap">
-    <main class="report">
-      <header class="head">
-        <div class="title-block">
-          <h1>Differential footprint report (<span id="title-cond1">K562</span> vs <span id="title-cond2">HepG2</span>)</h1>
-          <p id="report-method" class="sub">Sample-quantile normalization; empirical-Bayes replicate contrast; BH FDR &lt; 0.05</p>
-        </div>
-        <div class="comparison-controls" aria-label="Choose a pairwise comparison">
-          <label>Condition 1<select id="condition-1" aria-label="Condition 1"></select></label>
-          <span class="versus" aria-hidden="true">vs</span>
-          <label>Condition 2<select id="condition-2" aria-label="Condition 2"></select></label>
-        </div>
-      </header>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Interactive pairwise fp-tools differential-footprinting reports across seven ENCODE-profiled cancer cell lines."
+    />
+    <title>Differential footprint report</title>
+    <link rel="icon" href="../assets/fp_tools_logo_icon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <main class="report">
+        <header class="head">
+          <div class="title-block">
+            <h1>
+              Differential footprint report (<span id="title-cond1">K562</span>
+              vs <span id="title-cond2">HepG2</span>)
+            </h1>
+            <p id="report-method" class="sub">
+              Normalization: Q95-scale; Input beds: bound.bed; FDR &lt; 0.001;
+              |Δ FP score| &gt; 0.1; Bound Sites &gt; 500
+            </p>
+          </div>
+          <div
+            class="comparison-controls"
+            aria-label="Choose a pairwise comparison"
+          >
+            <label
+              >Condition 1<select
+                id="condition-1"
+                aria-label="Condition 1"
+              ></select
+            ></label>
+            <span class="versus" aria-hidden="true">vs</span>
+            <label
+              >Condition 2<select
+                id="condition-2"
+                aria-label="Condition 2"
+              ></select
+            ></label>
+          </div>
+        </header>
 
-      <details id="options" class="options" open>
-        <summary>Show/Hide</summary>
-        <div class="options-grid">
-          <section class="option-col options-actions">
-            <p class="section-title">Export</p>
-            <div class="card export-stack">
-              <label class="format-row">Format
-                <select id="figure-format" aria-label="Figure export format">
-                  <option value="svg">Editable SVG</option>
-                  <option value="png">PNG</option>
-                  <option value="pdf">Print / PDF</option>
-                </select>
-              </label>
-              <button id="download-logo" type="button">Download motif logo panel</button>
-              <button id="download-rank" type="button">Download bar plot panel</button>
-              <button id="download-volcano" type="button">Download volcano plot</button>
-              <button id="download-aggregate" type="button">Download motif aggregate panel</button>
-              <button id="download-panel" type="button">Download combined panel</button>
-              <button id="download-tsv" type="button">Download comparison TSV</button>
-              <a id="download-all" class="button-link" href="data/all_pairwise_results.tsv.gz" download>Download all results</a>
-            </div>
-            <p class="section-title group-title">Groups</p>
-            <div class="card control-stack">
-              <div id="color-controls" class="color-controls"></div>
-              <label class="rows-control">Rows
-                <input id="rank-rows-slider" type="range" min="2" max="200" step="2" value="20">
-                <input id="rank-rows" type="number" min="2" max="200" step="2" value="20">
-              </label>
-            </div>
+        <details id="options" class="options" open>
+          <summary>Show/Hide</summary>
+          <div class="options-grid">
+            <section class="option-col options-actions">
+              <p class="section-title">Export</p>
+              <div class="card export-stack">
+                <label class="format-row"
+                  >Format
+                  <select id="figure-format" aria-label="Figure export format">
+                    <option value="svg">Editable SVG</option>
+                    <option value="png">PNG</option>
+                    <option value="pdf">Print / PDF</option>
+                  </select>
+                </label>
+                <button id="download-logo" type="button">Motif logos</button>
+                <button id="download-rank" type="button">Bar plot</button>
+                <button id="download-volcano" type="button">Volcano plot</button>
+                <button id="download-aggregate" type="button">Aggregate plots</button>
+                <button id="download-panel" type="button">Combined panel</button>
+                <button id="download-tsv" type="button">Comparison TSV</button>
+                <a
+                  id="download-all"
+                  class="button-link"
+                  href="data/all_pairwise_results.tsv.gz"
+                  download
+                  >All results</a
+                >
+              </div>
+              <p class="section-title group-title">Groups</p>
+              <div class="card control-stack">
+                <div id="color-controls" class="color-controls"></div>
+                <label class="rows-control"
+                  >Rows
+                  <input
+                    id="rank-rows-slider"
+                    type="range"
+                    min="2"
+                    max="200"
+                    step="1"
+                    value="20"
+                  />
+                  <input
+                    id="rank-rows"
+                    type="number"
+                    min="2"
+                    max="200"
+                    step="1"
+                    value="20"
+                  />
+                </label>
+              </div>
+            </section>
+
+            <section class="option-col options-samples">
+              <p class="section-title">Sample line styles</p>
+              <div id="sample-style-panel" class="sample-style-panel"></div>
+            </section>
+
+            <section class="selected-card option-col">
+              <div class="selected-toolbar">
+                <p class="section-title">Selected motifs</p>
+                <label
+                  >Plots
+                  <select
+                    id="plot-count"
+                    aria-label="Number of selected motif plots"
+                  >
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                  </select>
+                </label>
+              </div>
+              <div id="selected-grid" class="selected-grid"></div>
+            </section>
+          </div>
+        </details>
+
+        <section id="dashboard" class="dashboard">
+          <aside class="rank-card">
+            <svg
+              id="rank-chart"
+              viewBox="0 0 380 640"
+              aria-label="Top differential motifs"
+            ></svg>
+          </aside>
+          <section class="volcano-card">
+            <svg
+              id="chart"
+              viewBox="0 0 760 760"
+              aria-label="Differential footprint volcano plot"
+            ></svg>
           </section>
-
-          <section class="option-col options-samples">
-            <p class="section-title">Sample line styles</p>
-            <div id="sample-style-panel" class="sample-style-panel"></div>
+          <section class="aggregate-card">
+            <div id="aggregate-legend" class="aggregate-legend"></div>
+            <div id="aggregate-grid" class="aggregate-grid"></div>
           </section>
-
-          <section class="selected-card option-col">
-            <div class="selected-toolbar">
-              <p class="section-title">Selected motifs</p>
-              <label>Plots
-                <select id="plot-count" aria-label="Number of selected motif plots">
-                  <option value="1">1</option><option value="2">2</option>
-                  <option value="3">3</option><option value="4" selected>4</option>
-                  <option value="5">5</option><option value="6">6</option>
-                  <option value="7">7</option><option value="8">8</option>
-                  <option value="9">9</option><option value="10">10</option>
-                  <option value="11">11</option><option value="12">12</option>
-                </select>
-              </label>
-            </div>
-            <div id="selected-grid" class="selected-grid"></div>
-          </section>
-        </div>
-      </details>
-
-      <section id="dashboard" class="dashboard">
-        <aside class="rank-card">
-          <svg id="rank-chart" viewBox="0 0 380 640" aria-label="Top differential motifs"></svg>
-        </aside>
-        <section class="volcano-card">
-          <svg id="chart" viewBox="0 0 760 760" aria-label="Differential footprint volcano plot"></svg>
         </section>
-        <section class="aggregate-card">
-          <div id="aggregate-legend" class="aggregate-legend"></div>
-          <div id="aggregate-grid" class="aggregate-grid"></div>
-        </section>
-      </section>
-    </main>
-  </div>
-  <p id="status" class="status" role="status" aria-live="polite">Loading report…</p>
-  <noscript>This browser requires JavaScript to render the static result files.</noscript>
-  <script src="app.js" defer></script>
-</body>
+      </main>
+    </div>
+    <p id="status" class="status" role="status" aria-live="polite">
+      Loading report…
+    </p>
+    <noscript
+      >This browser requires JavaScript to render the static result
+      files.</noscript
+    >
+    <script src="app.js" defer></script>
+  </body>
 </html>

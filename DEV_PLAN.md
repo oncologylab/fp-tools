@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-14
+Last updated: 2026-08-15
 
 ## Current Baseline
 
@@ -32,21 +32,34 @@ a separately planned breaking release explicitly changes the contract.
   PyPI publication.
 - Branded GitHub and MkDocs presentation with responsive standalone report and
   GUI demos plus automated desktop/mobile browser audits.
-- A manifest-pinned, storage-conscious ENCODE footprint resource for 15
-  biological replicates from seven cancer cell lines. Its reproducible runner
-  processes one source BAM at a time, deletes verified temporary BAMs after
-  correction, uses one locked cancer-only peak and motif-site universe, and
-  exports all 21 pairwise empirical-Bayes comparisons to a dependency-free
-  static browser under the project documentation. The browser uses the
-  standalone differential-report layout with two directional condition
-  selectors, compact JASPAR motif matrices, and lazy-loaded aggregate profiles.
+- A manifest-pinned, storage-conscious ENCODE workflow for 17 biological
+  replicates from seven cancer cell lines. Its resumable runner uses a
+  pair-specific union of released IDR-thresholded peaks, peak-q95 scaling, and
+  the same differential workflow as the preserved three-replicate
+  K562-HepG2 report. The dependency-free static browser has two directional
+  selectors and reads compact canonical report payloads.
+
+## Active ENCODE Resource Build
+
+- Two of 21 comparisons are validated: the exact preserved HepG2-K562
+  reference and the newly completed A549-HCT116 full workflow.
+- Two 16-core shards are running in persistent tmux sessions. A separate
+  finalizer will verify all 21 pairs and rebuild/verify the static site only
+  after both shards exit successfully.
+- Summary-mode differential runs now retain only temporary all/bound motif
+  sites needed to build aggregate profiles. The temporary tree is removed
+  after the compact payload and result table validate.
+- Do not deploy or commit generated browser data until all 21 comparisons,
+  strict documentation checks, browser exports, and the reference scientific
+  digest pass.
 
 ## Near-Term Priorities
 
-1. Keep the completed seven-line ENCODE cancer resource reproducible and
-   storage-conscious. Preserve all 1,019 motifs, 15 biological replicates, and
+1. Keep the seven-line ENCODE cancer resource reproducible and
+   storage-conscious. Preserve all 1,019 motifs, 17 biological replicates, and
    21 prespecified contrasts; resource membership remains independent of
-   observed differential results.
+   observed differential results, and the K562-HepG2 comparison must retain its
+   exact preserved scientific payload.
 2. Keep README, MkDocs, examples, CLI help, package metadata, and the static
    cancer-cell-line browser synchronized.
 3. Add focused regression tests for every user-visible bug or command-contract

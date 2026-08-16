@@ -54,6 +54,7 @@ SPECIALIZED_MANIFEST_SCHEMAS = {
     "encode_cancer_7line_20260814.tsv": [
         "condition",
         "sample",
+        "display_order",
         "biological_replicate",
         "selected_biosample",
         "biosample",
@@ -71,6 +72,14 @@ SPECIALIZED_MANIFEST_SCHEMAS = {
         "comparison",
         "cond1",
         "cond2",
+    ],
+    "encode_cancer_7line_20260814_peaks.tsv": [
+        "condition",
+        "experiment",
+        "peak_accession",
+        "peak_size",
+        "peak_md5",
+        "output_type",
     ],
 }
 

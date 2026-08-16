@@ -280,6 +280,12 @@ def process_tfbs(TF_name, args, log2fc_params, bed_rows=None):
     logger = FpToolsLogger("", args.verbosity, args.log_q)
     write_motif_outputs = bool(getattr(args, "write_motif_outputs", True))
     write_cache_motif_all = bool(getattr(args, "write_cache_motif_all", False))
+    aggregate_site_set = (getattr(args, "aggregate_site_set", "all") or "all").replace("_", "-")
+    write_aggregate_sites = bool(
+        not write_motif_outputs
+        and getattr(args, "aggregate_signals", None)
+        and getattr(args, "plot_aggregate", "off") != "off"
+    )
 
     tmp_root = getattr(args, "tmp_tfbs_root", None) or args.outdir
     bed_outdir = os.path.join(tmp_root, TF_name, "beds")
@@ -353,21 +359,23 @@ def process_tfbs(TF_name, args, log2fc_params, bed_rows=None):
     bed_table = pd.DataFrame(bedlines, columns=overview_columns)
     logger.spam(f"Read table {bed_table.shape} for TF {TF_name}")
 
-    if write_motif_outputs or write_cache_motif_all:
+    if write_motif_outputs or write_cache_motif_all or write_aggregate_sites:
         # write *_all.bed
         outfile = os.path.join(bed_outdir, TF_name + "_all.bed")
         dict_to_tab(bedlines, outfile, header + condition_columns + condition_sd_columns)
 
-    if write_motif_outputs:
+    if write_motif_outputs or (write_aggregate_sites and aggregate_site_set == "bound"):
         # write bound/unbound per condition
         for condition in args.cond_names:
             chosen_columns = header[:-len(args.sample_names)] + [condition + "_score"]
-            for state in ["bound", "unbound"]:
+            states = ["bound", "unbound"] if write_motif_outputs else ["bound"]
+            for state in states:
                 chosen_bool = 1 if state == "bound" else 0
                 subset = [bl for bl in bedlines if bl[condition + "_bound"] == chosen_bool]
                 outfile = os.path.join(bed_outdir, f"{TF_name}_{condition}_{state}.bed")
                 dict_to_tab(subset, outfile, chosen_columns)
 
+    if write_motif_outputs:
         # overview (txt + optional xlsx)
         overview_txt = os.path.join(args.outdir, TF_name, TF_name + "_overview.txt")
         dict_to_tab(bedlines, overview_txt, overview_columns, header=True)
@@ -1098,9 +1106,10 @@ def build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args)
     max_centers = getattr(args, "aggregate_max_sites", None)
     cond_groups = {cond: list(indices) for cond, indices in getattr(args, "cond_groups", {}).items()}
     aggregate_site_maps = getattr(args, "aggregate_site_maps", None)
+    aggregate_bed_root = getattr(args, "tmp_tfbs_root", None) or args.outdir
     aggregate_norm_spec = _fit_aggregate_normalizers(
         selected,
-        args.outdir,
+        aggregate_bed_root,
         list(args.aggregate_signals),
         cond_groups,
         (c1, c2),
@@ -1112,7 +1121,7 @@ def build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args)
         aggregate_site_maps=aggregate_site_maps,
     )
     sample_names = list(getattr(args, "sample_names", []) or [f"sample_{idx + 1}" for idx in range(len(args.aggregate_signals))])
-    tasks = [(row.to_dict(), (c1, c2), args.outdir, list(args.aggregate_signals), cond_groups, flank, len(x), base, normalization, aggregate_norm_spec, sample_names, site_set, max_centers, aggregate_site_maps) for _, row in selected.iterrows()]
+    tasks = [(row.to_dict(), (c1, c2), aggregate_bed_root, list(args.aggregate_signals), cond_groups, flank, len(x), base, normalization, aggregate_norm_spec, sample_names, site_set, max_centers, aggregate_site_maps) for _, row in selected.iterrows()]
 
     cores = max(1, int(getattr(args, "cores", 1) or 1))
     if cores > 1 and len(tasks) > 1:
