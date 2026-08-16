@@ -42,10 +42,7 @@ RAW = ROOT / "data/public/raw/encode_cancer_pairwise_q95_20260814"
 GENOME = ROOT / "data/public/raw/genome/hg38.fa"
 REFERENCE_PROJECT = ROOT / "data/public/processed/encode_k562_hepg2_atac_replicates"
 REFERENCE_REPORT = ROOT / "docs/demos/reports/diff_footprints_K562_HepG2.html"
-REFERENCE_RESULTS = (
-    REFERENCE_PROJECT
-    / "fp_tools/diff_footprints_jaspar2026_vertebrates_norm_corrected_q95/diff_footprints_results.txt"
-)
+REFERENCE_RESULTS = ROOT / "benchmarks/fixtures/encode_k562_hepg2_q95_diff_footprints_results.txt.gz"
 BLACKLIST = REFERENCE_PROJECT / "reference/hg38-blacklist.v2.bed"
 CHROM_SIZES = REFERENCE_PROJECT / "reference/hg38.chrom.sizes"
 BEDTOOLS = Path("/home/exouser/miniforge3/envs/fp-tools-atac/bin/bedtools")
@@ -366,9 +363,11 @@ def seed_reference_locked(pair: Path) -> Path:
     results = pair / "results"
     results.mkdir(parents=True, exist_ok=True)
     metrics = compact_payload(payload, payload_path)
-    if REFERENCE_RESULTS.is_file():
-        shutil.copy2(REFERENCE_RESULTS, results / "diff_footprints_results.txt")
     result_table = results / "diff_footprints_results.txt"
+    if not REFERENCE_RESULTS.is_file():
+        raise ValueError(f"The compressed reference result fixture is missing: {REFERENCE_RESULTS}")
+    with gzip.open(REFERENCE_RESULTS, "rb") as source, result_table.open("wb") as destination:
+        shutil.copyfileobj(source, destination)
     validate_result_table(result_table)
     marker = {
         "schema": "fp-tools.encode-cancer-pair.v1",

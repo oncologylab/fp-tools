@@ -176,18 +176,20 @@ class EncodeCancerBrowserTest(unittest.TestCase):
             "K562_rep1", "K562_rep2", "K562_rep3",
             "HepG2_rep1", "HepG2_rep2", "HepG2_rep3",
         ]
-        self.assertTrue(
-            RUNNER.report_outputs_valid(
-                RUNNER.REFERENCE_REPORT,
-                RUNNER.REFERENCE_RESULTS,
-                expected_samples,
-            )
-        )
         with tempfile.TemporaryDirectory() as tmpdir:
+            seeded_payload = RUNNER.seed_reference(Path(tmpdir))
+            seeded_results = seeded_payload.parent / "diff_footprints_results.txt"
+            self.assertTrue(
+                RUNNER.report_outputs_valid(
+                    RUNNER.REFERENCE_REPORT,
+                    seeded_results,
+                    expected_samples,
+                )
+            )
             partial = Path(tmpdir) / "partial.html"
             partial.write_text("<html>interrupted", encoding="utf-8")
             self.assertFalse(
-                RUNNER.report_outputs_valid(partial, RUNNER.REFERENCE_RESULTS, expected_samples)
+                RUNNER.report_outputs_valid(partial, seeded_results, expected_samples)
             )
 
 
