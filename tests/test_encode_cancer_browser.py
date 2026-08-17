@@ -121,6 +121,14 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         self.assertIn("state.entry?.profile_shards?.find", app)
         self.assertIn("fetchGzipJsonCached(shard.file)", app)
 
+    def test_static_browser_uses_readable_default_profile_and_legend_lines(self):
+        app = (ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/app.js").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("width: 2", app)
+        self.assertIn("Math.max(2,row.style.width)", app)
+        self.assertNotIn("width: 0.7", app)
+
     def test_volcano_y_axis_uses_comparison_specific_headroom(self):
         app = (ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/app.js").read_text(encoding="utf-8")
         self.assertIn("rawYMax = Math.max(...yValues, 0)", app)

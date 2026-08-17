@@ -204,6 +204,32 @@
   padding: 0.7rem 0.85rem;
 }
 
+.fp-live-demo-wrap {
+  border: 1px solid var(--fp-line);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(15, 42, 42, 0.08);
+  margin: 0.8rem 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.fp-live-demo {
+  background: #ffffff;
+  border: 0;
+  display: block;
+  width: 100%;
+}
+
+.fp-report-demo {
+  height: min(78vh, 900px);
+  min-height: 620px;
+}
+
+.fp-gui-demo {
+  height: min(76vh, 820px);
+  min-height: 560px;
+}
+
 .md-typeset a:focus-visible,
 .md-typeset button:focus-visible {
   outline: 3px solid var(--fp-teal);
@@ -213,6 +239,12 @@
 @media screen and (max-width: 900px) {
   .fp-grid {
     grid-template-columns: 1fr;
+  }
+
+  .fp-report-demo,
+  .fp-gui-demo {
+    height: 72vh;
+    min-height: 520px;
   }
 }
 

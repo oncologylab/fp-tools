@@ -98,10 +98,7 @@ def audit(site_dir: Path) -> None:
                         )
                     embedded_frame = None
                     if relative == "reports/":
-                        selector = (
-                            'iframe[title="Interactive fp-tools differential '
-                            'footprint report"]'
-                        )
+                        selector = "iframe.fp-report-demo"
                         iframe = page.locator(selector)
                         iframe.wait_for(state="attached", timeout=60_000)
                         iframe.evaluate("element => element.scrollIntoView()")
@@ -112,7 +109,7 @@ def audit(site_dir: Path) -> None:
                                 state="visible", timeout=60_000
                             )
                     if relative == "gui/":
-                        selector = 'iframe[title="Interactive fp-tools GUI preview"]'
+                        selector = "iframe.fp-gui-demo"
                         iframe = page.locator(selector)
                         iframe.wait_for(state="attached", timeout=60_000)
                         iframe.evaluate("element => element.scrollIntoView()")
@@ -241,6 +238,23 @@ def audit(site_dir: Path) -> None:
                                 failures.append(
                                     f"{label}: embedded GUI route lacks aria-current"
                                 )
+
+                    if relative in {"gui/", "reports/"}:
+                        frame_state = page.locator("iframe.fp-live-demo").evaluate(
+                            """frame => ({
+                              ready: frame.contentDocument?.readyState,
+                              title: frame.contentDocument?.title || "",
+                              contentLength: frame.contentDocument?.body?.textContent?.length || 0
+                            })"""
+                        )
+                        if (
+                            frame_state["ready"] != "complete"
+                            or not frame_state["title"]
+                            or frame_state["contentLength"] < 100
+                        ):
+                            failures.append(
+                                f"{label}: embedded demo did not load {frame_state}"
+                            )
 
                     if relative.endswith("fp-tools-gui-static-demo.html"):
                         for route in ("diff-footprints", "run-history", "home"):

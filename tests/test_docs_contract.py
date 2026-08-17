@@ -147,15 +147,12 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertIn(
             'src="../ENCODE-Cancer-Cell-lines-Footprinting/"', reports
         )
-        self.assertIn(
-            'title="Interactive fp-tools differential footprint report"', reports
-        )
-        self.assertIn("interface_plot_aggregate_batch_html.png", reports)
+        self.assertIn('class="fp-live-demo', reports)
         self.assertNotIn("interface_diff_footprints_html.png", reports)
         self.assertIn(
             'src="../demos/gui/fp-tools-gui-static-demo.html"', gui
         )
-        self.assertIn('title="Interactive fp-tools GUI preview"', gui)
+        self.assertIn('class="fp-live-demo', gui)
         self.assertNotIn("interface_gui_home.png", gui)
         self.assertNotIn("fp-demo-callout", reports + gui)
         self.assertFalse(
@@ -168,6 +165,15 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertIn("aria-current", gui_demo)
         self.assertIn('rel="icon"', gui_demo)
         self.assertIn('rel="icon"', report_demo)
+
+    def test_landing_pages_are_concise_and_use_current_workflow_names(self):
+        index = (ROOT / "docs" / "index.md").read_text(encoding="utf-8")
+        self.assertNotIn("Reproducible regulatory genomics", index)
+        self.assertNotIn("Where To Go Next", index)
+        self.assertNotIn("fp-hero", index)
+        self.assertIn("Output demo with ENCODE cancer cell lines", self.readme)
+        self.assertIn("Single-cell workflow", self.readme)
+        self.assertIn("Optional de novo motif discovery", self.readme)
 
     def test_prepare_atac_profiles_are_explained_in_plain_language(self):
         public_atac_docs = "\n".join(

@@ -24,7 +24,7 @@ from sklearn.neighbors import NearestNeighbors
 
 
 SANS_SERIF_FONTS = ["Arial", "Helvetica", "Liberation Sans", "Nimbus Sans", "DejaVu Sans"]
-DEFAULT_KNN_NEIGHBORS = 150
+DEFAULT_KNN_NEIGHBORS = 75
 
 plt.rcParams.update(
     {

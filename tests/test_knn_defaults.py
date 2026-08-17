@@ -3,5 +3,5 @@ from fp_tools.tools.pseudobulk_footprints import DEFAULT_KNN_NEIGHBORS as PSEUDO
 
 
 def test_reviewer_validated_knn_default_is_shared() -> None:
-    assert DEFAULT_KNN_NEIGHBORS == 150
+    assert DEFAULT_KNN_NEIGHBORS == 75
     assert PSEUDOBULK_DEFAULT_KNN_NEIGHBORS == DEFAULT_KNN_NEIGHBORS

@@ -40,7 +40,7 @@ extra_css:
 
 nav:
   - Get Started: index.md
-  - Reports: reports.md
+  - Output Demo: reports.md
   - GUI Demo: gui.md
   - API Reference: api.md
 

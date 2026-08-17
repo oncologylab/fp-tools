@@ -1730,7 +1730,7 @@ options:
                         Maximum marker motif sites per TF for selected-marker
                         UMAP scoring (default: 1500).
   --knn KNN             Number of nearest neighbors used to smooth per-cell
-                        cut-site profiles (default: 150).
+                        cut-site profiles (default: 75).
   --flank FLANK         Motif-centered half-window in bp for fragment counting
                         (default: 100).
   --center-half-width CENTER_HALF_WIDTH
@@ -1976,7 +1976,7 @@ options:
                         for top heatmap rows (default: 0.5).
   --single-cell-signature-knn SINGLE_CELL_SIGNATURE_KNN
                         KNN size for optional per-cell footprint-signature
-                        smoothing (default: 150).
+                        smoothing (default: 75).
   --single-cell-signature-max-sites-per-motif SINGLE_CELL_SIGNATURE_MAX_SITES_PER_MOTIF
                         Maximum motif instances per motif for optional all-
                         motif per-cell heatmap scoring; use 0 for all sites

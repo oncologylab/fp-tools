@@ -259,7 +259,7 @@ function defaultSampleStyle(sample, condition, index) {
     visible: true,
     color: conditionColor,
     alpha: 0.9,
-    width: 0.7,
+    width: 2,
     type: "solid",
   };
 }
@@ -316,7 +316,7 @@ function renderSampleStyles() {
     input.addEventListener("input", () => {
       state.sampleStyles.get(input.dataset.sampleWidth).width = Math.max(
         0.3,
-        Math.min(4, finite(input.value, 0.9)),
+        Math.min(4, finite(input.value, 2)),
       );
       renderAll(false);
     }),
@@ -668,7 +668,7 @@ function renderLegend() {
   $("aggregate-legend").innerHTML = rows
     .map(
       (row) =>
-        `<div class="legend-row"><i class="legend-line" style="border-top-color:${row.style.color};border-top-width:${row.style.width}px;border-top-style:${row.style.type === "dash" ? "dashed" : row.style.type === "dot" ? "dotted" : "solid"};opacity:${row.style.alpha}"></i><span title="${esc(row.sample)}">${esc(row.sample)}</span></div>`,
+        `<div class="legend-row"><i class="legend-line" style="border-top-color:${row.style.color};border-top-width:${Math.max(2,row.style.width)}px;border-top-style:${row.style.type === "dash" ? "dashed" : row.style.type === "dot" ? "dotted" : "solid"};opacity:${row.style.alpha}"></i><span title="${esc(row.sample)}">${esc(row.sample)}</span></div>`,
     )
     .join("");
 }
@@ -882,7 +882,7 @@ function aggregateGridSvg() {
               ? ' stroke-dasharray="2 3"'
               : "";
       parts.push(
-        `<line x1="8" y1="${y - 3}" x2="38" y2="${y - 3}" stroke="${style.borderTopColor}" stroke-width="${parseFloat(style.borderTopWidth) || 1}"${dash} stroke-opacity="${style.opacity || 1}"/><text x="44" y="${y}" class="tick">${esc(label)}</text>`,
+        `<line x1="8" y1="${y - 3}" x2="38" y2="${y - 3}" stroke="${style.borderTopColor}" stroke-width="${Math.max(2, parseFloat(style.borderTopWidth) || 2)}"${dash} stroke-opacity="${style.opacity || 1}"/><text x="44" y="${y}" class="tick">${esc(label)}</text>`,
       );
     });
     parts.push("</g>");
