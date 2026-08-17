@@ -13,7 +13,7 @@
   ·
   <a href="https://oncologylab.github.io/fp-tools/ENCODE-Cancer-Cell-lines-Footprinting/"><strong>Output demo with ENCODE cancer cell lines</strong></a>
   ·
-  <a href="https://oncologylab.github.io/fp-tools/gui/"><strong>GUI demo</strong></a>
+  <a href="https://oncologylab.github.io/fp-tools/demos/gui/fp-tools-gui-static-demo.html"><strong>GUI demo</strong></a>
   ·
   <a href="https://pypi.org/project/fp-tools-bio/"><strong>PyPI</strong></a>
 </p>

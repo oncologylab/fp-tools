@@ -172,6 +172,11 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertNotIn("Where To Go Next", index)
         self.assertNotIn("fp-hero", index)
         self.assertIn("Output demo with ENCODE cancer cell lines", self.readme)
+        self.assertIn(
+            "https://oncologylab.github.io/fp-tools/demos/gui/"
+            "fp-tools-gui-static-demo.html",
+            self.readme,
+        )
         self.assertIn("Single-cell workflow", self.readme)
         self.assertIn("Optional de novo motif discovery", self.readme)
 
