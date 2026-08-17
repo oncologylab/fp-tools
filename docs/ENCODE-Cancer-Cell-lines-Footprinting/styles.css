@@ -595,7 +595,7 @@ input {
     grid-template-columns: minmax(0, 1fr) 125px;
   }
 }
-@media (max-width: 1190px) {
+@media (max-width: 1100px) {
   body {
     overflow: auto;
   }

@@ -1,18 +1,4 @@
-<section class="fp-hero">
-  <div class="fp-hero-copy">
-    <p class="fp-eyebrow">Reproducible regulatory genomics</p>
-    <h1>ATAC-seq footprints, motifs, and reports from one command-first toolkit</h1>
-    <p>Turn raw reads or processed tracks into bias-corrected signal,
-    footprint scores, motif-aware comparisons, aggregate profiles, and
-    portable HTML reports.</p>
-    <div class="fp-actions">
-      <a class="fp-button primary" href="#install">Install fp-tools</a>
-      <a class="fp-button" href="reports/">Explore reports</a>
-      <a class="fp-button" href="api/">Command reference</a>
-    </div>
-  </div>
-  <img src="assets/fp_tools_logo_icon.svg" alt="" role="presentation">
-</section>
+# Get Started
 
 `fp-tools` runs ATAC-seq footprint workflows from the command line or the
 optional browser GUI. The same YAML configuration can be saved from the GUI
@@ -207,23 +193,3 @@ find-signature-fp \
   --all-motif-diff-dir project/pseudobulk/diff_footprints \
   --outdir project/pseudobulk/signature_fp
 ```
-
-## Where To Go Next
-
-<div class="fp-grid">
-  <div class="fp-card">
-    <h3>Command Manuals</h3>
-    <p>See the command overview and full help for every supported command.</p>
-    <p><a href="api/">Open API Reference</a></p>
-  </div>
-  <div class="fp-card">
-    <h3>Report Demo</h3>
-    <p>Open a static differential-footprint report in the browser.</p>
-    <p><a href="reports/">Open Reports</a></p>
-  </div>
-  <div class="fp-card">
-    <h3>GUI Demo</h3>
-    <p>Preview the browser interface and tutorial layout.</p>
-    <p><a href="gui/">Open GUI Demo</a></p>
-  </div>
-</div>

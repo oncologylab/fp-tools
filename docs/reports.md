@@ -1,33 +1,26 @@
+---
+hide:
+  - toc
+---
+
 # Report Demos
 
 `fp-tools` writes standalone HTML reports. They can be opened locally, shared with collaborators, or hosted on GitHub Pages.
 
-## ENCODE Cancer Cell-line Footprinting
+## Interactive Differential Footprint Report
 
-The [browser for seven ENCODE-profiled cancer cell lines included in this analysis](https://oncologylab.github.io/fp-tools/ENCODE-Cancer-Cell-lines-Footprinting/)
-contains all 21 replicate-aware pairwise comparisons and all 1,019 JASPAR 2026
-vertebrate motifs. Each pair uses its own union of released IDR-thresholded
-peaks and peak-q95-scaled corrected cut-site tracks. Two condition selectors
-open each comparison in the same report layout used by the standalone
-`diff-footprints` output; K562 versus HepG2 is the exact preserved
-three-replicate demonstration.
+K562 versus HepG2 is shown initially. Use the condition selectors to browse
+all 21 pairwise comparisons across seven ENCODE cancer cell lines.
 
-## Differential Footprint Demo
-
-<div class="fp-demo-callout">
-  <h3>K562 vs HepG2 differential footprint report</h3>
-  <p>Example output from a motif-aware condition comparison with volcano results, motif tables, logos, and aggregate footprint profiles.</p>
-  <a class="fp-button primary" href="../demos/reports/diff_footprints_K562_HepG2.html">Open report demo</a>
+<div class="fp-live-demo fp-live-demo-report">
+  <iframe
+    src="../ENCODE-Cancer-Cell-lines-Footprinting/"
+    title="Interactive fp-tools differential footprint report"
+    loading="eager"
+    allowfullscreen></iframe>
 </div>
 
-<figure class="fp-wide-image">
-  <a href="../demos/reports/diff_footprints_K562_HepG2.html">
-    <img src="../assets/interface_diff_footprints_html.png"
-         alt="Interactive differential footprint report with motif statistics, volcano plot, and aggregate profile">
-  </a>
-  <figcaption>Interactive motif selection, differential evidence, aggregate
-  profiles, and editable SVG export in one portable report.</figcaption>
-</figure>
+<p class="fp-live-demo-link"><a href="../ENCODE-Cancer-Cell-lines-Footprinting/">Open the report in a full browser window</a></p>
 
 ## Typical Report Contents
 

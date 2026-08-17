@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # GUI Demo
 
 [fp-tools-gui](api.md#fp-tools-gui) is an optional browser interface for users who prefer forms over long command lines. It still runs the same fp-tools commands and saves reusable YAML configs.
@@ -34,22 +39,20 @@ Open the printed URL in a browser. Public access also requires the port to be al
   </div>
 </div>
 
-## Static Preview
+## Interactive Preview
 
-<div class="fp-demo-callout">
-  <h3>GUI walkthrough preview</h3>
-  <p>This static page shows the intended layout and workflow without starting a compute backend.</p>
-  <a class="fp-button primary" href="../demos/gui/fp-tools-gui-static-demo.html">Open GUI preview</a>
+This browser preview supports the navigation and form controls but does not
+run analyses.
+
+<div class="fp-live-demo fp-live-demo-gui">
+  <iframe
+    src="../demos/gui/fp-tools-gui-static-demo.html"
+    title="Interactive fp-tools GUI preview"
+    loading="eager"
+    allowfullscreen></iframe>
 </div>
 
-<figure class="fp-wide-image">
-  <a href="../demos/gui/fp-tools-gui-static-demo.html">
-    <img src="../assets/interface_gui_home.png"
-         alt="fp-tools browser GUI with command navigation, guided workflow, and YAML-ready controls">
-  </a>
-  <figcaption>The optional GUI keeps commands visible, previews reusable YAML,
-  and records outputs without moving workflow logic out of the CLI.</figcaption>
-</figure>
+<p class="fp-live-demo-link"><a href="../demos/gui/fp-tools-gui-static-demo.html">Open the GUI preview in a full browser window</a></p>
 
 ## Example Configs
 
