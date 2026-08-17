@@ -129,6 +129,17 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         self.assertIn("Math.max(2,row.style.width)", app)
         self.assertNotIn("width: 0.7", app)
 
+    def test_expanded_controls_keep_aggregate_tiles_inside_the_grid(self):
+        styles = (
+            ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/styles.css"
+        ).read_text(encoding="utf-8")
+        self.assertIn("body:has(.options[open])", styles)
+        self.assertIn(".options[open] + .dashboard", styles)
+        self.assertRegex(
+            styles,
+            r"(?s)\.aggregate-tile\s*\{.*?height:\s*100%;",
+        )
+
     def test_volcano_y_axis_uses_comparison_specific_headroom(self):
         app = (ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/app.js").read_text(encoding="utf-8")
         self.assertIn("rawYMax = Math.max(...yValues, 0)", app)

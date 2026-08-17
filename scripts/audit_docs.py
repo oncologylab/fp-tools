@@ -46,6 +46,51 @@ def serve(directory: Path):
             thread.join()
 
 
+def check_expanded_aggregate_layout(surface, label: str, failures: list[str]) -> None:
+    """Confirm that opening report controls cannot stack aggregate tiles."""
+    details = surface.locator("#options")
+    details.evaluate("element => { element.open = true; }")
+    surface.wait_for_timeout(100)
+    layout = surface.evaluate(
+        """() => {
+          const grid = document.querySelector("#aggregate-grid");
+          const gridBox = grid.getBoundingClientRect();
+          const boxes = [...grid.querySelectorAll(".aggregate-tile")].map(tile => {
+            const box = tile.getBoundingClientRect();
+            return {left: box.left, top: box.top, right: box.right, bottom: box.bottom};
+          });
+          const overlaps = [];
+          for (let first = 0; first < boxes.length; first += 1) {
+            for (let second = first + 1; second < boxes.length; second += 1) {
+              const a = boxes[first];
+              const b = boxes[second];
+              const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+              const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+              if (overlapX > 1 && overlapY > 1) overlaps.push([first, second]);
+            }
+          }
+          const outside = boxes
+            .map((box, index) => ({box, index}))
+            .filter(({box}) =>
+              box.left < gridBox.left - 1 || box.top < gridBox.top - 1 ||
+              box.right > gridBox.right + 1 || box.bottom > gridBox.bottom + 1
+            )
+            .map(({index}) => index);
+          return {overlaps, outside};
+        }"""
+    )
+    details.evaluate("element => { element.open = false; }")
+    if layout["overlaps"]:
+        failures.append(
+            f"{label}: expanded controls overlap aggregate tiles {layout['overlaps']}"
+        )
+    if layout["outside"]:
+        failures.append(
+            f"{label}: expanded controls push aggregate tiles outside their grid "
+            f"{layout['outside']}"
+        )
+
+
 def audit(site_dir: Path) -> None:
     failures: list[str] = []
     with serve(site_dir) as base_url, sync_playwright() as playwright:
@@ -201,6 +246,7 @@ def audit(site_dir: Path) -> None:
                                 )
 
                     if relative == "reports/" and embedded_frame is not None:
+                        check_expanded_aggregate_layout(embedded_frame, label, failures)
                         first = embedded_frame.locator("#condition-1")
                         second = embedded_frame.locator("#condition-2")
                         if first.input_value() != "K562" or second.input_value() != "HepG2":
@@ -274,6 +320,7 @@ def audit(site_dir: Path) -> None:
                                     f"{label}: GUI route {route} lacks aria-current"
                                 )
                     if relative == "ENCODE-Cancer-Cell-lines-Footprinting/":
+                        check_expanded_aggregate_layout(page, label, failures)
                         first = page.locator("#condition-1")
                         second = page.locator("#condition-2")
                         if first.input_value() != "K562" or second.input_value() != "HepG2":

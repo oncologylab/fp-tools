@@ -28,6 +28,10 @@ body {
   font-family: Helvetica, Arial, sans-serif;
   font-size: 12px;
 }
+body:has(.options[open]) {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 button,
 select,
 input,
@@ -390,6 +394,9 @@ a {
 .report:has(.options:not([open])) .dashboard {
   height: calc(100vh - 16px - var(--head-height) - 34px - var(--gap) * 2);
 }
+.options[open] + .dashboard {
+  min-height: 520px;
+}
 .dashboard > * {
   min-width: 0;
   min-height: 0;
@@ -429,8 +436,7 @@ a {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: auto;
-  aspect-ratio: 1/1;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   align-self: center;
