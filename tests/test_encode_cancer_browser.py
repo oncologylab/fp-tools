@@ -125,8 +125,16 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         app = (ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/app.js").read_text(
             encoding="utf-8"
         )
+        styles = (
+            ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/styles.css"
+        ).read_text(encoding="utf-8")
         self.assertIn("width: 2", app)
-        self.assertIn("Math.max(2,row.style.width)", app)
+        self.assertIn("const aggregateLegendLineWidth = 3", app)
+        self.assertIn('stroke-width="${aggregateLegendLineWidth}"', app)
+        self.assertIn("function legendGroups()", app)
+        self.assertIn('class="legend-group"', app)
+        self.assertIn("border-top-width: 3px", styles)
+        self.assertNotIn("Math.max(2,row.style.width)", app)
         self.assertNotIn("width: 0.7", app)
 
     def test_expanded_controls_keep_aggregate_tiles_inside_the_grid(self):

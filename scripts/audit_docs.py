@@ -91,6 +91,45 @@ def check_expanded_aggregate_layout(surface, label: str, failures: list[str]) ->
         )
 
 
+def check_grouped_aggregate_legend(surface, label: str, failures: list[str]) -> None:
+    """Confirm grouped legend geometry and fixed swatch width."""
+    details = surface.locator("#options")
+    details.evaluate("element => { element.open = true; }")
+    width_control = surface.locator("[data-sample-width]").first
+    width_control.fill("0.3")
+    width_control.dispatch_event("input")
+    surface.wait_for_timeout(100)
+    metrics = surface.evaluate(
+        """() => {
+          const legend = document.querySelector("#aggregate-legend");
+          const grid = document.querySelector("#aggregate-grid");
+          const legendBox = legend.getBoundingClientRect();
+          const gridBox = grid.getBoundingClientRect();
+          return {
+            groups: legend.querySelectorAll(".legend-group").length,
+            widths: [...legend.querySelectorAll(".legend-line")]
+              .map(line => getComputedStyle(line).borderTopWidth),
+            thinPlotLines: [...document.querySelectorAll(".aggregate-panel path")]
+              .some(path => Number(path.getAttribute("stroke-width")) === 0.3),
+            separated: legendBox.bottom <= gridBox.top + 1
+          };
+        }"""
+    )
+    if metrics["groups"] != 2:
+        failures.append(f"{label}: expected two aggregate legend groups")
+    if not metrics["widths"] or set(metrics["widths"]) != {"3px"}:
+        failures.append(
+            f"{label}: aggregate legend widths are not fixed at 3px "
+            f"({metrics['widths']})"
+        )
+    if not metrics["thinPlotLines"]:
+        failures.append(f"{label}: aggregate curve width control did not reach 0.3")
+    if not metrics["separated"]:
+        failures.append(f"{label}: grouped legend overlaps the aggregate grid")
+    width_control.fill("2")
+    width_control.dispatch_event("input")
+
+
 def audit(site_dir: Path) -> None:
     failures: list[str] = []
     with serve(site_dir) as base_url, sync_playwright() as playwright:
@@ -321,6 +360,7 @@ def audit(site_dir: Path) -> None:
                                 )
                     if relative == "ENCODE-Cancer-Cell-lines-Footprinting/":
                         check_expanded_aggregate_layout(page, label, failures)
+                        check_grouped_aggregate_legend(page, label, failures)
                         first = page.locator("#condition-1")
                         second = page.locator("#condition-2")
                         if first.input_value() != "K562" or second.input_value() != "HepG2":
@@ -345,6 +385,27 @@ def audit(site_dir: Path) -> None:
                                 )
                             if not download_info.value.suggested_filename.endswith("_volcano.svg"):
                                 failures.append(f"{label}: unexpected SVG export filename")
+                            with page.expect_download(timeout=30_000) as aggregate_download:
+                                page.locator("#download-aggregate").evaluate(
+                                    "element => element.click()"
+                                )
+                            aggregate_path = aggregate_download.value.path()
+                            aggregate_svg = Path(aggregate_path).read_text(encoding="utf-8")
+                            legend_match = re.search(
+                                r'<g class="aggregate-export-legend">(.*?)</g>',
+                                aggregate_svg,
+                                flags=re.DOTALL,
+                            )
+                            if legend_match is None:
+                                failures.append(f"{label}: exported aggregate legend is missing")
+                            elif 'stroke-width="3"' not in legend_match.group(1):
+                                failures.append(
+                                    f"{label}: exported aggregate legend is not 3 units thick"
+                                )
+                    if relative == "reports/" and embedded_frame is not None:
+                        check_grouped_aggregate_legend(
+                            embedded_frame, f"{label} embedded report", failures
+                        )
                     page.close()
         browser.close()
     if failures:

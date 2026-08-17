@@ -21,6 +21,7 @@ const state = {
 };
 const plotSvgStyle =
   "svg,text{font-family:Helvetica,Arial,sans-serif}.plot-title{font-size:15px;font-weight:900;fill:#172033}.axis{stroke:#344256;stroke-width:1.2}.zero{stroke:#7c8798;stroke-width:1.1;stroke-dasharray:4 4}.grid{stroke:#e3eaf3;stroke-width:1}.tick{font-size:11px;fill:#526176;font-weight:700}.axis-label{font-size:12px;fill:#243247;font-weight:900}.rank-bar.active{stroke:#111827;stroke-width:1.5}.pt.selected{filter:drop-shadow(0 1px 2px rgba(15,23,42,.28))}";
+const aggregateLegendLineWidth = 3;
 
 function esc(value) {
   return String(value ?? "").replace(
@@ -654,21 +655,32 @@ function aggregateShape(count) {
   return { columns: 4, rows: 3 };
 }
 
+function legendGroups() {
+  return [state.first, state.second]
+    .map((condition) => ({
+      condition,
+      rows: conditionSamples(condition)
+        .map((sample, index) => ({
+          sample,
+          condition,
+          style: sampleStyle(sample, condition, index),
+        }))
+        .filter((row) => row.style.visible),
+    }))
+    .filter((group) => group.rows.length);
+}
+
 function renderLegend() {
-  const rows = [];
-  [
-    [state.first, conditionSamples(state.first)],
-    [state.second, conditionSamples(state.second)],
-  ].forEach(([condition, samples]) =>
-    samples.forEach((sample, index) => {
-      const style = sampleStyle(sample, condition, index);
-      if (style.visible) rows.push({ sample, style });
-    }),
-  );
-  $("aggregate-legend").innerHTML = rows
+  const groups = legendGroups();
+  $("aggregate-legend").innerHTML = groups
     .map(
-      (row) =>
-        `<div class="legend-row"><i class="legend-line" style="border-top-color:${row.style.color};border-top-width:${Math.max(2,row.style.width)}px;border-top-style:${row.style.type === "dash" ? "dashed" : row.style.type === "dot" ? "dotted" : "solid"};opacity:${row.style.alpha}"></i><span title="${esc(row.sample)}">${esc(row.sample)}</span></div>`,
+      (group) =>
+        `<div class="legend-group"><div class="legend-group-title" title="${esc(group.condition)}">${esc(group.condition)}</div>${group.rows
+          .map(
+            (row) =>
+              `<div class="legend-row"><i class="legend-line" style="border-top-color:${row.style.color};border-top-style:${row.style.type === "dash" ? "dashed" : row.style.type === "dot" ? "dotted" : "solid"};opacity:${row.style.alpha}"></i><span title="${esc(row.sample)}">${esc(row.sample)}</span></div>`,
+          )
+          .join("")}</div>`,
     )
     .join("");
 }
@@ -851,39 +863,43 @@ function aggregateGridSvg() {
     plotHeight = 300,
     gridWidth = shape.columns * plotWidth,
     gridHeight = shape.rows * plotHeight,
-    legendRows = [...$("aggregate-legend").querySelectorAll(".legend-row")],
-    legendWidth = legendRows.length ? 170 : 0,
-    totalWidth = gridWidth + (legendWidth ? 12 + legendWidth : 0),
+    groups = legendGroups(),
+    legendRows = Math.max(0, ...groups.map((group) => group.rows.length)),
+    legendHeight = groups.length ? 25 + legendRows * 16 : 0,
+    totalWidth = gridWidth,
+    totalHeight = gridHeight + legendHeight,
     parts = [
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${gridHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${totalHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/>`,
     ];
   svgs.forEach((svg, index) => {
     const clone = styledClone(svg);
     clone.querySelector("style")?.remove();
     parts.push(
-      `<g transform="translate(${(index % shape.columns) * plotWidth},${Math.floor(index / shape.columns) * plotHeight})">${clone.innerHTML}</g>`,
+      `<g transform="translate(${(index % shape.columns) * plotWidth},${legendHeight + Math.floor(index / shape.columns) * plotHeight})">${clone.innerHTML}</g>`,
     );
   });
-  if (legendRows.length) {
-    const x = gridWidth + 12,
-      height = legendRows.length * 16 + 14;
+  if (groups.length) {
+    const groupWidth = gridWidth / groups.length;
     parts.push(
-      `<g transform="translate(${x},8)"><rect width="${legendWidth}" height="${height}" rx="5" fill="#fff" stroke="#d8e2ef"/>`,
+      `<g class="aggregate-export-legend"><rect x="1" y="1" width="${gridWidth - 2}" height="${legendHeight - 4}" rx="5" fill="#fff" stroke="#d8e2ef"/>`,
     );
-    legendRows.forEach((row, index) => {
-      const line = row.querySelector(".legend-line"),
-        label = row.querySelector("span").textContent,
-        y = 14 + index * 16,
-        style = line.style,
-        dash =
-          style.borderTopStyle === "dashed"
+    groups.forEach((group, groupIndex) => {
+      const x = groupIndex * groupWidth + 10;
+      parts.push(
+        `<text x="${x}" y="14" class="tick" font-weight="900">${esc(group.condition)}</text>`,
+      );
+      group.rows.forEach((row, index) => {
+        const y = 28 + index * 16,
+          dash =
+          row.style.type === "dash"
             ? ' stroke-dasharray="7 4"'
-            : style.borderTopStyle === "dotted"
+            : row.style.type === "dot"
               ? ' stroke-dasharray="2 3"'
               : "";
-      parts.push(
-        `<line x1="8" y1="${y - 3}" x2="38" y2="${y - 3}" stroke="${style.borderTopColor}" stroke-width="${Math.max(2, parseFloat(style.borderTopWidth) || 2)}"${dash} stroke-opacity="${style.opacity || 1}"/><text x="44" y="${y}" class="tick">${esc(label)}</text>`,
-      );
+        parts.push(
+          `<line x1="${x}" y1="${y - 3}" x2="${x + 30}" y2="${y - 3}" stroke="${row.style.color}" stroke-width="${aggregateLegendLineWidth}"${dash} stroke-opacity="${row.style.alpha}"/><text x="${x + 36}" y="${y}" class="tick">${esc(row.sample)}</text>`,
+        );
+      });
     });
     parts.push("</g>");
   }
