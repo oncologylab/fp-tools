@@ -127,6 +127,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
             self.assertNotIn(stale, public_docs)
 
     def test_public_site_uses_branded_assets_and_responsive_demo_contracts(self):
+        index = (ROOT / "docs" / "index.md").read_text(encoding="utf-8")
         reports = (ROOT / "docs" / "reports.md").read_text(encoding="utf-8")
         gui = (ROOT / "docs" / "gui.md").read_text(encoding="utf-8")
         gui_demo = (
@@ -140,9 +141,29 @@ class DocsEntryPointContractTest(unittest.TestCase):
             / "diff_footprints_K562_HepG2.html"
         ).read_text(encoding="utf-8")
         self.assertIn("fp_tools_logo_horizontal.svg", self.readme)
-        self.assertIn("interface_diff_footprints_html.png", reports)
+        self.assertIn("# Get Started", index)
+        self.assertNotIn("fp-hero", index)
+        self.assertNotIn("Where To Go Next", index)
+        self.assertIn(
+            'src="../ENCODE-Cancer-Cell-lines-Footprinting/"', reports
+        )
+        self.assertIn(
+            'title="Interactive fp-tools differential footprint report"', reports
+        )
         self.assertIn("interface_plot_aggregate_batch_html.png", reports)
-        self.assertIn("interface_gui_home.png", gui)
+        self.assertNotIn("interface_diff_footprints_html.png", reports)
+        self.assertIn(
+            'src="../demos/gui/fp-tools-gui-static-demo.html"', gui
+        )
+        self.assertIn('title="Interactive fp-tools GUI preview"', gui)
+        self.assertNotIn("interface_gui_home.png", gui)
+        self.assertNotIn("fp-demo-callout", reports + gui)
+        self.assertFalse(
+            (ROOT / "docs" / "assets" / "interface_diff_footprints_html.png").exists()
+        )
+        self.assertFalse(
+            (ROOT / "docs" / "assets" / "interface_gui_home.png").exists()
+        )
         self.assertIn('class="menu-button"', gui_demo)
         self.assertIn("aria-current", gui_demo)
         self.assertIn('rel="icon"', gui_demo)

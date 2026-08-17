@@ -60,7 +60,8 @@ def audit(site_dir: Path) -> None:
                         lambda route: route.fulfill(status=204, body=""),
                     )
                     console_errors: list[str] = []
-                    failed_requests: list[str] = []
+                    failed_requests: list[tuple[str, str]] = []
+                    successful_requests: set[str] = set()
                     page.on(
                         "console",
                         lambda message, errors=console_errors: (
@@ -69,7 +70,15 @@ def audit(site_dir: Path) -> None:
                     )
                     page.on(
                         "requestfailed",
-                        lambda request, errors=failed_requests: errors.append(request.url),
+                        lambda request, errors=failed_requests: errors.append(
+                            (request.url, request.failure or "unknown failure")
+                        ),
+                    )
+                    page.on(
+                        "response",
+                        lambda response, successes=successful_requests: (
+                            successes.add(response.url) if response.ok else None
+                        ),
                     )
                     response = page.goto(
                         base_url + relative, wait_until="networkidle", timeout=60_000
@@ -87,6 +96,32 @@ def audit(site_dir: Path) -> None:
                         page.locator(".aggregate-panel").first.wait_for(
                             state="visible", timeout=60_000
                         )
+                    embedded_frame = None
+                    if relative == "reports/":
+                        selector = (
+                            'iframe[title="Interactive fp-tools differential '
+                            'footprint report"]'
+                        )
+                        iframe = page.locator(selector)
+                        iframe.wait_for(state="attached", timeout=60_000)
+                        iframe.evaluate("element => element.scrollIntoView()")
+                        handle = iframe.element_handle()
+                        embedded_frame = handle.content_frame() if handle else None
+                        if embedded_frame is not None:
+                            embedded_frame.locator(".aggregate-panel").first.wait_for(
+                                state="visible", timeout=60_000
+                            )
+                    if relative == "gui/":
+                        selector = 'iframe[title="Interactive fp-tools GUI preview"]'
+                        iframe = page.locator(selector)
+                        iframe.wait_for(state="attached", timeout=60_000)
+                        iframe.evaluate("element => element.scrollIntoView()")
+                        handle = iframe.element_handle()
+                        embedded_frame = handle.content_frame() if handle else None
+                        if embedded_frame is not None:
+                            embedded_frame.locator('[data-page="home"]').wait_for(
+                                state="attached", timeout=60_000
+                            )
                     label = f"{relative or '/'} at {width}x{height} ({scheme})"
                     if response is None or response.status != 200:
                         failures.append(
@@ -133,8 +168,79 @@ def audit(site_dir: Path) -> None:
                         )
                     if console_errors:
                         failures.append(f"{label}: console errors {console_errors}")
-                    if failed_requests:
-                        failures.append(f"{label}: failed requests {failed_requests}")
+                    meaningful_failures = [
+                        f"{url} ({reason})"
+                        for url, reason in failed_requests
+                        if reason != "net::ERR_ABORTED" or url not in successful_requests
+                    ]
+                    if meaningful_failures:
+                        failures.append(
+                            f"{label}: failed requests {meaningful_failures}"
+                        )
+
+                    if relative in {"reports/", "gui/"}:
+                        if embedded_frame is None:
+                            failures.append(f"{label}: interactive iframe did not load")
+                        else:
+                            frame_metrics = embedded_frame.evaluate(
+                                """() => ({
+                                  scrollWidth: document.documentElement.scrollWidth,
+                                  clientWidth: document.documentElement.clientWidth,
+                                  brokenImages: [...document.images].filter(
+                                    image => !image.complete || image.naturalWidth === 0
+                                  ).map(image => image.src)
+                                })"""
+                            )
+                            if frame_metrics["scrollWidth"] > frame_metrics["clientWidth"]:
+                                failures.append(
+                                    f"{label}: iframe horizontal overflow "
+                                    f"{frame_metrics['scrollWidth']}>"
+                                    f"{frame_metrics['clientWidth']}"
+                                )
+                            if frame_metrics["brokenImages"]:
+                                failures.append(
+                                    f"{label}: iframe broken images "
+                                    f"{frame_metrics['brokenImages']}"
+                                )
+
+                    if relative == "reports/" and embedded_frame is not None:
+                        first = embedded_frame.locator("#condition-1")
+                        second = embedded_frame.locator("#condition-2")
+                        if first.input_value() != "K562" or second.input_value() != "HepG2":
+                            failures.append(f"{label}: unexpected embedded comparison")
+                        if embedded_frame.locator(".selected-motif").count() != 4:
+                            failures.append(
+                                f"{label}: expected four embedded motif cards"
+                            )
+                        if embedded_frame.locator(".aggregate-panel").count() != 4:
+                            failures.append(
+                                f"{label}: expected four embedded aggregate panels"
+                            )
+                        if width == 1440 and height == 1000 and scheme == "light":
+                            first.select_option("A549")
+                            second.select_option("HCT116")
+                            embedded_frame.locator("#title-cond1").filter(
+                                has_text="A549"
+                            ).wait_for(timeout=60_000)
+                            embedded_frame.locator("#title-cond2").filter(
+                                has_text="HCT116"
+                            ).wait_for(timeout=60_000)
+
+                    if relative == "gui/" and embedded_frame is not None:
+                        if width == 1440 and height == 1000 and scheme == "light":
+                            route = embedded_frame.locator(
+                                '[data-page="diff-footprints"]'
+                            )
+                            route.evaluate("element => element.click()")
+                            embedded_frame.wait_for_timeout(50)
+                            if embedded_frame.url.rsplit("#", 1)[-1] != "diff-footprints":
+                                failures.append(
+                                    f"{label}: embedded GUI route did not open"
+                                )
+                            if route.get_attribute("aria-current") != "page":
+                                failures.append(
+                                    f"{label}: embedded GUI route lacks aria-current"
+                                )
 
                     if relative.endswith("fp-tools-gui-static-demo.html"):
                         for route in ("diff-footprints", "run-history", "home"):

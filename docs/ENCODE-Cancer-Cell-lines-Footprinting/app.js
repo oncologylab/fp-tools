@@ -1050,7 +1050,7 @@ async function init() {
       syncRows(event.target),
     );
     bindExports();
-    if (window.innerWidth >= 1190 && window.innerHeight < 900)
+    if (window.innerWidth >= 1100 && window.innerHeight < 900)
       $("options").removeAttribute("open");
     await loadComparison(true);
   } catch (error) {

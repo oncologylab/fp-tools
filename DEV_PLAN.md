@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-15
+Last updated: 2026-08-17
 
 ## Current Baseline
 
@@ -30,7 +30,7 @@ a separately planned breaking release explicitly changes the contract.
 - Optional Streamlit GUI whose saved YAML runs through `run-workflow`.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
   PyPI publication.
-- Branded GitHub and MkDocs presentation with responsive standalone report and
+- Branded GitHub and MkDocs presentation with responsive embedded report and
   GUI demos plus automated desktop/mobile browser audits.
 - A manifest-pinned, storage-conscious ENCODE workflow for 17 biological
   replicates from seven cancer cell lines. Its resumable runner uses a
@@ -39,19 +39,14 @@ a separately planned breaking release explicitly changes the contract.
   K562-HepG2 report. The dependency-free static browser has two directional
   selectors and reads compact canonical report payloads.
 
-## Active ENCODE Resource Build
+## Current ENCODE Resource
 
-- Two of 21 comparisons are validated: the exact preserved HepG2-K562
-  reference and the newly completed A549-HCT116 full workflow.
-- Two 16-core shards are running in persistent tmux sessions. A separate
-  finalizer will verify all 21 pairs and rebuild/verify the static site only
-  after both shards exit successfully.
-- Summary-mode differential runs now retain only temporary all/bound motif
-  sites needed to build aggregate profiles. The temporary tree is removed
-  after the compact payload and result table validate.
-- Do not deploy or commit generated browser data until all 21 comparisons,
-  strict documentation checks, browser exports, and the reference scientific
-  digest pass.
+- All 21 pairwise comparisons are available in the static browser.
+- The preserved K562-HepG2 comparison retains its reference scientific
+  payload, and the browser loads compact report data, profile shards, and motif
+  logos on demand.
+- The public report page embeds this browser with K562 versus HepG2 as the
+  default comparison.
 
 ## Near-Term Priorities
 
@@ -71,7 +66,7 @@ a separately planned breaking release explicitly changes the contract.
 6. Keep benchmark claims proportional to validated public data and recorded
    metrics.
 7. Keep public pages free of broken assets, browser errors, responsive
-   overflow, inaccessible navigation, and stale screenshots.
+   overflow, inaccessible navigation, and broken live embeds.
 
 ## Deferred or Experimental Work
 
