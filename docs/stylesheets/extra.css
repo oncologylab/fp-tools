@@ -342,6 +342,10 @@ textarea {
   width: 100%;
 }
 
+.fp-output-figure > a {
+  display: block;
+}
+
 .fp-output-figure figcaption {
   color: var(--fp-muted);
   font-size: 0.72rem;

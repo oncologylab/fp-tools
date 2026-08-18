@@ -25,5 +25,5 @@ plot-aggregate \
 - Static PDF or interactive HTML aggregate plots.
 - Optional aggregated signal and summary tables.
 
-See the [Bulk output example](../output-examples.md#bulk-atac-seq) and the
+See the [Bulk output example](../output-examples/bulk-atac-seq.md) and the
 [complete `plot-aggregate` reference](../../api.md#plot-aggregate).

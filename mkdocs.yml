@@ -74,7 +74,9 @@ nav:
               - pseudobulk-fragments: get-started/commands/pseudobulk-fragments.md
               - find-signature-fp: get-started/commands/find-signature-fp.md
               - pseudobulk-footprints: get-started/commands/pseudobulk-footprints.md
-      - Output examples: get-started/output-examples.md
+      - Output examples:
+          - Bulk ATAC-seq: get-started/output-examples/bulk-atac-seq.md
+          - Single-cell ATAC-seq: get-started/output-examples/single-cell-atac-seq.md
   - Output Demo: reports.md
   - GUI Demo: gui.md
   - API Reference: api.md

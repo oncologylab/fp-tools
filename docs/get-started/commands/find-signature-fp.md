@@ -30,5 +30,5 @@ find-signature-fp \
 - Cell-type and footprint-signature UMAP figures.
 - Source tables for the plotted signatures.
 
-See the [Single-cell output example](../output-examples.md#single-cell-atac-seq)
+See the [Single-cell output example](../output-examples/single-cell-atac-seq.md)
 and the [complete `find-signature-fp` reference](../../api.md#find-signature-fp).

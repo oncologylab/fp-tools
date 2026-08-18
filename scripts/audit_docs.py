@@ -42,7 +42,8 @@ GET_STARTED_PAGES = (
     "get-started/workflows/single-cell/",
     "get-started/workflows/de-novo-motif-discovery/",
     *(f"get-started/commands/{command}/" for command in COMMAND_PAGES),
-    "get-started/output-examples/",
+    "get-started/output-examples/bulk-atac-seq/",
+    "get-started/output-examples/single-cell-atac-seq/",
 )
 PAGES = (
     *GET_STARTED_PAGES,
@@ -54,13 +55,17 @@ PAGES = (
     "ENCODE-Cancer-Cell-lines-Footprinting/",
 )
 VIEWPORTS = ((1440, 1000), (1280, 720), (390, 844))
-REPORT_IFRAME_PAGES = {"reports/", "get-started/output-examples/"}
+REPORT_IFRAME_PAGES = {
+    "reports/",
+    "get-started/output-examples/bulk-atac-seq/",
+}
 DARK_MODE_PAGES = {
     "",
     "get-started/tool-overview/",
     "get-started/workflows/bulk-atac-seq/",
     "get-started/commands/diff-footprints/",
-    "get-started/output-examples/",
+    "get-started/output-examples/bulk-atac-seq/",
+    "get-started/output-examples/single-cell-atac-seq/",
     "api/",
     "gui/",
     "reports/",

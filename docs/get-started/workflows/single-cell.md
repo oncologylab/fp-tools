@@ -33,4 +33,4 @@ pseudobulk-footprints \
   --outdir project/pseudobulk
 ```
 
-See the [Single-cell output example](../output-examples.md#single-cell-atac-seq).
+See the [Single-cell output example](../output-examples/single-cell-atac-seq.md).

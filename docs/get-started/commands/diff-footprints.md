@@ -30,5 +30,5 @@ diff-footprints \
 - Replicate score matrices and diagnostics when replicates are present.
 - A portable interactive HTML report with volcano and aggregate views.
 
-See the [Bulk output example](../output-examples.md#bulk-atac-seq) and the
+See the [Bulk output example](../output-examples/bulk-atac-seq.md) and the
 [complete `diff-footprints` reference](../../api.md#diff-footprints).

@@ -70,4 +70,4 @@ diff-footprints \
 ```
 
 The comparison produces motif statistics, aggregate profiles, and a portable
-interactive HTML report. See the [Bulk output example](../output-examples.md#bulk-atac-seq).
+interactive HTML report. See the [Bulk output example](../output-examples/bulk-atac-seq.md).

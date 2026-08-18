@@ -149,7 +149,8 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "Home: index.md",
             "Installation: get-started/installation.md",
             "Tool overview: get-started/tool-overview.md",
-            "Output examples: get-started/output-examples.md",
+            "Bulk ATAC-seq: get-started/output-examples/bulk-atac-seq.md",
+            "Single-cell ATAC-seq: get-started/output-examples/single-cell-atac-seq.md",
         ]:
             self.assertIn(required, nav)
         self.assertIn("font: false", config)
@@ -197,8 +198,19 @@ class DocsEntryPointContractTest(unittest.TestCase):
         index = (ROOT / "docs" / "index.md").read_text(encoding="utf-8")
         reports = (ROOT / "docs" / "reports.md").read_text(encoding="utf-8")
         gui = (ROOT / "docs" / "gui.md").read_text(encoding="utf-8")
-        examples = (
-            ROOT / "docs" / "get-started" / "output-examples.md"
+        bulk_example = (
+            ROOT
+            / "docs"
+            / "get-started"
+            / "output-examples"
+            / "bulk-atac-seq.md"
+        ).read_text(encoding="utf-8")
+        single_cell_example = (
+            ROOT
+            / "docs"
+            / "get-started"
+            / "output-examples"
+            / "single-cell-atac-seq.md"
         ).read_text(encoding="utf-8")
         gui_demo = (
             ROOT / "docs" / "demos" / "gui" / "fp-tools-gui-static-demo.html"
@@ -231,10 +243,16 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertNotIn("interface_gui_home.png", gui)
         self.assertNotIn("fp-demo-callout", reports + gui)
         self.assertIn(
-            'src="../../ENCODE-Cancer-Cell-lines-Footprinting/"', examples
+            'src="../../../ENCODE-Cancer-Cell-lines-Footprinting/"', bulk_example
         )
-        self.assertIn("pbmc5k_single_cell_footprinting_summary.svg", examples)
-        self.assertTrue(
+        self.assertIn("pbmc5k_signature_heatmap.png", single_cell_example)
+        self.assertIn("pbmc5k_eight_marker_umaps.png", single_cell_example)
+        for asset in [
+            "pbmc5k_signature_heatmap.png",
+            "pbmc5k_eight_marker_umaps.png",
+        ]:
+            self.assertTrue((ROOT / "docs" / "assets" / asset).exists())
+        self.assertFalse(
             (
                 ROOT
                 / "docs"
@@ -242,6 +260,17 @@ class DocsEntryPointContractTest(unittest.TestCase):
                 / "pbmc5k_single_cell_footprinting_summary.svg"
             ).exists()
         )
+        for marker in [
+            "STAT6",
+            "FOSB",
+            "CEBPA",
+            "IRF8",
+            "RELA",
+            "ZNF683",
+            "NR4A1",
+            "SMAD3",
+        ]:
+            self.assertIn(marker, single_cell_example)
         self.assertFalse(
             (ROOT / "docs" / "assets" / "interface_diff_footprints_html.png").exists()
         )
