@@ -13,9 +13,9 @@ motif-summary \
 
 ## Primary inputs
 
-- Motif-discovery output in MEME-compatible text format.
-- Optional Tomtom match table.
-- Output table and optional HTML paths.
+- `--meme-txt` — MEME-compatible motif-discovery output.
+- `--tomtom-tsv` — optional Tomtom known-motif matches.
+- `--out-tsv` — compact output table for discovered motifs and matches.
 
 ## Main outputs
 

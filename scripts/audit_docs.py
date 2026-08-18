@@ -305,7 +305,7 @@ def audit(site_dir: Path) -> None:
                                 f"{label}: Get Started navigation is not visible"
                             )
                         secondary = page.locator(".md-sidebar--secondary")
-                        if not secondary.is_visible():
+                        if relative and not secondary.is_visible():
                             failures.append(f"{label}: page TOC is not visible")
                         if page.locator(".md-footer__link--next").count() != 1:
                             failures.append(f"{label}: next-page footer link is missing")
@@ -320,6 +320,21 @@ def audit(site_dir: Path) -> None:
                             failures.append(
                                 f"{label}: unexpected body font family {family}"
                             )
+                    if relative in {"api/", "gui/", "reports/"} and width >= 1280:
+                        primary = page.locator(".md-sidebar--primary")
+                        if primary.is_visible():
+                            failures.append(f"{label}: redundant primary navigation is visible")
+                    if relative == "api/" and width >= 1280:
+                        secondary = page.locator(".md-sidebar--secondary")
+                        content = page.locator(".md-content")
+                        if not secondary.is_visible():
+                            failures.append(f"{label}: API table of contents is not visible")
+                        elif secondary.bounding_box()["x"] >= content.bounding_box()["x"]:
+                            failures.append(f"{label}: API table of contents is not on the left")
+                    if relative in {"gui/", "reports/"} and width >= 1280:
+                        secondary = page.locator(".md-sidebar--secondary")
+                        if secondary.is_visible():
+                            failures.append(f"{label}: redundant page TOC is visible")
                     if console_errors:
                         failures.append(f"{label}: console errors {console_errors}")
                     meaningful_failures = [

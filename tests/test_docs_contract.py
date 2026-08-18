@@ -119,6 +119,20 @@ class DocsEntryPointContractTest(unittest.TestCase):
             self.assertIn(f"../../api.md#{command}", content)
             self.assertIn(f"commands/{command}.md", overview)
 
+            example = content.split("## Example command", 1)[1].split(
+                "## Primary inputs", 1
+            )[0]
+            primary_inputs = content.split("## Primary inputs", 1)[1].split(
+                "## Main outputs", 1
+            )[0]
+            example_flags = set(re.findall(r"--[a-z0-9-]+", example))
+            documented_flags = set(re.findall(r"--[a-z0-9-]+", primary_inputs))
+            self.assertEqual(
+                documented_flags,
+                example_flags,
+                f"{command} should explain exactly the flags shown in its example",
+            )
+
     def test_get_started_navigation_preserves_four_top_level_tabs(self):
         config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
         nav = config.split("nav:\n", 1)[1].split("\nmarkdown_extensions:", 1)[0]
@@ -135,10 +149,19 @@ class DocsEntryPointContractTest(unittest.TestCase):
         ]:
             self.assertIn(required, nav)
         self.assertIn("font: false", config)
+        self.assertIn("toc_depth: 3", config)
+        self.assertIn("javascripts/layout.js", config)
         styles = (ROOT / "docs" / "stylesheets" / "extra.css").read_text(
             encoding="utf-8"
         )
         self.assertIn('"Helvetica Neue", Helvetica, Arial, sans-serif', styles)
+
+        reports = (ROOT / "docs" / "reports.md").read_text(encoding="utf-8")
+        gui = (ROOT / "docs" / "gui.md").read_text(encoding="utf-8")
+        api = (ROOT / "docs" / "api.md").read_text(encoding="utf-8")
+        self.assertIn("  - navigation", reports)
+        self.assertIn("  - navigation", gui)
+        self.assertIn("  - navigation", api)
 
     def test_public_site_docs_use_current_wording(self):
         public_docs = "\n".join(
@@ -181,8 +204,12 @@ class DocsEntryPointContractTest(unittest.TestCase):
             / "diff_footprints_K562_HepG2.html"
         ).read_text(encoding="utf-8")
         self.assertIn("fp_tools_logo_horizontal.svg", self.readme)
-        self.assertIn("# fp-tools", index)
+        self.assertIn("# ATAC-seq footprinting and regulatory motif analysis", index)
         self.assertIn("fp_tools_logo_horizontal.svg", index)
+        self.assertLess(
+            index.index("fp_tools_logo_horizontal.svg"),
+            index.index("# ATAC-seq footprinting and regulatory motif analysis"),
+        )
         self.assertNotIn("fp-hero", index)
         self.assertNotIn("Where To Go Next", index)
         self.assertIn(

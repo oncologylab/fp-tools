@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # API Reference
 
 The public interface of `fp-tools` is command-first. Each command below includes the required inputs, main outputs, a practical example, and the complete option reference generated from the current `--help` output.

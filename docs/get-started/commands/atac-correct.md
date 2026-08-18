@@ -15,9 +15,10 @@ atac-correct \
 
 ## Primary inputs
 
-- One or more ATAC-seq BAM files or a project sample table.
-- Reference genome FASTA.
-- Shared or per-sample peak BED files and an optional blacklist.
+- `--sample-table` — sample names, BAM files, and peak BED files for one or more libraries.
+- `--genome` — reference genome FASTA.
+- `--blacklist` — genomic regions excluded from signal correction.
+- `--outdir` — project directory for corrected tracks and QC outputs.
 
 ## Main outputs
 

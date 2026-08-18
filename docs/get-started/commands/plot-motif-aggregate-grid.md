@@ -16,9 +16,11 @@ plot-motif-aggregate-grid \
 
 ## Primary inputs
 
-- A `review-multi-comparisons` HTML report or project directory.
-- Optional motif ordering, page size, flank width, and missing-profile settings.
-- Optional RNA expression tables and motif-to-gene mapping.
+- `--outdir` — project directory containing the multi-comparison review report.
+- `--output` — output PDF path.
+- `--source-tsv` — source-data table written with the PDF.
+- `--rows-per-page` — maximum motif rows on each PDF page.
+- `--fill-missing-profiles` — complete aggregate profiles missing from the report.
 
 ## Main outputs
 

@@ -19,9 +19,14 @@ pseudobulk-footprints \
 
 ## Primary inputs
 
-- Single-cell fragments or a barcode-tagged BAM plus cell annotations.
-- Grouping column, genome, genome sizes, and accessible peaks.
-- Optional motif database, signature-site directory, and H5AD embedding.
+- `--fragments` — single-cell fragment file.
+- `--annotations` — barcode-level cell annotation table.
+- `--group-by` — annotation column used to define pseudobulk groups.
+- `--genome-sizes` — chromosome sizes used to write grouped signal tracks.
+- `--genome` — reference genome FASTA.
+- `--peaks` — accessible-region BED file.
+- `--motif-db` — built-in motif database name.
+- `--outdir` — directory for pseudobulk tracks, motif results, and reports.
 
 ## Main outputs
 

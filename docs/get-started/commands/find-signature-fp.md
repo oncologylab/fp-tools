@@ -17,9 +17,12 @@ find-signature-fp \
 
 ## Primary inputs
 
-- Cell annotations, fragments, and a single-cell H5AD containing an embedding.
-- Motif-site directories and result tables from prior footprint analysis.
-- Optional marker definitions and KNN settings.
+- `--annotations` — barcode-level cell annotation table.
+- `--fragments` — indexed single-cell fragment file.
+- `--h5ad` — single-cell object containing the spectral or UMAP embedding.
+- `--tf-site-dir` — motif-site directories from the footprint analysis.
+- `--all-motif-results` — completed motif-level differential result table.
+- `--outdir` — directory for per-cell scores, heatmaps, and UMAP figures.
 
 ## Main outputs
 

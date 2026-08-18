@@ -15,9 +15,10 @@ call-footprints \
 
 ## Primary inputs
 
-- One or more corrected cut-site bigWigs.
-- BED regions in which footprint scores will be calculated.
-- Optional footprint-window, smoothing, and multiscale settings.
+- `--signals` — one or more corrected cut-site bigWig tracks.
+- `--sample-names` — labels corresponding to the input tracks.
+- `--regions` — BED regions in which footprint scores are calculated.
+- `--sample-output-root` — root directory for per-sample footprint outputs.
 
 ## Main outputs
 

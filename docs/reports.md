@@ -1,3 +1,9 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 # Output Demo with ENCODE Cancer Cell Lines
 
 Select any two of the seven cell lines to inspect differential footprints,

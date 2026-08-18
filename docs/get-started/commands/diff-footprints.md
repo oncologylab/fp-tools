@@ -17,9 +17,12 @@ diff-footprints \
 
 ## Primary inputs
 
-- A project sample/comparison table, footprint bigWigs, or reusable `match-motifs` sample folders.
-- Condition labels, with repeated labels defining biological replicates.
-- Reference genome, accessible peaks, and motif database.
+- `--sample-table` — samples, conditions, footprint tracks, and reusable motif-result folders.
+- `--comparison-table` — condition pairs to compare.
+- `--genome` — reference genome FASTA.
+- `--peaks` — accessible-region BED file.
+- `--motif-db` — built-in motif database name.
+- `--outdir` — project directory for statistics, figures, and HTML reports.
 
 ## Main outputs
 

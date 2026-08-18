@@ -14,9 +14,9 @@ prepare-atac \
 
 ## Primary inputs
 
-- A TSV or CSV sample sheet containing public accessions, local FASTQ paths, or HTTPS FASTQ links.
-- A named `hg38` or `mm10` reference, or a configured custom genome.
-- Optional YAML settings for trimming, alignment, filtering, peak calling, QC, and compute resources.
+- `--samples` — TSV or CSV sample sheet containing public accessions, local FASTQ paths, or HTTPS FASTQ links.
+- `--genome` — named `hg38` or `mm10` reference, or a configured custom genome.
+- `--outdir` — project directory for processed data and QC outputs.
 
 ## Main outputs
 

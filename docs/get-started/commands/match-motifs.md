@@ -17,9 +17,12 @@ match-motifs \
 
 ## Primary inputs
 
-- Footprint score bigWigs.
-- Reference genome FASTA and accessible-region BED file.
-- A built-in motif database or custom motif files.
+- `--signals` — footprint score bigWig tracks.
+- `--sample-names` — labels corresponding to the input tracks.
+- `--genome` — reference genome FASTA.
+- `--peaks` — accessible-region BED file searched for motif sites.
+- `--motif-db` — built-in motif database name.
+- `--sample-output-root` — root directory for per-sample motif results.
 
 ## Main outputs
 

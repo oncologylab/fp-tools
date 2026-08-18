@@ -14,9 +14,9 @@ fp-tools-score-variants \
 
 ## Primary inputs
 
-- Variants in VCF or BED-like form.
-- Reference genome FASTA.
-- Optional footprint tracks, candidate intervals, motifs, or a trained model.
+- `--variants` — variants in VCF or BED-like form.
+- `--genome` — reference genome FASTA.
+- `--out` — output TSV path.
 
 ## Main outputs
 

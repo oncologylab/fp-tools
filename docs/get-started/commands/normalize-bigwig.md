@@ -17,9 +17,12 @@ normalize-bigwig \
 
 ## Primary inputs
 
-- A project sample table or explicit bigWig paths.
-- Shared background BED regions.
-- Normalization method, summary statistic, and across-sample target.
+- `--sample-table` — samples and input bigWig tracks.
+- `--background` — shared BED regions used to estimate scaling factors.
+- `--outdir` — project directory for normalized tracks and statistics.
+- `--method` — normalization method; the example uses `background-scale`.
+- `--stat` — background summary statistic; the example uses `q95`.
+- `--target` — across-sample target; the example uses the median.
 
 ## Main outputs
 

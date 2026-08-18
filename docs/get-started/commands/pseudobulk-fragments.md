@@ -17,9 +17,12 @@ pseudobulk-fragments \
 
 ## Primary inputs
 
-- Single-cell fragment TSV or TSV.GZ file.
-- Cell annotation table and grouping column.
-- Genome sizes when cut-site bigWigs or pseudo-BAMs are requested.
+- `--fragments` — single-cell fragment TSV or TSV.GZ file.
+- `--annotations` — barcode-level cell annotation table.
+- `--group-by` — annotation column used to define pseudobulk groups.
+- `--genome-sizes` — chromosome sizes used to write signal tracks.
+- `--write-cutsite-bigwigs` — write cut-site bigWigs for retained groups.
+- `--outdir` — directory for grouped fragments, tracks, and QC outputs.
 
 ## Main outputs
 

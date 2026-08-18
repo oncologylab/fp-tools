@@ -17,9 +17,12 @@ motif-discovery \
 
 ## Primary inputs
 
-- Candidate BED intervals or candidate sequences in FASTA format.
-- Reference genome when sequences must be extracted from BED intervals.
-- MEME, STREME, or DREME and an optional known-motif database.
+- `--candidates` — candidate-footprint BED intervals.
+- `--genome` — reference genome used to extract candidate sequences.
+- `--flank` — bases included on each side of a candidate center.
+- `--method` — motif-discovery method; the example uses STREME.
+- `--known-motif-db` — optional known-motif database for Tomtom matching.
+- `--outdir` — directory for candidate FASTA files and discovery results.
 
 ## Main outputs
 

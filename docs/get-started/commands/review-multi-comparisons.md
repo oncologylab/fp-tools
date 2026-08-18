@@ -16,9 +16,11 @@ review-multi-comparisons \
 
 ## Primary inputs
 
-- One or more `diff-footprints` HTML reports or a project directory.
-- Optional comparison labels and initial panel count.
-- Optional project data for completing aggregate profiles not embedded in the source reports.
+- `--outdir` — project directory containing differential-footprint reports.
+- `--display-panels` — number of comparison panels shown initially.
+- `--aggregate-legends` — initial aggregate-legend visibility.
+- `--recompute-missing-aggregate-profiles` — calculate profiles absent from source reports.
+- `--cores` — worker processes used for profile calculation.
 
 ## Main outputs
 

@@ -1,9 +1,15 @@
-# fp-tools
+---
+hide:
+  - toc
+---
 
 <div class="fp-home" markdown="1">
+<div class="fp-home-logo">
+  <img src="assets/fp_tools_logo_horizontal.svg" alt="fp-tools">
+</div>
 <div class="fp-home-copy" markdown="1">
 
-## ATAC-seq footprinting and regulatory motif analysis
+# ATAC-seq footprinting and regulatory motif analysis
 
 `fp-tools` provides command-line and optional browser workflows for bulk and
 single-cell ATAC-seq footprinting. It connects bias correction, footprint
@@ -25,8 +31,5 @@ scoring, motif analysis, replicate comparisons, and reusable reports.
 &nbsp;·&nbsp;
 [View the tool overview](get-started/tool-overview.md){ .fp-text-link }
 
-</div>
-<div class="fp-home-logo">
-  <img src="assets/fp_tools_logo_horizontal.svg" alt="fp-tools">
 </div>
 </div>

@@ -15,9 +15,10 @@ plot-aggregate \
 
 ## Primary inputs
 
-- Signal bigWigs.
-- Motif-site BED files, other region BED files, or a `match-motifs` directory.
-- Optional labels, site-set selection, flank size, and normalization mode.
+- `--sample-table` — samples, conditions, and signal bigWig tracks.
+- `--motifs` — motif names or identifiers to plot.
+- `--site-set` — motif-site set; the example uses bound sites.
+- `--outdir` — project directory containing motif results and receiving plots.
 
 ## Main outputs
 

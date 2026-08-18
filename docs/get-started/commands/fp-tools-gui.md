@@ -14,9 +14,9 @@ fp-tools-gui \
 
 ## Primary inputs
 
-- Optional host and port settings.
-- A directory for GUI-managed runs.
-- User-selected command inputs and parameters in the browser.
+- `--host` — interface on which the GUI listens.
+- `--port` — fixed browser port.
+- `--run-dir` — directory for GUI-managed configurations and runs.
 
 ## Main outputs
 

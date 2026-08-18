@@ -11,8 +11,7 @@ run-workflow \
 
 ## Primary inputs
 
-- A YAML configuration exported by the GUI or written directly.
-- Optional tool filters and run-metadata directory.
+- `--config` — command-compatible YAML configuration exported by the GUI or written directly.
 
 ## Main outputs
 
