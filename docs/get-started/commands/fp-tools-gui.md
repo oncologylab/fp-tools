@@ -1,4 +1,4 @@
-# `fp-tools-gui`
+# [`fp-tools-gui`](../../api.md#fp-tools-gui)
 
 Launch the optional browser interface for configuring and running fp-tools
 commands.

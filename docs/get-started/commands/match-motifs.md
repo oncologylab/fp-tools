@@ -1,4 +1,4 @@
-# `match-motifs`
+# [`match-motifs`](../../api.md#match-motifs)
 
 Scan accessible regions for motif sites and summarize their footprint scores
 for one or more samples.

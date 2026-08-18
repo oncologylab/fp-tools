@@ -1,4 +1,4 @@
-# `motif-summary`
+# [`motif-summary`](../../api.md#motif-summary)
 
 Summarize MEME, STREME, DREME, and Tomtom results in a compact report.
 

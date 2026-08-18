@@ -1,4 +1,4 @@
-# `plot-aggregate`
+# [`plot-aggregate`](../../api.md#plot-aggregate)
 
 Plot average signal around motif sites or other genomic regions as a static
 figure or interactive HTML report.

@@ -112,7 +112,11 @@ class DocsEntryPointContractTest(unittest.TestCase):
         for command in self.project_scripts:
             page = command_dir / f"{command}.md"
             content = page.read_text(encoding="utf-8")
-            self.assertIn(f"# `{command}`", content)
+            self.assertIn(
+                f"# [`{command}`](../../api.md#{command})",
+                content,
+                f"{command} page title should link to its complete API reference",
+            )
             self.assertIn("## Example command", content)
             self.assertIn("## Primary inputs", content)
             self.assertIn("## Main outputs", content)
@@ -155,6 +159,9 @@ class DocsEntryPointContractTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn('"Helvetica Neue", Helvetica, Arial, sans-serif', styles)
+        self.assertRegex(styles, r"\.md-typeset h1 \{[^}]*font-size: 1\.25rem;")
+        self.assertRegex(styles, r"\.md-typeset h2 \{[^}]*font-size: 1rem;")
+        self.assertRegex(styles, r"\.md-typeset h3 \{[^}]*font-size: 0\.9rem;")
 
         reports = (ROOT / "docs" / "reports.md").read_text(encoding="utf-8")
         gui = (ROOT / "docs" / "gui.md").read_text(encoding="utf-8")

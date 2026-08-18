@@ -1,4 +1,4 @@
-# `find-signature-fp`
+# [`find-signature-fp`](../../api.md#find-signature-fp)
 
 Calculate and plot per-cell footprint signatures from completed pseudobulk or
 motif analyses.

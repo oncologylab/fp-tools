@@ -1,4 +1,4 @@
-# `motif-discovery`
+# [`motif-discovery`](../../api.md#motif-discovery)
 
 Prepare or run de novo motif discovery from candidate footprint intervals or
 an existing FASTA file.

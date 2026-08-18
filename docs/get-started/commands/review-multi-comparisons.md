@@ -1,4 +1,4 @@
-# `review-multi-comparisons`
+# [`review-multi-comparisons`](../../api.md#review-multi-comparisons)
 
 Combine multiple differential-footprint reports into one interactive review
 page.

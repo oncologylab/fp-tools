@@ -1,4 +1,4 @@
-# `call-footprints`
+# [`call-footprints`](../../api.md#call-footprints)
 
 Calculate continuous footprint score tracks from corrected ATAC-seq cut-site
 signal.

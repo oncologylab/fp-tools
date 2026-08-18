@@ -1,4 +1,4 @@
-# `diff-footprints`
+# [`diff-footprints`](../../api.md#diff-footprints)
 
 Compare motif-associated footprint scores across conditions, including
 replicate-supported contrasts.

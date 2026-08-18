@@ -1,4 +1,4 @@
-# `fp-tools-score-variants`
+# [`fp-tools-score-variants`](../../api.md#fp-tools-score-variants)
 
 Annotate genomic variants with footprint overlap, local sequence changes, and
 optional motif or model score changes.

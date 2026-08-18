@@ -1,4 +1,4 @@
-# `plot-motif-aggregate-grid`
+# [`plot-motif-aggregate-grid`](../../api.md#plot-motif-aggregate-grid)
 
 Export motif-by-comparison aggregate profiles from a multi-comparison review
 report.

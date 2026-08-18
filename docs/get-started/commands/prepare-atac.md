@@ -1,4 +1,4 @@
-# `prepare-atac`
+# [`prepare-atac`](../../api.md#prepare-atac)
 
 Prepare public or local ATAC-seq reads as the filtered alignments, peaks,
 coverage tracks, and QC files needed for footprint analysis.

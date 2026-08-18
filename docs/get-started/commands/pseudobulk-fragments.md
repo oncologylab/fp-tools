@@ -1,4 +1,4 @@
-# `pseudobulk-fragments`
+# [`pseudobulk-fragments`](../../api.md#pseudobulk-fragments)
 
 Group single-cell ATAC fragments by a cell-annotation column to create
 pseudobulk inputs.

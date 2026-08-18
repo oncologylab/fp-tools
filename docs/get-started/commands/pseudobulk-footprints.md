@@ -1,4 +1,4 @@
-# `pseudobulk-footprints`
+# [`pseudobulk-footprints`](../../api.md#pseudobulk-footprints)
 
 Run grouping, bias correction, footprint scoring, motif analysis, and optional
 per-cell signature reporting for single-cell ATAC-seq data.

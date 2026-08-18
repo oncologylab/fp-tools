@@ -1,4 +1,4 @@
-# `run-workflow`
+# [`run-workflow`](../../api.md#run-workflow)
 
 Run one or more fp-tools jobs from a reusable YAML configuration.
 

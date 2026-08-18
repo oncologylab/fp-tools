@@ -1,4 +1,4 @@
-# `atac-correct`
+# [`atac-correct`](../../api.md#atac-correct)
 
 Estimate and correct Tn5 sequence bias in ATAC-seq cut-site signal before
 footprint scoring.

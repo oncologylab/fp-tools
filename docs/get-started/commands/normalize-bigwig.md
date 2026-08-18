@@ -1,4 +1,4 @@
-# `normalize-bigwig`
+# [`normalize-bigwig`](../../api.md#normalize-bigwig)
 
 Normalize multiple bigWig tracks with scale estimates calculated from the same
 background regions.
