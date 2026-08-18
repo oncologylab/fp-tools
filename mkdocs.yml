@@ -6,6 +6,7 @@ repo_name: oncologylab/fp-tools
 
 theme:
   name: material
+  font: false
   logo: assets/fp_tools_logo_icon.svg
   favicon: assets/fp_tools_logo_icon.svg
   features:
@@ -39,7 +40,38 @@ extra_css:
   - stylesheets/extra.css
 
 nav:
-  - Get Started: index.md
+  - Get Started:
+      - Home: index.md
+      - Installation: get-started/installation.md
+      - Tool overview: get-started/tool-overview.md
+      - Workflows:
+          - Bulk ATAC-seq: get-started/workflows/bulk-atac-seq.md
+          - Single-cell: get-started/workflows/single-cell.md
+          - Optional de novo motif discovery: get-started/workflows/de-novo-motif-discovery.md
+      - Commands:
+          - Core analysis:
+              - prepare-atac: get-started/commands/prepare-atac.md
+              - atac-correct: get-started/commands/atac-correct.md
+              - call-footprints: get-started/commands/call-footprints.md
+              - match-motifs: get-started/commands/match-motifs.md
+              - diff-footprints: get-started/commands/diff-footprints.md
+              - normalize-bigwig: get-started/commands/normalize-bigwig.md
+          - Visualization and review:
+              - plot-aggregate: get-started/commands/plot-aggregate.md
+              - review-multi-comparisons: get-started/commands/review-multi-comparisons.md
+              - plot-motif-aggregate-grid: get-started/commands/plot-motif-aggregate-grid.md
+          - Workflow and interface:
+              - run-workflow: get-started/commands/run-workflow.md
+              - fp-tools-gui: get-started/commands/fp-tools-gui.md
+          - Motifs and variants:
+              - motif-discovery: get-started/commands/motif-discovery.md
+              - motif-summary: get-started/commands/motif-summary.md
+              - fp-tools-score-variants: get-started/commands/fp-tools-score-variants.md
+          - Single-cell:
+              - pseudobulk-fragments: get-started/commands/pseudobulk-fragments.md
+              - find-signature-fp: get-started/commands/find-signature-fp.md
+              - pseudobulk-footprints: get-started/commands/pseudobulk-footprints.md
+      - Output examples: get-started/output-examples.md
   - Output Demo: reports.md
   - GUI Demo: gui.md
   - API Reference: api.md

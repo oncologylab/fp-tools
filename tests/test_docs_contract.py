@@ -35,12 +35,9 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.data = _load_pyproject()
         self.project_scripts = self.data["project"]["scripts"]
         self.readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.markdown_paths = sorted((ROOT / "docs").rglob("*.md"))
         self.site_docs = "\n".join(
-            (ROOT / path).read_text(encoding="utf-8")
-            for path in [
-                "docs/index.md",
-                "docs/api.md",
-            ]
+            path.read_text(encoding="utf-8") for path in self.markdown_paths
         )
         self.api_reference = (ROOT / "docs" / "api.md").read_text(encoding="utf-8")
 
@@ -103,6 +100,46 @@ class DocsEntryPointContractTest(unittest.TestCase):
             self.assertIn(f"usage: {command}", self.api_reference)
         self.assertNotIn("::: fp_tools", self.api_reference)
 
+    def test_each_public_command_has_a_concise_get_started_page(self):
+        overview = (ROOT / "docs" / "get-started" / "tool-overview.md").read_text(
+            encoding="utf-8"
+        )
+        command_dir = ROOT / "docs" / "get-started" / "commands"
+        self.assertEqual(
+            {path.stem for path in command_dir.glob("*.md")},
+            set(self.project_scripts),
+        )
+        for command in self.project_scripts:
+            page = command_dir / f"{command}.md"
+            content = page.read_text(encoding="utf-8")
+            self.assertIn(f"# `{command}`", content)
+            self.assertIn("## Example command", content)
+            self.assertIn("## Primary inputs", content)
+            self.assertIn("## Main outputs", content)
+            self.assertIn(f"../../api.md#{command}", content)
+            self.assertIn(f"commands/{command}.md", overview)
+
+    def test_get_started_navigation_preserves_four_top_level_tabs(self):
+        config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+        nav = config.split("nav:\n", 1)[1].split("\nmarkdown_extensions:", 1)[0]
+        top_level = re.findall(r"^  - ([^:]+):", nav, flags=re.MULTILINE)
+        self.assertEqual(
+            top_level,
+            ["Get Started", "Output Demo", "GUI Demo", "API Reference"],
+        )
+        for required in [
+            "Home: index.md",
+            "Installation: get-started/installation.md",
+            "Tool overview: get-started/tool-overview.md",
+            "Output examples: get-started/output-examples.md",
+        ]:
+            self.assertIn(required, nav)
+        self.assertIn("font: false", config)
+        styles = (ROOT / "docs" / "stylesheets" / "extra.css").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('"Helvetica Neue", Helvetica, Arial, sans-serif', styles)
+
     def test_public_site_docs_use_current_wording(self):
         public_docs = "\n".join(
             (ROOT / path).read_text(encoding="utf-8")
@@ -130,6 +167,9 @@ class DocsEntryPointContractTest(unittest.TestCase):
         index = (ROOT / "docs" / "index.md").read_text(encoding="utf-8")
         reports = (ROOT / "docs" / "reports.md").read_text(encoding="utf-8")
         gui = (ROOT / "docs" / "gui.md").read_text(encoding="utf-8")
+        examples = (
+            ROOT / "docs" / "get-started" / "output-examples.md"
+        ).read_text(encoding="utf-8")
         gui_demo = (
             ROOT / "docs" / "demos" / "gui" / "fp-tools-gui-static-demo.html"
         ).read_text(encoding="utf-8")
@@ -141,7 +181,8 @@ class DocsEntryPointContractTest(unittest.TestCase):
             / "diff_footprints_K562_HepG2.html"
         ).read_text(encoding="utf-8")
         self.assertIn("fp_tools_logo_horizontal.svg", self.readme)
-        self.assertIn("# Get Started", index)
+        self.assertIn("# fp-tools", index)
+        self.assertIn("fp_tools_logo_horizontal.svg", index)
         self.assertNotIn("fp-hero", index)
         self.assertNotIn("Where To Go Next", index)
         self.assertIn(
@@ -155,6 +196,18 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertIn('class="fp-live-demo', gui)
         self.assertNotIn("interface_gui_home.png", gui)
         self.assertNotIn("fp-demo-callout", reports + gui)
+        self.assertIn(
+            'src="../../ENCODE-Cancer-Cell-lines-Footprinting/"', examples
+        )
+        self.assertIn("pbmc5k_single_cell_footprinting_summary.svg", examples)
+        self.assertTrue(
+            (
+                ROOT
+                / "docs"
+                / "assets"
+                / "pbmc5k_single_cell_footprinting_summary.svg"
+            ).exists()
+        )
         self.assertFalse(
             (ROOT / "docs" / "assets" / "interface_diff_footprints_html.png").exists()
         )
@@ -171,6 +224,8 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertNotIn("Reproducible regulatory genomics", index)
         self.assertNotIn("Where To Go Next", index)
         self.assertNotIn("fp-hero", index)
+        self.assertLess(len(index.split()), 190)
+        self.assertIn("ATAC-seq footprinting and regulatory motif analysis", index)
         self.assertIn("Output demo with ENCODE cancer cell lines", self.readme)
         self.assertIn(
             "https://oncologylab.github.io/fp-tools/demos/gui/"
@@ -209,7 +264,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
             ROOT / "AGENTS.md",
             ROOT / "DEV_PLAN.md",
             ROOT / "RELEASE_CHECKLIST.md",
-            *sorted((ROOT / "docs").glob("*.md")),
+            *sorted((ROOT / "docs").rglob("*.md")),
             *sorted((ROOT / "benchmarks").glob("*.md")),
         ]
         pattern = re.compile(r"\[[^\]]+\]\((?!https?://|mailto:|#)([^)#]+)")

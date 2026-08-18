@@ -11,11 +11,41 @@ import socketserver
 import threading
 from pathlib import Path
 
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 
-PAGES = (
+COMMAND_PAGES = (
+    "prepare-atac",
+    "atac-correct",
+    "call-footprints",
+    "match-motifs",
+    "diff-footprints",
+    "normalize-bigwig",
+    "plot-aggregate",
+    "review-multi-comparisons",
+    "plot-motif-aggregate-grid",
+    "run-workflow",
+    "fp-tools-gui",
+    "motif-discovery",
+    "motif-summary",
+    "fp-tools-score-variants",
+    "pseudobulk-fragments",
+    "find-signature-fp",
+    "pseudobulk-footprints",
+)
+GET_STARTED_PAGES = (
     "",
+    "get-started/installation/",
+    "get-started/tool-overview/",
+    "get-started/workflows/bulk-atac-seq/",
+    "get-started/workflows/single-cell/",
+    "get-started/workflows/de-novo-motif-discovery/",
+    *(f"get-started/commands/{command}/" for command in COMMAND_PAGES),
+    "get-started/output-examples/",
+)
+PAGES = (
+    *GET_STARTED_PAGES,
     "api/",
     "gui/",
     "reports/",
@@ -24,6 +54,17 @@ PAGES = (
     "ENCODE-Cancer-Cell-lines-Footprinting/",
 )
 VIEWPORTS = ((1440, 1000), (1280, 720), (390, 844))
+REPORT_IFRAME_PAGES = {"reports/", "get-started/output-examples/"}
+DARK_MODE_PAGES = {
+    "",
+    "get-started/tool-overview/",
+    "get-started/workflows/bulk-atac-seq/",
+    "get-started/commands/diff-footprints/",
+    "get-started/output-examples/",
+    "api/",
+    "gui/",
+    "reports/",
+}
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -135,7 +176,7 @@ def audit(site_dir: Path) -> None:
     with serve(site_dir) as base_url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         for relative in PAGES:
-            schemes = ("light", "dark") if relative in {"", "api/", "gui/", "reports/"} else ("light",)
+            schemes = ("light", "dark") if relative in DARK_MODE_PAGES else ("light",)
             for width, height in VIEWPORTS:
                 for scheme in schemes:
                     page = browser.new_page(viewport={"width": width, "height": height})
@@ -181,7 +222,7 @@ def audit(site_dir: Path) -> None:
                             state="visible", timeout=60_000
                         )
                     embedded_frame = None
-                    if relative == "reports/":
+                    if relative in REPORT_IFRAME_PAGES:
                         selector = "iframe.fp-report-demo"
                         iframe = page.locator(selector)
                         iframe.wait_for(state="attached", timeout=60_000)
@@ -189,9 +230,15 @@ def audit(site_dir: Path) -> None:
                         handle = iframe.element_handle()
                         embedded_frame = handle.content_frame() if handle else None
                         if embedded_frame is not None:
-                            embedded_frame.locator(".aggregate-panel").first.wait_for(
-                                state="visible", timeout=60_000
-                            )
+                            try:
+                                embedded_frame.locator(".aggregate-panel").first.wait_for(
+                                    state="visible", timeout=60_000
+                                )
+                            except PlaywrightTimeoutError:
+                                failures.append(
+                                    f"{relative}: embedded aggregate report timed out"
+                                )
+                                embedded_frame = None
                     if relative == "gui/":
                         selector = "iframe.fp-gui-demo"
                         iframe = page.locator(selector)
@@ -200,9 +247,13 @@ def audit(site_dir: Path) -> None:
                         handle = iframe.element_handle()
                         embedded_frame = handle.content_frame() if handle else None
                         if embedded_frame is not None:
-                            embedded_frame.locator('[data-page="home"]').wait_for(
-                                state="attached", timeout=60_000
-                            )
+                            try:
+                                embedded_frame.locator('[data-page="home"]').wait_for(
+                                    state="attached", timeout=60_000
+                                )
+                            except PlaywrightTimeoutError:
+                                failures.append(f"{relative}: embedded GUI timed out")
+                                embedded_frame = None
                     label = f"{relative or '/'} at {width}x{height} ({scheme})"
                     if response is None or response.status != 200:
                         failures.append(
@@ -247,6 +298,28 @@ def audit(site_dir: Path) -> None:
                         failures.append(
                             f"{label}: duplicate IDs {metrics['duplicateIds']}"
                         )
+                    if relative in GET_STARTED_PAGES and width >= 1280:
+                        primary = page.locator(".md-sidebar--primary")
+                        if not primary.is_visible():
+                            failures.append(
+                                f"{label}: Get Started navigation is not visible"
+                            )
+                        secondary = page.locator(".md-sidebar--secondary")
+                        if not secondary.is_visible():
+                            failures.append(f"{label}: page TOC is not visible")
+                        if page.locator(".md-footer__link--next").count() != 1:
+                            failures.append(f"{label}: next-page footer link is missing")
+                        if relative and page.locator(".md-footer__link--prev").count() != 1:
+                            failures.append(
+                                f"{label}: previous-page footer link is missing"
+                            )
+                        family = page.locator("body").evaluate(
+                            "element => getComputedStyle(element).fontFamily"
+                        )
+                        if "Helvetica" not in family and "Arial" not in family:
+                            failures.append(
+                                f"{label}: unexpected body font family {family}"
+                            )
                     if console_errors:
                         failures.append(f"{label}: console errors {console_errors}")
                     meaningful_failures = [
@@ -259,7 +332,7 @@ def audit(site_dir: Path) -> None:
                             f"{label}: failed requests {meaningful_failures}"
                         )
 
-                    if relative in {"reports/", "gui/"}:
+                    if relative in REPORT_IFRAME_PAGES | {"gui/"}:
                         if embedded_frame is None:
                             failures.append(f"{label}: interactive iframe did not load")
                         else:
@@ -324,7 +397,7 @@ def audit(site_dir: Path) -> None:
                                     f"{label}: embedded GUI route lacks aria-current"
                                 )
 
-                    if relative in {"gui/", "reports/"}:
+                    if relative in REPORT_IFRAME_PAGES | {"gui/"}:
                         frame_state = page.locator("iframe.fp-live-demo").evaluate(
                             """frame => ({
                               ready: frame.contentDocument?.readyState,
