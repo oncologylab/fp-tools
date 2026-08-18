@@ -19,6 +19,3 @@ motif statistics, logos, and aggregate profiles.
 </div>
 
 <a href="../ENCODE-Cancer-Cell-lines-Footprinting/">Open the output demo in a full page</a>
-
-The report is static after generation and supports searchable comparisons and
-editable SVG export without a Python server.
