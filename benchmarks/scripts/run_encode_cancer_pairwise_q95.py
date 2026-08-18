@@ -51,8 +51,8 @@ EXPECTED_CONDITIONS = ("A549", "HCT116", "HepG2", "K562", "MCF-7", "PC-3", "Panc
 EXPECTED_REPLICATES = {"A549": 3, "HCT116": 2, "HepG2": 3, "K562": 3, "MCF-7": 2, "PC-3": 2, "Panc1": 2}
 EXPECTED_MOTIFS = 1019
 EXPECTED_PAIRS = 21
-REFERENCE_JSON_SHA256 = "76b7e66039d9b502bb726f9a80b137f4878608643b386e465903ba32f2842ed1"
-REPORT_LABEL = "Normalization: Q95-scale; Input beds: bound.bed; FDR < 0.001; |Δ FP score| > 0.1; Bound Sites > 500"
+REFERENCE_JSON_SHA256 = "761181a913f6f538aa47c3af07d005fa34f30f38f986ded0152f2316fc40ad6e"
+REPORT_LABEL = "Normalization: Q95-scale; aggregate sites: all motif matches; FDR < 0.001; |Δ FP score| > 0.1; Bound Sites > 500"
 
 
 def utc_now() -> str:
@@ -505,7 +505,7 @@ def run_pair(comparison: str, *, cores: int, allow_download: bool, keep_work: bo
             "--peaks", str(merged), "--outdir", str(results), "--prefix", "diff_footprints",
             "--normalization", "none", "--replicate-report", "auto",
             "--aggregate-signals", *map(str, normalized), "--aggregate-normalization", "none",
-            "--aggregate-site-set", "bound", "--plot-aggregate", "all", "--aggregate-flank", "100",
+            "--aggregate-site-set", "all", "--plot-aggregate", "all", "--aggregate-flank", "100",
             "--motif-outputs", "summary", "--report-label", REPORT_LABEL, "--skip-excel", "--cores", str(cores),
         ], pair_dir / "logs/diff_footprints.log")
     payload, source_digest = extract_payload(report)

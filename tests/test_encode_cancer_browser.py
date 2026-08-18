@@ -55,7 +55,8 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         self.assertEqual(digest, RUNNER.REFERENCE_JSON_SHA256)
         self.assertEqual(payload["conditions"], ["K562", "HepG2"])
         self.assertEqual(len(payload["points"]), 1019)
-        self.assertEqual(len(payload["aggregate"]["motifs"]), 1009)
+        self.assertEqual(payload["aggregate"]["site_set"], "all")
+        self.assertEqual(len(payload["aggregate"]["motifs"]), 1019)
         samples = {
             sample["name"]
             for motif in payload["aggregate"]["motifs"]
@@ -191,7 +192,7 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         source = RUNNER_PATH.read_text(encoding="utf-8")
         self.assertIn('"background-scale", "--stat", "q95"', source)
         self.assertIn('"--normalization", "none"', source)
-        self.assertIn('"--aggregate-site-set", "bound"', source)
+        self.assertIn('"--aggregate-site-set", "all"', source)
         self.assertIn('"--plot-aggregate", "all"', source)
         self.assertIn("shutil.rmtree(work)", source)
         self.assertIn('keep = {"report_payload.json.gz", "diff_footprints_results.txt"}', source)

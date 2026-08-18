@@ -346,7 +346,7 @@ run_diff_footprints() {
     --replicate-report auto \
     --aggregate-signals "${aggregate_args[@]}" \
     --aggregate-normalization none \
-    --aggregate-site-set bound \
+    --aggregate-site-set all \
     --plot-aggregate sig \
     --aggregate-flank 100 \
     --report-label "${report_label}" \

@@ -26,5 +26,5 @@
   },
   "normalization": "background-scale q95 to the across-sample median",
   "differential_normalization": "none",
-  "aggregate_site_set": "bound"
+  "aggregate_site_set": "all"
 }

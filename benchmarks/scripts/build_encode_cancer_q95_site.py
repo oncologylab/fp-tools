@@ -25,7 +25,7 @@ EXPECTED_MOTIFS = 1019
 EXPECTED_PAIRS = 21
 PROFILE_SHARDS = 16
 RELEASE_DATE = "2026-08-14"
-REFERENCE_SCIENTIFIC_SHA256 = "72e545e4a1324edc5b172b3206105e60f8d5b77c7fca5032addcf81b9466a6ff"
+REFERENCE_SCIENTIFIC_SHA256 = "ae9c8abca29096a0f5b10bbb0952e1dd41c1c55a2344075ba0e17822b401812a"
 
 
 def sha256(path: Path) -> str:
@@ -262,7 +262,7 @@ def build(*, project: Path, site: Path, allow_partial: bool) -> None:
             "comparison": "K562 vs HepG2",
             "uncompressed_scientific_sha256": REFERENCE_SCIENTIFIC_SHA256,
             "points": 1019,
-            "aggregate_motifs": 1009,
+            "aggregate_motifs": 1019,
         },
     }
     if not frame.empty and set(logos) != set(frame["prefix"]):

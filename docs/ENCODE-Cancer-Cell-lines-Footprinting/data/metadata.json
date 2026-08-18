@@ -1257,108 +1257,108 @@
       "condition1": "K562",
       "condition2": "HepG2",
       "file": "data/reports/HepG2_vs_K562.json.gz",
-      "payload_sha256": "cd523ff8d9457232537e2adc926ff798c1e7e2b0129ac7004e4abfc743f9a63c",
-      "source_payload_sha256": "46b8a954e987247a75ab917d7b59b681340561990d2dd050437d61fc6c8327bf",
+      "payload_sha256": "8c1d7c5f551c14d83f6d555f0d641c4176015c39a86cf9014edd8dc87cbb9fa2",
+      "source_payload_sha256": "69c41321c8e7b657ef17fb824873247e24161580cfed3f34fc84ea23521de778",
       "profile_shards": [
         {
           "id": 0,
           "file": "data/profiles/HepG2_vs_K562/00.json.gz",
-          "sha256": "d60ace69206edf2f379c40487ae6994217b4b5ff87c03520ce4ad3384403cfc7",
+          "sha256": "8570cf2871f1c977ed5275d35e83e53f22f9bacdccea8df8d4cae3d4579002fe",
           "motifs": 63
         },
         {
           "id": 1,
           "file": "data/profiles/HepG2_vs_K562/01.json.gz",
-          "sha256": "474ef8b739db0124da90416e261a2c881540506b58291b97ca3f6553f8d9e42f",
+          "sha256": "f5195caeca619fce64cf29411d4965f66998640607aa6af22bd6c1198b79b692",
           "motifs": 48
         },
         {
           "id": 2,
           "file": "data/profiles/HepG2_vs_K562/02.json.gz",
-          "sha256": "8d2d61a153ddc52c0966503d76fa81cf3217e4638266b6af57da2f9637339593",
+          "sha256": "a1b0a0cdfc28f1e0a6e25f07ff5d811f884cdb2eaec28a0276dfca296198e3ce",
           "motifs": 67
         },
         {
           "id": 3,
           "file": "data/profiles/HepG2_vs_K562/03.json.gz",
-          "sha256": "0f9697c20b97ffc63b8a74280e87fcb245f4b87065194f2ab9477a3bb83f4d9d",
+          "sha256": "3952486acee04528c3a2bae3263276f8901c37536c80b4eaeb277b4ed123df58",
           "motifs": 61
         },
         {
           "id": 4,
           "file": "data/profiles/HepG2_vs_K562/04.json.gz",
-          "sha256": "2a1d9638a90494c46fcec82b9603e94f05c2349776b4baedbff3053215246210",
-          "motifs": 64
+          "sha256": "8f3f0bf50558c97b271e30afcc90c00b6c2b5181106b12dad41a3cd44407be61",
+          "motifs": 65
         },
         {
           "id": 5,
           "file": "data/profiles/HepG2_vs_K562/05.json.gz",
-          "sha256": "1670deba95a8e2561edb6f319ac6161c4a95db44dd4316a59fb13944ecb92e52",
+          "sha256": "7d48054d868fe1c848d553267f44d1a322bd2398d2918336e593508301ea928a",
           "motifs": 65
         },
         {
           "id": 6,
           "file": "data/profiles/HepG2_vs_K562/06.json.gz",
-          "sha256": "012ce58be8b1cae0f4892d413b1eea51324f50cb182ad71e29bc6a86f33cbd1c",
+          "sha256": "99b8f29a269954ed36b56b13aaa775977be37047d22872ddd76765f7faafbc6e",
           "motifs": 65
         },
         {
           "id": 7,
           "file": "data/profiles/HepG2_vs_K562/07.json.gz",
-          "sha256": "9b311f2397f66a851021d78c325d5bbd08cf938c8179cee209d53968152c6153",
+          "sha256": "04594e6e9fa8d3478f3c424fb8f1515df453afba05420244faf45c6a121b45ee",
           "motifs": 51
         },
         {
           "id": 8,
           "file": "data/profiles/HepG2_vs_K562/08.json.gz",
-          "sha256": "2e5359a02ff279a07816464514e129fa181455720d888cf0e707aa7094506b0c",
+          "sha256": "5831547e0634ce305263c5569246fcbd0d29ea08aecfa068d157f8529d2f5535",
           "motifs": 58
         },
         {
           "id": 9,
           "file": "data/profiles/HepG2_vs_K562/09.json.gz",
-          "sha256": "ecb524c29f971864eb54698ac0d7884bd160dfef76366a85951e004ae1c2434b",
+          "sha256": "d8b979aaa52a3ceb65b6e65343db1dddb62a21c0a7ab17d87a55ce7755046afe",
           "motifs": 74
         },
         {
           "id": 10,
           "file": "data/profiles/HepG2_vs_K562/0a.json.gz",
-          "sha256": "3e55d7b90fb15ceeb336621013b4ba99e43262879856f0228a798ea5a6cc21e8",
-          "motifs": 65
+          "sha256": "239bc648a44aea22facbf3425b8104d09e9ed7fa7ac8135449e1a84913234430",
+          "motifs": 70
         },
         {
           "id": 11,
           "file": "data/profiles/HepG2_vs_K562/0b.json.gz",
-          "sha256": "882cadc2dfce8819f2d1f078509d2084fad9d640cf3606628528cb7d683b1bc4",
-          "motifs": 58
+          "sha256": "f35b2d466252fda0eaddd39102e130bb1d4e37be6f8b22eb80a84b7042df8618",
+          "motifs": 59
         },
         {
           "id": 12,
           "file": "data/profiles/HepG2_vs_K562/0c.json.gz",
-          "sha256": "bc12edda4a7f12be2e17ec7e026ceb3822ac32fecc36a27b81cc9e6b2644a5b1",
-          "motifs": 57
+          "sha256": "abc8f43d0596ef315b1961e3e2e426b2b70943015e4acd8e6f243d68ba90df0b",
+          "motifs": 59
         },
         {
           "id": 13,
           "file": "data/profiles/HepG2_vs_K562/0d.json.gz",
-          "sha256": "5e95b2283f1bcc61587bd48b29f0d9fa4012dada72cdf03bb46cb287f5f91430",
+          "sha256": "9f43f3d03ec4edebd304de164ea9a13acecd00ac9f769025f5baa1bd16f09360",
           "motifs": 68
         },
         {
           "id": 14,
           "file": "data/profiles/HepG2_vs_K562/0e.json.gz",
-          "sha256": "73d89c7d6a7fa660d9f3ccd873d345138ac0f63c10d9cabd97095375a35373cd",
+          "sha256": "127bda41f72988d155e624608eef4067befb7591e31ab2538e6c4bc1eccf21fd",
           "motifs": 78
         },
         {
           "id": 15,
           "file": "data/profiles/HepG2_vs_K562/0f.json.gz",
-          "sha256": "14cdaab03c77c29cd973770ecfb870e9f9de46f407f907b772ac1fd815729c0a",
-          "motifs": 67
+          "sha256": "9545d8a2f2ac42ee38bcfe82bb3a524787966286274ebaac2db80ed9b45ead02",
+          "motifs": 68
         }
       ],
       "motifs": 1019,
-      "aggregate_motifs": 1009
+      "aggregate_motifs": 1019
     },
     {
       "comparison": "HepG2_vs_MCF-7",
@@ -2344,8 +2344,8 @@
   },
   "reference": {
     "comparison": "K562 vs HepG2",
-    "uncompressed_scientific_sha256": "72e545e4a1324edc5b172b3206105e60f8d5b77c7fca5032addcf81b9466a6ff",
+    "uncompressed_scientific_sha256": "ae9c8abca29096a0f5b10bbb0952e1dd41c1c55a2344075ba0e17822b401812a",
     "points": 1019,
-    "aggregate_motifs": 1009
+    "aggregate_motifs": 1019
   }
 }
