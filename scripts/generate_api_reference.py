@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tomllib
@@ -12,6 +13,35 @@ import tomllib
 ROOT = Path(__file__).resolve().parents[1]
 PYPROJECT = ROOT / "pyproject.toml"
 OUTPUT = ROOT / "docs" / "api.md"
+GUIDES_DIR = ROOT / "docs" / "get-started" / "commands"
+
+
+def _guide_content(command: str) -> tuple[str, str]:
+    """Return the command purpose and reusable guide content for the API page."""
+    path = GUIDES_DIR / f"{command}.md"
+    if not path.is_file():
+        raise SystemExit(f"Missing command guide: {path}")
+
+    source = path.read_text(encoding="utf-8").strip()
+    lines = source.splitlines()
+    if not lines or not lines[0].startswith("# "):
+        raise SystemExit(f"Command guide must start with an H1: {path}")
+
+    blocks = "\n".join(lines[1:]).strip().split("\n\n")
+    blocks = [block for block in blocks if "../../api.md" not in block]
+    if not blocks:
+        raise SystemExit(f"Command guide has no reusable content: {path}")
+
+    purpose = " ".join(blocks[0].split())
+    body = "\n\n".join(blocks)
+    for heading in ("Example command", "Primary inputs", "Main outputs"):
+        body = body.replace(f"## {heading}", f"**{heading}**")
+    body = re.sub(
+        r"\[(`[^`]+`)\]\(([^/)]+)\.md\)",
+        lambda match: f"[{match.group(1)}](#{Path(match.group(2)).name})",
+        body,
+    )
+    return purpose, body
 
 
 def main() -> int:
@@ -22,6 +52,8 @@ def main() -> int:
     if missing:
         raise SystemExit(f"Public commands missing from [project.scripts]: {', '.join(missing)}")
 
+    guides = {command: _guide_content(command) for command in commands}
+
     rows = [
         "---",
         "hide:",
@@ -30,15 +62,19 @@ def main() -> int:
         "",
         "# API Reference",
         "",
-        "Direct CLI commands are the primary interface. The GUI and YAML runner call these same commands.",
+        "Direct CLI commands are the primary interface. Each reference includes a method summary, practical example, primary inputs, outputs, and the complete command options.",
         "",
-        "| Command | Reference |",
+        "| Command | Purpose |",
         "| --- | --- |",
     ]
-    rows.extend(f"| `{command}` | [Options](#{command}) |" for command in commands)
+    rows.extend(
+        f"| [`{command}`](#{command}) | {guides[command][0]} |"
+        for command in commands
+    )
     rows.append("")
     bin_dir = Path(sys.executable).parent
     for command in commands:
+        _, guide = guides[command]
         executable = bin_dir / command
         result = subprocess.run(
             [str(executable), "--help"],
@@ -55,9 +91,17 @@ def main() -> int:
             [
                 f"## `{command}`",
                 "",
+                '<div class="fp-api-card" markdown="1">',
+                "",
+                guide,
+                "",
+                "**Complete options**",
+                "",
                 "```text",
                 help_text,
                 "```",
+                "",
+                "</div>",
                 "",
             ]
         )

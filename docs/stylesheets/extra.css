@@ -72,6 +72,7 @@ textarea {
     align-self: stretch;
     display: flex;
     flex: 0 0 auto;
+    margin-right: auto;
   }
 
   .fp-header-tabs__list {

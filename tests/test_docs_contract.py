@@ -88,6 +88,15 @@ class DocsEntryPointContractTest(unittest.TestCase):
         for command in self.public_scripts:
             self.assertIn(f"## `{command}`", self.api_reference)
             self.assertIn(f"usage: {command}", self.api_reference)
+            section = self.api_reference.split(f"## `{command}`", 1)[1]
+            section = section.split("\n## `", 1)[0]
+            for required in (
+                "**Example command**",
+                "**Primary inputs**",
+                "**Main outputs**",
+                "**Complete options**",
+            ):
+                self.assertIn(required, section)
         for command in self.deprecated_scripts:
             self.assertNotIn(f"## `{command}`", self.api_reference)
         self.assertNotIn("::: fp_tools", self.api_reference)

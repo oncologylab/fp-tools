@@ -15,7 +15,7 @@
       {% set icon = config.theme.icon.menu or "material/menu" %}
       {% include ".icons/" ~ icon ~ ".svg" %}
     </label>
-    <div class="md-header__title" data-md-component="header-title">
+    <a href="{{ config.extra.homepage | d(nav.homepage.url, true) | url }}" class="md-header__title" title="Go to the fp-tools home page" data-md-component="header-title">
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">{{ config.site_name }}</span>
@@ -30,7 +30,7 @@
           </span>
         </div>
       </div>
-    </div>
+    </a>
     {% if "navigation.tabs" in features %}
       <div class="fp-header-tabs" role="navigation" aria-label="{{ lang.t('tabs') }}">
         <ul class="fp-header-tabs__list">

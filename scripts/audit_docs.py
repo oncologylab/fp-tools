@@ -348,6 +348,34 @@ def audit(site_dir: Path) -> None:
                                 )
                         if page.locator(".md-container > .md-tabs:visible").count():
                             failures.append(f"{label}: separate global navigation row is visible")
+                        title_link = page.locator("a.md-header__title")
+                        if title_link.count() != 1:
+                            failures.append(f"{label}: fp-tools header title is not a home link")
+                        else:
+                            title_href = title_link.get_attribute("href") or ""
+                            if not title_href.endswith("/"):
+                                failures.append(
+                                    f"{label}: fp-tools header title has invalid home link "
+                                    f"{title_href}"
+                                )
+                        source = page.locator(".md-header__source")
+                        if source.is_visible():
+                            header_box = header.bounding_box()
+                            source_box = source.bounding_box()
+                            if (
+                                header_box is None
+                                or source_box is None
+                                or abs(
+                                    source_box["x"]
+                                    + source_box["width"]
+                                    - header_box["x"]
+                                    - header_box["width"]
+                                )
+                                > 8
+                            ):
+                                failures.append(
+                                    f"{label}: repository controls are not right-aligned"
+                                )
                     if relative in {"api/", "gui/", "reports/"} and width >= 1280:
                         primary = page.locator(".md-sidebar--primary")
                         if primary.is_visible():
