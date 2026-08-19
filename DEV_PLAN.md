@@ -4,9 +4,9 @@ Last updated: 2026-08-19
 
 ## Current Baseline
 
-fp-tools is a command-first Python 3.12 package for bulk and pseudobulk
-ATAC-seq footprinting, motif analysis, differential reports, and optional
-browser/YAML wrappers. Scientific workflow logic belongs in
+fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk
+ATAC-seq footprinting, motif analysis, differential reports, and browser/YAML
+wrappers. Scientific workflow logic belongs in
 `src/fp_tools/tools/` and shared helpers in `src/fp_tools/utils/`; CLI and GUI
 layers remain thin.
 
@@ -35,7 +35,7 @@ a separately planned breaking release explicitly changes the contract.
   baseline-matched region classes, six pairwise comparisons, three biological
   replicates, complete motif statistics, and curated all-site aggregate views.
 - Pseudobulk fragment/BAM generation and single-cell signature reporting.
-- Optional Streamlit GUI whose saved YAML runs through `run-yaml-workflow`.
+- Streamlit GUI whose saved YAML runs through `run-yaml-workflow`.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
   PyPI publication.
 - Branded GitHub and MkDocs presentation with responsive embedded report and
@@ -80,6 +80,9 @@ a separately planned breaking release explicitly changes the contract.
 8. Keep region-set examples outcome-independent: define groups from external
    annotations, match baseline signal before testing, report all motifs, and
    use explicit display motifs only to configure the initial browser view.
+9. Maintain binary-wheel installation and scientific I/O parity on Windows,
+   macOS, and Linux for Python 3.11–3.13. Raw FASTQ preparation and external
+   MEME programs remain explicit system-tool integrations.
 
 ## Deferred or Experimental Work
 
@@ -101,6 +104,7 @@ help checks, YAML dry runs, `pip check`, strict MkDocs, release artifact checks,
 and relevant focused regressions. Release, GitHub Actions, Pages, and PyPI
 instructions belong only in `RELEASE_CHECKLIST.md`.
 
-The GUI remains an optional wrapper. Future GUI changes must keep direct CLI
-use primary, retain reusable YAML, avoid hosted-service assumptions, and use
-the current static demo and layout as the visual baseline.
+The GUI remains a thin wrapper included in the standard installation. Future
+GUI changes must keep direct CLI use primary, retain reusable YAML, avoid
+hosted-service assumptions, and use the current static demo and layout as the
+visual baseline.

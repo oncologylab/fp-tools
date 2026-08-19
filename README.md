@@ -20,20 +20,18 @@
 
 `fp-tools` is a command-first toolkit for ATAC-seq bias correction, footprint
 scoring, motif analysis, replicate-aware comparisons, and single-cell
-footprint signatures. The optional GUI and YAML runner call the same commands.
+footprint signatures. The GUI and YAML runner call the same commands.
 
 ## Install
 
 ```bash
-pip install fp-tools-bio
-```
-
-For the GUI:
-
-```bash
-pip install "fp-tools-bio[gui]"
+python -m pip install fp-tools-bio
 fp-tools-gui
 ```
+
+Python 3.11–3.13 is supported on Windows, macOS, and Linux. Core analysis and
+the GUI install from wheels; raw FASTQ preprocessing uses standard external
+bioinformatics tools (WSL on Windows).
 
 ## Bulk ATAC-seq
 

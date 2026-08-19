@@ -524,7 +524,7 @@ class PseudobulkTest(unittest.TestCase):
             self.assertTrue(commands.exists())
             text = commands.read_text(encoding="utf-8")
             self.assertIn("atac-correct", text)
-            self.assertIn("--bams", text)
+            self.assertIn("--fragments", text)
             self.assertNotIn("--bam ", text)
             self.assertIn("--read_shift 0 0", text)
             self.assertIn("call-footprints", text)

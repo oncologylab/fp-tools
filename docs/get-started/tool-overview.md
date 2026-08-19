@@ -26,7 +26,7 @@ comparison table, ENCODE downloads, and the expected output layout.
 - [`bulk-footprinting`](commands/bulk-footprinting.md) — run the complete bulk workflow from aligned BAM and peak files.
 - [`sc-footprinting`](commands/sc-footprinting.md) — run pseudobulk and per-cell single-cell ATAC-seq footprinting.
 - [`run-yaml-workflow`](commands/run-yaml-workflow.md) — run command-compatible jobs from YAML.
-- [`fp-tools-gui`](commands/fp-tools-gui.md) — launch the optional browser interface.
+- [`fp-tools-gui`](commands/fp-tools-gui.md) — launch the browser interface.
 
 ## De Novo Motif Discovery
 

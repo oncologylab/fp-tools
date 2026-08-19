@@ -23,6 +23,7 @@ import random
 import shutil
 import copy
 import tempfile
+import threading
 import zipfile
 import subprocess
 import numpy as np
@@ -48,8 +49,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 # Bio
-import pysam
-import pyBigWig as pybw
+from fp_tools.utils.fasta import open_fasta
+from fp_tools.utils import bigwig as pybw
 
 # Internal (fp_tools namespace)
 from fp_tools.parsers import add_diff_footprints_arguments
@@ -398,11 +399,14 @@ def _async_remove_tree(path):
     if not base.startswith(("fp_tools_match_shared_", "fp_tools_diff_tfbs_")):
         shutil.rmtree(path, ignore_errors=True)
         return
-    subprocess.Popen(
-        ["rm", "-rf", path],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
+    threading.Thread(target=shutil.rmtree, args=(path,), kwargs={"ignore_errors": True}, daemon=True).start()
+
+
+def _subprocess_session_options():
+    return (
+        {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+        if os.name == "nt"
+        else {"start_new_session": True}
     )
 
 
@@ -1436,7 +1440,7 @@ def _launch_async_match_motif_bed_materialization(sample_args_list, cores_per_sa
             [sys.executable, "-c", code],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            start_new_session=True,
+            **_subprocess_session_options(),
         )
 
 
@@ -2171,7 +2175,7 @@ def run_diff_footprints(args):
     # boundaries vs fasta / signals
     logger.info("Checking for match between --peaks and --fasta/--signals boundaries")
     logger.info(f"- Comparing peaks to {args.genome}")
-    fasta_obj = pysam.FastaFile(args.genome)
+    fasta_obj = open_fasta(args.genome)
     fasta_boundaries = dict(zip(fasta_obj.references, fasta_obj.lengths))
     fasta_obj.close()
     logger.debug(f"Fasta boundaries: {fasta_boundaries}")

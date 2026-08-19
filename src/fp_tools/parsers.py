@@ -36,6 +36,7 @@ def add_atacorrect_arguments(parser):
 	#Required arguments
 	reqargs = parser.add_argument_group('Required arguments')
 	reqargs.add_argument('--bams', metavar="<bam>", nargs="*", help="One or more .bam files containing reads to be corrected")
+	reqargs.add_argument('--fragments', metavar="<fragments.tsv.gz>", nargs="*", help="One or more 10x-style fragment files; uses cut sites directly without creating pseudo-BAMs")
 	reqargs.add_argument('-g', '--genome', metavar="<fasta>", help="A .fasta-file containing whole genomic sequence")
 	reqargs.add_argument('-p', '--peaks', metavar="<bed>", nargs="*", help="One shared merged peak BED, or multiple per-sample peak BEDs to merge internally")
 

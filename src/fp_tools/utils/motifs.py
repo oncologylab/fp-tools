@@ -43,17 +43,95 @@ except Exception as e:
         "biopython is required for reading/writing motifs. Install with: `poetry add biopython`"
     ) from e
 
-try:  # fast scanning
+try:  # fast scanning when the legacy extension is available
     import MOODS.scan  # type: ignore
     import MOODS.tools  # type: ignore
     import MOODS.parsers  # type: ignore
-except Exception as e:  # pragma: no cover
-    raise ImportError(
-        "MOODS is required for motif scanning. Install with: `poetry add MOODS-python==1.9.4.1`"
-    ) from e
+    _HAVE_MOODS = True
+except Exception:  # Cross-platform NumPy fallback is used on Windows.
+    MOODS = None
+    _HAVE_MOODS = False
 
 # --- Internal (fp_tools namespace) ----------------------------------------
 from fp_tools.utils.regions import OneRegion, RegionList
+
+
+class _ScanMatch:
+    def __init__(self, pos: int, score: float):
+        self.pos = pos
+        self.score = score
+
+
+class _NumpyMotifScanner:
+    """MOODS-compatible scanner for the fp-tools DNA alphabet (A,C,G,T)."""
+
+    def set_motifs(self, matrices, background, thresholds):
+        self.matrices = [np.asarray(matrix, dtype=float) for matrix in matrices]
+        self.thresholds = [float(value) for value in thresholds]
+
+    def scan(self, sequence: str):
+        lookup = np.full(256, -1, dtype=np.int8)
+        for index, base in enumerate(b"ACGT"):
+            lookup[base] = lookup[base + 32] = index
+        encoded = lookup[np.frombuffer(sequence.encode("ascii", errors="replace"), dtype=np.uint8)]
+        output = []
+        for matrix, threshold in zip(self.matrices, self.thresholds):
+            width = matrix.shape[1]
+            count = encoded.size - width + 1
+            if count <= 0:
+                output.append([])
+                continue
+            scores = np.zeros(count, dtype=float)
+            valid = np.ones(count, dtype=bool)
+            for offset in range(width):
+                bases = encoded[offset:offset + count]
+                valid &= bases >= 0
+                safe = np.where(bases >= 0, bases, 0)
+                scores += matrix[safe, offset]
+            positions = np.flatnonzero(valid & (scores >= threshold))
+            output.append([_ScanMatch(int(pos), float(scores[pos])) for pos in positions])
+        return output
+
+
+def _threshold_from_p(pssm: np.ndarray, background: np.ndarray, pvalue: float) -> float:
+    if _HAVE_MOODS:
+        pssm_tuple = tuple(tuple(float(value) for value in row) for row in pssm)
+        return float(MOODS.tools.threshold_from_p(pssm_tuple, background, pvalue, 4))
+    # Exact Python translation of MOODS threshold_from_p_with_precision for a
+    # first-order DNA PSSM (the upstream default DP precision is 2,000).
+    precision = 2_000.0
+    scaled = precision * np.asarray(pssm, dtype=float)
+    integer = np.where(scaled > 0.0, np.floor(scaled + 0.5), np.ceil(scaled - 0.5)).astype(np.int64)
+    width = integer.shape[1]
+    column_max = integer.max(axis=0)
+    minimum_value = int(integer.min())
+    max_total = int(column_max.sum())
+    score_range = max_total - width * minimum_value
+    current = np.zeros(score_range + 1, dtype=float)
+    following = np.zeros(score_range + 1, dtype=float)
+    for base in range(integer.shape[0]):
+        current[int(integer[base, 0] - minimum_value)] += float(background[base])
+    for position in range(1, width):
+        for base in range(integer.shape[0]):
+            shift = int(integer[base, position] - minimum_value)
+            following[shift:] += float(background[base]) * current[:score_range + 1 - shift]
+        current, following = following, current
+        following.fill(0.0)
+    tail = float(current[score_range])
+    if tail > pvalue:
+        maxima = np.max(pssm, axis=0)
+        deltas = []
+        for column in np.asarray(pssm, dtype=float).T:
+            unique = np.unique(column)
+            if unique.size > 1:
+                deltas.append(float(unique[-1] - unique[-2]))
+        min_delta = min(deltas) if deltas else 0.0
+        return float(np.sum(maxima) - min_delta / 2.0)
+    for score_index in range(score_range - 1, -1, -1):
+        tail += float(current[score_index])
+        if tail > pvalue:
+            return float((score_index + width * minimum_value + 1) / precision)
+    return float(np.sum(np.min(pssm, axis=0)) - 1.0)
 
 # We try to import helpers from your utilities, but also provide local
 # fallbacks so this module works out-of-the-box.
@@ -329,7 +407,7 @@ class MotifList(list):
             parameters["names"].append(motif.prefix)
             parameters["matrices"].append(motif.pssm)
             parameters["thresholds"].append(motif.threshold)
-        scanner = MOODS.scan.Scanner(7)
+        scanner = MOODS.scan.Scanner(7) if _HAVE_MOODS else _NumpyMotifScanner()
         scanner.set_motifs(parameters["matrices"], motifs.bg, parameters["thresholds"])  # type: ignore[attr-defined]
         return (scanner, parameters)
 
@@ -641,8 +719,7 @@ class OneMotif:
     def get_threshold(self, pvalue: float = 1e-4) -> "OneMotif":
         if self.pssm is None:
             self.get_pssm()
-        pssm_tuple = tuple([tuple(row) for row in self.pssm])
-        self.threshold = MOODS.tools.threshold_from_p(pssm_tuple, self.bg, pvalue, 4)
+        self.threshold = _threshold_from_p(np.asarray(self.pssm, dtype=float), np.asarray(self.bg, dtype=float), pvalue)
         return self
 
     # ------- metrics -------------------------------------------------------

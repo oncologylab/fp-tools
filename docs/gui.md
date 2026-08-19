@@ -6,11 +6,10 @@ hide:
 
 # GUI Demo
 
-The optional GUI runs the same fp-tools commands and saves reusable YAML
+The GUI runs the same fp-tools commands and saves reusable YAML
 configurations.
 
 ```bash
-pip install "fp-tools-bio[gui]"
 fp-tools-gui
 ```
 

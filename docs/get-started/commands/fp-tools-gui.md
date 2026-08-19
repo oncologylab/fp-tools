@@ -1,19 +1,19 @@
 # [`fp-tools-gui`](../../api.md#fp-tools-gui)
 
-Launch the optional browser interface for configuring and running fp-tools
-commands.
+Launch the browser interface for configuring and running fp-tools commands.
 
 ## Example command
 
 ```bash
-fp-tools-gui --host 0.0.0.0 --port 8891 --run-dir project/gui_runs
+fp-tools-gui --host 127.0.0.1 --port 8891 --run-dir project/gui_runs --no-browser
 ```
 
 ## Primary inputs
 
-- `--host` — interface on which the GUI listens.
+- `--host` — interface on which the GUI listens (default: `127.0.0.1`).
 - `--port` — fixed browser port.
 - `--run-dir` — directory for GUI-managed configurations and runs.
+- `--no-browser` — start the server without opening a local browser.
 
 ## Main outputs
 
@@ -27,3 +27,26 @@ Files under `{run_dir}` are local run state. A saved YAML remains runnable with
 
 Open the [GUI Demo](../../gui.md), or see the
 [complete `fp-tools-gui` reference](../../api.md#fp-tools-gui).
+
+## Local computer
+
+Run `fp-tools-gui`. A browser opens after the server is ready. If it does not,
+open the local URL printed in the terminal.
+
+## Remote Linux server
+
+Start fp-tools on the server without exposing a network port:
+
+```bash
+fp-tools-gui --no-browser --port 8891
+```
+
+On your computer, create an SSH tunnel and keep that terminal open:
+
+```bash
+ssh -N -L 8891:127.0.0.1:8891 USER@SERVER
+```
+
+Open `http://127.0.0.1:8891`. Binding with `--host 0.0.0.0` is also supported,
+but fp-tools does not add authentication; protect direct network access with a
+firewall, VPN, or reverse proxy.

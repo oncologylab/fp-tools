@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 
 from fp_tools.tools.motif_discovery import CandidateSite, load_genome_fasta, read_candidate_sites
 

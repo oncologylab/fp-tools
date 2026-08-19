@@ -19,7 +19,7 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 | [`plot-aggregate`](#plot-aggregate) | Plot average signal around motif sites or other genomic regions as a static figure or interactive HTML report. |
 | [`review-multi-comparisons`](#review-multi-comparisons) | Combine differential-footprint reports as a scalable browser bundle or one self-contained HTML report. |
 | [`run-yaml-workflow`](#run-yaml-workflow) | Run one or more fp-tools jobs from a reusable YAML configuration. |
-| [`fp-tools-gui`](#fp-tools-gui) | Launch the optional browser interface for configuring and running fp-tools commands. |
+| [`fp-tools-gui`](#fp-tools-gui) | Launch the browser interface for configuring and running fp-tools commands. |
 | [`discover-motifs`](#discover-motifs) | Prepare or run de novo motif discovery from candidate footprint intervals or an existing FASTA file. |
 | [`summarize-motifs`](#summarize-motifs) | Summarize MEME, STREME, DREME, and Tomtom results in a compact report. |
 | [`pseudobulk-fragments`](#pseudobulk-fragments) | Group single-cell ATAC fragments by a cell-annotation column to create pseudobulk inputs. |
@@ -327,10 +327,11 @@ same `{prefix}_*.bw`, `{prefix}_atacorrect.pdf`, and
 **Complete options**
 
 ```text
-usage: atac-correct [-h] [--bams [<bam> ...]] [-g <fasta>] [-p [<bed> ...]]
-                    [--regions-in <bed>] [--regions-out <bed>] [--blacklist <bed>]
-                    [--extend <int>] [--split-strands] [--norm-off]
-                    [--write-tracks [<track> ...]] [--track-off [<track> ...]] [--skip-qc]
+usage: atac-correct [-h] [--bams [<bam> ...]] [--fragments [<fragments.tsv.gz> ...]]
+                    [-g <fasta>] [-p [<bed> ...]] [--regions-in <bed>]
+                    [--regions-out <bed>] [--blacklist <bed>] [--extend <int>]
+                    [--split-strands] [--norm-off] [--write-tracks [<track> ...]]
+                    [--track-off [<track> ...]] [--skip-qc]
                     [--scale-corrected {auto,none,q95}] [--scale-background <bed>]
                     [--scale-corrected-bigwigs [<bigwig> ...]]
                     [--scale-target {median,mean}] [--scale-chrom-sizes <chrom.sizes>]
@@ -363,6 +364,9 @@ Output files:
 
 Required arguments:
   --bams [<bam> ...]               One or more .bam files containing reads to be corrected
+  --fragments [<fragments.tsv.gz> ...]
+                                   One or more 10x-style fragment files; uses cut sites
+                                   directly without creating pseudo-BAMs
   -g <fasta>, --genome <fasta>     A .fasta-file containing whole genomic sequence
   -p [<bed> ...], --peaks [<bed> ...]
                                    One shared merged peak BED, or multiple per-sample peak
@@ -1559,23 +1563,24 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Launch the optional browser interface for configuring and running fp-tools
-commands.
+Launch the browser interface for configuring and running fp-tools commands.
 
 **Example command**
 
 ```bash
 fp-tools-gui \
-  --host 0.0.0.0 \
+  --host 127.0.0.1 \
   --port 8891 \
-  --run-dir project/gui_runs
+  --run-dir project/gui_runs \
+  --no-browser
 ```
 
 **Primary inputs**
 
-- `--host` — interface on which the GUI listens.
+- `--host` — interface on which the GUI listens (default: `127.0.0.1`).
 - `--port` — fixed browser port.
 - `--run-dir` — directory for GUI-managed configurations and runs.
+- `--no-browser` — start the server without opening a local browser.
 
 **Main outputs**
 
@@ -1587,18 +1592,43 @@ fp-tools-gui \
 Files under `{run_dir}` are local run state. A saved YAML remains runnable with
 `run-yaml-workflow --config {run_dir}/{timestamp}_{label}/config.yml`.
 
+## Local computer
+
+Run `fp-tools-gui`. A browser opens after the server is ready. If it does not,
+open the local URL printed in the terminal.
+
+## Remote Linux server
+
+Start fp-tools on the server without exposing a network port:
+
+```bash
+fp-tools-gui --no-browser --port 8891
+```
+
+On your computer, create an SSH tunnel and keep that terminal open:
+
+```bash
+ssh -N -L 8891:127.0.0.1:8891 USER@SERVER
+```
+
+Open `http://127.0.0.1:8891`. Binding with `--host 0.0.0.0` is also supported,
+but fp-tools does not add authentication; protect direct network access with a
+firewall, VPN, or reverse proxy.
+
 **Complete options**
 
 ```text
 usage: fp-tools-gui [-h] [--host HOST] [--port PORT] [--run-dir RUN_DIR]
+                    [--no-browser]
 
-Launch the fp-tools Streamlit GUI.
+Launch the fp-tools browser interface.
 
 options:
   -h, --help         show this help message and exit
-  --host HOST        Bind address for the GUI server.
-  --port PORT        Optional fixed port.
+  --host HOST        Bind address (default: 127.0.0.1).
+  --port PORT        Optional fixed port (default: first free port from 8891).
   --run-dir RUN_DIR  Directory for GUI-managed runs.
+  --no-browser       Do not open a local browser automatically.
 ```
 
 </div>
@@ -2097,8 +2127,8 @@ options:
   --outdir OUTDIR       Output directory for the full pseudobulk footprint
                         workflow.
   --genome-sizes GENOME_SIZES
-                        Two-column chromosome sizes file; required for
-                        fragment input cut-site bigWigs and pseudo-BAMs.
+                        Two-column chromosome sizes file used for fragment-
+                        derived cut-site bigWigs.
   --genome GENOME       Genome FASTA for atac-correct.
   --peaks PEAKS         Peak BED used for atac-correct and footprint scoring.
   --blacklist BLACKLIST
@@ -2122,8 +2152,8 @@ options:
   --no-cpm-normalize    Write raw cut counts instead of CPM-normalized cut-
                         site bigWigs for fragment input.
   --top-n TOP_N         Optional top N candidate footprints per group.
-  --read-shift FWD REV  Override the atac-correct read shift for fragment-
-                        derived pseudo-BAMs (default: 0 0).
+  --read-shift FWD REV  Override the atac-correct read shift for fragment cut
+                        sites (default: 0 0).
   --motifs [MOTIFS ...]
                         Optional motif file(s); when provided, run motif-aware
                         diff-footprints on pseudobulk footprint tracks.

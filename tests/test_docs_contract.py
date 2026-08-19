@@ -70,21 +70,14 @@ class DocsEntryPointContractTest(unittest.TestCase):
         documented = _verify_help_commands(self.readme)
         self.assertFalse(documented & REMOVED_ALIASES)
 
-    def test_gui_extra_is_declared_and_documented(self):
+    def test_gui_is_included_in_standard_install(self):
         extras = self.data["project"].get("optional-dependencies", {})
         self.assertIn(
             "gui", extras, "Expected a [project.optional-dependencies] gui extra."
         )
-        self.assertTrue(
-            any("streamlit" in dep for dep in extras["gui"]),
-            "The gui extra should provide streamlit.",
-        )
-        self.assertNotIn(
-            "streamlit",
-            "\n".join(self.data["project"]["dependencies"]),
-            "streamlit should be an optional extra, not a core dependency.",
-        )
-        self.assertIn("fp-tools-bio[gui]", self.readme)
+        self.assertTrue(any("streamlit" in dep for dep in self.data["project"]["dependencies"]))
+        self.assertIn("python -m pip install fp-tools-bio", self.readme)
+        self.assertNotIn("fp-tools-bio[gui]", self.readme)
 
     def test_api_reference_is_command_manual(self):
         for command in self.public_scripts:
