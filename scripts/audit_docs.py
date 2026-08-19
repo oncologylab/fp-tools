@@ -67,6 +67,10 @@ STANDALONE_DEMO_PAGES = {
     "demos/gui/fp-tools-gui-static-demo.html",
     "ENCODE-Cancer-Cell-lines-Footprinting/",
 }
+DOCUMENTATION_RETURN_PAGES = {
+    "demos/gui/fp-tools-gui-static-demo.html",
+    "ENCODE-Cancer-Cell-lines-Footprinting/",
+}
 DARK_MODE_PAGES = {
     "",
     "get-started/tool-overview/",
@@ -312,6 +316,23 @@ def audit(site_dir: Path) -> None:
                         failures.append(
                             f"{label}: duplicate IDs {metrics['duplicateIds']}"
                         )
+                    if relative in DOCUMENTATION_RETURN_PAGES:
+                        documentation_link = page.locator("a.documentation-link")
+                        if documentation_link.count() != 1:
+                            failures.append(
+                                f"{label}: documentation return link is missing"
+                            )
+                        else:
+                            href = documentation_link.evaluate("element => element.href") or ""
+                            target = documentation_link.get_attribute("target") or ""
+                            if href != base_url:
+                                failures.append(
+                                    f"{label}: documentation return link has invalid target {href}"
+                                )
+                            if target != "_top":
+                                failures.append(
+                                    f"{label}: documentation return link does not escape an iframe"
+                                )
                     if relative in GET_STARTED_PAGES and width >= 1280:
                         primary = page.locator(".md-sidebar--primary")
                         if not primary.is_visible():

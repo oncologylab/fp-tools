@@ -79,6 +79,25 @@ a {
   flex: 0 0 auto;
   padding-bottom: 2px;
 }
+.documentation-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #b9c8da;
+  border-radius: 5px;
+  background: #fff;
+  color: #26364d;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.documentation-link:hover,
+.documentation-link:focus-visible {
+  background: #eef5fc;
+}
 .comparison-controls label,
 .format-row,
 .selected-toolbar label {
@@ -684,7 +703,13 @@ input {
   }
   .comparison-controls {
     margin-top: 8px;
+    flex-wrap: wrap;
     justify-content: flex-start;
+  }
+  .documentation-link {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    width: max-content;
   }
   .comparison-controls label {
     flex: 1;

@@ -286,9 +286,17 @@ class DocsEntryPointContractTest(unittest.TestCase):
             (ROOT / "docs" / "assets" / "interface_gui_home.png").exists()
         )
         self.assertIn('class="menu-button"', gui_demo)
+        self.assertIn('class="documentation-link" href="../../" target="_top"', gui_demo)
         self.assertIn("aria-current", gui_demo)
         self.assertIn('rel="icon"', gui_demo)
         self.assertIn('rel="icon"', report_demo)
+
+        encode_browser = (
+            ROOT / "docs" / "ENCODE-Cancer-Cell-lines-Footprinting" / "index.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn('class="documentation-link"', encode_browser)
+        self.assertIn('href="../"', encode_browser)
+        self.assertIn('target="_top"', encode_browser)
 
     def test_landing_pages_are_concise_and_use_current_workflow_names(self):
         index = (ROOT / "docs" / "index.md").read_text(encoding="utf-8")
