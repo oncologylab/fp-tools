@@ -13,7 +13,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 
 
 DEFAULT_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#f97316", "#0891b2", "#7c3aed", "#64748b"]

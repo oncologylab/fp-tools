@@ -17,7 +17,7 @@ import copy
 from difflib import SequenceMatcher
 import traceback
 
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 from fp_tools.utils.logger import *
 
 

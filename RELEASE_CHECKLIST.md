@@ -4,7 +4,8 @@ Use this checklist before publishing `fp-tools-bio` or preparing paper benchmark
 
 ## 1. Environment
 
-- Use Python 3.12 in the project virtualenv.
+- Use a clean Python 3.12 environment for release orchestration. Wheels target
+  Python 3.11–3.13 on Windows, macOS, and Linux.
 - Confirm editable install:
 
 ```bash
@@ -56,20 +57,19 @@ Primary current API checks:
 
 ## 4. Build Artifacts
 
-Build source and wheel artifacts. On Linux releases, install `auditwheel` and
-`patchelf` first so `scripts/build_release.sh` can repair platform wheels to
-manylinux tags accepted by PyPI:
+Release wheels are built by `cibuildwheel` in the manual `Publish` workflow.
+The required artifact set is:
+
+- CPython 3.11, 3.12, and 3.13
+- Windows AMD64
+- macOS x86_64 and arm64
+- manylinux x86_64 and aarch64
+
+Build an sdist locally only for preflight inspection:
 
 ```bash
-.venv/bin/python -m pip install build twine auditwheel patchelf
-./scripts/build_release.sh
-```
-
-The build script uses isolated `python -m build`, removes unrepaired
-`linux_x86_64` wheels when a repaired manylinux wheel is produced, and leaves
-the upload-ready files in `dist/`. Validate metadata before upload:
-
-```bash
+.venv/bin/python -m pip install build twine
+.venv/bin/python -m build --sdist
 .venv/bin/python -m twine check dist/*
 ```
 
@@ -78,7 +78,7 @@ After uploading, verify a fresh install from PyPI:
 ```bash
 python -m venv /tmp/fp-tools-pypi-smoke
 /tmp/fp-tools-pypi-smoke/bin/python -m pip install --upgrade pip
-/tmp/fp-tools-pypi-smoke/bin/python -m pip install "fp-tools-bio[gui]==<version>"
+/tmp/fp-tools-pypi-smoke/bin/python -m pip install --only-binary=:all: "fp-tools-bio==<version>"
 /tmp/fp-tools-pypi-smoke/bin/atac-correct --help >/dev/null
 /tmp/fp-tools-pypi-smoke/bin/plot-aggregate --help >/dev/null
 /tmp/fp-tools-pypi-smoke/bin/fp-tools-gui --help >/dev/null
@@ -88,9 +88,9 @@ The manual GitHub Actions `Publish` workflow uses the repository
 `PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or
 committed files. Rotate any token that was exposed outside a secret manager.
 
-The preferred publish path is the manual GitHub Actions `Publish` workflow. It
-repairs the Linux wheel, checks metadata, smoke-tests every declared console
-script, and uploads with the configured token.
+The manual GitHub Actions `Publish` workflow builds and tests every wheel,
+checks all artifacts, then uploads the complete set with the configured token.
+Do not publish when any platform wheel is absent.
 
 ## 5. Metadata And Docs
 

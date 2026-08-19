@@ -14,7 +14,7 @@ import argparse
 import copy
 import bisect
 import numpy as np
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import closing

@@ -25,7 +25,8 @@ from scipy.optimize import curve_fit
 import pickle
 
 #Bio-specific packages
-import pysam
+from fp_tools.utils.alignment import open_alignment
+from fp_tools.utils.fasta import open_fasta
 
 #Internal functions and classes
 from fp_tools.utils.sequences import SequenceMatrix, GenomicSequence
@@ -89,7 +90,7 @@ def count_reads(regions_list, params):
 
 	bam_f = params.bam
 	read_shift = params.read_shift
-	bam_obj = pysam.AlignmentFile(bam_f, "rb")
+	bam_obj = open_alignment(bam_f, "rb")
 
 	log_q = params.log_q
 	logger = FpToolsLogger("", params.verbosity, log_q) #sending all logger calls to log_q
@@ -127,8 +128,8 @@ def bias_estimation(regions_list, params):
 	logger = FpToolsLogger("", params.verbosity, params.log_q) 	#sending all logger calls to log_q
 
 	#Open objects for reading
-	bam_obj = pysam.AlignmentFile(bam_f, "rb")
-	fasta_obj = pysam.FastaFile(fasta_f)
+	bam_obj = open_alignment(bam_f, "rb")
+	fasta_obj = open_fasta(fasta_f)
 	chrom_lengths = dict(zip(bam_obj.references, bam_obj.lengths))  #Chromosome boundaries from bam_obj
 
 	bias_obj = AtacBias(L, params.score_mat)
@@ -217,8 +218,8 @@ def bias_correction(regions_list, params, bias_obj):
 	post_bias = {strand: SequenceMatrix.create(L, "PWM") for strand in strands} if collect_qc else None
 
 	#Open bamfile and fasta
-	bam_obj = pysam.AlignmentFile(bam_f, "rb")
-	fasta_obj = pysam.FastaFile(fasta_f)
+	bam_obj = open_alignment(bam_f, "rb")
+	fasta_obj = open_fasta(fasta_f)
 
 	out_signals = {}
 	

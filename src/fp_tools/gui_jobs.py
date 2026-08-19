@@ -48,13 +48,18 @@ def launch_config_async(
     command = [sys.executable, "-m", "fp_tools.cli_batch", "--config", str(config_path), "--run-root", str(run_root)]
 
     with stdout_path.open("w", encoding="utf-8") as stdout_handle, stderr_path.open("w", encoding="utf-8") as stderr_handle:
+        session_options = (
+            {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+            if os.name == "nt"
+            else {"start_new_session": True}
+        )
         process = subprocess.Popen(
             command,
             stdout=stdout_handle,
             stderr=stderr_handle,
             text=True,
-            start_new_session=True,
             cwd=Path.cwd(),
+            **session_options,
         )
 
     status = {

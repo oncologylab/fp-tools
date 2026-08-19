@@ -35,8 +35,9 @@ class ReleaseMetadataTest(unittest.TestCase):
             "unittest discover",
             "call-footprints --help",
             "diff-footprints --help",
-            "scripts/build_release.sh",
-            "auditwheel",
+            "cibuildwheel",
+            "Windows AMD64",
+            "macOS x86_64 and arm64",
             "manylinux",
             "twine check",
             "PyPI",
@@ -89,9 +90,12 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertTrue((ROOT / "DEV_PLAN.md").is_file())
         self.assertFalse((ROOT / "GUI_PLAN.md").exists())
 
-    def test_publish_workflow_uses_token_and_repaired_wheels(self):
+    def test_publish_workflow_uses_token_and_cross_platform_wheels(self):
         workflow = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
-        self.assertIn("auditwheel", workflow)
+        self.assertIn("pypa/cibuildwheel", workflow)
+        self.assertIn("CIBW_ARCHS_LINUX: x86_64 aarch64", workflow)
+        self.assertIn("CIBW_ARCHS_MACOS: x86_64 arm64", workflow)
+        self.assertIn("CIBW_ARCHS_WINDOWS: AMD64", workflow)
         self.assertIn("twine check", workflow)
         self.assertIn("twine upload", workflow)
         self.assertIn("TWINE_USERNAME: __token__", workflow)

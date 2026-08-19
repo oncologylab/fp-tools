@@ -35,8 +35,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
 #Bio-specific packages
-import pyBigWig
-import pysam
+from fp_tools.utils import bigwig as pyBigWig
+from fp_tools.utils.alignment import index_alignment, open_alignment
+from fp_tools.utils.fasta import open_fasta
 
 #Internal functions and classes
 from fp_tools.parsers import add_atacorrect_arguments
@@ -256,14 +257,18 @@ def run_atacorrect(args):
 		args.outdir = str(project)
 
 	bams = _compact_list(getattr(args, "bams", None))
-	if not bams:
-		sys.exit("Error: No .bam-file given. Use --bams <reads.bam> [<more_reads.bam> ...]")
+	fragments = _compact_list(getattr(args, "fragments", None))
+	if bams and fragments:
+		sys.exit("Error: use either --bams or --fragments, not both")
+	inputs = fragments or bams
+	if not inputs:
+		sys.exit("Error: provide --bams <reads.bam> or --fragments <fragments.tsv.gz>")
 	if args.genome == None:
 		sys.exit("Error: No .fasta-file given")
 	if not _compact_list(getattr(args, "peaks", None)):
 		sys.exit("Error: No .peaks-file given")
-	if len(bams) > 1 and getattr(args, "prefix", None):
-		sys.exit("Error: --prefix can only be used with a single --bams input. Use --sample-names for multi-BAM runs.")
+	if len(inputs) > 1 and getattr(args, "prefix", None):
+		sys.exit("Error: --prefix can only be used with a single input. Use --sample-names for multi-sample runs.")
 
 	base_outdir = os.path.abspath(args.outdir) if args.outdir != None else os.path.abspath(os.getcwd())
 	sample_output_root = getattr(args, "sample_output_root", None)
@@ -271,10 +276,10 @@ def run_atacorrect(args):
 		sample_output_root = os.path.abspath(sample_output_root)
 		if not getattr(args, "outdir", None):
 			base_outdir = sample_output_root
-	sample_names = _sample_names_from_bams(bams, getattr(args, "sample_names", None))
+	sample_names = _sample_names_from_bams(inputs, getattr(args, "sample_names", None))
 	peak_files = _compact_list(args.peaks)
 	preflight_logger = FpToolsLogger("atac-correct", getattr(args, "verbosity", 3))
-	_warn_peak_sample_mismatches(bams, sample_names, peak_files, preflight_logger)
+	_warn_peak_sample_mismatches(inputs, sample_names, peak_files, preflight_logger)
 	peaks_for_run = _merge_peak_files(args.peaks, base_outdir, getattr(args, "merged_peaks_out", None))
 	if is_project_layout(getattr(args, "layout", None)) and getattr(args, "sample_table", None):
 		project = project_root(getattr(args, "outdir", None))
@@ -282,16 +287,19 @@ def run_atacorrect(args):
 	corrected_bigwigs = []
 
 	sample_args_list = []
-	for bam, sample_name in zip(bams, sample_names):
+	for bam, sample_name in zip(inputs, sample_names):
 		sample_args = deepcopy(args)
 		sample_args.bam = bam
-		sample_args.bams = [bam]
+		sample_args.bams = [] if fragments else [bam]
 		sample_args.peaks = peaks_for_run
-		sample_args.prefix = args.prefix if len(bams) == 1 and args.prefix else sample_name
+		sample_args.input_type = "fragments" if fragments else "bam"
+		if fragments:
+			sample_args.read_shift = [0, 0]
+		sample_args.prefix = args.prefix if len(inputs) == 1 and args.prefix else sample_name
 		if sample_output_root:
 			sample_args.outdir = os.path.join(sample_output_root, sample_name, "atac_correct")
 		else:
-			sample_args.outdir = base_outdir if len(bams) == 1 else os.path.join(base_outdir, sample_name)
+			sample_args.outdir = base_outdir if len(inputs) == 1 else os.path.join(base_outdir, sample_name)
 		sample_args.scale_corrected = "none"
 		sample_args._scale_after_single = False
 		corrected_bigwigs.extend(_corrected_output_paths_for_args(sample_args))
@@ -320,7 +328,7 @@ def run_atacorrect(args):
 				future.result()
 
 	args.outdir = base_outdir
-	if len(bams) == 1:
+	if len(inputs) == 1:
 		args.prefix = args.prefix if args.prefix else sample_names[0]
 	mode = getattr(args, "scale_corrected", "auto")
 	if mode != "none":
@@ -415,10 +423,12 @@ def _run_atacorrect_single(args):
 	#----------------------------------------------------------------------------------------------------#
 
 	logger.info("Reading info from .bam file")
-	bamfile = pysam.AlignmentFile(args.bam, "rb")
+	bamfile = open_alignment(args.bam, "rb")
 	if bamfile.has_index() == False:
-		logger.warning("No index found for bamfile - creating one via pysam.")
-		pysam.index(args.bam)
+		if index_alignment(args.bam):
+			logger.warning("No index found for bamfile; created one for faster access.")
+		else:
+			logger.warning("No BAM index found; using the portable sequential-scan cache.")
 
 	bam_references = bamfile.references 	#chromosomes in correct order
 	bam_chrom_info = dict(zip(bamfile.references, bamfile.lengths))
@@ -426,10 +436,16 @@ def _run_atacorrect_single(args):
 	bamfile.close()
 
 	logger.info("Reading info from .fasta file")
-	fastafile = pysam.FastaFile(args.genome)
+	fastafile = open_fasta(args.genome)
 	fasta_chrom_info = dict(zip(fastafile.references, fastafile.lengths))
 	logger.debug("fasta_chrom_info: {0}".format(fasta_chrom_info))
 	fastafile.close()
+
+	# Compare chrom lengths for BAM input. Fragment files do not carry chromosome
+	# sizes, so the FASTA header is authoritative for their synthetic read view.
+	if getattr(args, "input_type", "bam") == "fragments":
+		bam_references = list(fasta_chrom_info)
+		bam_chrom_info = dict(fasta_chrom_info)
 
 	#Compare chrom lengths
 	chrom_in_common = set(bam_chrom_info.keys()).intersection(fasta_chrom_info.keys())

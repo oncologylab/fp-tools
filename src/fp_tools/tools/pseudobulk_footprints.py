@@ -223,10 +223,10 @@ def _group_inputs(args: argparse.Namespace, grouping_dir: Path, include_chroms: 
         include_chroms=include_chroms,
         exclude_chroms=exclude_chroms,
         compress_output=True,
-        index_output=True,
+        index_output=False,
         genome_sizes=args.genome_sizes,
         write_cutsite_bigwigs=True,
-        write_pseudo_bams=True,
+        write_pseudo_bams=False,
         cpm_normalize=not args.no_cpm_normalize,
         cores=args.cores,
     )
@@ -298,8 +298,8 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
 
         atac_command = [
             "atac-correct",
-            "--bams",
-            str(source["pseudo_bam"]),
+            "--fragments" if str(source.get("source_type", "")) == "fragments" else "--bams",
+            str(source["fragment_file"] if str(source.get("source_type", "")) == "fragments" else source["pseudo_bam"]),
             "--genome",
             str(args.genome),
             "--peaks",
@@ -479,7 +479,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--annotations", required=True, help="Cell annotation TSV or CSV.")
     parser.add_argument("--group-by", required=True, help="Comma-separated annotation columns to group by.")
     parser.add_argument("--outdir", required=True, help="Output directory for the full pseudobulk footprint workflow.")
-    parser.add_argument("--genome-sizes", help="Two-column chromosome sizes file; required for fragment input cut-site bigWigs and pseudo-BAMs.")
+    parser.add_argument("--genome-sizes", help="Two-column chromosome sizes file used for fragment-derived cut-site bigWigs.")
     parser.add_argument("--genome", required=True, help="Genome FASTA for atac-correct.")
     parser.add_argument("--peaks", required=True, help="Peak BED used for atac-correct and footprint scoring.")
     parser.add_argument("--blacklist", help="Optional blacklist BED for atac-correct.")
@@ -493,7 +493,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-fragments", type=int, default=1, help="Minimum fragments/reads for passes_filters (default: 1).")
     parser.add_argument("--no-cpm-normalize", action="store_true", help="Write raw cut counts instead of CPM-normalized cut-site bigWigs for fragment input.")
     parser.add_argument("--top-n", type=int, default=None, help="Optional top N candidate footprints per group.")
-    parser.add_argument("--read-shift", nargs=2, type=int, metavar=("FWD", "REV"), help="Override the atac-correct read shift for fragment-derived pseudo-BAMs (default: 0 0).")
+    parser.add_argument("--read-shift", nargs=2, type=int, metavar=("FWD", "REV"), help="Override the atac-correct read shift for fragment cut sites (default: 0 0).")
     parser.add_argument("--motifs", nargs="*", help="Optional motif file(s); when provided, run motif-aware diff-footprints on pseudobulk footprint tracks.")
     parser.add_argument("--motif-db", default=DEFAULT_MOTIF_DB, help=f"Built-in motif database for motif matching (default: {DEFAULT_MOTIF_DB}); can be combined with --motifs.")
     parser.add_argument("--list-motif-dbs", action="store_true", help="List available built-in motif databases and exit.")

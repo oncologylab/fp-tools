@@ -37,8 +37,8 @@ from matplotlib.lines import Line2D
 from adjustText import adjust_text  # noqa: F401
 
 # Bio
-import pyBigWig
-import pysam
+from fp_tools.utils import bigwig as pyBigWig
+from fp_tools.utils.fasta import open_fasta
 
 # Internal (fp_tools namespace)
 from fp_tools.utils.regions import *
@@ -139,7 +139,7 @@ def get_gc_content(regions, fasta):
     """Mean GC fraction inside regions."""
     nuc_count = {"T": 0, "t": 0, "A": 0, "a": 0, "G": 1, "g": 1, "C": 1, "c": 1}
     gc = 0; total = 0
-    fasta_obj = pysam.FastaFile(fasta)
+    fasta_obj = open_fasta(fasta)
     for region in regions:
         seq = fasta_obj.fetch(region.chrom, region.start, region.end)
         gc += sum([nuc_count.get(nuc, 0.5) for nuc in seq])
@@ -171,7 +171,7 @@ def scan_and_score(regions, motifs_obj, args, log_q, qs):
             sample_bigwigs[sample_name] = pyBigWig.open(args.signals[signal_idx], "rb")
             signal_to_sample[signal_idx] = sample_name
 
-    fasta_obj = pysam.FastaFile(args.genome)
+    fasta_obj = open_fasta(args.genome)
     chrom_boundaries = dict(zip(fasta_obj.references, fasta_obj.lengths))
 
     rand_window = 200
@@ -296,15 +296,12 @@ def process_tfbs(TF_name, args, log2fc_params, bed_rows=None):
     diff_dist = scipy.stats.norm
 
     if args.output_peaks is not None and bed_rows is None:
-        # Import lazily so diff-footprints --help and parser-only paths do not touch
-        # pybedtools/genomepy cache initialization.
-        from pybedtools import BedTool
+        from fp_tools.utils.intervals import intersect_bed
 
-        output_bt = BedTool(args.output_peaks)
-        sites_bt = BedTool(filename)
-        intersection = sites_bt.intersect(output_bt, u=True)
-        filename = intersection.fn
-        tmp_files.append(intersection.fn)
+        intersection_path = filename + ".output_peaks.bed"
+        intersect_bed(filename, args.output_peaks, intersection_path)
+        filename = intersection_path
+        tmp_files.append(intersection_path)
 
     stime = datetime.now()
     header = ["TFBS_chr", "TFBS_start", "TFBS_end", "TFBS_name", "TFBS_score", "TFBS_strand"] \

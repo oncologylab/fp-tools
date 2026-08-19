@@ -76,7 +76,7 @@ git diff --check
 
 ```bash
 .venv/bin/run-yaml-workflow --config examples/gui_configs/call_footprints_single.yml --dry-run
-.venv/bin/fp-tools-gui --host 0.0.0.0 --port 8891 --run-dir examples/gui_runs
+.venv/bin/fp-tools-gui --port 8891 --run-dir examples/gui_runs
 ```
 
 Keep YAML configs portable: paths and sample lists should be explicit, and the

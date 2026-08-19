@@ -26,8 +26,11 @@ from pathlib import Path
 from typing import Any, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import pyBigWig
-import pysam
+from fp_tools.utils import bigwig as pyBigWig
+try:
+    import pysam
+except ImportError:  # Raw-read preparation is documented through WSL on Windows.
+    pysam = None
 import yaml
 
 
@@ -1557,10 +1560,18 @@ def _available_memory_gb() -> float:
                 return int(line.split()[1]) / (1024**2)
     except (OSError, ValueError, IndexError):
         pass
-    return os.sysconf("SC_AVPHYS_PAGES") * os.sysconf("SC_PAGE_SIZE") / (1024**3)
+    try:
+        return os.sysconf("SC_AVPHYS_PAGES") * os.sysconf("SC_PAGE_SIZE") / (1024**3)
+    except (AttributeError, OSError, ValueError):
+        return 8.0
 
 
 def run_preprocessing(args: argparse.Namespace) -> int:
+    if os.name == "nt":
+        raise SystemExit(
+            "prepare-atac requires Unix bioinformatics executables. On Windows, run it in WSL; "
+            "the downstream fp-tools commands and GUI run natively."
+        )
     overrides: dict[str, Any] = {"profile": args.profile} if args.profile else {}
     resource_overrides = {
         key: value
