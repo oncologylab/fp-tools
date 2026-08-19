@@ -203,6 +203,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
                 return list(csv.DictReader(handle, delimiter="\t"))
 
         fastq_rows = rows("encode_hepg2_k562_fastq_urls.tsv")
+        local_fastq_rows = rows("local_fastq_template.tsv")
         self.assertEqual(len(fastq_rows), 6)
         self.assertEqual({row["condition"] for row in fastq_rows}, {"HepG2", "K562"})
         for row in fastq_rows:
@@ -210,6 +211,10 @@ class DocsEntryPointContractTest(unittest.TestCase):
                 self.assertTrue(row[field].startswith("https://www.encodeproject.org/files/"))
             for field in ("fastq_1_md5", "fastq_2_md5"):
                 self.assertRegex(row[field], r"^[0-9a-f]{32}$")
+        self.assertEqual(
+            list(local_fastq_rows[0]),
+            ["sample", "condition", "fastq_1", "fastq_2"],
+        )
 
         small_samples = rows("encode_hepg2_k562_bams.tsv")
         local_samples = rows("local_bam_peak_template.tsv")
@@ -244,6 +249,10 @@ class DocsEntryPointContractTest(unittest.TestCase):
             6,
         )
         self.assertEqual(
+            len(read_preprocess_metadata(ENCODE_DOCS / "local_fastq_template.tsv")),
+            2,
+        )
+        self.assertEqual(
             len(read_sample_table(ENCODE_DOCS / "encode_hepg2_k562_bams.tsv")), 6
         )
         self.assertEqual(
@@ -269,6 +278,21 @@ class DocsEntryPointContractTest(unittest.TestCase):
         )
         for forbidden in ("/home/", "169.254.169.254", "localhost:"):
             self.assertNotIn(forbidden, text)
+
+    def test_bulk_workflow_uses_minimal_beginner_examples(self):
+        guide = (
+            ROOT / "docs" / "get-started" / "workflows" / "bulk-atac-seq.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("sample\tcondition\tfastq_1\tfastq_2", guide)
+        self.assertIn("sample\tcondition\tbam\tpeaks", guide)
+        self.assertIn("Only the four columns shown above are needed", guide)
+        for unnecessary_detail in (
+            "Plan storage and runtime before downloading",
+            "Why the wrapper output is not byte-for-byte identical",
+            "Representative ENCODE QC files",
+            "not a reproduction of the pair-specific demo",
+        ):
+            self.assertNotIn(unnecessary_detail, guide)
 
     def test_command_guides_use_precise_signal_names_and_file_patterns(self):
         command_dir = ROOT / "docs" / "get-started" / "commands"
