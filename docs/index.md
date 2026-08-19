@@ -13,7 +13,7 @@ hide:
 
 `fp-tools` provides command-line and browser workflows for bulk and single-cell
 footprinting of Tn5-based chromatin profiling data, including ATAC-seq,
-CUT&Tag, and Tn5-based CUT&RUN. It connects bias correction, footprint scoring,
+CUT&Tag, and related assays. It connects bias correction, footprint scoring,
 motif analysis, replicate comparisons, and reusable reports.
 
 <div class="fp-badges">

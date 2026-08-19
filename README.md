@@ -19,8 +19,8 @@
 </p>
 
 `fp-tools` is a command-first toolkit for footprinting Tn5-based chromatin
-profiling data, including ATAC-seq, CUT&Tag, and Tn5-based CUT&RUN. It provides
-bias correction, motif analysis, replicate-aware comparisons, and single-cell
+profiling data, including ATAC-seq, CUT&Tag, and related assays. It provides bias
+correction, motif analysis, replicate-aware comparisons, and single-cell
 footprint signatures. The GUI and YAML runner call the same commands.
 
 ## Install

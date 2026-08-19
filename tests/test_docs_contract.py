@@ -456,7 +456,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertLess(len(index.split()), 190)
         self.assertIn("Tn5-based chromatin footprinting", index)
         self.assertIn("CUT&Tag", index)
-        self.assertIn("Tn5-based CUT&RUN", index)
+        self.assertNotIn("CUT&RUN", index)
         self.assertIn("Output demo with ENCODE cancer cell lines", self.readme)
         self.assertIn(
             "https://oncologylab.github.io/fp-tools/demos/gui/"
