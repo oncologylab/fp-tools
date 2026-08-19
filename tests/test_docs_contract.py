@@ -4,6 +4,7 @@ These guard against README/MkDocs/PyPI drift where the documented command
 surface diverges from the console scripts declared in ``pyproject.toml``.
 """
 
+import csv
 import pathlib
 import re
 import tomllib
@@ -11,6 +12,7 @@ import unittest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+ENCODE_DOCS = ROOT / "docs" / "demos" / "data" / "encode"
 
 REMOVED_ALIASES = {
     "ATACorrect",
@@ -171,6 +173,134 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertIn("  - navigation", reports)
         self.assertIn("  - navigation", gui)
         self.assertIn("  - navigation", api)
+
+    def test_core_command_footer_is_a_closed_sequence(self):
+        sequence = [
+            "prepare-atac",
+            "atac-correct",
+            "call-footprints",
+            "match-motifs",
+            "diff-footprints",
+            "normalize-bigwig",
+        ]
+        command_dir = ROOT / "docs" / "get-started" / "commands"
+        for index, command in enumerate(sequence):
+            content = (command_dir / f"{command}.md").read_text(encoding="utf-8")
+            self.assertIn("core_nav:", content)
+            if index:
+                self.assertIn(f"title: {sequence[index - 1]}", content)
+            if index < len(sequence) - 1:
+                self.assertIn(f"title: {sequence[index + 1]}", content)
+        for command in set(self.public_scripts) - set(sequence):
+            content = (command_dir / f"{command}.md").read_text(encoding="utf-8")
+            self.assertNotIn("core_nav:", content)
+        footer = (ROOT / "overrides" / "partials" / "footer.html").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("page.meta.core_nav", footer)
+        self.assertNotIn("page.previous_page", footer)
+        self.assertNotIn("page.next_page", footer)
+
+    def test_encode_example_tables_are_complete_and_portable(self):
+        from fp_tools.tools.prepare_atac import read_preprocess_metadata
+        from fp_tools.utils.project_layout import read_comparison_table, read_sample_table
+
+        def rows(name):
+            with (ENCODE_DOCS / name).open(encoding="utf-8", newline="") as handle:
+                return list(csv.DictReader(handle, delimiter="\t"))
+
+        fastq_rows = rows("encode_hepg2_k562_fastq_urls.tsv")
+        self.assertEqual(len(fastq_rows), 6)
+        self.assertEqual({row["condition"] for row in fastq_rows}, {"HepG2", "K562"})
+        for row in fastq_rows:
+            for field in ("fastq_1", "fastq_2"):
+                self.assertTrue(row[field].startswith("https://www.encodeproject.org/files/"))
+            for field in ("fastq_1_md5", "fastq_2_md5"):
+                self.assertRegex(row[field], r"^[0-9a-f]{32}$")
+
+        small_samples = rows("encode_hepg2_k562_bams.tsv")
+        local_samples = rows("local_bam_peak_template.tsv")
+        full_samples = rows("encode_cancer_7line_bams.tsv")
+        small_comparisons = rows("encode_hepg2_k562_comparisons.tsv")
+        full_comparisons = rows("encode_cancer_7line_comparisons.tsv")
+        self.assertEqual(len(small_samples), 6)
+        self.assertEqual(len(local_samples), 4)
+        self.assertEqual(len(full_samples), 17)
+        self.assertEqual(len(small_comparisons), 1)
+        self.assertEqual(len(full_comparisons), 21)
+        self.assertEqual(len({row["sample"] for row in full_samples}), 17)
+        self.assertEqual(
+            {row["condition"] for row in full_samples},
+            {"A549", "HCT116", "HepG2", "K562", "MCF-7", "PC-3", "Panc1"},
+        )
+        conditions = {row["condition"] for row in full_samples}
+        for row in full_samples:
+            self.assertFalse(pathlib.Path(row["bam"]).is_absolute())
+            self.assertFalse(pathlib.Path(row["peaks"]).is_absolute())
+            self.assertTrue(row["peaks"].endswith(".bed"))
+            self.assertFalse(row["peaks"].endswith(".bed.gz"))
+            self.assertRegex(row["bam_md5"], r"^[0-9a-f]{32}$")
+            self.assertRegex(row["peak_md5"], r"^[0-9a-f]{32}$")
+        for row in full_comparisons:
+            self.assertIn(row["cond1"], conditions)
+            self.assertIn(row["cond2"], conditions)
+            self.assertNotEqual(row["cond1"], row["cond2"])
+
+        self.assertEqual(
+            len(read_preprocess_metadata(ENCODE_DOCS / "encode_hepg2_k562_fastq_urls.tsv")),
+            6,
+        )
+        self.assertEqual(
+            len(read_sample_table(ENCODE_DOCS / "encode_hepg2_k562_bams.tsv")), 6
+        )
+        self.assertEqual(
+            len(read_sample_table(ENCODE_DOCS / "local_bam_peak_template.tsv")), 4
+        )
+        self.assertEqual(
+            len(read_sample_table(ENCODE_DOCS / "encode_cancer_7line_bams.tsv")), 17
+        )
+        self.assertEqual(
+            len(read_comparison_table(ENCODE_DOCS / "encode_cancer_7line_comparisons.tsv")),
+            21,
+        )
+
+    def test_encode_docs_have_no_machine_specific_paths(self):
+        paths = [
+            *ENCODE_DOCS.glob("*"),
+            *(ROOT / "docs" / "demos" / "qc" / "encode").glob("*.tsv"),
+            ROOT / "docs" / "get-started" / "workflows" / "bulk-atac-seq.md",
+            ROOT / "docs" / "api.md",
+        ]
+        text = "\n".join(
+            path.read_text(encoding="utf-8") for path in paths if path.is_file()
+        )
+        for forbidden in ("/home/", "169.254.169.254", "localhost:"):
+            self.assertNotIn(forbidden, text)
+
+    def test_command_guides_use_precise_signal_names_and_file_patterns(self):
+        command_dir = ROOT / "docs" / "get-started" / "commands"
+        required_patterns = {
+            "prepare-atac": "{sample}.rp10m.bw",
+            "atac-correct": "{sample}_corrected.bw",
+            "call-footprints": "{sample}_footprints.bw",
+            "match-motifs": "motif_matches_results.txt",
+            "diff-footprints": "{prefix}_results.txt",
+            "normalize-bigwig": "{sample}_corrected_q95_scaled.bw",
+        }
+        for command, pattern in required_patterns.items():
+            content = (command_dir / f"{command}.md").read_text(encoding="utf-8")
+            self.assertIn(pattern, content)
+        prepare = (command_dir / "prepare-atac.md").read_text(encoding="utf-8")
+        self.assertNotIn("RP10M coverage", prepare)
+        self.assertIn("alignment coverage bigWig", prepare)
+        atac = (command_dir / "atac-correct.md").read_text(encoding="utf-8")
+        for signal in (
+            "Observed base-resolution cut-site signal",
+            "Tn5 sequence-bias score",
+            "Expected cut-site signal",
+            "Bias-corrected cut-site signal",
+        ):
+            self.assertIn(signal, atac)
 
     def test_public_site_docs_use_current_wording(self):
         public_docs = "\n".join(

@@ -26,9 +26,15 @@ discover-motifs \
 
 ## Main outputs
 
-- Candidate FASTA sequences.
-- A runnable discovery plan or executed results.
-- Optional Tomtom comparisons with known motifs.
+`{outdir}` is the selected discovery directory:
+
+| Path | Meaning |
+| --- | --- |
+| `{outdir}/candidate_sequences.fa` | Reference sequences extracted around candidate footprint intervals. |
+| `{outdir}/run_motif_discovery.sh` | Reproducible MEME/DREME/STREME command plan. |
+| `{outdir}/{method}/streme.txt` or the method-equivalent MEME output | De novo motif models when `--execute` is used. |
+| `{outdir}/tomtom/tomtom.tsv` | Optional similarity matches to the selected known-motif database. |
+| `{outdir}/motif_summary.tsv` and `motif_summary.html` | Summary targets written by the generated plan after discovery and matching complete. |
 
 Continue with [`summarize-motifs`](summarize-motifs.md), or see the
 [complete `discover-motifs` reference](../../api.md#discover-motifs).

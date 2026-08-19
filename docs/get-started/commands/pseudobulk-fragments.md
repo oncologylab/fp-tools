@@ -26,9 +26,17 @@ pseudobulk-fragments \
 
 ## Main outputs
 
-- One fragment file per retained cell group.
-- Group manifest and QC summary.
-- Optional indexed fragments, cut-site bigWigs, and pseudo-BAMs.
+For each sanitized `{group}` under `{outdir}`:
+
+| Path | Meaning |
+| --- | --- |
+| `{group}.fragments.tsv` or `{group}.fragments.tsv.gz` | Fragments assigned to the group; compressed/indexed form is controlled by the command options. |
+| `{group}.fragments.tsv.gz.tbi` | Optional Tabix index for random genomic access. |
+| `{group}.cutsites.cpm.bw` | Optional CPM-normalized cut-site signal bigWig written by `--write-cutsite-bigwigs`. |
+| `{group}.pseudo_pairs.sorted.bam` and `.bai` | Optional pseudo-paired alignment used by `atac-correct` with read shift `0 0`. |
+| `pseudobulk_manifest.tsv` | Per-group paths, cell/fragment counts, and filter status. |
+| `fp_tools_manifest.yml` | Machine-readable run settings and retained groups. |
+| `pseudobulk_downstream_commands.sh` | Optional generated downstream command examples. |
 
 Continue with [`sc-footprinting`](sc-footprinting.md), or see the
 [complete `pseudobulk-fragments` reference](../../api.md#pseudobulk-fragments).

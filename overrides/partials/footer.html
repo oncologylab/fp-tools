@@ -1,0 +1,42 @@
+{# Core-command navigation is explicit so unrelated pages never enter the chain. #}
+<footer class="md-footer">
+  {% if "navigation.footer" in features and page.meta and page.meta.core_nav %}
+    {% set core_nav = page.meta.core_nav %}
+    <nav class="md-footer__inner md-grid" aria-label="{{ lang.t('footer') }}">
+      {% if core_nav.previous %}
+        {% set direction = lang.t("footer.previous") %}
+        <a href="{{ core_nav.previous.url | url }}" class="md-footer__link md-footer__link--prev" aria-label="{{ direction }}: {{ core_nav.previous.title | e }}">
+          <div class="md-footer__button md-icon">
+            {% set icon = config.theme.icon.previous or "material/arrow-left" %}
+            {% include ".icons/" ~ icon ~ ".svg" %}
+          </div>
+          <div class="md-footer__title">
+            <span class="md-footer__direction">{{ direction }}</span>
+            <div class="md-ellipsis">{{ core_nav.previous.title }}</div>
+          </div>
+        </a>
+      {% endif %}
+      {% if core_nav.next %}
+        {% set direction = lang.t("footer.next") %}
+        <a href="{{ core_nav.next.url | url }}" class="md-footer__link md-footer__link--next" aria-label="{{ direction }}: {{ core_nav.next.title | e }}">
+          <div class="md-footer__title">
+            <span class="md-footer__direction">{{ direction }}</span>
+            <div class="md-ellipsis">{{ core_nav.next.title }}</div>
+          </div>
+          <div class="md-footer__button md-icon">
+            {% set icon = config.theme.icon.next or "material/arrow-right" %}
+            {% include ".icons/" ~ icon ~ ".svg" %}
+          </div>
+        </a>
+      {% endif %}
+    </nav>
+  {% endif %}
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      {% include "partials/copyright.html" %}
+      {% if config.extra.social %}
+        {% include "partials/social.html" %}
+      {% endif %}
+    </div>
+  </div>
+</footer>

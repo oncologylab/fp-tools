@@ -45,13 +45,21 @@ GET_STARTED_PAGES = (
     "get-started/output-examples/single-cell-atac-seq/",
     "get-started/output-examples/region-set-comparison/",
 )
+CORE_COMMAND_SEQUENCE = (
+    "get-started/commands/prepare-atac/",
+    "get-started/commands/atac-correct/",
+    "get-started/commands/call-footprints/",
+    "get-started/commands/match-motifs/",
+    "get-started/commands/diff-footprints/",
+    "get-started/commands/normalize-bigwig/",
+)
 PAGES = (
     *GET_STARTED_PAGES,
     "api/",
     "gui/",
     "reports/",
     "demos/reports/diff_footprints_K562_HepG2.html",
-    "demos/reports/region_set_K562_CTCF.html",
+    "demos/reports/region_set_HepG2_HNF4A_FOXA2/",
     "demos/gui/fp-tools-gui-static-demo.html",
     "ENCODE-Cancer-Cell-lines-Footprinting/",
 )
@@ -63,12 +71,13 @@ REPORT_IFRAME_PAGES = {
 }
 STANDALONE_DEMO_PAGES = {
     "demos/reports/diff_footprints_K562_HepG2.html",
-    "demos/reports/region_set_K562_CTCF.html",
+    "demos/reports/region_set_HepG2_HNF4A_FOXA2/",
     "demos/gui/fp-tools-gui-static-demo.html",
     "ENCODE-Cancer-Cell-lines-Footprinting/",
 }
 DOCUMENTATION_RETURN_PAGES = {
     "demos/gui/fp-tools-gui-static-demo.html",
+    "demos/reports/region_set_HepG2_HNF4A_FOXA2/",
     "ENCODE-Cancer-Cell-lines-Footprinting/",
 }
 DARK_MODE_PAGES = {
@@ -231,8 +240,12 @@ def audit(site_dir: Path) -> None:
                             "element => element.click()"
                         )
                         page.wait_for_timeout(100)
-                    if relative.endswith(("diff_footprints_K562_HepG2.html", "region_set_K562_CTCF.html")):
+                    if relative.endswith("diff_footprints_K562_HepG2.html"):
                         page.locator(".selected-motif").first.wait_for(
+                            state="visible", timeout=60_000
+                        )
+                    if relative == "demos/reports/region_set_HepG2_HNF4A_FOXA2/":
+                        page.locator(".aggregate-panel").first.wait_for(
                             state="visible", timeout=60_000
                         )
                     if relative == "ENCODE-Cancer-Cell-lines-Footprinting/":
@@ -342,11 +355,23 @@ def audit(site_dir: Path) -> None:
                         secondary = page.locator(".md-sidebar--secondary")
                         if secondary.is_visible():
                             failures.append(f"{label}: page TOC should be hidden")
-                        if page.locator(".md-footer__link--next").count() != 1:
-                            failures.append(f"{label}: next-page footer link is missing")
-                        if relative and page.locator(".md-footer__link--prev").count() != 1:
+                        previous_count = page.locator(".md-footer__link--prev").count()
+                        next_count = page.locator(".md-footer__link--next").count()
+                        if relative in CORE_COMMAND_SEQUENCE:
+                            index = CORE_COMMAND_SEQUENCE.index(relative)
+                            expected_previous = int(index > 0)
+                            expected_next = int(index < len(CORE_COMMAND_SEQUENCE) - 1)
+                            if previous_count != expected_previous:
+                                failures.append(
+                                    f"{label}: expected {expected_previous} core previous link, found {previous_count}"
+                                )
+                            if next_count != expected_next:
+                                failures.append(
+                                    f"{label}: expected {expected_next} core next link, found {next_count}"
+                                )
+                        elif previous_count or next_count:
                             failures.append(
-                                f"{label}: previous-page footer link is missing"
+                                f"{label}: Previous/Next banner must be limited to Core analysis"
                             )
                         family = page.locator("body").evaluate(
                             "element => getComputedStyle(element).fontFamily"
@@ -594,6 +619,26 @@ def audit(site_dir: Path) -> None:
                                 failures.append(
                                     f"{label}: exported aggregate legend is not 3 units thick"
                                 )
+                    if relative == "demos/reports/region_set_HepG2_HNF4A_FOXA2/":
+                        check_expanded_aggregate_layout(page, label, failures)
+                        check_grouped_aggregate_legend(page, label, failures)
+                        first = page.locator("#condition-1")
+                        second = page.locator("#condition-2")
+                        if (
+                            first.input_value() != "HNF4A + FOXA2"
+                            or second.input_value() != "No HNF4A/FOXA2"
+                        ):
+                            failures.append(f"{label}: unexpected region-set default comparison")
+                        if page.locator(".selected-motif").count() != 8:
+                            failures.append(f"{label}: expected eight selected motif cards")
+                        if page.locator(".aggregate-panel").count() != 8:
+                            failures.append(f"{label}: expected eight aggregate panels")
+                        first.select_option("HNF4A only")
+                        page.wait_for_timeout(100)
+                        second.select_option("FOXA2 only")
+                        page.wait_for_timeout(1_000)
+                        if "HNF4A only vs FOXA2 only" not in page.title():
+                            failures.append(f"{label}: region-set dropdown comparison did not load")
                     if relative == "reports/" and embedded_frame is not None:
                         check_grouped_aggregate_legend(
                             embedded_frame, f"{label} embedded report", failures

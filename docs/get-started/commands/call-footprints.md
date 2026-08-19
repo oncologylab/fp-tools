@@ -1,7 +1,18 @@
+---
+core_nav:
+  previous:
+    title: atac-correct
+    url: get-started/commands/atac-correct/
+  next:
+    title: match-motifs
+    url: get-started/commands/match-motifs/
+---
+
 # [`call-footprints`](../../api.md#call-footprints)
 
-Calculate continuous footprint score tracks from corrected ATAC-seq cut-site
-signal.
+Calculate a continuous footprint score from bias-corrected cut-site signal
+within accessible regions. Higher local depletion relative to flanking signal
+produces stronger footprint evidence.
 
 ## Example command
 
@@ -15,16 +26,22 @@ call-footprints \
 
 ## Primary inputs
 
-- `--signals` — one or more corrected cut-site bigWig tracks.
-- `--sample-names` — labels corresponding to the input tracks.
-- `--regions` — BED regions in which footprint scores are calculated.
-- `--sample-output-root` — root directory for per-sample footprint outputs.
+- `--signals` — one bias-corrected cut-site signal bigWig per sample.
+- `--sample-names` — labels in the same order as `--signals`.
+- `--regions` — BED intervals in which scores are calculated; normally the project merged, filtered peaks.
+- `--sample-output-root` — root represented by `{sample_root}` below.
 
 ## Main outputs
 
-- One footprint score bigWig per input signal.
-- Optional candidate-footprint BED files for de novo motif discovery.
-- Optional multiscale score arrays and candidate summaries.
+| Path | Meaning |
+| --- | --- |
+| `{sample_root}/{sample}/footprints/{sample}_footprints.bw` | Base-resolution footprint score bigWig used by `match-motifs` and `diff-footprints`. |
+| `{sample_root}/{sample}/footprints/{sample}_candidate_footprints.bed` | Optional local score maxima for de novo motif discovery; written with `--call-candidates`. |
+| user-selected `*.npz` | Optional compressed scale-by-position score arrays when `--score multiscale` is used with an NPZ output option. |
+
+In direct mode, `--output result.bw` writes exactly `result.bw`; multiple
+signals written through `--outdir {outdir}` use
+`{outdir}/{signal_stem}_footprints.bw`.
 
 Continue with [`match-motifs`](match-motifs.md), or see the
 [complete `call-footprints` reference](../../api.md#call-footprints).

@@ -1734,7 +1734,7 @@ def run_preprocessing(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="prepare-atac",
-        description="Download single- or paired-end ATAC-seq reads and prepare filtered BAM, peak BED, RP10M bigWig, and QC files.",
+        description="Download single- or paired-end ATAC-seq reads and prepare filtered BAM, peak BED, sequencing-depth-normalized alignment coverage bigWig, and QC files.",
     )
     parser.add_argument(
         "--samples",

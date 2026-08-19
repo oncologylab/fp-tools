@@ -1,0 +1,5 @@
+sample	condition	bam	peaks
+condition_a_rep1	condition_a	data/bams/condition_a_rep1.filtered.bam	data/peaks/condition_a_rep1.narrowPeak
+condition_a_rep2	condition_a	data/bams/condition_a_rep2.filtered.bam	data/peaks/condition_a_rep2.narrowPeak
+condition_b_rep1	condition_b	data/bams/condition_b_rep1.filtered.bam	data/peaks/condition_b_rep1.narrowPeak
+condition_b_rep2	condition_b	data/bams/condition_b_rep2.filtered.bam	data/peaks/condition_b_rep2.narrowPeak

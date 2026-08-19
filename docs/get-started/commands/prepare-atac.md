@@ -1,7 +1,17 @@
+---
+core_nav:
+  next:
+    title: atac-correct
+    url: get-started/commands/atac-correct/
+---
+
 # [`prepare-atac`](../../api.md#prepare-atac)
 
-Prepare public or local ATAC-seq reads as the filtered alignments, peaks,
-coverage tracks, and QC files needed for footprint analysis.
+Download public ATAC-seq reads or use local FASTQ files, then trim, align,
+filter, call peaks, calculate alignment coverage, and write QC files. Use this
+command when the analysis starts from reads; skip it when filtered BAM and peak
+files already exist. Before a large job, run
+`prepare-atac --doctor --profile modern` to check external programs.
 
 ## Example command
 
@@ -9,20 +19,45 @@ coverage tracks, and QC files needed for footprint analysis.
 prepare-atac \
   --samples metadata.tsv \
   --genome hg38 \
-  --outdir project/raw
+  --outdir project
 ```
 
 ## Primary inputs
 
-- `--samples` — TSV or CSV sample sheet containing public accessions, local FASTQ paths, or HTTPS FASTQ links.
-- `--genome` — named `hg38` or `mm10` reference, or a configured custom genome.
-- `--outdir` — project directory for processed data and QC outputs.
+- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [ENCODE and local examples](../workflows/bulk-atac-seq.md#starting-from-fastq-files).
+- `--genome` — packaged `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
+- `--outdir` — project directory represented by `{project}` below.
+
+Repeated rows with the same `sample`, `condition`, and `replicate` combine
+technical sequencing runs. Different `sample` values sharing a `condition` are
+biological replicates.
 
 ## Main outputs
 
-- Filtered BAM and BAI files, peak BED files, and RP10M coverage bigWigs.
-- Per-sample QC files and command logs.
-- Merged project peaks, resolved settings, and a downstream sample table.
+For each `{sample}`, the default modern profile writes:
+
+| Path | Meaning |
+| --- | --- |
+| `{project}/samples/{sample}/alignment/{sample}.filtered.bam` | Coordinate-sorted, filtered ATAC-seq alignment used downstream. |
+| `{project}/samples/{sample}/alignment/{sample}.filtered.bam.bai` | Samtools index for the filtered BAM. |
+| `{project}/samples/{sample}/peaks/{sample}.narrowPeak` | MACS3 narrow-peak calls before project-level merging. |
+| `{project}/samples/{sample}/tracks/{sample}.rp10m.bw` | Sequencing-depth-normalized alignment coverage bigWig. `rp10m` is retained only as the historical filename suffix. |
+| `{project}/samples/{sample}/qc/{sample}.fastp.html` | Interactive Fastp read-trimming QC report. |
+| `{project}/samples/{sample}/qc/{sample}.fastp.json` | Machine-readable Fastp metrics. |
+| `{project}/samples/{sample}/qc/flagstat.tsv` | Samtools alignment and filtering counts. |
+| `{project}/samples/{sample}/qc/fragment_lengths.tsv` | Fragment-length distribution used to inspect ATAC-seq periodicity. |
+| `{project}/samples/{sample}/qc/metrics.json` | Consolidated per-sample QC metrics. |
+| `{project}/samples/{sample}/qc/commands.log` | External commands used for that sample. |
+
+Project-level files include:
+
+| Path | Meaning |
+| --- | --- |
+| `{project}/peaks/merged_peaks.bed` | Union of sample peak intervals. |
+| `{project}/peaks/merged_peaks_filtered.bed` | Analysis peak set after excluded chromosomes are removed. |
+| `{project}/metadata/resolved_runs.tsv` | Resolved local/downloaded FASTQ files and run grouping. |
+| `{project}/metadata/samples.tsv` | Downstream `sample`, `condition`, `bam`, and `peaks` table accepted by core commands. |
+| `{project}/reports/qc_summary.tsv` | Cross-sample QC summary. |
 
 Continue with [`atac-correct`](atac-correct.md), or see the
 [complete `prepare-atac` reference](../../api.md#prepare-atac).

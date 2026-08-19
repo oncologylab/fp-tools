@@ -3,14 +3,18 @@
 The guides below cover common inputs and outputs. See the
 [API Reference](../api.md) for every option.
 
+If you are new to fp-tools, start with the [bulk ATAC-seq workflow](workflows/bulk-atac-seq.md):
+it includes complete FASTQ and aligned-data sample sheets, an explicit
+comparison table, ENCODE downloads, and the expected output layout.
+
 ## Core analysis
 
-- [`prepare-atac`](commands/prepare-atac.md) — prepare FASTQ inputs as filtered BAM, peak, coverage, and QC outputs.
+- [`prepare-atac`](commands/prepare-atac.md) — prepare FASTQ inputs as filtered BAM, peak, alignment coverage, and QC outputs.
 - [`atac-correct`](commands/atac-correct.md) — correct ATAC-seq cut-site signal for Tn5 sequence bias.
 - [`call-footprints`](commands/call-footprints.md) — calculate footprint-score tracks from corrected signal.
 - [`match-motifs`](commands/match-motifs.md) — scan motifs and summarize motif-associated footprint scores.
 - [`diff-footprints`](commands/diff-footprints.md) — compare conditions or user-defined region sets, with replicate-aware statistics.
-- [`normalize-bigwig`](commands/normalize-bigwig.md) — normalize bigWig tracks over shared background regions.
+- [`normalize-bigwig`](commands/normalize-bigwig.md) — normalize corrected cut-site signals over shared background regions.
 
 ## Visualization and review
 

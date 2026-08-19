@@ -18,17 +18,22 @@ plot-aggregate \
 
 ## Primary inputs
 
-- `--sample-table` — samples, conditions, and signal bigWig tracks.
+- `--sample-table` — samples, conditions, and bias-corrected cut-site signal bigWigs used for the aggregate profiles.
 - `--motifs` — motif names or identifiers to plot.
 - `--site-set` — motif-site set; the example uses bound sites.
 - `--outdir` — project directory containing motif results and receiving plots.
 
 ## Main outputs
 
-- Static PDF or interactive HTML aggregate plots.
-- Optional aggregated signal and summary tables.
-- A multipage motif-by-comparison PDF when `--motif-grid` is used with a
-  `review-multi-comparisons` bundle.
+- `{project}/reports/plot_aggregate.html` — default project-layout interactive aggregate report with motif-centered signal profiles.
+- the exact `--output` path — static PDF/PNG/SVG or interactive HTML in custom layout.
+- the exact `--output-txt` path — optional per-position aggregate values.
+- the exact `--output-aggregated-signals`, `--output-aggregated-scores`, and `--output-aggregated-stats` paths — optional source tables when requested.
+- the exact `--output` path in `--motif-grid` mode — multipage motif-by-comparison PDF built from a review bundle.
+
+When both signal types are available, use footprint score bigWigs for motif
+statistics and bias-corrected cut-site signal bigWigs for observed aggregate
+profiles; label the chosen signal explicitly in figure captions.
 
 ```bash
 plot-aggregate \

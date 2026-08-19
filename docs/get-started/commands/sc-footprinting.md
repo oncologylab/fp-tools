@@ -32,9 +32,20 @@ sc-footprinting \
 
 ## Main outputs
 
-- Pseudobulk fragments, pseudo-BAMs, and corrected/footprint bigWigs.
-- Motif-aware differential reports and aggregate plots.
-- Per-cell footprint-signature heatmaps and UMAP figures.
+`{outdir}` contains a complete staged workflow:
+
+| Path | Meaning |
+| --- | --- |
+| `pseudobulk/{group}.fragments.tsv.gz` and `.tbi` | Indexed fragments for each retained cell group. |
+| `pseudobulk/{group}.cutsites.cpm.bw` | Group cut-site signal bigWig. |
+| `pseudobulk/{group}.pseudo_pairs.sorted.bam` and `.bai` | Pseudo-paired alignment used for bias correction. |
+| `atacorrect/{group}/{group}_corrected.bw` | Bias-corrected cut-site signal per group. |
+| `footprints/{group}_footprints.bw` | Footprint score signal per group. |
+| `diff_footprints/pseudobulk_diff_footprints_results.txt` | Optional motif-level group comparison results. |
+| `plots/single_cell_footprinting/` | Per-cell score tables, heatmaps, and UMAP figures from `find-signature-fp`. |
+| `pseudobulk_footprint_manifest.tsv` | Group paths and workflow completion state. |
+| `pseudobulk_footprint_commands.sh` | Exact generated commands for reproducibility. |
+| `logs/{stage}.stdout.log` and `{stage}.stderr.log` | Captured output for each stage. |
 
 See the [Single-cell workflow](../workflows/single-cell.md) and the
 [complete `sc-footprinting` reference](../../api.md#sc-footprinting).

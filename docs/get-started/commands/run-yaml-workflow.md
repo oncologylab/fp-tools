@@ -15,9 +15,14 @@ run-yaml-workflow \
 
 ## Main outputs
 
-- The same outputs produced by the configured fp-tools commands.
-- Expanded-command preview in dry-run mode.
-- Run metadata and logs when a run root is supplied.
+- The exact files documented for each command named in the YAML; YAML does not create a separate analysis format.
+- Standard output containing the expanded command lines when `--dry-run` is used.
+- `{run_root}/{job_id}/config.yml` and `command.txt` — normalized per-job configuration and exact command.
+- `{run_root}/{job_id}/status.json`, `stdout.log`, and `stderr.log` — completion state and captured command output.
+- `{run_root}/batch_index.tsv` — one-row-per-job batch status index.
+
+Paths are resolved according to the YAML runner and remain independent of GUI
+state. Inspect the dry-run expansion before starting a long workflow.
 
 The YAML remains command-compatible and does not require GUI state. See the
 [complete `run-yaml-workflow` reference](../../api.md#run-yaml-workflow).

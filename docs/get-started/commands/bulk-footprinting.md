@@ -3,6 +3,9 @@
 Run the complete bulk ATAC-seq workflow from aligned BAM files, peak BED files,
 and an explicit comparison table.
 
+The [bulk workflow guide](../workflows/bulk-atac-seq.md) provides a runnable
+six-sample ENCODE design and the complete seven-cell-line tables.
+
 ## Example command
 
 ```bash
@@ -26,8 +29,22 @@ bulk-footprinting \
 
 ## Main outputs
 
-- Bias-corrected and footprint-score tracks for every sample.
-- Motif and replicate-aware differential results for each requested comparison.
-- One static multi-comparison browser under `reports/review_multi_comparisons/`.
+`{project}` is the `--outdir`, `{sample}` comes from the sample table, and
+`{comparison}` comes from the comparison table:
+
+| Path | Meaning |
+| --- | --- |
+| `{project}/samples/{sample}/atac_correct/{sample}_corrected.bw` | Bias-corrected cut-site signal. |
+| `{project}/samples/{sample}/footprints/{sample}_footprints.bw` | Footprint score signal. |
+| `{project}/samples/{sample}/match_motifs/motif_matches_results.txt` | Per-sample motif summary and binding calls. |
+| `{project}/comparisons/{comparison}/diff_footprints_results.txt` | Motif-level differential statistics. |
+| `{project}/comparisons/{comparison}/diff_footprints_{cond1}_{cond2}.html` | Portable interactive comparison report. |
+| `{project}/reports/review_multi_comparisons/index.html` | Static browser combining every requested comparison. |
+| `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for all five stages. |
+| `{project}/logs/bulk_footprinting/{stage}.stdout.log` and `{stage}.stderr.log` | Stage-specific logs for troubleshooting. |
+
+The wrapper does not run `normalize-bigwig`; `--normalization` controls only
+the differential stage. See the workflow guide for how this differs from the
+pair-specific ENCODE demo method.
 
 FASTQ preparation is a separate optional step with [`prepare-atac`](prepare-atac.md).

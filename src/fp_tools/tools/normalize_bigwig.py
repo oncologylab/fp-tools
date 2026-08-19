@@ -397,7 +397,7 @@ def _write_qc_tables(rows: list[BackgroundStats], outdir: Path) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Normalize bigWig tracks using robust statistics from shared background BED regions. "
+            "Normalize input signal bigWigs using robust statistics from shared background BED regions. "
             "For corrected cut-site bigWigs, the recommended method is background-scale."
         )
     )
@@ -429,7 +429,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Across-sample target statistic for background-scale (default: median).",
     )
     parser.add_argument("--chrom-sizes", help="Optional chromosome sizes file for output validation/header.")
-    parser.add_argument("--workers", type=int, default=None, help="Number of bigWig tracks to normalize concurrently (default: all available cores, capped by input count).")
+    parser.add_argument("--workers", type=int, default=None, help="Number of input signal bigWigs to normalize concurrently (default: all available cores, capped by input count).")
     return parser
 
 

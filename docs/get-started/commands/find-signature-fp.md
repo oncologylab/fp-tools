@@ -26,9 +26,19 @@ find-signature-fp \
 
 ## Main outputs
 
-- Per-cell footprint-signature heatmaps.
-- Cell-type and footprint-signature UMAP figures.
-- Source tables for the plotted signatures.
+Under `{outdir}` the default names include:
+
+| Path | Meaning |
+| --- | --- |
+| `knn_footprint_signature_scores.tsv` | Per-cell KNN-smoothed footprint protection scores for selected TFs. |
+| `knn_footprint_orientation_summary.tsv` | Direction/orientation checks used to make marker scores comparable. |
+| `chromvar_like_motif_activity_scores.tsv` | Companion accessibility-derived motif activity scores. |
+| `knn_footprint_signature_umap.svg` and `.pdf` | Per-marker footprint-signature UMAP panels. |
+| `per_cell_footprint_signature_heatmap.svg` and `.pdf` | Selected-marker per-cell heatmap. |
+| `single_cell_footprinting_summary.svg` and `.pdf` | Combined heatmap and representative UMAP summary. |
+| `all_motif_per_cell_footprint_signature_heatmap.tsv` | Optional all-motif score matrix and metadata when all-motif inputs are supplied. |
+
+Additional top-motif and all-TF review files use their requested output prefix.
 
 See the [Single-cell output example](../output-examples/single-cell-atac-seq.md)
 and the [complete `find-signature-fp` reference](../../api.md#find-signature-fp).

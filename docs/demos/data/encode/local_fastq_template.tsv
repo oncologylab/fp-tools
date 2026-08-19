@@ -1,0 +1,4 @@
+run_accession	sample	condition	replicate	fastq_1	fastq_2
+sample_a_run1	sample_a_rep1	condition_a	1	fastq/sample_a_rep1_R1.fastq.gz	fastq/sample_a_rep1_R2.fastq.gz
+sample_a_run2	sample_a_rep1	condition_a	1	fastq/sample_a_rep1_lane2_R1.fastq.gz	fastq/sample_a_rep1_lane2_R2.fastq.gz
+sample_b_run1	sample_b_rep1	condition_b	1	fastq/sample_b_rep1_R1.fastq.gz	fastq/sample_b_rep1_R2.fastq.gz

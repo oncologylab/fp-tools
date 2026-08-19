@@ -27,6 +27,13 @@ scoring, motif analysis, replicate comparisons, and reusable reports.
 - Analyze pseudobulk and per-cell footprint signatures.
 - Export static figures and portable interactive HTML reports.
 
+Choose your starting point:
+
+- **FASTQ files:** prepare and QC reads with [`prepare-atac`](get-started/commands/prepare-atac.md).
+- **BAM and peak files:** follow the runnable [bulk ATAC-seq workflow](get-started/workflows/bulk-atac-seq.md).
+- **Single-cell fragments:** follow the [single-cell workflow](get-started/workflows/single-cell.md).
+- **Existing fp-tools outputs:** open the [output demo](reports.md) or choose a command in the [tool overview](get-started/tool-overview.md).
+
 [Install fp-tools](get-started/installation.md){ .fp-text-link }
 &nbsp;·&nbsp;
 [View the tool overview](get-started/tool-overview.md){ .fp-text-link }
