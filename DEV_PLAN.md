@@ -25,7 +25,8 @@ a separately planned breaking release explicitly changes the contract.
   known-motif matching, de novo motif preparation, and aggregate plotting.
 - Replicate-aware differential footprint reports, including per-sample motif
   matrices and empirical-Bayes residual-variance moderation with biological
-  samples as the inferential units, plus multi-comparison reviews.
+  samples as the inferential units, plus bundle and aggregate-free standalone
+  multi-comparison reviews.
 - Pseudobulk fragment/BAM generation and single-cell signature reporting.
 - Optional Streamlit GUI whose saved YAML runs through `run-yaml-workflow`.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
