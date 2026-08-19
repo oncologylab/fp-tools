@@ -27,9 +27,12 @@ a separately planned breaking release explicitly changes the contract.
   matrices and empirical-Bayes residual-variance moderation with biological
   samples as the inferential units, plus multi-comparison reviews.
 - Region-set differential footprinting for one sample or paired biological
-  replicates, with equal enhancer weighting, optional matching strata,
+  replicates, with equal region weighting, optional matching strata,
   resampling-based uncertainty, paired empirical-Bayes inference, and the same
   portable interactive report format.
+- A compact HepG2 HNF4A/FOXA2 region-set example with four mutually exclusive,
+  baseline-matched region classes, six pairwise comparisons, three biological
+  replicates, complete motif statistics, and curated all-site aggregate views.
 - Pseudobulk fragment/BAM generation and single-cell signature reporting.
 - Optional Streamlit GUI whose saved YAML runs through `run-yaml-workflow`.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
@@ -73,6 +76,9 @@ a separately planned breaking release explicitly changes the contract.
    metrics.
 7. Keep public pages free of broken assets, browser errors, responsive
    overflow, inaccessible navigation, and broken live embeds.
+8. Keep region-set examples outcome-independent: define groups from external
+   annotations, match baseline signal before testing, report all motifs, and
+   use explicit display motifs only to configure the initial browser view.
 
 ## Deferred or Experimental Work
 

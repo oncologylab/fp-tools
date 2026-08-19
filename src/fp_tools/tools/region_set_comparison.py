@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import itertools
 import os
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,7 +19,10 @@ import pandas as pd
 import pyBigWig
 import pysam
 
-from fp_tools.tools.diff_footprint_helpers import plot_interactive_diff_footprints
+from fp_tools.tools.diff_footprint_helpers import (
+    plot_interactive_diff_footprints,
+    select_aggregate_rows,
+)
 from fp_tools.utils.empirical_bayes import (
     benjamini_hochberg,
     fit_moderated_paired_contrast,
@@ -385,7 +389,10 @@ def _aggregate_payload(motifs, motif_rows, result_rows, labels, signals, sample_
     ranked["effect_sort"] = pd.to_numeric(ranked["effect"], errors="coerce").abs().fillna(0.0)
     ranked = ranked.sort_values(["p_sort", "effect_sort"], ascending=[True, False])
     top_n = max(1, int(getattr(args, "plot_aggregate_top_n", 20)))
-    if mode == "all":
+    requested_motifs = list(getattr(args, "plot_aggregate_motifs", None) or [])
+    if requested_motifs:
+        selected = select_aggregate_rows(ranked, requested_motifs)
+    elif mode == "all":
         selected = ranked
     elif mode == "top":
         selected = ranked.head(top_n)
@@ -403,11 +410,11 @@ def _aggregate_payload(motifs, motif_rows, result_rows, labels, signals, sample_
             motif = motif_lookup[prefix]
             rows = motif_rows.get(prefix, [])
             conditions = []
-            for label in labels:
+            for label_index, label in enumerate(labels):
                 label_rows = [row for row in rows if row["region_set"] == label]
                 sample_payloads = []
                 for sample, handle in zip(sample_names, handles):
-                    enhancer_profiles = []
+                    region_profiles = []
                     for row in label_rows:
                         site_profiles = []
                         for chrom, center, strand in row["centers"]:
@@ -419,13 +426,14 @@ def _aggregate_payload(motifs, motif_rows, result_rows, labels, signals, sample_
                                 values = values[::-1]
                             site_profiles.append(values)
                         if site_profiles:
-                            enhancer_profiles.append(np.mean(np.asarray(site_profiles), axis=0))
+                            region_profiles.append(np.mean(np.asarray(site_profiles), axis=0))
                     profile = (
-                        np.mean(np.asarray(enhancer_profiles), axis=0)
-                        if enhancer_profiles else np.zeros(len(x), dtype=float)
+                        np.mean(np.asarray(region_profiles), axis=0)
+                        if region_profiles else np.zeros(len(x), dtype=float)
                     )
                     sample_payloads.append({
-                        "name": f"{label}_{sample}",
+                        "name": f"region{label_index + 1}::{sample}",
+                        "display_name": sample,
                         "profile": [round(float(value), 6) for value in profile],
                         "fp_score": round(float(np.mean(profile)), 6),
                     })
@@ -453,13 +461,17 @@ def _aggregate_payload(motifs, motif_rows, result_rows, labels, signals, sample_
     finally:
         for handle in handles:
             handle.close()
+    default_plot_count = max(1, min(12, int(getattr(args, "default_aggregate_plots", 4))))
+    default_motifs = [payload["prefix"] for payload in payloads]
     return {
         "x": x,
         "motifs": payloads,
         "comparison": " / ".join(labels),
         "normalization": "none",
-        "site_set": "equal enhancer weight",
+        "site_set": "all motif-containing regions; equal region weight",
         "max_sites_per_motif": None,
+        "default_motifs": default_motifs,
+        "default_plot_count": min(default_plot_count, len(default_motifs)),
         "x_label": "Distance from motif center (bp)",
         "y_label": "Corrected cut-site signal" if getattr(args, "aggregate_signals", None) else "Footprint score signal",
     }
@@ -488,14 +500,18 @@ def _write_reports(results, motifs, motif_rows, labels, args):
             motifs, motif_rows, pair_rows, [label_1, label_2], aggregate_signals,
             args.sample_names, args,
         )
-        html_path = os.path.join(args.outdir, f"{args.prefix}_{comparison}.html")
+        comparison_slug = "_vs_".join(
+            re.sub(r"[^A-Za-z0-9_.-]+", "_", str(label)).strip("_.")
+            for label in (label_1, label_2)
+        )
+        html_path = os.path.join(args.outdir, f"{args.prefix}_{comparison_slug}.html")
         plot_interactive_diff_footprints(
             report_motifs,
             [label_1, label_2],
             html_path,
             aggregate_data=aggregate,
             title="Region-set footprint report",
-            report_label="Equal enhancer weighting; matching strata preserved",
+            report_label="Equal region weighting; baseline accessibility matched",
             change_label="Stratum-adjusted footprint-score difference",
             results_table=pair_rows,
         )
@@ -514,6 +530,8 @@ def run_region_set_comparison(args):
         raise ValueError("--region-permutations and --region-bootstrap must be positive")
     if int(args.min_regions_per_set) < 2:
         raise ValueError("--min-regions-per-set must be at least 2")
+    if not 1 <= int(getattr(args, "default_aggregate_plots", 4)) <= 12:
+        raise ValueError("--default-aggregate-plots must be between 1 and 12")
 
     args.outdir = os.path.abspath(args.outdir)
     make_directory(args.outdir)

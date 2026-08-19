@@ -270,6 +270,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--outdir", help="Project directory used with --layout project.")
     parser.add_argument("--layout", choices=["custom", "project"], default="project", help="Use fp-tools standard project output layout under --outdir (default: project when only --outdir is provided).")
     parser.add_argument("--display-panels", type=int, default=4, help=argparse.SUPPRESS)
+    parser.add_argument("--default-comparison", nargs=2, metavar=("<group1>", "<group2>"), help="Region or condition pair initially shown in the static browser")
+    parser.add_argument("--default-aggregate-motifs", nargs="+", metavar="<motif>", help="Ordered motif IDs, names, or output prefixes initially shown")
+    parser.add_argument("--default-aggregate-plots", type=int, metavar="<int>", help="Number of aggregate profiles initially shown (default: 4; maximum: 12)")
+    parser.add_argument("--documentation-url", metavar="<url>", help="Optional link back to the documentation site")
     parser.add_argument("--aggregate-legends", choices=["show", "hide"], default="show", help=argparse.SUPPRESS)
     parser.add_argument("--fill-missing-aggregate-profiles", action="store_true", help="Fill missing motif aggregate panels from profiles embedded elsewhere in the combined review payload.")
     parser.add_argument("--recompute-missing-aggregate-profiles", action="store_true", help="Recompute still-missing motif aggregate panels from project sample bigWigs and match-motifs BEDs.")
@@ -314,6 +318,14 @@ def main(argv: list[str] | None = None) -> int:
             [item["payload"] for item in payload["comparisons"]],
             args.output_dir,
             title=args.title,
+            default_comparison=args.default_comparison,
+            default_motifs=args.default_aggregate_motifs,
+            default_aggregate_plots=(
+                args.default_aggregate_plots
+                if args.default_aggregate_plots is not None
+                else args.display_panels
+            ),
+            documentation_url=args.documentation_url,
         )
     except ValueError as exc:
         parser.error(str(exc))

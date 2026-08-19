@@ -14,6 +14,7 @@ from fp_tools.tools.region_set_comparison import (
     _stratified_effect,
     run_region_set_comparison,
 )
+from fp_tools.tools.diff_footprint_helpers import select_aggregate_rows
 
 
 class RegionSetComparisonTest(unittest.TestCase):
@@ -30,6 +31,28 @@ class RegionSetComparisonTest(unittest.TestCase):
         self.assertEqual(args.comparison_axis, "regions")
         self.assertEqual(args.region_labels, ["bound", "control"])
         self.assertEqual(args.region_strata_column, 4)
+        self.assertIsNone(args.plot_aggregate_motifs)
+        self.assertEqual(args.default_aggregate_plots, 4)
+
+    def test_parser_accepts_ordered_aggregate_motifs(self):
+        parser = add_diff_footprints_arguments(argparse.ArgumentParser(prog="diff-footprints"))
+        args = parser.parse_args([
+            "--plot-aggregate-motifs", "MA1494.2", "MA0047.4",
+            "--default-aggregate-plots", "8",
+        ])
+        self.assertEqual(args.plot_aggregate_motifs, ["MA1494.2", "MA0047.4"])
+        self.assertEqual(args.default_aggregate_plots, 8)
+
+    def test_explicit_aggregate_motifs_preserve_order_and_reject_ambiguity(self):
+        rows = pd.DataFrame([
+            {"output_prefix": "HNF4A_MA1494.2", "motif_id": "MA1494.2", "name": "HNF4A"},
+            {"output_prefix": "HNF4A_MA0114.5", "motif_id": "MA0114.5", "name": "HNF4A"},
+            {"output_prefix": "FOXA2_MA0047.4", "motif_id": "MA0047.4", "name": "FOXA2"},
+        ])
+        selected = select_aggregate_rows(rows, ["MA0047.4", "MA1494.2"])
+        self.assertEqual(selected["motif_id"].tolist(), ["MA0047.4", "MA1494.2"])
+        with self.assertRaisesRegex(ValueError, "Ambiguous aggregate motif"):
+            select_aggregate_rows(rows, ["HNF4A"])
 
     def test_stratified_effect_respects_strata(self):
         frame = pd.DataFrame({
@@ -86,6 +109,7 @@ class RegionSetComparisonTest(unittest.TestCase):
                 random_seed=3, motifs=[str(motif)], naming="name_id", motif_pvalue=0.01,
                 normalization="none", norm_off=False, outdir=str(outdir), prefix="test",
                 skip_excel=True, plot_aggregate="top", plot_aggregate_top_n=1,
+                plot_aggregate_motifs=None, default_aggregate_plots=1,
                 aggregate_flank=5, verbosity=0,
             )
             result = run_region_set_comparison(args)

@@ -81,6 +81,12 @@ def split_browser_payload(payload: dict) -> tuple[dict, list[list[dict]]]:
             }
         )
         shards[shard].append(motif)
+    motif_matrices = payload.get("motif_matrices") or {}
+    core["motif_matrices"] = {
+        prefix: motif_matrices[prefix]
+        for prefix in (motif["prefix"] for motif in summaries)
+        if prefix in motif_matrices
+    }
     core["aggregate"] = {**{key: value for key, value in aggregate.items() if key != "motifs"}, "motifs": summaries}
     return core, shards
 
@@ -127,7 +133,9 @@ def _condition_records(payloads: list[dict]) -> list[dict]:
 def _write_all_results(payloads: list[dict], comparisons: list[str], output: Path) -> None:
     columns = [
         "comparison", "condition1", "condition2", "prefix", "name", "motif_id",
-        "group", "n_sites", "effect", "pvalue", "qvalue",
+        "group", "n_profile_sites", "n_motif_regions_condition1",
+        "n_motif_regions_condition2", "effect",
+        "ci_lower", "ci_upper", "pvalue", "qvalue", "statistical_method",
     ]
     output.parent.mkdir(parents=True, exist_ok=True)
     with gzip.open(output, "wt", encoding="utf-8", newline="") as handle:
@@ -149,15 +157,60 @@ def _write_all_results(payloads: list[dict], comparisons: list[str], output: Pat
                         "name": point.get("name", ""),
                         "motif_id": point.get("motif_id", ""),
                         "group": point.get("group", ""),
-                        "n_sites": aggregate.get(point.get("prefix"), {}).get("n_sites", ""),
+                        "n_profile_sites": aggregate.get(point.get("prefix"), {}).get(
+                            "n_sites", ""
+                        ),
+                        "n_motif_regions_condition1": point.get("n_motif_regions_set_1", ""),
+                        "n_motif_regions_condition2": point.get("n_motif_regions_set_2", ""),
                         "effect": point.get("change", ""),
+                        "ci_lower": point.get("ci_lower", ""),
+                        "ci_upper": point.get("ci_upper", ""),
                         "pvalue": point.get("pvalue", ""),
                         "qvalue": point.get("fdr", ""),
+                        "statistical_method": point.get("statistical_method", ""),
                     }
                 )
 
 
-def build_static_browser(payloads: list[dict], output_dir: str | Path, title: str) -> Path:
+def _resolve_default_motifs(payload: dict, selectors: list[str] | None) -> list[str]:
+    motifs = (payload.get("aggregate") or {}).get("motifs") or []
+    if not selectors:
+        configured = (payload.get("aggregate") or {}).get("default_motifs") or []
+        return [str(prefix) for prefix in configured if prefix]
+    selected = []
+    for selector in selectors:
+        token = str(selector).strip().casefold()
+        matches = {
+            str(motif.get("prefix"))
+            for motif in motifs
+            if token in {
+                str(motif.get("prefix") or "").strip().casefold(),
+                str(motif.get("motif_id") or "").strip().casefold(),
+                str(motif.get("name") or "").strip().casefold(),
+            }
+        }
+        matches.discard("")
+        if not matches:
+            raise ValueError(f"Unknown default aggregate motif: {selector}")
+        if len(matches) > 1:
+            raise ValueError(
+                f"Ambiguous default aggregate motif {selector!r}; use an exact motif ID or prefix"
+            )
+        prefix = next(iter(matches))
+        if prefix not in selected:
+            selected.append(prefix)
+    return selected
+
+
+def build_static_browser(
+    payloads: list[dict],
+    output_dir: str | Path,
+    title: str,
+    default_comparison: tuple[str, str] | list[str] | None = None,
+    default_motifs: list[str] | None = None,
+    default_aggregate_plots: int | None = None,
+    documentation_url: str | None = None,
+) -> Path:
     """Write an ENCODE-demo-compatible static browser bundle."""
     if not payloads:
         raise ValueError("No comparison payloads were supplied")
@@ -223,6 +276,27 @@ def build_static_browser(payloads: list[dict], output_dir: str | Path, title: st
         (logos_dir / f"{prefix}.png").write_bytes(image)
 
     default = metadata_records[0]
+    if default_comparison:
+        first, second = map(str, default_comparison)
+        match = next(
+            (
+                record
+                for record in metadata_records
+                if {record["condition1"], record["condition2"]} == {first, second}
+            ),
+            None,
+        )
+        if match is None:
+            raise ValueError(f"Unknown default comparison: {first} vs {second}")
+        default = match
+    default_payload = payloads[metadata_records.index(default)]
+    resolved_default_motifs = _resolve_default_motifs(default_payload, default_motifs)
+    if default_aggregate_plots is None:
+        default_aggregate_plots = int(
+            (default_payload.get("aggregate") or {}).get("default_plot_count") or 4
+        )
+    if not 1 <= int(default_aggregate_plots) <= 12:
+        raise ValueError("default aggregate plots must be between 1 and 12")
     metadata = {
         "schema": "fp-tools.static-comparison-browser.v1",
         "release_date": date.today().isoformat(),
@@ -231,9 +305,14 @@ def build_static_browser(payloads: list[dict], output_dir: str | Path, title: st
         "conditions": _condition_records(payloads),
         "comparisons": metadata_records,
         "default_comparison": {
-            "condition1": default["condition1"],
-            "condition2": default["condition2"],
+            "condition1": str(default_comparison[0]) if default_comparison else default["condition1"],
+            "condition2": str(default_comparison[1]) if default_comparison else default["condition2"],
         },
+        "default_aggregate_motifs": resolved_default_motifs,
+        "default_aggregate_plots": min(
+            int(default_aggregate_plots), max(1, len(resolved_default_motifs) or 12)
+        ),
+        "documentation_url": documentation_url or "",
         "downloads": {"all_results": "data/all_pairwise_results.tsv.gz"},
         "logos": {"base": "data/logos", "format": "png", "count": len(logos)},
     }

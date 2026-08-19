@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -149,6 +150,35 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
             self.assertIn("condition-2", app)
             self.assertIn("profile_shards", app)
 
+    def test_static_browser_records_explicit_defaults(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            payload = _diff_payload()
+            payload["aggregate"]["motifs"].append({
+                "prefix": "TF2", "name": "TF2", "motif_id": "M2", "n_sites": 8,
+                "conditions": [
+                    {"name": "A", "n_sites": 5, "samples": [{"name": "A::rep1", "display_name": "rep1", "profile": [0.2, 0.3]}]},
+                    {"name": "B", "n_sites": 3, "samples": [{"name": "B::rep1", "display_name": "rep1", "profile": [0.1, 0.2]}]},
+                ],
+            })
+            build_static_browser(
+                [payload], root / "browser", "Review",
+                default_comparison=("B", "A"),
+                default_motifs=["M2", "M1"],
+                default_aggregate_plots=2,
+                documentation_url="../../../",
+            )
+            metadata = json.loads((root / "browser/data/metadata.json").read_text())
+            app = (root / "browser/app.js").read_text()
+
+        self.assertEqual(metadata["default_comparison"], {"condition1": "B", "condition2": "A"})
+        self.assertEqual(metadata["default_aggregate_motifs"], ["TF2", "TF1"])
+        self.assertEqual(metadata["default_aggregate_plots"], 2)
+        self.assertEqual(metadata["documentation_url"], "../../../")
+        self.assertIn("metadata.default_aggregate_motifs", app)
+        self.assertIn("regions:", app)
+        self.assertIn("mean</title>", app)
+
     def test_can_fill_missing_aggregate_profiles_before_writing_review(self):
         payload = {
             "schema": "fp-tools.review-multi-comparisons.v1",
@@ -215,6 +245,28 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertEqual(args.output_dir, "review")
         self.assertEqual(args.display_panels, 8)
         self.assertEqual(args.aggregate_legends, "hide")
+
+    def test_parser_accepts_static_browser_defaults(self):
+        parser = build_parser()
+        args = parser.parse_args([
+            "--inputs", "a.html", "--output-dir", "review",
+            "--default-comparison", "HNF4A + FOXA2", "No HNF4A/FOXA2",
+            "--default-aggregate-motifs", "MA1494.2", "MA0047.4",
+            "--default-aggregate-plots", "8",
+            "--documentation-url", "../../../",
+        ])
+        self.assertEqual(args.default_comparison, ["HNF4A + FOXA2", "No HNF4A/FOXA2"])
+        self.assertEqual(args.default_aggregate_motifs, ["MA1494.2", "MA0047.4"])
+        self.assertEqual(args.default_aggregate_plots, 8)
+        self.assertEqual(args.documentation_url, "../../../")
+
+    def test_static_payload_keeps_only_matrices_with_aggregate_profiles(self):
+        from fp_tools.tools.static_comparison_browser import split_browser_payload
+
+        payload = _diff_payload("A vs B")
+        payload["motif_matrices"]["TF2"] = [[1], [1], [1], [1]]
+        compact, _shards = split_browser_payload(payload)
+        self.assertEqual(set(compact["motif_matrices"]), {"TF1"})
 
     def test_parser_accepts_missing_aggregate_profile_options(self):
         parser = build_parser()
