@@ -324,6 +324,30 @@ def audit(site_dir: Path) -> None:
                             failures.append(
                                 f"{label}: unexpected body font family {family}"
                             )
+                    if width >= 1280 and relative not in {
+                        "demos/reports/diff_footprints_K562_HepG2.html",
+                        "demos/gui/fp-tools-gui-static-demo.html",
+                        "ENCODE-Cancer-Cell-lines-Footprinting/",
+                    }:
+                        header = page.locator(".md-header__inner")
+                        tabs = page.locator(".fp-header-tabs")
+                        if not tabs.is_visible():
+                            failures.append(f"{label}: global navigation is not in the header")
+                        else:
+                            header_box = header.bounding_box()
+                            tabs_box = tabs.bounding_box()
+                            if (
+                                header_box is None
+                                or tabs_box is None
+                                or tabs_box["y"] < header_box["y"] - 1
+                                or tabs_box["y"] + tabs_box["height"]
+                                > header_box["y"] + header_box["height"] + 1
+                            ):
+                                failures.append(
+                                    f"{label}: global navigation is outside the header row"
+                                )
+                        if page.locator(".md-container > .md-tabs:visible").count():
+                            failures.append(f"{label}: separate global navigation row is visible")
                     if relative in {"api/", "gui/", "reports/"} and width >= 1280:
                         primary = page.locator(".md-sidebar--primary")
                         if primary.is_visible():

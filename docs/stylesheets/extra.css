@@ -53,6 +53,62 @@ textarea {
   font-weight: 800;
 }
 
+/* The four global destinations share the main desktop header row. */
+.md-tabs {
+  display: none;
+}
+
+.fp-header-tabs {
+  display: none;
+}
+
+@media screen and (min-width: 76.25em) {
+  .md-header__title {
+    flex: 0 1 8.5rem;
+    min-width: 5.5rem;
+  }
+
+  .fp-header-tabs {
+    align-self: stretch;
+    display: flex;
+    flex: 0 0 auto;
+  }
+
+  .fp-header-tabs__list {
+    align-items: stretch;
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .fp-header-tabs .md-tabs__item {
+    align-items: stretch;
+    display: flex;
+    height: auto;
+    padding: 0;
+  }
+
+  .fp-header-tabs .md-tabs__link {
+    align-items: center;
+    border-bottom: 2px solid transparent;
+    display: flex;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin: 0;
+    opacity: 0.82;
+    padding: 0 0.58rem;
+    white-space: nowrap;
+  }
+
+  .fp-header-tabs .md-tabs__link:hover,
+  .fp-header-tabs .md-tabs__item--active .md-tabs__link {
+    border-bottom-color: var(--fp-teal);
+    color: #ffffff;
+    opacity: 1;
+  }
+}
+
 .md-typeset {
   font-size: 0.82rem;
   line-height: 1.58;

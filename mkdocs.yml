@@ -6,6 +6,7 @@ repo_name: oncologylab/fp-tools
 
 theme:
   name: material
+  custom_dir: overrides
   font: false
   logo: assets/fp_tools_logo_icon.svg
   favicon: assets/fp_tools_logo_icon.svg
