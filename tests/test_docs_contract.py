@@ -284,8 +284,10 @@ class DocsEntryPointContractTest(unittest.TestCase):
             ROOT / "docs" / "get-started" / "workflows" / "bulk-atac-seq.md"
         ).read_text(encoding="utf-8")
         self.assertIn("sample\tcondition\tfastq_1\tfastq_2", guide)
+        self.assertIn("sample\tcondition\tfastq_1\n", guide)
+        self.assertIn("For single-end data, omit `fastq_2`", guide)
         self.assertIn("sample\tcondition\tbam\tpeaks", guide)
-        self.assertIn("Only the four columns shown above are needed", guide)
+        self.assertIn("optional provenance columns that may be left out", guide)
         for unnecessary_detail in (
             "Plan storage and runtime before downloading",
             "Why the wrapper output is not byte-for-byte identical",
@@ -378,11 +380,12 @@ class DocsEntryPointContractTest(unittest.TestCase):
             / "diff_footprints_K562_HepG2.html"
         ).read_text(encoding="utf-8")
         self.assertIn("fp_tools_logo_horizontal.svg", self.readme)
-        self.assertIn("# ATAC-seq footprinting and regulatory motif analysis", index)
+        heading = "# Tn5-based chromatin footprinting and regulatory motif analysis"
+        self.assertIn(heading, index)
         self.assertIn("fp_tools_logo_horizontal.svg", index)
         self.assertLess(
             index.index("fp_tools_logo_horizontal.svg"),
-            index.index("# ATAC-seq footprinting and regulatory motif analysis"),
+            index.index(heading),
         )
         self.assertNotIn("fp-hero", index)
         self.assertNotIn("Where To Go Next", index)
@@ -451,7 +454,9 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertNotIn("Where To Go Next", index)
         self.assertNotIn("fp-hero", index)
         self.assertLess(len(index.split()), 190)
-        self.assertIn("ATAC-seq footprinting and regulatory motif analysis", index)
+        self.assertIn("Tn5-based chromatin footprinting", index)
+        self.assertIn("CUT&Tag", index)
+        self.assertIn("Tn5-based CUT&RUN", index)
         self.assertIn("Output demo with ENCODE cancer cell lines", self.readme)
         self.assertIn(
             "https://oncologylab.github.io/fp-tools/demos/gui/"

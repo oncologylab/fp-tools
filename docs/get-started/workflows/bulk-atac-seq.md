@@ -21,7 +21,9 @@ assembly. The examples below use hg38.
 ## Starting from FASTQ files
 
 [`prepare-atac`](../commands/prepare-atac.md) accepts a tab-separated or
-comma-separated sample sheet. For paired-end data, use these four columns:
+comma-separated sample sheet.
+
+For paired-end data:
 
 ```text
 sample	condition	fastq_1	fastq_2
@@ -29,10 +31,18 @@ HepG2_rep1	HepG2	fastq/HepG2_rep1_R1.fastq.gz	fastq/HepG2_rep1_R2.fastq.gz
 K562_rep1	K562	fastq/K562_rep1_R1.fastq.gz	fastq/K562_rep1_R2.fastq.gz
 ```
 
+For single-end data, omit `fastq_2`:
+
+```text
+sample	condition	fastq_1
+HepG2_rep1	HepG2	fastq/HepG2_rep1.fastq.gz
+K562_rep1	K562	fastq/K562_rep1.fastq.gz
+```
+
 [Download the ENCODE FASTQ sheet](../../demos/data/encode/encode_hepg2_k562_fastq_urls.tsv)
 or use the [local FASTQ template](../../demos/data/encode/local_fastq_template.tsv).
-Only the four columns shown above are needed for this paired-end workflow. The
-ENCODE download includes optional provenance columns that may be left out.
+Use the columns shown for your library layout. The ENCODE download includes
+optional provenance columns that may be left out.
 
 ```bash
 prepare-atac --samples encode_hepg2_k562_fastq_urls.tsv --genome hg38 --outdir project --cores 8

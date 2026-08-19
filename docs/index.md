@@ -9,11 +9,12 @@ hide:
 </div>
 <div class="fp-home-copy" markdown="1">
 
-# ATAC-seq footprinting and regulatory motif analysis
+# Tn5-based chromatin footprinting and regulatory motif analysis
 
-`fp-tools` provides command-line and browser workflows for bulk and
-single-cell ATAC-seq footprinting. It connects bias correction, footprint
-scoring, motif analysis, replicate comparisons, and reusable reports.
+`fp-tools` provides command-line and browser workflows for bulk and single-cell
+footprinting of Tn5-based chromatin profiling data, including ATAC-seq,
+CUT&Tag, and Tn5-based CUT&RUN. It connects bias correction, footprint scoring,
+motif analysis, replicate comparisons, and reusable reports.
 
 <div class="fp-badges">
   <a href="https://pypi.org/project/fp-tools-bio/">PyPI</a>
@@ -22,7 +23,7 @@ scoring, motif analysis, replicate comparisons, and reusable reports.
   <span>MIT license</span>
 </div>
 
-- Process raw reads or start from aligned ATAC-seq data.
+- Process raw reads or start from aligned Tn5-based chromatin data.
 - Compare motif-associated footprint scores across samples and replicates.
 - Analyze pseudobulk and per-cell footprint signatures.
 - Export static figures and portable interactive HTML reports.

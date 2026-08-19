@@ -1,5 +1,5 @@
 site_name: fp-tools
-site_description: Command-first ATAC-seq footprinting, motif analysis, and pseudobulk utilities.
+site_description: Command-first Tn5-based chromatin footprinting, motif analysis, and pseudobulk utilities.
 site_url: https://oncologylab.github.io/fp-tools/
 repo_url: https://github.com/oncologylab/fp-tools
 repo_name: oncologylab/fp-tools

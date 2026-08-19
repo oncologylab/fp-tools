@@ -18,8 +18,9 @@
   <a href="https://pypi.org/project/fp-tools-bio/"><strong>PyPI</strong></a>
 </p>
 
-`fp-tools` is a command-first toolkit for ATAC-seq bias correction, footprint
-scoring, motif analysis, replicate-aware comparisons, and single-cell
+`fp-tools` is a command-first toolkit for footprinting Tn5-based chromatin
+profiling data, including ATAC-seq, CUT&Tag, and Tn5-based CUT&RUN. It provides
+bias correction, motif analysis, replicate-aware comparisons, and single-cell
 footprint signatures. The GUI and YAML runner call the same commands.
 
 ## Install
