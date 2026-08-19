@@ -9,7 +9,7 @@ import unittest
 from types import SimpleNamespace
 
 from fp_tools.cli_batch import run_config_file
-from fp_tools.gui_config import expand_jobs, load_yaml_config, normalize_config
+from fp_tools.gui_config import build_cli_command, expand_jobs, load_yaml_config, normalize_config, validate_config
 from fp_tools.parsers import add_aggregate_arguments, add_atacorrect_arguments, add_diff_footprints_arguments, add_scorebigwig_arguments
 from fp_tools.tools import diff_footprints
 from fp_tools.tools.diff_footprints import _prepare_condition_metadata
@@ -20,6 +20,29 @@ CONFIG_DIR = ROOT / "examples" / "gui_configs"
 
 
 class CliAndConfigSmokeTest(unittest.TestCase):
+    def test_review_multi_comparisons_yaml_supports_standalone_output(self):
+        item = {
+            "tool": "review-multi-comparisons",
+            "inputs": ["comparison_a.html", "comparison_b.html"],
+            "labels": ["A", "B"],
+            "output_html": "review.html",
+        }
+        config = {"samples": [], "comparisons": [item]}
+        self.assertEqual(validate_config(config), [])
+        command = build_cli_command(item["tool"], item)
+        self.assertIn("--output-html", command)
+        self.assertNotIn("--output-dir", command)
+
+    def test_review_multi_comparisons_yaml_rejects_two_output_modes(self):
+        item = {
+            "tool": "review-multi-comparisons",
+            "inputs": ["comparison.html"],
+            "output_dir": "review",
+            "output_html": "review.html",
+        }
+        errors = validate_config({"samples": [], "comparisons": [item]})
+        self.assertTrue(any("mutually exclusive" in error for error in errors))
+
     def test_all_example_yaml_configs_expand_to_jobs(self):
         config_paths = sorted(CONFIG_DIR.glob("*.yml"))
         self.assertGreaterEqual(len(config_paths), 1)

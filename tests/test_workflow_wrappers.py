@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from fp_tools.tools.bulk_footprinting import build_commands, build_parser, run_bulk_footprinting
+from fp_tools.tools.bulk_footprinting import _stage_complete, build_commands, build_parser, run_bulk_footprinting
 from fp_tools.tools.find_signature_fp import read_marker_sites_from_diff
 
 
@@ -41,6 +41,80 @@ class WorkflowWrapperTest(unittest.TestCase):
             differential = commands[-2][1]
             self.assertIn("--comparison-table", differential)
             self.assertIn("--aggregate-site-set", differential)
+            self.assertEqual(differential[differential.index("--plot-aggregate") + 1], "all")
+            self.assertEqual(args.plot_aggregate, "all")
+            self.assertEqual(args.review_format, "auto")
+
+    def test_bulk_wrapper_resolves_aggregate_free_auto_review_to_standalone(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            samples = root / "samples.tsv"
+            comparisons = root / "comparisons.tsv"
+            samples.write_text(
+                "sample\tcondition\tbam\tpeaks\nA1\tA\tA1.bam\tA1.bed\nB1\tB\tB1.bam\tB1.bed\n",
+                encoding="utf-8",
+            )
+            comparisons.write_text("comparison\tcond1\tcond2\nA_vs_B\tA\tB\n", encoding="utf-8")
+            args = build_parser().parse_args(
+                [
+                    "--sample-table", str(samples),
+                    "--comparison-table", str(comparisons),
+                    "--genome", "genome.fa",
+                    "--outdir", str(root / "project"),
+                    "--plot-aggregate", "off",
+                ]
+            )
+            commands = build_commands(args)
+            differential = dict(commands)["diff-footprints"]
+            review = dict(commands)["review-multi-comparisons"]
+            self.assertEqual(differential[differential.index("--plot-aggregate") + 1], "off")
+            self.assertIn("--output-html", review)
+            self.assertNotIn("--output-dir", review)
+            self.assertTrue(review[-1].endswith("reports/review_multi_comparisons.html"))
+
+    def test_bulk_wrapper_can_skip_review(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            samples = root / "samples.tsv"
+            comparisons = root / "comparisons.tsv"
+            samples.write_text(
+                "sample\tcondition\tbam\tpeaks\nA1\tA\tA1.bam\tA1.bed\nB1\tB\tB1.bam\tB1.bed\n",
+                encoding="utf-8",
+            )
+            comparisons.write_text("comparison\tcond1\tcond2\nA_vs_B\tA\tB\n", encoding="utf-8")
+            args = build_parser().parse_args(
+                [
+                    "--sample-table", str(samples),
+                    "--comparison-table", str(comparisons),
+                    "--genome", "genome.fa",
+                    "--outdir", str(root / "project"),
+                    "--review-format", "none",
+                ]
+            )
+            self.assertNotIn("review-multi-comparisons", dict(build_commands(args)))
+
+    def test_bulk_wrapper_rejects_bundle_without_aggregate_profiles(self):
+        args = build_parser().parse_args(
+            [
+                "--sample-table", "samples.tsv",
+                "--comparison-table", "comparisons.tsv",
+                "--genome", "genome.fa",
+                "--outdir", "project",
+                "--plot-aggregate", "off",
+                "--review-format", "bundle",
+            ]
+        )
+        with self.assertRaisesRegex(ValueError, "requires aggregate profiles"):
+            build_commands(args)
+
+    def test_bulk_wrapper_resume_detects_standalone_review(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project = Path(tmpdir)
+            report = project / "reports" / "review_multi_comparisons.html"
+            report.parent.mkdir(parents=True)
+            report.write_text("report", encoding="utf-8")
+            self.assertTrue(_stage_complete("review-multi-comparisons", project, [], [], "standalone"))
+            self.assertFalse(_stage_complete("review-multi-comparisons", project, [], [], "bundle"))
 
     def test_single_cell_marker_sites_come_from_own_diff_results(self):
         with tempfile.TemporaryDirectory() as tmpdir:

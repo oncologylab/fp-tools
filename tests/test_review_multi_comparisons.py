@@ -1,3 +1,4 @@
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -5,11 +6,13 @@ from unittest.mock import patch
 
 from fp_tools.tools.review_multi_comparisons import (
     _compressed_json_b64,
+    _decode_payload_b64,
     build_review_payload,
     build_parser,
     count_missing_aggregate_profiles,
     discover_input_htmls,
     fill_missing_aggregate_profiles,
+    main,
     read_diff_html_payload,
     write_review_html,
 )
@@ -149,6 +152,67 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
             self.assertIn("condition-2", app)
             self.assertIn("profile_shards", app)
 
+    def test_command_writes_aggregate_free_self_contained_html(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            paths = []
+            for idx in range(3):
+                payload = _diff_payload("A vs B")
+                payload["aggregate"] = {"motifs": []}
+                path = root / f"input_{idx}" / "diff_footprints_A_B.html"
+                path.parent.mkdir(parents=True)
+                _write_diff_html(path, payload)
+                paths.append(path)
+            output = root / "standalone.html"
+            self.assertEqual(
+                main(
+                    [
+                        "--inputs", *map(str, paths),
+                        "--labels", "Baseline", "Dose 1", "Dose 2",
+                        "--output-html", str(output),
+                    ]
+                ),
+                0,
+            )
+            document = output.read_text(encoding="utf-8")
+            encoded = re.search(r'const reportPayloadB64="([^"]+)"', document)
+            self.assertIsNotNone(encoded)
+            combined = _decode_payload_b64(encoded.group(1))
+
+        self.assertEqual(
+            [item["label"] for item in combined["comparisons"]],
+            ["Baseline", "Dose 1", "Dose 2"],
+        )
+        self.assertIn("hasAggregateProfiles=false", document)
+        self.assertIn('id="download-aggregate" class="aggregate-only" hidden', document)
+        self.assertIn('class="aggregate-card aggregate-only" hidden', document)
+        self.assertIn("drawRank", document)
+        self.assertIn("drawVolcano", document)
+        self.assertIn("downloadLogoPanel", document)
+        self.assertNotIn("<script src=", document)
+        self.assertNotIn("<link rel=", document)
+
+    def test_aggregate_controls_remain_visible_when_profiles_exist(self):
+        payload = {
+            "schema": "fp-tools.review-multi-comparisons.v1",
+            "title": "Review",
+            "comparisons": [{"label": "A vs B", "payload": _diff_payload()}],
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "review.html"
+            write_review_html(payload, output)
+            document = output.read_text(encoding="utf-8")
+        self.assertIn("hasAggregateProfiles=true", document)
+        self.assertIn('id="download-aggregate" class="aggregate-only">', document)
+        self.assertNotIn('class="aggregate-card aggregate-only" hidden', document)
+
+    def test_bundle_mode_still_requires_aggregate_profiles(self):
+        payload = _diff_payload()
+        payload["aggregate"] = {"motifs": []}
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with self.assertRaisesRegex(ValueError, "no aggregate motif profiles"):
+                build_static_browser([payload], Path(tmpdir) / "browser", "Review")
+
     def test_can_fill_missing_aggregate_profiles_before_writing_review(self):
         payload = {
             "schema": "fp-tools.review-multi-comparisons.v1",
@@ -215,6 +279,15 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertEqual(args.output_dir, "review")
         self.assertEqual(args.display_panels, 8)
         self.assertEqual(args.aggregate_legends, "hide")
+
+    def test_parser_accepts_output_html_and_rejects_both_output_modes(self):
+        parser = build_parser()
+        args = parser.parse_args(["--inputs", "a.html", "--output-html", "review.html"])
+        self.assertEqual(args.output_html, "review.html")
+        with self.assertRaises(SystemExit):
+            parser.parse_args(
+                ["--inputs", "a.html", "--output-dir", "review", "--output-html", "review.html"]
+            )
 
     def test_parser_accepts_missing_aggregate_profile_options(self):
         parser = build_parser()

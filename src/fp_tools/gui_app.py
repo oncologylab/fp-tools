@@ -68,6 +68,8 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "genome": "genome.fa",
         "outdir": "results/bulk_footprinting",
         "motif_db": "jaspar2026_vertebrates",
+        "plot_aggregate": "all",
+        "review_format": "auto",
         "cores": 4,
     },
     "review-multi-comparisons": {
@@ -1506,6 +1508,7 @@ def _discover_outputs(child_run_dir: Path) -> list[Path]:
         add_path(item.get("outdir", ""))
     elif tool == "review-multi-comparisons":
         add_path(item.get("output_dir", ""))
+        add_path(item.get("output_html", ""))
 
     seen: set[str] = set()
     deduped: list[Path] = []
