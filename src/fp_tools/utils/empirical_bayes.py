@@ -199,3 +199,82 @@ def fit_moderated_contrast(
     output.loc[valid_index, "ci_upper"] = effect + critical * moderated_se
     output.loc[valid_index, "significant_fdr05"] = qvalue <= alpha
     return output
+
+
+def fit_moderated_paired_contrast(
+    effect_matrix: pd.DataFrame,
+    *,
+    alpha: float = 0.05,
+) -> pd.DataFrame:
+    """Fit a moderated one-sample model to paired replicate effects.
+
+    Rows are motifs and columns are biological replicates. Each value is the
+    within-replicate contrast for the same two region sets. Moderation is
+    therefore applied to the variance of paired effects, rather than to two
+    unrelated groups of samples.
+    """
+
+    values = effect_matrix.apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
+    if values.shape[1] < 2:
+        raise ValueError("Paired empirical-Bayes testing requires at least two biological replicates")
+    complete = np.isfinite(values).all(axis=1)
+    residual_df = values.shape[1] - 1
+    output = pd.DataFrame(index=effect_matrix.index)
+    for column in (
+        "effect",
+        "residual_variance",
+        "prior_variance",
+        "prior_df",
+        "posterior_variance",
+        "moderated_se",
+        "moderated_t",
+        "moderated_df",
+        "pvalue",
+        "qvalue_bh",
+        "ci_lower",
+        "ci_upper",
+    ):
+        output[column] = np.nan
+    output["significant_fdr05"] = False
+    if np.count_nonzero(complete) < 2:
+        raise ValueError("At least two motifs with complete paired effects are required")
+
+    complete_values = values[complete]
+    effects = np.mean(complete_values, axis=1)
+    residual_variance = np.var(complete_values, axis=1, ddof=1)
+    prior = estimate_variance_prior(residual_variance, residual_df)
+    if np.isinf(prior.degrees_of_freedom):
+        posterior_variance = np.full_like(residual_variance, prior.variance)
+        moderated_df = np.full_like(residual_variance, np.inf)
+    else:
+        posterior_variance = (
+            prior.degrees_of_freedom * prior.variance + residual_df * residual_variance
+        ) / (prior.degrees_of_freedom + residual_df)
+        moderated_df = np.full_like(residual_variance, prior.degrees_of_freedom + residual_df)
+
+    moderated_se = np.sqrt(posterior_variance / values.shape[1])
+    moderated_t = np.divide(
+        effects,
+        moderated_se,
+        out=np.full_like(effects, np.nan),
+        where=moderated_se > 0,
+    )
+    pvalue = 2.0 * student_t.sf(np.abs(moderated_t), moderated_df)
+    qvalue = benjamini_hochberg(pvalue)
+    critical = student_t.ppf(1.0 - alpha / 2.0, moderated_df)
+
+    valid_index = output.index[complete]
+    output.loc[valid_index, "effect"] = effects
+    output.loc[valid_index, "residual_variance"] = residual_variance
+    output.loc[valid_index, "prior_variance"] = prior.variance
+    output.loc[valid_index, "prior_df"] = prior.degrees_of_freedom
+    output.loc[valid_index, "posterior_variance"] = posterior_variance
+    output.loc[valid_index, "moderated_se"] = moderated_se
+    output.loc[valid_index, "moderated_t"] = moderated_t
+    output.loc[valid_index, "moderated_df"] = moderated_df
+    output.loc[valid_index, "pvalue"] = pvalue
+    output.loc[valid_index, "qvalue_bh"] = qvalue
+    output.loc[valid_index, "ci_lower"] = effects - critical * moderated_se
+    output.loc[valid_index, "ci_upper"] = effects + critical * moderated_se
+    output.loc[valid_index, "significant_fdr05"] = qvalue <= alpha
+    return output

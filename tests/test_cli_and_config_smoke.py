@@ -9,7 +9,7 @@ import unittest
 from types import SimpleNamespace
 
 from fp_tools.cli_batch import run_config_file
-from fp_tools.gui_config import expand_jobs, load_yaml_config, normalize_config
+from fp_tools.gui_config import expand_jobs, load_yaml_config, normalize_config, validate_config
 from fp_tools.parsers import add_aggregate_arguments, add_atacorrect_arguments, add_diff_footprints_arguments, add_scorebigwig_arguments
 from fp_tools.tools import diff_footprints
 from fp_tools.tools.diff_footprints import _prepare_condition_metadata
@@ -20,6 +20,28 @@ CONFIG_DIR = ROOT / "examples" / "gui_configs"
 
 
 class CliAndConfigSmokeTest(unittest.TestCase):
+    def test_region_comparison_yaml_does_not_require_peaks(self):
+        config = {
+            "version": 1,
+            "run_mode": "single",
+            "samples": [{
+                "sample_id": "regions",
+                "tool": "diff-footprints",
+                "comparison_axis": "regions",
+                "signals": ["rep1.bw", "rep2.bw"],
+                "sample_names": ["rep1", "rep2"],
+                "regions": ["bound.bed", "control.bed"],
+                "region_labels": ["bound", "control"],
+                "genome": "hg38.fa",
+            }],
+            "comparisons": [],
+        }
+        self.assertEqual(validate_config(config), [])
+        job = expand_jobs(config)[0]
+        self.assertIn("--comparison-axis", job.command)
+        self.assertIn("--regions", job.command)
+        self.assertNotIn("--peaks", job.command)
+
     def test_all_example_yaml_configs_expand_to_jobs(self):
         config_paths = sorted(CONFIG_DIR.glob("*.yml"))
         self.assertGreaterEqual(len(config_paths), 1)

@@ -77,6 +77,7 @@ nav:
       - Output examples:
           - Bulk ATAC-seq: get-started/output-examples/bulk-atac-seq.md
           - Single-cell ATAC-seq: get-started/output-examples/single-cell-atac-seq.md
+          - Region-set comparison: get-started/output-examples/region-set-comparison.md
   - Output Demo: reports.md
   - GUI Demo: gui.md
   - API Reference: api.md

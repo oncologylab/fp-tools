@@ -26,6 +26,10 @@ a separately planned breaking release explicitly changes the contract.
 - Replicate-aware differential footprint reports, including per-sample motif
   matrices and empirical-Bayes residual-variance moderation with biological
   samples as the inferential units, plus multi-comparison reviews.
+- Region-set differential footprinting for one sample or paired biological
+  replicates, with equal enhancer weighting, optional matching strata,
+  resampling-based uncertainty, paired empirical-Bayes inference, and the same
+  portable interactive report format.
 - Pseudobulk fragment/BAM generation and single-cell signature reporting.
 - Optional Streamlit GUI whose saved YAML runs through `run-yaml-workflow`.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
@@ -41,7 +45,9 @@ a separately planned breaking release explicitly changes the contract.
 
 ## Current ENCODE Resource
 
-- All 21 pairwise comparisons are available in the static browser.
+- All 21 pairwise comparisons are available in the static browser, and every
+  aggregate profile uses the complete motif-site set rather than bound-only
+  sites.
 - The preserved K562-HepG2 comparison retains its reference scientific
   payload, and the browser loads compact report data, profile shards, and motif
   logos on demand.

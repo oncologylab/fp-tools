@@ -9,7 +9,7 @@ The guides below cover common inputs and outputs. See the
 - [`atac-correct`](commands/atac-correct.md) — correct ATAC-seq cut-site signal for Tn5 sequence bias.
 - [`call-footprints`](commands/call-footprints.md) — calculate footprint-score tracks from corrected signal.
 - [`match-motifs`](commands/match-motifs.md) — scan motifs and summarize motif-associated footprint scores.
-- [`diff-footprints`](commands/diff-footprints.md) — compare motif-associated footprint scores across conditions and replicates.
+- [`diff-footprints`](commands/diff-footprints.md) — compare conditions or user-defined region sets, with replicate-aware statistics.
 - [`normalize-bigwig`](commands/normalize-bigwig.md) — normalize bigWig tracks over shared background regions.
 
 ## Visualization and review

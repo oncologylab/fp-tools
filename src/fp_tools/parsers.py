@@ -157,9 +157,9 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 		description = "match-motifs scans motifs in open chromatin regions for one or more footprint score tracks and infers sample-specific bound and unbound motif sites.\n\n"
 		description += "Usage:\nmatch-motifs --signals <footprints.bw> [<more_footprints.bw> ...] --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
 	else:
-		description = "diff-footprints takes motifs, footprint signals, and genome sequence as input to infer motif-associated bound sites and compare footprint evidence across conditions. "
-		description += "The method ranks motifs by signal differences across input conditions and reports motif-level and site-level results.\n\n"
-		description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\n\n"
+		description = "diff-footprints takes motifs, footprint signals, and genome sequence as input to compare motif-associated footprint evidence across biological conditions or user-defined region sets. "
+		description += "Region-set mode gives every region equal weight and supports matching strata and paired biological replicates.\n\n"
+		description += "Usage:\ndiff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --peaks <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]\ndiff-footprints --comparison-axis regions --signals <bigwig1> [<replicate2> ...] --regions <set1.bed> <set2.bed> --genome <genome.fasta> [--region-labels <set1> <set2>]\n\n"
 	if is_match_motifs:
 		description += "Output files:\n- <outdir>/<prefix>_results.{txt,xlsx}\n- <outdir>/<prefix>_distances.txt\n- <outdir>/cache/* compact reuse caches\n"
 		description += "- <outdir>/<TF>/beds/*_all.bed, *_bound.bed, and *_unbound.bed by default\n"
@@ -178,7 +178,7 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 	
 	required = parser.add_argument_group('Required arguments')
 	required.add_argument('--signals', metavar="<bigwig>", help="One or more footprint score bigWigs (.bigwig format)" if is_match_motifs else "Signal per condition (.bigwig format)", nargs="*")
-	required.add_argument('--peaks', metavar="<bed>", help="Peaks.bed containing open chromatin regions" if is_match_motifs else "Peaks.bed containing open chromatin regions across all conditions")
+	required.add_argument('--peaks', metavar="<bed>", help="Peaks.bed containing open chromatin regions" if is_match_motifs else "Peaks.bed containing open chromatin regions across all conditions (not used with --comparison-axis regions)")
 	required.add_argument('--genome', metavar="<fasta>", help="Genome .fasta file")
 
 	optargs = parser.add_argument_group('Optional arguments')
@@ -187,6 +187,15 @@ def add_diff_footprints_arguments(parser, command_name="diff-footprints"):
 	optargs.add_argument('--list-motif-dbs', action='store_true', help="List available built-in motif databases and exit")
 	optargs.add_argument('--sample-names', metavar="<name>", nargs="*", help="Sample labels for --signals (default: prefix of each --signals file)" if is_match_motifs else "Sample labels for --signals; distinct from --cond-names and used for per-sample score columns, replicate reports, and aggregate profiles (default: prefix of each --signals file)")
 	optargs.add_argument('--cond-names', metavar="<name>", nargs="*", help="Optional condition labels for --signals (default: prefix of each --signals file)" if is_match_motifs else "Condition labels for --signals; repeat names to define biological replicates (default: prefix of each --signals file)")
+	if not is_match_motifs:
+		optargs.add_argument('--comparison-axis', choices=["conditions", "regions"], default="conditions", help="Compare biological conditions or region sets measured in the same sample(s) (default: conditions)")
+		optargs.add_argument('--regions', metavar="<bed>", nargs="*", help="Two or more non-overlapping BED files for --comparison-axis regions")
+		optargs.add_argument('--region-labels', metavar="<name>", nargs="*", help="Labels for --regions (default: BED filename stems)")
+		optargs.add_argument('--region-strata-column', metavar="<int>", type=int, help="Optional 1-based BED column containing matching strata")
+		optargs.add_argument('--region-permutations', metavar="<int>", type=int, default=100000, help="Within-stratum label permutations for a one-sample region comparison (default: 100000)")
+		optargs.add_argument('--region-bootstrap', metavar="<int>", type=int, default=1000, help="Within-set, within-stratum bootstrap samples for confidence intervals (default: 1000)")
+		optargs.add_argument('--min-regions-per-set', metavar="<int>", type=int, default=10, help="Minimum motif-containing regions required in each set (default: 10)")
+		optargs.add_argument('--random-seed', metavar="<int>", type=int, default=1, help="Random seed for region-set resampling (default: 1)")
 	optargs.add_argument('--sample-table', metavar="<tsv>", help="Project sample table with sample and condition columns plus bam/peaks for upstream steps")
 	optargs.add_argument('--comparison-table', metavar="<tsv>", help=argparse.SUPPRESS if is_match_motifs else "Project comparison table with comparison, cond1, and cond2 columns")
 	optargs.add_argument('--layout', choices=["custom", "project"], default="project", help="Use fp-tools standard project output layout under --outdir (default: project when --sample-table is provided)")

@@ -59,6 +59,10 @@ LIST_FLAGS = {
     "cond-names",
     "tfbs",
     "regions",
+    "region_labels",
+    "region-labels",
+    "aggregate_signals",
+    "aggregate-signals",
     "bigwigs",
     "motifs",
     "match_dir",
@@ -74,7 +78,7 @@ REQUIRED_FIELDS = {
     "atac-correct": ("bams", "genome", "peaks"),
     "call-footprints": ("signal", "regions", "output"),
     "match-motifs": ("signals", "genome", "peaks"),
-    "diff-footprints": ("genome", "peaks"),
+    "diff-footprints": ("genome",),
     "normalize-bigwig": ("bigwigs", "background", "outdir"),
     "plot-aggregate": ("output",),
     "review-multi-comparisons": ("inputs", "output_dir"),
@@ -112,6 +116,13 @@ FLAG_NAME_MAP = {
     "output_dir": "--output-dir",
     "match_dir": "--match-dir",
     "sample_dirs": "--sample-dirs",
+    "comparison_axis": "--comparison-axis",
+    "region_strata_column": "--region-strata-column",
+    "region_permutations": "--region-permutations",
+    "region_bootstrap": "--region-bootstrap",
+    "min_regions_per_set": "--min-regions-per-set",
+    "random_seed": "--random-seed",
+    "aggregate_signals": "--aggregate-signals",
     "default_layout": "--default-layout",
     "chrom_sizes": "--chrom-sizes",
     "genome_sizes": "--genome-sizes",
@@ -342,6 +353,7 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
                 if not str(item.get("fasta") or "").strip() and not str(item.get("candidates") or "").strip():
                     errors.append(f"{job_name}: provide either 'fasta' or 'candidates'")
             if tool == "diff-footprints":
+                comparison_axis = str(item.get("comparison_axis") or item.get("comparison-axis") or "conditions")
                 signals = item.get("signals") or []
                 sample_dirs = item.get("sample_dirs") or item.get("sample-dirs") or []
                 project_dir = item.get("project_dir") or item.get("project-dir")
@@ -351,6 +363,19 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
                     sample_dirs = [sample_dirs]
                 if not [value for value in signals if str(value).strip()] and not [value for value in sample_dirs if str(value).strip()] and not str(project_dir or "").strip():
                     errors.append(f"{job_name}: provide either 'signals', 'sample_dirs', or 'project_dir'")
+                if comparison_axis == "regions":
+                    regions = item.get("regions") or []
+                    if isinstance(regions, str):
+                        regions = [regions]
+                    labels = item.get("region_labels") or item.get("region-labels") or []
+                    if isinstance(labels, str):
+                        labels = [labels]
+                    if len([value for value in regions if str(value).strip()]) < 2:
+                        errors.append(f"{job_name}: region comparisons require at least two 'regions' BED files")
+                    if labels and len(labels) != len(regions):
+                        errors.append(f"{job_name}: 'region_labels' must match the number of region BED files")
+                elif not str(item.get("peaks") or "").strip():
+                    errors.append(f"{job_name}: missing required field 'peaks'")
             if tool == "sc-footprinting" and not str(item.get("fragments") or "").strip():
                 errors.append(f"{job_name}: missing required field 'fragments'")
             if tool == "find-signature-fp":

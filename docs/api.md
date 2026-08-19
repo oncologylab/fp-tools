@@ -14,7 +14,7 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 | [`atac-correct`](#atac-correct) | Estimate and correct Tn5 sequence bias in ATAC-seq cut-site signal before footprint scoring. |
 | [`call-footprints`](#call-footprints) | Calculate continuous footprint score tracks from corrected ATAC-seq cut-site signal. |
 | [`match-motifs`](#match-motifs) | Scan accessible regions for motif sites and summarize their footprint scores for one or more samples. |
-| [`diff-footprints`](#diff-footprints) | Compare motif-associated footprint scores across conditions, including replicate-supported contrasts. |
+| [`diff-footprints`](#diff-footprints) | Compare motif-associated footprint scores across conditions or between user-defined region sets measured in the same sample(s). |
 | [`normalize-bigwig`](#normalize-bigwig) | Normalize multiple bigWig tracks with scale estimates calculated from the same background regions. |
 | [`plot-aggregate`](#plot-aggregate) | Plot average signal around motif sites or other genomic regions as a static figure or interactive HTML report. |
 | [`review-multi-comparisons`](#review-multi-comparisons) | Combine multiple differential-footprint reports into one static browser with two condition selectors. |
@@ -695,8 +695,8 @@ Run arguments:
 
 <div class="fp-api-card" markdown="1">
 
-Compare motif-associated footprint scores across conditions, including
-replicate-supported contrasts.
+Compare motif-associated footprint scores across conditions or between
+user-defined region sets measured in the same sample(s).
 
 **Example command**
 
@@ -724,6 +724,14 @@ diff-footprints \
 - Motif-level differential footprint statistics.
 - Replicate score matrices and diagnostics when replicates are present.
 - A portable interactive HTML report with volcano and aggregate views.
+- Region-set analyses also report confidence intervals, motif prevalence,
+  region counts, per-replicate effects, and matching balance.
+
+For a region-set comparison, use `--comparison-axis regions`, provide two or
+more BED files with `--regions`, and name them with `--region-labels`. An
+optional `--region-strata-column` preserves accessibility or other matching
+strata during resampling. One sample uses a stratified label-permutation test;
+two or more biological replicates use a paired empirical-Bayes model.
 
 **Complete options**
 
@@ -731,6 +739,10 @@ diff-footprints \
 usage: diff-footprints [-h] [--signals [<bigwig> ...]] [--peaks <bed>] [--genome <fasta>]
                        [--motifs [<motifs> ...]] [--motif-db <name>] [--list-motif-dbs]
                        [--sample-names [<name> ...]] [--cond-names [<name> ...]]
+                       [--comparison-axis {conditions,regions}] [--regions [<bed> ...]]
+                       [--region-labels [<name> ...]] [--region-strata-column <int>]
+                       [--region-permutations <int>] [--region-bootstrap <int>]
+                       [--min-regions-per-set <int>] [--random-seed <int>]
                        [--sample-table <tsv>] [--comparison-table <tsv>]
                        [--layout {custom,project}] [--sample-dirs [<directory> ...]]
                        [--project-dir <directory>] [--peak-header <file>]
@@ -757,14 +769,16 @@ ________________________________________________________________________________
                                  fp-tools diff-footprints
 __________________________________________________________________________________________
 
-diff-footprints takes motifs, footprint signals, and genome sequence as input to infer
-motif-associated bound sites and compare footprint evidence across conditions. The method
-ranks motifs by signal differences across input conditions and reports motif-level and
-site-level results.
+diff-footprints takes motifs, footprint signals, and genome sequence as input to compare
+motif-associated footprint evidence across biological conditions or user-defined region
+sets. Region-set mode gives every region equal weight and supports matching strata and
+paired biological replicates.
 
 Usage:
 diff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --peaks
 <peaks.bed> [--motif-db jaspar2026_vertebrates | --motifs <motifs.txt>]
+diff-footprints --comparison-axis regions --signals <bigwig1> [<replicate2> ...] --regions
+<set1.bed> <set2.bed> --genome <genome.fasta> [--region-labels <set1> <set2>]
 
 Output files:
 - <outdir>/<prefix>_results.{txt,xlsx}
@@ -782,7 +796,7 @@ Output files:
 Required arguments:
   --signals [<bigwig> ...]         Signal per condition (.bigwig format)
   --peaks <bed>                    Peaks.bed containing open chromatin regions across all
-                                   conditions
+                                   conditions (not used with --comparison-axis regions)
   --genome <fasta>                 Genome .fasta file
 
 Optional arguments:
@@ -800,6 +814,20 @@ Optional arguments:
   --cond-names [<name> ...]        Condition labels for --signals; repeat names to define
                                    biological replicates (default: prefix of each
                                    --signals file)
+  --comparison-axis {conditions,regions}
+                                   Compare biological conditions or region sets measured
+                                   in the same sample(s) (default: conditions)
+  --regions [<bed> ...]            Two or more non-overlapping BED files for --comparison-
+                                   axis regions
+  --region-labels [<name> ...]     Labels for --regions (default: BED filename stems)
+  --region-strata-column <int>     Optional 1-based BED column containing matching strata
+  --region-permutations <int>      Within-stratum label permutations for a one-sample
+                                   region comparison (default: 100000)
+  --region-bootstrap <int>         Within-set, within-stratum bootstrap samples for
+                                   confidence intervals (default: 1000)
+  --min-regions-per-set <int>      Minimum motif-containing regions required in each set
+                                   (default: 10)
+  --random-seed <int>              Random seed for region-set resampling (default: 1)
   --sample-table <tsv>             Project sample table with sample and condition columns
                                    plus bam/peaks for upstream steps
   --comparison-table <tsv>         Project comparison table with comparison, cond1, and

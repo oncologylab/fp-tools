@@ -43,6 +43,7 @@ GET_STARTED_PAGES = (
     *(f"get-started/commands/{command}/" for command in COMMAND_PAGES),
     "get-started/output-examples/bulk-atac-seq/",
     "get-started/output-examples/single-cell-atac-seq/",
+    "get-started/output-examples/region-set-comparison/",
 )
 PAGES = (
     *GET_STARTED_PAGES,
@@ -50,6 +51,7 @@ PAGES = (
     "gui/",
     "reports/",
     "demos/reports/diff_footprints_K562_HepG2.html",
+    "demos/reports/region_set_K562_CTCF.html",
     "demos/gui/fp-tools-gui-static-demo.html",
     "ENCODE-Cancer-Cell-lines-Footprinting/",
 )
@@ -57,6 +59,13 @@ VIEWPORTS = ((1440, 1000), (1280, 720), (390, 844))
 REPORT_IFRAME_PAGES = {
     "reports/",
     "get-started/output-examples/bulk-atac-seq/",
+    "get-started/output-examples/region-set-comparison/",
+}
+STANDALONE_DEMO_PAGES = {
+    "demos/reports/diff_footprints_K562_HepG2.html",
+    "demos/reports/region_set_K562_CTCF.html",
+    "demos/gui/fp-tools-gui-static-demo.html",
+    "ENCODE-Cancer-Cell-lines-Footprinting/",
 }
 DARK_MODE_PAGES = {
     "",
@@ -65,6 +74,7 @@ DARK_MODE_PAGES = {
     "get-started/commands/diff-footprints/",
     "get-started/output-examples/bulk-atac-seq/",
     "get-started/output-examples/single-cell-atac-seq/",
+    "get-started/output-examples/region-set-comparison/",
     "api/",
     "gui/",
     "reports/",
@@ -217,7 +227,7 @@ def audit(site_dir: Path) -> None:
                             "element => element.click()"
                         )
                         page.wait_for_timeout(100)
-                    if relative.endswith("diff_footprints_K562_HepG2.html"):
+                    if relative.endswith(("diff_footprints_K562_HepG2.html", "region_set_K562_CTCF.html")):
                         page.locator(".selected-motif").first.wait_for(
                             state="visible", timeout=60_000
                         )
@@ -324,11 +334,7 @@ def audit(site_dir: Path) -> None:
                             failures.append(
                                 f"{label}: unexpected body font family {family}"
                             )
-                    if width >= 1280 and relative not in {
-                        "demos/reports/diff_footprints_K562_HepG2.html",
-                        "demos/gui/fp-tools-gui-static-demo.html",
-                        "ENCODE-Cancer-Cell-lines-Footprinting/",
-                    }:
+                    if width >= 1280 and relative not in STANDALONE_DEMO_PAGES:
                         header = page.locator(".md-header__inner")
                         tabs = page.locator(".fp-header-tabs")
                         if not tabs.is_visible():

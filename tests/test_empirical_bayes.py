@@ -11,11 +11,28 @@ from fp_tools.utils.empirical_bayes import (
     benjamini_hochberg,
     estimate_variance_prior,
     fit_moderated_contrast,
+    fit_moderated_paired_contrast,
 )
 from fp_tools.tools.diff_footprints import _apply_replicate_empirical_bayes
 
 
 class EmpiricalBayesTest(unittest.TestCase):
+
+    def test_paired_contrast_uses_within_replicate_effects(self):
+        matrix = pd.DataFrame(
+            {
+                "rep1": [2.0, -1.0, 0.1, 0.0],
+                "rep2": [2.2, -1.1, -0.1, 0.1],
+                "rep3": [1.8, -0.9, 0.0, -0.1],
+            },
+            index=["positive", "negative", "null1", "null2"],
+        )
+        result = fit_moderated_paired_contrast(matrix)
+        self.assertGreater(result.loc["positive", "effect"], 1.5)
+        self.assertLess(result.loc["negative", "effect"], -0.8)
+        self.assertLess(result.loc["positive", "pvalue"], result.loc["null1", "pvalue"])
+        self.assertTrue(np.isfinite(result.loc["positive", "ci_lower"]))
+
     def setUp(self):
         self.conditions = {
             "treated_1": "treated",

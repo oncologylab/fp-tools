@@ -2007,6 +2007,11 @@ def _collect_cached_background(peak_chunks, args, pool, worker_cores):
 # ----------------------------------------------------------------------------- #
 def run_diff_footprints(args):
     """Run the differential-footprint pipeline from parsed CLI arguments."""
+    if getattr(args, "comparison_axis", "conditions") == "regions":
+        from fp_tools.tools.region_set_comparison import run_region_set_comparison
+
+        _resolve_motif_arguments(args)
+        return run_region_set_comparison(args)
     if getattr(args, "reuse_existing_results", False):
         return run_diff_footprints_reuse_existing_results(args)
 
@@ -2906,11 +2911,25 @@ def diff_footprints_cli():
     if is_project_layout(getattr(args, "layout", None)) and getattr(args, "comparison_table", None):
         _run_project_comparison_table(args, parser)
         return
+    region_mode = getattr(args, "comparison_axis", "conditions") == "regions"
     folder_mode = bool(args.sample_dirs or args.project_dir)
     n_inputs = len(args.sample_dirs or []) if args.sample_dirs else len(args.signals or [])
     if args.project_dir and not args.sample_dirs:
         n_inputs = None
-    if args.method == "motif" and not folder_mode and (not args.signals or len(args.signals) < 2):
+    if region_mode:
+        if folder_mode:
+            parser.error("--comparison-axis regions currently requires direct --signals inputs")
+        if not args.signals:
+            parser.error("--comparison-axis regions requires at least one --signals bigWig")
+        if not args.regions or len(args.regions) < 2:
+            parser.error("--comparison-axis regions requires at least two --regions BED files")
+        if args.region_labels is not None and len(args.region_labels) != len(args.regions):
+            parser.error("--region-labels must contain one value per --regions BED file")
+        if args.cond_names and len(set(args.cond_names)) > 1:
+            parser.error("region-set comparisons measure one biological condition; --cond-names must all match")
+        if args.peaks:
+            parser.error("--peaks is not used with --comparison-axis regions; provide region sets with --regions")
+    if args.method == "motif" and not region_mode and not folder_mode and (not args.signals or len(args.signals) < 2):
         parser.error("diff-footprints expects at least two --signals bigWigs, or --sample-dirs/--project-dir")
     if args.signals and folder_mode:
         parser.error("diff-footprints cannot combine --signals with --sample-dirs/--project-dir")

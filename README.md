@@ -52,7 +52,8 @@ bulk-footprinting \
 
 The wrapper runs `atac-correct`, `call-footprints`, `match-motifs`,
 `diff-footprints`, and `review-multi-comparisons`. Each command can also be run
-directly.
+directly. `diff-footprints --comparison-axis regions` compares matched genomic
+region sets within one sample or across biological replicates.
 
 ## Single-cell ATAC-seq
 

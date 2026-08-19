@@ -736,6 +736,7 @@ def _default_config_for_tool(tool: str) -> dict[str, Any]:
         defaults = {"signal": "", "regions": "", "output": "", "score": "footprint", "cores": 1}
     elif tool == "diff-footprints":
         defaults = {
+            "comparison_axis": "conditions",
             "motifs": "",
             "motif_db": "jaspar2026_vertebrates",
             "signals": [],
@@ -1124,6 +1125,12 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
         )
         if mode == "Single condition":
             with st.form("diff_footprints_single_form"):
+                comparison_axis = st.selectbox(
+                    "Comparison axis",
+                    ["conditions", "regions"],
+                    index=0 if str(single.get("comparison_axis", "conditions")) == "conditions" else 1,
+                    help="Compare conditions, or compare two or more region sets in the same biological sample(s).",
+                )
                 left, right = st.columns(2)
                 with left:
                     motifs = st.text_input("Motifs", value=str(single.get("motifs", "")))
@@ -1137,12 +1144,30 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
                     skip_excel = st.checkbox("Skip Excel", value=bool(single.get("skip_excel", False)))
                 signals = st.text_area("Signals", value=_join_multi(single.get("signals", [])), height=94)
                 cond_names = st.text_area("Condition names", value=_join_multi(single.get("cond_names", ["Bcell"])), height=76)
+                regions = st.text_area(
+                    "Region-set BED files",
+                    value=_join_multi(single.get("regions", [])),
+                    height=76,
+                    help="Required only for region comparisons; one BED path per line.",
+                )
+                region_labels = st.text_input(
+                    "Region labels",
+                    value=",".join(single.get("region_labels", [])),
+                    help="Optional comma-separated labels in the same order as the BED files.",
+                )
+                region_strata_column = st.number_input(
+                    "Matching-stratum BED column (0 = none)",
+                    min_value=0,
+                    value=int(single.get("region_strata_column", 0) or 0),
+                    step=1,
+                )
                 submitted = st.form_submit_button("Update page config")
             if submitted:
                 _set_config(
                     make_single_config(
                         "diff-footprints",
                         {
+                            "comparison_axis": comparison_axis,
                             "motifs": motifs,
                             "motif_db": motif_db,
                             "signals": _split_multi(signals),
@@ -1151,6 +1176,9 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
                             "peak_header": peak_header,
                             "outdir": outdir,
                             "cond_names": _split_multi(cond_names),
+                            "regions": _split_multi(regions),
+                            "region_labels": _split_multi(region_labels),
+                            "region_strata_column": int(region_strata_column) or None,
                             "cores": int(cores),
                             "skip_excel": bool(skip_excel),
                         },

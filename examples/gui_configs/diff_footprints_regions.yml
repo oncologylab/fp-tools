@@ -1,0 +1,26 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: k562_ctcf_regions
+    tool: diff-footprints
+    comparison_axis: regions
+    signals:
+      - K562_rep1_footprints.bw
+      - K562_rep2_footprints.bw
+    sample_names:
+      - K562_rep1
+      - K562_rep2
+    cond_names:
+      - K562
+      - K562
+    regions:
+      - CTCF_bound.bed
+      - matched_control.bed
+    region_labels:
+      - CTCF_bound
+      - matched_control
+    region_strata_column: 4
+    genome: hg38.fa
+    motif_db: jaspar2026_vertebrates
+    outdir: region_set_comparison
+comparisons: []
