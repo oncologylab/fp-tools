@@ -862,10 +862,32 @@ def run_aggregate(args):
     logger.end()
 
 
-def main():
+def main(argv=None):
     parser = add_aggregate_arguments(argparse.ArgumentParser())
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.motif_grid:
+        if len(args.input_html) != 1:
+            parser.error("--motif-grid requires exactly one --input-html review report")
+        from fp_tools.tools.motif_aggregate_grid import run_grid
+
+        grid_args = argparse.Namespace(
+            input_html=args.input_html[0],
+            order_htmls=args.order_htmls,
+            outdir=args.outdir,
+            layout=args.layout,
+            output=args.output,
+            source_tsv=args.output_txt,
+            rows_per_page=args.rows_per_page,
+            flank=args.flank,
+            fill_missing_profiles=args.fill_missing_profiles,
+            recompute_missing_profiles=args.recompute_missing_profiles,
+            cores=args.cores,
+            repeat_column_labels=args.repeat_column_labels,
+            title=args.title,
+        )
+        return run_grid(grid_args, parser)
     run_aggregate(args)
+    return 0
 
 
 if __name__ == "__main__":

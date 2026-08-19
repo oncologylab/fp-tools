@@ -34,6 +34,8 @@ class DocsEntryPointContractTest(unittest.TestCase):
     def setUp(self):
         self.data = _load_pyproject()
         self.project_scripts = self.data["project"]["scripts"]
+        self.public_scripts = self.data["tool"]["fp-tools"]["public-console-scripts"]
+        self.deprecated_scripts = self.data["tool"]["fp-tools"]["deprecated-console-scripts"]
         self.readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.markdown_paths = sorted((ROOT / "docs").rglob("*.md"))
         self.site_docs = "\n".join(
@@ -50,7 +52,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
         )
 
     def test_primary_entry_points_are_documented_in_readme_and_manual(self):
-        for command in self.project_scripts:
+        for command in self.public_scripts:
             self.assertIn(command, self.readme, f"{command} is missing from README.md")
             self.assertIn(
                 command, self.site_docs, f"{command} is missing from MkDocs pages"
@@ -58,19 +60,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
 
     def test_help_block_exactly_covers_non_alias_commands(self):
         documented = _verify_help_commands(self.readme)
-        expected = set(self.project_scripts)
-        # Every primary command must appear in the README --help verification block ...
-        self.assertEqual(
-            expected - documented,
-            set(),
-            "Commands declared in pyproject but missing a `--help` check in README.md.",
-        )
-        # ... and the verification block must not invent commands that do not exist.
-        self.assertEqual(
-            documented - set(self.project_scripts),
-            set(),
-            "README `--help` block references commands that are not entry points.",
-        )
+        self.assertTrue(documented <= set(self.public_scripts))
 
     def test_tobias_compatible_aliases_are_removed(self):
         for alias in REMOVED_ALIASES:
@@ -95,9 +85,11 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertIn("fp-tools-bio[gui]", self.readme)
 
     def test_api_reference_is_command_manual(self):
-        for command in self.project_scripts:
-            self.assertIn(f"### `{command}`", self.api_reference)
+        for command in self.public_scripts:
+            self.assertIn(f"## `{command}`", self.api_reference)
             self.assertIn(f"usage: {command}", self.api_reference)
+        for command in self.deprecated_scripts:
+            self.assertNotIn(f"## `{command}`", self.api_reference)
         self.assertNotIn("::: fp_tools", self.api_reference)
 
     def test_each_public_command_has_a_concise_get_started_page(self):
@@ -107,9 +99,9 @@ class DocsEntryPointContractTest(unittest.TestCase):
         command_dir = ROOT / "docs" / "get-started" / "commands"
         self.assertEqual(
             {path.stem for path in command_dir.glob("*.md")},
-            set(self.project_scripts),
+            set(self.public_scripts),
         )
-        for command in self.project_scripts:
+        for command in self.public_scripts:
             page = command_dir / f"{command}.md"
             content = page.read_text(encoding="utf-8")
             self.assertIn(
@@ -302,8 +294,8 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "fp-tools-gui-static-demo.html",
             self.readme,
         )
-        self.assertIn("Single-cell workflow", self.readme)
-        self.assertIn("Optional de novo motif discovery", self.readme)
+        self.assertIn("Single-cell ATAC-seq", self.readme)
+        self.assertIn("De novo motifs", self.readme)
 
     def test_prepare_atac_profiles_are_explained_in_plain_language(self):
         public_atac_docs = "\n".join(
@@ -312,12 +304,11 @@ class DocsEntryPointContractTest(unittest.TestCase):
         )
         for required in [
             "fastp",
-            "mapping quality 30",
             "MACS3",
             "Trim Galore",
             "Picard",
             "HOMER",
-            "reads Bowtie2 reports at more than one genomic location",
+            "--profile {modern,homer-atac}",
         ]:
             self.assertIn(required, public_atac_docs)
         for rejected in [

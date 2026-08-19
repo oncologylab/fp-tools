@@ -82,7 +82,7 @@ class MotifDatabaseTest(unittest.TestCase):
         self.assertIn("hocomoco14_core", result.stdout)
 
     def test_optional_motif_clis_list_motif_databases_without_required_inputs(self):
-        commands = ["pseudobulk-footprints", "motif-discovery", "fp-tools-score-variants"]
+        commands = ["sc-footprinting", "discover-motifs"]
         for command in commands:
             exe = ROOT / ".venv" / "bin" / command
             if not exe.exists():
@@ -154,7 +154,7 @@ class MotifDatabaseTest(unittest.TestCase):
                 "samples": [
                     {
                         "sample_id": "demo",
-                        "tool": "motif-discovery",
+                        "tool": "discover-motifs",
                         "fasta": "sites.fa",
                         "outdir": "motifs",
                         "known_motif_db": "jaspar2026_vertebrates",

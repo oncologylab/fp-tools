@@ -76,16 +76,33 @@ diff-footprints = "fp_tools.tools.diff_footprints:diff_footprints_cli"
 normalize-bigwig = "fp_tools.tools.normalize_bigwig:main"
 plot-aggregate = "fp_tools.cli_plotaggregate:main"
 review-multi-comparisons = "fp_tools.tools.review_multi_comparisons:main"
-plot-motif-aggregate-grid = "fp_tools.tools.motif_aggregate_grid:main"
+plot-motif-aggregate-grid = "fp_tools.cli_compat:plot_motif_aggregate_grid_main"
 prepare-atac = "fp_tools.tools.prepare_atac:main"
-run-workflow = "fp_tools.cli_batch:main"
+bulk-footprinting = "fp_tools.tools.bulk_footprinting:main"
+run-yaml-workflow = "fp_tools.cli_batch:main"
+run-workflow = "fp_tools.cli_compat:run_workflow_main"
 fp-tools-gui = "fp_tools.cli_gui:main"
-motif-discovery = "fp_tools.tools.motif_discovery:motif_discovery_plan_main"
-motif-summary = "fp_tools.tools.motif_discovery:motif_report_main"
-fp-tools-score-variants = "fp_tools.tools.variants:main"
+discover-motifs = "fp_tools.tools.motif_discovery:motif_discovery_plan_main"
+summarize-motifs = "fp_tools.tools.motif_discovery:motif_report_main"
+motif-discovery = "fp_tools.cli_compat:motif_discovery_main"
+motif-summary = "fp_tools.cli_compat:motif_summary_main"
 pseudobulk-fragments = "fp_tools.tools.pseudobulk:main"
 find-signature-fp = "fp_tools.tools.find_signature_fp:main"
-pseudobulk-footprints = "fp_tools.tools.pseudobulk_footprints:main"
+sc-footprinting = "fp_tools.tools.pseudobulk_footprints:main"
+pseudobulk-footprints = "fp_tools.cli_compat:pseudobulk_footprints_main"
+
+[tool.fp-tools]
+public-console-scripts = [
+  "prepare-atac", "bulk-footprinting", "atac-correct", "call-footprints",
+  "match-motifs", "diff-footprints", "normalize-bigwig", "plot-aggregate",
+  "review-multi-comparisons", "run-yaml-workflow", "fp-tools-gui",
+  "discover-motifs", "summarize-motifs", "pseudobulk-fragments",
+  "find-signature-fp", "sc-footprinting"
+]
+deprecated-console-scripts = [
+  "plot-motif-aggregate-grid", "run-workflow", "motif-discovery",
+  "motif-summary", "pseudobulk-footprints"
+]
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -99,6 +116,7 @@ include = ["fp_tools*"]
 [tool.setuptools.package-data]
 "fp_tools.utils" = ["*.pyx", "*.pxd"]
 "fp_tools.resources.motifs" = ["*.txt"]
+"fp_tools.resources.static_browser" = ["*.html", "*.js", "*.css"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -113,7 +131,7 @@ description = "Standalone footprint tools with vendored Cython internals"
 authors = ["Yaoxiang Li"]
 readme = "README.md"
 packages = [{ include = "fp_tools", from = "src" }]
-include = ["src/fp_tools/resources/motifs/*.txt"]
+include = ["src/fp_tools/resources/motifs/*.txt", "src/fp_tools/resources/static_browser/*"]
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0"
@@ -154,13 +172,17 @@ diff-footprints = "fp_tools.tools.diff_footprints:diff_footprints_cli"
 normalize-bigwig = "fp_tools.tools.normalize_bigwig:main"
 plot-aggregate = "fp_tools.cli_plotaggregate:main"
 review-multi-comparisons = "fp_tools.tools.review_multi_comparisons:main"
-plot-motif-aggregate-grid = "fp_tools.tools.motif_aggregate_grid:main"
+plot-motif-aggregate-grid = "fp_tools.cli_compat:plot_motif_aggregate_grid_main"
 prepare-atac = "fp_tools.tools.prepare_atac:main"
-run-workflow = "fp_tools.cli_batch:main"
+bulk-footprinting = "fp_tools.tools.bulk_footprinting:main"
+run-yaml-workflow = "fp_tools.cli_batch:main"
+run-workflow = "fp_tools.cli_compat:run_workflow_main"
 fp-tools-gui = "fp_tools.cli_gui:main"
-motif-discovery = "fp_tools.tools.motif_discovery:motif_discovery_plan_main"
-motif-summary = "fp_tools.tools.motif_discovery:motif_report_main"
-fp-tools-score-variants = "fp_tools.tools.variants:main"
+discover-motifs = "fp_tools.tools.motif_discovery:motif_discovery_plan_main"
+summarize-motifs = "fp_tools.tools.motif_discovery:motif_report_main"
+motif-discovery = "fp_tools.cli_compat:motif_discovery_main"
+motif-summary = "fp_tools.cli_compat:motif_summary_main"
 pseudobulk-fragments = "fp_tools.tools.pseudobulk:main"
 find-signature-fp = "fp_tools.tools.find_signature_fp:main"
-pseudobulk-footprints = "fp_tools.tools.pseudobulk_footprints:main"
+sc-footprinting = "fp_tools.tools.pseudobulk_footprints:main"
+pseudobulk-footprints = "fp_tools.cli_compat:pseudobulk_footprints_main"

@@ -40,12 +40,12 @@ class CliAndConfigSmokeTest(unittest.TestCase):
                             "normalize-bigwig",
                             "plot-aggregate",
                             "review-multi-comparisons",
-                            "motif-discovery",
-                            "motif-summary",
-                            "fp-tools-score-variants",
+                            "bulk-footprinting",
+                            "discover-motifs",
+                            "summarize-motifs",
                             "pseudobulk-fragments",
                             "find-signature-fp",
-                            "pseudobulk-footprints",
+                            "sc-footprinting",
                         },
                     )
                     self.assertEqual(job.command[0], job.tool)
@@ -68,13 +68,13 @@ class CliAndConfigSmokeTest(unittest.TestCase):
             "normalize-bigwig",
             "plot-aggregate",
             "review-multi-comparisons",
-            "run-workflow",
-            "motif-discovery",
-            "motif-summary",
-            "fp-tools-score-variants",
+            "bulk-footprinting",
+            "run-yaml-workflow",
+            "discover-motifs",
+            "summarize-motifs",
             "pseudobulk-fragments",
             "find-signature-fp",
-            "pseudobulk-footprints",
+            "sc-footprinting",
         ]
         for command in commands:
             exe = ROOT / ".venv" / "bin" / command

@@ -1,9 +1,5 @@
-from fp_tools.parsers import add_aggregate_arguments
-from fp_tools.tools.plot_aggregate import run_aggregate
+from fp_tools.tools.plot_aggregate import main as plot_aggregate_main
 
 
 def main():
-    import argparse
-    parser = add_aggregate_arguments(argparse.ArgumentParser())
-    args = parser.parse_args()
-    run_aggregate(args)
+    return plot_aggregate_main()

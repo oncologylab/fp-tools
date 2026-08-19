@@ -36,6 +36,7 @@ Primary current API checks:
 
 ```bash
 .venv/bin/prepare-atac --help
+.venv/bin/bulk-footprinting --help
 .venv/bin/atac-correct --help
 .venv/bin/call-footprints --help
 .venv/bin/match-motifs --help
@@ -43,16 +44,14 @@ Primary current API checks:
 .venv/bin/normalize-bigwig --help
 .venv/bin/plot-aggregate --help
 .venv/bin/review-multi-comparisons --help
-.venv/bin/plot-motif-aggregate-grid --help
-.venv/bin/run-workflow --help
+.venv/bin/run-yaml-workflow --help
 .venv/bin/fp-tools-gui --help
-.venv/bin/motif-discovery --help
-.venv/bin/motif-summary --help
-.venv/bin/fp-tools-score-variants --help
+.venv/bin/discover-motifs --help
+.venv/bin/summarize-motifs --help
 .venv/bin/pseudobulk-fragments --help
 .venv/bin/find-signature-fp --help
-.venv/bin/pseudobulk-footprints --help
-.venv/bin/run-workflow --config examples/gui_configs/call_footprints_single.yml --dry-run
+.venv/bin/sc-footprinting --help
+.venv/bin/run-yaml-workflow --config examples/gui_configs/call_footprints_single.yml --dry-run
 ```
 
 ## 4. Build Artifacts

@@ -397,6 +397,10 @@ textarea {
 }
 
 @media screen and (min-width: 76.25em) {
+  .fp-page-get-started .md-sidebar--secondary {
+    display: none;
+  }
+
   .md-main__inner,
   .md-grid {
     max-width: min(100rem, calc(100vw - 2rem));

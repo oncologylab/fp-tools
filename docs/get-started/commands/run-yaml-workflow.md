@@ -1,11 +1,11 @@
-# [`run-workflow`](../../api.md#run-workflow)
+# [`run-yaml-workflow`](../../api.md#run-yaml-workflow)
 
 Run one or more fp-tools jobs from a reusable YAML configuration.
 
 ## Example command
 
 ```bash
-run-workflow \
+run-yaml-workflow \
   --config examples/gui_configs/diff_footprints_single.yml
 ```
 
@@ -20,4 +20,4 @@ run-workflow \
 - Run metadata and logs when a run root is supplied.
 
 The YAML remains command-compatible and does not require GUI state. See the
-[complete `run-workflow` reference](../../api.md#run-workflow).
+[complete `run-yaml-workflow` reference](../../api.md#run-yaml-workflow).

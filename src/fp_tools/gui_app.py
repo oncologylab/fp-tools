@@ -3,7 +3,7 @@
 This module is an isolated wrapper around the packaged commands. Direct CLI
 usage remains primary. The GUI supports direct form-driven runs, YAML load/save,
 and batch editing while using the same normalized config model as the optional
-``run-workflow --config ...`` path.
+``run-yaml-workflow --config ...`` path.
 """
 
 from __future__ import annotations
@@ -40,25 +40,41 @@ PAGE_OPTIONS = [
     "diff-footprints",
     "normalize-bigwig",
     "plot-aggregate",
-    "motif-discovery",
-    "motif-summary",
-    "fp-tools-score-variants",
+    "bulk-footprinting",
+    "review-multi-comparisons",
+    "discover-motifs",
+    "summarize-motifs",
     "pseudobulk-fragments",
     "find-signature-fp",
-    "pseudobulk-footprints",
+    "sc-footprinting",
     "Config",
 ]
 
 NAV_GROUPS = [
     ("Overview", ["Home", "Run History"]),
     ("Core workflow", ["atac-correct", "call-footprints", "match-motifs", "diff-footprints"]),
+    ("Workflow and interface", ["bulk-footprinting", "sc-footprinting", "review-multi-comparisons"]),
     ("Signals and reports", ["normalize-bigwig", "plot-aggregate"]),
-    ("Motifs and variants", ["motif-discovery", "motif-summary", "fp-tools-score-variants"]),
-    ("Single-cell ATAC", ["pseudobulk-fragments", "find-signature-fp", "pseudobulk-footprints"]),
+    ("De Novo Motif Discovery", ["discover-motifs", "summarize-motifs"]),
+    ("Single-cell ATAC-seq", ["pseudobulk-fragments", "find-signature-fp"]),
     ("Configuration", ["Config"]),
 ]
 
 GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
+    "bulk-footprinting": {
+        "sample_id": "bulk_footprinting_run",
+        "sample_table": "samples.tsv",
+        "comparison_table": "comparisons.tsv",
+        "genome": "genome.fa",
+        "outdir": "results/bulk_footprinting",
+        "motif_db": "jaspar2026_vertebrates",
+        "cores": 4,
+    },
+    "review-multi-comparisons": {
+        "sample_id": "comparison_browser_run",
+        "inputs": ["results/bulk_footprinting/comparisons"],
+        "output_dir": "results/bulk_footprinting/reports/review_multi_comparisons",
+    },
     "match-motifs": {
         "sample_id": "match_motifs_run",
         "signals": "test_data/Bcell_footprints.bw",
@@ -79,7 +95,7 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "stat": "q95",
         "target": "median",
     },
-    "motif-discovery": {
+    "discover-motifs": {
         "sample_id": "motif_discovery_run",
         "candidates": "test_data/merged_peaks.bed",
         "genome": "test_data/genome.fa.gz",
@@ -87,21 +103,13 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "method": "streme",
         "known_motif_db": "jaspar2026_vertebrates",
     },
-    "motif-summary": {
+    "summarize-motifs": {
         "sample_id": "motif_summary_run",
         "meme_txt": "",
         "tomtom_tsv": "",
         "out_tsv": "examples/gui_demo_outputs/motif_summary/motif_summary.tsv",
         "out_html": "examples/gui_demo_outputs/motif_summary/motif_summary.html",
         "title": "fp-tools motif summary",
-    },
-    "fp-tools-score-variants": {
-        "sample_id": "variant_scoring_run",
-        "variants": "test_data/variants_example.bed",
-        "genome": "test_data/genome.fa.gz",
-        "out": "examples/gui_demo_outputs/variants/variant_scores.tsv",
-        "candidate_scores": "test_data/merged_peaks.bed",
-        "motif_db": "jaspar2026_vertebrates",
     },
     "pseudobulk-fragments": {
         "sample_id": "pseudobulk_fragments_run",
@@ -124,10 +132,11 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "summary_output_prefix": "single_cell_footprinting",
         "max_motifs": 25,
     },
-    "pseudobulk-footprints": {
+    "sc-footprinting": {
         "sample_id": "pseudobulk_footprints_run",
         "fragments": "data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz",
         "annotations": "data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv",
+        "h5ad": "data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad.h5ad",
         "group_by": "cell_type",
         "outdir": "examples/gui_demo_outputs/pseudobulk_footprints",
         "genome_sizes": "data/public/processed/pseudobulk_pbmc5k_scatac/hg38.chrom.sizes",
@@ -800,7 +809,7 @@ def _render_home(run_dir: Path) -> None:
         </section>
         <div class="fp-section-title">Typical workflow</div>
         <div class="fp-card-grid">
-          <div class="fp-gui-card"><h3>1. Choose command</h3><p>Open bulk ATAC, motif, report, variant, pseudobulk, or signature tools.</p></div>
+          <div class="fp-gui-card"><h3>1. Choose command</h3><p>Open bulk ATAC, motif, report, pseudobulk, or signature tools.</p></div>
           <div class="fp-gui-card"><h3>2. Load example</h3><p>Start from bundled YAML or paste your own paths.</p></div>
           <div class="fp-gui-card"><h3>3. Review YAML</h3><p>Check the exact config before running.</p></div>
           <div class="fp-gui-card"><h3>4. Inspect outputs</h3><p>Open logs, tables, bigWigs, and HTML reports.</p></div>
@@ -1272,7 +1281,7 @@ def _render_generic_tool_page(run_dir: Path, tool: str) -> None:
         _render_page_loader(tool)
         defaults = GENERIC_TOOL_DEFAULTS.get(tool, {"sample_id": f"{tool.replace('-', '_')}_run"})
         current = _current_single_params(tool) or defaults
-        st.caption("This page writes the same YAML config used by run-workflow and the direct CLI.")
+        st.caption("This page writes the same YAML config used by run-yaml-workflow and the direct CLI.")
         with st.form(f"{tool}_generic_form"):
             edited: dict[str, Any] = {}
             simple_fields: list[tuple[str, Any]] = []
@@ -1487,16 +1496,16 @@ def _discover_outputs(child_run_dir: Path) -> list[Path]:
                 outputs.extend(sorted(path for path in outdir_path.glob("diff_footprints_*.html")))
     elif tool == "normalize-bigwig":
         add_path(item.get("outdir", ""))
-    elif tool == "motif-discovery":
+    elif tool == "discover-motifs":
         add_path(item.get("outdir", ""))
         add_path(item.get("script", ""))
-    elif tool == "motif-summary":
+    elif tool == "summarize-motifs":
         for key in ("out_tsv", "out_html"):
             add_path(item.get(key, ""))
-    elif tool == "fp-tools-score-variants":
-        add_path(item.get("out", ""))
-    elif tool in {"pseudobulk-fragments", "find-signature-fp", "pseudobulk-footprints"}:
+    elif tool in {"pseudobulk-fragments", "find-signature-fp", "sc-footprinting", "bulk-footprinting"}:
         add_path(item.get("outdir", ""))
+    elif tool == "review-multi-comparisons":
+        add_path(item.get("output_dir", ""))
 
     seen: set[str] = set()
     deduped: list[Path] = []

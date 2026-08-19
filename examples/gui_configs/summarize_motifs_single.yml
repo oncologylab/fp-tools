@@ -2,7 +2,7 @@ version: 1
 run_mode: single
 samples:
   - sample_id: motif_summary_demo
-    tool: motif-summary
+    tool: summarize-motifs
     out_tsv: examples/gui_demo_outputs/motif_summary/motif_summary.tsv
     out_html: examples/gui_demo_outputs/motif_summary/motif_summary.html
     title: fp-tools motif summary

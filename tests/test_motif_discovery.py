@@ -71,7 +71,7 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
         self.assertIn("meme", text)
         self.assertIn("-nmotifs 5", text)
         self.assertIn("tomtom", text)
-        self.assertIn("motif-summary", text)
+        self.assertIn("summarize-motifs", text)
         self.assertTrue(text.startswith("#!/usr/bin/env bash"))
 
     def test_motif_discovery_plan_accepts_builtin_known_motif_db(self):

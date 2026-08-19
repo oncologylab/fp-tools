@@ -5,7 +5,7 @@ This directory holds reference outputs and manual-run artifacts so the project r
 - `atacorrect/`: ignored manual `atac-correct` outputs.
 - `scorebigwig/`: ignored manual `call-footprints` outputs.
 - `bindetect/`: ignored historical/manual differential-footprint outputs.
-- `gui_configs/`: portable YAML examples for `run-workflow` and the GUI.
+- `gui_configs/`: portable YAML examples for `run-yaml-workflow` and the GUI.
 - `nutrient_stress_project/`: portable multi-condition project template.
 - `plotaggregate_tfbs_dir/` and `plotaggregate_tfbs_grid/`: small plotting inputs.
 - `reports/`: standalone generated PDFs or similar reference files.

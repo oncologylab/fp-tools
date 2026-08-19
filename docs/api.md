@@ -5,93 +5,34 @@ hide:
 
 # API Reference
 
-The public interface of `fp-tools` is command-first. Each command below includes the required inputs, main outputs, a practical example, and the complete option reference generated from the current `--help` output.
+Direct CLI commands are the primary interface. The GUI and YAML runner call these same commands.
 
-## Command Overview
-
-| Command | Purpose |
+| Command | Reference |
 | --- | --- |
-| [`prepare-atac`](#prepare-atac) | Prepare single- or paired-end ATAC-seq reads as filtered BAM, peak BED, RP10M bigWig, and QC files. |
-| [`atac-correct`](#atac-correct) | Bias-correct ATAC-seq cut-site signal. |
-| [`call-footprints`](#call-footprints) | Create footprint score tracks from one or more corrected bigWig signals. |
-| [`match-motifs`](#match-motifs) | Scan motifs for one or more footprint tracks and write per-sample bound/unbound motif-site calls. |
-| [`diff-footprints`](#diff-footprints) | Compare motif-associated footprint scores across conditions or biological replicates. |
-| [`normalize-bigwig`](#normalize-bigwig) | Normalize bigWig tracks with a shared background-region scale estimate. |
-| [`plot-aggregate`](#plot-aggregate) | Plot aggregate signal around motif sites or region sets as static output or HTML. |
-| [`review-multi-comparisons`](#review-multi-comparisons) | Review multiple differential-footprint HTML reports in one page. |
-| [`plot-motif-aggregate-grid`](#plot-motif-aggregate-grid) | Export multi-page motif-by-comparison aggregate PDFs from review reports. |
-| [`run-workflow`](#run-workflow) | Run a saved YAML workflow configuration. |
-| [`fp-tools-gui`](#fp-tools-gui) | Launch the optional browser GUI for command-compatible workflows. |
-| [`motif-discovery`](#motif-discovery) | Prepare or run de novo motif discovery from candidate footprint intervals or FASTA. |
-| [`motif-summary`](#motif-summary) | Summarize MEME/STREME/DREME and Tomtom motif discovery outputs. |
-| [`fp-tools-score-variants`](#fp-tools-score-variants) | Annotate variants with footprint, sequence, candidate-overlap, and optional motif/model score changes. |
-| [`pseudobulk-fragments`](#pseudobulk-fragments) | Group single-cell ATAC fragments into pseudobulk fragment files and optional cut-site tracks. |
-| [`find-signature-fp`](#find-signature-fp) | Plot per-cell footprint-signature heatmaps and UMAP reports from completed pseudobulk or motif analysis outputs. |
-| [`pseudobulk-footprints`](#pseudobulk-footprints) | Run grouping, correction, footprint scoring, motif reports, aggregate plots, and optional signature reporting for single-cell ATAC pseudobulk analyses. |
+| `prepare-atac` | [Options](#prepare-atac) |
+| `bulk-footprinting` | [Options](#bulk-footprinting) |
+| `atac-correct` | [Options](#atac-correct) |
+| `call-footprints` | [Options](#call-footprints) |
+| `match-motifs` | [Options](#match-motifs) |
+| `diff-footprints` | [Options](#diff-footprints) |
+| `normalize-bigwig` | [Options](#normalize-bigwig) |
+| `plot-aggregate` | [Options](#plot-aggregate) |
+| `review-multi-comparisons` | [Options](#review-multi-comparisons) |
+| `run-yaml-workflow` | [Options](#run-yaml-workflow) |
+| `fp-tools-gui` | [Options](#fp-tools-gui) |
+| `discover-motifs` | [Options](#discover-motifs) |
+| `summarize-motifs` | [Options](#summarize-motifs) |
+| `pseudobulk-fragments` | [Options](#pseudobulk-fragments) |
+| `find-signature-fp` | [Options](#find-signature-fp) |
+| `sc-footprinting` | [Options](#sc-footprinting) |
 
-## Command Manuals
-
-### `prepare-atac`
-
-<div class="fp-api-card" markdown="1">
-
-Turn single- or paired-end ATAC-seq reads into the BAM, peak, coverage, and QC files needed
-for footprint analysis. The command can download public runs or use FASTQs that
-are already available locally.
-
-**Input parameters**
-
-- A TSV or CSV file with an `ID` or `run_accession` column for public data.
-  Local files and HTTPS links can be supplied in `fastq_1` and `fastq_2`
-  columns.
-- A named `hg38` or `mm10` reference, or a custom FASTA with a Bowtie2 index,
-  blacklist BED, and genome-size value.
-- An optional YAML file for changing trimming, alignment, filtering, peak
-  calling, coverage, QC, and compute settings.
-
-**Processing profiles**
-
-| Stage | `modern` profile | `homer-atac` profile |
-|---|---|---|
-| Read preparation | fastp detects adapters, trims low-quality sequence, and discards reads shorter than 20 bases. FastQC can be run before trimming. | Trim Galore performs adapter and quality trimming and runs FastQC on the trimmed reads. |
-| Alignment | Bowtie2 uses its very-sensitive end-to-end mode and accepts fragments up to 2,000 bp. | Bowtie2 uses very-sensitive local alignment and accepts fragments up to 1,000 bp. |
-| Read filtering | Keeps proper pairs with mapping quality 30 or higher. Secondary, supplementary, failed-QC, mitochondrial, duplicate, and blacklist-overlapping reads are removed. | Picard marks PCR duplicates. Duplicate reads, blacklist overlaps, and reads Bowtie2 reports at more than one genomic location are removed. No mapping-quality cutoff is added, and mitochondrial reads are retained. |
-| Peak calling | MACS3 calls paired-end fragments directly or uses the configured shift and extension for single-end reads, at q-value 0.01. | HOMER calls factor-style peaks with local enrichment 15, a 150,000 bp local window, and FDR 0.00001. Single-end libraries use HOMER's single-read tag mode. |
-| Coverage track | bedtools calculates coverage and scales it to 10 million reads or fragments. | HOMER creates a coverage track scaled to 10 million tags. |
-
-Use the default `modern` profile for new projects. Choose `homer-atac` when a
-Trim Galore, Picard, and HOMER-based processing workflow is required.
-
-**Output**
-
-- One folder per sample containing a filtered BAM and BAI, peak BED, RP10M
-  bigWig, QC metrics, fragment-length summary, and command log.
-- Convenient links named `<sample>.<assembly>.filtered.bam`,
-  `<sample>.<assembly>.rp10m.bw`, and
-  `<sample>.<assembly>.rp10m.narrowpeaks.bed` without copying large files.
-- Merged project peaks, the resolved settings and reference information,
-  software versions, `metadata/samples.tsv`, and a ready-to-run
-  `atac_correct.yml`.
-
-**Example command**
-
-```bash
-prepare-atac \
-  --samples GSE192390_NIH3T3_samples.txt \
-  --genome mm10 \
-  --outdir gse192390_atac
-```
-
-To use the HOMER-based processing method, add `--profile homer-atac` and choose
-a different output directory.
-
-**Options**
+## `prepare-atac`
 
 ```text
 usage: prepare-atac [-h] [--samples SAMPLES] [--genome GENOME]
                     [--outdir OUTDIR] [--config CONFIG]
-                    [--profile {modern,homer-atac}]
-                    [--id-column ID_COLUMN] [--sample-column SAMPLE_COLUMN]
+                    [--profile {modern,homer-atac}] [--id-column ID_COLUMN]
+                    [--sample-column SAMPLE_COLUMN]
                     [--condition-column CONDITION_COLUMN]
                     [--include INCLUDE [INCLUDE ...]]
                     [--reference-dir REFERENCE_DIR] [--fasta FASTA]
@@ -100,11 +41,11 @@ usage: prepare-atac [-h] [--samples SAMPLES] [--genome GENOME]
                     [--cores CORES]
                     [--max-parallel-samples MAX_PARALLEL_SAMPLES]
                     [--memory-gb MEMORY_GB] [--keep-intermediates]
-                    [--no-resume] [--fail-fast] [--dry-run]
-                    [--doctor] [--write-default-config PATH]
+                    [--no-resume] [--fail-fast] [--dry-run] [--doctor]
+                    [--write-default-config PATH]
 
-Download single- or paired-end ATAC-seq reads and prepare filtered BAM, peak BED, RP10M
-bigWig, and QC files.
+Download single- or paired-end ATAC-seq reads and prepare filtered BAM, peak
+BED, RP10M bigWig, and QC files.
 
 options:
   -h, --help            show this help message and exit
@@ -127,7 +68,8 @@ options:
   --include INCLUDE [INCLUDE ...]
                         Only process these sample names or accessions.
   --reference-dir REFERENCE_DIR
-                        Reference cache root.
+                        Reference cache root (default: ~/.cache/fp-
+                        tools/references).
   --fasta FASTA         Custom reference FASTA.
   --bowtie2-index BOWTIE2_INDEX
                         Existing Bowtie2 index prefix.
@@ -135,63 +77,65 @@ options:
                         Custom blacklist BED.
   --tss TSS             Optional TSS BED for enrichment QC.
   --macs-genome-size MACS_GENOME_SIZE
-                        MACS3 genome size or hs/mm shorthand for custom genomes.
+                        MACS3 genome size or hs/mm shorthand for custom
+                        genomes.
   --cores CORES         Total core budget.
   --max-parallel-samples MAX_PARALLEL_SAMPLES
-                        Maximum samples processed concurrently.
+                        Maximum samples processed concurrently (default:
+                        config value).
   --memory-gb MEMORY_GB
-                        Enforce this total memory budget and reserve 8 GiB for
-                        the host.
-  --keep-intermediates  Keep trimmed reads and intermediate alignment files.
-  --no-resume           Recompute completed samples even when fingerprints match.
+                        Enforced total memory budget in GiB; reserves 8 GiB
+                        for the host.
+  --keep-intermediates  Keep trimmed FASTQs and intermediate alignment files
+                        under each sample .work directory.
+  --no-resume           Recompute completed samples even when fingerprints
+                        match.
   --fail-fast           Stop after the first failed sample.
-  --dry-run             Validate and list planned samples without processing.
+  --dry-run             Validate and list the planned samples without
+                        downloading or processing.
   --doctor              Report external preprocessing dependencies and exit.
   --write-default-config PATH
-                        Write the documented default YAML and exit.
+                        Write the fully documented default YAML and exit.
 ```
 
-</div>
+## `bulk-footprinting`
 
-### `atac-correct`
+```text
+usage: bulk-footprinting [-h] --sample-table SAMPLE_TABLE --comparison-table
+                         COMPARISON_TABLE --genome GENOME
+                         [--blacklist BLACKLIST] [--motifs [MOTIFS ...]]
+                         [--motif-db MOTIF_DB]
+                         [--normalization {none,condition-quantile,sample-quantile}]
+                         --outdir OUTDIR [--cores CORES] [--resume] [--force]
+                         [--dry-run] [--fail-fast]
 
-<div class="fp-api-card" markdown="1">
+Run the complete bulk ATAC-seq footprinting workflow for explicit comparisons.
 
-Bias-correct ATAC-seq cut-site signal.
-
-**Input parameters**
-
-- One or more BAM files from ATAC-seq experiments.
-- Reference genome FASTA.
-- One shared `merged_peaks.bed`, or multiple per-sample peak BEDs that are merged internally; optional blacklist and q95 scaling regions.
-
-**Output**
-
-- Uncorrected, expected, bias, and corrected bigWig tracks.
-- QC PDF and run logs in the output directory.
-- For multi-BAM runs, one output subfolder per sample. If multiple peak BEDs are supplied, fp-tools merges them and saves `merged_peaks.bed`.
-- With a sample table and `--outdir project`, each sample is written under `<project>/samples/<sample>/atac_correct/`, merged peaks are written under `<project>/peaks/`, and downstream commands can reuse the same sample table. Use `--layout custom` for fully manual paths.
-
-**Example commands**
-
-```bash
-atac-correct \
-  --bams sample.bam \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --blacklist hg38.blacklist.bed \
-  --outdir project/samples/sample/atac_correct
-
-atac-correct \
-  --sample-table project/metadata/samples.tsv \
-  --genome hg38.fa.gz \
-  --blacklist hg38.blacklist.bed \
-  --outdir project
+options:
+  -h, --help            show this help message and exit
+  --sample-table SAMPLE_TABLE
+                        TSV with sample, condition, BAM, and peak BED columns.
+  --comparison-table COMPARISON_TABLE
+                        TSV with comparison, cond1, and cond2 columns.
+  --genome GENOME       Reference genome FASTA.
+  --blacklist BLACKLIST
+                        Optional blacklist BED used during bias correction.
+  --motifs [MOTIFS ...]
+                        Optional motif files.
+  --motif-db MOTIF_DB   Built-in motif database (default:
+                        jaspar2026_vertebrates).
+  --normalization {none,condition-quantile,sample-quantile}
+                        Differential-stage normalization (default: none).
+  --outdir OUTDIR       Project output directory.
+  --cores CORES         Total worker cores passed to each stage (default: 1).
+  --resume              Skip stages whose expected outputs are complete.
+  --force               Rerun stages even when outputs already exist.
+  --dry-run             Validate inputs and print the commands without running
+                        them.
+  --fail-fast           Stop at the first failed stage.
 ```
 
-**Options**
-
-This option reference is generated from `atac-correct --help` and lists every accepted option for the command.
+## `atac-correct`
 
 ```text
 usage: atac-correct [-h] [--bams [<bam> ...]] [-g <fasta>] [-p [<bed> ...]]
@@ -224,7 +168,7 @@ atac-correct --bams <reads.bam> [<more_reads.bam> ...] --genome <genome.fa> --pe
 Output files:
 - <outdir>/<sample>/<sample>_corrected.bw for multi-BAM runs
 - optional auxiliary tracks with --write-tracks
-- optional <outdir>/<prefix>_atacorrect.pdf unless --skip-qc is used
+- <outdir>/<prefix>_atacorrect.pdf
 
 ------------------------------------------------------------------------------------------
 
@@ -232,8 +176,8 @@ Required arguments:
   --bams [<bam> ...]               One or more .bam files containing reads to be corrected
   -g <fasta>, --genome <fasta>     A .fasta-file containing whole genomic sequence
   -p [<bed> ...], --peaks [<bed> ...]
-                                   One shared merged peak BED, or multiple per-sample
-                                   peak BEDs to merge internally
+                                   One shared merged peak BED, or multiple per-sample peak
+                                   BEDs to merge internally
 
 Optional arguments:
   --regions-in <bed>               Input regions for estimating bias (default: regions not
@@ -313,38 +257,7 @@ Run arguments:
                                    2: info, 3: stats, 4: debug, 5: spam) (default: 3)
 ```
 
-</div>
-
-### `call-footprints`
-
-<div class="fp-api-card" markdown="1">
-
-Create footprint score tracks from one or more corrected bigWig signals.
-
-**Input parameters**
-
-- One or more corrected cut-site bigWigs passed with `--signals`.
-- BED regions where footprint scores should be computed.
-
-**Output**
-
-- Footprint score bigWig per input signal.
-- Optional BED coordinates for candidate footprint peaks used by de novo motif discovery when `--call-candidates`, `--output-bed`, or `--output-beds` is used.
-- With `--sample-output-root`, outputs are written under `<root>/<sample>/footprints/`.
-
-**Example commands**
-
-```bash
-call-footprints \
-  --signals A_corrected.bw B_corrected.bw \
-  --sample-names A B \
-  --regions merged_peaks.bed \
-  --sample-output-root project/samples
-```
-
-**Options**
-
-This option reference is generated from `call-footprints --help` and lists every accepted option for the command.
+## `call-footprints`
 
 ```text
 usage: call-footprints [-h] [-s <bigwig>] [--signals [<bigwig> ...]] [-o <bigwig>]
@@ -465,49 +378,14 @@ Run arguments:
                                         spam) (default: 3)
 ```
 
-</div>
-
-### `match-motifs`
-
-<div class="fp-api-card" markdown="1">
-
-Scan motifs for one or more footprint tracks and write per-sample motif binding summaries plus compact reuse caches.
-
-**Input parameters**
-
-- One or more footprint score bigWigs passed with `--signals`.
-- Genome FASTA and peak BED.
-- A built-in motif database through `--motif-db` or custom motif files through `--motifs`.
-- Optional `--sample-names` labels for per-sample columns.
-
-**Output**
-
-- Summary tables with motif binding statistics for each sample.
-- Motif-site and background-score caches used by `diff-footprints --sample-dirs`; cached comparisons may create internal per-motif shard caches on first reuse.
-- Per-motif folders containing `<motif>_all.bed`, `<motif>_<sample>_bound.bed`, and `<motif>_<sample>_unbound.bed` by default. In project mode these BED folders are materialized in the background after report-ready outputs. Use `--motif-outputs summary` to skip permanent BED folders.
-- With project/sample-table input or `--sample-output-root`, fp-tools uses a shared motif scan by default for multi-sample runs and writes one normal sample folder under `<root>/<sample>/match_motifs/`.
-
-**Example commands**
-
-```bash
-match-motifs \
-  --signals A_footprints.bw B_footprints.bw \
-  --sample-names A B \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --sample-output-root project/samples
-```
-
-**Options**
-
-This option reference is generated from `match-motifs --help` and lists every accepted option for the command.
+## `match-motifs`
 
 ```text
 usage: match-motifs [-h] [--signals [<bigwig> ...]] [--peaks <bed>] [--genome <fasta>]
                     [--motifs [<motifs> ...]] [--motif-db <name>] [--list-motif-dbs]
                     [--sample-names [<name> ...]] [--cond-names [<name> ...]]
                     [--sample-table <tsv>] [--layout {custom,project}]
+                    [--match-scan-mode {auto,shared,per-sample}]
                     [--sample-output-root <directory>] [--peak-header <file>]
                     [--naming <string>] [--motif-pvalue <float>] [--bound-pvalue <float>]
                     [--cluster-threshold <float>] [--pseudo <float>] [--skip-excel]
@@ -538,8 +416,8 @@ Output files:
 - <outdir>/<prefix>_results.{txt,xlsx}
 - <outdir>/<prefix>_distances.txt
 - <outdir>/cache/* compact reuse caches
-- optional <outdir>/<TF>/<TF>_overview.{txt,xlsx} and <outdir>/<TF>/beds/*.bed with
---motif-outputs full
+- <outdir>/<TF>/beds/*_all.bed, *_bound.bed, and *_unbound.bed by default
+- optional <outdir>/<TF>/<TF>_overview.{txt,xlsx} with --motif-outputs full
 
 ------------------------------------------------------------------------------------------
 
@@ -603,8 +481,9 @@ Optional arguments:
   --plot-aggregate {sig,all,top,off}
                                    Embed aggregate profiles in HTML reports for
                                    significant, all, top-N, or no motifs (default: sig)
-  --plot-aggregate-top-n <int>     Maximum number of motifs to aggregate when --plot-aggregate sig/top
-                                   or fallback selection is used (default: 20)
+  --plot-aggregate-top-n <int>     Maximum number of motifs to aggregate when --plot-
+                                   aggregate sig/top or fallback selection is used
+                                   (default: 20)
   --aggregate-pvalue-threshold <float>
                                    P-value threshold for --plot-aggregate sig (default:
                                    0.05)
@@ -622,8 +501,8 @@ Optional arguments:
                                    compact caches plus per-motif BED files; summary writes
                                    only main result/report tables and caches; full writes
                                    per-motif BED and overview files synchronously. For
-                                   diff-footprints, auto writes full motif outputs only when
-                                   aggregate reports need them.
+                                   diff-footprints, auto writes full motif outputs only
+                                   when aggregate reports need them.
   --report-label <text>            Optional method label shown under the report subtitle
                                    in interactive HTML reports
   --prefix <prefix>                Prefix for overview files in --outdir folder (default:
@@ -644,56 +523,16 @@ Run arguments:
                                    2: info, 3: stats, 4: debug, 5: spam) (default: 3)
 ```
 
-</div>
-
-### `diff-footprints`
-
-<div class="fp-api-card" markdown="1">
-
-Compare motif-associated footprint scores across conditions or biological replicates.
-
-**Input parameters**
-
-- Two or more footprint score bigWigs passed with `--signals`, standardized sample folders from prior `match-motifs` runs passed with `--sample-dirs` / `--project-dir`, or a project-mode sample/comparison table.
-- `--cond-names` to define conditions; repeat names for replicates.
-- Optional `--sample-names` to override file-derived sample labels without changing conditions.
-- Genome FASTA, peak BED, and motif database or motif files.
-- Optional corrected cut-site bigWigs in `--aggregate-signals` for embedded aggregate profiles.
-
-**Output**
-
-- Motif-level differential footprint tables.
-- Optional per-motif overview tables and bound/unbound BED files when `--motif-outputs full` is used.
-- Standalone interactive HTML report with volcano summaries and aggregate profiles.
-- Optional static volcano/cluster PDFs with `--static-plots`, optional per-motif diagnostic PDFs with `--per-motif-plots`, and optional skew/shift PDF with `--skew-report`.
-- A per-sample motif-score matrix and replicate diagnostic tables when replicate groups are present. Comparisons with at least two biological replicates per condition also include empirical-Bayes moderated effect, standard-error, t, confidence-interval, p-value, and BH q-value columns in the main result table.
-
-For replicate-supported contrasts, biological samples are the inferential units. `diff-footprints` first averages the common motif-site scores within each sample, fits the condition difference across replicate means, and moderates residual variances across motifs. Native standardized motif-versus-background columns remain separate for compatibility and interpretation.
-
-**Example commands**
-
-```bash
-diff-footprints \
-  --sample-table project/metadata/samples.tsv \
-  --comparison-table project/metadata/comparisons.tsv \
-  --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks_filtered.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project
-```
-
-Project-mode comparisons use a generic table with `comparison`, `cond1`, and `cond2` columns. Each comparison reuses cached `match_motifs` folders from the project samples directory, so folder mode skips motif rescanning, motif-site rescoring, and footprint bigWig rereads for the differential table. The first cached comparison can build internal per-motif shard caches; later comparisons reuse those shards.
-
-**Options**
-
-This option reference is generated from `diff-footprints --help` and lists every accepted option for the command.
+## `diff-footprints`
 
 ```text
 usage: diff-footprints [-h] [--signals [<bigwig> ...]] [--peaks <bed>] [--genome <fasta>]
                        [--motifs [<motifs> ...]] [--motif-db <name>] [--list-motif-dbs]
                        [--sample-names [<name> ...]] [--cond-names [<name> ...]]
-                       [--sample-dirs [<directory> ...]] [--project-dir <directory>]
-                       [--peak-header <file>] [--naming <string>] [--motif-pvalue <float>]
+                       [--sample-table <tsv>] [--comparison-table <tsv>]
+                       [--layout {custom,project}] [--sample-dirs [<directory> ...]]
+                       [--project-dir <directory>] [--peak-header <file>]
+                       [--naming <string>] [--motif-pvalue <float>]
                        [--bound-pvalue <float>] [--cluster-threshold <float>]
                        [--pseudo <float>] [--time-series] [--time-course] [--skip-excel]
                        [--output-peaks <bed>] [--norm-off]
@@ -706,9 +545,10 @@ usage: diff-footprints [-h] [--signals [<bigwig> ...]] [--peaks <bed>] [--genome
                        [--aggregate-pvalue-threshold <float>] [--aggregate-flank <bp>]
                        [--aggregate-normalization {match,none,sample-quantile,size-factor}]
                        [--aggregate-site-set {all,bound}] [--reuse-existing-results]
-                       [--static-plots] [--per-motif-plots] [--skew-report]
-                       [--report-label <text>] [--outdir <directory>] [--prefix <prefix>]
-                       [--cores <int>] [--split <int>] [--debug] [--verbosity <int>]
+                       [--motif-outputs {auto,summary,full}] [--static-plots]
+                       [--per-motif-plots] [--skew-report] [--report-label <text>]
+                       [--outdir <directory>] [--prefix <prefix>] [--cores <int>]
+                       [--split <int>] [--debug] [--verbosity <int>]
 
 __________________________________________________________________________________________
 
@@ -726,15 +566,12 @@ diff-footprints --signals <bigwig1> (<bigwig2> (...)) --genome <genome.fasta> --
 
 Output files:
 - <outdir>/<prefix>_results.{txt,xlsx}
-- <outdir>/<prefix>_replicate_motif_score_matrix.tsv when repeated conditions are present
-- <outdir>/<prefix>_replicate_report.tsv, <prefix>_replicate_summary.tsv, and <prefix>_replicate_report.png when replicate reporting is enabled
 - <outdir>/<prefix>_distances.txt
 - <outdir>/<prefix>_<condition1>_<condition2>.html
 - optional <outdir>/<prefix>_figures.pdf with --static-plots
 - optional <outdir>/<prefix>_clusters.pdf with --static-plots
 - optional <outdir>/<TF>/plots/<TF>_log2fcs.pdf with --per-motif-plots
-- <outdir>/<TF>/<TF>_overview.{txt,xlsx} (per motif)
-- <outdir>/<TF>/beds/<TF>_all.bed (per motif)
+- optional <outdir>/<TF>/<TF>_overview.{txt,xlsx} with --motif-outputs full
 - <outdir>/<TF>/beds/<TF>_<condition>_bound.bed (per motif-condition pair)
 - <outdir>/<TF>/beds/<TF>_<condition>_unbound.bed (per motif-condition pair)
 
@@ -761,10 +598,18 @@ Optional arguments:
   --cond-names [<name> ...]        Condition labels for --signals; repeat names to define
                                    biological replicates (default: prefix of each
                                    --signals file)
+  --sample-table <tsv>             Project sample table with sample and condition columns
+                                   plus bam/peaks for upstream steps
+  --comparison-table <tsv>         Project comparison table with comparison, cond1, and
+                                   cond2 columns
+  --layout {custom,project}        Use fp-tools standard project output layout under
+                                   --outdir (default: project when --sample-table is
+                                   provided)
   --sample-dirs [<directory> ...]  Sample output folders containing match_motifs/ outputs
                                    to reuse for differential analysis
   --project-dir <directory>        Parent folder containing sample output folders for
-                                   folder-based differential analysis
+                                   folder-based differential analysis, typically
+                                   <project>/samples
   --peak-header <file>             File containing the header of --peaks separated by
                                    whitespace or newlines (default: peak columns are named
                                    "_additional_<count>")
@@ -812,8 +657,9 @@ Optional arguments:
   --plot-aggregate {sig,all,top,off}
                                    Embed aggregate profiles in HTML reports for
                                    significant, all, top-N, or no motifs (default: sig)
-  --plot-aggregate-top-n <int>     Maximum number of motifs to aggregate when --plot-aggregate sig/top
-                                   or fallback selection is used (default: 20)
+  --plot-aggregate-top-n <int>     Maximum number of motifs to aggregate when --plot-
+                                   aggregate sig/top or fallback selection is used
+                                   (default: 20)
   --aggregate-pvalue-threshold <float>
                                    P-value threshold for --plot-aggregate sig (default:
                                    0.05)
@@ -829,6 +675,13 @@ Optional arguments:
   --reuse-existing-results         Regenerate final diff-footprints reports from existing
                                    <prefix>_results.txt and per-motif BEDs without
                                    rescanning motifs
+  --motif-outputs {auto,summary,full}
+                                   Per-motif output mode. For match-motifs, auto writes
+                                   compact caches plus per-motif BED files; summary writes
+                                   only main result/report tables and caches; full writes
+                                   per-motif BED and overview files synchronously. For
+                                   diff-footprints, auto writes full motif outputs only
+                                   when aggregate reports need them.
   --static-plots                   Also write static volcano and cluster PDF summaries. By
                                    default diff-footprints writes the interactive HTML
                                    report without these PDFs.
@@ -854,49 +707,14 @@ Run arguments:
                                    2: info, 3: stats, 4: debug, 5: spam) (default: 3)
 ```
 
-</div>
-
-### `normalize-bigwig`
-
-<div class="fp-api-card" markdown="1">
-
-Normalize bigWig tracks with a shared background-region scale estimate.
-
-**Input parameters**
-
-- A project sample table with `sample`, `condition`, `bam`, and `peaks` columns, or one or more explicit bigWig tracks.
-- Shared background BED regions. In project mode this is usually `project/peaks/merged_peaks_filtered.bed`, written by `atac-correct`.
-- Output project directory and optional labels.
-
-**Output**
-
-- Per-sample normalized bigWig files under `project/samples/<sample>/normalize/`.
-- A summary table of background statistics and scaling factors.
-- A manifest of normalized output tracks.
-
-**Example commands**
-
-```bash
-normalize-bigwig \
-  --sample-table project/metadata/samples.tsv \
-  --background project/peaks/merged_peaks_filtered.bed \
-  --outdir project \
-  --method background-scale \
-  --stat q95 \
-  --target median
-```
-
-Project mode reads corrected tracks from each sample's `atac_correct` folder and writes q95-scaled tracks back into the same sample folder structure for `call-footprints` to reuse.
-
-**Options**
-
-This option reference is generated from `normalize-bigwig --help` and lists every accepted option for the command.
+## `normalize-bigwig`
 
 ```text
 usage: normalize-bigwig [-h] [--bigwigs BIGWIGS [BIGWIGS ...]]
                         [--background BACKGROUND] [--outdir OUTDIR]
                         [--sample-names [SAMPLE_NAMES ...]]
-                        [--sample-table SAMPLE_TABLE] [--layout {custom,project}]
+                        [--sample-table SAMPLE_TABLE]
+                        [--layout {custom,project}]
                         [--sample-output-root SAMPLE_OUTPUT_ROOT]
                         [--method {background-scale,background-zscore,none}]
                         [--stat STAT] [--target {median,mean}]
@@ -943,51 +761,21 @@ options:
                         (default: all available cores, capped by input count).
 ```
 
-</div>
-
-### `plot-aggregate`
-
-<div class="fp-api-card" markdown="1">
-
-Plot aggregate signal around motif sites or region sets as static output or HTML.
-
-**Input parameters**
-
-- Signal bigWigs passed with `--signals`.
-- Either TFBS BED files with `--TFBS` or a `match-motifs` output directory with `--match-dir`.
-- Optional motif names/IDs, site set, regions, labels, and normalization mode.
-
-**Output**
-
-- PDF or HTML aggregate plots depending on `--format` or output extension.
-- Optional aggregated signal and summary tables.
-
-**Example commands**
-
-```bash
-plot-aggregate \
-  --sample-table project/metadata/samples.tsv \
-  --motifs SPIB CEBPB \
-  --site-set bound \
-  --outdir project
-```
-
-Project mode reads each sample's `match_motifs` folder and corrected cut-site bigWig, then writes the aggregate browser to `project/reports/plot_aggregate.html` unless `--output` is provided.
-
-**Options**
-
-This option reference is generated from `plot-aggregate --help` and lists every accepted option for the command.
+## `plot-aggregate`
 
 ```text
 usage: plot-aggregate [-h] [--TFBS [<bed> ...]] [--signals [<bigwig> ...]]
-                      [--match-dir [<directory> ...]] [--regions [<bed> ...]]
-                      [--whitelist [<bed> ...]] [--blacklist [<bed> ...]] [--output]
+                      [--match-dir [<directory> ...]] [--sample-dirs [<directory> ...]]
+                      [--sample-table <tsv>] [--layout {custom,project}]
+                      [--manifest <tsv>] [--input-html [<html> ...]]
+                      [--regions [<bed> ...]] [--whitelist [<bed> ...]]
+                      [--blacklist [<bed> ...]] [--output] [--outdir <directory>]
                       [--output-txt] [--output-csv] [--output_aggregated_signals]
                       [--output_aggregated_scores] [--multiscale-npz <npz>]
                       [--output-multiscale-aggregate] [--title] [--format {auto,pdf,html}]
                       [--flank] [--motifs [<motif> ...]] [--site-set {bound,all,unbound}]
                       [--top-n <int>] [--default-layout {1x1,1x2,2x2,2x3}]
-                      [--TFBS-labels [...]] [--signal-labels [...]]
+                      [--hide-summary] [--TFBS-labels [...]] [--signal-labels [...]]
                       [--cond-names [<name> ...]] [--region-labels [...]]
                       [--control-label <label>] [--grid <rows>x<cols>] [--share-y]
                       [--normalize]
@@ -995,7 +783,10 @@ usage: plot-aggregate [-h] [--TFBS [<bed> ...]] [--signals [<bigwig> ...]]
                       [--normalization-comparison-output] [--output_aggregated_stats]
                       [--show-replicate-sd] [--negate] [--smooth <int>] [--log-transform]
                       [--plot-boundaries] [--signal-on-x] [--remove-outliers <float>]
-                      [--verbosity <int>]
+                      [--motif-grid] [--rows-per-page ROWS_PER_PAGE]
+                      [--order-htmls [ORDER_HTMLS ...]] [--fill-missing-profiles]
+                      [--recompute-missing-profiles] [--repeat-column-labels {none,row}]
+                      [--cores <int>] [--verbosity <int>]
 
 __________________________________________________________________________________________
 
@@ -1007,15 +798,28 @@ Input / output arguments:
   --signals [<bigwig> ...]              Signals in bigwig format (*required)
   --match-dir [<directory> ...]         match-motifs output directory or directories to
                                         use as the motif-site source
+  --sample-dirs [<directory> ...]       Alias for --match-dir in HTML mode; sample or
+                                        differential output directories containing motif
+                                        BEDs
+  --sample-table <tsv>                  Project sample table with sample and condition
+                                        columns
+  --layout {custom,project}             Use fp-tools standard project output layout under
+                                        --outdir (default: project when --sample-table is
+                                        provided)
+  --manifest <tsv>                      TSV with sample, signal, and match_dir/sample_dir
+                                        columns for HTML mode
+  --input-html [<html> ...]             Existing aggregate or diff-footprints HTML
+                                        payload(s) to merge in HTML mode
   --regions [<bed> ...]                 Regions to overlap with TFBS (optional)
   --whitelist [<bed> ...]               Only plot sites overlapping whitelist (optional)
   --blacklist [<bed> ...]               Exclude sites overlapping blacklist (optional)
   --output                              Path to output plot (default: fp-
                                         tools_aggregate.pdf)
+  --outdir <directory>                  Project directory used with --layout project
   --output-txt                          Path to output file for aggregates in .txt-format
                                         (default: None)
-  --output-csv                          Path to aggregated signal CSV output
-                                        (default: None)
+  --output-csv                          Path to aggregated signal CSV output (default:
+                                        None)
   --output_aggregated_signals           Path to CSV file for per-base aggregated signals
                                         (default: None)
   --output_aggregated_scores            Path to CSV file for aggregated footprint-score
@@ -1039,6 +843,8 @@ Plot arguments:
   --top-n <int>                         Number of motifs to plot from --match-dir when
                                         --motifs is omitted (default: 12)
   --default-layout {1x1,1x2,2x2,2x3}    Initial HTML subplot layout (default: 2x2)
+  --hide-summary                        Hide the TF site-count summary sidebar in HTML
+                                        mode
   --TFBS-labels [ ...]                  Labels used for each TFBS file (default: prefix of
                                         each --TFBS)
   --signal-labels [ ...]                Labels used for each signal file (default: prefix
@@ -1080,61 +886,40 @@ Plot arguments:
   --remove-outliers <float>             Value between 0-1 indicating the percentile of
                                         regions to include, e.g. 0.99 to remove the sites
                                         with 1% highest values (default: 1)
+  --motif-grid                          Create a multi-page motif-by-comparison PDF from
+                                        one review-multi-comparisons report
+  --rows-per-page ROWS_PER_PAGE         Motif rows per page in --motif-grid mode (default:
+                                        16)
+  --order-htmls [ORDER_HTMLS ...]       Optional review reports used to define one shared
+                                        motif order in --motif-grid mode
+  --fill-missing-profiles               Fill missing motif profiles from profiles embedded
+                                        elsewhere in the review report
+  --recompute-missing-profiles          Recompute missing motif profiles from project
+                                        bigWigs and motif BEDs
+  --repeat-column-labels {none,row}     Repeat comparison labels in every motif row
+                                        (default: none)
 
 Run arguments:
+  --cores <int>                         Worker processes for recomputing missing motif
+                                        profiles
   --verbosity <int>                     Level of output logging (0: silent, 1:
                                         errors/warnings, 2: info, 3: stats, 4: debug, 5:
                                         spam) (default: 3)
 ```
 
-</div>
-
-### `review-multi-comparisons`
-
-<div class="fp-api-card" markdown="1">
-
-Review multiple diff-footprints HTML reports in one interactive HTML file.
-
-**Input parameters**
-
-- One or more `diff_footprints_*.html` files, or directories containing those files.
-- Optional labels for the resolved comparisons.
-- Optional initial panel count from 4 to 8 for reviewing more comparisons at once.
-- Optional aggregate-legend visibility; hiding legends lets the motif aggregate review fit 4 to 8 selected comparison panels in one row.
-- Optional aggregate-profile completion from the standard project layout, so motifs present in the differential statistics can still be plotted when their profiles were not embedded in the original comparison HTML.
-
-**Output**
-
-- A standalone HTML report with comparison bar/volcano plot pairs, shared selected motifs, aggregate profiles, and editable SVG export buttons.
-
-**Example commands**
-
-```bash
-review-multi-comparisons \
-  --outdir project \
-  --display-panels 8 \
-  --aggregate-legends hide \
-  --recompute-missing-aggregate-profiles \
-  --cores 16
-```
-
-**Options**
-
-This option reference is generated from `review-multi-comparisons --help` and lists every accepted option for the command.
+## `review-multi-comparisons`
 
 ```text
 usage: review-multi-comparisons [-h] [--inputs INPUTS [INPUTS ...]]
-                                [--labels [LABELS ...]] [--output OUTPUT]
-                                [--outdir OUTDIR] [--layout {custom,project}]
-                                [--display-panels DISPLAY_PANELS]
-                                [--aggregate-legends {show,hide}]
+                                [--labels [LABELS ...]]
+                                [--output-dir OUTPUT_DIR] [--outdir OUTDIR]
+                                [--layout {custom,project}]
                                 [--fill-missing-aggregate-profiles]
                                 [--recompute-missing-aggregate-profiles]
                                 [--aggregate-flank AGGREGATE_FLANK]
-                                [--cores CORES]
-                                [--title TITLE]
+                                [--cores CORES] [--title TITLE]
 
-Review multiple diff-footprints HTML reports in one interactive HTML file.
+Combine diff-footprints reports into one scalable static browser bundle.
 
 options:
   -h, --help            show this help message and exit
@@ -1144,19 +929,14 @@ options:
                         recursively.
   --labels [LABELS ...]
                         Optional labels, one per resolved input HTML.
-  --output OUTPUT       Output standalone review HTML.
+  --output-dir OUTPUT_DIR
+                        Output directory for index.html, JavaScript, CSS, and
+                        compact static data files.
   --outdir OUTDIR       Project directory used with --layout project.
   --layout {custom,project}
                         Use fp-tools standard project output layout under
                         --outdir (default: project when only --outdir is
                         provided).
-  --display-panels DISPLAY_PANELS
-                        Initial number of comparison panels to display in the
-                        HTML report, from 4 to 8 (default: 4).
-  --aggregate-legends {show,hide}
-                        Initial visibility for legends beside motif aggregate
-                        subplots (default: show). Use hide to fit 4-8 aggregate
-                        panels in one row.
   --fill-missing-aggregate-profiles
                         Fill missing motif aggregate panels from profiles
                         embedded elsewhere in the combined review payload.
@@ -1164,159 +944,20 @@ options:
                         Recompute still-missing motif aggregate panels from
                         project sample bigWigs and match-motifs BEDs.
   --aggregate-flank AGGREGATE_FLANK
-                        Flank used when recomputing missing aggregate profiles,
-                        or 'auto' to match the existing report axis (default:
-                        auto).
+                        Flank used when recomputing missing aggregate
+                        profiles, or 'auto' to match the existing report axis
+                        (default: auto).
   --cores CORES         Worker processes for --recompute-missing-aggregate-
                         profiles (default: all available cores).
   --title TITLE
 ```
 
-</div>
-
-### `plot-motif-aggregate-grid`
-
-<div class="fp-api-card" markdown="1">
-
-Create a multi-page motif-by-comparison aggregate PDF from a `review-multi-comparisons` HTML report.
-
-**Input parameters**
-
-- A completed `review_multi_comparisons.html` report with embedded comparison payloads, or a project directory containing `reports/review_multi_comparisons.html`.
-- Optional output paths, page density, flank size, shared motif-order HTMLs, fast missing-profile filling, optional bigWig recomputation, RNA expression matrices, motif-to-gene mapping, and title.
-- Use `--repeat-column-labels row` when each motif row should repeat the comparison label inside every subplot.
-
-**Output**
-
-- A multi-page PDF where each column is a comparison, each row is a motif, and each square subplot shows aggregate profiles for that motif/comparison.
-- A source TSV containing motif labels, comparison labels, `delta_fp` values from the waterfall/bar report, p-values/FDR when present, profile availability, profile source (`html`, `assembled`, `recomputed`, or `missing`), site counts, and optional RNA TF log2FC values.
-
-**Example commands**
-
-```bash
-plot-motif-aggregate-grid \
-  --outdir project \
-  --output project/reports/all_motif_aggregate_grid.pdf \
-  --source-tsv project/reports/all_motif_aggregate_grid_source.tsv \
-  --rows-per-page 16 \
-  --fill-missing-profiles \
-  --rna-log2norm rna_deseq2_log2norm.tsv.gz \
-  --rna-raw-counts rna_raw_counts.tsv.gz \
-  --rna-sample-table rna_sample_metadata.tsv \
-  --motif-gene-map JASPAR2024_hg38.txt \
-  --repeat-column-labels row
-```
-
-**Options**
-
-This option reference is generated from `plot-motif-aggregate-grid --help` and lists every accepted option for the command.
+## `run-yaml-workflow`
 
 ```text
-usage: plot-motif-aggregate-grid [-h] [--input-html INPUT_HTML]
-                                 [--order-htmls [ORDER_HTMLS ...]]
-                                 [--outdir OUTDIR] [--layout {project,custom}]
-                                 [--output OUTPUT] [--source-tsv SOURCE_TSV]
-                                 [--rows-per-page ROWS_PER_PAGE]
-                                 [--flank FLANK] [--fill-missing-profiles]
-                                 [--recompute-missing-profiles]
-                                 [--cores CORES]
-                                 [--rna-log2norm RNA_LOG2NORM]
-                                 [--rna-raw-counts RNA_RAW_COUNTS]
-                                 [--rna-sample-table RNA_SAMPLE_TABLE]
-                                 [--motif-gene-map MOTIF_GENE_MAP]
-                                 [--rna-min-raw-mean RNA_MIN_RAW_MEAN]
-                                 [--repeat-column-labels {none,row}]
-                                 [--title TITLE]
-
-Create a multi-page motif-by-comparison aggregate PDF from review-multi-
-comparisons HTML.
-
-options:
-  -h, --help            show this help message and exit
-  --input-html INPUT_HTML
-                        review_multi_comparisons.html with embedded comparison
-                        payloads.
-  --order-htmls [ORDER_HTMLS ...]
-                        Optional review HTML files used only to build one
-                        shared motif row order by max |delta FP|.
-  --outdir OUTDIR       Project directory used with --layout project.
-  --layout {project,custom}
-                        Use fp-tools project layout under --outdir (default:
-                        project).
-  --output OUTPUT       Output multi-page PDF. In project mode, defaults to
-                        reports/motif_aggregate_grid.pdf.
-  --source-tsv SOURCE_TSV
-                        Output source TSV. Defaults to <output
-                        stem>_source.tsv.
-  --rows-per-page ROWS_PER_PAGE
-                        Motif rows per PDF page (default: 16).
-  --flank FLANK         Distance from motif center shown in each subplot
-                        (default: 60 bp).
-  --fill-missing-profiles
-                        Fill missing motif aggregate panels from condition
-                        profiles already embedded elsewhere in the review
-                        report.
-  --recompute-missing-profiles
-                        Slower fallback: recompute still-missing motif
-                        aggregate profiles from project sample bigWigs and
-                        motif BEDs.
-  --cores CORES         Worker processes for --recompute-missing-profiles
-                        (default: all available cores).
-  --rna-log2norm RNA_LOG2NORM
-                        Optional DESeq2/RUVr log2-normalized RNA matrix with
-                        gene_key and sample columns.
-  --rna-raw-counts RNA_RAW_COUNTS
-                        Optional raw RNA count matrix used to filter
-                        unexpressed TFs.
-  --rna-sample-table RNA_SAMPLE_TABLE
-                        Optional RNA sample table with sample and condition
-                        columns. Use this when RNA and ATAC sample identifiers
-                        differ.
-  --motif-gene-map MOTIF_GENE_MAP
-                        Optional motif-to-gene map with motif and gene_symbol
-                        columns.
-  --rna-min-raw-mean RNA_MIN_RAW_MEAN
-                        Minimum mean raw count in either compared condition
-                        for a TF to be shown (default: 1.0).
-  --repeat-column-labels {none,row}
-                        Repeat comparison labels inside each motif row panel
-                        instead of showing them only in the page header
-                        (default: none).
-  --title TITLE         PDF title.
-```
-
-</div>
-
-### `run-workflow`
-
-<div class="fp-api-card" markdown="1">
-
-Run a saved YAML workflow configuration.
-
-**Input parameters**
-
-- YAML config exported from the GUI or written by hand.
-- Optional run root and tool filters.
-
-**Output**
-
-- Runs each configured command or prints the commands with dry-run mode.
-
-**Example commands**
-
-```bash
-run-workflow \
-  --config examples/gui_configs/diff_footprints.yml
-```
-
-**Options**
-
-This option reference is generated from `run-workflow --help` and lists every accepted option for the command.
-
-```text
-usage: run-workflow [-h] --config CONFIG [--run-root RUN_ROOT]
-                    [--only [ONLY ...]] [--dry-run] [--list-jobs]
-                    [--fail-fast]
+usage: run-yaml-workflow [-h] --config CONFIG [--run-root RUN_ROOT]
+                         [--only [ONLY ...]] [--dry-run] [--list-jobs]
+                         [--fail-fast]
 
 Run fp-tools jobs from a YAML config file.
 
@@ -1330,33 +971,7 @@ options:
   --fail-fast          Stop at first failed job.
 ```
 
-</div>
-
-### `fp-tools-gui`
-
-<div class="fp-api-card" markdown="1">
-
-Launch the optional browser GUI for command-compatible workflows.
-
-**Input parameters**
-
-- Host, port, and optional run directory.
-
-**Output**
-
-- A local or server-hosted Streamlit GUI that writes reusable YAML configs and launches fp-tools commands.
-
-**Example commands**
-
-```bash
-fp-tools-gui \
-  --host 0.0.0.0 \
-  --port 8891
-```
-
-**Options**
-
-This option reference is generated from `fp-tools-gui --help` and lists every accepted option for the command.
+## `fp-tools-gui`
 
 ```text
 usage: fp-tools-gui [-h] [--host HOST] [--port PORT] [--run-dir RUN_DIR]
@@ -1370,44 +985,10 @@ options:
   --run-dir RUN_DIR  Directory for GUI-managed runs.
 ```
 
-</div>
-
-### `motif-discovery`
-
-<div class="fp-api-card" markdown="1">
-
-Prepare or run de novo motif discovery from candidate footprint intervals or FASTA.
-
-**Input parameters**
-
-- Candidate BED intervals or a FASTA file.
-- Reference genome FASTA when extracting candidate-centered sequences.
-- Motif discovery method and optional known motif database for comparison.
-
-**Output**
-
-- Candidate FASTA files.
-- Runnable MEME/STREME/DREME command plan or executed motif discovery output.
-- Optional Tomtom comparison and summary files.
-
-**Example commands**
-
-```bash
-motif-discovery \
-  --candidates project/samples/sample/footprints/sample_candidate_footprints.bed \
-  --genome hg38.fa.gz \
-  --flank 75 \
-  --method streme \
-  --known-motif-db jaspar2026_vertebrates \
-  --outdir project/de_novo/sample
-```
-
-**Options**
-
-This option reference is generated from `motif-discovery --help` and lists every accepted option for the command.
+## `discover-motifs`
 
 ```text
-usage: motif-discovery [-h] (--fasta FASTA | --candidates CANDIDATES)
+usage: discover-motifs [-h] (--fasta FASTA | --candidates CANDIDATES)
                        [--genome GENOME] [--flank FLANK] --outdir OUTDIR
                        [--script SCRIPT] [--method {meme,dreme,streme}]
                        [--known-motifs KNOWN_MOTIFS]
@@ -1439,39 +1020,12 @@ options:
   --execute             Run the generated script immediately.
 ```
 
-</div>
-
-### `motif-summary`
-
-<div class="fp-api-card" markdown="1">
-
-Summarize MEME/STREME/DREME and Tomtom motif discovery outputs.
-
-**Input parameters**
-
-- Motif discovery text/XML outputs and optional Tomtom TSV.
-- Output TSV or HTML paths.
-
-**Output**
-
-- Compact motif summary table and optional HTML report with motif names, consensus strings, and database matches.
-
-**Example commands**
-
-```bash
-motif-summary \
-  --meme-txt project/de_novo/sample/streme/streme.txt \
-  --tomtom-tsv project/de_novo/sample/tomtom/tomtom.tsv \
-  --out-tsv project/de_novo/sample/motif_summary.tsv
-```
-
-**Options**
-
-This option reference is generated from `motif-summary --help` and lists every accepted option for the command.
+## `summarize-motifs`
 
 ```text
-usage: motif-summary [-h] [--meme-txt MEME_TXT] [--tomtom-tsv TOMTOM_TSV]
-                     --out-tsv OUT_TSV [--out-html OUT_HTML] [--title TITLE]
+usage: summarize-motifs [-h] [--meme-txt MEME_TXT] [--tomtom-tsv TOMTOM_TSV]
+                        --out-tsv OUT_TSV [--out-html OUT_HTML]
+                        [--title TITLE]
 
 Summarize MEME/Tomtom outputs into TSV and HTML reports.
 
@@ -1485,110 +1039,7 @@ options:
   --title TITLE
 ```
 
-</div>
-
-### `fp-tools-score-variants`
-
-<div class="fp-api-card" markdown="1">
-
-Annotate variants with footprint, sequence, candidate-overlap, and optional motif/model score changes.
-
-**Input parameters**
-
-- Variant VCF/BED-like input.
-- Reference genome FASTA.
-- Optional footprint bigWigs, candidate BEDs, motif files, and trained models.
-
-**Output**
-
-- Variant-level TSV with requested footprint, sequence, motif, or model delta columns.
-
-**Example commands**
-
-```bash
-fp-tools-score-variants \
-  --variants variants.vcf \
-  --genome hg38.fa.gz \
-  --out project/variants/variant_scores.tsv
-```
-
-**Options**
-
-This option reference is generated from `fp-tools-score-variants --help` and lists every accepted option for the command.
-
-```text
-usage: fp-tools-score-variants [-h] --variants VARIANTS --genome GENOME --out
-                               OUT [--candidate-scores CANDIDATE_SCORES]
-                               [--sequence-flank SEQUENCE_FLANK]
-                               [--kmer-size KMER_SIZE] [--motifs [MOTIFS ...]]
-                               [--motif-db MOTIF_DB] [--list-motif-dbs]
-                               [--motif-flank MOTIF_FLANK]
-                               [--tfbs-model TFBS_MODEL]
-
-Annotate variants with genome allele checks and footprint/candidate overlaps.
-
-options:
-  -h, --help            show this help message and exit
-  --variants VARIANTS   BED-like variants: chrom start end name ref alt.
-  --genome GENOME       Genome FASTA, optionally gzipped.
-  --out OUT             Output TSV.
-  --candidate-scores CANDIDATE_SCORES
-                        Optional BED-like scored candidates or footprint
-                        intervals.
-  --sequence-flank SEQUENCE_FLANK
-                        Flanking bases on each side for ref/alt sequence-
-                        context delta features.
-  --kmer-size KMER_SIZE
-                        K-mer size for exact ref/alt disruption features.
-  --motifs [MOTIFS ...]
-                        Optional JASPAR/MEME motif files for best ref/alt PWM
-                        delta scoring.
-  --motif-db MOTIF_DB   Optional built-in motif database for best ref/alt PWM
-                        delta scoring; can be combined with --motifs.
-  --list-motif-dbs      List available built-in motif databases and exit.
-  --motif-flank MOTIF_FLANK
-                        Flanking bases on each side for motif ref/alt delta
-                        scoring.
-  --tfbs-model TFBS_MODEL
-                        Optional fp-tools tabular TFBS model pickle for
-                        ref/alt probability deltas.
-```
-
-</div>
-
-### `pseudobulk-fragments`
-
-<div class="fp-api-card" markdown="1">
-
-Group single-cell ATAC fragments into pseudobulk fragment files and optional cut-site tracks.
-
-**Input parameters**
-
-- Fragment TSV/TSV.GZ file.
-- Cell annotation table and grouping column.
-- Optional genome sizes for cut-site bigWigs.
-
-**Output**
-
-- One pseudobulk fragment file per group.
-- Manifest and QC summary tables.
-- Optional indexed fragments and CPM-normalized cut-site bigWigs.
-
-**Example commands**
-
-```bash
-pseudobulk-fragments \
-  --fragments pbmc_fragments.tsv.gz \
-  --annotations cell_annotations.tsv \
-  --group-by cell_type \
-  --genome-sizes hg38.chrom.sizes \
-  --write-cutsite-bigwigs \
-  --outdir project/pseudobulk/fragments
-```
-
-**Options**
-
-This option reference is generated from `pseudobulk-fragments --help` and lists every accepted option for the command.
+## `pseudobulk-fragments`
 
 ```text
 usage: pseudobulk-fragments [-h] --fragments FRAGMENTS --annotations
@@ -1637,7 +1088,7 @@ options:
                         Write one sparse cut-site bigWig per kept pseudobulk
                         group.
   --write-pseudo-bams   Write sorted pseudo-paired BAMs for kept groups; use
-                        atac-correct --bams ... --read_shift 0 0 on these BAMs.
+                        atac-correct --read_shift 0 0 on these BAMs.
   --no-cpm-normalize    Write raw cut counts instead of CPM-normalized bigWig
                         values.
   --write-downstream-commands
@@ -1650,46 +1101,12 @@ options:
                         samtools commands (default: all available cores).
 ```
 
-</div>
-
-### `find-signature-fp`
-
-<div class="fp-api-card" markdown="1">
-
-Plot per-cell footprint-signature heatmaps and UMAP reports from completed pseudobulk or motif analysis outputs.
-
-**Input parameters**
-
-- Cell annotations, fragments, and single-cell embedding H5AD.
-- TF site directory and motif result tables from prior analysis.
-- Output directory and optional marker groups.
-
-**Output**
-
-- Marker footprint-signature heatmaps.
-- UMAP panels colored by cell type and selected motif-associated footprint signatures.
-- Source tables for the plotted signatures.
-
-**Example commands**
-
-```bash
-find-signature-fp \
-  --annotations cell_annotations.tsv \
-  --fragments pbmc_fragments.tsv.gz \
-  --h5ad pbmc_embedding.h5ad \
-  --tf-site-dir marker_motif_sites \
-  --all-motif-results project/pseudobulk/pseudobulk_diff_footprints_results.txt \
-  --outdir project/pseudobulk/signature_fp
-```
-
-**Options**
-
-This option reference is generated from `find-signature-fp --help` and lists every accepted option for the command.
+## `find-signature-fp`
 
 ```text
 usage: find-signature-fp [-h] --annotations ANNOTATIONS --fragments FRAGMENTS
-                         --h5ad H5AD --tf-site-dir TF_SITE_DIR --outdir OUTDIR
-                         [--markers MARKERS]
+                         --h5ad H5AD [--tf-site-dir TF_SITE_DIR] --outdir
+                         OUTDIR [--markers MARKERS]
                          [--max-sites-per-tf MAX_SITES_PER_TF] [--knn KNN]
                          [--flank FLANK]
                          [--center-half-width CENTER_HALF_WIDTH]
@@ -1724,8 +1141,10 @@ options:
   --h5ad H5AD           AnnData file containing the single-cell embedding used
                         for KNN smoothing.
   --tf-site-dir TF_SITE_DIR
-                        Directory containing marker motif-site BED files named
-                        by TF.
+                        Optional directory containing marker motif-site BED
+                        files named by TF. When omitted, marker sites are
+                        taken from --all-motif-diff-dir and --all-motif-
+                        results.
   --outdir OUTDIR       Output directory for signature score tables, heatmaps,
                         and UMAP reports.
   --markers MARKERS     Comma-separated marker TFs to score and plot (default:
@@ -1796,94 +1215,50 @@ options:
                         it is missing.
 ```
 
-</div>
-
-### `pseudobulk-footprints`
-
-<div class="fp-api-card" markdown="1">
-
-Run grouping, correction, footprint scoring, motif reports, aggregate plots, and optional signature reporting for single-cell ATAC pseudobulk analyses.
-
-**Input parameters**
-
-- Single-cell fragments or BAM input plus annotation table.
-- Grouping column, genome, peaks, and optional motif database.
-- Optional TF site directory and H5AD for signature reports.
-
-**Output**
-
-- Pseudobulk fragments and pseudo-BAMs.
-- Corrected cut-site and footprint score bigWigs.
-- Motif-aware differential reports and aggregate plots.
-- Optional single-cell footprint-signature heatmaps and UMAPs.
-
-**Example commands**
-
-```bash
-pseudobulk-footprints \
-  --fragments pbmc_fragments.tsv.gz \
-  --annotations cell_annotations.tsv \
-  --group-by cell_type \
-  --genome-sizes hg38.chrom.sizes \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project/pseudobulk
-```
-
-**Options**
-
-This option reference is generated from `pseudobulk-footprints --help` and lists every accepted option for the command.
+## `sc-footprinting`
 
 ```text
-usage: pseudobulk-footprints [-h] (--fragments FRAGMENTS | --bam BAM)
-                             --annotations ANNOTATIONS --group-by GROUP_BY
-                             --outdir OUTDIR [--genome-sizes GENOME_SIZES]
-                             --genome GENOME --peaks PEAKS
-                             [--blacklist BLACKLIST]
-                             [--barcode-column BARCODE_COLUMN]
-                             [--bam-barcode-tag BAM_BARCODE_TAG]
-                             [--no-strip-barcode-suffix]
-                             [--include-chroms INCLUDE_CHROMS]
-                             [--exclude-chroms EXCLUDE_CHROMS]
-                             [--groups GROUPS] [--min-cells MIN_CELLS]
-                             [--min-fragments MIN_FRAGMENTS]
-                             [--no-cpm-normalize] [--top-n TOP_N]
-                             [--read-shift FWD REV] [--motifs [MOTIFS ...]]
-                             [--motif-db MOTIF_DB] [--list-motif-dbs]
-                             [--peak-header PEAK_HEADER]
-                             [--diff-prefix DIFF_PREFIX]
-                             [--diff-normalization {condition-quantile,sample-quantile,none}]
-                             [--diff-plot-aggregate {sig,all,top,off}]
-                             [--skip-excel | --no-skip-excel]
-                             [--tf-site-dir TF_SITE_DIR]
-                             [--site-summary SITE_SUMMARY] [--tfs TFS]
-                             [--plot-flank PLOT_FLANK]
-                             [--plot-script PLOT_SCRIPT]
-                             [--single-cell-signature-h5ad SINGLE_CELL_SIGNATURE_H5AD]
-                             [--single-cell-signature-outdir SINGLE_CELL_SIGNATURE_OUTDIR]
-                             [--single-cell-signature-markers SINGLE_CELL_SIGNATURE_MARKERS]
-                             [--single-cell-signature-fig-prefix SINGLE_CELL_SIGNATURE_FIG_PREFIX]
-                             [--single-cell-signature-all-motif-score-table SINGLE_CELL_SIGNATURE_ALL_MOTIF_SCORE_TABLE]
-                             [--single-cell-signature-marker-score-table SINGLE_CELL_SIGNATURE_MARKER_SCORE_TABLE]
-                             [--single-cell-signature-top-per-cell-type SINGLE_CELL_SIGNATURE_TOP_PER_CELL_TYPE]
-                             [--single-cell-signature-top-min-specificity SINGLE_CELL_SIGNATURE_TOP_MIN_SPECIFICITY]
-                             [--single-cell-signature-knn SINGLE_CELL_SIGNATURE_KNN]
-                             [--single-cell-signature-max-sites-per-motif SINGLE_CELL_SIGNATURE_MAX_SITES_PER_MOTIF]
-                             [--single-cell-signature-max-motifs SINGLE_CELL_SIGNATURE_MAX_MOTIFS]
-                             [--cores CORES] [--resume] [--force] [--dry-run]
-                             [--fail-fast]
+usage: sc-footprinting [-h] --fragments FRAGMENTS --annotations ANNOTATIONS
+                       --group-by GROUP_BY --outdir OUTDIR
+                       [--genome-sizes GENOME_SIZES] --genome GENOME --peaks
+                       PEAKS [--blacklist BLACKLIST]
+                       [--barcode-column BARCODE_COLUMN]
+                       [--no-strip-barcode-suffix]
+                       [--include-chroms INCLUDE_CHROMS]
+                       [--exclude-chroms EXCLUDE_CHROMS] [--groups GROUPS]
+                       [--min-cells MIN_CELLS] [--min-fragments MIN_FRAGMENTS]
+                       [--no-cpm-normalize] [--top-n TOP_N]
+                       [--read-shift FWD REV] [--motifs [MOTIFS ...]]
+                       [--motif-db MOTIF_DB] [--list-motif-dbs]
+                       [--peak-header PEAK_HEADER] [--diff-prefix DIFF_PREFIX]
+                       [--diff-normalization {condition-quantile,sample-quantile,none}]
+                       [--diff-plot-aggregate {sig,all,top,off}]
+                       [--skip-excel | --no-skip-excel]
+                       [--tf-site-dir TF_SITE_DIR]
+                       [--site-summary SITE_SUMMARY] [--tfs TFS]
+                       [--plot-flank PLOT_FLANK] [--plot-script PLOT_SCRIPT]
+                       --h5ad SINGLE_CELL_SIGNATURE_H5AD
+                       [--single-cell-signature-outdir SINGLE_CELL_SIGNATURE_OUTDIR]
+                       [--single-cell-signature-markers SINGLE_CELL_SIGNATURE_MARKERS]
+                       [--single-cell-signature-fig-prefix SINGLE_CELL_SIGNATURE_FIG_PREFIX]
+                       [--single-cell-signature-all-motif-score-table SINGLE_CELL_SIGNATURE_ALL_MOTIF_SCORE_TABLE]
+                       [--single-cell-signature-marker-score-table SINGLE_CELL_SIGNATURE_MARKER_SCORE_TABLE]
+                       [--single-cell-signature-top-per-cell-type SINGLE_CELL_SIGNATURE_TOP_PER_CELL_TYPE]
+                       [--single-cell-signature-top-min-specificity SINGLE_CELL_SIGNATURE_TOP_MIN_SPECIFICITY]
+                       [--single-cell-signature-knn SINGLE_CELL_SIGNATURE_KNN]
+                       [--single-cell-signature-max-sites-per-motif SINGLE_CELL_SIGNATURE_MAX_SITES_PER_MOTIF]
+                       [--single-cell-signature-max-motifs SINGLE_CELL_SIGNATURE_MAX_MOTIFS]
+                       [--cores CORES] [--resume] [--force] [--dry-run]
+                       [--fail-fast]
 
-Run a full pseudobulk ATAC footprint workflow from single-cell fragments or
-tagged BAMs.
+Run the complete pseudobulk and per-cell footprint workflow from single-cell
+fragments.
 
 options:
   -h, --help            show this help message and exit
   --fragments FRAGMENTS
                         10x-style fragments TSV/TSV.GZ with barcode in column
                         4.
-  --bam BAM             All-cell BAM with cell barcodes stored in a read tag,
-                        e.g. CB.
   --annotations ANNOTATIONS
                         Cell annotation TSV or CSV.
   --group-by GROUP_BY   Comma-separated annotation columns to group by.
@@ -1898,9 +1273,6 @@ options:
                         Optional blacklist BED for atac-correct.
   --barcode-column BARCODE_COLUMN
                         Annotation barcode column (default: barcode).
-  --bam-barcode-tag BAM_BARCODE_TAG
-                        BAM read tag containing cell barcodes for --bam input
-                        (default: CB).
   --no-strip-barcode-suffix
                         Require exact barcode matches instead of matching
                         AAAC-1 to AAAC.
@@ -1918,13 +1290,14 @@ options:
   --no-cpm-normalize    Write raw cut counts instead of CPM-normalized cut-
                         site bigWigs for fragment input.
   --top-n TOP_N         Optional top N candidate footprints per group.
-  --read-shift FWD REV  Override atac-correct read shift; default is 0 0 for
-                        fragment pseudo-BAMs and 4 -5 for tagged BAM input.
+  --read-shift FWD REV  Override the atac-correct read shift for fragment-
+                        derived pseudo-BAMs (default: 0 0).
   --motifs [MOTIFS ...]
                         Optional motif file(s); when provided, run motif-aware
                         diff-footprints on pseudobulk footprint tracks.
-  --motif-db MOTIF_DB   Optional built-in motif database for motif-aware diff-
-                        footprints; can be combined with --motifs.
+  --motif-db MOTIF_DB   Built-in motif database for motif matching (default:
+                        jaspar2026_vertebrates); can be combined with
+                        --motifs.
   --list-motif-dbs      List available built-in motif databases and exit.
   --peak-header PEAK_HEADER
                         Optional peak-header file passed to diff-footprints.
@@ -1951,10 +1324,9 @@ options:
                         Flank for optional aggregate plots (default: 100).
   --plot-script PLOT_SCRIPT
                         Plotting script path for optional aggregate plots.
-  --single-cell-signature-h5ad SINGLE_CELL_SIGNATURE_H5AD
-                        Optional h5ad with cell embeddings/counts; with
-                        --fragments and --tf-site-dir, write per-cell KNN
-                        footprint-signature heatmaps and UMAP reports.
+  --h5ad SINGLE_CELL_SIGNATURE_H5AD, --single-cell-signature-h5ad SINGLE_CELL_SIGNATURE_H5AD
+                        AnnData file containing the cell embedding used for
+                        KNN footprint-signature smoothing.
   --single-cell-signature-outdir SINGLE_CELL_SIGNATURE_OUTDIR
                         Output directory for optional per-cell signature
                         reports (default:
@@ -1998,5 +1370,3 @@ options:
                         correct, call-footprints, motif detection, or plots.
   --fail-fast           Stop after the first failed group command.
 ```
-
-</div>

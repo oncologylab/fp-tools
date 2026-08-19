@@ -14,7 +14,6 @@ from typing import Iterable
 
 import matplotlib
 import numpy as np
-import pandas as pd
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -25,19 +24,6 @@ from matplotlib.patches import Rectangle
 from fp_tools.tools.diff_footprint_helpers import _aggregate_fp_score, _mean_profile, _read_bed_centers
 from fp_tools.tools.plot_aggregate_batch import read_embedded_payload
 from fp_tools.utils.project_layout import corrected_bigwig_path, is_project_layout, match_motifs_dir, project_root, read_sample_table, reports_dir
-
-
-NUTRIENT_GROUP_ORDER = {
-    "FBS": 0,
-    "Glc": 1,
-    "Met.Cys": 2,
-    "Gln.Arg": 3,
-    "Gln": 4,
-    "Arg": 5,
-    "BCAA": 6,
-    "Trp": 7,
-    "Lys": 8,
-}
 
 
 @dataclass(frozen=True)
@@ -64,12 +50,6 @@ class SampleView:
     match_dir: Path
 
 
-@dataclass(frozen=True)
-class RnaFcView:
-    label: str
-    values: tuple[tuple[str, float], ...]
-
-
 def _as_float(value, default: float = 0.0) -> float:
     try:
         out = float(value)
@@ -91,19 +71,6 @@ def _comparison_condition(label: str, payload: dict | None = None) -> str:
     return text
 
 
-def _split_condition(condition: str) -> tuple[float, str]:
-    match = re.match(r"^\s*([0-9]+(?:\.[0-9]+)?)_(.+?)\s*$", condition)
-    if match:
-        return float(match.group(1)), match.group(2)
-    return float("-inf"), condition
-
-
-def nutrient_sort_key(condition: str) -> tuple[int, float, str]:
-    concentration, nutrient = _split_condition(condition)
-    group_rank = NUTRIENT_GROUP_ORDER.get(nutrient, len(NUTRIENT_GROUP_ORDER))
-    return (group_rank, -concentration, condition)
-
-
 def ordered_comparisons(review_payload: dict) -> list[ComparisonView]:
     views = []
     for idx, item in enumerate(review_payload.get("comparisons") or []):
@@ -111,7 +78,7 @@ def ordered_comparisons(review_payload: dict) -> list[ComparisonView]:
         label = str(item.get("label") or f"Comparison {idx + 1}")
         condition = _comparison_condition(label, payload)
         views.append(ComparisonView(label=label, payload=payload, condition=condition, index=idx))
-    return sorted(views, key=lambda item: (*nutrient_sort_key(item.condition), item.index))
+    return views
 
 
 def _motif_label(item: dict | MotifView) -> str:
@@ -127,66 +94,6 @@ def _point_map(payload: dict) -> dict[str, dict]:
 def _aggregate_map(payload: dict) -> dict[str, dict]:
     aggregate = payload.get("aggregate") or {}
     return {str(motif.get("prefix")): motif for motif in aggregate.get("motifs") or [] if motif.get("prefix")}
-
-
-def _split_tf_symbols(value: str) -> list[str]:
-    text = str(value or "").strip()
-    if not text:
-        return []
-    parts = re.split(r"::|/|;|,", text)
-    out = []
-    seen = set()
-    for part in parts:
-        gene = re.sub(r"[^A-Za-z0-9-]", "", part).upper()
-        if gene and gene not in seen:
-            seen.add(gene)
-            out.append(gene)
-    return out
-
-
-def _motif_id_base(value: str) -> str:
-    match = re.search(r"(MA\d+)", str(value or ""))
-    return match.group(1) if match else ""
-
-
-def _read_motif_gene_map(path: str | Path | None) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
-    if not path:
-        return {}, {}
-    table = pd.read_csv(path, sep="\t")
-    if "motif" not in table.columns or "gene_symbol" not in table.columns:
-        raise ValueError("motif gene map must contain motif and gene_symbol columns")
-    by_motif: dict[str, list[str]] = {}
-    by_base: dict[str, list[str]] = {}
-    for _, row in table.iterrows():
-        motif = str(row.get("motif") or "").strip()
-        genes = _split_tf_symbols(str(row.get("gene_symbol") or ""))
-        if not motif or not genes:
-            continue
-        by_motif[motif] = genes
-        base = _motif_id_base(motif)
-        if base:
-            by_base.setdefault(base, genes)
-    return by_motif, by_base
-
-
-def _genes_for_motif(motif: MotifView, motif_map: dict[str, list[str]], base_map: dict[str, list[str]]) -> list[str]:
-    if motif.prefix in motif_map:
-        return motif_map[motif.prefix]
-    if motif.motif_id in motif_map:
-        return motif_map[motif.motif_id]
-    base = _motif_id_base(motif.motif_id) or _motif_id_base(motif.prefix)
-    if base and base in base_map:
-        return base_map[base]
-    return _split_tf_symbols(motif.name)
-
-
-def _format_rna_fc(items: list[tuple[str, float]]) -> str:
-    if not items:
-        return ""
-    first = f"RNA {items[0][0]}={items[0][1]:+.2f}"
-    if len(items) == 1:
-        return first
-    return first + f"\n{items[1][0]}={items[1][1]:+.2f}"
 
 
 def collect_motifs(comparisons: Iterable[ComparisonView]) -> list[MotifView]:
@@ -316,108 +223,6 @@ def _project_sample_table(project: str | Path) -> Path | None:
         if path.exists() and path.stat().st_size > 0:
             return path
     return None
-
-
-def _read_sample_conditions(project: str | Path) -> dict[str, str]:
-    table = _project_sample_table(project)
-    if table is None:
-        return {}
-    return {record.sample: record.condition for record in read_sample_table(table)}
-
-
-def _read_rna_sample_conditions(path: str | Path | None) -> dict[str, str]:
-    """Read an optional RNA-specific sample-to-condition mapping."""
-    if not path:
-        return {}
-    table = pd.read_csv(path, sep="\t", dtype=str).fillna("")
-    missing = {"sample", "condition"} - set(table.columns)
-    if missing:
-        raise ValueError(f"RNA sample table missing columns: {sorted(missing)}")
-    table["sample"] = table["sample"].str.strip()
-    table["condition"] = table["condition"].str.strip()
-    if (table["sample"] == "").any() or (table["condition"] == "").any():
-        raise ValueError("RNA sample table contains empty sample or condition values")
-    duplicates = table.loc[table["sample"].duplicated(keep=False), "sample"].unique()
-    if len(duplicates):
-        raise ValueError(f"RNA sample table contains duplicate samples: {sorted(duplicates)}")
-    return dict(zip(table["sample"], table["condition"]))
-
-
-def _mean_by_condition(matrix: pd.DataFrame, sample_conditions: dict[str, str], samples: list[str]) -> dict[str, pd.Series]:
-    available = [sample for sample in samples if sample in matrix.columns and sample in sample_conditions]
-    out = {}
-    for condition in sorted({sample_conditions[sample] for sample in available}):
-        cols = [sample for sample in available if sample_conditions[sample] == condition]
-        if cols:
-            out[condition] = matrix[cols].mean(axis=1)
-    return out
-
-
-def compute_rna_fc_map(
-    review_payload: dict,
-    project: str | Path | None,
-    motif_order: list[MotifView] | None,
-    rna_log2norm: str | Path | None,
-    rna_raw_counts: str | Path | None,
-    motif_gene_map: str | Path | None,
-    min_raw_mean: float = 1.0,
-    rna_sample_table: str | Path | None = None,
-) -> dict[tuple[int, str], RnaFcView]:
-    if not project or not rna_log2norm or not motif_gene_map:
-        return {}
-    sample_conditions = _read_rna_sample_conditions(rna_sample_table) or _read_sample_conditions(project)
-    if not sample_conditions:
-        return {}
-    expr = pd.read_csv(rna_log2norm, sep="\t")
-    if "gene_key" not in expr.columns:
-        raise ValueError("RNA log2-normalized matrix must contain a gene_key column")
-    expr["gene_key_upper"] = expr["gene_key"].astype(str).str.upper()
-    expr = expr.drop_duplicates("gene_key_upper").set_index("gene_key_upper")
-    sample_cols = [col for col in expr.columns if col in sample_conditions]
-    expr = expr[sample_cols].apply(pd.to_numeric, errors="coerce")
-    raw = None
-    raw_means = None
-    if rna_raw_counts:
-        raw = pd.read_csv(rna_raw_counts, sep="\t")
-        if "gene_key" not in raw.columns:
-            raise ValueError("RNA raw count matrix must contain a gene_key column")
-        raw["gene_key_upper"] = raw["gene_key"].astype(str).str.upper()
-        raw = raw.drop_duplicates("gene_key_upper").set_index("gene_key_upper")
-        raw_cols = [col for col in raw.columns if col in sample_conditions]
-        raw = raw[raw_cols].apply(pd.to_numeric, errors="coerce")
-        raw_means = _mean_by_condition(raw, sample_conditions, raw_cols)
-    expr_means = _mean_by_condition(expr, sample_conditions, sample_cols)
-    motif_map, base_map = _read_motif_gene_map(motif_gene_map)
-    comparisons = ordered_comparisons(review_payload)
-    motifs = _ordered_motifs_for_payload(review_payload, motif_order)
-    motif_by_prefix = {motif.prefix: motif for motif in motifs}
-    rna_map: dict[tuple[int, str], RnaFcView] = {}
-    for comparison in comparisons:
-        conditions = _wanted_conditions(comparison)
-        if len(conditions) < 2 or conditions[0] not in expr_means or conditions[1] not in expr_means:
-            continue
-        cond1, cond2 = conditions[:2]
-        points = _point_map(comparison.payload)
-        for prefix in points:
-            motif = motif_by_prefix.get(prefix)
-            if not motif:
-                point = points[prefix]
-                motif = MotifView(prefix=prefix, name=str(point.get("name") or prefix), motif_id=str(point.get("motif_id") or ""), sort_score=0.0)
-            values = []
-            for gene in _genes_for_motif(motif, motif_map, base_map):
-                gene_key = gene.upper()
-                if gene_key not in expr.index:
-                    continue
-                if raw_means is not None and cond1 in raw_means and cond2 in raw_means:
-                    max_raw = max(_as_float(raw_means[cond1].get(gene_key), float("nan")), _as_float(raw_means[cond2].get(gene_key), float("nan")))
-                    if not math.isfinite(max_raw) or max_raw < min_raw_mean:
-                        continue
-                fc = _as_float(expr_means[cond1].get(gene_key), float("nan")) - _as_float(expr_means[cond2].get(gene_key), float("nan"))
-                if math.isfinite(fc):
-                    values.append((gene, fc))
-            if values:
-                rna_map[(comparison.index, prefix)] = RnaFcView(label=_format_rna_fc(values), values=tuple(values))
-    return rna_map
 
 
 def _motif_all_bed(match_dir: Path, prefix: str, cache: dict[tuple[str, str], Path | None] | None = None) -> Path | None:
@@ -745,16 +550,16 @@ def _add_trace_legend(fig, comparisons: list[ComparisonView], page_width: float,
         return
     first = comparisons[0]
     conditions = list((first.payload.get("conditions") or [])[:2])
-    stress_label = "Column condition"
+    first_label = conditions[0] if conditions else first.condition
     ctrl_label = conditions[1] if len(conditions) > 1 else "Control"
-    stress_color = _condition_color(first.payload, conditions[0] if conditions else first.condition, 0)
+    first_color = _condition_color(first.payload, first_label, 0)
     ctrl_color = _condition_color(first.payload, ctrl_label, 1)
     x0 = 0.70
     y = 1 - 0.18 / page_height
     line_w = 0.026
     text_dx = 0.006
-    _add_fig_line(fig, [x0, x0 + line_w], [y, y], color=stress_color, lw=1.4)
-    _add_fig_text(fig, x0 + line_w + text_dx, y, f"{stress_label} (nutrient stress)", ha="left", va="center", fontsize=5.8, fontweight="bold")
+    _add_fig_line(fig, [x0, x0 + line_w], [y, y], color=first_color, lw=1.4)
+    _add_fig_text(fig, x0 + line_w + text_dx, y, first_label, ha="left", va="center", fontsize=5.8, fontweight="bold")
     x1 = x0 + 0.17
     _add_fig_line(fig, [x1, x1 + line_w], [y, y], color=ctrl_color, lw=1.4)
     _add_fig_text(fig, x1 + line_w + text_dx, y, ctrl_label, ha="left", va="center", fontsize=5.8, fontweight="bold")
@@ -782,12 +587,10 @@ def write_source_table(
     flank: int = 60,
     motif_order: list[MotifView] | None = None,
     aggregate_maps: dict[tuple[int, str], tuple[dict | None, str]] | None = None,
-    rna_fc_map: dict[tuple[int, str], RnaFcView] | None = None,
 ) -> int:
     comparisons = ordered_comparisons(review_payload)
     motifs = _ordered_motifs_for_payload(review_payload, motif_order)
     aggregate_maps = aggregate_maps or prepare_aggregate_maps(review_payload, flank=flank)
-    rna_fc_map = rna_fc_map or {}
     rows = []
     for motif in motifs:
         for comparison in comparisons:
@@ -795,7 +598,6 @@ def write_source_table(
             point = points.get(motif.prefix) or {}
             aggregate, profile_source = aggregate_maps.get((comparison.index, motif.prefix), ({}, "missing"))
             aggregate = aggregate or {}
-            rna = rna_fc_map.get((comparison.index, motif.prefix))
             rows.append(
                 {
                     "motif_prefix": motif.prefix,
@@ -809,8 +611,6 @@ def write_source_table(
                     "n_sites": aggregate.get("n_sites", aggregate.get("sites", "")),
                     "aggregate_profile": bool(aggregate),
                     "profile_source": profile_source,
-                    "rna_tf_genes": ";".join(gene for gene, _ in rna.values) if rna else "",
-                    "rna_log2fc": ";".join(f"{gene}:{value:.6g}" for gene, value in rna.values) if rna else "",
                 }
             )
     output = Path(output)
@@ -830,13 +630,11 @@ def plot_grid_pdf(
     title: str | None = None,
     motif_order: list[MotifView] | None = None,
     aggregate_maps: dict[tuple[int, str], tuple[dict | None, str]] | None = None,
-    rna_fc_map: dict[tuple[int, str], RnaFcView] | None = None,
     repeat_column_labels: str = "none",
 ) -> tuple[int, int]:
     comparisons = ordered_comparisons(review_payload)
     motifs = _ordered_motifs_for_payload(review_payload, motif_order)
     aggregate_maps = aggregate_maps or prepare_aggregate_maps(review_payload, flank=flank)
-    rna_fc_map = rna_fc_map or {}
     if repeat_column_labels not in {"none", "row"}:
         raise ValueError("repeat_column_labels must be 'none' or 'row'")
     if not comparisons:
@@ -916,7 +714,6 @@ def plot_grid_pdf(
                     aggregate, profile_source = aggregate_maps.get((comparison.index, motif.prefix), (None, "missing"))
                     point = _point_map(comparison.payload).get(motif.prefix) or aggregate or {}
                     change = _as_float(point.get("change"), default=float("nan"))
-                    rna = rna_fc_map.get((comparison.index, motif.prefix))
                     _fig_rect(fig, fx0, fy0, fw, fh, facecolor="white", edgecolor="black", linewidth=0.45)
                     sx = lambda value: (plot_x0 + ((value + flank) / (2 * flank)) * plot_w) / page_width
                     sy = lambda value: (plot_y0 + ((value - vmin) / (vmax - vmin or 1.0)) * plot_h) / page_height
@@ -926,8 +723,6 @@ def plot_grid_pdf(
                     else:
                         _add_fig_text(fig, (plot_x0 + plot_w / 2) / page_width, (plot_y0 + plot_h / 2) / page_height, "No\nprofile", ha="center", va="center", fontsize=5.5, fontweight="bold")
                     _add_fig_text(fig, (plot_x0 + 0.02) / page_width, (plot_y0 + plot_h - 0.035) / page_height, f"dFP={_format_number(change)}", ha="left", va="top", fontsize=5.2, fontweight="bold", bbox={"boxstyle": "round,pad=0.08", "facecolor": "white", "edgecolor": "none", "alpha": 0.82})
-                    if rna and rna.label:
-                        _add_fig_text(fig, (plot_x0 + 0.02) / page_width, (plot_y0 + plot_h - 0.13) / page_height, rna.label, ha="left", va="top", fontsize=4.5, fontweight="bold", color="#111827", bbox={"boxstyle": "round,pad=0.06", "facecolor": "white", "edgecolor": "none", "alpha": 0.75})
                     for x_tick in (-flank, 0, flank):
                         x_fig = sx(x_tick)
                         _add_fig_line(fig, [x_fig, x_fig], [fy0, fy0 + fh], color="#e6edf5" if x_tick else "#999999", lw=0.3, ls=(0, (2, 2)) if x_tick == 0 else "solid")
@@ -955,19 +750,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--fill-missing-profiles", action="store_true", help="Fill missing motif aggregate panels from condition profiles already embedded elsewhere in the review report.")
     parser.add_argument("--recompute-missing-profiles", action="store_true", help="Slower fallback: recompute still-missing motif aggregate profiles from project sample bigWigs and motif BEDs.")
     parser.add_argument("--cores", type=int, default=None, help="Worker processes for --recompute-missing-profiles (default: all available cores).")
-    parser.add_argument("--rna-log2norm", help="Optional DESeq2/RUVr log2-normalized RNA matrix with gene_key and sample columns.")
-    parser.add_argument("--rna-raw-counts", help="Optional raw RNA count matrix used to filter unexpressed TFs.")
-    parser.add_argument("--rna-sample-table", help="Optional RNA sample table with sample and condition columns. Use this when RNA and ATAC sample identifiers differ.")
-    parser.add_argument("--motif-gene-map", help="Optional motif-to-gene map with motif and gene_symbol columns.")
-    parser.add_argument("--rna-min-raw-mean", type=float, default=1.0, help="Minimum mean raw count in either compared condition for a TF to be shown (default: 1.0).")
     parser.add_argument("--repeat-column-labels", choices=["none", "row"], default="none", help="Repeat comparison labels inside each motif row panel instead of showing them only in the page header (default: none).")
     parser.add_argument("--title", help="PDF title.")
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+def run_grid(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     project = None
     if is_project_layout(args.layout):
         if not args.outdir and not args.input_html:
@@ -975,7 +763,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.outdir:
             project = project_root(args.outdir)
             if not args.input_html:
-                args.input_html = str(reports_dir(project) / "review_multi_comparisons.html")
+                args.input_html = str(reports_dir(project) / "review_multi_comparisons")
             if not args.output:
                 args.output = str(reports_dir(project) / "motif_aggregate_grid.pdf")
     if not args.input_html:
@@ -986,41 +774,40 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--recompute-missing-profiles requires --outdir in project layout")
     if args.rows_per_page < 1:
         parser.error("--rows-per-page must be at least 1")
-    if args.rna_log2norm and not args.motif_gene_map:
-        parser.error("--rna-log2norm requires --motif-gene-map")
-    if args.rna_raw_counts and not args.rna_log2norm:
-        parser.error("--rna-raw-counts requires --rna-log2norm")
-    if args.rna_sample_table and not args.rna_log2norm:
-        parser.error("--rna-sample-table requires --rna-log2norm")
-    payload = read_embedded_payload(args.input_html)
+    payload = read_review_payload(args.input_html)
     if payload.get("schema") != "fp-tools.review-multi-comparisons.v1":
         raise SystemExit(f"{args.input_html} is not a review-multi-comparisons HTML payload")
     order_payloads = []
     for html in args.order_htmls:
-        order_payload = read_embedded_payload(html)
+        order_payload = read_review_payload(html)
         if order_payload.get("schema") != "fp-tools.review-multi-comparisons.v1":
             raise SystemExit(f"{html} is not a review-multi-comparisons HTML payload")
         order_payloads.append(order_payload)
     motif_order = collect_motifs_from_payloads(order_payloads) if order_payloads else None
     aggregate_maps = prepare_aggregate_maps(payload, project=project, fill_missing=args.fill_missing_profiles or args.recompute_missing_profiles, recompute_missing=args.recompute_missing_profiles, flank=args.flank, cores=args.cores)
-    rna_fc_map = compute_rna_fc_map(
-        payload,
-        project,
-        motif_order,
-        args.rna_log2norm,
-        args.rna_raw_counts,
-        args.motif_gene_map,
-        min_raw_mean=args.rna_min_raw_mean,
-        rna_sample_table=args.rna_sample_table,
-    )
     output = Path(args.output)
     source_tsv = Path(args.source_tsv) if args.source_tsv else output.with_name(f"{output.stem}_source.tsv")
-    motifs, pages = plot_grid_pdf(payload, output, rows_per_page=args.rows_per_page, flank=args.flank, title=args.title, motif_order=motif_order, aggregate_maps=aggregate_maps, rna_fc_map=rna_fc_map, repeat_column_labels=args.repeat_column_labels)
-    row_count = write_source_table(payload, source_tsv, flank=args.flank, motif_order=motif_order, aggregate_maps=aggregate_maps, rna_fc_map=rna_fc_map)
+    motifs, pages = plot_grid_pdf(payload, output, rows_per_page=args.rows_per_page, flank=args.flank, title=args.title, motif_order=motif_order, aggregate_maps=aggregate_maps, repeat_column_labels=args.repeat_column_labels)
+    row_count = write_source_table(payload, source_tsv, flank=args.flank, motif_order=motif_order, aggregate_maps=aggregate_maps)
     print(f"Wrote {output} ({motifs} motifs, {pages} pages)")
     print(f"Wrote {source_tsv} ({row_count} rows)")
     return 0
 
 
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    return run_grid(args, parser)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
+def read_review_payload(path: str | Path) -> dict:
+    """Read either a legacy embedded review HTML or a static browser bundle."""
+    path = Path(path)
+    bundle_root = path if path.is_dir() else path.parent
+    if (bundle_root / "data" / "metadata.json").is_file():
+        from fp_tools.tools.static_comparison_browser import read_static_browser_review
+
+        return read_static_browser_review(bundle_root)
+    return read_embedded_payload(path)

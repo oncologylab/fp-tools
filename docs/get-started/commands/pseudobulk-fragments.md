@@ -30,5 +30,5 @@ pseudobulk-fragments \
 - Group manifest and QC summary.
 - Optional indexed fragments, cut-site bigWigs, and pseudo-BAMs.
 
-Continue with [`pseudobulk-footprints`](pseudobulk-footprints.md), or see the
+Continue with [`sc-footprinting`](sc-footprinting.md), or see the
 [complete `pseudobulk-fragments` reference](../../api.md#pseudobulk-fragments).

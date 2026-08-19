@@ -3,6 +3,7 @@
     const path = window.location.pathname.replace(/\/+$/, "/");
     const classes = {
       "fp-page-api-reference": /\/api\/$/.test(path),
+      "fp-page-get-started": /\/get-started\//.test(path),
       "fp-page-tool-overview": /\/get-started\/tool-overview\/$/.test(path),
       "fp-page-command-guide": /\/get-started\/commands\/[^/]+\/$/.test(path),
     };

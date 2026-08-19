@@ -317,7 +317,7 @@
       <div class="nav-group">Single-cell ATAC</div>
       <a class="nav-item" href="#pseudobulk-fragments" data-page="pseudobulk-fragments">pseudobulk-fragments</a>
       <a class="nav-item" href="#find-signature-fp" data-page="find-signature-fp">find-signature-fp</a>
-      <a class="nav-item" href="#pseudobulk-footprints" data-page="pseudobulk-footprints">pseudobulk-footprints</a>
+      <a class="nav-item" href="#sc-footprinting" data-page="sc-footprinting">sc-footprinting</a>
     </aside>
     <main id="main-content">
       <section class="hero">
@@ -327,7 +327,7 @@
       </section>
 
       <section class="steps">
-        <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, variants, pseudobulk, or signatures.</span></div>
+        <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, pseudobulk, or signatures.</span></div>
         <div class="step"><strong>2. Load example</strong><span>Start from bundled YAML or paste your own paths.</span></div>
         <div class="step"><strong>3. Review YAML</strong><span>See the exact config before running.</span></div>
         <div class="step"><strong>4. Inspect outputs</strong><span>Open logs, tables, bigWigs, and HTML reports.</span></div>
@@ -514,19 +514,19 @@ plot_aggregate: sig</pre>
         yaml: "tool: find-signature-fp\nfragments: pbmc_fragments.tsv.gz\nannotations: cell_annotations.tsv\nh5ad: pbmc_embedding.h5ad\ntf_site_dir: marker_motif_sites\noutdir: results/signature_fp",
         metrics: [["Tool", "scATAC"], ["Output", "heatmap + UMAP"], ["Mode", "report"]]
       },
-      "pseudobulk-footprints": {
-        title: "pseudobulk-footprints",
-        description: "Run full pseudobulk ATAC correction, footprint scoring, motif analysis, aggregate plots, and optional signature reports.",
+      "sc-footprinting": {
+        title: "sc-footprinting",
+        description: "Run grouping, pseudobulk footprinting, motif comparison, and per-cell footprint-signature reporting.",
         fields: [
           ["Fragments", "pbmc_fragments.tsv.gz"],
+          ["Annotations", "cell_annotations.tsv"],
           ["Genome FASTA", "hg38.fa"],
           ["Peaks BED", "pbmc_peaks.bed"],
           ["Motif database", "jaspar2026_vertebrates"],
-          ["Marker TFs", "STAT6, FOSB, CEBPA"],
           ["Cell embedding", "pbmc_embedding.h5ad"],
           ["Output folder", "project/pseudobulk_footprints"]
         ],
-        yaml: "tool: pseudobulk-footprints\nfragments: pbmc_fragments.tsv.gz\nannotations: cell_annotations.tsv\ngroup_by: cell_type\nmotif_db: jaspar2026_vertebrates\ntf_site_dir: marker_motif_sites\nsingle_cell_signature_h5ad: pbmc_embedding.h5ad",
+        yaml: "tool: sc-footprinting\nfragments: pbmc_fragments.tsv.gz\nannotations: cell_annotations.tsv\ngroup_by: cell_type\ngenome: hg38.fa\npeaks: pbmc_peaks.bed\nmotif_db: jaspar2026_vertebrates\nh5ad: pbmc_embedding.h5ad\noutdir: project/pseudobulk_footprints",
         metrics: [["Tool", "scATAC"], ["Steps", "Full"], ["Plots", "UMAP"]]
       }
     };
@@ -538,7 +538,7 @@ plot_aggregate: sig</pre>
         intro: "Choose a command, load an example, review the YAML, and launch the same reproducible workflow used by the command line.",
         body: `
           <section class="steps">
-            <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, variants, pseudobulk, or signatures.</span></div>
+            <div class="step"><strong>1. Choose command</strong><span>Bulk ATAC, motif reports, pseudobulk, or signatures.</span></div>
             <div class="step"><strong>2. Load example</strong><span>Start from bundled YAML or paste your own paths.</span></div>
             <div class="step"><strong>3. Review YAML</strong><span>See the exact config before running.</span></div>
             <div class="step"><strong>4. Inspect outputs</strong><span>Open logs, tables, bigWigs, and HTML reports.</span></div>
@@ -556,7 +556,7 @@ plot_aggregate: sig</pre>
               <h3>Recent runs</h3>
               <div class="form-grid">
                 <div><label>Status</label><div class="input">Complete: diff-footprints</div></div>
-                <div><label>Command</label><div class="input">run-workflow results/config.yml</div></div>
+                <div><label>Command</label><div class="input">run-yaml-workflow results/config.yml</div></div>
                 <div><label>Log</label><div class="input">project/comparisons/run.log</div></div>
                 <div><label>Report</label><div class="input">diff_footprints_K562_HepG2.html</div></div>
               </div>

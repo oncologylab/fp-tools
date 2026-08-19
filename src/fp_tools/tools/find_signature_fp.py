@@ -7,6 +7,7 @@ import argparse
 from bisect import bisect_left, bisect_right
 import gzip
 from pathlib import Path
+import re
 
 import anndata as ad
 import matplotlib.patches as mpatches
@@ -124,6 +125,44 @@ def read_sites(site_dir: Path, markers: list[str], max_sites: int | None) -> dic
         if not rows:
             raise SystemExit(f"No sites found for {tf}")
         sites[tf] = rows
+    return sites
+
+
+def read_marker_sites_from_diff(
+    results_path: Path,
+    diff_dir: Path,
+    markers: list[str],
+    max_sites: int | None,
+) -> dict[str, list[tuple[str, int]]]:
+    """Resolve selected TF marker sites from a diff-footprints result bundle."""
+    motif_table = read_diff_footprint_motif_table(results_path, diff_dir, None)
+    limit = max_sites if max_sites is not None and max_sites > 0 else None
+    sites: dict[str, list[tuple[str, int]]] = {}
+    for marker in markers:
+        marker_upper = marker.upper()
+        matches = motif_table[
+            motif_table["tf_name"].astype(str).map(
+                lambda value: marker_upper
+                in {token.upper() for token in re.findall(r"[A-Za-z0-9-]+", value)}
+            )
+        ]
+        rows: list[tuple[str, int]] = []
+        seen: set[tuple[str, int]] = set()
+        for _, match in matches.iterrows():
+            for site in read_motif_bed_sites(Path(match["bed_path"]), None):
+                if site in seen:
+                    continue
+                seen.add(site)
+                rows.append(site)
+                if limit is not None and len(rows) >= limit:
+                    break
+            if limit is not None and len(rows) >= limit:
+                break
+        if not rows:
+            raise SystemExit(
+                f"Could not find motif sites for marker {marker} in {results_path} and {diff_dir}."
+            )
+        sites[marker] = rows
     return sites
 
 
@@ -1587,7 +1626,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--annotations", required=True, help="Cell annotation TSV/CSV with barcode, cell type, and UMAP columns.")
     parser.add_argument("--fragments", required=True, help="10x-style fragments TSV/TSV.GZ used to count cut sites around motif centers.")
     parser.add_argument("--h5ad", required=True, help="AnnData file containing the single-cell embedding used for KNN smoothing.")
-    parser.add_argument("--tf-site-dir", required=True, help="Directory containing marker motif-site BED files named by TF.")
+    parser.add_argument("--tf-site-dir", help="Optional directory containing marker motif-site BED files named by TF. When omitted, marker sites are taken from --all-motif-diff-dir and --all-motif-results.")
     parser.add_argument("--outdir", required=True, help="Output directory for signature score tables, heatmaps, and UMAP reports.")
     parser.add_argument("--markers", default=",".join(MARKERS), help=f"Comma-separated marker TFs to score and plot (default: {','.join(MARKERS)}).")
     parser.add_argument("--max-sites-per-tf", type=int, default=1500, help="Maximum marker motif sites per TF for selected-marker UMAP scoring (default: 1500).")
@@ -1639,7 +1678,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     markers = [marker.strip() for marker in args.markers.split(",") if marker.strip()]
     annotations = read_annotations(Path(args.annotations))
-    sites = read_sites(Path(args.tf_site_dir), markers, args.max_sites_per_tf)
+    if args.tf_site_dir:
+        sites = read_sites(Path(args.tf_site_dir), markers, args.max_sites_per_tf)
+    elif args.all_motif_diff_dir and args.all_motif_results:
+        sites = read_marker_sites_from_diff(
+            Path(args.all_motif_results),
+            Path(args.all_motif_diff_dir),
+            markers,
+            args.max_sites_per_tf,
+        )
+    else:
+        parser.error(
+            "provide --tf-site-dir or provide both --all-motif-diff-dir and --all-motif-results"
+        )
 
     profiles = count_fragment_profiles(Path(args.fragments), annotations, sites, args.flank, create_index=not args.no_create_fragment_index)
     neighbors = knn_indices(annotations, Path(args.h5ad), args.knn)

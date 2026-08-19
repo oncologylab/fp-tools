@@ -13,6 +13,7 @@ from fp_tools.tools.review_multi_comparisons import (
     read_diff_html_payload,
     write_review_html,
 )
+from fp_tools.tools.static_comparison_browser import build_static_browser
 
 
 def _diff_payload(label="A vs B"):
@@ -132,6 +133,22 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertNotIn("&#916;FP", html)
         self.assertNotIn("FDR =", html)
 
+    def test_writes_scalable_static_browser_bundle(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "browser"
+            index = build_static_browser([_diff_payload()], output, "Review")
+            self.assertEqual(index, output / "index.html")
+            self.assertTrue((output / "app.js").is_file())
+            self.assertTrue((output / "styles.css").is_file())
+            self.assertTrue((output / "data" / "metadata.json").is_file())
+            self.assertTrue((output / "data" / "reports" / "A_vs_B.json.gz").is_file())
+            self.assertTrue((output / "data" / "profiles" / "A_vs_B" / "00.json.gz").is_file())
+            self.assertFalse((output / "data" / "review_payload.json.gz").exists())
+            app = (output / "app.js").read_text(encoding="utf-8")
+            self.assertIn("condition-1", app)
+            self.assertIn("condition-2", app)
+            self.assertIn("profile_shards", app)
+
     def test_can_fill_missing_aggregate_profiles_before_writing_review(self):
         payload = {
             "schema": "fp-tools.review-multi-comparisons.v1",
@@ -194,7 +211,8 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
 
     def test_parser_accepts_display_panels_option(self):
         parser = build_parser()
-        args = parser.parse_args(["--inputs", "a.html", "--output", "review.html", "--display-panels", "8", "--aggregate-legends", "hide"])
+        args = parser.parse_args(["--inputs", "a.html", "--output-dir", "review", "--display-panels", "8", "--aggregate-legends", "hide"])
+        self.assertEqual(args.output_dir, "review")
         self.assertEqual(args.display_panels, 8)
         self.assertEqual(args.aggregate_legends, "hide")
 

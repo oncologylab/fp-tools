@@ -1,31 +1,25 @@
 # [`review-multi-comparisons`](../../api.md#review-multi-comparisons)
 
-Combine multiple differential-footprint reports into one interactive review
-page.
+Combine multiple differential-footprint reports into one static browser with
+two condition selectors.
 
 ## Example command
 
 ```bash
 review-multi-comparisons \
-  --outdir project \
-  --display-panels 8 \
-  --aggregate-legends hide \
-  --recompute-missing-aggregate-profiles \
-  --cores 16
+  --inputs project/comparisons \
+  --output-dir project/reports/review_multi_comparisons
 ```
 
 ## Primary inputs
 
-- `--outdir` — project directory containing differential-footprint reports.
-- `--display-panels` — number of comparison panels shown initially.
-- `--aggregate-legends` — initial aggregate-legend visibility.
-- `--recompute-missing-aggregate-profiles` — calculate profiles absent from source reports.
-- `--cores` — worker processes used for profile calculation.
+- `--inputs` — report files or directories containing differential reports.
+- `--output-dir` — destination for the complete static bundle.
 
 ## Main outputs
 
-- A portable HTML report for selecting comparisons and motifs.
+- `index.html` with local CSS, JavaScript, gzip data, profile shards, and logos.
 - Coordinated volcano, bar, logo, and aggregate-profile views with SVG export.
 
-Continue with [`plot-motif-aggregate-grid`](plot-motif-aggregate-grid.md), or
+Continue with the `--motif-grid` mode of [`plot-aggregate`](plot-aggregate.md), or
 see the [complete `review-multi-comparisons` reference](../../api.md#review-multi-comparisons).

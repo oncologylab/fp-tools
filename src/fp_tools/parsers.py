@@ -388,8 +388,15 @@ def add_aggregate_arguments(parser):
 	PLOT.add_argument('--plot-boundaries', help="Plot TFBS boundaries (Note: estimated from first region in each --TFBS)", action='store_true')
 	PLOT.add_argument('--signal-on-x', help="Show signals on x-axis and TFBSs on y-axis (default: signal is on y-axis)", action='store_true')
 	PLOT.add_argument('--remove-outliers', metavar="<float>", help="Value between 0-1 indicating the percentile of regions to include, e.g. 0.99 to remove the sites with 1%% highest values (default: 1)", type=lambda x: restricted_float(x, 0, 1), default=1)
+	PLOT.add_argument('--motif-grid', action='store_true', help="Create a multi-page motif-by-comparison PDF from one review-multi-comparisons report")
+	PLOT.add_argument('--rows-per-page', type=int, default=16, help="Motif rows per page in --motif-grid mode (default: 16)")
+	PLOT.add_argument('--order-htmls', nargs='*', default=[], help="Optional review reports used to define one shared motif order in --motif-grid mode")
+	PLOT.add_argument('--fill-missing-profiles', action='store_true', help="Fill missing motif profiles from profiles embedded elsewhere in the review report")
+	PLOT.add_argument('--recompute-missing-profiles', action='store_true', help="Recompute missing motif profiles from project bigWigs and motif BEDs")
+	PLOT.add_argument('--repeat-column-labels', choices=['none', 'row'], default='none', help="Repeat comparison labels in every motif row (default: none)")
 
 	RUN = parser.add_argument_group("Run arguments")
+	RUN.add_argument('--cores', metavar="<int>", type=int, default=None, help="Worker processes for recomputing missing motif profiles")
 	RUN = add_logger_args(RUN)
 	
 	return(parser)

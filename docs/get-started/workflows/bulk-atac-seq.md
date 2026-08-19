@@ -29,6 +29,19 @@ B1	conditionB	B1.bam	B1_peaks.bed
 
 ## Main analysis
 
+Run the complete workflow with [`bulk-footprinting`](../commands/bulk-footprinting.md):
+
+```bash
+bulk-footprinting \
+  --sample-table samples.tsv \
+  --comparison-table comparisons.tsv \
+  --genome hg38.fa.gz \
+  --blacklist hg38.blacklist.bed \
+  --outdir project
+```
+
+## Run step by step
+
 <div class="fp-command-chain" markdown="1">
 
 [`atac-correct`](../commands/atac-correct.md)
@@ -69,5 +82,5 @@ diff-footprints \
   --outdir project
 ```
 
-The comparison produces motif statistics, aggregate profiles, and a portable
-interactive HTML report. See the [Bulk output example](../output-examples/bulk-atac-seq.md).
+The workflow produces motif statistics, aggregate profiles, and a static
+comparison browser. See the [Bulk output example](../output-examples/bulk-atac-seq.md).

@@ -1,14 +1,15 @@
-# [`pseudobulk-footprints`](../../api.md#pseudobulk-footprints)
+# [`sc-footprinting`](../../api.md#sc-footprinting)
 
-Run grouping, bias correction, footprint scoring, motif analysis, and optional
-per-cell signature reporting for single-cell ATAC-seq data.
+Run grouping, bias correction, footprint scoring, motif analysis, and per-cell
+signature reporting for single-cell ATAC-seq data.
 
 ## Example command
 
 ```bash
-pseudobulk-footprints \
+sc-footprinting \
   --fragments pbmc_fragments.tsv.gz \
   --annotations cell_annotations.tsv \
+  --h5ad cell_embedding.h5ad \
   --group-by cell_type \
   --genome-sizes hg38.chrom.sizes \
   --genome hg38.fa.gz \
@@ -21,6 +22,7 @@ pseudobulk-footprints \
 
 - `--fragments` — single-cell fragment file.
 - `--annotations` — barcode-level cell annotation table.
+- `--h5ad` — AnnData file containing the cell embedding used for KNN smoothing.
 - `--group-by` — annotation column used to define pseudobulk groups.
 - `--genome-sizes` — chromosome sizes used to write grouped signal tracks.
 - `--genome` — reference genome FASTA.
@@ -32,7 +34,7 @@ pseudobulk-footprints \
 
 - Pseudobulk fragments, pseudo-BAMs, and corrected/footprint bigWigs.
 - Motif-aware differential reports and aggregate plots.
-- Optional per-cell footprint-signature heatmaps and UMAP figures.
+- Per-cell footprint-signature heatmaps and UMAP figures.
 
 See the [Single-cell workflow](../workflows/single-cell.md) and the
-[complete `pseudobulk-footprints` reference](../../api.md#pseudobulk-footprints).
+[complete `sc-footprinting` reference](../../api.md#sc-footprinting).

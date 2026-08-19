@@ -1,7 +1,7 @@
 """Shared config helpers for optional GUI and YAML-driven batch execution.
 
 This module defines the normalized config shape used by the GUI and the
-optional ``run-workflow --config ...`` path. Direct CLI commands remain the
+optional ``run-yaml-workflow --config ...`` path. Direct CLI commands remain the
 primary interface and do not depend on this layer.
 """
 
@@ -25,16 +25,19 @@ TOOL_ALIASES = {
     "normalize-bigwig": "normalize-bigwig",
     "plot-aggregate": "plot-aggregate",
     "review-multi-comparisons": "review-multi-comparisons",
-    "plot-motif-aggregate-grid": "plot-motif-aggregate-grid",
+    "plot-motif-aggregate-grid": "plot-aggregate",
     "prepare-atac": "prepare-atac",
-    "run-workflow": "run-workflow",
-    "motif-discovery": "motif-discovery",
-    "motif-summary": "motif-summary",
-    "fp-tools-score-variants": "fp-tools-score-variants",
-    "score-variants": "fp-tools-score-variants",
+    "bulk-footprinting": "bulk-footprinting",
+    "run-yaml-workflow": "run-yaml-workflow",
+    "run-workflow": "run-yaml-workflow",
+    "discover-motifs": "discover-motifs",
+    "motif-discovery": "discover-motifs",
+    "summarize-motifs": "summarize-motifs",
+    "motif-summary": "summarize-motifs",
     "pseudobulk-fragments": "pseudobulk-fragments",
     "find-signature-fp": "find-signature-fp",
-    "pseudobulk-footprints": "pseudobulk-footprints",
+    "sc-footprinting": "sc-footprinting",
+    "pseudobulk-footprints": "sc-footprinting",
 }
 
 RESERVED_KEYS = {
@@ -74,14 +77,13 @@ REQUIRED_FIELDS = {
     "diff-footprints": ("genome", "peaks"),
     "normalize-bigwig": ("bigwigs", "background", "outdir"),
     "plot-aggregate": ("output",),
-    "review-multi-comparisons": ("inputs", "output"),
-    "plot-motif-aggregate-grid": ("output",),
-    "motif-discovery": ("outdir",),
-    "motif-summary": ("out_tsv",),
-    "fp-tools-score-variants": ("variants", "genome", "out"),
+    "review-multi-comparisons": ("inputs", "output_dir"),
+    "bulk-footprinting": ("sample_table", "comparison_table", "genome", "outdir"),
+    "discover-motifs": ("outdir",),
+    "summarize-motifs": ("out_tsv",),
     "pseudobulk-fragments": ("fragments", "annotations", "group_by", "outdir"),
-    "find-signature-fp": ("annotations", "fragments", "h5ad", "tf_site_dir", "outdir"),
-    "pseudobulk-footprints": ("annotations", "group_by", "outdir", "genome", "peaks"),
+    "find-signature-fp": ("annotations", "fragments", "h5ad", "outdir"),
+    "sc-footprinting": ("fragments", "annotations", "h5ad", "group_by", "outdir", "genome", "peaks"),
     "prepare-atac": ("samples", "genome", "outdir"),
 }
 
@@ -107,6 +109,7 @@ FLAG_NAME_MAP = {
     "motif_flank": "--motif-flank",
     "tfbs_model": "--tfbs-model",
     "input_html": "--input-html",
+    "output_dir": "--output-dir",
     "match_dir": "--match-dir",
     "sample_dirs": "--sample-dirs",
     "default_layout": "--default-layout",
@@ -335,7 +338,7 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
                         errors.append(f"{job_name}: missing required field '{field}'")
                 elif str(value or "").strip() == "":
                     errors.append(f"{job_name}: missing required field '{field}'")
-            if tool == "motif-discovery":
+            if tool == "discover-motifs":
                 if not str(item.get("fasta") or "").strip() and not str(item.get("candidates") or "").strip():
                     errors.append(f"{job_name}: provide either 'fasta' or 'candidates'")
             if tool == "diff-footprints":
@@ -348,9 +351,17 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
                     sample_dirs = [sample_dirs]
                 if not [value for value in signals if str(value).strip()] and not [value for value in sample_dirs if str(value).strip()] and not str(project_dir or "").strip():
                     errors.append(f"{job_name}: provide either 'signals', 'sample_dirs', or 'project_dir'")
-            if tool == "pseudobulk-footprints":
-                if not str(item.get("fragments") or "").strip() and not str(item.get("bam") or "").strip():
-                    errors.append(f"{job_name}: provide either 'fragments' or 'bam'")
+            if tool == "sc-footprinting" and not str(item.get("fragments") or "").strip():
+                errors.append(f"{job_name}: missing required field 'fragments'")
+            if tool == "find-signature-fp":
+                has_site_dir = bool(str(item.get("tf_site_dir") or "").strip())
+                has_diff_sites = bool(str(item.get("all_motif_diff_dir") or "").strip()) and bool(
+                    str(item.get("all_motif_results") or "").strip()
+                )
+                if not has_site_dir and not has_diff_sites:
+                    errors.append(
+                        f"{job_name}: provide 'tf_site_dir' or both 'all_motif_diff_dir' and 'all_motif_results'"
+                    )
 
     return errors
 

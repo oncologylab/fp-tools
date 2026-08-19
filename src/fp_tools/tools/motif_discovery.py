@@ -169,7 +169,7 @@ def write_motif_discovery_plan(
         )
         tomtom_tsv = f" --tomtom-tsv {shlex.quote(str(tomtom_dir / 'tomtom.tsv'))}"
     lines.append(
-        f"motif-summary --meme-txt {shlex.quote(str(motif_txt))}{tomtom_tsv} "
+        f"summarize-motifs --meme-txt {shlex.quote(str(motif_txt))}{tomtom_tsv} "
         f"--out-tsv {shlex.quote(str(summary_tsv))} --out-html {shlex.quote(str(summary_html))}"
     )
     script.write_text("\n".join(lines) + "\n", encoding="utf-8")

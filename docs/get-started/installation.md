@@ -23,7 +23,7 @@ fp-tools-gui
 ```
 
 The GUI saves YAML configurations that can be run directly with
-[`run-workflow`](commands/run-workflow.md).
+[`run-yaml-workflow`](commands/run-yaml-workflow.md).
 
 ## Source installation
 

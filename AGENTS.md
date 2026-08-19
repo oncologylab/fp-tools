@@ -18,14 +18,13 @@ unless the user explicitly asks to publish the manuscript source.
   Python entry points rather than moving workflow logic into Streamlit code.
 - Direct CLI remains primary. YAML configs and the GUI are wrapper paths, not
   replacements for direct command use.
-- GUI-saved YAML must remain runnable with `run-workflow`.
+- GUI-saved YAML must remain runnable with `run-yaml-workflow`.
 - Use the current public command names in docs and examples:
-  `prepare-atac`, `atac-correct`, `call-footprints`, `match-motifs`,
-  `diff-footprints`, `normalize-bigwig`, `plot-aggregate`,
-  `review-multi-comparisons`, `plot-motif-aggregate-grid`, `run-workflow`,
-  `fp-tools-gui`, `motif-discovery`, `motif-summary`,
-  `fp-tools-score-variants`, `pseudobulk-fragments`, `find-signature-fp`, and
-  `pseudobulk-footprints`.
+  `prepare-atac`, `bulk-footprinting`, `atac-correct`, `call-footprints`,
+  `match-motifs`, `diff-footprints`, `normalize-bigwig`, `plot-aggregate`,
+  `review-multi-comparisons`, `run-yaml-workflow`, `fp-tools-gui`,
+  `discover-motifs`, `summarize-motifs`, `pseudobulk-fragments`,
+  `find-signature-fp`, and `sc-footprinting`.
 - Do not reintroduce the removed TOBIAS-style console aliases. Use the current
   command names above in code, tests, docs, and examples.
 
@@ -76,12 +75,12 @@ git diff --check
 ### YAML And GUI
 
 ```bash
-.venv/bin/run-workflow --config examples/gui_configs/call_footprints_single.yml --dry-run
+.venv/bin/run-yaml-workflow --config examples/gui_configs/call_footprints_single.yml --dry-run
 .venv/bin/fp-tools-gui --host 0.0.0.0 --port 8891 --run-dir examples/gui_runs
 ```
 
 Keep YAML configs portable: paths and sample lists should be explicit, and the
-same config should work through `run-workflow` without GUI-only state.
+same config should work through `run-yaml-workflow` without GUI-only state.
 
 For release, package-build, full-test, GitHub Actions, website-deployment, and
 PyPI procedures, use `RELEASE_CHECKLIST.md` as the source of truth. Do not

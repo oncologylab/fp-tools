@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-17
+Last updated: 2026-08-19
 
 ## Current Baseline
 
@@ -27,7 +27,7 @@ a separately planned breaking release explicitly changes the contract.
   matrices and empirical-Bayes residual-variance moderation with biological
   samples as the inferential units, plus multi-comparison reviews.
 - Pseudobulk fragment/BAM generation and single-cell signature reporting.
-- Optional Streamlit GUI whose saved YAML runs through `run-workflow`.
+- Optional Streamlit GUI whose saved YAML runs through `run-yaml-workflow`.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
   PyPI publication.
 - Branded GitHub and MkDocs presentation with responsive embedded report and

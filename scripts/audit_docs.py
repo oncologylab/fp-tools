@@ -17,6 +17,7 @@ from playwright.sync_api import sync_playwright
 
 COMMAND_PAGES = (
     "prepare-atac",
+    "bulk-footprinting",
     "atac-correct",
     "call-footprints",
     "match-motifs",
@@ -24,15 +25,13 @@ COMMAND_PAGES = (
     "normalize-bigwig",
     "plot-aggregate",
     "review-multi-comparisons",
-    "plot-motif-aggregate-grid",
-    "run-workflow",
+    "run-yaml-workflow",
     "fp-tools-gui",
-    "motif-discovery",
-    "motif-summary",
-    "fp-tools-score-variants",
+    "discover-motifs",
+    "summarize-motifs",
     "pseudobulk-fragments",
     "find-signature-fp",
-    "pseudobulk-footprints",
+    "sc-footprinting",
 )
 GET_STARTED_PAGES = (
     "",
@@ -310,8 +309,8 @@ def audit(site_dir: Path) -> None:
                                 f"{label}: Get Started navigation is not visible"
                             )
                         secondary = page.locator(".md-sidebar--secondary")
-                        if relative and not secondary.is_visible():
-                            failures.append(f"{label}: page TOC is not visible")
+                        if secondary.is_visible():
+                            failures.append(f"{label}: page TOC should be hidden")
                         if page.locator(".md-footer__link--next").count() != 1:
                             failures.append(f"{label}: next-page footer link is missing")
                         if relative and page.locator(".md-footer__link--prev").count() != 1:

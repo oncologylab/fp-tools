@@ -9,9 +9,9 @@ footprint intervals and compares them with known motif databases.
 
 [`call-footprints`](../commands/call-footprints.md)
 <span>→</span>
-[`motif-discovery`](../commands/motif-discovery.md)
+[`discover-motifs`](../commands/discover-motifs.md)
 <span>→</span>
-[`motif-summary`](../commands/motif-summary.md)
+[`summarize-motifs`](../commands/summarize-motifs.md)
 
 </div>
 
@@ -19,7 +19,7 @@ First use [`call-footprints`](../commands/call-footprints.md) with candidate
 calling enabled. Then run motif discovery:
 
 ```bash
-motif-discovery \
+discover-motifs \
   --candidates candidate_footprints.bed \
   --genome hg38.fa.gz \
   --flank 75 \
@@ -28,5 +28,5 @@ motif-discovery \
   --outdir project/de_novo
 ```
 
-[`motif-summary`](../commands/motif-summary.md) converts MEME/STREME/DREME and
+[`summarize-motifs`](../commands/summarize-motifs.md) converts MEME/STREME/DREME and
 Tomtom results into a compact table and optional HTML report.

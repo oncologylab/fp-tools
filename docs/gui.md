@@ -29,5 +29,5 @@ Example configurations are in `examples/gui_configs/` and can also be run
 directly:
 
 ```bash
-run-workflow --config examples/gui_configs/call_footprints_single.yml
+run-yaml-workflow --config examples/gui_configs/call_footprints_single.yml
 ```

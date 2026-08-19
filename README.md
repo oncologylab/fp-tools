@@ -20,8 +20,7 @@
 
 `fp-tools` is a command-first toolkit for ATAC-seq bias correction, footprint
 scoring, motif analysis, replicate-aware comparisons, and single-cell
-footprint signatures. The optional GUI saves YAML that remains runnable with
-`run-workflow`.
+footprint signatures. The optional GUI and YAML runner call the same commands.
 
 ## Install
 
@@ -29,139 +28,58 @@ footprint signatures. The optional GUI saves YAML that remains runnable with
 pip install fp-tools-bio
 ```
 
-For the browser GUI:
+For the GUI:
 
 ```bash
 pip install "fp-tools-bio[gui]"
 fp-tools-gui
 ```
 
-Raw-read processing also requires the genomics tools included in
-`environment.yml` or the project Docker image.
+## Bulk ATAC-seq
 
-## Standard workflow
-
-```text
-prepare-atac → atac-correct → call-footprints → match-motifs → diff-footprints
-```
-
-For processed BAM and peak files, use a sample table:
-
-```text
-sample	condition	bam	peaks
-A1	conditionA	A1.bam	A1_peaks.bed
-B1	conditionB	B1.bam	B1_peaks.bed
-```
+`bulk-footprinting` runs the complete analysis from aligned BAM and peak files.
+FASTQ preparation remains available separately through `prepare-atac`.
 
 ```bash
-atac-correct \
-  --sample-table samples.tsv \
-  --genome hg38.fa.gz \
-  --blacklist hg38.blacklist.bed \
-  --outdir project
-
-call-footprints \
-  --sample-table samples.tsv \
-  --regions project/peaks/merged_peaks_filtered.bed \
-  --outdir project
-
-match-motifs \
-  --sample-table samples.tsv \
-  --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks_filtered.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project
-
-diff-footprints \
+bulk-footprinting \
   --sample-table samples.tsv \
   --comparison-table comparisons.tsv \
   --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks_filtered.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project
+  --blacklist hg38.blacklist.bed \
+  --outdir project \
+  --cores 8
 ```
 
-Repeated condition labels define biological replicates. Output includes motif
-tables, replicate statistics, aggregate profiles, and portable HTML/SVG
-reports.
+The wrapper runs `atac-correct`, `call-footprints`, `match-motifs`,
+`diff-footprints`, and `review-multi-comparisons`. Each command can also be run
+directly.
 
-## Single-cell workflow
+## Single-cell ATAC-seq
 
-Use `pseudobulk-fragments` for grouping only, or `pseudobulk-footprints` for
-the complete grouped workflow. `find-signature-fp` produces per-cell footprint
-signature heatmaps and UMAPs.
+`sc-footprinting` groups fragments, runs pseudobulk footprinting, and produces
+per-cell KNN footprint-signature heatmaps and UMAPs.
 
 ```bash
-pseudobulk-footprints \
+sc-footprinting \
   --fragments fragments.tsv.gz \
   --annotations cell_annotations.tsv \
+  --h5ad embedding.h5ad \
   --group-by cell_type \
   --genome-sizes hg38.chrom.sizes \
   --genome hg38.fa.gz \
   --peaks merged_peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project/pseudobulk
+  --outdir project/single_cell
 ```
 
-## Optional de novo motif discovery
+## Main commands
 
-Candidate footprints from `call-footprints` can be passed to
-`motif-discovery`, then summarized with `motif-summary` or included in
-`match-motifs` and `diff-footprints`.
-
-```bash
-motif-discovery \
-  --candidates candidate_footprints.bed \
-  --genome hg38.fa.gz \
-  --flank 75 \
-  --method streme \
-  --known-motif-db jaspar2026_vertebrates \
-  --outdir project/de_novo
-```
-
-## Commands
-
-| Command | Purpose |
+| Area | Commands |
 | --- | --- |
-| `prepare-atac` | Prepare raw ATAC-seq reads. |
-| `atac-correct` | Correct Tn5 sequence bias. |
-| `call-footprints` | Create footprint-score tracks. |
-| `match-motifs` | Scan motifs and call bound sites. |
-| `diff-footprints` | Compare conditions or replicates. |
-| `normalize-bigwig` | Scale signal tracks. |
-| `plot-aggregate` | Plot motif-centered profiles. |
-| `review-multi-comparisons` | Review multiple comparison reports. |
-| `plot-motif-aggregate-grid` | Export aggregate comparison grids. |
-| `motif-discovery` | Run optional de novo motif discovery. |
-| `motif-summary` | Summarize discovered motifs. |
-| `pseudobulk-fragments` | Group single-cell fragments. |
-| `pseudobulk-footprints` | Run the complete pseudobulk workflow. |
-| `find-signature-fp` | Plot single-cell footprint signatures. |
-| `run-workflow` | Run a saved YAML configuration. |
-| `fp-tools-gui` | Open the optional browser GUI. |
-| `fp-tools-score-variants` | Score sequence variants in motifs. |
+| Core analysis | `prepare-atac`, `atac-correct`, `call-footprints`, `match-motifs`, `diff-footprints`, `normalize-bigwig` |
+| Workflows | `bulk-footprinting`, `sc-footprinting`, `run-yaml-workflow`, `fp-tools-gui` |
+| Reports | `plot-aggregate`, `review-multi-comparisons` |
+| De novo motifs | `discover-motifs`, `summarize-motifs` |
+| Single-cell utilities | `pseudobulk-fragments`, `find-signature-fp` |
 
-Check command syntax directly:
-
-```bash
-prepare-atac --help
-atac-correct --help
-call-footprints --help
-match-motifs --help
-diff-footprints --help
-normalize-bigwig --help
-plot-aggregate --help
-review-multi-comparisons --help
-plot-motif-aggregate-grid --help
-run-workflow --help
-fp-tools-gui --help
-motif-discovery --help
-motif-summary --help
-fp-tools-score-variants --help
-pseudobulk-fragments --help
-find-signature-fp --help
-pseudobulk-footprints --help
-```
-
-Example YAML files are in `examples/gui_configs/` and run identically through
-the GUI or `run-workflow`.
+Use `<command> --help` for complete options. Practical examples and the API
+reference are available in the [documentation](https://oncologylab.github.io/fp-tools/).

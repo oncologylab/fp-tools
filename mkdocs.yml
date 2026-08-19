@@ -49,7 +49,7 @@ nav:
       - Tool overview: get-started/tool-overview.md
       - Workflows:
           - Bulk ATAC-seq: get-started/workflows/bulk-atac-seq.md
-          - Single-cell: get-started/workflows/single-cell.md
+          - Single-cell ATAC-seq: get-started/workflows/single-cell.md
           - Optional de novo motif discovery: get-started/workflows/de-novo-motif-discovery.md
       - Commands:
           - Core analysis:
@@ -62,18 +62,17 @@ nav:
           - Visualization and review:
               - plot-aggregate: get-started/commands/plot-aggregate.md
               - review-multi-comparisons: get-started/commands/review-multi-comparisons.md
-              - plot-motif-aggregate-grid: get-started/commands/plot-motif-aggregate-grid.md
           - Workflow and interface:
-              - run-workflow: get-started/commands/run-workflow.md
+              - bulk-footprinting: get-started/commands/bulk-footprinting.md
+              - sc-footprinting: get-started/commands/sc-footprinting.md
+              - run-yaml-workflow: get-started/commands/run-yaml-workflow.md
               - fp-tools-gui: get-started/commands/fp-tools-gui.md
-          - Motifs and variants:
-              - motif-discovery: get-started/commands/motif-discovery.md
-              - motif-summary: get-started/commands/motif-summary.md
-              - fp-tools-score-variants: get-started/commands/fp-tools-score-variants.md
-          - Single-cell:
+          - De Novo Motif Discovery:
+              - discover-motifs: get-started/commands/discover-motifs.md
+              - summarize-motifs: get-started/commands/summarize-motifs.md
+          - Single-cell ATAC-seq:
               - pseudobulk-fragments: get-started/commands/pseudobulk-fragments.md
               - find-signature-fp: get-started/commands/find-signature-fp.md
-              - pseudobulk-footprints: get-started/commands/pseudobulk-footprints.md
       - Output examples:
           - Bulk ATAC-seq: get-started/output-examples/bulk-atac-seq.md
           - Single-cell ATAC-seq: get-started/output-examples/single-cell-atac-seq.md

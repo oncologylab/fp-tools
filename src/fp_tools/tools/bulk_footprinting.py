@@ -1,0 +1,200 @@
+#!/usr/bin/env python
+"""Run the complete bulk ATAC-seq footprinting workflow for explicit comparisons."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import shlex
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+from fp_tools.utils.project_layout import (
+    analysis_peaks_path,
+    comparison_dir,
+    corrected_bigwig_path,
+    footprint_bigwig_path,
+    match_motifs_dir,
+    read_comparison_table,
+    read_sample_table,
+)
+
+
+def _resolve_executable(name: str) -> str:
+    local = Path(sys.executable).parent / name
+    if local.exists():
+        return str(local)
+    return shutil.which(name) or name
+
+
+def _quote(command: list[str]) -> str:
+    return " ".join(shlex.quote(str(part)) for part in command)
+
+
+def _run(command: list[str], stdout_path: Path, stderr_path: Path) -> int:
+    resolved = list(command)
+    resolved[0] = _resolve_executable(resolved[0])
+    env = os.environ.copy()
+    env.setdefault("MPLCONFIGDIR", str(stdout_path.parent / ".mplconfig"))
+    env.setdefault("XDG_CACHE_HOME", str(stdout_path.parent / ".cache"))
+    Path(env["MPLCONFIGDIR"]).mkdir(parents=True, exist_ok=True)
+    Path(env["XDG_CACHE_HOME"]).mkdir(parents=True, exist_ok=True)
+    with stdout_path.open("w", encoding="utf-8") as stdout, stderr_path.open("w", encoding="utf-8") as stderr:
+        result = subprocess.run(resolved, stdout=stdout, stderr=stderr, text=True, env=env, check=False)
+    return int(result.returncode)
+
+
+def _all_nonempty(paths: list[Path]) -> bool:
+    return bool(paths) and all(path.is_file() and path.stat().st_size > 0 for path in paths)
+
+
+def _stage_complete(stage: str, project: Path, samples, comparisons) -> bool:
+    if stage == "atac-correct":
+        return analysis_peaks_path(project).is_file() and _all_nonempty(
+            [corrected_bigwig_path(project, row.sample) for row in samples]
+        )
+    if stage == "call-footprints":
+        return _all_nonempty([footprint_bigwig_path(project, row.sample) for row in samples])
+    if stage == "match-motifs":
+        return all(match_motifs_dir(project, row.sample).is_dir() for row in samples)
+    if stage == "diff-footprints":
+        return all(
+            any(comparison_dir(project, row.comparison).glob("diff_footprints_*.html"))
+            for row in comparisons
+        )
+    if stage == "review-multi-comparisons":
+        return (project / "reports" / "review_multi_comparisons" / "index.html").is_file()
+    return False
+
+
+def build_commands(args: argparse.Namespace) -> list[tuple[str, list[str]]]:
+    project = Path(args.outdir).expanduser().resolve()
+    shared = ["--sample-table", str(args.sample_table), "--layout", "project", "--outdir", str(project)]
+    motif_args = ["--motif-db", str(args.motif_db)] if args.motif_db else []
+    if args.motifs:
+        motif_args.extend(["--motifs", *[str(path) for path in args.motifs]])
+    atac = [
+        "atac-correct",
+        *shared,
+        "--genome",
+        str(args.genome),
+        "--cores",
+        str(args.cores),
+    ]
+    if args.blacklist:
+        atac.extend(["--blacklist", str(args.blacklist)])
+    footprints = ["call-footprints", *shared, "--cores", str(args.cores)]
+    motifs = [
+        "match-motifs",
+        *shared,
+        "--genome",
+        str(args.genome),
+        *motif_args,
+        "--cores",
+        str(args.cores),
+    ]
+    differential = [
+        "diff-footprints",
+        *shared,
+        "--comparison-table",
+        str(args.comparison_table),
+        "--genome",
+        str(args.genome),
+        *motif_args,
+        "--normalization",
+        str(args.normalization),
+        "--plot-aggregate",
+        "all",
+        "--aggregate-site-set",
+        "all",
+        "--cores",
+        str(args.cores),
+    ]
+    review = [
+        "review-multi-comparisons",
+        "--inputs",
+        str(project / "comparisons"),
+        "--output-dir",
+        str(project / "reports" / "review_multi_comparisons"),
+    ]
+    return [
+        ("atac-correct", atac),
+        ("call-footprints", footprints),
+        ("match-motifs", motifs),
+        ("diff-footprints", differential),
+        ("review-multi-comparisons", review),
+    ]
+
+
+def run_bulk_footprinting(args: argparse.Namespace) -> int:
+    project = Path(args.outdir).expanduser().resolve()
+    project.mkdir(parents=True, exist_ok=True)
+    log_dir = project / "logs" / "bulk_footprinting"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    samples = read_sample_table(args.sample_table)
+    comparisons = read_comparison_table(args.comparison_table)
+    conditions = {row.condition for row in samples}
+    unknown = sorted({value for row in comparisons for value in (row.cond1, row.cond2)} - conditions)
+    if unknown:
+        raise ValueError(f"Comparison table references unknown conditions: {', '.join(unknown)}")
+
+    commands = build_commands(args)
+    command_file = log_dir / "bulk_footprinting_commands.sh"
+    lines = ["#!/usr/bin/env bash", "set -euo pipefail", "", "# Generated by bulk-footprinting.", ""]
+    for label, command in commands:
+        lines.extend([f"# {label}", _quote(command), ""])
+    command_file.write_text("\n".join(lines), encoding="utf-8")
+    command_file.chmod(0o755)
+
+    exit_code = 0
+    for label, command in commands:
+        if args.resume and not args.force and _stage_complete(label, project, samples, comparisons):
+            print(f"[resume] {label}: complete")
+            continue
+        if args.dry_run:
+            print(f"[{label}] {_quote(command)}")
+            continue
+        code = _run(command, log_dir / f"{label}.stdout.log", log_dir / f"{label}.stderr.log")
+        if code:
+            print(f"{label} failed with exit code {code}; see {log_dir}", file=sys.stderr)
+            exit_code = code
+            if args.fail_fast:
+                break
+            break
+    print(f"Wrote command log to {command_file}")
+    return exit_code
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="bulk-footprinting", description=__doc__)
+    parser.add_argument("--sample-table", required=True, help="TSV with sample, condition, BAM, and peak BED columns.")
+    parser.add_argument("--comparison-table", required=True, help="TSV with comparison, cond1, and cond2 columns.")
+    parser.add_argument("--genome", required=True, help="Reference genome FASTA.")
+    parser.add_argument("--blacklist", help="Optional blacklist BED used during bias correction.")
+    parser.add_argument("--motifs", nargs="*", help="Optional motif files.")
+    parser.add_argument("--motif-db", default="jaspar2026_vertebrates", help="Built-in motif database (default: jaspar2026_vertebrates).")
+    parser.add_argument("--normalization", choices=["none", "condition-quantile", "sample-quantile"], default="none", help="Differential-stage normalization (default: none).")
+    parser.add_argument("--outdir", required=True, help="Project output directory.")
+    parser.add_argument("--cores", type=int, default=1, help="Total worker cores passed to each stage (default: 1).")
+    parser.add_argument("--resume", action="store_true", help="Skip stages whose expected outputs are complete.")
+    parser.add_argument("--force", action="store_true", help="Rerun stages even when outputs already exist.")
+    parser.add_argument("--dry-run", action="store_true", help="Validate inputs and print the commands without running them.")
+    parser.add_argument("--fail-fast", action="store_true", help="Stop at the first failed stage.")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.resume and args.force:
+        parser.error("--resume and --force are mutually exclusive")
+    try:
+        return run_bulk_footprinting(args)
+    except ValueError as exc:
+        parser.error(str(exc))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

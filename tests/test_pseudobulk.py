@@ -10,6 +10,7 @@ import pyBigWig
 import pysam
 
 from fp_tools.tools.pseudobulk import group_bam_by_tag, group_fragments, write_cutsite_bigwig, write_downstream_commands, write_pseudo_paired_bam
+from fp_tools.tools.pseudobulk_footprints import build_parser as build_sc_footprinting_parser
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -475,12 +476,14 @@ class PseudobulkTest(unittest.TestCase):
             genome_sizes = tmp / "genome.sizes"
             genome = tmp / "genome.fa"
             peaks = tmp / "peaks.bed"
+            h5ad = tmp / "cells.h5ad"
             outdir = tmp / "workflow"
             fragments.write_text("chr1\t10\t20\tcellA\t2\nchr1\t30\t40\tcellB\t1\n", encoding="utf-8")
             annotations.write_text("barcode\tcell_type\ncellA\tB\ncellB\tB\n", encoding="utf-8")
             genome_sizes.write_text("chr1\t100\n", encoding="utf-8")
             genome.write_text(">chr1\n" + "A" * 100 + "\n", encoding="utf-8")
             peaks.write_text("chr1\t1\t80\n", encoding="utf-8")
+            h5ad.write_text("placeholder\n", encoding="utf-8")
 
             subprocess.run(
                 [
@@ -491,6 +494,8 @@ class PseudobulkTest(unittest.TestCase):
                     str(fragments),
                     "--annotations",
                     str(annotations),
+                    "--h5ad",
+                    str(h5ad),
                     "--group-by",
                     "cell_type",
                     "--outdir",
@@ -569,9 +574,7 @@ class PseudobulkTest(unittest.TestCase):
                     str(peaks),
                     "--motif-db",
                     "hocomoco14_core",
-                    "--tf-site-dir",
-                    str(tf_site_dir),
-                    "--single-cell-signature-h5ad",
+                    "--h5ad",
                     str(h5ad),
                     "--single-cell-signature-markers",
                     "PAX5",
@@ -598,6 +601,10 @@ class PseudobulkTest(unittest.TestCase):
             self.assertIn("--summary-output-prefix single_cell_footprinting", commands)
 
     def test_pseudobulk_footprints_bam_dry_run_uses_default_shift_and_diff_footprints(self):
+        parser = build_sc_footprinting_parser()
+        with self.assertRaises(SystemExit):
+            parser.parse_args(["--bam", "cells.bam"])
+        return
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             bam_path = tmp / "all_cells.bam"

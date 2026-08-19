@@ -20,15 +20,15 @@ from pathlib import Path
 from fp_tools.gui_config import JobSpec, canonical_tool_name, dump_yaml_config, expand_jobs, load_yaml_config, normalize_config
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Run fp-tools jobs from a YAML config file.")
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(prog="run-yaml-workflow", description="Run fp-tools jobs from a YAML config file.")
     parser.add_argument("--config", required=True, help="Path to YAML config.")
     parser.add_argument("--run-root", default=None, help="Optional directory for run metadata/logs.")
     parser.add_argument("--only", nargs="*", default=None, help="Optional tool filter, e.g. diff-footprints.")
     parser.add_argument("--dry-run", action="store_true", help="Print expanded commands without running.")
     parser.add_argument("--list-jobs", action="store_true", help="List expanded jobs and exit.")
     parser.add_argument("--fail-fast", action="store_true", help="Stop at first failed job.")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     only_tools = {canonical_tool_name(tool_name) for tool_name in (args.only or [])}
     exit_code = run_config_file(

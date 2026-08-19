@@ -10,6 +10,7 @@ import html
 import json
 import re
 from pathlib import Path
+from fp_tools.tools.static_comparison_browser import build_static_browser
 from fp_tools.utils.project_layout import comparisons_dir, is_project_layout, project_root, review_output_path
 
 
@@ -261,14 +262,15 @@ function renderAll(refreshStyles=true){setPanelGridShape();if(refreshStyles)rend
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="review-multi-comparisons", description="Review multiple diff-footprints HTML reports in one interactive HTML file.")
+    parser = argparse.ArgumentParser(prog="review-multi-comparisons", description="Combine diff-footprints reports into one scalable static browser bundle.")
     parser.add_argument("--inputs", nargs="+", help="diff-footprints HTML files or directories containing diff_footprints_*.html files; directories are searched recursively.")
     parser.add_argument("--labels", nargs="*", help="Optional labels, one per resolved input HTML.")
-    parser.add_argument("--output", help="Output standalone review HTML.")
+    parser.add_argument("--output-dir", help="Output directory for index.html, JavaScript, CSS, and compact static data files.")
+    parser.add_argument("--output", dest="output_dir", help=argparse.SUPPRESS)
     parser.add_argument("--outdir", help="Project directory used with --layout project.")
     parser.add_argument("--layout", choices=["custom", "project"], default="project", help="Use fp-tools standard project output layout under --outdir (default: project when only --outdir is provided).")
-    parser.add_argument("--display-panels", type=int, default=4, help="Initial number of comparison panels to display in the HTML report, from 4 to 8 (default: 4).")
-    parser.add_argument("--aggregate-legends", choices=["show", "hide"], default="show", help="Initial visibility for legends beside motif aggregate subplots (default: show). Use hide to fit 4-8 aggregate panels in one row.")
+    parser.add_argument("--display-panels", type=int, default=4, help=argparse.SUPPRESS)
+    parser.add_argument("--aggregate-legends", choices=["show", "hide"], default="show", help=argparse.SUPPRESS)
     parser.add_argument("--fill-missing-aggregate-profiles", action="store_true", help="Fill missing motif aggregate panels from profiles embedded elsewhere in the combined review payload.")
     parser.add_argument("--recompute-missing-aggregate-profiles", action="store_true", help="Recompute still-missing motif aggregate panels from project sample bigWigs and match-motifs BEDs.")
     parser.add_argument("--aggregate-flank", default="auto", help="Flank used when recomputing missing aggregate profiles, or 'auto' to match the existing report axis (default: auto).")
@@ -285,14 +287,13 @@ def main(argv: list[str] | None = None) -> int:
         project = project_root(args.outdir)
         if not args.inputs:
             args.inputs = [str(comparisons_dir(project))]
-            if not args.output:
-                args.output = str(review_output_path(project))
+            if not args.output_dir:
+                legacy_path = review_output_path(project)
+                args.output_dir = str(legacy_path.with_suffix(""))
     if not args.inputs:
         parser.error("provide --inputs or use --layout project with --outdir")
-    if not args.output:
-        parser.error("provide --output or use --layout project with --outdir")
-    if args.display_panels < 4 or args.display_panels > 8:
-        parser.error("--display-panels must be between 4 and 8")
+    if not args.output_dir:
+        parser.error("provide --output-dir or use --layout project with --outdir")
     if args.recompute_missing_aggregate_profiles and project is None:
         parser.error("--recompute-missing-aggregate-profiles requires --outdir in project layout")
     try:
@@ -309,10 +310,14 @@ def main(argv: list[str] | None = None) -> int:
         else:
             before_missing, total = count_missing_aggregate_profiles(payload)
             fill_stats = {"before_missing": before_missing, "after_missing": before_missing, "filled": 0, "total": total}
-        write_review_html(payload, args.output, display_panels=args.display_panels, aggregate_legends=args.aggregate_legends)
+        index_path = build_static_browser(
+            [item["payload"] for item in payload["comparisons"]],
+            args.output_dir,
+            title=args.title,
+        )
     except ValueError as exc:
         parser.error(str(exc))
-    print(f"Wrote {args.output}")
+    print(f"Wrote {index_path}")
     if fill_stats["before_missing"]:
         print(f"Aggregate profiles: filled {fill_stats['filled']} missing panels; {fill_stats['after_missing']} remain missing of {fill_stats['total']}")
     return 0
