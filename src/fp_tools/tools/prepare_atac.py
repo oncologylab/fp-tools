@@ -68,9 +68,12 @@ DEFAULTS: dict[str, Any] = {
     },
 }
 
+PUBLIC_PROFILES = ("modern", "homer-atac")
+PROFILE_ALIASES = {"legacy-atac": "homer-atac"}
+
 PROFILE_DEFAULTS: dict[str, dict[str, Any]] = {
     "modern": {},
-    "legacy-atac": {
+    "homer-atac": {
         "align": {
             "mapq": 0,
             "max_insert": 1000,
@@ -95,7 +98,7 @@ PROFILE_DEFAULTS: dict[str, dict[str, Any]] = {
             "cores": max(1, os.cpu_count() or 1),
             "max_parallel_samples": 1,
             "memory_gb": 24,
-            "legacy_sample_memory_gb": 16,
+            "sample_memory_gb": 16,
         },
     },
 }
@@ -124,7 +127,7 @@ REFERENCE_MANIFEST = {
 MITO_CHROMS = {"chrM", "chrMT", "M", "MT", "Mito"}
 PROFILE_EXECUTABLES = {
     "modern": ("fastp", "bowtie2", "bowtie2-build", "samtools", "bedtools", "macs3"),
-    "legacy-atac": (
+    "homer-atac": (
         "trim_galore",
         "fastqc",
         "bowtie2",
@@ -138,6 +141,24 @@ PROFILE_EXECUTABLES = {
         "pos2bed.pl",
     ),
 }
+
+
+def normalize_profile(profile: str) -> str:
+    """Return the canonical public name for an ATAC preprocessing profile."""
+    canonical = PROFILE_ALIASES.get(str(profile), str(profile))
+    if canonical not in PROFILE_DEFAULTS:
+        raise ValueError(
+            f"Unknown ATAC preprocessing profile: {profile}; "
+            f"choose one of {', '.join(PUBLIC_PROFILES)}"
+        )
+    return canonical
+
+
+def _profile_argument(value: str) -> str:
+    try:
+        return normalize_profile(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
 
 
 @dataclass(frozen=True)
@@ -195,16 +216,22 @@ def load_settings(
             raise ValueError(
                 f"Unknown preprocessing config section(s): {', '.join(sorted(unknown))}"
             )
-    profile = str(
-        (overrides or {}).get("profile") or loaded.get("profile") or DEFAULTS["profile"]
+    profile = normalize_profile(
+        str(
+            (overrides or {}).get("profile")
+            or loaded.get("profile")
+            or DEFAULTS["profile"]
+        )
     )
-    if profile not in PROFILE_DEFAULTS:
-        raise ValueError(f"Unknown ATAC preprocessing profile: {profile}")
     settings = _deep_merge(DEFAULTS, PROFILE_DEFAULTS[profile])
     settings = _deep_merge(settings, loaded)
     if overrides:
         settings = _deep_merge(settings, overrides)
     settings["profile"] = profile
+    resources = settings["resources"]
+    if "legacy_sample_memory_gb" in resources:
+        resources["sample_memory_gb"] = resources["legacy_sample_memory_gb"]
+        resources.pop("legacy_sample_memory_gb", None)
     provider = str(settings["download"].get("provider", "auto"))
     if provider not in {"auto", "ena", "sra"}:
         raise ValueError("download.provider must be auto, ena, or sra")
@@ -221,8 +248,7 @@ def load_settings(
 def write_default_config(path: str | Path, profile: str = "modern") -> Path:
     output = Path(path).expanduser()
     output.parent.mkdir(parents=True, exist_ok=True)
-    if profile not in PROFILE_DEFAULTS:
-        raise ValueError(f"Unknown ATAC preprocessing profile: {profile}")
+    profile = normalize_profile(profile)
     settings = _deep_merge(DEFAULTS, PROFILE_DEFAULTS[profile])
     settings["profile"] = profile
     output.write_text(yaml.safe_dump(settings, sort_keys=False), encoding="utf-8")
@@ -731,8 +757,7 @@ def prepare_reference(
 
 
 def dependency_report(profile: str = "modern") -> list[dict[str, str]]:
-    if profile not in PROFILE_EXECUTABLES:
-        raise ValueError(f"Unknown ATAC preprocessing profile: {profile}")
+    profile = normalize_profile(profile)
     required = PROFILE_EXECUTABLES[profile]
     rows = []
     optional = (
@@ -790,6 +815,7 @@ def _software_identity(profile: str = "modern") -> list[dict[str, str | int]]:
 
 
 def doctor(profile: str = "modern") -> int:
+    profile = normalize_profile(profile)
     rows = dependency_report(profile)
     print(f"profile\t{profile}")
     print("tool\trequired\tpath")
@@ -1078,7 +1104,7 @@ def process_sample(
     settings: dict[str, Any],
     resume: bool = True,
 ) -> dict[str, str]:
-    if settings.get("profile") == "legacy-atac":
+    if settings.get("profile") == "homer-atac":
         from fp_tools.tools.prepare_atac_legacy import process_legacy_sample
 
         return process_legacy_sample(sample, root, reference, settings, resume)
@@ -1629,13 +1655,13 @@ def run_preprocessing(args: argparse.Namespace) -> int:
             raise RuntimeError(
                 f"Only {available_gb:.1f} GiB RAM is available; this run requires {required_gb:.1f} GiB including the host reserve"
             )
-        if profile == "legacy-atac":
+        if profile == "homer-atac":
             per_sample = float(
-                settings["resources"].get("legacy_sample_memory_gb") or 16
+                settings["resources"].get("sample_memory_gb") or 16
             )
             if float(memory_gb) < per_sample:
                 raise RuntimeError(
-                    f"legacy-atac reserves {per_sample:g} GiB per active sample; increase --memory-gb"
+                    f"homer-atac reserves {per_sample:g} GiB per active sample; increase --memory-gb"
                 )
             parallel = min(parallel, max(1, int(float(memory_gb) // per_sample)))
     total_cores = int(settings["resources"]["cores"])
@@ -1724,8 +1750,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--profile",
-        choices=sorted(PROFILE_DEFAULTS),
-        help="Processing method: modern uses fastp, samtools, and MACS3; legacy-atac uses Trim Galore, Picard, and HOMER (default: modern).",
+        choices=PUBLIC_PROFILES,
+        type=_profile_argument,
+        help="Processing method: modern uses fastp, samtools, and MACS3; homer-atac uses Trim Galore, Picard, and HOMER (default: modern).",
     )
     parser.add_argument("--id-column", help="Explicit accession column name.")
     parser.add_argument("--sample-column", help="Explicit sample-name column.")

@@ -51,7 +51,7 @@ are already available locally.
 
 **Processing profiles**
 
-| Stage | Default profile | `legacy-atac` profile |
+| Stage | `modern` profile | `homer-atac` profile |
 |---|---|---|
 | Read preparation | fastp detects adapters, trims low-quality sequence, and discards reads shorter than 20 bases. FastQC can be run before trimming. | Trim Galore performs adapter and quality trimming and runs FastQC on the trimmed reads. |
 | Alignment | Bowtie2 uses its very-sensitive end-to-end mode and accepts fragments up to 2,000 bp. | Bowtie2 uses very-sensitive local alignment and accepts fragments up to 1,000 bp. |
@@ -59,8 +59,8 @@ are already available locally.
 | Peak calling | MACS3 calls paired-end fragments directly or uses the configured shift and extension for single-end reads, at q-value 0.01. | HOMER calls factor-style peaks with local enrichment 15, a 150,000 bp local window, and FDR 0.00001. Single-end libraries use HOMER's single-read tag mode. |
 | Coverage track | bedtools calculates coverage and scales it to 10 million reads or fragments. | HOMER creates a coverage track scaled to 10 million tags. |
 
-Use the default profile for new projects. Use `legacy-atac` when results need to
-be compared with ATAC-seq data processed using the nutrient-dataset method.
+Use the default `modern` profile for new projects. Choose `homer-atac` when a
+Trim Galore, Picard, and HOMER-based processing workflow is required.
 
 **Output**
 
@@ -82,15 +82,15 @@ prepare-atac \
   --outdir gse192390_atac
 ```
 
-To use the nutrient-dataset processing method, add
-`--profile legacy-atac` and choose a different output directory.
+To use the HOMER-based processing method, add `--profile homer-atac` and choose
+a different output directory.
 
 **Options**
 
 ```text
 usage: prepare-atac [-h] [--samples SAMPLES] [--genome GENOME]
                     [--outdir OUTDIR] [--config CONFIG]
-                    [--profile {legacy-atac,modern}]
+                    [--profile {modern,homer-atac}]
                     [--id-column ID_COLUMN] [--sample-column SAMPLE_COLUMN]
                     [--condition-column CONDITION_COLUMN]
                     [--include INCLUDE [INCLUDE ...]]
@@ -114,9 +114,9 @@ options:
   --outdir OUTDIR       Output project directory.
   --config CONFIG       Optional preprocessing YAML; CLI values override
                         packaged defaults.
-  --profile {legacy-atac,modern}
+  --profile {modern,homer-atac}
                         Processing method: modern uses fastp, samtools, and
-                        MACS3; legacy-atac uses Trim Galore, Picard, and HOMER
+                        MACS3; homer-atac uses Trim Galore, Picard, and HOMER
                         (default: modern).
   --id-column ID_COLUMN
                         Explicit accession column name.
@@ -357,7 +357,7 @@ usage: call-footprints [-h] [-s <bigwig>] [--signals [<bigwig> ...]] [-o <bigwig
                        [--call-candidates] [--top-n <int>] [--min-score <float>]
                        [--call-width <bp>] [--min-distance <bp>] [--fp-min <int>]
                        [--fp-max <int>] [--flank-min <int>] [--flank-max <int>]
-                       [--footprint-kernel {fast,legacy}] [--window <int>]
+                       [--footprint-kernel {fast,reference}] [--window <int>]
                        [--sample-names [<name> ...]] [--sample-table <tsv>]
                        [--layout {custom,project}] [--sample-output-root <directory>]
                        [--outdir <directory>] [--cores <int>] [--sample-workers <int>]
@@ -435,9 +435,8 @@ Parameters for score == footprint:
   --fp-max <int>                        Maximum footprint width (default: 50)
   --flank-min <int>                     Minimum range of flanking regions (default: 10)
   --flank-max <int>                     Maximum range of flanking regions (default: 30)
-  --footprint-kernel {fast,legacy}      Footprint scoring kernel (default: fast; use
-                                        legacy for exact historical floating-point
-                                        behavior)
+  --footprint-kernel {fast,reference}   Footprint scoring kernel (default: fast; use
+                                        reference for the original scalar implementation)
 
 Parameters for score == sum:
   --window <int>                        The window for calculation of sum (default: 100)
@@ -1015,7 +1014,7 @@ Input / output arguments:
                                         tools_aggregate.pdf)
   --output-txt                          Path to output file for aggregates in .txt-format
                                         (default: None)
-  --output-csv                          Legacy alias for aggregated signal CSV output
+  --output-csv                          Path to aggregated signal CSV output
                                         (default: None)
   --output_aggregated_signals           Path to CSV file for per-base aggregated signals
                                         (default: None)
@@ -1201,9 +1200,9 @@ plot-motif-aggregate-grid \
   --source-tsv project/reports/all_motif_aggregate_grid_source.tsv \
   --rows-per-page 16 \
   --fill-missing-profiles \
-  --rna-log2norm nutrient_rna_deseq2_log2norm_ruvr_k20.tsv.gz \
-  --rna-raw-counts nutrient_rna_raw_counts_ruvr_k20_gene_universe.tsv.gz \
-  --rna-sample-table nutrient_rna_sample_metadata.tsv \
+  --rna-log2norm rna_deseq2_log2norm.tsv.gz \
+  --rna-raw-counts rna_raw_counts.tsv.gz \
+  --rna-sample-table rna_sample_metadata.tsv \
   --motif-gene-map JASPAR2024_hg38.txt \
   --repeat-column-labels row
 ```

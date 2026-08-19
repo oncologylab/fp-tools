@@ -114,6 +114,16 @@ class CliAndConfigSmokeTest(unittest.TestCase):
         self.assertEqual(args.outputs, ["A_footprints.bw", "B_footprints.bw"])
         self.assertEqual(args.output_beds, ["A_candidates.bed", "B_candidates.bed"])
 
+    def test_call_footprints_uses_public_reference_kernel_name(self):
+        parser = add_scorebigwig_arguments(argparse.ArgumentParser())
+        reference = parser.parse_args(["--footprint-kernel", "reference"])
+        compatibility = parser.parse_args(["--footprint-kernel", "legacy"])
+        self.assertEqual(reference.footprint_kernel, "reference")
+        self.assertEqual(compatibility.footprint_kernel, "reference")
+        help_text = parser.format_help().lower()
+        self.assertIn("{fast,reference}", help_text)
+        self.assertNotIn("legacy", help_text)
+
     def test_atac_correct_accepts_batch_bam_and_peak_arguments(self):
         parser = add_atacorrect_arguments(argparse.ArgumentParser())
         args = parser.parse_args(
@@ -155,6 +165,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
         self.assertEqual(args.match_dir, ["results/motif_matches/sample"])
         self.assertEqual(args.motifs, ["SPIB", "CEBPB"])
         self.assertEqual(args.format, "html")
+        self.assertNotIn("legacy", parser.format_help().lower())
 
     def test_diff_footprints_accepts_sample_names_separate_from_conditions(self):
         parser = add_diff_footprints_arguments(argparse.ArgumentParser(prog="diff-footprints"))

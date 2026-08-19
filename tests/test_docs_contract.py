@@ -194,6 +194,13 @@ class DocsEntryPointContractTest(unittest.TestCase):
         ]:
             self.assertNotIn(stale, public_docs)
 
+    def test_api_reference_uses_general_purpose_names(self):
+        api = self.api_reference.lower()
+        for project_specific_term in ("nutrient", "legacy"):
+            self.assertNotIn(project_specific_term, api)
+        self.assertIn("--profile {modern,homer-atac}", api)
+        self.assertIn("--footprint-kernel {fast,reference}", api)
+
     def test_public_site_uses_branded_assets_and_responsive_demo_contracts(self):
         index = (ROOT / "docs" / "index.md").read_text(encoding="utf-8")
         reports = (ROOT / "docs" / "reports.md").read_text(encoding="utf-8")

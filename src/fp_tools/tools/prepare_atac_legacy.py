@@ -129,7 +129,7 @@ def _ensure_bigwig(output: Path, chrom_sizes: Path) -> None:
 def process_legacy_sample(
     sample, root: Path, reference, settings: dict[str, Any], resume: bool = True
 ) -> dict[str, str]:
-    """Run the legacy ATAC route while retaining modern project metadata."""
+    """Run the HOMER-based ATAC route while retaining standard project metadata."""
     from fp_tools.tools.prepare_atac import (
         MITO_CHROMS,
         _bam_count,
@@ -157,7 +157,7 @@ def process_legacy_sample(
     fastqs = [materialize_run_fastqs(run, fastq_dir, settings) for run in sample.runs]
     if not fastqs:
         raise ValueError(
-            f"legacy-atac did not resolve FASTQs for sample {sample.sample}"
+            f"homer-atac did not resolve FASTQs for sample {sample.sample}"
         )
     paired = all(r2 is not None for _, r2 in fastqs)
     if not paired and any(r2 is not None for _, r2 in fastqs):
@@ -428,7 +428,7 @@ def process_legacy_sample(
     metrics = {
         "sample": sample.sample,
         "condition": sample.condition,
-        "profile": "legacy-atac",
+        "profile": "homer-atac",
         "paired_end": paired,
         "usable_reads": max(1, _bam_count(final_bam) // (2 if paired else 1)),
         "peaks": sum(

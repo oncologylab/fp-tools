@@ -109,9 +109,9 @@ class PrepareAtacConfigTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Unknown"):
                 load_settings(path)
 
-    def test_legacy_profile_has_exact_atac_defaults_and_all_cores(self):
-        settings = load_settings(overrides={"profile": "legacy-atac"})
-        self.assertEqual(settings["profile"], "legacy-atac")
+    def test_homer_profile_has_expected_atac_defaults_and_all_cores(self):
+        settings = load_settings(overrides={"profile": "homer-atac"})
+        self.assertEqual(settings["profile"], "homer-atac")
         self.assertEqual(settings["align"]["max_insert"], 1000)
         self.assertEqual(settings["align"]["mapq"], 0)
         self.assertIn("--very-sensitive-local", settings["align"]["extra_args"])
@@ -119,7 +119,7 @@ class PrepareAtacConfigTest(unittest.TestCase):
         self.assertEqual(settings["peaks"]["homer_local_fold"], 15)
         self.assertEqual(
             settings["resources"]["cores"],
-            PROFILE_DEFAULTS["legacy-atac"]["resources"]["cores"],
+            PROFILE_DEFAULTS["homer-atac"]["resources"]["cores"],
         )
 
     def test_sort_memory_is_bounded_by_total_run_budget(self):
@@ -137,16 +137,30 @@ class PrepareAtacConfigTest(unittest.TestCase):
                 "profile: legacy-atac\nalign:\n  max_insert: 750\n", encoding="utf-8"
             )
             settings = load_settings(path, {"align": {"max_insert": 900}})
-            self.assertEqual(settings["profile"], "legacy-atac")
+            self.assertEqual(settings["profile"], "homer-atac")
             self.assertEqual(settings["align"]["max_insert"], 900)
 
     def test_writes_profile_specific_config(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "legacy.yml"
+            path = Path(tmp) / "homer.yml"
             write_default_config(path, "legacy-atac")
             text = path.read_text(encoding="utf-8")
-            self.assertIn("profile: legacy-atac", text)
+            self.assertIn("profile: homer-atac", text)
+            self.assertIn("sample_memory_gb: 16", text)
+            self.assertNotIn("legacy", text.lower())
             self.assertIn("homer_local_size: 150000", text)
+
+    def test_old_memory_setting_is_normalized(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "old.yml"
+            path.write_text(
+                "profile: legacy-atac\nresources:\n  legacy_sample_memory_gb: 20\n",
+                encoding="utf-8",
+            )
+            settings = load_settings(path)
+            self.assertEqual(settings["profile"], "homer-atac")
+            self.assertEqual(settings["resources"]["sample_memory_gb"], 20)
+            self.assertNotIn("legacy_sample_memory_gb", settings["resources"])
 
     def test_parser_has_simple_run_and_management_options(self):
         parser = build_parser()
@@ -155,8 +169,13 @@ class PrepareAtacConfigTest(unittest.TestCase):
         )
         self.assertTrue(args.dry_run)
         self.assertEqual(args.genome, "mm10")
-        legacy = parser.parse_args(["--profile", "legacy-atac", "--doctor"])
-        self.assertEqual(legacy.profile, "legacy-atac")
+        homer = parser.parse_args(["--profile", "homer-atac", "--doctor"])
+        self.assertEqual(homer.profile, "homer-atac")
+        compatibility = parser.parse_args(["--profile", "legacy-atac", "--doctor"])
+        self.assertEqual(compatibility.profile, "homer-atac")
+        help_text = parser.format_help().lower()
+        self.assertIn("{modern,homer-atac}", help_text)
+        self.assertNotIn("legacy", help_text)
         self.assertIsInstance(parser, argparse.ArgumentParser)
 
 

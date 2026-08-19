@@ -7,6 +7,16 @@ import os
 from fp_tools.utils.utilities import format_help_description, restricted_float, add_underscore_options
 from fp_tools.utils.logger import add_logger_args
 
+
+def _footprint_kernel_argument(value):
+	canonical = "reference" if value == "legacy" else value
+	if canonical not in {"fast", "reference"}:
+		raise argparse.ArgumentTypeError(
+			"footprint kernel must be one of: fast, reference"
+		)
+	return canonical
+
+
 #--------------------------------------------------------------------------------------------------------#
 def add_atacorrect_arguments(parser):
 
@@ -120,7 +130,7 @@ def add_scorebigwig_arguments(parser):
 	footprintargs.add_argument('--fp-max', metavar="<int>", type=int, help="Maximum footprint width (default: 50)", default=50)
 	footprintargs.add_argument('--flank-min', metavar="<int>", type=int, help="Minimum range of flanking regions (default: 10)", default=10)
 	footprintargs.add_argument('--flank-max', metavar="<int>", type=int, help="Maximum range of flanking regions (default: 30)", default=30)
-	footprintargs.add_argument('--footprint-kernel', choices=["fast", "legacy"], default="fast", help="Footprint scoring kernel (default: fast; use legacy for exact historical floating-point behavior)")
+	footprintargs.add_argument('--footprint-kernel', choices=["fast", "reference"], type=_footprint_kernel_argument, default="fast", help="Footprint scoring kernel (default: fast; use reference for the original scalar implementation)")
 	
 	sumargs = parser.add_argument_group('Parameters for score == sum')
 	sumargs.add_argument('--window', metavar="<int>", type=int, help="The window for calculation of sum (default: 100)", default=100)
@@ -343,7 +353,7 @@ def add_aggregate_arguments(parser):
 	IO.add_argument('--output', metavar="", help="Path to output plot (default: fp-tools_aggregate.pdf)", default="fp-tools_aggregate.pdf")
 	IO.add_argument('--outdir', metavar="<directory>", help="Project directory used with --layout project")
 	IO.add_argument('--output-txt', metavar="", help="Path to output file for aggregates in .txt-format (default: None)")
-	IO.add_argument('--output-csv', metavar="", default=None, help="Legacy alias for aggregated signal CSV output (default: None)")
+	IO.add_argument('--output-csv', metavar="", default=None, help="Path to aggregated signal CSV output (default: None)")
 	IO.add_argument('--output_aggregated_signals', metavar="", default=None, help="Path to CSV file for per-base aggregated signals (default: None)")
 	IO.add_argument('--output_aggregated_scores', metavar="", default=None, help="Path to CSV file for aggregated footprint-score table (default: None)")
 	IO.add_argument('--multiscale-npz', metavar="<npz>", help="Optional call-footprints --output-multiscale-npz sidecar to render as a scale-by-position aggregate figure")

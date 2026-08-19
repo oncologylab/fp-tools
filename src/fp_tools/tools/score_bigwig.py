@@ -236,7 +236,7 @@ def calculate_scores(regions, args):
             scores = fast_rolling_math(signal, args.window, "mean")
 
         elif args.score == "footprint":
-            if getattr(args, "footprint_kernel", "fast") == "legacy":
+            if getattr(args, "footprint_kernel", "fast") in {"reference", "legacy"}:
                 scores = footprint_score_array(signal, args.flank_min, args.flank_max, args.fp_min, args.fp_max)
             else:
                 scores = footprint_score_array_fast(signal, args.flank_min, args.flank_max, args.fp_min, args.fp_max)
