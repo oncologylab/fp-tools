@@ -1,7 +1,7 @@
 # [`review-multi-comparisons`](../../api.md#review-multi-comparisons)
 
-Combine multiple differential-footprint reports into one static browser with
-two condition selectors.
+Combine differential-footprint reports as a scalable browser bundle or one
+self-contained HTML report.
 
 ## Example command
 
@@ -40,6 +40,21 @@ review-multi-comparisons \
 Project mode defaults to
 `{project}/reports/review_multi_comparisons/index.html`. The directory is a
 portable unit; copying only `index.html` produces a broken report.
+
+## Standalone output
+
+Use `--output-html` instead of `--output-dir`. Aggregate profiles are optional,
+and `--labels` keeps repeated condition pairs distinct. The exact output is the
+path passed to `--output-html`; it is one portable HTML file with coordinated
+volcano, ranked-motif, logo, and SVG-export views. Aggregate controls appear
+only when profiles exist.
+
+```bash
+review-multi-comparisons \
+  --inputs baseline/report.html dose1/report.html dose2/report.html \
+  --labels Baseline "Dose 1" "Dose 2" \
+  --output-html review.html
+```
 
 Continue with the `--motif-grid` mode of [`plot-aggregate`](plot-aggregate.md), or
 see the [complete `review-multi-comparisons` reference](../../api.md#review-multi-comparisons).

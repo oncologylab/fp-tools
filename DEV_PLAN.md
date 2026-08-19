@@ -25,7 +25,8 @@ a separately planned breaking release explicitly changes the contract.
   known-motif matching, de novo motif preparation, and aggregate plotting.
 - Replicate-aware differential footprint reports, including per-sample motif
   matrices and empirical-Bayes residual-variance moderation with biological
-  samples as the inferential units, plus multi-comparison reviews.
+  samples as the inferential units, plus bundle and aggregate-free standalone
+  multi-comparison reviews.
 - Region-set differential footprinting for one sample or paired biological
   replicates, with equal region weighting, optional matching strata,
   resampling-based uncertainty, paired empirical-Bayes inference, and the same

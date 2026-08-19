@@ -80,6 +80,10 @@ DOCUMENTATION_RETURN_PAGES = {
     "demos/reports/region_set_HepG2_HNF4A_FOXA2/",
     "ENCODE-Cancer-Cell-lines-Footprinting/",
 }
+DOCUMENTATION_RETURN_PAGES = {
+    "demos/gui/fp-tools-gui-static-demo.html",
+    "ENCODE-Cancer-Cell-lines-Footprinting/",
+}
 DARK_MODE_PAGES = {
     "",
     "get-started/tool-overview/",

@@ -81,7 +81,7 @@ REQUIRED_FIELDS = {
     "diff-footprints": ("genome",),
     "normalize-bigwig": ("bigwigs", "background", "outdir"),
     "plot-aggregate": ("output",),
-    "review-multi-comparisons": ("inputs", "output_dir"),
+    "review-multi-comparisons": ("inputs",),
     "bulk-footprinting": ("sample_table", "comparison_table", "genome", "outdir"),
     "discover-motifs": ("outdir",),
     "summarize-motifs": ("out_tsv",),
@@ -114,6 +114,7 @@ FLAG_NAME_MAP = {
     "tfbs_model": "--tfbs-model",
     "input_html": "--input-html",
     "output_dir": "--output-dir",
+    "output_html": "--output-html",
     "match_dir": "--match-dir",
     "sample_dirs": "--sample-dirs",
     "comparison_axis": "--comparison-axis",
@@ -376,6 +377,14 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
                         errors.append(f"{job_name}: 'region_labels' must match the number of region BED files")
                 elif not str(item.get("peaks") or "").strip():
                     errors.append(f"{job_name}: missing required field 'peaks'")
+            if tool == "review-multi-comparisons":
+                output_dir = str(item.get("output_dir") or "").strip()
+                output_html = str(item.get("output_html") or "").strip()
+                project_dir = str(item.get("outdir") or "").strip()
+                if output_dir and output_html:
+                    errors.append(f"{job_name}: 'output_dir' and 'output_html' are mutually exclusive")
+                elif not output_dir and not output_html and not project_dir:
+                    errors.append(f"{job_name}: provide 'output_dir', 'output_html', or 'outdir'")
             if tool == "sc-footprinting" and not str(item.get("fragments") or "").strip():
                 errors.append(f"{job_name}: missing required field 'fragments'")
             if tool == "find-signature-fp":
