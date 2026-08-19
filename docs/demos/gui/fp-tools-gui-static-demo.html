@@ -35,6 +35,29 @@
     .menu-button {
       display: none;
     }
+    .documentation-link {
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--blue);
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 900;
+      min-height: 34px;
+      padding: 7px 11px;
+      position: fixed;
+      right: 14px;
+      text-decoration: none;
+      top: 12px;
+      z-index: 30;
+    }
+    .documentation-link:hover,
+    .documentation-link:focus-visible {
+      background: var(--soft-blue);
+      outline: 2px solid #72e0b2;
+      outline-offset: 2px;
+    }
     aside {
       background: var(--nav);
       color: #e5edf6;
@@ -294,6 +317,8 @@
   </style>
 </head>
 <body>
+  <a class="documentation-link" href="../../" target="_top"
+     aria-label="Back to fp-tools documentation">← Documentation</a>
   <button class="menu-button" type="button" aria-controls="preview-navigation"
           aria-expanded="false">☰ Menu</button>
   <div class="app">
