@@ -376,6 +376,27 @@ def audit(site_dir: Path) -> None:
                                 failures.append(
                                     f"{label}: repository controls are not right-aligned"
                                 )
+                        expected_tab = (
+                            "API Reference"
+                            if relative == "api/"
+                            else "GUI Demo"
+                            if relative == "gui/"
+                            else "Output Demo"
+                            if relative == "reports/"
+                            else "Get Started"
+                        )
+                        active_tabs = page.locator(
+                            ".fp-header-tabs .md-tabs__item--active .md-tabs__link"
+                        )
+                        if active_tabs.count() != 1:
+                            failures.append(
+                                f"{label}: expected one active global navigation item"
+                            )
+                        elif active_tabs.first.inner_text().strip() != expected_tab:
+                            failures.append(
+                                f"{label}: active global navigation item is not "
+                                f"{expected_tab}"
+                            )
                     if relative in {"api/", "gui/", "reports/"} and width >= 1280:
                         primary = page.locator(".md-sidebar--primary")
                         if primary.is_visible():
@@ -549,6 +570,28 @@ def audit(site_dir: Path) -> None:
                     if relative == "reports/" and embedded_frame is not None:
                         check_grouped_aggregate_legend(
                             embedded_frame, f"{label} embedded report", failures
+                        )
+                    if (
+                        relative == ""
+                        and width == 1440
+                        and height == 1000
+                        and scheme == "light"
+                    ):
+                        output_tab = page.locator(
+                            ".fp-header-tabs .md-tabs__link",
+                            has_text="Output Demo",
+                        )
+                        output_tab.evaluate("element => element.click()")
+                        page.wait_for_url(re.compile(r"/reports/$"), timeout=60_000)
+                        page.wait_for_function(
+                            """() => {
+                              const active = document.querySelector(
+                                ".fp-header-tabs .md-tabs__item--active .md-tabs__link"
+                              );
+                              return active?.textContent.trim() === "Output Demo" &&
+                                active.getAttribute("aria-current") === "page";
+                            }""",
+                            timeout=60_000,
                         )
                     page.close()
         browser.close()
