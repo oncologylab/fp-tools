@@ -181,6 +181,18 @@ class EncodeCancerBrowserTest(unittest.TestCase):
         self.assertEqual(observed, {frozenset(pair) for pair in combinations(names, 2)})
         self.assertEqual(len(observed) * 2, 42)
 
+    def test_every_static_comparison_uses_all_motif_matches_for_aggregates(self):
+        browser = ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting"
+        metadata = json.loads((browser / "data/metadata.json").read_text(encoding="utf-8"))
+        self.assertEqual(metadata["aggregate_site_set"], "all")
+        for record in metadata["comparisons"]:
+            self.assertEqual(record["aggregate_site_set"], "all")
+            payload = BUILDER.read_browser_payload(browser / record["file"])
+            self.assertEqual(payload["aggregate"]["site_set"], "all")
+            for motif in payload["aggregate"]["motifs"]:
+                counts = {condition["n_sites"] for condition in motif["conditions"]}
+                self.assertEqual(len(counts), 1, (record["comparison"], motif["prefix"]))
+
     def test_each_static_payload_is_bounded(self):
         data = ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/data"
         for path in (data / "reports").glob("*.json.gz"):

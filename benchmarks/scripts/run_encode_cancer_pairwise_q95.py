@@ -51,6 +51,7 @@ EXPECTED_CONDITIONS = ("A549", "HCT116", "HepG2", "K562", "MCF-7", "PC-3", "Panc
 EXPECTED_REPLICATES = {"A549": 3, "HCT116": 2, "HepG2": 3, "K562": 3, "MCF-7": 2, "PC-3": 2, "Panc1": 2}
 EXPECTED_MOTIFS = 1019
 EXPECTED_PAIRS = 21
+EXPECTED_AGGREGATE_SITE_SET = "all"
 REFERENCE_JSON_SHA256 = "761181a913f6f538aa47c3af07d005fa34f30f38f986ded0152f2316fc40ad6e"
 REPORT_LABEL = "Normalization: Q95-scale; aggregate sites: all motif matches; FDR < 0.001; |Δ FP score| > 0.1; Bound Sites > 500"
 
@@ -306,6 +307,17 @@ def validate_payload(payload: dict, expected_samples: list[str] | None = None) -
     motifs = payload.get("aggregate", {}).get("motifs", [])
     if not motifs or len({motif["prefix"] for motif in motifs}) != len(motifs):
         raise ValueError("Report payload lacks valid aggregate profiles")
+    if payload.get("aggregate", {}).get("site_set") != EXPECTED_AGGREGATE_SITE_SET:
+        raise ValueError("Aggregate profiles were not calculated from all motif matches")
+    for motif in motifs:
+        site_counts = {
+            int(condition.get("n_sites", -1))
+            for condition in motif.get("conditions", [])
+        }
+        if len(site_counts) != 1 or next(iter(site_counts), 0) <= 0:
+            raise ValueError(
+                f"All-site aggregate count differs between conditions: {motif.get('prefix')}"
+            )
     observed_samples = {
         row["name"]
         for motif in motifs
@@ -377,6 +389,7 @@ def seed_reference_locked(pair: Path) -> Path:
         "source_uncompressed_json_sha256": raw_digest,
         "points": len(payload["points"]),
         "aggregate_motifs": len(payload["aggregate"]["motifs"]),
+        "aggregate_site_set": EXPECTED_AGGREGATE_SITE_SET,
         "samples": ["K562_rep1", "K562_rep2", "K562_rep3", "HepG2_rep1", "HepG2_rep2", "HepG2_rep3"],
         "results_sha256": sha256(result_table),
         "completed_at": utc_now(),
@@ -523,6 +536,7 @@ def run_pair(comparison: str, *, cores: int, allow_download: bool, keep_work: bo
         "source_uncompressed_json_sha256": source_digest,
         "points": len(payload["points"]),
         "aggregate_motifs": len(payload["aggregate"]["motifs"]),
+        "aggregate_site_set": EXPECTED_AGGREGATE_SITE_SET,
         "results_sha256": sha256(result_table),
         "completed_at": utc_now(),
         **metrics,

@@ -23,6 +23,7 @@ COMPARISONS = ROOT / "benchmarks/manifests/encode_cancer_7line_20260814_comparis
 REFERENCE_REPORT = ROOT / "docs/demos/reports/diff_footprints_K562_HepG2.html"
 EXPECTED_MOTIFS = 1019
 EXPECTED_PAIRS = 21
+EXPECTED_AGGREGATE_SITE_SET = "all"
 PROFILE_SHARDS = 16
 RELEASE_DATE = "2026-08-14"
 REFERENCE_SCIENTIFIC_SHA256 = "ae9c8abca29096a0f5b10bbb0952e1dd41c1c55a2344075ba0e17822b401812a"
@@ -51,6 +52,17 @@ def read_payload(path: Path) -> dict:
         raise ValueError(f"{path} does not contain {EXPECTED_MOTIFS} motifs")
     if len(payload.get("conditions", [])) != 2 or not payload.get("aggregate", {}).get("motifs"):
         raise ValueError(f"{path} is not a complete differential-report payload")
+    if payload.get("aggregate", {}).get("site_set") != EXPECTED_AGGREGATE_SITE_SET:
+        raise ValueError(f"{path} does not use all motif matches for aggregate profiles")
+    for motif in payload["aggregate"]["motifs"]:
+        counts = {
+            int(condition.get("n_sites", -1))
+            for condition in motif.get("conditions", [])
+        }
+        if len(counts) != 1 or next(iter(counts), 0) <= 0:
+            raise ValueError(
+                f"{path} has condition-specific aggregate sites for {motif.get('prefix')}"
+            )
     return payload
 
 
@@ -230,6 +242,7 @@ def build(*, project: Path, site: Path, allow_partial: bool) -> None:
             ],
             "motifs": len(payload["points"]),
             "aggregate_motifs": len(payload["aggregate"]["motifs"]),
+            "aggregate_site_set": payload["aggregate"]["site_set"],
         })
     frame = pd.DataFrame(long_rows)
     if not frame.empty:
@@ -249,6 +262,7 @@ def build(*, project: Path, site: Path, allow_partial: bool) -> None:
         "schema": "fp-tools.encode-cancer-static-browser.v2",
         "release_date": RELEASE_DATE,
         "method": "Pair-specific released IDR-peak union; corrected cut-site q95 scaling; fp-tools footprint scoring",
+        "aggregate_site_set": EXPECTED_AGGREGATE_SITE_SET,
         "conditions": conditions,
         "comparisons": metadata_records,
         "downloads": {"all_results": "data/all_pairwise_results.tsv.gz"},
@@ -280,6 +294,8 @@ def verify(site: Path, *, allow_partial: bool) -> None:
         raise ValueError(f"Static site exposes {expected}, not {EXPECTED_PAIRS}, comparisons")
     if len(metadata["conditions"]) != 7 or sum(len(item["samples"]) for item in metadata["conditions"]) != 17:
         raise ValueError("Static site does not expose the locked seven-line, 17-sample design")
+    if metadata.get("aggregate_site_set") != EXPECTED_AGGREGATE_SITE_SET:
+        raise ValueError("Static site does not declare all-site aggregate profiles")
     expected_logos = reference_logo_pngs()
     if metadata.get("logos", {}).get("count") != EXPECTED_MOTIFS:
         raise ValueError("Static site does not declare all 1,019 motif logos")
@@ -287,6 +303,8 @@ def verify(site: Path, *, allow_partial: bool) -> None:
         if (site / f"data/logos/{prefix}.png").read_bytes() != expected:
             raise ValueError(f"Static motif logo differs from the preserved report: {prefix}")
     for record in metadata["comparisons"]:
+        if record.get("aggregate_site_set") != EXPECTED_AGGREGATE_SITE_SET:
+            raise ValueError(f"Static comparison is not all-site: {record['comparison']}")
         path = site / record["file"]
         if sha256(path) != record["payload_sha256"]:
             raise ValueError(f"Static payload checksum mismatch: {record['comparison']}")
