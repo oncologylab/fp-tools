@@ -9,15 +9,8 @@ six-sample ENCODE design and the complete seven-cell-line tables.
 ## Example command
 
 ```bash
-bulk-footprinting \
-  --sample-table samples.tsv \
-  --comparison-table comparisons.tsv \
-  --genome hg38.fa.gz \
-  --blacklist hg38.blacklist.bed \
-  --plot-aggregate all \
-  --review-format auto \
-  --outdir project \
-  --cores 8
+bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv --genome hg38.fa.gz \
+  --blacklist hg38.blacklist.bed --plot-aggregate all --review-format auto --outdir project --cores 8
 ```
 
 ## Primary inputs

@@ -5,8 +5,7 @@ Run one or more fp-tools jobs from a reusable YAML configuration.
 ## Example command
 
 ```bash
-run-yaml-workflow \
-  --config examples/gui_configs/diff_footprints_single.yml
+run-yaml-workflow --config examples/gui_configs/diff_footprints_single.yml
 ```
 
 ## Primary inputs

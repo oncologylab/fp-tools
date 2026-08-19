@@ -9,11 +9,7 @@ Multiple user-defined BED files are supported through `--TFBS`. Multiple
 ## Example command
 
 ```bash
-plot-aggregate \
-  --sample-table project/metadata/samples.tsv \
-  --motifs SPIB CEBPB \
-  --site-set bound \
-  --outdir project
+plot-aggregate --sample-table project/metadata/samples.tsv --motifs SPIB CEBPB --site-set bound --outdir project
 ```
 
 ## Primary inputs

@@ -51,11 +51,7 @@ recommended for downloaded files. Relative paths are interpreted from the
 directory where the command is run.
 
 ```bash
-prepare-atac \
-  --samples encode_hepg2_k562_fastq_urls.tsv \
-  --genome hg38 \
-  --outdir project \
-  --cores 8
+prepare-atac --samples encode_hepg2_k562_fastq_urls.tsv --genome hg38 --outdir project --cores 8
 ```
 
 The downstream aligned-data table is written to
@@ -105,27 +101,16 @@ becomes the output-directory name.
 ## Run the complete aligned-data workflow
 
 ```bash
-bulk-footprinting \
-  --sample-table encode_hepg2_k562_bams.tsv \
-  --comparison-table encode_hepg2_k562_comparisons.tsv \
-  --genome hg38.fa.gz \
-  --blacklist hg38.blacklist.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project \
-  --cores 8
+bulk-footprinting --sample-table encode_hepg2_k562_bams.tsv --comparison-table encode_hepg2_k562_comparisons.tsv \
+  --genome hg38.fa.gz --blacklist hg38.blacklist.bed --motif-db jaspar2026_vertebrates --outdir project --cores 8
 ```
 
 Validate table contents and see the expanded commands before beginning the
 long run:
 
 ```bash
-bulk-footprinting \
-  --sample-table encode_hepg2_k562_bams.tsv \
-  --comparison-table encode_hepg2_k562_comparisons.tsv \
-  --genome hg38.fa.gz \
-  --blacklist hg38.blacklist.bed \
-  --outdir project \
-  --dry-run
+bulk-footprinting --sample-table encode_hepg2_k562_bams.tsv --comparison-table encode_hepg2_k562_comparisons.tsv \
+  --genome hg38.fa.gz --blacklist hg38.blacklist.bed --outdir project --dry-run
 ```
 
 The wrapper runs `atac-correct`, `call-footprints`, `match-motifs`,

@@ -6,13 +6,8 @@ pseudobulk inputs.
 ## Example command
 
 ```bash
-pseudobulk-fragments \
-  --fragments pbmc_fragments.tsv.gz \
-  --annotations cell_annotations.tsv \
-  --group-by cell_type \
-  --genome-sizes hg38.chrom.sizes \
-  --write-cutsite-bigwigs \
-  --outdir project/pseudobulk/fragments
+pseudobulk-fragments --fragments pbmc_fragments.tsv.gz --annotations cell_annotations.tsv --group-by cell_type \
+  --genome-sizes hg38.chrom.sizes --write-cutsite-bigwigs --outdir project/pseudobulk/fragments
 ```
 
 ## Primary inputs

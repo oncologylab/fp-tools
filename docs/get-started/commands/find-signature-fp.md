@@ -6,12 +6,8 @@ motif analyses.
 ## Example command
 
 ```bash
-find-signature-fp \
-  --annotations cell_annotations.tsv \
-  --fragments pbmc_fragments.tsv.gz \
-  --h5ad pbmc_embedding.h5ad \
-  --tf-site-dir marker_motif_sites \
-  --all-motif-results project/pseudobulk/pseudobulk_diff_footprints_results.txt \
+find-signature-fp --annotations cell_annotations.tsv --fragments pbmc_fragments.tsv.gz --h5ad pbmc_embedding.h5ad \
+  --tf-site-dir marker_motif_sites --all-motif-results project/pseudobulk/pseudobulk_diff_footprints_results.txt \
   --outdir project/pseudobulk/signature_fp
 ```
 

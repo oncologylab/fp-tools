@@ -17,13 +17,8 @@ when motif locations and per-sample motif summaries are needed.
 ## Example command
 
 ```bash
-match-motifs \
-  --signals A_footprints.bw B_footprints.bw \
-  --sample-names A B \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --sample-output-root project/samples
+match-motifs --signals A_footprints.bw B_footprints.bw --sample-names A B --genome hg38.fa.gz \
+  --peaks merged_peaks.bed --motif-db jaspar2026_vertebrates --sample-output-root project/samples
 ```
 
 ## Primary inputs

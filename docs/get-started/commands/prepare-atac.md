@@ -16,10 +16,7 @@ files already exist. Before a large job, run
 ## Example command
 
 ```bash
-prepare-atac \
-  --samples metadata.tsv \
-  --genome hg38 \
-  --outdir project
+prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 ```
 
 ## Primary inputs

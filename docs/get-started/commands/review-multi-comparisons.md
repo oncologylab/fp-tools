@@ -6,13 +6,10 @@ self-contained HTML report.
 ## Example command
 
 ```bash
-review-multi-comparisons \
-  --inputs project/comparisons \
-  --output-dir project/reports/review_multi_comparisons \
+review-multi-comparisons --inputs project/comparisons --output-dir project/reports/review_multi_comparisons \
   --default-comparison "HNF4A + FOXA2" "No HNF4A/FOXA2" \
   --default-aggregate-motifs MA1494.2 MA0484.3 MA0047.4 MA0148.5 MA0046.3 MA0153.2 MA0102.5 MA0466.4 \
-  --default-aggregate-plots 8 \
-  --documentation-url https://oncologylab.github.io/fp-tools/
+  --default-aggregate-plots 8 --documentation-url https://oncologylab.github.io/fp-tools/
 ```
 
 ## Primary inputs
@@ -50,10 +47,8 @@ volcano, ranked-motif, logo, and SVG-export views. Aggregate controls appear
 only when profiles exist.
 
 ```bash
-review-multi-comparisons \
-  --inputs baseline/report.html dose1/report.html dose2/report.html \
-  --labels Baseline "Dose 1" "Dose 2" \
-  --output-html review.html
+review-multi-comparisons --inputs baseline/report.html dose1/report.html dose2/report.html \
+  --labels Baseline "Dose 1" "Dose 2" --output-html review.html
 ```
 
 Continue with the `--motif-grid` mode of [`plot-aggregate`](plot-aggregate.md), or

@@ -6,10 +6,7 @@ commands.
 ## Example command
 
 ```bash
-fp-tools-gui \
-  --host 0.0.0.0 \
-  --port 8891 \
-  --run-dir project/gui_runs
+fp-tools-gui --host 0.0.0.0 --port 8891 --run-dir project/gui_runs
 ```
 
 ## Primary inputs

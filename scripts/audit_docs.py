@@ -202,6 +202,38 @@ def check_grouped_aggregate_legend(surface, label: str, failures: list[str]) -> 
     width_control.dispatch_event("input")
 
 
+def check_wide_command_layout(page, label: str, failures: list[str]) -> None:
+    """Confirm command guides use their available desktop content width."""
+    metrics = page.evaluate(
+        """() => {
+          const content = document.querySelector(".md-typeset");
+          const selectors = {
+            paragraph: ".md-typeset > p",
+            list: ".md-typeset > ul, .md-typeset > ol",
+            command: ".md-typeset .highlight",
+            table: ".md-typeset .md-typeset__table"
+          };
+          const contentWidth = content?.getBoundingClientRect().width || 0;
+          const widths = {};
+          for (const [name, selector] of Object.entries(selectors)) {
+            const element = document.querySelector(selector);
+            widths[name] = element?.getBoundingClientRect().width || null;
+          }
+          return {contentWidth, widths};
+        }"""
+    )
+    content_width = metrics["contentWidth"]
+    if not content_width:
+        failures.append(f"{label}: command-guide content width is unavailable")
+        return
+    for name, width in metrics["widths"].items():
+        if width is not None and width < content_width * 0.9:
+            failures.append(
+                f"{label}: {name} uses only {width:.0f}px of "
+                f"{content_width:.0f}px available content width"
+            )
+
+
 def audit(site_dir: Path) -> None:
     failures: list[str] = []
     with serve(site_dir) as base_url, sync_playwright() as playwright:
@@ -384,6 +416,12 @@ def audit(site_dir: Path) -> None:
                             failures.append(
                                 f"{label}: unexpected body font family {family}"
                             )
+                    if (
+                        relative.startswith("get-started/commands/")
+                        and width >= 1280
+                        and scheme == "light"
+                    ):
+                        check_wide_command_layout(page, label, failures)
                     if width >= 1280 and relative not in STANDALONE_DEMO_PAGES:
                         header = page.locator(".md-header__inner")
                         tabs = page.locator(".fp-header-tabs")

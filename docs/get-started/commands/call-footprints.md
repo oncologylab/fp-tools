@@ -17,11 +17,8 @@ produces stronger footprint evidence.
 ## Example command
 
 ```bash
-call-footprints \
-  --signals A_corrected.bw B_corrected.bw \
-  --sample-names A B \
-  --regions merged_peaks.bed \
-  --sample-output-root project/samples
+call-footprints --signals A_corrected.bw B_corrected.bw --sample-names A B \
+  --regions merged_peaks.bed --sample-output-root project/samples
 ```
 
 ## Primary inputs

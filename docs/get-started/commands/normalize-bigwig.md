@@ -14,13 +14,8 @@ shared signal scale before downstream scoring or plotting.
 ## Example command
 
 ```bash
-normalize-bigwig \
-  --sample-table project/metadata/samples.tsv \
-  --background project/peaks/merged_peaks_filtered.bed \
-  --outdir project \
-  --method background-scale \
-  --stat q95 \
-  --target median
+normalize-bigwig --sample-table project/metadata/samples.tsv --background project/peaks/merged_peaks_filtered.bed \
+  --outdir project --method background-scale --stat q95 --target median
 ```
 
 ## Primary inputs

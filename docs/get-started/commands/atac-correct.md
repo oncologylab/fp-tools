@@ -17,11 +17,7 @@ footprint scoring.
 ## Example command
 
 ```bash
-atac-correct \
-  --sample-table project/metadata/samples.tsv \
-  --genome hg38.fa.gz \
-  --blacklist hg38.blacklist.bed \
-  --outdir project
+atac-correct --sample-table project/metadata/samples.tsv --genome hg38.fa.gz --blacklist hg38.blacklist.bed --outdir project
 ```
 
 ## Primary inputs

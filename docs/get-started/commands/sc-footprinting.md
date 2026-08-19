@@ -6,16 +6,9 @@ signature reporting for single-cell ATAC-seq data.
 ## Example command
 
 ```bash
-sc-footprinting \
-  --fragments pbmc_fragments.tsv.gz \
-  --annotations cell_annotations.tsv \
-  --h5ad cell_embedding.h5ad \
-  --group-by cell_type \
-  --genome-sizes hg38.chrom.sizes \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project/pseudobulk
+sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations.tsv --h5ad cell_embedding.h5ad \
+  --group-by cell_type --genome-sizes hg38.chrom.sizes --genome hg38.fa.gz --peaks merged_peaks.bed \
+  --motif-db jaspar2026_vertebrates --outdir project/pseudobulk
 ```
 
 ## Primary inputs

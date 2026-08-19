@@ -5,10 +5,8 @@ Summarize MEME, STREME, DREME, and Tomtom results in a compact report.
 ## Example command
 
 ```bash
-summarize-motifs \
-  --meme-txt project/de_novo/sample/streme/streme.txt \
-  --tomtom-tsv project/de_novo/sample/tomtom/tomtom.tsv \
-  --out-tsv project/de_novo/sample/motif_summary.tsv
+summarize-motifs --meme-txt project/de_novo/sample/streme/streme.txt \
+  --tomtom-tsv project/de_novo/sample/tomtom/tomtom.tsv --out-tsv project/de_novo/sample/motif_summary.tsv
 ```
 
 ## Primary inputs

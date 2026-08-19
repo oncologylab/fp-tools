@@ -16,13 +16,8 @@ user-defined region sets measured in the same sample(s).
 ## Example command
 
 ```bash
-diff-footprints \
-  --sample-table project/metadata/samples.tsv \
-  --comparison-table project/metadata/comparisons.tsv \
-  --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks_filtered.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project
+diff-footprints --sample-table project/metadata/samples.tsv --comparison-table project/metadata/comparisons.tsv \
+  --genome hg38.fa.gz --peaks project/peaks/merged_peaks_filtered.bed --motif-db jaspar2026_vertebrates --outdir project
 ```
 
 ## Primary inputs

@@ -6,13 +6,8 @@ an existing FASTA file.
 ## Example command
 
 ```bash
-discover-motifs \
-  --candidates project/samples/sample/footprints/sample_candidate_footprints.bed \
-  --genome hg38.fa.gz \
-  --flank 75 \
-  --method streme \
-  --known-motif-db jaspar2026_vertebrates \
-  --outdir project/de_novo/sample
+discover-motifs --candidates project/samples/sample/footprints/sample_candidate_footprints.bed --genome hg38.fa.gz \
+  --flank 75 --method streme --known-motif-db jaspar2026_vertebrates --outdir project/de_novo/sample
 ```
 
 ## Primary inputs

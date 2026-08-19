@@ -118,7 +118,7 @@ textarea {
 .md-typeset > p,
 .md-typeset > ul,
 .md-typeset > ol {
-  max-width: 78ch;
+  max-width: none;
 }
 
 .md-typeset h1 {

@@ -13,19 +13,15 @@ measurements of the same region classes.
 ## Example command
 
 ```bash
-diff-footprints \
-  --comparison-axis regions \
+diff-footprints --comparison-axis regions \
   --signals HepG2_rep1_footprints.bw HepG2_rep2_footprints.bw HepG2_rep3_footprints.bw \
   --sample-names "HepG2 rep 1" "HepG2 rep 2" "HepG2 rep 3" \
   --regions HNF4A_FOXA2.bed HNF4A_only.bed FOXA2_only.bed No_HNF4A_FOXA2.bed \
-  --region-labels "HNF4A + FOXA2" "HNF4A only" "FOXA2 only" "No HNF4A/FOXA2" \
-  --region-strata-column 4 \
-  --genome hg38.fa \
-  --motif-db jaspar2026_vertebrates \
+  --region-labels "HNF4A + FOXA2" "HNF4A only" "FOXA2 only" "No HNF4A/FOXA2" --region-strata-column 4 \
+  --genome hg38.fa --motif-db jaspar2026_vertebrates \
   --aggregate-signals HepG2_rep1_corrected.bw HepG2_rep2_corrected.bw HepG2_rep3_corrected.bw \
   --plot-aggregate-motifs MA1494.2 MA0484.3 MA0047.4 MA0148.5 MA0046.3 MA0153.2 MA0102.5 MA0466.4 \
-  --default-aggregate-plots 8 \
-  --outdir HepG2_region_comparison
+  --default-aggregate-plots 8 --outdir HepG2_region_comparison
 ```
 
 The primary effect is the matching-stratum-adjusted difference in region-level
