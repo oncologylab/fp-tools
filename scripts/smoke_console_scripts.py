@@ -7,7 +7,9 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import sys
+import sysconfig
 import tomllib
 
 
@@ -28,7 +30,7 @@ def main() -> int:
     parser.add_argument(
         "--bin-dir",
         type=Path,
-        default=Path(sys.executable).parent,
+        default=Path(sysconfig.get_path("scripts")),
         help="Directory containing installed console scripts.",
     )
     args = parser.parse_args()
@@ -36,9 +38,12 @@ def main() -> int:
     failures = []
     env = os.environ.copy()
     for command in console_scripts():
-        executable = args.bin_dir / command
+        executable = shutil.which(command, path=str(args.bin_dir))
+        if executable is None:
+            failures.append((command, 127, f"not found in {args.bin_dir}"))
+            continue
         result = subprocess.run(
-            [str(executable), "--help"],
+            [executable, "--help"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
             text=True,

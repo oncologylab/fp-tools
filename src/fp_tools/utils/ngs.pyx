@@ -2,7 +2,7 @@
 
 """Classes for working with NGS data such as reads and read lists."""
 
-import pysam
+from fp_tools.utils.alignment import index_alignment, open_alignment
 from collections import Counter
 
 import time
@@ -38,10 +38,10 @@ def index_bam(bam_obj, logger=None):
 	except ValueError:
 		logger.warn("Alignment file <{0}> has no .bai-index. Creating one now.".format(filename))
 
-		pysam.index(filename, filename + ".bai")
+		index_alignment(filename)
 		logger.info("Succesfully created index: {0}".format(filename + ".bai"))
 
-		bam_obj = pysam.AlignmentFile(filename)	#open bam again to include index 
+		bam_obj = open_alignment(filename)	#open bam again to include index
 
 	return(bam_obj)
 

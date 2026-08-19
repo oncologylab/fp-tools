@@ -20,7 +20,10 @@ from matplotlib.colors import ListedColormap, TwoSlopeNorm
 from matplotlib.ticker import MaxNLocator
 import numpy as np
 import pandas as pd
-import pysam
+try:
+    import pysam
+except ImportError:  # Fragment scanning remains available without tabix on Windows.
+    pysam = None
 from sklearn.neighbors import NearestNeighbors
 
 
@@ -287,7 +290,7 @@ def ensure_tabix_index(fragments: Path, create_index: bool) -> bool:
     index_path = Path(str(fragments) + ".tbi")
     if index_path.exists():
         return True
-    if not create_index:
+    if not create_index or pysam is None:
         return False
     pysam.tabix_index(str(fragments), preset="bed", force=True, keep_original=True)
     return index_path.exists()

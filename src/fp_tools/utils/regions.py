@@ -6,7 +6,7 @@ import numpy as np
 import sys
 import re
 from copy import deepcopy
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 from collections import Counter
 import logging
 import traceback

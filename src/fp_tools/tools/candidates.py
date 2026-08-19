@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 
 
 @dataclass(frozen=True)

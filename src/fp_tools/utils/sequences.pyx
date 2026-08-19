@@ -8,7 +8,7 @@ import cython
 from libc.math cimport log2
 import sys
 
-import pysam
+from fp_tools.utils.fasta import open_fasta
 complement = {0:1, 1:0, 2:3, 3:2}
 
 
@@ -425,7 +425,7 @@ def get_gc_content(regions, fasta):
 	""" Get GC content from regions in fasta """
 	gc = 0
 	total = 0
-	fasta_obj = pysam.FastaFile(fasta)
+	fasta_obj = open_fasta(fasta)
 	for region in regions:
 		seq = fasta_obj.fetch(region.chrom, region.start, region.end)
 		gc += sum([1 for nuc in seq if (nuc == "G" or nuc == "g" or nuc == "C" or nuc == "c")])

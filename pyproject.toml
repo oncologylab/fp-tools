@@ -10,19 +10,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fp-tools-bio"
-version = "0.1.18"
+version = "0.2.0rc1"
 description = "Standalone footprint tools with vendored Cython internals"
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Yaoxiang Li" }]
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 keywords = ["ATAC-seq", "footprinting", "motif", "chromatin", "bioinformatics"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
+  "Operating System :: Microsoft :: Windows :: Windows 10",
+  "Operating System :: Microsoft :: Windows :: Windows 11",
+  "Operating System :: MacOS",
   "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Cython",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
@@ -31,31 +36,29 @@ classifiers = [
 dependencies = [
   "numpy>=1.22,<3.0",
   "scipy>=1.16,<2.0",
-  "pysam>=0.23.3,<0.24.0",
-  "pyBigWig>=0.3.24,<0.4.0",
+  "pysam>=0.23.3,<0.24.0; platform_system != 'Windows'",
+  "bamnostic>=1.3,<2.0; platform_system == 'Windows'",
+  "pyBigWig>=0.3.24,<0.4.0; platform_system == 'Linux' and platform_machine == 'x86_64'",
+  "pybigtools>=0.3.0,<0.4.0",
+  "pyfastx>=2.3.1,<3.0",
   "matplotlib>=3.10,<4.0",
   "pandas>=2.3.3,<3.0",
   "seaborn>=0.13.2,<0.14.0",
-  "pybedtools>=0.12,<0.13",
   "scikit-learn>=1.5,<2.0",
   "tqdm>=4.66,<5.0",
   "kneed>=0.8.5,<0.9.0",
   "adjustText>=1.3.0,<2.0.0",
-  "moods-python>=1.9.4.1,<2.0.0.0",
   "biopython>=1.85,<2.0",
   "logomaker>=0.8.7,<0.9.0",
   "xlsxwriter>=3.2.9,<4.0.0",
   "anndata>=0.12,<0.13",
-  "PyYAML>=6.0,<7.0"
+  "PyYAML>=6.0,<7.0",
+  "streamlit>=1.44,<2.0"
 ]
 
-# Optional feature groups keep the core CLI/scientific install light for cluster and
-# container environments, which typically do not need the Streamlit GUI layer.
 [project.optional-dependencies]
-# Streamlit GUI wrapper: pip install "fp-tools-bio[gui]"
-gui = ["streamlit>=1.44,<2.0"]
-# Convenience meta-extra that pulls in every optional feature.
-all = ["streamlit>=1.44,<2.0"]
+gui = []
+all = []
 docs = [
   "mkdocs>=1.6,<2.0",
   "mkdocs-material>=9.5,<10.0",
@@ -123,10 +126,24 @@ testpaths = ["tests"]
 norecursedirs = ["data", "site", ".git", ".venv"]
 pythonpath = ["."]
 
+[tool.cibuildwheel]
+build = "cp311-* cp312-* cp313-*"
+skip = "*-musllinux_*"
+test-command = [
+  "python -m pip check",
+  "atac-correct --help",
+  "call-footprints --help",
+  "diff-footprints --help",
+  "fp-tools-gui --help"
+]
+
+[tool.cibuildwheel.macos]
+environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
+
 # --- Poetry mirror of the important bits so `poetry build` works too ---
 [tool.poetry]
 name = "fp-tools-bio"
-version = "0.1.18"
+version = "0.2.0rc1"
 description = "Standalone footprint tools with vendored Cython internals"
 authors = ["Yaoxiang Li"]
 readme = "README.md"
@@ -134,34 +151,35 @@ packages = [{ include = "fp_tools", from = "src" }]
 include = ["src/fp_tools/resources/motifs/*.txt", "src/fp_tools/resources/static_browser/*"]
 
 [tool.poetry.dependencies]
-python = ">=3.12,<4.0"
+python = ">=3.11,<4.0"
 numpy = ">=1.22,<3.0"
 scipy = ">=1.16,<2.0"
-pysam = ">=0.23.3,<0.24.0"
-pybigwig = ">=0.3.24,<0.4.0"
+pysam = { version = ">=0.23.3,<0.24.0", markers = "platform_system != 'Windows'" }
+bamnostic = { version = ">=1.3,<2.0", markers = "platform_system == 'Windows'" }
+pybigwig = { version = ">=0.3.24,<0.4.0", markers = "platform_system == 'Linux' and platform_machine == 'x86_64'" }
+pybigtools = ">=0.3.0,<0.4.0"
+pyfastx = ">=2.3.1,<3.0"
 matplotlib = ">=3.10,<4.0"
 pandas = ">=2.3.3,<3.0"
 seaborn = ">=0.13.2,<0.14.0"
-pybedtools = ">=0.12,<0.13"
 scikit-learn = ">=1.5,<2.0"
 tqdm = ">=4.66,<5.0"
 kneed = ">=0.8.5,<0.9.0"
 adjusttext = ">=1.3.0,<2.0.0"
-moods-python = ">=1.9.4.1,<2.0.0.0"
 biopython = ">=1.85,<2.0"
 logomaker = ">=0.8.7,<0.9.0"
 xlsxwriter = ">=3.2.9,<4.0.0"
 anndata = ">=0.12,<0.13"
 pyyaml = ">=6.0,<7.0"
-streamlit = { version = ">=1.44,<2.0", optional = true }
+streamlit = ">=1.44,<2.0"
 mkdocs = { version = ">=1.6,<2.0", optional = true }
 mkdocs-material = { version = ">=9.5,<10.0", optional = true }
 mkdocstrings = { version = ">=0.26,<1.0", extras = ["python"], optional = true }
 mkdocs-git-revision-date-localized-plugin = { version = ">=1.2,<2.0", optional = true }
 
 [tool.poetry.extras]
-gui = ["streamlit"]
-all = ["streamlit"]
+gui = []
+all = []
 docs = ["mkdocs", "mkdocs-material", "mkdocstrings", "mkdocs-git-revision-date-localized-plugin"]
 
 [tool.poetry.scripts]

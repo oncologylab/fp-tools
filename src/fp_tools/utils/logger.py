@@ -10,6 +10,7 @@ from datetime import datetime
 import logging
 import logging.handlers
 import multiprocessing as mp
+import threading
 import time
 from importlib.metadata import PackageNotFoundError, version as package_version
 
@@ -114,7 +115,13 @@ class FpToolsLogger(logging.Logger):
     def start_logger_queue(self):
         self.debug("Starting logger queue for multiprocessing")
         self.queue = mp.Manager().Queue()
-        self.listener = mp.Process(target=self.main_logger_process)
+        # A thread can consume records produced by spawned worker processes
+        # without requiring the logger itself to be pickled on macOS/Windows.
+        self.listener = threading.Thread(
+            target=self.main_logger_process,
+            name=f"{self.tool_name}-log-listener",
+            daemon=True,
+        )
         self.listener.start()
 
     def stop_logger_queue(self):
@@ -127,10 +134,8 @@ class FpToolsLogger(logging.Logger):
         if self.listener is not None:
             self.listener.join(timeout=5)
             if self.listener.is_alive():
-                self.warning("Multiprocessing logger did not stop promptly; terminating listener.")
-                self.listener.terminate()
-                self.listener.join(timeout=2)
-            self.debug(f"Logger listener exitcode is: {self.listener.exitcode}")
+                self.warning("Multiprocessing logger did not stop promptly.")
+            self.debug(f"Logger listener is alive: {self.listener.is_alive()}")
 
     def main_logger_process(self):
         self.debug("Started main logger process")

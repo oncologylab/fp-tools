@@ -22,7 +22,7 @@ import matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 from sklearn import preprocessing
 
 from fp_tools.parsers import add_aggregate_arguments
@@ -420,9 +420,7 @@ def _resolve_match_dir_tfbs(args, logger):
 def run_aggregate(args):
     """Create aggregate plots and optional aggregate exports."""
 
-    # Import lazily so plot-aggregate --help does not trigger pybedtools/genomepy
-    # cache initialization before argument parsing.
-    import pybedtools as pb
+    from fp_tools.utils.intervals import filter_regions
 
     apply_pdf_style()
     logger = FpToolsLogger("plot-aggregate", args.verbosity)
@@ -566,16 +564,14 @@ def run_aggregate(args):
             tfbs_f = args.TFBS[tfbs_idx]
             region_f = args.regions[region_idx]
 
-            overlap = pb.BedTool(tfbs_f).intersect(pb.BedTool(region_f), u=True)
             name = args.TFBS_labels[tfbs_idx] + " <OVERLAPPING> " + args.region_labels[region_idx]
             region_names.append(name)
-            regions_dict[name] = RegionList().from_bed(overlap.fn)
+            regions_dict[name] = filter_regions(RegionList().from_bed(tfbs_f), region_f)
 
             if args.negate:
-                overlap_neg = pb.BedTool(tfbs_f).intersect(pb.BedTool(region_f), v=True)
                 name = args.TFBS_labels[tfbs_idx] + " <NOT OVERLAPPING> " + args.region_labels[region_idx]
                 region_names.append(name)
-                regions_dict[name] = RegionList().from_bed(overlap_neg.fn)
+                regions_dict[name] = filter_regions(RegionList().from_bed(tfbs_f), region_f, invert=True)
     else:
         region_names = list(args.TFBS_labels)
         regions_dict = {
@@ -588,20 +584,17 @@ def run_aggregate(args):
     if len(args.whitelist) > 0 or len(args.blacklist) > 0:
         logger.info("Subsetting regions on whitelist/blacklist")
         for regions_id in regions_dict:
-            sites = pb.BedTool(regions_dict[regions_id].as_bed(), from_string=True)
             logger.stats(f"Found {len(regions_dict[regions_id])} sites in {regions_id}")
 
             if len(args.whitelist) > 0:
                 for whitelist_f in args.whitelist:
-                    sites = sites.intersect(pb.BedTool(whitelist_f), u=True)
-                    logger.stats(f"Overlapped to whitelist -> {len(sites)}")
+                    regions_dict[regions_id] = filter_regions(regions_dict[regions_id], whitelist_f)
+                    logger.stats(f"Overlapped to whitelist -> {len(regions_dict[regions_id])}")
 
             if len(args.blacklist) > 0:
                 for blacklist_f in args.blacklist:
-                    sites = sites.intersect(pb.BedTool(blacklist_f), v=True)
-                    logger.stats(f"Removed blacklist -> {len(sites)}")
-
-            regions_dict[regions_id] = RegionList().from_bed(sites.fn)
+                    regions_dict[regions_id] = filter_regions(regions_dict[regions_id], blacklist_f, invert=True)
+                    logger.stats(f"Removed blacklist -> {len(regions_dict[regions_id])}")
 
     motif_widths = {}
     for regions_id, site_list in regions_dict.items():

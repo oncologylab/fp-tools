@@ -11,14 +11,14 @@ hide:
 
 # ATAC-seq footprinting and regulatory motif analysis
 
-`fp-tools` provides command-line and optional browser workflows for bulk and
+`fp-tools` provides command-line and browser workflows for bulk and
 single-cell ATAC-seq footprinting. It connects bias correction, footprint
 scoring, motif analysis, replicate comparisons, and reusable reports.
 
 <div class="fp-badges">
   <a href="https://pypi.org/project/fp-tools-bio/">PyPI</a>
   <a href="https://github.com/oncologylab/fp-tools">GitHub</a>
-  <span>Python 3.12+</span>
+  <span>Python 3.11–3.13</span>
   <span>MIT license</span>
 </div>
 
