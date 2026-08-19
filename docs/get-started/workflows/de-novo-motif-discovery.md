@@ -1,4 +1,4 @@
-# Optional de novo motif discovery
+# De novo motif discovery
 
 This optional workflow discovers enriched sequence motifs from candidate
 footprint intervals and compares them with known motif databases.

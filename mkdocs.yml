@@ -50,7 +50,7 @@ nav:
       - Workflows:
           - Bulk ATAC-seq: get-started/workflows/bulk-atac-seq.md
           - Single-cell ATAC-seq: get-started/workflows/single-cell.md
-          - Optional de novo motif discovery: get-started/workflows/de-novo-motif-discovery.md
+          - De novo motif discovery: get-started/workflows/de-novo-motif-discovery.md
       - Commands:
           - Core analysis:
               - prepare-atac: get-started/commands/prepare-atac.md
