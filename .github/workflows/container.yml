@@ -8,6 +8,10 @@ on:
         required: false
         type: boolean
         default: false
+      publish_version:
+        description: Existing package version to republish, for example 0.2.0rc5
+        required: false
+        type: string
   push:
     tags:
       - "v*"
@@ -49,7 +53,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
       - name: Log in to GitHub Container Registry
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -83,17 +87,20 @@ jobs:
           docker logs fp-tools-gui-smoke
           exit 1
       - name: Push architecture image
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
         shell: bash
         env:
           ARCH: ${{ matrix.arch }}
+          PUBLISH_VERSION: ${{ inputs.publish_version }}
         run: |
-          docker tag fp-tools:smoke "${IMAGE}:${GITHUB_REF_NAME}-${ARCH}"
-          docker push "${IMAGE}:${GITHUB_REF_NAME}-${ARCH}"
+          release_tag="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then release_tag="v${PUBLISH_VERSION#v}"; fi
+          docker tag fp-tools:smoke "${IMAGE}:${release_tag}-${ARCH}"
+          docker push "${IMAGE}:${release_tag}-${ARCH}"
 
   manifest:
     name: multi-architecture manifest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
     needs: image
     runs-on: ubuntu-latest
     steps:
@@ -105,17 +112,21 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish release and latest manifests
         shell: bash
+        env:
+          PUBLISH_VERSION: ${{ inputs.publish_version }}
         run: |
+          release_tag="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then release_tag="v${PUBLISH_VERSION#v}"; fi
           docker buildx imagetools create \
-            --tag "${IMAGE}:${GITHUB_REF_NAME}" \
+            --tag "${IMAGE}:${release_tag}" \
             --tag "${IMAGE}:latest" \
-            "${IMAGE}:${GITHUB_REF_NAME}-amd64" \
-            "${IMAGE}:${GITHUB_REF_NAME}-arm64"
-          docker buildx imagetools inspect "${IMAGE}:${GITHUB_REF_NAME}"
+            "${IMAGE}:${release_tag}-amd64" \
+            "${IMAGE}:${release_tag}-arm64"
+          docker buildx imagetools inspect "${IMAGE}:${release_tag}"
 
   visibility:
     name: public container package
-    if: always() && (startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.visibility_only == true))
+    if: always() && (startsWith(github.ref, 'refs/tags/') || inputs.publish_version != '' || (github.event_name == 'workflow_dispatch' && inputs.visibility_only == true))
     needs: [image, manifest]
     runs-on: ubuntu-latest
     steps:
