@@ -19,6 +19,25 @@ def free_port() -> int:
         return int(handle.getsockname()[1])
 
 
+def stop_process_tree(process: subprocess.Popen[str]) -> str:
+    """Stop the GUI and any server child while preserving captured output."""
+
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    else:
+        process.terminate()
+    try:
+        return process.communicate(timeout=20)[0] or ""
+    except subprocess.TimeoutExpired:
+        process.kill()
+        return process.communicate(timeout=20)[0] or ""
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("executable")
@@ -61,13 +80,7 @@ def main() -> int:
                     time.sleep(0.5)
             raise SystemExit(f"GUI did not become ready within {args.timeout:g} seconds: {last_error}")
         finally:
-            output = ""
-            process.terminate()
-            try:
-                output = process.communicate(timeout=10)[0] or ""
-            except subprocess.TimeoutExpired:
-                process.kill()
-                output = process.communicate(timeout=10)[0] or ""
+            output = stop_process_tree(process)
             if process.returncode not in (0, -15, 1):
                 print(output)
 
