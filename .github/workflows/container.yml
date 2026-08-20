@@ -3,13 +3,8 @@ name: Container
 on:
   workflow_dispatch:
     inputs:
-      visibility_only:
-        description: Make the existing fp-tools container package public without rebuilding it
-        required: false
-        type: boolean
-        default: false
       publish_version:
-        description: Existing package version to republish, for example 0.2.0rc6
+        description: Existing package version to rebuild, for example 0.2.0rc6
         required: false
         type: string
   push:
@@ -25,15 +20,10 @@ on:
       - .github/workflows/container.yml
 
 permissions:
-  contents: read
-  packages: write
-
-env:
-  IMAGE: ghcr.io/oncologylab/fp-tools-bio
+  contents: write
 
 jobs:
   image:
-    if: github.event_name != 'workflow_dispatch' || inputs.visibility_only != true
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
@@ -52,13 +42,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
-      - name: Log in to GitHub Container Registry
-        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build native smoke image
         uses: docker/build-push-action@v7
         with:
@@ -86,7 +69,7 @@ jobs:
           done
           docker logs fp-tools-gui-smoke
           exit 1
-      - name: Push architecture image
+      - name: Pack architecture image
         if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
         shell: bash
         env:
@@ -95,44 +78,46 @@ jobs:
         run: |
           release_tag="${GITHUB_REF_NAME}"
           if [[ "${GITHUB_REF}" != refs/tags/* ]]; then release_tag="v${PUBLISH_VERSION#v}"; fi
-          docker tag fp-tools:smoke "${IMAGE}:${release_tag}-${ARCH}"
-          docker push "${IMAGE}:${release_tag}-${ARCH}"
+          version="${release_tag#v}"
+          mkdir -p release
+          docker tag fp-tools:smoke "fp-tools:${release_tag}"
+          docker tag fp-tools:smoke fp-tools:latest
+          docker save "fp-tools:${release_tag}" fp-tools:latest | gzip -1 \
+            > "release/fp-tools-container-${version}-linux-${ARCH}.tar.gz"
+      - uses: actions/upload-artifact@v7
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
+        with:
+          name: fp-tools-container-${{ matrix.arch }}
+          path: release/fp-tools-container-*.tar.gz
+          if-no-files-found: error
 
-  manifest:
-    name: multi-architecture manifest
+  release:
+    name: container release archives
     if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
     needs: image
     runs-on: ubuntu-latest
     steps:
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
+      - uses: actions/download-artifact@v8
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish release and latest manifests
+          pattern: fp-tools-container-*
+          merge-multiple: true
+          path: release
+      - name: Upload container archives to the GitHub release
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           PUBLISH_VERSION: ${{ inputs.publish_version }}
         run: |
           release_tag="${GITHUB_REF_NAME}"
           if [[ "${GITHUB_REF}" != refs/tags/* ]]; then release_tag="v${PUBLISH_VERSION#v}"; fi
-          docker buildx imagetools create \
-            --tag "${IMAGE}:${release_tag}" \
-            --tag "${IMAGE}:latest" \
-            "${IMAGE}:${release_tag}-amd64" \
-            "${IMAGE}:${release_tag}-arm64"
-          docker buildx imagetools inspect "${IMAGE}:${release_tag}"
-
-  visibility:
-    name: public container package
-    if: always() && (startsWith(github.ref, 'refs/tags/') || inputs.publish_version != '' || (github.event_name == 'workflow_dispatch' && inputs.visibility_only == true))
-    needs: [image, manifest]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Make the container package public
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api --method PATCH "orgs/oncologylab/packages/container/fp-tools-bio" \
-            -f visibility=public
+          (cd release && sha256sum fp-tools-container-*.tar.gz > CONTAINER_SHA256SUMS.txt)
+          if ! gh release view "${release_tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            release_flags=()
+            if [[ "${release_tag}" == *rc* ]]; then release_flags+=(--prerelease); fi
+            gh release create "${release_tag}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "fp-tools ${release_tag}" \
+              --generate-notes \
+              "${release_flags[@]}"
+          fi
+          gh release upload "${release_tag}" release/* --repo "${GITHUB_REPOSITORY}" --clobber

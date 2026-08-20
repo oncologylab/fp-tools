@@ -116,19 +116,28 @@ def _runtime_spec(component: str, target_platform: str | None = None) -> dict:
         raise RuntimeProvisionError(
             f"Managed runtime component {component!r} is not available for {target}."
         ) from exc
-    return {
+    spec = {
         "schema": manifest["schema"],
         "runtime_version": manifest["runtime_version"],
-        "repository": manifest["repository"],
         "commands": manifest["components"][component]["commands"],
         **artifact,
     }
+    for key in ("repository", "release_base_url"):
+        if key in manifest:
+            spec[key] = manifest[key]
+    return spec
 
 
 def _request_json(url: str, headers: dict[str, str] | None = None) -> tuple[dict, dict]:
     request = urllib.request.Request(url, headers=headers or {})
     with urllib.request.urlopen(request, timeout=60) as response:
         return json.load(response), dict(response.headers)
+
+
+def _request_text(url: str) -> str:
+    request = urllib.request.Request(url)
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return response.read().decode("utf-8")
 
 
 def _oci_bearer_token(repository: str) -> str:
@@ -163,6 +172,18 @@ def _resolve_oci_layer(repository: str, tag: str) -> tuple[str, int, str]:
     size = int(layer.get("size", 0))
     url = f"https://{registry}/v2/{image}/blobs/{digest}"
     return url, size, digest.split(":", 1)[1]
+
+
+def _resolve_runtime_artifact(spec: dict) -> tuple[str, int, str]:
+    filename = spec.get("filename")
+    release_base_url = spec.get("release_base_url")
+    if filename and release_base_url:
+        url = f"{str(release_base_url).rstrip('/')}/{urllib.parse.quote(str(filename))}"
+        checksum = _request_text(url + ".sha256").strip().split()[0].lower()
+        if len(checksum) != 64 or any(char not in "0123456789abcdef" for char in checksum):
+            raise RuntimeProvisionError(f"Runtime artifact {filename} has no valid SHA-256 checksum.")
+        return url, 0, checksum
+    return _resolve_oci_layer(spec["repository"], spec["tag"])
 
 
 def _download(url: str, destination: Path, expected_size: int, expected_sha256: str) -> None:
@@ -282,7 +303,7 @@ def ensure_native_runtime(component: str = "core") -> RuntimeActivation:
     with _install_lock(root / f".{component}.lock"):
         if ready.is_file():
             return RuntimeActivation("managed", component, prefix=prefix)
-        url, size, digest = _resolve_oci_layer(spec["repository"], spec["tag"])
+        url, size, digest = _resolve_runtime_artifact(spec)
         _free_space_check(root, size)
         archive = root / f"{component}.tar.gz"
         _download(url, archive, size, digest)
@@ -383,7 +404,7 @@ def ensure_wsl_runtime(component: str = "core") -> RuntimeActivation:
     with _install_lock(root / ".wsl.lock"):
         if distro in _wsl_distributions():
             return RuntimeActivation("managed", component, distro=distro)
-        url, size, digest = _resolve_oci_layer(spec["repository"], spec["tag"])
+        url, size, digest = _resolve_runtime_artifact(spec)
         _free_space_check(root, size)
         archive = root / "fp-tools-wsl-rootfs.tar.gz"
         _download(url, archive, size, digest)
@@ -533,7 +554,7 @@ def run_container_command(
         _replace_runtime_option(list(arguments), "system"), path_flags, translate
     )
     image = os.environ.get(
-        "FP_TOOLS_CONTAINER_IMAGE", f"ghcr.io/oncologylab/fp-tools-bio:v{__version__}"
+        "FP_TOOLS_CONTAINER_IMAGE", f"fp-tools:v{__version__}"
     )
     invocation = [docker, "run", "--rm"]
     if os.name != "nt" and hasattr(os, "getuid"):

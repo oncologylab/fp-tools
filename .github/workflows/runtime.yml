@@ -18,15 +18,34 @@ on:
       - .github/workflows/runtime.yml
 
 permissions:
-  contents: read
-  packages: write
-
-env:
-  RUNTIME_REPOSITORY: ghcr.io/oncologylab/fp-tools-bio-runtime
+  contents: write
 
 jobs:
+  ensure-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure the release exists
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_VERSION: ${{ inputs.publish_version }}
+        shell: bash
+        run: |
+          release_tag="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then release_tag="v${PUBLISH_VERSION#v}"; fi
+          if ! gh release view "${release_tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            release_flags=()
+            if [[ "${release_tag}" == *rc* ]]; then release_flags+=(--prerelease); fi
+            gh release create "${release_tag}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "fp-tools ${release_tag}" \
+              --generate-notes \
+              "${release_flags[@]}"
+          fi
+
   native:
     name: ${{ matrix.target.platform }} / ${{ matrix.component }}
+    needs: ensure-release
     runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 120
     strategy:
@@ -69,26 +88,22 @@ jobs:
           ]
           assert not missing, f"Runtime is missing commands: {missing}"
           PY
-      - uses: oras-project/setup-oras@v1
-        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
-      - name: Log in to GHCR with ORAS
+      - name: Publish runtime archive
         if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: printf '%s' "${GH_TOKEN}" | oras login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
-      - name: Publish runtime artifact
-        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
-        shell: bash
-        env:
           PUBLISH_VERSION: ${{ inputs.publish_version }}
         run: |
           version="${GITHUB_REF_NAME#v}"
           if [[ "${GITHUB_REF}" != refs/tags/* ]]; then version="${PUBLISH_VERSION#v}"; fi
-          tag="${{ matrix.component }}-${version}-${{ matrix.target.platform }}"
-          oras push "${RUNTIME_REPOSITORY}:${tag}" \
-            --annotation "org.opencontainers.image.source=https://github.com/oncologylab/fp-tools" \
-            "runtime-out/${{ matrix.component }}.tar.gz:application/gzip"
+          release_tag="v${version}"
+          asset="fp-tools-runtime-${{ matrix.component }}-${version}-${{ matrix.target.platform }}.tar.gz"
+          mv "runtime-out/${{ matrix.component }}.tar.gz" "runtime-out/${asset}"
+          (cd runtime-out && sha256sum "${asset}" > "${asset}.sha256")
+          gh release upload "${release_tag}" \
+            "runtime-out/${asset}" "runtime-out/${asset}.sha256" \
+            --repo "${GITHUB_REPOSITORY}" --clobber
       - uses: actions/upload-artifact@v7
         with:
           name: runtime-${{ matrix.target.platform }}-${{ matrix.component }}-metadata
@@ -96,6 +111,7 @@ jobs:
 
   windows-wsl:
     name: windows-x64 / private WSL2 runtime
+    needs: ensure-release
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -109,25 +125,22 @@ jobs:
           trap 'docker rm -f "${container_id}" >/dev/null 2>&1 || true' EXIT
           mkdir -p runtime-out
           docker export "${container_id}" | gzip -1 > runtime-out/fp-tools-wsl-rootfs.tar.gz
-      - uses: oras-project/setup-oras@v1
-        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
-      - name: Log in to GHCR with ORAS
+      - name: Publish WSL2 runtime archive
         if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: printf '%s' "${GH_TOKEN}" | oras login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
-      - name: Publish WSL2 runtime artifact
-        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
-        shell: bash
-        env:
           PUBLISH_VERSION: ${{ inputs.publish_version }}
         run: |
           version="${GITHUB_REF_NAME#v}"
           if [[ "${GITHUB_REF}" != refs/tags/* ]]; then version="${PUBLISH_VERSION#v}"; fi
-          oras push "${RUNTIME_REPOSITORY}:wsl-core-${version}-linux-x86_64" \
-            --annotation "org.opencontainers.image.source=https://github.com/oncologylab/fp-tools" \
-            "runtime-out/fp-tools-wsl-rootfs.tar.gz:application/gzip"
+          release_tag="v${version}"
+          asset="fp-tools-runtime-wsl-core-${version}-linux-x86_64.tar.gz"
+          mv runtime-out/fp-tools-wsl-rootfs.tar.gz "runtime-out/${asset}"
+          (cd runtime-out && sha256sum "${asset}" > "${asset}.sha256")
+          gh release upload "${release_tag}" \
+            "runtime-out/${asset}" "runtime-out/${asset}.sha256" \
+            --repo "${GITHUB_REPOSITORY}" --clobber
 
   publish-and-test:
     name: public artifact and Windows WSL2 smoke test
@@ -137,13 +150,6 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
-      - name: Make the runtime repository public
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api --method PATCH "orgs/oncologylab/packages/container/fp-tools-bio-runtime" \
-            -f visibility=public
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"

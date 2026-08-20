@@ -25,25 +25,29 @@ with permission if needed, and Windows may request one restart.
 
 ## Complete container
 
-The container includes fp-tools and its external genomics programs. Docker
-automatically downloads the image when this one command starts the GUI.
+The container includes fp-tools and its external genomics programs. Build it
+once, or load the matching prebuilt archive from the GitHub release:
+
+```bash
+docker build -t fp-tools:latest https://github.com/oncologylab/fp-tools.git#main
+```
 
 === "Windows PowerShell"
 
     ```powershell
-    docker run --rm -p 8891:8891 -v "${PWD}:/work" ghcr.io/oncologylab/fp-tools-bio:latest
+    docker run --rm -p 8891:8891 -v "${PWD}:/work" fp-tools:latest
     ```
 
 === "macOS"
 
     ```bash
-    docker run --rm -p 8891:8891 -v "$PWD:/work" ghcr.io/oncologylab/fp-tools-bio:latest
+    docker run --rm -p 8891:8891 -v "$PWD:/work" fp-tools:latest
     ```
 
 === "Linux"
 
     ```bash
-    docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -p 8891:8891 -v "$PWD:/work" ghcr.io/oncologylab/fp-tools-bio:latest
+    docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -p 8891:8891 -v "$PWD:/work" fp-tools:latest
     ```
 
 Open `http://127.0.0.1:8891`. Files in the current directory appear under
@@ -51,7 +55,7 @@ Open `http://127.0.0.1:8891`. Files in the current directory appear under
 a command directly, for example:
 
 ```bash
-docker run --rm -v "$PWD:/work" ghcr.io/oncologylab/fp-tools-bio:latest atac-correct --help
+docker run --rm -v "$PWD:/work" fp-tools:latest atac-correct --help
 ```
 
 ## Command-line package
