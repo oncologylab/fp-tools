@@ -29,7 +29,7 @@ review-multi-comparisons --inputs project/comparisons --output-dir project/repor
 | --- | --- |
 | `{bundle}/index.html` | Browser entry point; open or publish this file together with the full bundle. |
 | `{bundle}/app.js` and `{bundle}/styles.css` | Local application code and styling. |
-| `{bundle}/data/manifest.json` | Comparison index and payload checksums. |
+| `{bundle}/data/metadata.json` | Comparison index and payload checksums. |
 | `{bundle}/data/reports/{comparison}.json.gz` | Compact data for one comparison. |
 | `{bundle}/data/profiles/` | Aggregate-profile shards loaded on demand. |
 | `{bundle}/data/logos/` | Motif logo assets. |
@@ -44,7 +44,8 @@ Use `--output-html` instead of `--output-dir`. Aggregate profiles are optional,
 and `--labels` keeps repeated condition pairs distinct. The exact output is the
 path passed to `--output-html`; it is one portable HTML file with coordinated
 volcano, ranked-motif, logo, and SVG-export views. Aggregate controls appear
-only when profiles exist.
+only when profiles exist. One **Comparison** list selects the exact input record
+in `--labels` order, so repeated condition pairs remain distinct.
 
 ```bash
 review-multi-comparisons --inputs baseline/report.html dose1/report.html dose2/report.html \

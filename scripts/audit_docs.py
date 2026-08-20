@@ -8,6 +8,7 @@ import contextlib
 import http.server
 import re
 import socketserver
+import tempfile
 import threading
 from pathlib import Path
 
@@ -232,6 +233,185 @@ def check_wide_command_layout(page, label: str, failures: list[str]) -> None:
                 f"{label}: {name} uses only {width:.0f}px of "
                 f"{content_width:.0f}px available content width"
             )
+
+
+def audit_embedded_review(browser, failures: list[str]) -> None:
+    """Exercise the portable repeated-comparison report directly from disk."""
+    from fp_tools.tools.static_comparison_browser import write_embedded_static_browser
+
+    def payload(effect: float, aggregate: bool = False) -> dict:
+        result = {
+            "title": "Differential footprint report",
+            "report_label": "Biological-replicate empirical-Bayes comparison",
+            "conditions": ["shHIF2", "P"],
+            "colors": {
+                "shHIF2_up": "#dc2626",
+                "P_up": "#2563eb",
+                "n.s.": "#8a94a6",
+            },
+            "change_label": "Differential footprint score",
+            "points": [
+                {
+                    "prefix": "TF1",
+                    "name": "TF1",
+                    "motif_id": "M1",
+                    "group": "shHIF2_up",
+                    "change": effect,
+                    "pvalue": 1e-6,
+                    "fdr": 1e-4,
+                    "neglog10p": 6.0,
+                },
+                {
+                    "prefix": "TF2",
+                    "name": "TF2",
+                    "motif_id": "M2",
+                    "group": "P_up",
+                    "change": -0.3,
+                    "pvalue": 1e-5,
+                    "fdr": 1e-3,
+                    "neglog10p": 5.0,
+                },
+            ],
+            "motif_matrices": {
+                "TF1": [[10, 0], [0, 10], [0, 0], [0, 0]],
+                "TF2": [[0, 0], [10, 0], [0, 10], [0, 0]],
+            },
+            "logos": {},
+            "aggregate": {"motifs": []},
+        }
+        if aggregate:
+            result["aggregate"] = {
+                "x": [-1, 1],
+                "motifs": [
+                    {
+                        "prefix": "TF1",
+                        "name": "TF1",
+                        "motif_id": "M1",
+                        "n_sites": 10,
+                        "conditions": [
+                            {
+                                "name": "shHIF2",
+                                "samples": [
+                                    {"name": "shHIF2_rep1", "profile": [0.1, 0.2]}
+                                ],
+                            },
+                            {
+                                "name": "P",
+                                "samples": [
+                                    {"name": "P_rep1", "profile": [0.2, 0.1]}
+                                ],
+                            },
+                        ],
+                    }
+                ],
+            }
+        return result
+
+    labels = ["shHIF2 replicate 1", "shHIF2 replicate 2", "shHIF2 replicate 3"]
+    review = {
+        "schema": "fp-tools.review-multi-comparisons.v1",
+        "title": "Kidney comparison review",
+        "comparisons": [
+            {"label": label, "payload": payload(0.4 + index)}
+            for index, label in enumerate(labels)
+        ],
+    }
+    aggregate_review = {
+        "schema": "fp-tools.review-multi-comparisons.v1",
+        "title": "Aggregate comparison review",
+        "comparisons": [{"label": "Aggregate", "payload": payload(0.4, True)}],
+    }
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        standalone = write_embedded_static_browser(review, root / "standalone.html")
+        aggregate = write_embedded_static_browser(
+            aggregate_review, root / "aggregate.html"
+        )
+        for width, height in VIEWPORTS:
+            page = browser.new_page(
+                viewport={"width": width, "height": height}, accept_downloads=True
+            )
+            console_errors: list[str] = []
+            requests: list[str] = []
+            page.on(
+                "console",
+                lambda message, errors=console_errors: (
+                    errors.append(message.text) if message.type == "error" else None
+                ),
+            )
+            page.on("request", lambda request, seen=requests: seen.append(request.url))
+            page.goto(standalone.as_uri(), wait_until="load", timeout=60_000)
+            page.wait_for_function(
+                "document.querySelector('#status').textContent.includes('motifs')",
+                timeout=60_000,
+            )
+            label = f"standalone repeated comparison at {width}x{height}"
+            options = page.locator("#comparison-selector option").all_text_contents()
+            if options != labels:
+                failures.append(f"{label}: comparison order changed {options}")
+            if not page.locator("#comparison-selector-control").is_visible():
+                failures.append(f"{label}: Comparison selector is hidden")
+            if page.locator("#condition-selector-controls").is_visible():
+                failures.append(f"{label}: condition selectors are visible")
+            if page.locator(".aggregate-card").is_visible():
+                failures.append(f"{label}: aggregate card reserves layout space")
+            if page.locator(".options-samples").is_visible():
+                failures.append(f"{label}: sample controls are visible")
+            if page.locator(".selected-motif").count() != 1:
+                failures.append(f"{label}: expected one selected-motif card")
+            page.locator("#comparison-selector").select_option("2")
+            page.wait_for_function(
+                "document.querySelector('#report-title').textContent.includes('replicate 3')"
+            )
+            first_point = page.locator(".pt").first
+            prefix = first_point.get_attribute("data-prefix")
+            first_point.dispatch_event("click")
+            if page.locator(".panel-tf").input_value() != prefix:
+                failures.append(f"{label}: volcano selection did not update motif")
+            first_bar = page.locator(".rank-bar").first
+            prefix = first_bar.get_attribute("data-prefix")
+            first_bar.dispatch_event("click")
+            if page.locator(".panel-tf").input_value() != prefix:
+                failures.append(f"{label}: ranked selection did not update motif")
+            metrics = page.evaluate(
+                """() => ({
+                  scrollWidth: document.documentElement.scrollWidth,
+                  clientWidth: document.documentElement.clientWidth
+                })"""
+            )
+            if metrics["scrollWidth"] > metrics["clientWidth"]:
+                failures.append(
+                    f"{label}: horizontal overflow "
+                    f"{metrics['scrollWidth']}>{metrics['clientWidth']}"
+                )
+            if console_errors:
+                failures.append(f"{label}: console errors {console_errors}")
+            external = [url for url in requests if url != standalone.as_uri()]
+            if external:
+                failures.append(f"{label}: unexpected network requests {external}")
+            if width == 1440 and height == 1000:
+                for button in (
+                    "download-logo",
+                    "download-rank",
+                    "download-volcano",
+                    "download-panel",
+                    "download-tsv",
+                    "download-all",
+                ):
+                    with page.expect_download(timeout=30_000):
+                        page.locator(f"#{button}").dispatch_event("click")
+            page.close()
+
+        page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        page.goto(aggregate.as_uri(), wait_until="load", timeout=60_000)
+        page.locator(".aggregate-panel").first.wait_for(
+            state="visible", timeout=60_000
+        )
+        if not page.locator(".aggregate-card").is_visible():
+            failures.append("aggregate-capable standalone: aggregate card is hidden")
+        if not page.locator(".options-samples").is_visible():
+            failures.append("aggregate-capable standalone: sample controls are hidden")
+        page.close()
 
 
 def audit(site_dir: Path) -> None:
@@ -708,6 +888,7 @@ def audit(site_dir: Path) -> None:
                             timeout=60_000,
                         )
                     page.close()
+        audit_embedded_review(browser, failures)
         browser.close()
     if failures:
         raise SystemExit("Documentation browser audit failed:\n- " + "\n- ".join(failures))

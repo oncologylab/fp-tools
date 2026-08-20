@@ -7,6 +7,7 @@ import csv
 from datetime import date
 import gzip
 import hashlib
+import html
 from importlib.resources import files
 import json
 from pathlib import Path
@@ -41,6 +42,62 @@ def _write_gzip_json(payload: dict, path: Path) -> None:
 def _read_gzip_json(path: Path) -> dict:
     with gzip.open(path, "rt", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def write_embedded_static_browser(review_payload: dict, output: str | Path) -> Path:
+    """Package the shared browser and a review payload into one portable HTML file."""
+    comparisons = review_payload.get("comparisons") or []
+    if not comparisons:
+        raise ValueError("No comparison payloads were supplied")
+    for record in comparisons:
+        payload = record.get("payload") or {}
+        if len(payload.get("conditions") or []) != 2 or not payload.get("points"):
+            raise ValueError("Each input must be a two-condition diff-footprints report")
+
+    raw = json.dumps(
+        review_payload,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+    payload_b64 = base64.b64encode(
+        gzip.compress(raw, compresslevel=9, mtime=0)
+    ).decode("ascii")
+    has_aggregates = any(
+        ((record.get("payload") or {}).get("aggregate") or {}).get("motifs")
+        for record in comparisons
+    )
+    template_root = files("fp_tools.resources.static_browser")
+    document = template_root.joinpath("index.html").read_text(encoding="utf-8")
+    stylesheet = template_root.joinpath("styles.css").read_text(encoding="utf-8")
+    application = template_root.joinpath("app.js").read_text(encoding="utf-8")
+    title = html.escape(
+        str(
+            review_payload.get("title")
+            or "Review multiple differential footprint comparisons"
+        )
+    )
+    bootstrap = (
+        f'<script>const reportPayloadB64="{payload_b64}",'
+        f'hasAggregateProfiles={str(has_aggregates).lower()};'
+        "window.fpToolsBrowserBootstrap={mode:\"embedded\","
+        "payloadB64:reportPayloadB64};</script>"
+    )
+    document = document.replace(
+        '<link rel="stylesheet" href="styles.css" />',
+        f"<style>\n{stylesheet}\n</style>",
+    )
+    document = document.replace(
+        '<script src="app.js" defer></script>',
+        f"{bootstrap}\n<script>\n{application}\n</script>",
+    )
+    document = document.replace(
+        "<title>Differential footprint report</title>",
+        f"<title>{title}</title>",
+    )
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(document, encoding="utf-8")
+    return output
 
 
 def _profile_shard(prefix: str) -> int:
