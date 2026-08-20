@@ -83,7 +83,7 @@ class RuntimeManagerTest(unittest.TestCase):
                 runtime, "runtime_cache_root", return_value=root / "cache"
             ), mock.patch.object(runtime, "platform_key", return_value="linux-x86_64"), mock.patch.object(
                 runtime,
-                "_resolve_oci_layer",
+                "_resolve_runtime_artifact",
                 return_value=(source.as_uri(), source.stat().st_size, digest),
             ):
                 first = runtime.ensure_native_runtime("core")
@@ -92,6 +92,25 @@ class RuntimeManagerTest(unittest.TestCase):
             self.assertTrue((first.prefix / "bin" / "fastp").is_file())
             marker = json.loads((first.prefix / ".fp-tools-runtime.json").read_text())
             self.assertEqual(marker["sha256"], digest)
+
+    def test_release_artifact_uses_public_checksum_sidecar(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            archive = root / "runtime.tar.gz"
+            archive.write_bytes(b"runtime")
+            digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+            (root / "runtime.tar.gz.sha256").write_text(
+                f"{digest}  runtime.tar.gz\n", encoding="utf-8"
+            )
+            url, size, observed = runtime._resolve_runtime_artifact(
+                {
+                    "release_base_url": root.as_uri(),
+                    "filename": "runtime.tar.gz",
+                }
+            )
+        self.assertEqual(url, archive.as_uri())
+        self.assertEqual(size, 0)
+        self.assertEqual(observed, digest)
 
     def test_download_rejects_wrong_checksum(self):
         with tempfile.TemporaryDirectory() as tmpdir:

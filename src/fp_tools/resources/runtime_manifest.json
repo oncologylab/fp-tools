@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "runtime_version": "0.2.0rc6",
-  "repository": "ghcr.io/oncologylab/fp-tools-bio-runtime",
+  "release_base_url": "https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc6",
   "components": {
     "core": {
       "commands": [
@@ -37,29 +37,29 @@
   },
   "artifacts": {
     "linux-x86_64": {
-      "core": {"tag": "core-0.2.0rc6-linux-x86_64"},
-      "meme": {"tag": "meme-0.2.0rc6-linux-x86_64"},
-      "homer": {"tag": "homer-0.2.0rc6-linux-x86_64"}
+      "core": {"filename": "fp-tools-runtime-core-0.2.0rc6-linux-x86_64.tar.gz"},
+      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc6-linux-x86_64.tar.gz"},
+      "homer": {"filename": "fp-tools-runtime-homer-0.2.0rc6-linux-x86_64.tar.gz"}
     },
     "linux-arm64": {
-      "core": {"tag": "core-0.2.0rc6-linux-arm64"},
-      "meme": {"tag": "meme-0.2.0rc6-linux-arm64"},
-      "homer": {"tag": "homer-0.2.0rc6-linux-arm64"}
+      "core": {"filename": "fp-tools-runtime-core-0.2.0rc6-linux-arm64.tar.gz"},
+      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc6-linux-arm64.tar.gz"},
+      "homer": {"filename": "fp-tools-runtime-homer-0.2.0rc6-linux-arm64.tar.gz"}
     },
     "macos-x86_64": {
-      "core": {"tag": "core-0.2.0rc6-macos-x86_64"},
-      "meme": {"tag": "meme-0.2.0rc6-macos-x86_64"},
-      "homer": {"tag": "homer-0.2.0rc6-macos-x86_64"}
+      "core": {"filename": "fp-tools-runtime-core-0.2.0rc6-macos-x86_64.tar.gz"},
+      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc6-macos-x86_64.tar.gz"},
+      "homer": {"filename": "fp-tools-runtime-homer-0.2.0rc6-macos-x86_64.tar.gz"}
     },
     "macos-arm64": {
-      "core": {"tag": "core-0.2.0rc6-macos-arm64"},
-      "meme": {"tag": "meme-0.2.0rc6-macos-arm64"},
-      "homer": {"tag": "homer-0.2.0rc6-macos-arm64"}
+      "core": {"filename": "fp-tools-runtime-core-0.2.0rc6-macos-arm64.tar.gz"},
+      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc6-macos-arm64.tar.gz"},
+      "homer": {"filename": "fp-tools-runtime-homer-0.2.0rc6-macos-arm64.tar.gz"}
     },
     "windows-x86_64": {
-      "core": {"tag": "wsl-core-0.2.0rc6-linux-x86_64"},
-      "meme": {"tag": "wsl-core-0.2.0rc6-linux-x86_64"},
-      "homer": {"tag": "wsl-core-0.2.0rc6-linux-x86_64"}
+      "core": {"filename": "fp-tools-runtime-wsl-core-0.2.0rc6-linux-x86_64.tar.gz"},
+      "meme": {"filename": "fp-tools-runtime-wsl-core-0.2.0rc6-linux-x86_64.tar.gz"},
+      "homer": {"filename": "fp-tools-runtime-wsl-core-0.2.0rc6-linux-x86_64.tar.gz"}
     }
   }
 }

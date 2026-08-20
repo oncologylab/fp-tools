@@ -31,7 +31,8 @@ class ReleaseMetadataTest(unittest.TestCase):
         )
         self.assertEqual(version, runtime_manifest["runtime_version"])
         self.assertEqual(
-            runtime_manifest["repository"], "ghcr.io/oncologylab/fp-tools-bio-runtime"
+            runtime_manifest["release_base_url"],
+            f"https://github.com/oncologylab/fp-tools/releases/download/v{version}",
         )
         info_plist = (ROOT / "packaging/desktop/Info.plist").read_text(encoding="utf-8")
         self.assertIn(f"<string>{version}</string>", info_plist)

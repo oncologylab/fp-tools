@@ -92,18 +92,16 @@ bundled Streamlit application starts, and its command check verifies frozen
 child-process dispatch. Release assets include a SHA-256 checksum manifest.
 macOS Intel and Linux users install the Python package instead.
 
-The `Container` workflow builds and tests the complete environment, then
-publishes `linux/amd64` and `linux/arm64` images to
-`ghcr.io/oncologylab/fp-tools-bio` for tagged releases. Its final job must confirm
-that the package is public; the `visibility_only` manual input can repair
-visibility without rebuilding images. The `publish_version` manual input
-rebuilds and republishes an existing version with repository-link metadata.
+The `Container` workflow builds and tests the complete environment on
+`linux/amd64` and `linux/arm64`, then attaches both loadable image archives and
+their checksums to tagged GitHub releases. The `publish_version` manual input
+can rebuild archives for an existing version.
 
-The `Managed runtimes` workflow publishes pinned core, MEME, and HOMER archives
-for Linux and macOS, plus the private Windows WSL2 root filesystem. It must
-verify archive relocation and a real Windows WSL2 import before release handoff.
-Its `publish_version` manual input can rebuild and republish an existing version
-with repository-link metadata before repeating the public-consumer smoke test.
+The `Managed runtimes` workflow attaches pinned core, MEME, and HOMER archives
+for Linux and macOS, plus the private Windows WSL2 root filesystem, to the
+public GitHub release with SHA-256 sidecars. It must verify archive relocation
+and a real Windows WSL2 import before release handoff. Its `publish_version`
+manual input can rebuild archives before repeating the public-consumer smoke.
 
 The manual GitHub Actions `Publish` workflow uses the repository
 `PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or
