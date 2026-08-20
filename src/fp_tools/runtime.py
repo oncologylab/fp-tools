@@ -533,7 +533,7 @@ def run_container_command(
         _replace_runtime_option(list(arguments), "system"), path_flags, translate
     )
     image = os.environ.get(
-        "FP_TOOLS_CONTAINER_IMAGE", f"ghcr.io/oncologylab/fp-tools:v{__version__}"
+        "FP_TOOLS_CONTAINER_IMAGE", f"ghcr.io/oncologylab/fp-tools-bio:v{__version__}"
     )
     invocation = [docker, "run", "--rm"]
     if os.name != "nt" and hasattr(os, "getuid"):

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_version:
-        description: Existing package version to republish, for example 0.2.0rc5
+        description: Existing package version to republish, for example 0.2.0rc6
         required: false
         type: string
   push:
@@ -22,7 +22,7 @@ permissions:
   packages: write
 
 env:
-  RUNTIME_REPOSITORY: ghcr.io/oncologylab/fp-tools-runtime
+  RUNTIME_REPOSITORY: ghcr.io/oncologylab/fp-tools-bio-runtime
 
 jobs:
   native:
@@ -142,7 +142,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --method PATCH "orgs/oncologylab/packages/container/fp-tools-runtime" \
+          gh api --method PATCH "orgs/oncologylab/packages/container/fp-tools-bio-runtime" \
             -f visibility=public
       - uses: actions/setup-python@v6
         with:
