@@ -21,7 +21,7 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 
 ## Primary inputs
 
-- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [ENCODE and local examples](../workflows/bulk-atac-seq.md#starting-from-fastq-files).
+- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [ENCODE and local examples](../workflows/bulk-atac-seq.md#start-from-fastq-files).
 - `--genome` — packaged `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.
 

@@ -283,12 +283,21 @@ class DocsEntryPointContractTest(unittest.TestCase):
         guide = (
             ROOT / "docs" / "get-started" / "workflows" / "bulk-atac-seq.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("sample\tcondition\tfastq_1\tfastq_2", guide)
-        self.assertIn("sample\tcondition\tfastq_1\n", guide)
-        self.assertIn("For single-end data, omit `fastq_2`", guide)
-        self.assertIn("sample\tcondition\tbam\tpeaks", guide)
-        self.assertIn("optional provenance columns that may be left out", guide)
+        self.assertIn("encode_hepg2_k562_fastq_urls.tsv", guide)
+        self.assertIn("encode_hepg2_k562_bams.tsv", guide)
+        self.assertIn("encode_hepg2_k562_comparisons.tsv", guide)
+        self.assertIn("local_fastq_template.tsv", guide)
+        self.assertIn("local_bam_peak_template.tsv", guide)
+        self.assertIn("bulk-footprinting --reads-table", guide)
+        self.assertIn("bulk-footprinting --sample-table", guide)
+        self.assertEqual(guide.count("```bash"), 2)
         for unnecessary_detail in (
+            "sample\tcondition",
+            "Full seven-cell-line design",
+            "encode_cancer_7line_bams.tsv",
+            "encode_cancer_7line_comparisons.tsv",
+            "fp-tools-runtime status",
+            "--dry-run",
             "Plan storage and runtime before downloading",
             "Why the wrapper output is not byte-for-byte identical",
             "Representative ENCODE QC files",

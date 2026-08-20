@@ -1,49 +1,18 @@
 # Bulk ATAC-seq workflow
 
-This guide starts with either paired FASTQ files or aligned BAM and peak files,
-then compares motif-associated footprint scores between biological conditions.
-The worked example uses three HepG2 and three K562 biological replicates from
+`bulk-footprinting` runs a complete bulk ATAC-seq analysis from FASTQ files or
+prepared BAM and peak files. It produces footprint scores, differential motif
+results, and an interactive report.
+
+This example compares three HepG2 and three K562 biological replicates from
 ENCODE experiments [ENCSR291GJU](https://www.encodeproject.org/experiments/ENCSR291GJU/)
 and [ENCSR868FGK](https://www.encodeproject.org/experiments/ENCSR868FGK/).
 
-## Before you start
+## Start from FASTQ files
 
-Install fp-tools. The pinned raw-read programs are prepared automatically on
-first use; their status is available without downloading data:
-
-```bash
-fp-tools-runtime status
-```
-
-For a custom genome, provide a matching FASTA, Bowtie2 index, chromosome names,
-blacklist, and peak files. All BAMs, peaks, and the FASTA must use the same
-assembly. The examples below use hg38.
-
-## Starting from FASTQ files
-
-`bulk-footprinting --reads-table` accepts a tab-separated or comma-separated
-sample sheet and runs preparation plus all downstream stages.
-
-For paired-end data:
-
-```text
-sample	condition	fastq_1	fastq_2
-HepG2_rep1	HepG2	fastq/HepG2_rep1_R1.fastq.gz	fastq/HepG2_rep1_R2.fastq.gz
-K562_rep1	K562	fastq/K562_rep1_R1.fastq.gz	fastq/K562_rep1_R2.fastq.gz
-```
-
-For single-end data, omit `fastq_2`:
-
-```text
-sample	condition	fastq_1
-HepG2_rep1	HepG2	fastq/HepG2_rep1.fastq.gz
-K562_rep1	K562	fastq/K562_rep1.fastq.gz
-```
-
-[Download the ENCODE FASTQ sheet](../../demos/data/encode/encode_hepg2_k562_fastq_urls.tsv)
-or use the [local FASTQ template](../../demos/data/encode/local_fastq_template.tsv).
-Use the columns shown for your library layout. The ENCODE download includes
-optional provenance columns that may be left out.
+Download the [ENCODE FASTQ sample sheet](../../demos/data/encode/encode_hepg2_k562_fastq_urls.tsv)
+and the [HepG2/K562 comparison file](../../demos/data/encode/encode_hepg2_k562_comparisons.tsv).
+For your own data, begin with the [local FASTQ template](../../demos/data/encode/local_fastq_template.tsv).
 
 ```bash
 bulk-footprinting --reads-table encode_hepg2_k562_fastq_urls.tsv \
@@ -51,89 +20,30 @@ bulk-footprinting --reads-table encode_hepg2_k562_fastq_urls.tsv \
   --outdir project --cores 8
 ```
 
-The generated aligned-data table is retained at `project/metadata/samples.tsv`.
+## Start from aligned files
 
-## Starting from aligned ENCODE data
-
-The sample table requires `sample`, `condition`, `bam`, and `peaks`:
-
-```text
-sample	condition	bam	peaks
-HepG2_rep1	HepG2	data/bams/HepG2_rep1.bam	data/peaks/HepG2_peaks.bed
-K562_rep1	K562	data/bams/K562_rep1.bam	data/peaks/K562_peaks.bed
-```
-
-Use the complete [HepG2/K562 ENCODE sample table](../../demos/data/encode/encode_hepg2_k562_bams.tsv)
-with its [download helper](../../demos/data/encode/download_encode_hepg2_k562.sh),
-or copy the
-[local BAM/peak template](../../demos/data/encode/local_bam_peak_template.tsv)
-for your own data.
-
-Repeated `condition` values define biological replicates. Every BAM needs a
-`.bai` index next to it.
-
-## Define the comparison
-
-The comparison direction is `cond1 - cond2`. For HepG2 versus K562:
-
-```text
-comparison	cond1	cond2
-HepG2_vs_K562	HepG2	K562
-```
-
-[Download the HepG2/K562 comparison table](../../demos/data/encode/encode_hepg2_k562_comparisons.tsv).
-Condition names must exactly match the sample table; the `comparison` value
-becomes the output-directory name.
-
-## Run the complete aligned-data workflow
+Download the [ENCODE BAM and peak sample sheet](../../demos/data/encode/encode_hepg2_k562_bams.tsv)
+and its [download helper](../../demos/data/encode/download_encode_hepg2_k562.sh).
+For your own data, use the [local BAM and peak template](../../demos/data/encode/local_bam_peak_template.tsv).
+The same [comparison file](../../demos/data/encode/encode_hepg2_k562_comparisons.tsv)
+works for these aligned inputs.
 
 ```bash
-bulk-footprinting --sample-table encode_hepg2_k562_bams.tsv --comparison-table encode_hepg2_k562_comparisons.tsv \
-  --genome hg38.fa.gz --blacklist hg38.blacklist.bed --motif-db jaspar2026_vertebrates --outdir project --cores 8
+bulk-footprinting --sample-table encode_hepg2_k562_bams.tsv \
+  --comparison-table encode_hepg2_k562_comparisons.tsv \
+  --genome hg38.fa.gz --blacklist hg38.blacklist.bed \
+  --motif-db jaspar2026_vertebrates --outdir project --cores 8
 ```
 
-Preview the expanded commands without running them:
+Repeated condition names in a sample sheet define biological replicates. BAM,
+peak, blacklist, and genome files must use the same genome assembly.
 
-```bash
-bulk-footprinting --sample-table encode_hepg2_k562_bams.tsv --comparison-table encode_hepg2_k562_comparisons.tsv \
-  --genome hg38.fa.gz --blacklist hg38.blacklist.bed --outdir project --dry-run
-```
+## Review the results
 
-The wrapper runs `atac-correct`, `call-footprints`, `match-motifs`,
-`diff-footprints`, and `review-multi-comparisons`. See the
-[`bulk-footprinting` guide](../commands/bulk-footprinting.md) for its exact
-output tree.
+Open the generated interactive report to review differential motifs and
+aggregate footprint profiles. See the [bulk output example](../output-examples/bulk-atac-seq.md)
+or explore the [ENCODE cancer-cell-line output demo](../../reports.md).
 
-## Full seven-cell-line design
-
-The full example contains 17 samples from seven cancer cell lines:
-
-- [17-sample ENCODE BAM/peak table](../../demos/data/encode/encode_cancer_7line_bams.tsv)
-- [21-comparison table](../../demos/data/encode/encode_cancer_7line_comparisons.tsv)
-- [Interactive ENCODE cancer-cell-line output](../../reports.md)
-
-## Run the core commands separately
-
-The same analysis can be run step by step:
-
-<div class="fp-command-chain" markdown="1">
-
-[`atac-correct`](../commands/atac-correct.md)
-<span>→</span>
-[`call-footprints`](../commands/call-footprints.md)
-<span>→</span>
-[`match-motifs`](../commands/match-motifs.md)
-<span>→</span>
-[`diff-footprints`](../commands/diff-footprints.md)
-
-</div>
-
-Use the exact project-layout paths documented on each command page. The
-[Bulk output example](../output-examples/bulk-atac-seq.md) shows how to inspect
-the final interactive report.
-
-## Example QC files
-
-- [ATACorrect diagnostic PDF](../../demos/qc/encode/A549_rep1_atacorrect.pdf)
-- [Normalization QC table](../../demos/qc/encode/A549_normalize_bigwig_qc.tsv)
-- [Replicate motif-score matrix](../../demos/qc/encode/A549_motif_score_matrix.tsv)
+For additional options and output paths, see the
+[`bulk-footprinting` guide](../commands/bulk-footprinting.md) or the
+[complete API reference](../../api.md#bulk-footprinting).

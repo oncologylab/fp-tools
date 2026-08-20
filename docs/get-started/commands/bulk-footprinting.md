@@ -3,7 +3,7 @@
 Run bulk ATAC-seq from raw reads or aligned inputs through interactive reports.
 
 The [bulk workflow guide](../workflows/bulk-atac-seq.md) provides a runnable
-six-sample ENCODE design and the complete seven-cell-line tables.
+HepG2-versus-K562 ENCODE example from FASTQ or aligned inputs.
 
 ## Example command
 
