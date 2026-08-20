@@ -62,6 +62,24 @@ class AtacCorrectBatchTest(unittest.TestCase):
                 ["chr1\t1\t5", "chr1\t10\t25", "chr2\t2\t4"],
             )
 
+    def test_merge_peak_files_preserves_containing_peak_endpoint(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            peaks_a = tmp / "am173.bed"
+            peaks_b = tmp / "am166.bed"
+            peaks_a.write_text("chr1\t938517\t938672\n", encoding="utf-8")
+            peaks_b.write_text(
+                "chr1\t938523\t938666\nchr1\t938670\t938700\n",
+                encoding="utf-8",
+            )
+
+            merged = Path(_merge_peak_files([peaks_a, peaks_b], tmp / "out"))
+
+            self.assertEqual(
+                merged.read_text(encoding="utf-8").splitlines(),
+                ["chr1\t938517\t938700"],
+            )
+
     def test_multi_bam_dispatch_uses_sample_subdirectories(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)

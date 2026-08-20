@@ -335,7 +335,11 @@ class RegionList(list):
 
 
 	def merge(self, name=False): 	
-		""" Merge overlapping genomic regions. If name == True, regions will only be merged if the name is the same (used in count_overlaps) """
+		"""Merge overlapping regions into their geometric union.
+
+		Book-ended regions remain separate. If ``name`` is true, regions are
+		only merged when their names are identical (used in ``count_overlaps``).
+		"""
 
 		self.loc_sort()		#sort before overlapping
 		no = self.count()	#number of regions
@@ -356,8 +360,9 @@ class RegionList(list):
 					self[i].start = prev_start
 					self[i][1] = prev_start
 
-					self[i].end = curr_end
-					self[i][2] = curr_end
+					merged_end = max(prev_end, curr_end)
+					self[i].end = merged_end
+					self[i][2] = merged_end
 
 					del self[i-1]
 					no -= 1
