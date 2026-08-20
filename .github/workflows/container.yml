@@ -2,6 +2,12 @@ name: Container
 
 on:
   workflow_dispatch:
+    inputs:
+      visibility_only:
+        description: Make the existing fp-tools container package public without rebuilding it
+        required: false
+        type: boolean
+        default: false
   push:
     tags:
       - "v*"
@@ -23,6 +29,7 @@ env:
 
 jobs:
   image:
+    if: github.event_name != 'workflow_dispatch' || inputs.visibility_only != true
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
@@ -105,3 +112,16 @@ jobs:
             "${IMAGE}:${GITHUB_REF_NAME}-amd64" \
             "${IMAGE}:${GITHUB_REF_NAME}-arm64"
           docker buildx imagetools inspect "${IMAGE}:${GITHUB_REF_NAME}"
+
+  visibility:
+    name: public container package
+    if: always() && (startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.visibility_only == true))
+    needs: [image, manifest]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Make the container package public
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method PATCH "orgs/oncologylab/packages/container/fp-tools" \
+            -f visibility=public
