@@ -11,13 +11,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 
 from fp_tools.gui_config import JobSpec, canonical_tool_name, dump_yaml_config, expand_jobs, load_yaml_config, normalize_config
+from fp_tools.utils.subprocess_commands import resolve_fp_tools_subprocess
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -116,8 +116,7 @@ def run_job(job: JobSpec, run_root: Path) -> int:
     }
     status_path.write_text(json.dumps(status, indent=2), encoding="utf-8")
 
-    command = list(job.command)
-    command[0] = _resolve_executable(command[0])
+    command = resolve_fp_tools_subprocess(job.command)
     status["command"] = command
     status_path.write_text(json.dumps(status, indent=2), encoding="utf-8")
     (run_dir / "command.txt").write_text(" ".join(command) + "\n", encoding="utf-8")
@@ -139,16 +138,6 @@ def run_job(job: JobSpec, run_root: Path) -> int:
 def _default_run_root() -> Path:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return Path.cwd() / f"fp-tools-batch-{stamp}"
-
-
-def _resolve_executable(name: str) -> str:
-    local = Path(sys.executable).parent / name
-    if local.exists():
-        return str(local)
-    found = shutil.which(name)
-    if found:
-        return found
-    return name
 
 
 if __name__ == "__main__":

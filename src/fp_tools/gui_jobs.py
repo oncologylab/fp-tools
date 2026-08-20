@@ -5,12 +5,12 @@ from __future__ import annotations
 import os
 import json
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from fp_tools.gui_config import dump_yaml_config, normalize_config
+from fp_tools.utils.subprocess_commands import fp_tools_subprocess_command
 
 
 def default_gui_run_dir() -> Path:
@@ -30,7 +30,7 @@ def materialize_run_config(config: dict[str, Any], run_root: str | os.PathLike[s
 
 
 def run_config_sync(config_path: str | os.PathLike[str], run_root: str | os.PathLike[str] | None = None) -> subprocess.CompletedProcess[str]:
-    command = [sys.executable, "-m", "fp_tools.cli_batch", "--config", str(config_path)]
+    command = fp_tools_subprocess_command("run-yaml-workflow", ["--config", str(config_path)])
     if run_root:
         command.extend(["--run-root", str(run_root)])
     return subprocess.run(command, capture_output=True, text=True)
@@ -45,7 +45,10 @@ def launch_config_async(
     stdout_path = run_root / "launcher_stdout.log"
     stderr_path = run_root / "launcher_stderr.log"
     status_path = run_root / "status.json"
-    command = [sys.executable, "-m", "fp_tools.cli_batch", "--config", str(config_path), "--run-root", str(run_root)]
+    command = fp_tools_subprocess_command(
+        "run-yaml-workflow",
+        ["--config", str(config_path), "--run-root", str(run_root)],
+    )
 
     with stdout_path.open("w", encoding="utf-8") as stdout_handle, stderr_path.open("w", encoding="utf-8") as stderr_handle:
         session_options = (

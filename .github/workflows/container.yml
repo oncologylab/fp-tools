@@ -1,0 +1,107 @@
+name: Container
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - Dockerfile
+      - packaging/container/environment.yml
+      - pyproject.toml
+      - setup.py
+      - src/**
+      - .github/workflows/container.yml
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/oncologylab/fp-tools
+
+jobs:
+  image:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux-amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+            arch: amd64
+          - label: linux-arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Log in to GitHub Container Registry
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build native smoke image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: fp-tools:smoke
+          cache-from: type=gha,scope=container-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=container-${{ matrix.arch }}
+      - name: Test packaged commands, dependencies, regression, and GUI health
+        shell: bash
+        run: |
+          docker run --rm fp-tools:smoke python -c "import fp_tools.utils.sequences, fp_tools.utils.ngs, fp_tools.utils.signals"
+          docker run --rm fp-tools:smoke atac-correct --help >/dev/null
+          docker run --rm fp-tools:smoke prepare-atac --doctor --profile modern | tee /tmp/fp-tools-doctor.txt
+          grep -q $'bedtools\tyes\t' /tmp/fp-tools-doctor.txt
+          docker run --rm fp-tools:smoke python -c 'from fp_tools.utils.regions import OneRegion, RegionList; x=RegionList([OneRegion(["chr1",0,10,"outer"]),OneRegion(["chr1",2,8,"inner"])]); x.merge(); assert [(r.chrom,r.start,r.end) for r in x] == [("chr1",0,10)]'
+          docker run --rm -d --name fp-tools-gui-smoke -p 8891:8891 fp-tools:smoke
+          trap 'docker rm -f fp-tools-gui-smoke >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8891/_stcore/health >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs fp-tools-gui-smoke
+          exit 1
+      - name: Push architecture image
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          docker tag fp-tools:smoke "${IMAGE}:${GITHUB_REF_NAME}-${ARCH}"
+          docker push "${IMAGE}:${GITHUB_REF_NAME}-${ARCH}"
+
+  manifest:
+    name: multi-architecture manifest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish release and latest manifests
+        shell: bash
+        run: |
+          docker buildx imagetools create \
+            --tag "${IMAGE}:${GITHUB_REF_NAME}" \
+            --tag "${IMAGE}:latest" \
+            "${IMAGE}:${GITHUB_REF_NAME}-amd64" \
+            "${IMAGE}:${GITHUB_REF_NAME}-arm64"
+          docker buildx imagetools inspect "${IMAGE}:${GITHUB_REF_NAME}"

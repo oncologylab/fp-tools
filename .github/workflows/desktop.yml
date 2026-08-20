@@ -1,0 +1,107 @@
+name: Desktop bundles
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - packaging/desktop/**
+      - scripts/smoke_desktop_bundle.py
+      - pyproject.toml
+      - src/**
+      - .github/workflows/desktop.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows-x64
+            executable: dist/fp-tools-gui.exe
+          - os: macos-15-intel
+            label: macos-intel
+            executable: dist/fp-tools-gui
+          - os: macos-15
+            label: macos-apple-silicon
+            executable: dist/fp-tools-gui
+          - os: ubuntu-22.04
+            label: linux-x64
+            executable: dist/fp-tools-gui
+          - os: ubuntu-24.04-arm
+            label: linux-arm64
+            executable: dist/fp-tools-gui
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install fp-tools and bundler
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --only-binary=:all: . "pyinstaller>=6.19,<7"
+          python -m pip check
+      - name: Build one-file desktop executable
+        run: pyinstaller --clean --noconfirm packaging/desktop/fp-tools-gui.spec
+      - name: Smoke-test command dispatch and GUI startup
+        run: python scripts/smoke_desktop_bundle.py "${{ matrix.executable }}"
+      - name: Name release asset
+        shell: python
+        env:
+          SOURCE: ${{ matrix.executable }}
+          LABEL: ${{ matrix.label }}
+        run: |
+          import os, pathlib, shutil, tarfile
+          source = pathlib.Path(os.environ["SOURCE"])
+          release = pathlib.Path("release")
+          release.mkdir(exist_ok=True)
+          stem = f"fp-tools-gui-{os.environ['LABEL']}"
+          if os.environ["LABEL"].startswith("windows"):
+              shutil.copy2(source, release / f"{stem}.exe")
+          else:
+              with tarfile.open(release / f"{stem}.tar.gz", "w:gz") as archive:
+                  archive.add(source, arcname="fp-tools-gui")
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fp-tools-gui-${{ matrix.label }}
+          path: release/fp-tools-gui-*
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: fp-tools-gui-*
+          merge-multiple: true
+          path: release
+      - name: Write SHA-256 checksums
+        run: cd release && sha256sum fp-tools-gui-* > SHA256SUMS.txt
+      - name: Upload executables to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if ! gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            release_flags=()
+            if [[ "${GITHUB_REF_NAME}" == *rc* ]]; then
+              release_flags+=(--prerelease)
+            fi
+            gh release create "${GITHUB_REF_NAME}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --title "fp-tools ${GITHUB_REF_NAME}" \
+              --generate-notes \
+              "${release_flags[@]}"
+          fi
+          gh release upload "${GITHUB_REF_NAME}" release/* --repo "${GITHUB_REPOSITORY}" --clobber

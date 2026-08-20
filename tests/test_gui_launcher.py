@@ -2,8 +2,15 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from fp_tools.command_registry import COMMAND_TARGETS, dispatch_command
 from fp_tools.cli_gui import _access_urls, _startup_messages
+from fp_tools.utils.subprocess_commands import (
+    fp_tools_subprocess_command,
+    python_script_subprocess_command,
+    resolve_fp_tools_subprocess,
+)
 
 
 class GuiLauncherTests(unittest.TestCase):
@@ -21,6 +28,53 @@ class GuiLauncherTests(unittest.TestCase):
             _access_urls("0.0.0.0", 8891),
             ["http://127.0.0.1:8891", "http://SERVER_IP:8891"],
         )
+
+    def test_desktop_registry_covers_current_public_commands(self):
+        expected = {
+            "prepare-atac",
+            "bulk-footprinting",
+            "atac-correct",
+            "call-footprints",
+            "match-motifs",
+            "diff-footprints",
+            "normalize-bigwig",
+            "plot-aggregate",
+            "review-multi-comparisons",
+            "run-yaml-workflow",
+            "fp-tools-gui",
+            "discover-motifs",
+            "summarize-motifs",
+            "pseudobulk-fragments",
+            "find-signature-fp",
+            "sc-footprinting",
+        }
+        self.assertTrue(expected.issubset(COMMAND_TARGETS))
+
+    def test_frozen_child_command_routes_through_desktop_executable(self):
+        with patch("fp_tools.utils.subprocess_commands.is_frozen", return_value=True):
+            command = fp_tools_subprocess_command("plot-aggregate", ["--help"])
+        self.assertEqual(command[0], __import__("sys").executable)
+        self.assertEqual(command[1:3], ["--fp-tools-internal-command", "plot-aggregate"])
+        self.assertEqual(command[-1], "--help")
+
+    def test_non_fp_tools_child_command_is_not_rewritten(self):
+        self.assertEqual(resolve_fp_tools_subprocess(["samtools", "--version"]), ["samtools", "--version"])
+
+    def test_frozen_python_helper_routes_through_desktop_executable(self):
+        with patch("fp_tools.utils.subprocess_commands.is_frozen", return_value=True):
+            command = python_script_subprocess_command("helper.py", ["--value", "1"])
+        self.assertEqual(command[0], __import__("sys").executable)
+        self.assertEqual(command[1:3], ["--fp-tools-internal-python-script", "helper.py"])
+        self.assertEqual(command[-2:], ["--value", "1"])
+
+    def test_dispatch_restores_sys_argv(self):
+        import sys
+
+        previous = sys.argv
+        with self.assertRaises(SystemExit) as raised:
+            dispatch_command("summarize-motifs", ["--help"])
+        self.assertEqual(raised.exception.code, 0)
+        self.assertIs(sys.argv, previous)
 
 
 if __name__ == "__main__":

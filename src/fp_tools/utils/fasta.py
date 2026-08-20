@@ -6,12 +6,15 @@ import hashlib
 import os
 from pathlib import Path
 
-import pyfastx
-
 try:
     import pysam
 except ImportError:  # pragma: no cover - Windows path
     pysam = None
+
+if pysam is None:  # pragma: no cover - exercised by Windows CI
+    import pyfastx
+else:
+    pyfastx = None
 
 
 def _cache_root() -> Path:

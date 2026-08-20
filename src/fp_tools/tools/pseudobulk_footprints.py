@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -16,20 +15,13 @@ import pandas as pd
 from fp_tools.tools.find_signature_fp import DEFAULT_KNN_NEIGHBORS
 from fp_tools.tools.pseudobulk import _parse_chrom_list, _truthy, group_bam_by_tag, group_fragments
 from fp_tools.utils.motif_databases import DEFAULT_MOTIF_DB, motif_db_table, resolve_motif_inputs
+from fp_tools.utils.subprocess_commands import python_script_subprocess_command, resolve_fp_tools_subprocess
 
 
 def _split_csv(value: str | None) -> list[str]:
     if not value:
         return []
     return [item.strip() for item in value.split(",") if item.strip()]
-
-
-def _resolve_executable(name: str) -> str:
-    local = Path(sys.executable).parent / name
-    if local.exists():
-        return str(local)
-    found = shutil.which(name)
-    return found or name
 
 
 def _quote_command(command: list[str]) -> str:
@@ -95,8 +87,7 @@ def _resolve_script_path(script: str | Path) -> Path:
 
 def _run_command(command: list[str], stdout_path: Path, stderr_path: Path) -> int:
     stdout_path.parent.mkdir(parents=True, exist_ok=True)
-    resolved = list(command)
-    resolved[0] = _resolve_executable(resolved[0])
+    resolved = resolve_fp_tools_subprocess(command)
     env = os.environ.copy()
     env.setdefault("MPLCONFIGDIR", str(stdout_path.parent / ".mplconfig"))
     env.setdefault("XDG_CACHE_HOME", str(stdout_path.parent / ".cache"))
@@ -137,7 +128,7 @@ def _add_single_cell_signature_command(
     signature_dir.mkdir(parents=True, exist_ok=True)
     if args.single_cell_signature_script:
         signature_script = _resolve_script_path(args.single_cell_signature_script)
-        signature_command = [sys.executable, str(signature_script)]
+        signature_command = python_script_subprocess_command(signature_script)
     else:
         signature_command = ["find-signature-fp"]
     signature_command.extend(
@@ -422,28 +413,29 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
 
     if args.tf_site_dir:
         plot_script = _resolve_script_path(args.plot_script)
-        plot_command = [
-            sys.executable,
-            str(plot_script),
-            "--manifest",
-            str(manifest_path),
-            "--tf-site-dir",
-            str(args.tf_site_dir),
-            "--out-prefix",
-            str(plot_dir / "pseudobulk_footprint_aggregate"),
-            "--signal-column",
-            "footprint_bigwig",
-            "--value-column",
-            "footprint_score",
-            "--ylabel",
-            "Footprint score",
-            "--groups",
-            args.groups or ",".join(output_manifest.loc[output_manifest["status"].isin(["succeeded", "dry_run"]), "group"].astype(str).tolist()),
-            "--tfs",
-            args.tfs,
-            "--flank",
-            str(args.plot_flank),
-        ]
+        plot_command = python_script_subprocess_command(
+            plot_script,
+            [
+                "--manifest",
+                str(manifest_path),
+                "--tf-site-dir",
+                str(args.tf_site_dir),
+                "--out-prefix",
+                str(plot_dir / "pseudobulk_footprint_aggregate"),
+                "--signal-column",
+                "footprint_bigwig",
+                "--value-column",
+                "footprint_score",
+                "--ylabel",
+                "Footprint score",
+                "--groups",
+                args.groups or ",".join(output_manifest.loc[output_manifest["status"].isin(["succeeded", "dry_run"]), "group"].astype(str).tolist()),
+                "--tfs",
+                args.tfs,
+                "--flank",
+                str(args.plot_flank),
+            ],
+        )
         if args.site_summary:
             plot_command.extend(["--site-summary", str(args.site_summary)])
         commands.append(("plot corrected pseudobulk footprints", plot_command))

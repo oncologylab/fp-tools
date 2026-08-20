@@ -1429,15 +1429,21 @@ def _launch_async_match_motif_bed_materialization(sample_args_list, cores_per_sa
         payload_path = handle.name
     finally:
         handle.close()
-    code = (
-        "from fp_tools.tools.diff_footprints import _materialize_match_motif_beds_payload; "
-        f"_materialize_match_motif_beds_payload({payload_path!r})"
-    )
     if os.environ.get("FP_TOOLS_SYNC_MATCH_BEDS") == "1":
         _materialize_match_motif_beds_payload(payload_path)
     else:
+        if getattr(sys, "frozen", False):
+            from fp_tools.desktop import INTERNAL_MATCH_BEDS_FLAG
+
+            command = [sys.executable, INTERNAL_MATCH_BEDS_FLAG, payload_path]
+        else:
+            code = (
+                "from fp_tools.tools.diff_footprints import _materialize_match_motif_beds_payload; "
+                f"_materialize_match_motif_beds_payload({payload_path!r})"
+            )
+            command = [sys.executable, "-c", code]
         subprocess.Popen(
-            [sys.executable, "-c", code],
+            command,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             **_subprocess_session_options(),

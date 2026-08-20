@@ -1,0 +1,24 @@
+name: fp-tools
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12
+  - pip
+  - c-compiler
+  - bedtools>=2.31
+  - samtools>=1.23
+  - bowtie2>=2.5
+  - fastp>=1.0
+  - fastqc>=0.12
+  - trim-galore>=0.6
+  - picard>=2.26
+  - homer>=4.11
+  - macs3>=3.0
+  - multiqc>=1.25
+  - boto3>=1.35
+  - sra-tools>=3.1
+  - aria2>=1.37
+  - pigz>=2.8
+  - meme>=5.5
+  - ucsc-bedgraphtobigwig
