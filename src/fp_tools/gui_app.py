@@ -491,15 +491,20 @@ def _apply_page_style() -> None:
             line-height: 1.28;
         }
         .fp-nav-group {
-            margin: 0.72rem 0 0.28rem;
+            margin: 0;
             display: block;
-            padding-bottom: 0.18rem;
+            box-sizing: border-box;
+            padding: 0.72rem 0 0.46rem;
             color: #93a4b8;
             font-size: 0.72rem;
             font-weight: 800;
             letter-spacing: 0.06em;
             text-transform: uppercase;
             line-height: 1.1;
+        }
+        [data-testid="stMarkdown"]:has(.fp-nav-group)
+        [data-testid="stMarkdownContainer"] {
+            margin-bottom: 0 !important;
         }
         .fp-run-dir-pill {
             display: block;

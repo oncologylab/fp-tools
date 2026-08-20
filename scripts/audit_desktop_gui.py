@@ -17,6 +17,18 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 
+SIDEBAR_FIRST_PAGES = (
+    ("Overview", "Home"),
+    ("Core workflow", "atac-correct"),
+    ("Workflow and interface", "bulk-footprinting"),
+    ("Signals and reports", "normalize-bigwig"),
+    ("De Novo Motif Discovery", "discover-motifs"),
+    ("Single-cell ATAC-seq", "pseudobulk-fragments"),
+    ("Configuration", "Config"),
+)
+MINIMUM_SIDEBAR_GAP_PX = 2.0
+
+
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as handle:
         handle.bind(("127.0.0.1", 0))
@@ -136,6 +148,125 @@ def _audit_page(
     context.close()
 
 
+def _audit_sidebar_navigation(
+    browser,
+    base_url: str,
+    width: int,
+    height: int,
+    device_scale_factor: float,
+    output: Path,
+    capture_screenshots: bool,
+) -> None:
+    """Assert that every group label clears its first button, including active rows."""
+
+    context = browser.new_context(
+        viewport={"width": width, "height": height},
+        device_scale_factor=device_scale_factor,
+    )
+    page = context.new_page()
+    try:
+        page.goto(f"{base_url}/?page=Home", wait_until="domcontentloaded")
+        page.locator(".fp-nav-group").first.wait_for(timeout=60_000)
+        page.wait_for_function(
+            "() => document.querySelectorAll('.fp-nav-group').length === 7",
+            timeout=60_000,
+        )
+        for active_group, page_name in SIDEBAR_FIRST_PAGES:
+            print(
+                f"Checking active sidebar row {page_name} at {width}px/DPR "
+                f"{device_scale_factor}",
+                flush=True,
+            )
+            page.locator(".fp-nav-group").evaluate_all(
+                """(headings, activeGroup) => headings.forEach(heading => {
+                  const container = heading.closest('[data-testid="stElementContainer"]');
+                  let sibling = container ? container.nextElementSibling : null;
+                  let button = null;
+                  while (sibling && !button) {
+                    button = sibling.querySelector('button');
+                    sibling = sibling.nextElementSibling;
+                  }
+                  if (button) button.disabled = heading.textContent.trim() === activeGroup;
+                })""",
+                active_group,
+            )
+            page.wait_for_timeout(50)
+            measurements = page.locator(".fp-nav-group").evaluate_all(
+                """headings => headings.map(heading => {
+                  const container = heading.closest('[data-testid="stElementContainer"]');
+                  let sibling = container ? container.nextElementSibling : null;
+                  let button = null;
+                  while (sibling && !button) {
+                    button = sibling.querySelector('button');
+                    sibling = sibling.nextElementSibling;
+                  }
+                  const headingBox = heading.getBoundingClientRect();
+                  const buttonBox = button ? button.getBoundingClientRect() : null;
+                  return {
+                    group: heading.textContent.trim(),
+                    headingBottom: headingBox.bottom,
+                    buttonTop: buttonBox ? buttonBox.top : null,
+                    gap: buttonBox ? buttonBox.top - headingBox.bottom : null,
+                    buttonText: button ? button.textContent.trim() : null,
+                    buttonDisabled: button ? button.disabled : null,
+                    clipped: heading.scrollWidth > heading.clientWidth + 1 ||
+                      heading.scrollHeight > heading.clientHeight + 1
+                  };
+                })"""
+            )
+            failures = []
+            for measurement in measurements:
+                if measurement["buttonTop"] is None:
+                    failures.append(f"{measurement['group']}: first navigation row was not found")
+                elif measurement["gap"] < MINIMUM_SIDEBAR_GAP_PX:
+                    failures.append(
+                        f"{measurement['group']}: heading-to-row gap is "
+                        f"{measurement['gap']:.2f}px; expected at least "
+                        f"{MINIMUM_SIDEBAR_GAP_PX:.2f}px"
+                    )
+                if measurement["clipped"]:
+                    failures.append(f"{measurement['group']}: heading text is clipped")
+            active = next(
+                (value for value in measurements if value["group"] == active_group),
+                None,
+            )
+            if active is None:
+                failures.append(f"{active_group}: active group heading was not found")
+            elif not active["buttonDisabled"]:
+                failures.append(
+                    f"{active_group}: first row {active['buttonText']!r} is not active"
+                )
+            elif active["buttonText"] != page_name:
+                failures.append(
+                    f"{active_group}: expected first row {page_name!r}, found "
+                    f"{active['buttonText']!r}"
+                )
+            if failures:
+                screenshot = output / f"sidebar-{page_name}-{width}-failure.png"
+                screenshot_note = "screenshot skipped"
+                if capture_screenshots:
+                    screenshot_note = f"screenshot: {screenshot}"
+                    try:
+                        page.screenshot(
+                            path=str(screenshot),
+                            full_page=False,
+                            animations="disabled",
+                            timeout=10_000,
+                        )
+                    except Exception as exc:
+                        screenshot_note = f"screenshot capture failed: {exc}"
+                raise RuntimeError(
+                    f"Sidebar audit failed for {page_name} at {width}px/DPR "
+                    f"{device_scale_factor}: {'; '.join(failures)}; {screenshot_note}"
+                )
+        print(
+            f"Audited every sidebar group at {width}x{height}, DPR {device_scale_factor}",
+            flush=True,
+        )
+    finally:
+        context.close()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("executable")
@@ -189,6 +320,20 @@ def main() -> int:
                                 output,
                                 not args.skip_screenshots,
                             )
+
+                    for width, height, scale in (
+                        (1920, 1080, 2.0),
+                        (1280, 720, 1.25),
+                    ):
+                        _audit_sidebar_navigation(
+                            browser,
+                            base_url,
+                            width,
+                            height,
+                            scale,
+                            output,
+                            not args.skip_screenshots,
+                        )
 
                     context = browser.new_context(viewport={"width": 1280, "height": 720})
                     page = context.new_page()
