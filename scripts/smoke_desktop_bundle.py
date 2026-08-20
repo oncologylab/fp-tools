@@ -125,7 +125,7 @@ def main() -> int:
                 str(fixture_root / "Bcell_corrected.bw"),
                 str(fixture_root / "Tcell_corrected.bw"),
                 "--background",
-                str(fixture_root / "merged_peaks.bed"),
+                str(fixture_root / "plot_regions.bed"),
                 "--outdir",
                 str(normalize_output),
                 "--method",
