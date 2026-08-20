@@ -19,8 +19,8 @@ starts from coordinate-sorted BAM/BAI files and matching peak BED files.
 Download the app for your computer, then open it. The GUI starts in your
 browser.
 
-[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc7/fp-tools-gui-windows-x64.exe){ .md-button }
-[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc7/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
+[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc8/fp-tools-gui-windows-x64.exe){ .md-button }
+[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc8/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
 
 The preview apps are unsigned. Windows may ask you to confirm the download. On
 macOS, Control-click the app and choose **Open** the first time.

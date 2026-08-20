@@ -1464,6 +1464,7 @@ def _render_page_loader(tool: str) -> None:
 def _render_run_controls(run_dir: Path, label: str) -> None:
     normalized = normalize_config(st.session_state.current_config)
     validation_errors = validate_gui_config(normalized)
+    has_validation_errors = bool(validation_errors)
     tool = _current_config_tool() or "none"
     with st.container(border=True):
         st.markdown(
@@ -1487,7 +1488,12 @@ def _render_run_controls(run_dir: Path, label: str) -> None:
             st.success("Config is ready to run.")
         with st.expander("Preview runnable YAML", expanded=False):
             st.code(config_to_yaml_text(normalized), language="yaml")
-        if st.button("Start run", key=f"run_{label}", width="stretch"):
+        if st.button(
+            "Start run",
+            key=f"run_{label}",
+            width="stretch",
+            disabled=has_validation_errors,
+        ):
             if validation_errors:
                 st.error("Run not started. Fix the config errors above first.")
                 return
