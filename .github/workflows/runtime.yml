@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_version:
-        description: Existing package version to republish, for example 0.2.0rc6
+        description: Existing package version to republish, for example 0.2.0rc7
         required: false
         type: string
   push:
@@ -44,19 +44,22 @@ jobs:
           fi
 
   native:
-    name: ${{ matrix.target.platform }} / ${{ matrix.component }}
+    name: ${{ matrix.platform }} / ${{ matrix.component }}
     needs: ensure-release
-    runs-on: ${{ matrix.target.runner }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        component: [core, meme, homer]
-        target:
-          - {runner: ubuntu-latest, platform: linux-x86_64}
-          - {runner: ubuntu-24.04-arm, platform: linux-arm64}
-          - {runner: macos-15-intel, platform: macos-x86_64}
-          - {runner: macos-15, platform: macos-arm64}
+        include:
+          - {runner: ubuntu-latest, platform: linux-x86_64, component: core}
+          - {runner: ubuntu-latest, platform: linux-x86_64, component: meme}
+          - {runner: ubuntu-latest, platform: linux-x86_64, component: homer}
+          - {runner: ubuntu-24.04-arm, platform: linux-arm64, component: core}
+          - {runner: ubuntu-24.04-arm, platform: linux-arm64, component: meme}
+          - {runner: ubuntu-24.04-arm, platform: linux-arm64, component: homer}
+          - {runner: macos-15-intel, platform: macos-x86_64, component: meme}
+          - {runner: macos-15, platform: macos-arm64, component: meme}
     steps:
       - uses: actions/checkout@v7
       - uses: mamba-org/setup-micromamba@v2
@@ -98,7 +101,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           if [[ "${GITHUB_REF}" != refs/tags/* ]]; then version="${PUBLISH_VERSION#v}"; fi
           release_tag="v${version}"
-          asset="fp-tools-runtime-${{ matrix.component }}-${version}-${{ matrix.target.platform }}.tar.gz"
+          asset="fp-tools-runtime-${{ matrix.component }}-${version}-${{ matrix.platform }}.tar.gz"
           mv "runtime-out/${{ matrix.component }}.tar.gz" "runtime-out/${asset}"
           (cd runtime-out && sha256sum "${asset}" > "${asset}.sha256")
           gh release upload "${release_tag}" \
@@ -106,22 +109,24 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" --clobber
       - uses: actions/upload-artifact@v7
         with:
-          name: runtime-${{ matrix.target.platform }}-${{ matrix.component }}-metadata
+          name: runtime-${{ matrix.platform }}-${{ matrix.component }}-metadata
           path: runtime-out/${{ matrix.component }}-sbom.json
 
   windows-wsl:
-    name: windows-x64 / private WSL2 runtime
+    name: windows-x64 / MEME WSL2 runtime
     needs: ensure-release
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
-      - name: Build and export complete runtime rootfs
+      - name: Build and export MEME-only runtime rootfs
         shell: bash
         run: |
-          docker build -t fp-tools-wsl-runtime .
-          container_id="$(docker create fp-tools-wsl-runtime)"
+          docker build \
+            -f packaging/runtime/windows-meme.Dockerfile \
+            -t fp-tools-wsl-meme-runtime .
+          container_id="$(docker create fp-tools-wsl-meme-runtime)"
           trap 'docker rm -f "${container_id}" >/dev/null 2>&1 || true' EXIT
           mkdir -p runtime-out
           docker export "${container_id}" | gzip -1 > runtime-out/fp-tools-wsl-rootfs.tar.gz
@@ -135,7 +140,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           if [[ "${GITHUB_REF}" != refs/tags/* ]]; then version="${PUBLISH_VERSION#v}"; fi
           release_tag="v${version}"
-          asset="fp-tools-runtime-wsl-core-${version}-linux-x86_64.tar.gz"
+          asset="fp-tools-runtime-wsl-meme-${version}-linux-x86_64.tar.gz"
           mv runtime-out/fp-tools-wsl-rootfs.tar.gz "runtime-out/${asset}"
           (cd runtime-out && sha256sum "${asset}" > "${asset}.sha256")
           gh release upload "${release_tag}" \
@@ -157,10 +162,10 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --only-binary=:all: .
-          fp-tools-runtime install core
+          fp-tools-runtime install meme
           fp-tools-runtime status
           $version = python -c "import fp_tools; print(fp_tools.__version__)"
           $distroName = "fp-tools-" + ($version -replace '\.', '-')
           $distro = (wsl.exe --list --quiet | Out-String).Replace("`0", "")
           if ($distro -notmatch [regex]::Escape($distroName)) { throw "fp-tools WSL runtime was not imported" }
-          wsl.exe --distribution $distroName --exec /opt/conda/bin/prepare-atac --doctor --profile modern
+          wsl.exe --distribution $distroName --exec /opt/conda/bin/streme --version

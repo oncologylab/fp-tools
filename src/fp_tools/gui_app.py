@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 from html import escape
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -19,17 +21,18 @@ import streamlit as st
 
 from fp_tools import __version__
 from fp_tools.gui_config import (
+    GUI_ENUM_CHOICES,
     canonical_tool_name,
     config_to_yaml_text,
     load_yaml_config,
     make_single_config,
     normalize_config,
     parse_yaml_text,
-    validate_config,
+    validate_gui_config,
 )
 from fp_tools.gui_jobs import default_gui_run_dir, launch_config_async, materialize_run_config, refresh_run_status
 
-GUI_EXAMPLE_DIR = Path("examples/gui_configs")
+GUI_EXAMPLE_PACKAGE = "fp_tools.resources.gui_configs"
 
 PAGE_OPTIONS = [
     "Home",
@@ -63,21 +66,24 @@ NAV_GROUPS = [
 GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
     "bulk-footprinting": {
         "sample_id": "bulk_footprinting_run",
-        "reads_table": "reads.tsv",
-        "sample_table": "",
+        "sample_table": "samples.tsv",
         "comparison_table": "comparisons.tsv",
-        "genome": "hg38",
+        "genome": "genome.fa.gz",
+        "blacklist": "",
         "outdir": "results/bulk_footprinting",
         "motif_db": "jaspar2026_vertebrates",
         "plot_aggregate": "all",
         "review_format": "auto",
         "cores": 4,
-        "runtime": "auto",
     },
     "review-multi-comparisons": {
         "sample_id": "comparison_browser_run",
         "inputs": ["results/bulk_footprinting/comparisons"],
+        "labels": [],
         "output_dir": "results/bulk_footprinting/reports/review_multi_comparisons",
+        "output_html": "",
+        "layout": "custom",
+        "title": "Review multiple differential footprint comparisons",
     },
     "match-motifs": {
         "sample_id": "match_motifs_run",
@@ -98,14 +104,21 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "method": "background-scale",
         "stat": "q95",
         "target": "median",
+        "chrom_sizes": "",
+        "workers": 2,
     },
     "discover-motifs": {
         "sample_id": "motif_discovery_run",
         "candidates": "test_data/merged_peaks.bed",
+        "fasta": "",
         "genome": "test_data/genome.fa.gz",
         "outdir": "examples/gui_demo_outputs/motif_discovery",
         "method": "streme",
         "known_motif_db": "jaspar2026_vertebrates",
+        "known_motifs": "",
+        "script": "",
+        "execute": False,
+        "runtime": "auto",
     },
     "summarize-motifs": {
         "sample_id": "motif_summary_run",
@@ -155,10 +168,35 @@ LIST_TEXT_FIELDS = {
     "signals",
     "bigwigs",
     "motifs",
+    "inputs",
+    "labels",
     "input_html",
     "cond_names",
+    "sample_names",
+    "sample_dirs",
+    "match_dir",
+    "aggregate_signals",
+    "region_labels",
+    "known_motifs",
     "TFBS",
     "read_shift",
+}
+
+GUI_FIELD_HELP: dict[str, dict[str, str]] = {
+    "bulk-footprinting": {
+        "normalization": "Normalization applied during differential footprinting.",
+        "plot_aggregate": "Motifs included in aggregate profiles, or off to omit profiles.",
+        "review_format": "Bundle, standalone HTML, automatic selection, or no combined report.",
+    },
+    "normalize-bigwig": {
+        "method": "Background scaling, robust z-score transformation, or no transformation.",
+        "stat": "Use median, iqr, or a quantile such as q90 or q95.",
+        "target": "Across-sample statistic used as the scaling target.",
+    },
+    "discover-motifs": {
+        "method": "MEME Suite discovery program.",
+        "runtime": "Managed, system, or container source for the optional MEME tools.",
+    },
 }
 
 
@@ -650,7 +688,9 @@ def _apply_page_style() -> None:
             color: #111827;
             font-size: 0.92rem;
             margin-top: 0.08rem;
-            word-break: break-word;
+            overflow-wrap: normal;
+            word-break: normal;
+            hyphens: none;
         }
         .fp-tutorial-panel {
             background: #eaf2ff;
@@ -676,6 +716,14 @@ def _apply_page_style() -> None:
             margin: 0.42rem 0 0;
             padding-left: 1.2rem;
         }
+        @media (max-width: 1500px) {
+            .fp-run-summary {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .fp-run-summary div:first-child {
+                grid-column: 1 / -1;
+            }
+        }
         @media (max-width: 900px) {
             [data-testid="stSidebar"] {
                 min-width: 300px !important;
@@ -686,6 +734,12 @@ def _apply_page_style() -> None:
             }
             .fp-run-card {
                 position: static;
+            }
+            .fp-run-summary {
+                grid-template-columns: 1fr;
+            }
+            .fp-run-summary div:first-child {
+                grid-column: auto;
             }
         }
         </style>
@@ -756,7 +810,7 @@ def _default_config_for_tool(tool: str) -> dict[str, Any]:
         defaults = {"TFBS": [], "signals": [], "output": "", "grid": "", "output_aggregated_scores": "", "output_aggregated_signals": ""}
     else:
         raw_defaults = GENERIC_TOOL_DEFAULTS.get(tool, {"sample_id": f"{tool.replace('-', '_')}_run"})
-        defaults = _prepare_generic_params(tool, _drop_single_meta(raw_defaults))
+        defaults = _drop_single_meta(raw_defaults)
     return make_single_config(tool, defaults, job_id=f"{tool.replace('-', '_')}_run")
 
 
@@ -826,17 +880,16 @@ def _render_home(run_dir: Path) -> None:
         "Remote access: launch `fp-tools-gui --host 0.0.0.0 --port 8891`, open the printed URL, "
         "and allow that TCP port in the firewall or cloud security group."
     )
-    if GUI_EXAMPLE_DIR.exists():
-        files = sorted(path.name for path in GUI_EXAMPLE_DIR.glob("*.yml"))
-        if files:
-            example_items = "\n".join(f'<div class="fp-example-item">{escape(name)}</div>' for name in files[:12])
-            st.markdown(
-                f"""
-                <div class="fp-section-title">Example YAML configs <span>{escape(str(GUI_EXAMPLE_DIR))}</span></div>
-                <div class="fp-example-grid">{example_items}</div>
-                """,
-                unsafe_allow_html=True,
-            )
+    files = [path.name for path in _all_example_files()]
+    if files:
+        example_items = "\n".join(f'<div class="fp-example-item">{escape(name)}</div>' for name in files[:12])
+        st.markdown(
+            f"""
+            <div class="fp-section-title">Example YAML configs</div>
+            <div class="fp-example-grid">{example_items}</div>
+            """,
+            unsafe_allow_html=True,
+        )
     _render_home_config_snapshot()
 
 
@@ -1312,14 +1365,14 @@ def _render_generic_tool_page(run_dir: Path, tool: str) -> None:
     with form_col:
         _render_page_loader(tool)
         defaults = GENERIC_TOOL_DEFAULTS.get(tool, {"sample_id": f"{tool.replace('-', '_')}_run"})
-        current = _current_single_params(tool) or defaults
+        current = {**_drop_single_meta(defaults), **_current_single_params(tool)}
         st.caption("This page writes the same YAML config used by run-yaml-workflow and the direct CLI.")
         with st.form(f"{tool}_generic_form"):
             edited: dict[str, Any] = {}
             simple_fields: list[tuple[str, Any]] = []
             wide_fields: list[tuple[str, Any]] = []
             for key, default_value in current.items():
-                if key in {"tool", "sample_id", "job_id", "comparison_id"}:
+                if key in {"tool", "sample_id", "job_id", "comparison_id", "extra_args"}:
                     continue
                 if key in LIST_TEXT_FIELDS or isinstance(default_value, list):
                     wide_fields.append((key, default_value))
@@ -1333,14 +1386,14 @@ def _render_generic_tool_page(run_dir: Path, tool: str) -> None:
                 edited[key] = _render_generic_field(tool, key, default_value)
             extra_args = st.text_input(
                 "Extra CLI args",
-                value=str(current.get("extra_args", "") if not isinstance(current.get("extra_args"), list) else " ".join(current.get("extra_args", []))),
+                value=_format_extra_args(current.get("extra_args", [])),
             )
             submitted = st.form_submit_button("Update page config")
         if submitted:
             config = _prepare_generic_params(tool, edited)
             if extra_args.strip():
-                config["extra_args"] = extra_args.split()
-            _set_config(make_single_config(tool, config, job_id=str(current.get("sample_id", f"{tool.replace('-', '_')}_run"))))
+                config["extra_args"] = _parse_extra_args(extra_args)
+            _set_config(make_single_config(tool, config, job_id=f"{tool.replace('-', '_')}_run"))
     with run_col:
         _render_run_controls(run_dir, label=tool.replace("-", "_"))
 
@@ -1398,7 +1451,8 @@ def _render_page_loader(tool: str) -> None:
                 key=f"{tool}_example_select",
             )
             if st.button("Load example", key=f"{tool}_load_example") and example_choice:
-                _set_config(normalize_config(load_yaml_config(GUI_EXAMPLE_DIR / example_choice)))
+                example = next(path for path in example_files if path.name == example_choice)
+                _set_config(parse_yaml_text(example.read_text(encoding="utf-8")))
         upload = st.file_uploader("Upload YAML", type=["yml", "yaml"], key=f"{tool}_uploader")
         if upload is not None and st.button("Apply uploaded YAML", key=f"{tool}_apply_upload"):
             _set_config(parse_yaml_text(upload.getvalue().decode("utf-8")))
@@ -1409,7 +1463,7 @@ def _render_page_loader(tool: str) -> None:
 
 def _render_run_controls(run_dir: Path, label: str) -> None:
     normalized = normalize_config(st.session_state.current_config)
-    validation_errors = validate_config(normalized)
+    validation_errors = validate_gui_config(normalized)
     tool = _current_config_tool() or "none"
     with st.container(border=True):
         st.markdown(
@@ -1566,15 +1620,31 @@ def _prepare_generic_params(tool: str, params: dict[str, Any]) -> dict[str, Any]
 
 def _render_generic_field(tool: str, key: str, default_value: Any) -> Any:
     value = default_value
+    help_text = GUI_FIELD_HELP.get(tool, {}).get(key)
     if isinstance(value, list):
         value = _join_multi(value)
     if isinstance(value, bool):
-        return st.checkbox(_human_label(key), value=value)
+        return st.checkbox(_human_label(key), value=value, help=help_text)
+    choices = GUI_ENUM_CHOICES.get(tool, {}).get(key)
+    if choices:
+        selected = str(value or choices[0])
+        index = choices.index(selected) if selected in choices else 0
+        return st.selectbox(
+            _human_label(key), choices, index=index, key=f"{tool}_{key}", help=help_text
+        )
     if key in LIST_TEXT_FIELDS:
-        return st.text_area(_human_label(key), value=str(value or ""), height=88, key=f"{tool}_{key}")
+        return st.text_area(
+            _human_label(key), value=str(value or ""), height=88, key=f"{tool}_{key}", help=help_text
+        )
     if isinstance(value, int):
-        return int(st.number_input(_human_label(key), min_value=0, value=int(value), step=1, key=f"{tool}_{key}"))
-    return st.text_input(_human_label(key), value=str(value or ""), key=f"{tool}_{key}")
+        return int(
+            st.number_input(
+                _human_label(key), min_value=0, value=int(value), step=1, key=f"{tool}_{key}", help=help_text
+            )
+        )
+    return st.text_input(
+        _human_label(key), value=str(value or ""), key=f"{tool}_{key}", help=help_text
+    )
 
 
 def _human_label(key: str) -> str:
@@ -1647,9 +1717,15 @@ def _drop_editor_meta(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _example_files_for_tool(tool: str) -> list[Path]:
-    if not GUI_EXAMPLE_DIR.exists():
-        return []
+def _all_example_files() -> list[Any]:
+    root = resources.files(GUI_EXAMPLE_PACKAGE)
+    return sorted(
+        (path for path in root.iterdir() if path.is_file() and path.name.endswith(".yml")),
+        key=lambda path: path.name,
+    )
+
+
+def _example_files_for_tool(tool: str) -> list[Any]:
     tool = canonical_tool_name(tool)
     prefixes = {
         "atac-correct": ["atacorrect", "atac_correct"],
@@ -1657,10 +1733,25 @@ def _example_files_for_tool(tool: str) -> list[Path]:
         "diff-footprints": ["diff_footprints"],
         "plot-aggregate": ["plotaggregate", "plot_aggregate"],
     }.get(tool, [tool.replace("-", "_")])
-    files: list[Path] = []
+    files: list[Any] = []
+    candidates = _all_example_files()
     for prefix in prefixes:
-        files.extend(GUI_EXAMPLE_DIR.glob(f"{prefix}_*.yml"))
-    return sorted(set(files))
+        files.extend(path for path in candidates if path.name.startswith(f"{prefix}_"))
+    return sorted({path.name: path for path in files}.values(), key=lambda path: path.name)
+
+
+def _parse_extra_args(text: str) -> list[str]:
+    lexer = shlex.shlex(str(text), posix=True)
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    lexer.escape = ""
+    return list(lexer)
+
+
+def _format_extra_args(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    return shlex.join([str(item) for item in (value or [])])
 
 
 def _tutorial_visible() -> bool:

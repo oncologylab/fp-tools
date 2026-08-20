@@ -5,8 +5,8 @@ hide:
 
 # Installation
 
-Choose the recommended option for your computer. fp-tools installs its Python
-dependencies and downloads any required genomics tools automatically.
+Choose the recommended option for your computer. Every GUI and desktop route
+starts from coordinate-sorted BAM/BAI files and matching peak BED files.
 
 | Computer | Recommended installation |
 | --- | --- |
@@ -19,14 +19,13 @@ dependencies and downloads any required genomics tools automatically.
 Download the app for your computer, then open it. The GUI starts in your
 browser.
 
-[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc6/fp-tools-gui-windows-x64.exe){ .md-button }
-[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc6/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
+[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc7/fp-tools-gui-windows-x64.exe){ .md-button }
+[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc7/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
 
 The preview apps are unsigned. Windows may ask you to confirm the download. On
 macOS, Control-click the app and choose **Open** the first time.
 
-The first FASTQ or de novo motif-discovery run prepares the complete analysis
-environment automatically. On Windows, enabling WSL2 may require one restart.
+Optional de novo motif discovery prepares its external tools on first use.
 
 ## Python package
 
@@ -61,6 +60,9 @@ server address. The port must be permitted by the server firewall.
     ```
 
     Open `http://127.0.0.1:8891`. Your current folder is available as `/work`.
+
+    The Linux container also supports FASTQ-to-BAM preparation with
+    `prepare-atac`; native Windows and macOS installations do not.
 
 ## Start an analysis
 

@@ -56,6 +56,17 @@ Primary current API checks:
 .venv/bin/run-yaml-workflow --config examples/gui_configs/call_footprints_single.yml --dry-run
 ```
 
+Platform contract checks:
+
+- Linux CLI and the Linux container support `prepare-atac` and
+  `bulk-footprinting --reads-table`.
+- Native macOS and Windows commands reject raw-read mode before downloads or
+  output creation while keeping `prepare-atac --help` available.
+- Every GUI and both desktop bundles accept BAM/BAI plus peak BED inputs and
+  reject `prepare-atac`, `reads_table`, and equivalent extra arguments.
+- Non-Linux runtime manifests expose the optional MEME component only; Linux
+  manifests also expose raw-read core and HOMER components.
+
 ## 4. Build Artifacts
 
 Release wheels are built by `cibuildwheel` in the manual `Publish` workflow;
@@ -98,10 +109,11 @@ their checksums to tagged GitHub releases. The `publish_version` manual input
 can rebuild archives for an existing version.
 
 The `Managed runtimes` workflow attaches pinned core, MEME, and HOMER archives
-for Linux and macOS, plus the private Windows WSL2 root filesystem, to the
-public GitHub release with SHA-256 sidecars. It must verify archive relocation
-and a real Windows WSL2 import before release handoff. Its `publish_version`
-manual input can rebuild archives before repeating the public-consumer smoke.
+for Linux, MEME archives for macOS, and the private Windows MEME WSL2 runtime to
+the public GitHub release with SHA-256 sidecars. It must verify archive
+relocation and a real Windows WSL2 import before release handoff. Its
+`publish_version` manual input can rebuild archives before repeating the
+public-consumer smoke.
 
 The manual GitHub Actions `Publish` workflow uses the repository
 `PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or

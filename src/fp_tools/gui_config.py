@@ -12,6 +12,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import yaml
 
@@ -351,8 +352,12 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
                 elif str(value or "").strip() == "":
                     errors.append(f"{job_name}: missing required field '{field}'")
             if tool == "discover-motifs":
-                if not str(item.get("fasta") or "").strip() and not str(item.get("candidates") or "").strip():
+                fasta = str(item.get("fasta") or "").strip()
+                candidates = str(item.get("candidates") or "").strip()
+                if not fasta and not candidates:
                     errors.append(f"{job_name}: provide either 'fasta' or 'candidates'")
+                elif fasta and candidates:
+                    errors.append(f"{job_name}: provide only one of 'fasta' or 'candidates'")
             if tool == "bulk-footprinting":
                 reads_table = str(item.get("reads_table") or "").strip()
                 sample_table = str(item.get("sample_table") or "").strip()
@@ -405,6 +410,277 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
                     )
 
     return errors
+
+
+GUI_RAW_READ_KEYS = {
+    "reads_table",
+    "reads-table",
+    "config",
+    "profile",
+    "reference_dir",
+    "reference-dir",
+    "fasta",
+    "bowtie2_index",
+    "bowtie2-index",
+    "tss",
+    "macs_genome_size",
+    "macs-genome-size",
+    "max_parallel_samples",
+    "max-parallel-samples",
+    "memory_gb",
+    "memory-gb",
+    "keep_intermediates",
+    "keep-intermediates",
+}
+
+GUI_ENUM_CHOICES: dict[str, dict[str, tuple[str, ...]]] = {
+    "bulk-footprinting": {
+        "normalization": ("none", "condition-quantile", "sample-quantile"),
+        "plot_aggregate": ("sig", "all", "top", "off"),
+        "review_format": ("auto", "bundle", "standalone", "none"),
+    },
+    "call-footprints": {"score": ("footprint", "sum", "mean", "none")},
+    "diff-footprints": {
+        "comparison_axis": ("conditions", "regions"),
+        "normalization": ("none", "condition-quantile", "sample-quantile"),
+        "plot_aggregate": ("sig", "all", "top", "off"),
+    },
+    "normalize-bigwig": {
+        "layout": ("custom", "project"),
+        "method": ("background-scale", "background-zscore", "none"),
+        "target": ("median", "mean"),
+    },
+    "plot-aggregate": {
+        "normalization": ("none", "mean", "sum", "max", "q95"),
+        "share_y": ("none", "signals", "sites", "both"),
+    },
+    "review-multi-comparisons": {
+        "layout": ("custom", "project"),
+        "aggregate_legends": ("show", "hide"),
+    },
+    "discover-motifs": {
+        "method": ("meme", "dreme", "streme"),
+        "runtime": ("auto", "managed", "system", "container"),
+    },
+    "sc-footprinting": {
+        "diff_normalization": ("none", "condition-quantile", "sample-quantile"),
+        "diff_plot_aggregate": ("sig", "all", "top", "off"),
+    },
+}
+
+GUI_INPUT_PATH_FIELDS: dict[str, dict[str, str]] = {
+    "atac-correct": {
+        "bams": "file",
+        "genome": "file",
+        "peaks": "file",
+        "blacklist": "file",
+    },
+    "call-footprints": {"signal": "file", "signals": "file", "regions": "file"},
+    "match-motifs": {
+        "signals": "file",
+        "genome": "file",
+        "peaks": "file",
+        "peak_header": "file",
+        "motifs": "file",
+    },
+    "diff-footprints": {
+        "signals": "file",
+        "genome": "file",
+        "peaks": "file",
+        "peak_header": "file",
+        "motifs": "file",
+        "regions": "file",
+        "aggregate_signals": "file",
+        "sample_dirs": "dir",
+        "project_dir": "dir",
+    },
+    "normalize-bigwig": {
+        "bigwigs": "file",
+        "background": "file",
+        "sample_table": "file",
+        "chrom_sizes": "file",
+    },
+    "plot-aggregate": {
+        "TFBS": "file",
+        "tfbs": "file",
+        "signals": "file",
+        "regions": "file",
+        "whitelist": "file",
+        "blacklist": "file",
+        "manifest": "file",
+        "input_html": "file",
+        "sample_dirs": "dir",
+        "match_dir": "dir",
+    },
+    "review-multi-comparisons": {"inputs": "any"},
+    "bulk-footprinting": {
+        "sample_table": "file",
+        "comparison_table": "file",
+        "genome": "file",
+        "blacklist": "file",
+        "motifs": "file",
+    },
+    "discover-motifs": {
+        "fasta": "file",
+        "candidates": "file",
+        "genome": "file",
+        "known_motifs": "file",
+    },
+    "summarize-motifs": {"meme_txt": "file", "tomtom_tsv": "file"},
+    "pseudobulk-fragments": {"fragments": "file", "annotations": "file"},
+    "find-signature-fp": {
+        "fragments": "file",
+        "annotations": "file",
+        "h5ad": "file",
+        "tf_site_dir": "dir",
+        "all_motif_diff_dir": "dir",
+        "all_motif_results": "file",
+        "all_motif_score_table": "file",
+        "marker_score_table": "file",
+    },
+    "sc-footprinting": {
+        "fragments": "file",
+        "annotations": "file",
+        "h5ad": "file",
+        "genome": "file",
+        "peaks": "file",
+        "blacklist": "file",
+        "genome_sizes": "file",
+        "motifs": "file",
+    },
+}
+
+
+def _path_values(value: Any) -> list[str]:
+    if isinstance(value, (list, tuple)):
+        return [str(item).strip() for item in value if str(item).strip()]
+    text = str(value or "").strip()
+    return [text] if text else []
+
+
+def _is_remote_path(value: str) -> bool:
+    return urlparse(value).scheme.lower() in {"http", "https", "ftp", "s3"}
+
+
+def _bam_index_exists(path: Path) -> bool:
+    candidates = [Path(str(path) + ".bai")]
+    if path.suffix.lower() == ".bam":
+        candidates.append(path.with_suffix(".bai"))
+    return any(candidate.is_file() for candidate in candidates)
+
+
+def _validate_gui_input_paths(tool: str, item: Mapping[str, Any], job_name: str) -> list[str]:
+    errors: list[str] = []
+    for field, expected in GUI_INPUT_PATH_FIELDS.get(tool, {}).items():
+        for value in _path_values(item.get(field)):
+            if _is_remote_path(value):
+                errors.append(
+                    f"{job_name}: '{field}' must be a local path; remote URLs are not supported: {value}"
+                )
+                continue
+            path = Path(value).expanduser()
+            valid = path.exists()
+            if expected == "file":
+                valid = path.is_file()
+            elif expected == "dir":
+                valid = path.is_dir()
+            if not valid:
+                label = "file or directory" if expected == "any" else expected
+                errors.append(f"{job_name}: '{field}' {label} does not exist: {value}")
+                continue
+            if field == "bams" and path.suffix.lower() == ".bam" and not _bam_index_exists(path):
+                errors.append(f"{job_name}: BAM index (.bai) is missing for '{field}': {value}")
+
+    if tool == "bulk-footprinting":
+        table_text = str(item.get("sample_table") or "").strip()
+        table_path = Path(table_text).expanduser() if table_text else None
+        if table_path is not None and table_path.is_file():
+            try:
+                from fp_tools.utils.project_layout import read_sample_table
+
+                samples = read_sample_table(table_path)
+            except (OSError, ValueError) as exc:
+                errors.append(f"{job_name}: invalid 'sample_table': {exc}")
+            else:
+                for sample in samples:
+                    for field, value in (("bam", sample.bam), ("peaks", sample.peaks)):
+                        path = Path(value).expanduser()
+                        if not value or not path.is_file():
+                            errors.append(
+                                f"{job_name}: sample {sample.sample!r} {field} file does not exist: {value or '<blank>'}"
+                            )
+                        elif field == "bam" and not _bam_index_exists(path):
+                            errors.append(
+                                f"{job_name}: sample {sample.sample!r} BAM index (.bai) is missing: {value}"
+                            )
+    return errors
+
+
+def validate_gui_config(config: Mapping[str, Any]) -> list[str]:
+    """Validate a config against the BAM-first GUI support boundary."""
+
+    normalized = normalize_config(config)
+    errors = validate_config(normalized)
+    normalized_raw_flags = {"--" + key.lstrip("-").replace("_", "-") for key in GUI_RAW_READ_KEYS}
+    for section in ("samples", "comparisons"):
+        for idx, item in enumerate(normalized[section], start=1):
+            tool = canonical_tool_name(str(item.get("tool", "")))
+            job_name = str(
+                item.get("sample_id")
+                or item.get("comparison_id")
+                or item.get("job_id")
+                or f"{tool.lower()}_{idx:03d}"
+            )
+            if tool == "prepare-atac":
+                errors.append(
+                    f"{job_name}: the GUI starts from BAM/BAI and peak BED files; "
+                    "run prepare-atac with the Linux CLI or Linux container first"
+                )
+                continue
+            if isinstance(item.get("extra_args"), str):
+                errors.append(f"{job_name}: 'extra_args' must be a YAML list, not a string")
+            if tool == "bulk-footprinting":
+                configured_raw_keys = [
+                    key
+                    for key in GUI_RAW_READ_KEYS
+                    if key in item and item.get(key) not in (None, "", False, [])
+                ]
+                extras = item.get("extra_args", []) or []
+                if isinstance(extras, str):
+                    extras = extras.split()
+                raw_extra_flags = [
+                    str(value).split("=", 1)[0]
+                    for value in extras
+                    if str(value).split("=", 1)[0] in normalized_raw_flags
+                ]
+                if configured_raw_keys or raw_extra_flags:
+                    errors.append(
+                        f"{job_name}: GUI bulk workflows require 'sample_table' with "
+                        "BAM/BAI and peak BED inputs; FASTQ preparation is Linux CLI/container only"
+                    )
+            for field, choices in GUI_ENUM_CHOICES.get(tool, {}).items():
+                value = item.get(field)
+                if value not in (None, "") and str(value) not in choices:
+                    errors.append(
+                        f"{job_name}: unsupported '{field}' value {value!r}; choose {', '.join(choices)}"
+                    )
+            if tool == "normalize-bigwig":
+                stat = str(item.get("stat") or "q90")
+                if stat not in {"median", "iqr"}:
+                    try:
+                        quantile = float(stat.removeprefix("q"))
+                    except ValueError:
+                        quantile = -1
+                    if not stat.startswith("q") or not 0 < quantile < 100:
+                        errors.append(
+                            f"{job_name}: unsupported 'stat' value {stat!r}; use median, iqr, or q0-q100"
+                        )
+            if tool == "summarize-motifs" and not any(
+                str(item.get(field) or "").strip() for field in ("meme_txt", "tomtom_tsv")
+            ):
+                errors.append(f"{job_name}: provide 'meme_txt' or 'tomtom_tsv'")
+            errors.extend(_validate_gui_input_paths(tool, item, job_name))
+    return list(dict.fromkeys(errors))
 
 
 def _key_to_flag(key: str) -> str:

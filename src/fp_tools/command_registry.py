@@ -13,7 +13,6 @@ from collections.abc import Callable, Sequence
 
 
 COMMAND_TARGETS: dict[str, str] = {
-    "prepare-atac": "fp_tools.tools.prepare_atac:main",
     "bulk-footprinting": "fp_tools.tools.bulk_footprinting:main",
     "atac-correct": "fp_tools.cli:main",
     "call-footprints": "fp_tools.cli_scorebigwig:main",

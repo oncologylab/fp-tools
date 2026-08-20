@@ -19,6 +19,12 @@ unless the user explicitly asks to publish the manuscript source.
 - Direct CLI remains primary. YAML configs and the GUI are wrapper paths, not
   replacements for direct command use.
 - GUI-saved YAML must remain runnable with `run-yaml-workflow`.
+- Every GUI and the Windows/macOS desktop applications start bulk workflows
+  from coordinate-sorted BAM/BAI and matching peak BED files. Do not expose
+  FASTQ-to-BAM preparation through GUI forms, GUI YAML, or desktop dispatch.
+- `prepare-atac` and `bulk-footprinting --reads-table` are supported only by
+  the Linux CLI and Linux container. Native macOS/Windows commands must reject
+  raw-read mode before downloads, filesystem writes, or runtime setup.
 - Use the current public command names in docs and examples:
   `prepare-atac`, `bulk-footprinting`, `atac-correct`, `call-footprints`,
   `match-motifs`, `diff-footprints`, `normalize-bigwig`, `plot-aggregate`,
@@ -28,9 +34,9 @@ unless the user explicitly asks to publish the manuscript source.
   `find-signature-fp`, and `sc-footprinting`.
 - Do not reintroduce the removed TOBIAS-style console aliases. Use the current
   command names above in code, tests, docs, and examples.
-- Keep external genomics programs behind the runtime abstraction. Raw-read and
-  executable motif workflows default to the pinned managed runtime; `system`
-  and `container` remain explicit alternative backends.
+- Keep external genomics programs behind the runtime abstraction. Linux
+  raw-read and cross-platform executable motif workflows default to the pinned
+  managed runtime; `system` and `container` remain explicit alternatives.
 
 ## Common Development Commands
 

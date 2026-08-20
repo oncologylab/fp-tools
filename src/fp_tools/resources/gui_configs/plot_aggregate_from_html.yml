@@ -1,0 +1,11 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: plot_aggregate_html_from_html
+    tool: plot-aggregate
+    format: html
+    input_html:
+      - examples/gui_demo_outputs/diff_call_footprints_comparison_2v2/diff_call_footprints_Bcell_Tcell.html
+    output: examples/gui_demo_outputs/plot_aggregate_batch_browser.html
+    default_layout: 2x2
+comparisons: []

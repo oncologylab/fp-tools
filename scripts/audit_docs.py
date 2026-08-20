@@ -47,7 +47,6 @@ GET_STARTED_PAGES = (
     "get-started/output-examples/region-set-comparison/",
 )
 CORE_COMMAND_SEQUENCE = (
-    "get-started/commands/prepare-atac/",
     "get-started/commands/atac-correct/",
     "get-started/commands/call-footprints/",
     "get-started/commands/match-motifs/",
@@ -575,7 +574,7 @@ def audit(site_dir: Path) -> None:
                         next_count = page.locator(".md-footer__link--next").count()
                         if relative in CORE_COMMAND_SEQUENCE:
                             index = CORE_COMMAND_SEQUENCE.index(relative)
-                            expected_previous = int(index > 0)
+                            expected_previous = 1
                             expected_next = int(index < len(CORE_COMMAND_SEQUENCE) - 1)
                             if previous_count != expected_previous:
                                 failures.append(

@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - packaging/desktop/**
+      - scripts/audit_desktop_gui.py
       - scripts/smoke_desktop_bundle.py
       - pyproject.toml
       - src/**
@@ -39,12 +40,20 @@ jobs:
       - name: Install fp-tools and bundler
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --only-binary=:all: . "pyinstaller>=6.19,<7"
+          python -m pip install --only-binary=:all: . "pyinstaller>=6.19,<7" "playwright>=1.55,<2"
+          python -m playwright install chromium
           python -m pip check
       - name: Build one-file desktop executable
         run: pyinstaller --clean --noconfirm packaging/desktop/fp-tools-gui.spec
       - name: Smoke-test command dispatch and GUI startup
         run: python scripts/smoke_desktop_bundle.py "${{ matrix.executable }}"
+      - name: Audit responsive desktop GUI
+        run: python scripts/audit_desktop_gui.py "${{ matrix.executable }}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-audit-${{ matrix.label }}
+          path: desktop-gui-audit/*.png
+          if-no-files-found: error
       - name: Name release asset
         if: runner.os == 'Windows'
         shell: python

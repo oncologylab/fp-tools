@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fp-tools-bio"
-version = "0.2.0rc6"
+version = "0.2.0rc7"
 description = "Standalone footprint tools with vendored Cython internals"
 readme = "README.md"
 license = "MIT"
@@ -122,6 +122,7 @@ include = ["fp_tools*"]
 "fp_tools.utils" = ["*.pyx", "*.pxd"]
 "fp_tools.resources.motifs" = ["*.txt"]
 "fp_tools.resources" = ["*.json"]
+"fp_tools.resources.gui_configs" = ["*.yml"]
 "fp_tools.resources.static_browser" = ["*.html", "*.js", "*.css"]
 
 [tool.pytest.ini_options]
@@ -146,12 +147,17 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
 # --- Poetry mirror of the important bits so `poetry build` works too ---
 [tool.poetry]
 name = "fp-tools-bio"
-version = "0.2.0rc6"
+version = "0.2.0rc7"
 description = "Standalone footprint tools with vendored Cython internals"
 authors = ["Yaoxiang Li"]
 readme = "README.md"
 packages = [{ include = "fp_tools", from = "src" }]
-include = ["src/fp_tools/resources/motifs/*.txt", "src/fp_tools/resources/static_browser/*"]
+include = [
+  "src/fp_tools/resources/motifs/*.txt",
+  "src/fp_tools/resources/static_browser/*",
+  "src/fp_tools/resources/gui_configs/*.yml",
+  "src/fp_tools/resources/runtime_manifest.json"
+]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"

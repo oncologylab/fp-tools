@@ -11,12 +11,37 @@ from fp_tools.command_registry import dispatch_command
 INTERNAL_COMMAND_FLAG = "--fp-tools-internal-command"
 INTERNAL_MATCH_BEDS_FLAG = "--fp-tools-internal-match-beds"
 INTERNAL_PYTHON_SCRIPT_FLAG = "--fp-tools-internal-python-script"
+INTERNAL_LIST_EXAMPLES_FLAG = "--fp-tools-internal-list-gui-examples"
+INTERNAL_SMOKE_HELPS_FLAG = "--fp-tools-internal-smoke-command-helps"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Launch the GUI, or dispatch a child command inside a frozen bundle."""
 
     arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == INTERNAL_SMOKE_HELPS_FLAG:
+        if len(arguments) != 1:
+            raise SystemExit(f"{INTERNAL_SMOKE_HELPS_FLAG} does not accept arguments")
+        from fp_tools.command_registry import COMMAND_TARGETS
+
+        for command in sorted(COMMAND_TARGETS):
+            try:
+                dispatch_command(command, ["--help"])
+            except SystemExit as exc:
+                if exc.code not in (None, 0):
+                    raise
+        print(f"Validated {len(COMMAND_TARGETS)} desktop commands")
+        return 0
+    if arguments and arguments[0] == INTERNAL_LIST_EXAMPLES_FLAG:
+        if len(arguments) != 1:
+            raise SystemExit(f"{INTERNAL_LIST_EXAMPLES_FLAG} does not accept arguments")
+        from importlib import resources
+
+        root = resources.files("fp_tools.resources.gui_configs")
+        for path in sorted(root.iterdir(), key=lambda value: value.name):
+            if path.is_file() and path.name.endswith(".yml"):
+                print(path.name)
+        return 0
     if arguments and arguments[0] == INTERNAL_COMMAND_FLAG:
         if len(arguments) < 2:
             raise SystemExit(f"{INTERNAL_COMMAND_FLAG} requires a command name")

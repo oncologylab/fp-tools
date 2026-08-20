@@ -1,17 +1,9 @@
----
-core_nav:
-  next:
-    title: atac-correct
-    url: get-started/commands/atac-correct/
----
-
 # [`prepare-atac`](../../api.md#prepare-atac)
 
-Download public ATAC-seq reads or use local FASTQ files, then trim, align,
-filter, call peaks, calculate alignment coverage, and write QC files. Use this
-command when the analysis starts from reads; skip it when filtered BAM and peak
-files already exist. The default runtime downloads its pinned external tools
-on first use.
+**Linux CLI or Linux container only.** Download public ATAC-seq reads or use
+local FASTQ files, then trim, align, filter, call peaks, calculate alignment
+coverage, and write QC files. The GUI and native macOS/Windows installations
+start from filtered BAM/BAI and peak BED files.
 
 ## Example command
 
@@ -21,7 +13,7 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 
 ## Primary inputs
 
-- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [ENCODE and local examples](../workflows/bulk-atac-seq.md#start-from-fastq-files).
+- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [ENCODE and local examples](../workflows/bulk-atac-seq.md#optional-fastq-preparation-on-linux).
 - `--genome` — packaged `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.
 

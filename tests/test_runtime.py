@@ -136,6 +136,13 @@ class RuntimeManagerTest(unittest.TestCase):
         resolver.assert_not_called()
         self.assertEqual(rows[0]["installed"], "no")
 
+    def test_non_linux_runtime_manifest_exposes_only_meme(self):
+        manifest = runtime.load_runtime_manifest()
+        for target in ("macos-x86_64", "macos-arm64", "windows-x86_64"):
+            self.assertEqual(set(manifest["artifacts"][target]), {"meme"})
+        for target in ("linux-x86_64", "linux-arm64"):
+            self.assertEqual(set(manifest["artifacts"][target]), {"core", "meme", "homer"})
+
 
 if __name__ == "__main__":
     unittest.main()

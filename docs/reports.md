@@ -18,4 +18,4 @@ motif statistics, logos, and aggregate profiles.
   </iframe>
 </div>
 
-<a href="../ENCODE-Cancer-Cell-lines-Footprinting/">Open the output demo in a full page</a>
+<a href="../ENCODE-Cancer-Cell-lines-Footprinting/" target="_blank" rel="noopener noreferrer">Open the output demo in a full page</a>

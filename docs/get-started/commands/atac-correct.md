@@ -1,8 +1,8 @@
 ---
 core_nav:
   previous:
-    title: prepare-atac
-    url: get-started/commands/prepare-atac/
+    title: Tool overview
+    url: get-started/tool-overview/
   next:
     title: call-footprints
     url: get-started/commands/call-footprints/

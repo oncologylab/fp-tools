@@ -169,7 +169,6 @@ class DocsEntryPointContractTest(unittest.TestCase):
 
     def test_core_command_footer_is_a_closed_sequence(self):
         sequence = [
-            "prepare-atac",
             "atac-correct",
             "call-footprints",
             "match-motifs",
@@ -304,6 +303,16 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "not a reproduction of the pair-specific demo",
         ):
             self.assertNotIn(unnecessary_detail, guide)
+
+    def test_full_page_demo_links_open_new_tabs(self):
+        for relative in (
+            "get-started/output-examples/bulk-atac-seq.md",
+            "reports.md",
+            "gui.md",
+        ):
+            content = (ROOT / "docs" / relative).read_text(encoding="utf-8")
+            self.assertIn('target="_blank"', content, relative)
+            self.assertIn('rel="noopener noreferrer"', content, relative)
 
     def test_command_guides_use_precise_signal_names_and_file_patterns(self):
         command_dir = ROOT / "docs" / "get-started" / "commands"

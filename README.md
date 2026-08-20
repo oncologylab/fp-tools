@@ -40,20 +40,19 @@ python -m pip install --pre fp-tools-bio
 fp-tools-gui
 ```
 
-External genomics programs are downloaded into a private, versioned cache on
-first use. They do not need to be installed separately. Docker remains an
-optional reproducible backend.
+Optional de novo motif tools are downloaded into a private, versioned cache on
+first use. Docker remains an optional reproducible backend.
 
 ## Bulk ATAC-seq
 
-`bulk-footprinting` can run from FASTQ files or public run accessions through
-the final interactive comparison report.
+`bulk-footprinting` runs from coordinate-sorted BAM/BAI files and matching peak
+BED files through the final interactive comparison report.
 
 ```bash
 bulk-footprinting \
-  --reads-table reads.tsv \
+  --sample-table samples.tsv \
   --comparison-table comparisons.tsv \
-  --genome hg38 \
+  --genome hg38.fa.gz \
   --outdir project \
   --cores 8
 ```
@@ -62,6 +61,10 @@ The wrapper runs `atac-correct`, `call-footprints`, `match-motifs`,
 `diff-footprints`, and `review-multi-comparisons`. Each command can also be run
 directly. `diff-footprints --comparison-axis regions` compares matched genomic
 region sets within one sample or across biological replicates.
+
+FASTQ-to-BAM preparation is available through `prepare-atac` on the Linux CLI
+and in the Linux container. The GUI and native macOS/Windows installations
+start from BAM/BAI and peak BED files.
 
 ## Single-cell ATAC-seq
 
@@ -84,7 +87,8 @@ sc-footprinting \
 
 | Area | Commands |
 | --- | --- |
-| Core analysis | `prepare-atac`, `atac-correct`, `call-footprints`, `match-motifs`, `diff-footprints`, `normalize-bigwig` |
+| Core analysis | `atac-correct`, `call-footprints`, `match-motifs`, `diff-footprints`, `normalize-bigwig` |
+| Linux preprocessing | `prepare-atac` |
 | Workflows | `bulk-footprinting`, `sc-footprinting`, `run-yaml-workflow`, `fp-tools-gui`, `fp-tools-runtime` |
 | Reports | `plot-aggregate`, `review-multi-comparisons` |
 | De novo motifs | `discover-motifs`, `summarize-motifs` |

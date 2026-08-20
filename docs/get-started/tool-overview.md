@@ -4,12 +4,12 @@ The guides below cover common inputs and outputs. See the
 [API Reference](../api.md) for every option.
 
 If you are new to fp-tools, start with the [bulk ATAC-seq workflow](workflows/bulk-atac-seq.md):
-it includes complete FASTQ and aligned-data sample sheets, an explicit
-comparison table, ENCODE downloads, and the expected output layout.
+it includes a BAM/peak sample sheet, an explicit comparison table, ENCODE
+downloads, and the expected output layout. A separate section on the same page
+covers optional Linux-only FASTQ preparation.
 
 ## Core analysis
 
-- [`prepare-atac`](commands/prepare-atac.md) — prepare FASTQ inputs as filtered BAM, peak, alignment coverage, and QC outputs.
 - [`atac-correct`](commands/atac-correct.md) — correct ATAC-seq cut-site signal for Tn5 sequence bias.
 - [`call-footprints`](commands/call-footprints.md) — calculate footprint-score tracks from corrected signal.
 - [`match-motifs`](commands/match-motifs.md) — scan motifs and summarize motif-associated footprint scores.
@@ -23,11 +23,15 @@ comparison table, ENCODE downloads, and the expected output layout.
 
 ## Workflow and interface
 
-- [`bulk-footprinting`](commands/bulk-footprinting.md) — run the complete bulk workflow from raw reads or aligned inputs.
+- [`bulk-footprinting`](commands/bulk-footprinting.md) — run the complete bulk workflow from BAM/BAI and peak BED inputs.
 - [`sc-footprinting`](commands/sc-footprinting.md) — run pseudobulk and per-cell single-cell ATAC-seq footprinting.
 - [`run-yaml-workflow`](commands/run-yaml-workflow.md) — run command-compatible jobs from YAML.
 - [`fp-tools-gui`](commands/fp-tools-gui.md) — launch the browser interface.
 - [`fp-tools-runtime`](commands/fp-tools-runtime.md) — inspect or prepare the managed external-tool runtime.
+
+## Linux preprocessing
+
+- [`prepare-atac`](commands/prepare-atac.md) — prepare FASTQ inputs as filtered BAM, peak, alignment coverage, and QC outputs from the Linux CLI or Linux container.
 
 ## De Novo Motif Discovery
 

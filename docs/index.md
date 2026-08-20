@@ -23,17 +23,19 @@ motif analysis, replicate comparisons, and reusable reports.
   <span>MIT license</span>
 </div>
 
-- Process raw reads or start from aligned Tn5-based chromatin data.
+- Analyze aligned Tn5-based chromatin data from BAM and peak files.
 - Compare motif-associated footprint scores across samples and replicates.
 - Analyze pseudobulk and per-cell footprint signatures.
 - Export static figures and portable interactive HTML reports.
 
 Choose your starting point:
 
-- **FASTQ files:** prepare and QC reads with [`prepare-atac`](get-started/commands/prepare-atac.md).
-- **BAM and peak files:** follow the runnable [bulk ATAC-seq workflow](get-started/workflows/bulk-atac-seq.md).
+- **BAM/BAI and peak BED files:** follow the runnable [bulk ATAC-seq workflow](get-started/workflows/bulk-atac-seq.md).
 - **Single-cell fragments:** follow the [single-cell workflow](get-started/workflows/single-cell.md).
 - **Existing fp-tools outputs:** open the [output demo](reports.md) or choose a command in the [tool overview](get-started/tool-overview.md).
+
+Linux command-line and container users can optionally prepare FASTQ files with
+[`prepare-atac`](get-started/commands/prepare-atac.md).
 
 [Install fp-tools](get-started/installation.md){ .fp-text-link }
 &nbsp;·&nbsp;

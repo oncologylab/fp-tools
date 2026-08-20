@@ -11,6 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from fp_tools.platform_support import require_raw_read_preparation_support
 from fp_tools.runtime import RuntimeProvisionError, add_runtime_argument, prepare_command_runtime
 from fp_tools.utils.project_layout import (
     analysis_peaks_path,
@@ -316,7 +317,10 @@ def build_parser() -> argparse.ArgumentParser:
     source.add_argument("--sample-table", help="TSV with sample, condition, BAM, and peak BED columns.")
     source.add_argument(
         "--reads-table",
-        help="TSV/CSV with local FASTQ paths or public run accessions; runs preparation before footprinting.",
+        help=(
+            "Linux CLI/container only: TSV/CSV with local FASTQ paths or public run "
+            "accessions; runs preparation before footprinting."
+        ),
     )
     parser.add_argument("--comparison-table", required=True, help="TSV with comparison, cond1, and cond2 columns.")
     parser.add_argument("--genome", required=True, help="Reference FASTA for aligned input, or hg38/mm10/custom label for raw reads.")
@@ -346,13 +350,64 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _require_input_file(value: str | None, flag: str) -> None:
+    if not value:
+        return
+    path = Path(value).expanduser()
+    if not path.is_file():
+        raise ValueError(f"{flag} file does not exist: {value}")
+
+
+def _preflight_input_paths(args: argparse.Namespace) -> None:
+    """Reject missing workflow inputs before runtime provisioning or writes."""
+
+    _require_input_file(args.reads_table or args.sample_table, "--reads-table" if args.reads_table else "--sample-table")
+    _require_input_file(args.comparison_table, "--comparison-table")
+    if args.reads_table:
+        for value, flag in (
+            (args.config, "--config"),
+            (args.fasta, "--fasta"),
+            (args.blacklist, "--blacklist"),
+            (args.tss, "--tss"),
+        ):
+            _require_input_file(value, flag)
+    else:
+        _require_input_file(args.genome, "--genome")
+        _require_input_file(args.blacklist, "--blacklist")
+        for motif in args.motifs or []:
+            _require_input_file(motif, "--motifs")
+
+
 def main(argv: list[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
     args = parser.parse_args(raw_args)
     if args.resume and args.force:
         parser.error("--resume and --force are mutually exclusive")
+    if args.reads_table:
+        try:
+            require_raw_read_preparation_support()
+        except ValueError as exc:
+            parser.error(str(exc))
+    elif any(
+        argument.split("=", 1)[0]
+        in {
+            "--config",
+            "--profile",
+            "--reference-dir",
+            "--fasta",
+            "--bowtie2-index",
+            "--tss",
+            "--macs-genome-size",
+            "--max-parallel-samples",
+            "--memory-gb",
+            "--keep-intermediates",
+        }
+        for argument in raw_args
+    ):
+        parser.error("raw-read preparation options require --reads-table")
     try:
+        _preflight_input_paths(args)
         if args.reads_table and not args.dry_run:
             delegated = prepare_command_runtime(
                 "bulk-footprinting",

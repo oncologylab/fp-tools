@@ -12,4 +12,4 @@ motif search, volcano plots, motif logos, aggregate profiles, and SVG export.
   </iframe>
 </div>
 
-[Open the complete Bulk output demo](../../reports.md)
+[Open the complete Bulk output demo](../../reports.md){ target="_blank" rel="noopener noreferrer" }
