@@ -1,0 +1,8 @@
+name: fp-tools-runtime-meme
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12
+  - conda-pack>=0.8
+  - meme>=5.5

@@ -29,9 +29,9 @@ Choose one route:
 
 | Route | Best for | Start |
 | --- | --- | --- |
-| Desktop executable | GUI without Python | [Download for Windows, macOS, or Linux](https://github.com/oncologylab/fp-tools/releases) |
-| Complete container | GUI plus raw-read and motif-discovery programs | `docker run --rm -p 8891:8891 ghcr.io/oncologylab/fp-tools:latest` |
-| Python package | Direct commands in an existing Python environment | `python -m pip install fp-tools-bio` |
+| Desktop app | Windows or Apple Silicon macOS | [Download](https://github.com/oncologylab/fp-tools/releases) |
+| Python package | Windows, macOS, or Linux with Python 3.11–3.13 | `python -m pip install fp-tools-bio` |
+| Container | Complete reproducible environment | `docker run --rm -p 8891:8891 ghcr.io/oncologylab/fp-tools:latest` |
 
 Python package example:
 
@@ -40,20 +40,20 @@ python -m pip install --pre fp-tools-bio
 fp-tools-gui
 ```
 
-Python 3.11–3.13 is supported on Windows, macOS, and Linux. The container is
-the complete environment for raw FASTQ processing and external MEME tools.
+External genomics programs are downloaded into a private, versioned cache on
+first use. They do not need to be installed separately. Docker remains an
+optional reproducible backend.
 
 ## Bulk ATAC-seq
 
-`bulk-footprinting` runs the complete analysis from aligned BAM and peak files.
-FASTQ preparation remains available separately through `prepare-atac`.
+`bulk-footprinting` can run from FASTQ files or public run accessions through
+the final interactive comparison report.
 
 ```bash
 bulk-footprinting \
-  --sample-table samples.tsv \
+  --reads-table reads.tsv \
   --comparison-table comparisons.tsv \
-  --genome hg38.fa.gz \
-  --blacklist hg38.blacklist.bed \
+  --genome hg38 \
   --outdir project \
   --cores 8
 ```
@@ -85,7 +85,7 @@ sc-footprinting \
 | Area | Commands |
 | --- | --- |
 | Core analysis | `prepare-atac`, `atac-correct`, `call-footprints`, `match-motifs`, `diff-footprints`, `normalize-bigwig` |
-| Workflows | `bulk-footprinting`, `sc-footprinting`, `run-yaml-workflow`, `fp-tools-gui` |
+| Workflows | `bulk-footprinting`, `sc-footprinting`, `run-yaml-workflow`, `fp-tools-gui`, `fp-tools-runtime` |
 | Reports | `plot-aggregate`, `review-multi-comparisons` |
 | De novo motifs | `discover-motifs`, `summarize-motifs` |
 | Single-cell utilities | `pseudobulk-fragments`, `find-signature-fp` |

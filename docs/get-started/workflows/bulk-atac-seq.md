@@ -8,10 +8,11 @@ and [ENCSR868FGK](https://www.encodeproject.org/experiments/ENCSR868FGK/).
 
 ## Before you start
 
-Install fp-tools and verify the external programs used by raw-read processing:
+Install fp-tools. The pinned raw-read programs are prepared automatically on
+first use; their status is available without downloading data:
 
 ```bash
-prepare-atac --doctor --profile modern
+fp-tools-runtime status
 ```
 
 For a custom genome, provide a matching FASTA, Bowtie2 index, chromosome names,
@@ -20,8 +21,8 @@ assembly. The examples below use hg38.
 
 ## Starting from FASTQ files
 
-[`prepare-atac`](../commands/prepare-atac.md) accepts a tab-separated or
-comma-separated sample sheet.
+`bulk-footprinting --reads-table` accepts a tab-separated or comma-separated
+sample sheet and runs preparation plus all downstream stages.
 
 For paired-end data:
 
@@ -45,12 +46,12 @@ Use the columns shown for your library layout. The ENCODE download includes
 optional provenance columns that may be left out.
 
 ```bash
-prepare-atac --samples encode_hepg2_k562_fastq_urls.tsv --genome hg38 --outdir project --cores 8
+bulk-footprinting --reads-table encode_hepg2_k562_fastq_urls.tsv \
+  --comparison-table encode_hepg2_k562_comparisons.tsv --genome hg38 \
+  --outdir project --cores 8
 ```
 
-The downstream aligned-data table is written to
-`project/metadata/samples.tsv`; use that generated table for the remaining
-commands.
+The generated aligned-data table is retained at `project/metadata/samples.tsv`.
 
 ## Starting from aligned ENCODE data
 

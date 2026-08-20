@@ -611,7 +611,7 @@ class RegionList(list):
 
 				#Do the regions overlap?
 				if s1_chrom == s2_chrom:
-					if s1_start < s2_end and s1_end > s2_start+1:	#if overlap
+					if s1_start < s2_end and s1_end > s2_start:	#if overlap
 						bp_overlap = min([s1_end, s2_end]) - max([s1_start, s2_start]) 
 						overlap[(s1_id, s2_id)] = overlap.get((s1_id, s2_id), 0) + bp_overlap
 						overlap[(s2_id, s1_id)] = overlap.get((s2_id, s1_id), 0) + bp_overlap

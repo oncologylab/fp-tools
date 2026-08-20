@@ -23,10 +23,14 @@ unless the user explicitly asks to publish the manuscript source.
   `prepare-atac`, `bulk-footprinting`, `atac-correct`, `call-footprints`,
   `match-motifs`, `diff-footprints`, `normalize-bigwig`, `plot-aggregate`,
   `review-multi-comparisons`, `run-yaml-workflow`, `fp-tools-gui`,
+  `fp-tools-runtime`,
   `discover-motifs`, `summarize-motifs`, `pseudobulk-fragments`,
   `find-signature-fp`, and `sc-footprinting`.
 - Do not reintroduce the removed TOBIAS-style console aliases. Use the current
   command names above in code, tests, docs, and examples.
+- Keep external genomics programs behind the runtime abstraction. Raw-read and
+  executable motif workflows default to the pinned managed runtime; `system`
+  and `container` remain explicit alternative backends.
 
 ## Common Development Commands
 

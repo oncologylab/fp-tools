@@ -63,14 +63,16 @@ NAV_GROUPS = [
 GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
     "bulk-footprinting": {
         "sample_id": "bulk_footprinting_run",
-        "sample_table": "samples.tsv",
+        "reads_table": "reads.tsv",
+        "sample_table": "",
         "comparison_table": "comparisons.tsv",
-        "genome": "genome.fa",
+        "genome": "hg38",
         "outdir": "results/bulk_footprinting",
         "motif_db": "jaspar2026_vertebrates",
         "plot_aggregate": "all",
         "review_format": "auto",
         "cores": 4,
+        "runtime": "auto",
     },
     "review-multi-comparisons": {
         "sample_id": "comparison_browser_run",

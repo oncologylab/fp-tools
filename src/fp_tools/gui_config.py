@@ -82,7 +82,7 @@ REQUIRED_FIELDS = {
     "normalize-bigwig": ("bigwigs", "background", "outdir"),
     "plot-aggregate": ("output",),
     "review-multi-comparisons": ("inputs",),
-    "bulk-footprinting": ("sample_table", "comparison_table", "genome", "outdir"),
+    "bulk-footprinting": ("comparison_table", "genome", "outdir"),
     "discover-motifs": ("outdir",),
     "summarize-motifs": ("out_tsv",),
     "pseudobulk-fragments": ("fragments", "annotations", "group_by", "outdir"),
@@ -353,6 +353,13 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
             if tool == "discover-motifs":
                 if not str(item.get("fasta") or "").strip() and not str(item.get("candidates") or "").strip():
                     errors.append(f"{job_name}: provide either 'fasta' or 'candidates'")
+            if tool == "bulk-footprinting":
+                reads_table = str(item.get("reads_table") or "").strip()
+                sample_table = str(item.get("sample_table") or "").strip()
+                if bool(reads_table) == bool(sample_table):
+                    errors.append(
+                        f"{job_name}: provide exactly one of 'reads_table' or 'sample_table'"
+                    )
             if tool == "diff-footprints":
                 comparison_axis = str(item.get("comparison_axis") or item.get("comparison-axis") or "conditions")
                 signals = item.get("signals") or []

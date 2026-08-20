@@ -109,6 +109,27 @@ def _benjamini_hochberg(pvalues):
     return qvals
 
 
+def _finite_highlight_thresholds(changes, pvalues):
+    """Return robust percentile thresholds for motif highlighting."""
+
+    change_values = np.asarray(changes, dtype=float)
+    pvalue_values = np.asarray(pvalues, dtype=float)
+    finite_changes = change_values[np.isfinite(change_values)]
+    finite_positive_pvalues = pvalue_values[
+        np.isfinite(pvalue_values) & (pvalue_values > 0)
+    ]
+    if finite_changes.size:
+        change_min, change_max = np.percentile(finite_changes, [5, 95])
+    else:
+        change_min, change_max = 0.0, 0.0
+    pvalue_min = (
+        float(np.percentile(finite_positive_pvalues, 5))
+        if finite_positive_pvalues.size
+        else 1.0
+    )
+    return float(change_min), float(change_max), pvalue_min
+
+
 def _apply_replicate_empirical_bayes(info_table, args):
     """Add replicate-level moderated contrasts and write their source matrix."""
 
@@ -568,16 +589,30 @@ def _existing_result_motifs(info_table, comparison, args, motif_lookup=None):
         )
 
     rows = info_table.copy()
-    rows[base + "_change_numeric"] = pd.to_numeric(rows[base + "_change"], errors="coerce").fillna(0.0)
-    rows[base + "_pvalue_numeric"] = pd.to_numeric(rows[base + "_pvalue"], errors="coerce").fillna(1.0)
+    rows[base + "_change_numeric"] = (
+        pd.to_numeric(rows[base + "_change"], errors="coerce")
+        .replace([np.inf, -np.inf], np.nan)
+        .fillna(0.0)
+    )
+    rows[base + "_pvalue_numeric"] = (
+        pd.to_numeric(rows[base + "_pvalue"], errors="coerce")
+        .replace([np.inf, -np.inf], np.nan)
+        .fillna(1.0)
+        .clip(0.0, 1.0)
+    )
     qvalue_col = base + "_qvalue_bh"
     if qvalue_col in rows.columns:
-        rows[base + "_qvalue_numeric"] = pd.to_numeric(rows[qvalue_col], errors="coerce").fillna(1.0)
+        rows[base + "_qvalue_numeric"] = (
+            pd.to_numeric(rows[qvalue_col], errors="coerce")
+            .replace([np.inf, -np.inf], np.nan)
+            .fillna(1.0)
+            .clip(0.0, 1.0)
+        )
     else:
         rows[base + "_qvalue_numeric"] = _benjamini_hochberg(rows[base + "_pvalue_numeric"].to_numpy())
-    filtered_p = rows.loc[rows[base + "_pvalue_numeric"] > 0, base + "_pvalue_numeric"]
-    pval_min = np.percentile(filtered_p, 5) if len(filtered_p) else 1.0
-    change_min, change_max = np.percentile(rows[base + "_change_numeric"], [5, 95]) if len(rows) else (0.0, 0.0)
+    change_min, change_max, pval_min = _finite_highlight_thresholds(
+        rows[base + "_change_numeric"], rows[base + "_pvalue_numeric"]
+    )
 
     motifs = []
     for _, row in rows.iterrows():
@@ -2594,18 +2629,28 @@ def run_diff_footprints(args):
     for (c1, c2) in comparisons:
         base = f"{c1}_{c2}"
         info_table[base + "_change"] = info_table[base + "_change"].astype(float).round(5)
-        raw_pvals = pd.to_numeric(info_table[base + "_pvalue"], errors="coerce").fillna(1.0).astype(float)
+        raw_pvals = (
+            pd.to_numeric(info_table[base + "_pvalue"], errors="coerce")
+            .replace([np.inf, -np.inf], np.nan)
+            .fillna(1.0)
+            .clip(0.0, 1.0)
+            .astype(float)
+        )
         qvals = _benjamini_hochberg(raw_pvals.to_numpy())
         info_table[base + "_pvalue"] = raw_pvals.map("{:.5E}".format, na_action="ignore")
         info_table[base + "_qvalue_bh"] = pd.Series(qvals, index=info_table.index).map("{:.5E}".format, na_action="ignore")
         info_table[base + "_significant_fdr05"] = pd.Series(qvals <= 0.05, index=info_table.index).fillna(False).astype(bool)
 
         names_series = info_table["output_prefix"]
-        changes = info_table[base + "_change"].astype(float)
+        changes = (
+            pd.to_numeric(info_table[base + "_change"], errors="coerce")
+            .replace([np.inf, -np.inf], np.nan)
+            .fillna(0.0)
+            .astype(float)
+        )
+        info_table[base + "_change"] = changes.round(5)
         pvals = raw_pvals
-        filtered_p = pvals[pvals > 0]
-        pval_min = np.percentile(filtered_p, 5) if len(filtered_p) >= 1 else 1.0
-        change_min, change_max = np.percentile(changes, [5, 95])
+        change_min, change_max, pval_min = _finite_highlight_thresholds(changes, pvals)
 
         for i, (chg, p) in enumerate(zip(changes, pvals)):
             # info_table.at[names_series[i], base + "_highlighted"] = (chg < change_min) or (chg > change_max) or (p < pval_min)

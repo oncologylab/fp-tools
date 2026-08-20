@@ -1,0 +1,18 @@
+name: fp-tools-runtime-core
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12
+  - conda-pack>=0.8
+  - fastp>=1.0
+  - fastqc>=0.12
+  - bowtie2>=2.5
+  - samtools>=1.23
+  - bedtools>=2.31
+  - macs3>=3.0
+  - multiqc>=1.25
+  - sra-tools>=3.1
+  - pigz>=2.8
+  - curl
+  - ucsc-bedgraphtobigwig

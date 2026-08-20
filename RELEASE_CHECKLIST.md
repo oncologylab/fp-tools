@@ -47,6 +47,7 @@ Primary current API checks:
 .venv/bin/review-multi-comparisons --help
 .venv/bin/run-yaml-workflow --help
 .venv/bin/fp-tools-gui --help
+.venv/bin/fp-tools-runtime --help
 .venv/bin/discover-motifs --help
 .venv/bin/summarize-motifs --help
 .venv/bin/pseudobulk-fragments --help
@@ -84,8 +85,8 @@ python -m venv /tmp/fp-tools-pypi-smoke
 /tmp/fp-tools-pypi-smoke/bin/fp-tools-gui --help >/dev/null
 ```
 
-The `Desktop bundles` workflow must produce and smoke-test Windows x64 and
-macOS Apple Silicon executables. Its live health check verifies that the
+The `Desktop bundles` workflow must produce and smoke-test a Windows x64
+executable and an unsigned Apple Silicon macOS DMG. Its live health check verifies that the
 bundled Streamlit application starts, and its command check verifies frozen
 child-process dispatch. Release assets include a SHA-256 checksum manifest.
 macOS Intel and Linux users install the Python package instead.
@@ -93,6 +94,10 @@ macOS Intel and Linux users install the Python package instead.
 The `Container` workflow builds and tests the complete environment, then
 publishes `linux/amd64` and `linux/arm64` images to
 `ghcr.io/oncologylab/fp-tools` for tagged releases.
+
+The `Managed runtimes` workflow publishes pinned core, MEME, and HOMER archives
+for Linux and macOS, plus the private Windows WSL2 root filesystem. It must
+verify archive relocation and a real Windows WSL2 import before release handoff.
 
 The manual GitHub Actions `Publish` workflow uses the repository
 `PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or

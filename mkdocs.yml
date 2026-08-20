@@ -68,6 +68,7 @@ nav:
               - sc-footprinting: get-started/commands/sc-footprinting.md
               - run-yaml-workflow: get-started/commands/run-yaml-workflow.md
               - fp-tools-gui: get-started/commands/fp-tools-gui.md
+              - fp-tools-runtime: get-started/commands/fp-tools-runtime.md
           - De Novo Motif Discovery:
               - discover-motifs: get-started/commands/discover-motifs.md
               - summarize-motifs: get-started/commands/summarize-motifs.md

@@ -16,6 +16,11 @@ from pathlib import Path
 
 from Bio import SeqIO
 
+from fp_tools.runtime import (
+    RuntimeProvisionError,
+    add_runtime_argument,
+    prepare_command_runtime,
+)
 from fp_tools.utils.motif_databases import motif_db_table, resolve_motif_inputs
 
 
@@ -404,7 +409,29 @@ def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
     parser.add_argument("--list-motif-dbs", action="store_true", help="List available built-in motif databases and exit.")
     parser.add_argument("--extra-args", nargs=argparse.REMAINDER, default=[], help="Additional arguments appended to MEME/DREME/STREME.")
     parser.add_argument("--execute", action="store_true", help="Run the generated script immediately.")
+    add_runtime_argument(parser)
     args = parser.parse_args(argv)
+
+    if args.execute:
+        try:
+            delegated = prepare_command_runtime(
+                "discover-motifs",
+                list(raw_args),
+                args.runtime,
+                "meme",
+                {
+                    "--fasta",
+                    "--candidates",
+                    "--genome",
+                    "--outdir",
+                    "--script",
+                    "--known-motifs",
+                },
+            )
+            if delegated is not None:
+                return delegated
+        except RuntimeProvisionError as exc:
+            parser.exit(2, f"discover-motifs: runtime error: {exc}\n")
 
     outdir = Path(args.outdir)
     if args.candidates:

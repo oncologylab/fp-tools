@@ -10,8 +10,8 @@ core_nav:
 Download public ATAC-seq reads or use local FASTQ files, then trim, align,
 filter, call peaks, calculate alignment coverage, and write QC files. Use this
 command when the analysis starts from reads; skip it when filtered BAM and peak
-files already exist. Before a large job, run
-`prepare-atac --doctor --profile modern` to check external programs.
+files already exist. The default runtime downloads its pinned external tools
+on first use.
 
 ## Example command
 
