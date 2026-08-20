@@ -79,6 +79,38 @@ class RegionListMergeTest(unittest.TestCase):
 
         self.assertEqual(self._coordinates(regions), [("chr1", 0, 10), ("chr1", 2, 8)])
 
+    def test_name_aware_merge_handles_interleaved_names(self):
+        regions = RegionList(
+            [
+                OneRegion(["chr1", 0, 10, "A"]),
+                OneRegion(["chr1", 2, 8, "B"]),
+                OneRegion(["chr1", 4, 6, "A"]),
+            ]
+        )
+
+        regions.merge(name=True)
+
+        self.assertEqual(
+            [(region.chrom, region.start, region.end, region.name) for region in regions],
+            [("chr1", 0, 10, "A"), ("chr1", 2, 8, "B")],
+        )
+
+    def test_count_overlaps_uses_name_aware_geometric_unions(self):
+        regions = RegionList(
+            [
+                OneRegion(["chr1", 0, 10, "A"]),
+                OneRegion(["chr1", 2, 8, "B"]),
+                OneRegion(["chr1", 4, 6, "A"]),
+            ]
+        )
+
+        overlaps = regions.count_overlaps()
+
+        self.assertEqual(overlaps["A"], 10)
+        self.assertEqual(overlaps["B"], 6)
+        self.assertEqual(overlaps[("A", "B")], 6)
+        self.assertEqual(overlaps[("B", "A")], 6)
+
 
 if __name__ == "__main__":
     unittest.main()
