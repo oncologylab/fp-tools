@@ -1,22 +1,20 @@
-<p align="center">
+<div align="center">
   <img src="docs/assets/fp_tools_logo_horizontal.svg" alt="fp-tools — regulatory footprinting" width="560">
-</p>
-
-<p align="center">
+  <br>
   <a href="https://pypi.org/project/fp-tools-bio/"><img alt="PyPI" src="https://img.shields.io/pypi/v/fp-tools-bio?color=1f9d55"></a>
   <a href="https://github.com/oncologylab/fp-tools/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/oncologylab/fp-tools/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/oncologylab/fp-tools/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1967b3"></a>
-</p>
-
-<p align="center">
-  <a href="https://oncologylab.github.io/fp-tools/"><strong>Documentation</strong></a>
-  ·
-  <a href="https://oncologylab.github.io/fp-tools/ENCODE-Cancer-Cell-lines-Footprinting/"><strong>Output demo with ENCODE cancer cell lines</strong></a>
-  ·
-  <a href="https://oncologylab.github.io/fp-tools/demos/gui/fp-tools-gui-static-demo.html"><strong>GUI demo</strong></a>
-  ·
-  <a href="https://pypi.org/project/fp-tools-bio/"><strong>PyPI</strong></a>
-</p>
+  <br>
+  <sub>
+    <a href="https://oncologylab.github.io/fp-tools/"><strong>Documentation</strong></a>
+    ·
+    <a href="https://oncologylab.github.io/fp-tools/ENCODE-Cancer-Cell-lines-Footprinting/"><strong>Output demo with ENCODE cancer cell lines</strong></a>
+    ·
+    <a href="https://oncologylab.github.io/fp-tools/demos/gui/fp-tools-gui-static-demo.html"><strong>GUI demo</strong></a>
+    ·
+    <a href="https://pypi.org/project/fp-tools-bio/"><strong>PyPI</strong></a>
+  </sub>
+</div>
 
 `fp-tools` is a command-first toolkit for footprinting Tn5-based chromatin
 profiling data, including ATAC-seq, CUT&Tag, and related assays. It provides bias
