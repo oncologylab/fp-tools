@@ -118,7 +118,7 @@ jobs:
 
   publish-and-test:
     name: public artifact and Windows WSL2 smoke test
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     needs: [native, windows-wsl]
     runs-on: windows-latest
     timeout-minutes: 45
@@ -129,7 +129,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --method PATCH "/orgs/oncologylab/packages/container/fp-tools-runtime" \
+          gh api --method PATCH "orgs/oncologylab/packages/container/fp-tools-runtime" \
             -f visibility=public
       - uses: actions/setup-python@v6
         with:

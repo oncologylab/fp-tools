@@ -93,7 +93,9 @@ macOS Intel and Linux users install the Python package instead.
 
 The `Container` workflow builds and tests the complete environment, then
 publishes `linux/amd64` and `linux/arm64` images to
-`ghcr.io/oncologylab/fp-tools` for tagged releases.
+`ghcr.io/oncologylab/fp-tools` for tagged releases. Its final job must confirm
+that the package is public; the `visibility_only` manual input can repair
+visibility without rebuilding images.
 
 The `Managed runtimes` workflow publishes pinned core, MEME, and HOMER archives
 for Linux and macOS, plus the private Windows WSL2 root filesystem. It must
