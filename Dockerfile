@@ -1,5 +1,7 @@
 FROM mambaorg/micromamba:2.0.5
 
+LABEL org.opencontainers.image.source="https://github.com/oncologylab/fp-tools"
+
 WORKDIR /opt/fp-tools
 ENV FP_TOOLS_RUNTIME=system
 USER root

@@ -95,11 +95,14 @@ The `Container` workflow builds and tests the complete environment, then
 publishes `linux/amd64` and `linux/arm64` images to
 `ghcr.io/oncologylab/fp-tools` for tagged releases. Its final job must confirm
 that the package is public; the `visibility_only` manual input can repair
-visibility without rebuilding images.
+visibility without rebuilding images. The `publish_version` manual input
+rebuilds and republishes an existing version with repository-link metadata.
 
 The `Managed runtimes` workflow publishes pinned core, MEME, and HOMER archives
 for Linux and macOS, plus the private Windows WSL2 root filesystem. It must
 verify archive relocation and a real Windows WSL2 import before release handoff.
+Its `publish_version` manual input can rebuild and republish an existing version
+with repository-link metadata before repeating the public-consumer smoke test.
 
 The manual GitHub Actions `Publish` workflow uses the repository
 `PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or

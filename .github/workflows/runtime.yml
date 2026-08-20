@@ -2,6 +2,11 @@ name: Managed runtimes
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_version:
+        description: Existing package version to republish, for example 0.2.0rc5
+        required: false
+        type: string
   push:
     tags:
       - "v*"
@@ -65,20 +70,24 @@ jobs:
           assert not missing, f"Runtime is missing commands: {missing}"
           PY
       - uses: oras-project/setup-oras@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
       - name: Log in to GHCR with ORAS
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: printf '%s' "${GH_TOKEN}" | oras login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
       - name: Publish runtime artifact
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
         shell: bash
+        env:
+          PUBLISH_VERSION: ${{ inputs.publish_version }}
         run: |
           version="${GITHUB_REF_NAME#v}"
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then version="${PUBLISH_VERSION#v}"; fi
           tag="${{ matrix.component }}-${version}-${{ matrix.target.platform }}"
           oras push "${RUNTIME_REPOSITORY}:${tag}" \
+            --annotation "org.opencontainers.image.source=https://github.com/oncologylab/fp-tools" \
             "runtime-out/${{ matrix.component }}.tar.gz:application/gzip"
       - uses: actions/upload-artifact@v7
         with:
@@ -101,24 +110,28 @@ jobs:
           mkdir -p runtime-out
           docker export "${container_id}" | gzip -1 > runtime-out/fp-tools-wsl-rootfs.tar.gz
       - uses: oras-project/setup-oras@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
       - name: Log in to GHCR with ORAS
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: printf '%s' "${GH_TOKEN}" | oras login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
       - name: Publish WSL2 runtime artifact
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
         shell: bash
+        env:
+          PUBLISH_VERSION: ${{ inputs.publish_version }}
         run: |
           version="${GITHUB_REF_NAME#v}"
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then version="${PUBLISH_VERSION#v}"; fi
           oras push "${RUNTIME_REPOSITORY}:wsl-core-${version}-linux-x86_64" \
+            --annotation "org.opencontainers.image.source=https://github.com/oncologylab/fp-tools" \
             "runtime-out/fp-tools-wsl-rootfs.tar.gz:application/gzip"
 
   publish-and-test:
     name: public artifact and Windows WSL2 smoke test
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
     needs: [native, windows-wsl]
     runs-on: windows-latest
     timeout-minutes: 45
@@ -140,6 +153,8 @@ jobs:
           python -m pip install --only-binary=:all: .
           fp-tools-runtime install core
           fp-tools-runtime status
+          $version = python -c "import fp_tools; print(fp_tools.__version__)"
+          $distroName = "fp-tools-" + ($version -replace '\.', '-')
           $distro = (wsl.exe --list --quiet | Out-String).Replace("`0", "")
-          if ($distro -notmatch "fp-tools-0-2-0rc5") { throw "fp-tools WSL runtime was not imported" }
-          wsl.exe --distribution fp-tools-0-2-0rc5 --exec /opt/conda/bin/prepare-atac --doctor --profile modern
+          if ($distro -notmatch [regex]::Escape($distroName)) { throw "fp-tools WSL runtime was not imported" }
+          wsl.exe --distribution $distroName --exec /opt/conda/bin/prepare-atac --doctor --profile modern
