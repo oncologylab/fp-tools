@@ -58,7 +58,8 @@ Primary current API checks:
 
 ## 4. Build Artifacts
 
-Release wheels are built by `cibuildwheel` in the manual `Publish` workflow.
+Release wheels are built by `cibuildwheel` in the manual `Publish` workflow;
+the two Linux architectures run as separate native jobs.
 The required artifact set is:
 
 - CPython 3.11, 3.12, and 3.13
@@ -93,7 +94,7 @@ macOS Intel and Linux users install the Python package instead.
 
 The `Container` workflow builds and tests the complete environment, then
 publishes `linux/amd64` and `linux/arm64` images to
-`ghcr.io/oncologylab/fp-tools` for tagged releases. Its final job must confirm
+`ghcr.io/oncologylab/fp-tools-bio` for tagged releases. Its final job must confirm
 that the package is public; the `visibility_only` manual input can repair
 visibility without rebuilding images. The `publish_version` manual input
 rebuilds and republishes an existing version with repository-link metadata.

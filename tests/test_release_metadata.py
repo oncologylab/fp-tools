@@ -1,3 +1,4 @@
+import json
 import pathlib
 import subprocess
 import sys
@@ -25,6 +26,15 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertEqual(version, namespace["__version__"])
         citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
         self.assertIn(f"version: {version}", citation)
+        runtime_manifest = json.loads(
+            (ROOT / "src/fp_tools/resources/runtime_manifest.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(version, runtime_manifest["runtime_version"])
+        self.assertEqual(
+            runtime_manifest["repository"], "ghcr.io/oncologylab/fp-tools-bio-runtime"
+        )
+        info_plist = (ROOT / "packaging/desktop/Info.plist").read_text(encoding="utf-8")
+        self.assertIn(f"<string>{version}</string>", info_plist)
         example = (ROOT / "examples/nutrient_stress_project/run_ctrl_vs_10fbs.sh").read_text(encoding="utf-8")
         self.assertIn(f'VERSION="${{FP_TOOLS_VERSION:-{version}}}"', example)
 
@@ -93,9 +103,11 @@ class ReleaseMetadataTest(unittest.TestCase):
     def test_publish_workflow_uses_token_and_cross_platform_wheels(self):
         workflow = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
         self.assertIn("pypa/cibuildwheel", workflow)
-        self.assertIn("CIBW_ARCHS_LINUX: x86_64 aarch64", workflow)
-        self.assertIn("CIBW_ARCHS_MACOS: x86_64 arm64", workflow)
-        self.assertIn("CIBW_ARCHS_WINDOWS: AMD64", workflow)
+        self.assertIn("os: ubuntu-latest, archs: x86_64", workflow)
+        self.assertIn("os: ubuntu-24.04-arm, archs: aarch64", workflow)
+        self.assertIn('os: macos-latest, archs: "x86_64 arm64"', workflow)
+        self.assertIn("os: windows-latest, archs: AMD64", workflow)
+        self.assertIn("CIBW_ARCHS: ${{ matrix.archs }}", workflow)
         self.assertIn("twine check", workflow)
         self.assertIn("twine upload", workflow)
         self.assertIn("TWINE_USERNAME: __token__", workflow)

@@ -9,7 +9,7 @@ on:
         type: boolean
         default: false
       publish_version:
-        description: Existing package version to republish, for example 0.2.0rc5
+        description: Existing package version to republish, for example 0.2.0rc6
         required: false
         type: string
   push:
@@ -29,7 +29,7 @@ permissions:
   packages: write
 
 env:
-  IMAGE: ghcr.io/oncologylab/fp-tools
+  IMAGE: ghcr.io/oncologylab/fp-tools-bio
 
 jobs:
   image:
@@ -134,5 +134,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --method PATCH "orgs/oncologylab/packages/container/fp-tools" \
+          gh api --method PATCH "orgs/oncologylab/packages/container/fp-tools-bio" \
             -f visibility=public

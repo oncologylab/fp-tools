@@ -20,7 +20,7 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 | [`review-multi-comparisons`](#review-multi-comparisons) | Combine differential-footprint reports as a scalable browser bundle or one self-contained HTML report. |
 | [`run-yaml-workflow`](#run-yaml-workflow) | Run one or more fp-tools jobs from a reusable YAML configuration. |
 | [`fp-tools-gui`](#fp-tools-gui) | Launch the browser interface for configuring and running fp-tools commands. |
-| [`fp-tools-runtime`](#fp-tools-runtime) | Inspect, install, or repair the private external-tool runtime used by raw-read and de novo motif workflows. |
+| [`fp-tools-runtime`](#fp-tools-runtime) | Inspect, install, or repair the managed external-tool runtime used by raw-read and de novo motif workflows. |
 | [`discover-motifs`](#discover-motifs) | Prepare or run de novo motif discovery from candidate footprint intervals or an existing FASTA file. |
 | [`summarize-motifs`](#summarize-motifs) | Summarize MEME, STREME, DREME, and Tomtom results in a compact report. |
 | [`pseudobulk-fragments`](#pseudobulk-fragments) | Group single-cell ATAC fragments by a cell-annotation column to create pseudobulk inputs. |

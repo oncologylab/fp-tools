@@ -45,9 +45,9 @@ a separately planned breaking release explicitly changes the contract.
   PyPI publication.
 - A complete amd64/arm64 container with the external genomics toolchain and a
   browser GUI as its default entry point.
-- Self-contained GUI executables for Windows x64, macOS Intel and Apple
-  Silicon, and Linux x64 and ARM64, with frozen-safe command and workflow
-  dispatch.
+- Self-contained GUI executables for Windows x64 and Apple Silicon, with
+  frozen-safe command and workflow dispatch. Linux and Intel macOS use the
+  Python package; the complete container remains available on amd64 and arm64.
 - Branded GitHub and MkDocs presentation with responsive embedded report and
   GUI demos plus automated desktop/mobile browser audits.
 - A manifest-pinned, storage-conscious ENCODE workflow for 17 biological
@@ -90,8 +90,9 @@ a separately planned breaking release explicitly changes the contract.
 8. Keep region-set examples outcome-independent: define groups from external
    annotations, match baseline signal before testing, report all motifs, and
    use explicit display motifs only to configure the initial browser view.
-9. Maintain binary-wheel and desktop-app scientific I/O parity on Windows,
-   macOS, and Linux. Test managed-runtime artifacts and keep the complete
+9. Maintain binary-wheel scientific I/O parity on Windows, macOS, and Linux,
+   plus desktop-app parity on Windows x64 and Apple Silicon. Test public,
+   repository-linked managed-runtime artifacts and keep the complete
    multi-architecture container as a reproducible alternative backend.
 
 ## Deferred or Experimental Work
