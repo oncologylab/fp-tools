@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+from fp_tools import gui_app
 from fp_tools.command_registry import COMMAND_TARGETS, dispatch_command
 from fp_tools.desktop import INTERNAL_LIST_EXAMPLES_FLAG, main as desktop_main
 from fp_tools.gui_app import (
@@ -21,6 +22,53 @@ from fp_tools.utils.subprocess_commands import (
 
 
 class GuiLauncherTests(unittest.TestCase):
+    def test_run_control_state_tracks_validation_and_keeps_launch_guard(self):
+        normalized = {
+            "version": 1,
+            "run_mode": "single",
+            "defaults": {},
+            "samples": [
+                {
+                    "tool": "bulk-footprinting",
+                    "sample_table": "samples.tsv",
+                    "comparison_table": "comparisons.tsv",
+                    "genome": "genome.fa",
+                    "outdir": "results",
+                }
+            ],
+            "comparisons": [],
+        }
+        fake_streamlit = MagicMock()
+        fake_streamlit.session_state.current_config = normalized
+        fake_streamlit.button.return_value = True
+
+        with (
+            patch.object(gui_app, "st", fake_streamlit),
+            patch.object(gui_app, "normalize_config", return_value=normalized),
+            patch.object(gui_app, "validate_gui_config", return_value=["missing input"]),
+            patch.object(gui_app, "_current_config_tool", return_value="bulk-footprinting"),
+            patch.object(gui_app, "materialize_run_config") as materialize,
+            patch.object(gui_app, "launch_config_async") as launch,
+        ):
+            gui_app._render_run_controls(Path("runs"), label="bulk_footprinting")
+
+        self.assertTrue(fake_streamlit.button.call_args.kwargs["disabled"])
+        materialize.assert_not_called()
+        launch.assert_not_called()
+
+        fake_streamlit.reset_mock()
+        fake_streamlit.session_state.current_config = normalized
+        fake_streamlit.button.return_value = False
+        with (
+            patch.object(gui_app, "st", fake_streamlit),
+            patch.object(gui_app, "normalize_config", return_value=normalized),
+            patch.object(gui_app, "validate_gui_config", return_value=[]),
+            patch.object(gui_app, "_current_config_tool", return_value="bulk-footprinting"),
+        ):
+            gui_app._render_run_controls(Path("runs"), label="bulk_footprinting")
+
+        self.assertFalse(fake_streamlit.button.call_args.kwargs["disabled"])
+
     def test_local_startup_explains_browser_and_ssh_access(self):
         text = "\n".join(_startup_messages("127.0.0.1", 8891, Path("runs")))
         self.assertIn("http://127.0.0.1:8891", text)

@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "runtime_version": "0.2.0rc7",
-  "release_base_url": "https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc7",
+  "runtime_version": "0.2.0rc8",
+  "release_base_url": "https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc8",
   "components": {
     "core": {
       "commands": [
@@ -37,23 +37,23 @@
   },
   "artifacts": {
     "linux-x86_64": {
-      "core": {"filename": "fp-tools-runtime-core-0.2.0rc7-linux-x86_64.tar.gz"},
-      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc7-linux-x86_64.tar.gz"},
-      "homer": {"filename": "fp-tools-runtime-homer-0.2.0rc7-linux-x86_64.tar.gz"}
+      "core": {"filename": "fp-tools-runtime-core-0.2.0rc8-linux-x86_64.tar.gz"},
+      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc8-linux-x86_64.tar.gz"},
+      "homer": {"filename": "fp-tools-runtime-homer-0.2.0rc8-linux-x86_64.tar.gz"}
     },
     "linux-arm64": {
-      "core": {"filename": "fp-tools-runtime-core-0.2.0rc7-linux-arm64.tar.gz"},
-      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc7-linux-arm64.tar.gz"},
-      "homer": {"filename": "fp-tools-runtime-homer-0.2.0rc7-linux-arm64.tar.gz"}
+      "core": {"filename": "fp-tools-runtime-core-0.2.0rc8-linux-arm64.tar.gz"},
+      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc8-linux-arm64.tar.gz"},
+      "homer": {"filename": "fp-tools-runtime-homer-0.2.0rc8-linux-arm64.tar.gz"}
     },
     "macos-x86_64": {
-      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc7-macos-x86_64.tar.gz"}
+      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc8-macos-x86_64.tar.gz"}
     },
     "macos-arm64": {
-      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc7-macos-arm64.tar.gz"}
+      "meme": {"filename": "fp-tools-runtime-meme-0.2.0rc8-macos-arm64.tar.gz"}
     },
     "windows-x86_64": {
-      "meme": {"filename": "fp-tools-runtime-wsl-meme-0.2.0rc7-linux-x86_64.tar.gz"}
+      "meme": {"filename": "fp-tools-runtime-wsl-meme-0.2.0rc8-linux-x86_64.tar.gz"}
     }
   }
 }

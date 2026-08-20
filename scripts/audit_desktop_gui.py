@@ -62,6 +62,34 @@ def _stop(process: subprocess.Popen[str]) -> None:
         process.wait(timeout=20)
 
 
+def _write_valid_bulk_fixture(root: Path) -> tuple[Path, Path, Path]:
+    """Create existence-only inputs for the GUI validation state transition."""
+
+    fixture = root / "valid-bulk-inputs"
+    fixture.mkdir()
+    genome = fixture / "genome.fa"
+    peaks = fixture / "peaks.bed"
+    for path in (genome, peaks):
+        path.write_text("fixture\n", encoding="utf-8")
+
+    sample_rows = ["sample\tcondition\tbam\tpeaks"]
+    for sample, condition in (("sample_a", "A"), ("sample_b", "B")):
+        bam = fixture / f"{sample}.bam"
+        bai = fixture / f"{sample}.bam.bai"
+        bam.write_bytes(b"fixture")
+        bai.write_bytes(b"fixture")
+        sample_rows.append(f"{sample}\t{condition}\t{bam}\t{peaks}")
+
+    samples = fixture / "samples.tsv"
+    samples.write_text("\n".join(sample_rows) + "\n", encoding="utf-8")
+    comparisons = fixture / "comparisons.tsv"
+    comparisons.write_text(
+        "comparison\tcond1\tcond2\nA_vs_B\tA\tB\n",
+        encoding="utf-8",
+    )
+    return samples, comparisons, genome
+
+
 def _audit_page(
     browser,
     base_url: str,
@@ -126,12 +154,20 @@ def main() -> int:
     port = _free_port()
     base_url = f"http://127.0.0.1:{port}"
     with tempfile.TemporaryDirectory(prefix="fp-tools-desktop-browser-") as workdir:
+        workdir_path = Path(workdir)
+        run_dir = workdir_path / "runs"
+        runtime_cache = workdir_path / "runtime-cache"
         process = subprocess.Popen(
-            [str(executable), "--no-browser", "--port", str(port), "--run-dir", str(Path(workdir) / "runs")],
+            [str(executable), "--no-browser", "--port", str(port), "--run-dir", str(run_dir)],
             cwd=workdir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            env={**os.environ, "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false"},
+            env={
+                **os.environ,
+                "FP_TOOLS_RUNTIME_CACHE": str(runtime_cache),
+                "LOCALAPPDATA": str(workdir_path / "local-app-data"),
+                "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false",
+            },
             start_new_session=os.name != "nt",
         )
         try:
@@ -166,8 +202,24 @@ def main() -> int:
                     page.get_by_text("Example YAML", exact=True).wait_for(timeout=30_000)
                     page.get_by_role("button", name="Load example", exact=True).wait_for(timeout=30_000)
                     page.get_by_text("Config needs fixes before launch.", exact=True).wait_for(timeout=30_000)
+                    start_button = page.get_by_role("button", name="Start run", exact=True)
+                    if not start_button.is_disabled():
+                        raise RuntimeError("Start run remains enabled for an invalid bulk configuration")
+                    if run_dir.exists() and any(run_dir.iterdir()):
+                        raise RuntimeError("Invalid bulk configuration created a GUI run")
+                    if runtime_cache.exists() and any(runtime_cache.iterdir()):
+                        raise RuntimeError("Invalid bulk configuration started managed-runtime preparation")
                     if page.get_by_text("Reads Table", exact=True).count():
                         raise RuntimeError("Desktop GUI unexpectedly exposes a FASTQ reads-table field")
+
+                    samples, comparisons, genome = _write_valid_bulk_fixture(workdir_path)
+                    page.get_by_label("Sample Table", exact=True).fill(str(samples))
+                    page.get_by_label("Comparison Table", exact=True).fill(str(comparisons))
+                    page.get_by_label("Genome", exact=True).fill(str(genome))
+                    page.get_by_role("button", name="Update page config", exact=True).click(force=True)
+                    page.get_by_text("Config is ready to run.", exact=True).wait_for(timeout=30_000)
+                    if start_button.is_disabled():
+                        raise RuntimeError("Start run remains disabled after the bulk configuration becomes valid")
                     context.close()
                 finally:
                     browser.close()
