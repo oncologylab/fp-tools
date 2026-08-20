@@ -29,19 +29,27 @@
             aria-label="Choose a pairwise comparison"
           >
             <a id="documentation-return" class="documentation-link documentation-return" href="#" target="_top" hidden>Documentation</a>
-            <label
-              >Condition 1<select
-                id="condition-1"
-                aria-label="Condition 1"
+            <label id="comparison-selector-control" hidden
+              >Comparison<select
+                id="comparison-selector"
+                aria-label="Comparison"
               ></select
             ></label>
-            <span class="versus" aria-hidden="true">vs</span>
-            <label
-              >Condition 2<select
-                id="condition-2"
-                aria-label="Condition 2"
-              ></select
-            ></label>
+            <div id="condition-selector-controls" class="condition-selector-controls">
+              <label
+                >Condition 1<select
+                  id="condition-1"
+                  aria-label="Condition 1"
+                ></select
+              ></label>
+              <span class="versus" aria-hidden="true">vs</span>
+              <label
+                >Condition 2<select
+                  id="condition-2"
+                  aria-label="Condition 2"
+                ></select
+              ></label>
+            </div>
           </div>
         </header>
 
@@ -62,7 +70,7 @@
                 <button id="download-logo" type="button">Motif logos</button>
                 <button id="download-rank" type="button">Bar plot</button>
                 <button id="download-volcano" type="button">Volcano plot</button>
-                <button id="download-aggregate" type="button">Aggregate plots</button>
+                <button id="download-aggregate" class="aggregate-only" type="button">Aggregate plots</button>
                 <button id="download-panel" type="button">Combined panel</button>
                 <button id="download-tsv" type="button">Comparison TSV</button>
                 <a
@@ -98,7 +106,7 @@
               </div>
             </section>
 
-            <section class="option-col options-samples">
+            <section class="option-col options-samples aggregate-only">
               <p class="section-title">Sample line styles</p>
               <div id="sample-style-panel" class="sample-style-panel"></div>
             </section>
@@ -106,7 +114,7 @@
             <section class="selected-card option-col">
               <div class="selected-toolbar">
                 <p class="section-title">Selected motifs</p>
-                <label
+                <label class="aggregate-only"
                   >Plots
                   <select
                     id="plot-count"
@@ -147,7 +155,7 @@
               aria-label="Differential footprint volcano plot"
             ></svg>
           </section>
-          <section class="aggregate-card">
+          <section class="aggregate-card aggregate-only">
             <div id="aggregate-legend" class="aggregate-legend"></div>
             <div id="aggregate-grid" class="aggregate-grid"></div>
           </section>

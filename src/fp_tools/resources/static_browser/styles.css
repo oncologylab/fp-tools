@@ -15,6 +15,9 @@
 * {
   box-sizing: border-box;
 }
+[hidden] {
+  display: none !important;
+}
 html,
 body {
   width: 100%;
@@ -78,6 +81,16 @@ a {
   gap: 7px;
   flex: 0 0 auto;
   padding-bottom: 2px;
+}
+.condition-selector-controls {
+  display: flex;
+  align-items: end;
+  gap: 7px;
+}
+#comparison-selector-control select {
+  width: min(360px, 42vw);
+  height: 28px;
+  padding: 2px 7px;
 }
 .documentation-return {
   align-self: end;
@@ -716,6 +729,9 @@ input {
     margin-top: 8px;
     justify-content: flex-start;
   }
+  .condition-selector-controls {
+    width: 100%;
+  }
   .comparison-controls label {
     flex: 1;
   }
@@ -759,5 +775,44 @@ input {
   .status {
     position: static;
     padding: 4px 7px;
+  }
+}
+
+body.no-aggregate .aggregate-only {
+  display: none !important;
+}
+body.no-aggregate .options-grid {
+  grid-template-columns: 270px minmax(300px, 420px);
+  grid-template-areas: "actions selected";
+  justify-content: start;
+}
+body.no-aggregate .selected-grid {
+  grid-template-columns: minmax(180px, 340px);
+}
+body.no-aggregate .dashboard,
+body.no-aggregate .report:has(.options:not([open])) .dashboard {
+  grid-template-columns: minmax(300px, 0.75fr) minmax(430px, 1.25fr);
+  grid-template-areas: "rank volcano";
+}
+body.no-aggregate .rank-card,
+body.no-aggregate .volcano-card {
+  height: auto;
+}
+
+@media (max-width: 720px) {
+  #comparison-selector-control,
+  #comparison-selector-control select {
+    width: 100%;
+  }
+  body.no-aggregate .options-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas: "actions" "selected";
+  }
+  body.no-aggregate .selected-grid {
+    grid-template-columns: 1fr;
+  }
+  body.no-aggregate .dashboard,
+  body.no-aggregate .report:has(.options:not([open])) .dashboard {
+    display: block;
   }
 }

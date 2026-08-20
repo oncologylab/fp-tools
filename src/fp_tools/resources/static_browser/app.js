@@ -1,9 +1,13 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
+const bootstrap = window.fpToolsBrowserBootstrap || { mode: "bundle" };
 const state = {
+  mode: bootstrap.mode === "embedded" ? "embedded" : "bundle",
+  review: null,
   metadata: null,
   entry: null,
+  comparisonIndex: 0,
   payload: null,
   motifs: [],
   aggregate: new Map(),
@@ -18,6 +22,7 @@ const state = {
   colors: { first: "#dc2626", second: "#2563eb", neutral: "#8a94a6" },
   request: 0,
   renderRequest: 0,
+  hasAggregates: true,
 };
 const plotSvgStyle =
   "svg,text{font-family:Helvetica,Arial,sans-serif}.plot-title{font-size:15px;font-weight:900;fill:#172033}.summary-label{font-size:10px;font-weight:700;fill:#64748b}.axis{stroke:#344256;stroke-width:1.2}.zero{stroke:#7c8798;stroke-width:1.1;stroke-dasharray:4 4}.grid{stroke:#e3eaf3;stroke-width:1}.tick{font-size:11px;fill:#526176;font-weight:700}.axis-label{font-size:12px;fill:#243247;font-weight:900}.rank-bar.active{stroke:#111827;stroke-width:1.5}.pt.selected{filter:drop-shadow(0 1px 2px rgba(15,23,42,.28))}";
@@ -123,6 +128,63 @@ async function fetchGzipJson(path) {
   return JSON.parse(await new Response(stream).text());
 }
 
+async function decodeEmbeddedPayload(payloadB64) {
+  if (!("DecompressionStream" in window))
+    throw new Error(
+      "This report needs a modern browser with gzip DecompressionStream support.",
+    );
+  const bytes = Uint8Array.from(atob(payloadB64), (character) =>
+      character.charCodeAt(0),
+    ),
+    stream = new Blob([bytes])
+      .stream()
+      .pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
+}
+
+function payloadHasAggregates(payload) {
+  return Boolean(payload?.aggregate?.motifs?.length);
+}
+
+function embeddedMetadata(review) {
+  const comparisons = (review.comparisons || []).map((record, index) => {
+      const payload = record.payload || {},
+        conditions = payload.conditions || ["condition1", "condition2"];
+      return {
+        comparison: `comparison-${index + 1}`,
+        ordinal: index,
+        label: String(record.label || `Comparison ${index + 1}`),
+        condition1: String(conditions[0] || "condition1"),
+        condition2: String(conditions[1] || "condition2"),
+        payload,
+        aggregate_motifs: payload.aggregate?.motifs?.length || 0,
+      };
+    }),
+    conditions = [];
+  comparisons.forEach((record) => {
+    [record.condition1, record.condition2].forEach((name) => {
+      if (!conditions.some((item) => item.name === name))
+        conditions.push({ name, samples: [] });
+    });
+  });
+  return {
+    schema: "fp-tools.static-comparison-browser.v1",
+    selector_mode: "comparison",
+    title: review.title || "Review multiple differential footprint comparisons",
+    comparisons,
+    conditions,
+    default_aggregate_plots: comparisons.some(
+      (record) => record.aggregate_motifs,
+    )
+      ? 4
+      : 1,
+    default_aggregate_motifs: [],
+    documentation_url: "",
+    downloads: {},
+    logos: {},
+  };
+}
+
 function fetchGzipJsonCached(path) {
   if (state.payloadCache.has(path)) return state.payloadCache.get(path);
   const request = fetchGzipJson(path).catch((error) => {
@@ -187,11 +249,16 @@ function conditionSamples(condition) {
   );
 }
 function plotCount() {
+  if (!state.hasAggregates) return 1;
   return Math.max(1, Math.min(12, Number($("plot-count").value) || 4));
 }
+function selectableMotifs() {
+  return state.hasAggregates
+    ? state.motifs.filter((item) => state.aggregate.has(item.prefix))
+    : state.motifs.slice();
+}
 function sortedMotifs() {
-  return state.motifs
-    .filter((item) => state.aggregate.has(item.prefix))
+  return selectableMotifs()
     .sort((a, b) =>
       motifLabel(a).localeCompare(motifLabel(b), undefined, {
         sensitivity: "base",
@@ -200,13 +267,11 @@ function sortedMotifs() {
 }
 
 function defaultSelected(target) {
-  const withProfiles = state.motifs.filter((item) =>
-      state.aggregate.has(item.prefix),
-    ),
-    positive = withProfiles
+  const candidates = selectableMotifs(),
+    positive = candidates
       .filter((item) => item.effect > 0)
       .sort((a, b) => b.effect - a.effect || a.pvalue - b.pvalue);
-  const negative = withProfiles
+  const negative = candidates
     .filter((item) => item.effect < 0)
     .sort((a, b) => a.effect - b.effect || a.pvalue - b.pvalue);
   const output = [],
@@ -215,7 +280,7 @@ function defaultSelected(target) {
   (state.metadata.default_aggregate_motifs || []).forEach((prefix) => {
     if (
       output.length < target &&
-      state.aggregate.has(prefix) &&
+      candidates.some((item) => item.prefix === prefix) &&
       !output.includes(prefix)
     )
       output.push(prefix);
@@ -226,7 +291,7 @@ function defaultSelected(target) {
   ].forEach((item) => {
     if (!output.includes(item.prefix)) output.push(item.prefix);
   });
-  withProfiles
+  candidates
     .slice()
     .sort(
       (a, b) => Math.abs(b.effect) - Math.abs(a.effect) || a.pvalue - b.pvalue,
@@ -253,7 +318,10 @@ function ensureSelected(reset = false) {
 }
 
 function updateHeader() {
-  const title = state.metadata?.title || "Differential footprint report";
+  const collectionTitle = state.metadata?.title || "Differential footprint report",
+    title = state.mode === "embedded"
+      ? state.entry?.label || collectionTitle
+      : collectionTitle;
   $("report-title").textContent = title;
   $("title-cond1").textContent = state.first;
   $("title-cond2").textContent = state.second;
@@ -368,6 +436,14 @@ function logoPath(prefix) {
   return `${base}/${encodeURIComponent(prefix)}.png`;
 }
 
+function embeddedLogoUri(prefix) {
+  if (state.mode !== "embedded") return "";
+  const record = state.payload?.logos?.[prefix] || {};
+  return [record.svg, record.png, record.uri, record.data_uri].find(
+    (value) => typeof value === "string" && value.startsWith("data:image/"),
+  ) || "";
+}
+
 function motifLogoSvg(prefix, attributes = "") {
   const counts = state.payload?.motif_matrices?.[prefix];
   if (
@@ -454,6 +530,11 @@ function motifLogoSvg(prefix, attributes = "") {
 function motifLogoHtml(prefix) {
   const svg = motifLogoSvg(prefix);
   if (svg) return svg;
+  const embedded = embeddedLogoUri(prefix);
+  if (embedded)
+    return `<img alt="${esc(prefix)} motif logo" src="${esc(embedded)}" width="1000" height="250" style="display:block;max-width:100%;max-height:60px;width:auto;height:auto;object-fit:contain">`;
+  if (state.mode === "embedded")
+    return '<span class="logo-empty">Logo unavailable</span>';
   return `<img alt="${esc(prefix)} motif logo" src="${esc(logoPath(prefix))}" width="1000" height="250" style="display:block;max-width:100%;max-height:60px;width:auto;height:auto;object-fit:contain">`;
 }
 
@@ -463,6 +544,23 @@ function logoDataUri(prefix) {
   if (svg) {
     const uri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
     const request = Promise.resolve(uri);
+    state.logoDataCache.set(prefix, request);
+    return request;
+  }
+  const embedded = embeddedLogoUri(prefix);
+  if (embedded) {
+    const request = Promise.resolve(embedded);
+    state.logoDataCache.set(prefix, request);
+    return request;
+  }
+  if (state.mode === "embedded") {
+    const label = motifLabel(
+        state.motifs.find((item) => item.prefix === prefix) || { name: prefix },
+      ),
+      placeholder = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 150"><rect width="420" height="150" fill="#fff"/><rect x="1" y="1" width="418" height="148" rx="7" fill="none" stroke="#d8e2ef"/><text x="210" y="78" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="16" font-weight="700" fill="#64748b">${esc(label)}</text></svg>`,
+      request = Promise.resolve(
+        `data:image/svg+xml;charset=utf-8,${encodeURIComponent(placeholder)}`,
+      );
     state.logoDataCache.set(prefix, request);
     return request;
   }
@@ -503,7 +601,7 @@ function renderSelectedCards() {
           )
           .join(""),
         group = groupFor(motif);
-      return `<article class="selected-motif${index === state.active ? " active" : ""}" data-selected-panel="${index}"><div class="selected-head"><select class="panel-tf" data-panel-tf="${index}" aria-label="Motif for aggregate plot ${index + 1}">${options}</select></div><div class="motif-logo">${motifLogoHtml(prefix)}</div><div class="detail-grid"><p class="motif-group" style="color:${colorFor(motif)}">${esc(group)}</p><p class="metric-line">ΔFP = ${fmt(motif.effect, 4)}</p><p class="metric-line">FDR = ${fmtSci(motif.qvalue)}</p></div></article>`;
+      return `<article class="selected-motif${index === state.active ? " active" : ""}" data-selected-panel="${index}"><div class="selected-head"><select class="panel-tf" data-panel-tf="${index}" aria-label="Selected motif ${index + 1}">${options}</select></div><div class="motif-logo">${motifLogoHtml(prefix)}</div><div class="detail-grid"><p class="motif-group" style="color:${colorFor(motif)}">${esc(group)}</p><p class="metric-line">ΔFP = ${fmt(motif.effect, 4)}</p><p class="metric-line">FDR = ${fmtSci(motif.qvalue)}</p></div></article>`;
     })
     .join("");
   $("selected-grid")
@@ -875,7 +973,7 @@ async function renderAggregateGrid() {
 }
 
 function setSelectedMotif(prefix) {
-  if (!state.aggregate.has(prefix)) {
+  if (state.hasAggregates && !state.aggregate.has(prefix)) {
     const motif = state.motifs.find((item) => item.prefix === prefix);
     $("status").textContent = `${motifLabel(motif || { name: prefix })} has a statistical result, but no embedded aggregate profile.`;
     return;
@@ -889,33 +987,57 @@ function renderAll(refreshControls = true) {
   updateHeader();
   if (refreshControls) {
     renderColorControls();
-    renderSampleStyles();
+    if (state.hasAggregates) renderSampleStyles();
   }
   renderSelectedCards();
   drawRank();
   renderVolcano();
-  renderLegend();
-  renderAggregateGrid();
+  if (state.hasAggregates) {
+    renderLegend();
+    renderAggregateGrid();
+  }
 }
 
 async function loadComparison(reset = true) {
-  const first = $("condition-1").value,
+  let entry,
+    payload,
+    first,
+    second,
+    reversed = false;
+  if (state.mode === "embedded") {
+    state.comparisonIndex = Math.max(
+      0,
+      Math.min(
+        state.metadata.comparisons.length - 1,
+        Number($("comparison-selector").value) || 0,
+      ),
+    );
+    entry = state.metadata.comparisons[state.comparisonIndex];
+    payload = entry?.payload;
+    [first, second] = payload?.conditions || [];
+  } else {
+    first = $("condition-1").value;
     second = $("condition-2").value;
-  if (first === second) return;
+    if (first === second) return;
+    ({ entry } = comparisonEntry(first, second));
+  }
+  if (!entry || (!payload && state.mode === "embedded"))
+    throw new Error("The selected comparison payload is unavailable");
   state.first = first;
   state.second = second;
   const token = ++state.request;
-  $("status").textContent = `Loading ${first} vs ${second}…`;
-  const { entry } = comparisonEntry(first, second),
-    payload = await fetchGzipJsonCached(entry.file);
+  $("status").textContent = `Loading ${entry.label || `${first} vs ${second}`}…`;
+  if (state.mode === "bundle") payload = await fetchGzipJsonCached(entry.file);
   if (token !== state.request) return;
   state.entry = entry;
   state.payload = payload;
+  state.hasAggregates = payloadHasAggregates(payload);
+  document.body.classList.toggle("no-aggregate", !state.hasAggregates);
   state.aggregate = new Map(
     (payload.aggregate?.motifs || []).map((item) => [item.prefix, item]),
   );
   state.profileAxis = payload.aggregate?.x || [];
-  const reversed = payload.conditions[0] !== first;
+  if (state.mode === "bundle") reversed = payload.conditions[0] !== first;
   if (
     new Set(payload.conditions).size !== 2 ||
     !payload.conditions.includes(first) ||
@@ -923,18 +1045,20 @@ async function loadComparison(reset = true) {
   )
     throw new Error(`Payload conditions do not match ${first} and ${second}`);
   state.motifs = payload.points.map((item) => orientedMotif(item, reversed));
+  const colors = payload.colors || {};
   state.colors = {
-    first: payload.colors[`${first}_up`] || "#dc2626",
-    second: payload.colors[`${second}_up`] || "#2563eb",
-    neutral: payload.colors["n.s."] || "#8a94a6",
+    first: colors[`${first}_up`] || "#dc2626",
+    second: colors[`${second}_up`] || "#2563eb",
+    neutral: colors["n.s."] || "#8a94a6",
   };
   state.sampleStyles = new Map();
+  state.logoDataCache = new Map();
   state.active = 0;
   ensureSelected(reset);
   renderAll(true);
   const significant = state.motifs.filter((item) => item.significant).length;
   $("status").textContent =
-    `${state.motifs.length.toLocaleString()} motifs | ${significant.toLocaleString()} significant | ${first} minus ${second}`;
+    `${entry.label || `${first} vs ${second}`} | ${state.motifs.length.toLocaleString()} motifs | ${significant.toLocaleString()} significant | ${first} minus ${second}`;
 }
 
 function handleConditionChange(changed) {
@@ -1003,6 +1127,52 @@ function comparisonTsv() {
       ].join("\t"),
     ),
   );
+  return rows.join("\n") + "\n";
+}
+
+function allComparisonsTsv() {
+  const columns = [
+      "comparison",
+      "condition1",
+      "condition2",
+      "prefix",
+      "name",
+      "motif_id",
+      "group",
+      "effect",
+      "ci_lower",
+      "ci_upper",
+      "pvalue",
+      "qvalue",
+      "significant",
+      "statistical_method",
+    ],
+    rows = [columns.join("\t")];
+  (state.review?.comparisons || []).forEach((record, index) => {
+    const payload = record.payload || {},
+      conditions = payload.conditions || ["condition1", "condition2"],
+      label = record.label || `Comparison ${index + 1}`;
+    (payload.points || []).forEach((point) =>
+      rows.push(
+        [
+          label,
+          conditions[0] ?? "",
+          conditions[1] ?? "",
+          point.prefix ?? "",
+          point.name ?? "",
+          point.motif_id ?? "",
+          point.group ?? "",
+          point.change ?? "",
+          point.ci_lower ?? "",
+          point.ci_upper ?? "",
+          point.pvalue ?? "",
+          point.fdr ?? "",
+          point.group !== "n.s.",
+          point.statistical_method ?? "",
+        ].join("\t"),
+      ),
+    );
+  });
   return rows.join("\n") + "\n";
 }
 
@@ -1102,11 +1272,6 @@ function aggregateGridSvg() {
 function combinedPanelSvg() {
   const rank = styledClone($("rank-chart")),
     volcano = styledClone($("chart")),
-    aggregate = aggregateGridSvg(),
-    aggregateDocument = new DOMParser().parseFromString(
-      aggregate,
-      "image/svg+xml",
-    ).documentElement,
     rankBox = rank.viewBox.baseVal,
     rankWidth = rankBox.width || 380,
     rankHeight = rankBox.height || 600,
@@ -1114,13 +1279,22 @@ function combinedPanelSvg() {
     panelHeight = Math.max(760, rankHeight),
     rankScale = panelHeight / rankHeight,
     rankDisplayWidth = rankWidth * rankScale,
+    gap = 20;
+  rank.querySelector("style")?.remove();
+  volcano.querySelector("style")?.remove();
+  if (!state.hasAggregates) {
+    const totalWidth = rankDisplayWidth + volcanoSize + gap;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${panelHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/><g transform="scale(${rankScale})">${rank.innerHTML}</g><g transform="translate(${rankDisplayWidth + gap},0)">${volcano.innerHTML}</g></svg>`;
+  }
+  const aggregate = aggregateGridSvg(),
+    aggregateDocument = new DOMParser().parseFromString(
+      aggregate,
+      "image/svg+xml",
+    ).documentElement,
     aggregateBox = aggregateDocument.viewBox.baseVal,
     aggregateScale = panelHeight / (aggregateBox.height || 600),
     aggregateWidth = (aggregateBox.width || 600) * aggregateScale,
-    gap = 20,
     totalWidth = rankDisplayWidth + volcanoSize + aggregateWidth + gap * 2;
-  rank.querySelector("style")?.remove();
-  volcano.querySelector("style")?.remove();
   aggregateDocument.querySelector("style")?.remove();
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${panelHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/><g transform="scale(${rankScale})">${rank.innerHTML}</g><g transform="translate(${rankDisplayWidth + gap},0)">${volcano.innerHTML}</g><g transform="translate(${rankDisplayWidth + volcanoSize + gap * 2},0) scale(${aggregateScale})">${aggregateDocument.innerHTML}</g></svg>`;
 }
@@ -1181,7 +1355,10 @@ function exportSvg(svg, name) {
 }
 
 function exportName(suffix) {
-  return `${state.first}_vs_${state.second}_${suffix}`.replace(
+  const base = state.mode === "embedded" && state.entry?.label
+    ? state.entry.label
+    : `${state.first}_vs_${state.second}`;
+  return `${base}_${suffix}`.replace(
     /[^A-Za-z0-9_.-]+/g,
     "_",
   );
@@ -1211,9 +1388,19 @@ function bindExports() {
       new Blob([comparisonTsv()], {
         type: "text/tab-separated-values;charset=utf-8",
       }),
-      `${state.first}_vs_${state.second}_fp_tools.tsv`,
+      `${exportName("fp_tools")}.tsv`,
     ),
   );
+  if (state.mode === "embedded")
+    $("download-all").addEventListener("click", (event) => {
+      event.preventDefault();
+      downloadBlob(
+        new Blob([allComparisonsTsv()], {
+          type: "text/tab-separated-values;charset=utf-8",
+        }),
+        "fp_tools_all_comparisons.tsv",
+      );
+    });
 }
 
 function syncRows(source) {
@@ -1232,7 +1419,17 @@ function showError(error) {
 
 async function init() {
   try {
-    const metadata = await fetchJson("data/metadata.json");
+    let metadata;
+    if (state.mode === "embedded") {
+      state.review = await decodeEmbeddedPayload(bootstrap.payloadB64 || "");
+      if (state.review.schema !== "fp-tools.review-multi-comparisons.v1")
+        throw new Error("Unsupported embedded review payload");
+      if (!state.review.comparisons?.length)
+        throw new Error("The embedded review contains no comparisons");
+      metadata = embeddedMetadata(state.review);
+    } else {
+      metadata = await fetchJson("data/metadata.json");
+    }
     state.metadata = metadata;
     if (metadata.documentation_url) {
       $("documentation-return").href = metadata.documentation_url;
@@ -1243,25 +1440,40 @@ async function init() {
       Math.min(12, Number(metadata.default_aggregate_plots) || 4),
     );
     $("plot-count").value = String(initialPlotCount);
-    const names = metadata.conditions.map((item) => item.name);
-    $("condition-1").innerHTML = optionMarkup(names);
-    const preferred = metadata.default_comparison ||
-      metadata.comparisons.find(
-        (record) => record.condition1 === "K562" && record.condition2 === "HepG2"
-      ) || metadata.comparisons[0];
-    state.first = preferred?.condition1 || names[0] || "";
-    const partners = availablePartners(state.first);
-    state.second = preferred?.condition2 || partners[0] || "";
-    $("condition-2").innerHTML = optionMarkup(partners);
-    $("condition-1").value = state.first;
-    $("condition-2").value = state.second;
-    $("download-all").href = metadata.downloads.all_results;
-    $("condition-1").addEventListener("change", () =>
-      handleConditionChange("first"),
-    );
-    $("condition-2").addEventListener("change", () =>
-      handleConditionChange("second"),
-    );
+    if (state.mode === "embedded") {
+      $("comparison-selector-control").hidden = false;
+      $("condition-selector-controls").hidden = true;
+      $("comparison-selector").innerHTML = metadata.comparisons
+        .map(
+          (record, index) =>
+            `<option value="${index}">${esc(record.label)}</option>`,
+        )
+        .join("");
+      $("comparison-selector").addEventListener("change", () =>
+        loadComparison(true).catch(showError),
+      );
+      $("download-all").removeAttribute("href");
+    } else {
+      const names = metadata.conditions.map((item) => item.name);
+      $("condition-1").innerHTML = optionMarkup(names);
+      const preferred = metadata.default_comparison ||
+        metadata.comparisons.find(
+          (record) => record.condition1 === "K562" && record.condition2 === "HepG2"
+        ) || metadata.comparisons[0];
+      state.first = preferred?.condition1 || names[0] || "";
+      const partners = availablePartners(state.first);
+      state.second = preferred?.condition2 || partners[0] || "";
+      $("condition-2").innerHTML = optionMarkup(partners);
+      $("condition-1").value = state.first;
+      $("condition-2").value = state.second;
+      $("download-all").href = metadata.downloads.all_results;
+      $("condition-1").addEventListener("change", () =>
+        handleConditionChange("first"),
+      );
+      $("condition-2").addEventListener("change", () =>
+        handleConditionChange("second"),
+      );
+    }
     $("plot-count").addEventListener("change", () => {
       ensureSelected();
       renderAll(false);
