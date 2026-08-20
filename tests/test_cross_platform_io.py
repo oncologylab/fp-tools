@@ -8,6 +8,7 @@ import subprocess
 import os
 import sys
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -22,6 +23,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class CrossPlatformIoTests(unittest.TestCase):
+    def test_pybigtools_windows_write_paths_are_not_url_like(self):
+        with mock.patch.object(bigwig.os, "name", "nt"):
+            self.assertEqual(
+                bigwig._pybigtools_write_path(r"C:\Users\runner\result.bw"),
+                r"\\?\C:\Users\runner\result.bw",
+            )
+            self.assertEqual(
+                bigwig._pybigtools_write_path(r"\\server\share\result.bw"),
+                r"\\?\UNC\server\share\result.bw",
+            )
+            self.assertEqual(
+                bigwig._pybigtools_write_path(r"\\?\C:\data\result.bw"),
+                r"\\?\C:\data\result.bw",
+            )
+
     def test_logger_listener_does_not_require_pickling_logger(self):
         logger = FpToolsLogger("portable-test", level=0)
         logger.start_logger_queue()

@@ -9,6 +9,7 @@ not need platform checks.
 from __future__ import annotations
 
 import math
+import ntpath
 import os
 import queue
 import threading
@@ -35,6 +36,25 @@ def backend_name() -> str:
     """Return the selected bigWig backend name."""
 
     return "pyBigWig" if _pybigwig is not None else "pybigtools"
+
+
+def _pybigtools_write_path(path: str | os.PathLike[str]) -> str:
+    """Return a local path that pybigtools will not parse as a URL.
+
+    pybigtools checks strings with Rust's URL parser before opening an output.
+    A normal absolute Windows path (``C:\\...``) is consequently mistaken for
+    a URL with scheme ``c``.  The equivalent Windows extended-length form is
+    still a valid local filesystem path and is unambiguously not a URL.
+    """
+
+    if os.name != "nt":
+        return os.path.abspath(os.fspath(path))
+    resolved = ntpath.abspath(os.fspath(path))
+    if resolved.startswith("\\\\?\\"):
+        return resolved
+    if resolved.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + resolved.lstrip("\\")
+    return "\\\\?\\" + resolved
 
 
 def open(path: str | os.PathLike[str], mode: str = "r"):  # noqa: A001 - API compatibility
@@ -151,7 +171,7 @@ class _StreamingBigWigWriter:
 
     def _write(self) -> None:
         try:
-            writer = _pybigtools.open(str(self.path), "w")
+            writer = _pybigtools.open(_pybigtools_write_path(self.path), "w")
             writer.write(self._header, self._records())
         except Exception as exc:  # surfaced in close/addEntries
             self._error = exc
