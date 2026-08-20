@@ -2,6 +2,7 @@
 
 const $ = (id) => document.getElementById(id);
 const bootstrap = window.fpToolsBrowserBootstrap || { mode: "bundle" };
+const plotControls = window.fpToolsPlotControls;
 const state = {
   mode: bootstrap.mode === "embedded" ? "embedded" : "bundle",
   review: null,
@@ -25,7 +26,7 @@ const state = {
   hasAggregates: true,
 };
 const plotSvgStyle =
-  "svg,text{font-family:Helvetica,Arial,sans-serif}.plot-title{font-size:15px;font-weight:900;fill:#172033}.summary-label{font-size:10px;font-weight:700;fill:#64748b}.axis{stroke:#344256;stroke-width:1.2}.zero{stroke:#7c8798;stroke-width:1.1;stroke-dasharray:4 4}.grid{stroke:#e3eaf3;stroke-width:1}.tick{font-size:11px;fill:#526176;font-weight:700}.axis-label{font-size:12px;fill:#243247;font-weight:900}.rank-bar.active{stroke:#111827;stroke-width:1.5}.pt.selected{filter:drop-shadow(0 1px 2px rgba(15,23,42,.28))}";
+  "svg,text{font-family:Helvetica,Arial,sans-serif}.plot-title{font-size:15px;font-weight:900;fill:#172033}.summary-label{font-size:10px;font-weight:700;fill:#64748b}.axis{stroke:#344256;stroke-width:1.2}.zero{stroke:#7c8798;stroke-width:1.1;stroke-dasharray:4 4}.grid{stroke:#e3eaf3;stroke-width:1}.tick{font-size:11px;fill:#526176;font-weight:700}.axis-label{font-size:12px;fill:#243247;font-weight:900}.rank-bar.active{stroke:#111827;stroke-width:1.5}.pt.selected{filter:drop-shadow(0 1px 2px rgba(15,23,42,.28))}.volcano-user-label{font-size:12px;font-weight:900;fill:#111827}.volcano-label-line{stroke:#475569;stroke-width:1}";
 const aggregateLegendLineWidth = 3;
 
 function esc(value) {
@@ -628,12 +629,51 @@ function visibleSelected() {
   return new Set(state.selected.slice(0, plotCount()));
 }
 
+function rankMode() {
+  return $("rank-sort-toggle").checked ? "significance" : "effect";
+}
+
+function comparisonTitle() {
+  return String(
+    state.entry?.label || `${state.first || "condition1"} vs ${state.second || "condition2"}`,
+  );
+}
+
+function volcanoLabelLayout(items, sx, sy, bounds) {
+  const minimumGap = 15,
+    middle = (bounds.left + bounds.right) / 2,
+    groups = { left: [], right: [] };
+  items.forEach((item) => {
+    const pointX = sx(item.effect),
+      pointY = sy(item.neglog10p),
+      side = pointX > middle ? "left" : "right";
+    groups[side].push({ item, pointX, pointY, labelY: pointY, side });
+  });
+  Object.values(groups).forEach((rows) => {
+    rows.sort((a, b) => a.pointY - b.pointY);
+    rows.forEach((row, index) => {
+      row.labelY = Math.max(
+        bounds.top,
+        row.pointY,
+        index ? rows[index - 1].labelY + minimumGap : bounds.top,
+      );
+    });
+    for (let index = rows.length - 1; index >= 0; index -= 1) {
+      const maximum = index === rows.length - 1
+        ? bounds.bottom
+        : rows[index + 1].labelY - minimumGap;
+      rows[index].labelY = Math.min(rows[index].labelY, maximum);
+    }
+  });
+  return [...groups.left, ...groups.right];
+}
+
 function renderVolcano() {
   const width = 760,
     height = 760,
-    margin = { top: 34, right: 48, bottom: 60, left: 84 },
+    margin = { top: 54, right: 48, bottom: 60, left: 84 },
     innerWidth = width - margin.left - margin.right,
-    innerHeight = height - margin.top - margin.bottom,
+    innerHeight = innerWidth,
     xValues = state.motifs.map((item) => item.effect),
     yValues = state.motifs.map((item) => item.neglog10p),
     xLimit = niceLimit(
@@ -648,9 +688,11 @@ function renderVolcano() {
       "font-size:15px;font-weight:900;font-family:Helvetica,Arial,sans-serif",
     axisStyle =
       "font-size:17px;font-weight:900;font-family:Helvetica,Arial,sans-serif",
-    selected = visibleSelected(),
+    selected = $("volcano-highlight").value === "none"
+      ? new Set()
+      : visibleSelected(),
     parts = [
-      `<style>${plotSvgStyle}</style><rect width="${width}" height="${height}" fill="#fff"/><rect x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}" fill="#fbfdff" stroke="#d9e2ec"/>`,
+      `<style>${plotSvgStyle}</style><text x="${width / 2}" y="24" class="plot-title" text-anchor="middle">Comparison: ${esc(comparisonTitle())}</text><rect x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}" fill="none" stroke="#d9e2ec"/>`,
     ];
   niceTicks(0, yMax, 7).forEach((value) =>
     parts.push(
@@ -673,6 +715,24 @@ function renderVolcano() {
         `<circle class="pt${isSelected ? " selected" : ""}" data-prefix="${esc(item.prefix)}" cx="${sx(item.effect).toFixed(2)}" cy="${sy(item.neglog10p).toFixed(2)}" r="${isSelected ? 7.2 : 4.2}" fill="${colorFor(item)}" fill-opacity="${isSelected ? 0.98 : 0.76}" stroke="${isSelected ? "#111827" : "#fff"}" stroke-width="${isSelected ? 2.7 : 0.9}"><title>${esc(motifLabel(item))}: ΔFP ${fmt(item.effect, 4)}, FDR ${fmtSci(item.qvalue)}</title></circle>`,
       ),
     );
+  const labelItems = plotControls.matchingMotifs(
+      state.motifs,
+      $("volcano-labels").value,
+    ),
+    labelLayout = volcanoLabelLayout(labelItems, sx, sy, {
+      left: margin.left + 8,
+      right: margin.left + innerWidth - 8,
+      top: margin.top + 10,
+      bottom: margin.top + innerHeight - 10,
+    });
+  labelLayout.forEach(({ item, pointX, pointY, labelY, side }) => {
+    const direction = side === "right" ? 1 : -1,
+      labelX = pointX + direction * 12,
+      anchor = side === "right" ? "start" : "end";
+    parts.push(
+      `<line class="volcano-label-line" x1="${pointX.toFixed(2)}" y1="${pointY.toFixed(2)}" x2="${labelX.toFixed(2)}" y2="${labelY.toFixed(2)}" stroke="#475569" stroke-width="1"/><text class="volcano-user-label" x="${(labelX + direction * 2).toFixed(2)}" y="${(labelY + 4).toFixed(2)}" text-anchor="${anchor}" font-family="Helvetica,Arial,sans-serif" font-size="12" font-weight="900" fill="#111827" stroke="none">${esc(item.name || motifLabel(item))}</text>`,
+    );
+  });
   $("chart").innerHTML = parts.join("");
   $("chart")
     .querySelectorAll("[data-prefix]")
@@ -688,21 +748,16 @@ function drawRank() {
       2,
       Math.min(200, Math.floor(Number($("rank-rows").value) || 20)),
     ),
-    perDirection = Math.max(1, Math.floor(limit / 2)),
-    positive = state.motifs
-      .filter((item) => item.effect > 0)
-      .sort((a, b) => b.effect - a.effect || a.pvalue - b.pvalue)
-      .slice(0, perDirection),
-    negative = state.motifs
-      .filter((item) => item.effect < 0)
-      .sort((a, b) => a.effect - b.effect || a.pvalue - b.pvalue)
-      .slice(0, perDirection),
+    mode = rankMode(),
+    ranked = plotControls.rankMotifs(state.motifs, mode, limit),
+    positive = ranked.positive,
+    negative = ranked.negative,
     shown = [...negative, ...positive],
     width = 380,
     rowHeight = 14,
     rowGap = 3,
     sectionGap = 8,
-    margin = { top: 64, bottom: 68, left: 128, right: 14 },
+    margin = { top: 110, bottom: 68, left: 128, right: 14 },
     height = Math.max(
       430,
       margin.top +
@@ -713,13 +768,46 @@ function drawRank() {
     xMiddle = 246,
     xWidth = 112,
     maxAbs = niceLimit(
-      Math.max(...shown.map((item) => Math.abs(item.effect)), 1e-9),
+      Math.max(
+        ...shown.map((item) => Math.abs(plotControls.rankMetric(item, mode))),
+        1e-9,
+      ),
     ),
     sx = (value) => xMiddle + (value / maxAbs) * xWidth,
     axisY = height - 60,
     selected = visibleSelected(),
+    effectColorMax = Math.max(
+      ...shown.map((item) => Math.abs(item.effect)),
+      1e-9,
+    ),
+    significanceColorMax = Math.max(
+      ...shown.map((item) => plotControls.negLog10P(item)),
+      1e-9,
+    ),
+    colorDomain = mode === "significance"
+      ? { maxAbs: effectColorMax }
+      : { max: significanceColorMax },
+    colorOptions = {
+      first: state.colors.first,
+      second: state.colors.second,
+      neutralCenter: "#f8fafc",
+    },
+    axisLabel = mode === "significance"
+      ? "Signed −log10(p-value)"
+      : state.payload?.change_label || "Differential footprint score",
+    legendLabel = mode === "significance"
+      ? state.payload?.change_label || "Differential footprint score"
+      : "−log10(p-value)",
+    legendLow = mode === "significance"
+      ? -effectColorMax
+      : significanceColorMax,
+    legendCenter = 0,
+    legendHigh = mode === "significance"
+      ? effectColorMax
+      : significanceColorMax,
+    gradientStops = `<stop offset="0%" stop-color="${state.colors.second}"/><stop offset="50%" stop-color="#f8fafc"/><stop offset="100%" stop-color="${state.colors.first}"/>`,
     parts = [
-      `<style>${plotSvgStyle}</style><rect width="${width}" height="${height}" fill="#fff"/><text x="${width / 2}" y="18" class="plot-title" text-anchor="middle">Top differential motifs</text><line x1="${xMiddle}" y1="${margin.top - 36}" x2="${xMiddle}" y2="${axisY}" stroke="#172033" stroke-width="2.2"/><text x="${xMiddle - 6}" y="${margin.top - 22}" text-anchor="end" font-size="14" font-weight="900" fill="${state.colors.second}">${esc(state.second)}_up</text><text x="${xMiddle + 6}" y="${margin.top - 22}" text-anchor="start" font-size="14" font-weight="900" fill="${state.colors.first}">${esc(state.first)}_up</text>`,
+      `<style>${plotSvgStyle}</style><defs><linearGradient id="rank-color-gradient" x1="0" x2="1">${gradientStops}</linearGradient></defs><text x="${width / 2}" y="16" class="plot-title" text-anchor="middle">Top differential motifs</text><text x="${width / 2}" y="34" class="summary-label" text-anchor="middle">Comparison: ${esc(comparisonTitle())}</text><text x="8" y="49" class="summary-label">Color: ${esc(legendLabel)}</text><rect x="8" y="54" width="104" height="7" rx="2" fill="url(#rank-color-gradient)"/><text x="8" y="72" class="tick">${fmt(legendLow, 2)}</text><text x="60" y="72" class="tick" text-anchor="middle">${fmt(legendCenter, 2)}</text><text x="112" y="72" class="tick" text-anchor="end">${fmt(legendHigh, 2)}</text><line x1="${xMiddle}" y1="${margin.top - 20}" x2="${xMiddle}" y2="${axisY}" stroke="#172033" stroke-width="2.2"/><text x="${xMiddle - 6}" y="${margin.top - 27}" text-anchor="end" font-size="14" font-weight="900" fill="${state.colors.second}">${esc(state.second)}_up</text><text x="${xMiddle + 6}" y="${margin.top - 27}" text-anchor="start" font-size="14" font-weight="900" fill="${state.colors.first}">${esc(state.first)}_up</text>`,
     ];
   niceTicks(-maxAbs, maxAbs, 5).forEach((value) =>
     parts.push(
@@ -727,18 +815,21 @@ function drawRank() {
     ),
   );
   parts.push(
-    `<line x1="${sx(-maxAbs)}" y1="${axisY}" x2="${sx(maxAbs)}" y2="${axisY}" class="axis"/><text x="${xMiddle}" y="${height - 8}" class="axis-label" text-anchor="middle">${esc(state.payload?.change_label || "Differential footprint score")}</text>`,
+    `<line x1="${sx(-maxAbs)}" y1="${axisY}" x2="${sx(maxAbs)}" y2="${axisY}" class="axis"/><text x="${xMiddle}" y="${height - 8}" class="axis-label" text-anchor="middle">${esc(axisLabel)}</text>`,
   );
   let y = margin.top;
   const drawRows = (rows) =>
     rows.forEach((item) => {
-      const barWidth = (Math.abs(item.effect) / maxAbs) * xWidth,
-        x = item.effect >= 0 ? xMiddle : xMiddle - barWidth,
+      const metric = plotControls.rankMetric(item, mode),
+        opposite = plotControls.oppositeMetric(item, mode),
+        barWidth = (Math.abs(metric) / maxAbs) * xWidth,
+        x = metric >= 0 ? xMiddle : xMiddle - barWidth,
         isSelected = selected.has(item.prefix),
         name = motifLabel(item).slice(0, 20),
-        labelY = y + rowHeight - 2;
+        labelY = y + rowHeight - 2,
+        fill = plotControls.rankColor(item, mode, colorDomain, colorOptions);
       parts.push(
-        `<text class="rank-name${isSelected ? " active" : ""}" data-prefix="${esc(item.prefix)}" x="6" y="${labelY}" font-size="10" font-weight="${isSelected ? 900 : 700}" fill="${isSelected ? colorFor(item) : "#526176"}">${esc(name)}</text><rect class="rank-bar${isSelected ? " active" : ""}" data-prefix="${esc(item.prefix)}" x="${x}" y="${y}" width="${Math.max(1, barWidth)}" height="${rowHeight}" fill="${colorFor(item)}" fill-opacity="${isSelected ? 0.95 : 0.72}"><title>${esc(motifLabel(item))}: ${fmt(item.effect, 4)}</title></rect><text x="${item.effect >= 0 ? x - 3 : x + barWidth + 3}" y="${labelY}" class="tick" text-anchor="${item.effect >= 0 ? "end" : "start"}">${fmt(item.effect, 3)}</text>`,
+        `<text class="rank-name${isSelected ? " active" : ""}" data-prefix="${esc(item.prefix)}" x="6" y="${labelY}" font-size="10" font-weight="${isSelected ? 900 : 700}" fill="${isSelected ? fill : "#526176"}">${esc(name)}</text><rect class="rank-bar${isSelected ? " active" : ""}" data-prefix="${esc(item.prefix)}" x="${x}" y="${y}" width="${Math.max(1, barWidth)}" height="${rowHeight}" fill="${fill}" fill-opacity="${isSelected ? 1 : 0.82}"><title>${esc(motifLabel(item))}: ΔFP ${fmt(item.effect, 4)}; −log10(p-value) ${fmt(plotControls.negLog10P(item), 3)}</title></rect><text x="${metric >= 0 ? x - 3 : x + barWidth + 3}" y="${labelY}" class="tick" text-anchor="${metric >= 0 ? "end" : "start"}">${fmt(opposite, mode === "significance" ? 3 : 2)}</text>`,
       );
       y += rowHeight + rowGap;
     });
@@ -1482,6 +1573,9 @@ async function init() {
     $("rank-rows-slider").addEventListener("input", (event) =>
       syncRows(event.target),
     );
+    $("rank-sort-toggle").addEventListener("change", drawRank);
+    $("volcano-highlight").addEventListener("change", renderVolcano);
+    $("volcano-labels").addEventListener("input", renderVolcano);
     bindExports();
     if (window.innerWidth >= 1100 && window.innerHeight < 900)
       $("options").removeAttribute("open");

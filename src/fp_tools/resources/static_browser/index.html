@@ -84,6 +84,11 @@
               <p class="section-title group-title">Groups</p>
               <div class="card control-stack">
                 <div id="color-controls" class="color-controls"></div>
+                <label class="rank-sort-control" title="Switch the waterfall ranking metric">
+                  <span>Differential footprint score</span>
+                  <input id="rank-sort-toggle" type="checkbox" role="switch" />
+                  <span>−log10(p-value)</span>
+                </label>
                 <label class="rows-control"
                   >Rows
                   <input
@@ -101,6 +106,23 @@
                     max="200"
                     step="1"
                     value="20"
+                  />
+                </label>
+                <label class="volcano-highlight-control"
+                  >Volcano highlight
+                  <select id="volcano-highlight" aria-label="Volcano point highlighting">
+                    <option value="selected">Selected motifs</option>
+                    <option value="none">(none)</option>
+                  </select>
+                </label>
+                <label class="volcano-label-control"
+                  >Label TFs
+                  <input
+                    id="volcano-labels"
+                    type="text"
+                    placeholder="e.g. JUN, HIF2A"
+                    aria-label="TF names to label on the volcano plot"
+                    title="Comma-separated TF names, motif IDs, or output prefixes"
                   />
                 </label>
               </div>
@@ -169,6 +191,7 @@
       >This browser requires JavaScript to render the static result
       files.</noscript
     >
+    <script src="plot_controls.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>

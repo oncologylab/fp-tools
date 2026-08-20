@@ -37,7 +37,11 @@ a separately planned breaking release explicitly changes the contract.
   samples as the inferential units. Bundle and self-contained multi-comparison
   reviews share one browser implementation; standalone reports preserve input
   order with an exact-record selector and remove aggregate-only controls when
-  profiles are unavailable.
+  profiles are unavailable. The shared browser also supports aggregate-neutral
+  volcano highlighting, lightweight user-selected TF labels, and a two-mode
+  ranked-motif waterfall with reciprocal score/significance labels, directional
+  blue/red color strength, a stable square volcano viewport, and comparison
+  labels embedded in exported waterfall, volcano, and combined-panel SVGs.
 - Region-set differential footprinting for one sample or paired biological
   replicates, with equal region weighting, optional matching strata,
   resampling-based uncertainty, paired empirical-Bayes inference, and the same
