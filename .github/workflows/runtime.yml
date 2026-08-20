@@ -44,7 +44,7 @@ jobs:
         shell: bash -el {0}
         run: |
           mkdir -p runtime-out runtime-smoke
-          conda-pack -n runtime -o "runtime-out/${{ matrix.component }}.tar.gz"
+          conda-pack -p "${MAMBA_ROOT_PREFIX}/envs/runtime" -o "runtime-out/${{ matrix.component }}.tar.gz"
           micromamba list -n runtime --json > "runtime-out/${{ matrix.component }}-sbom.json"
           tar -xzf "runtime-out/${{ matrix.component }}.tar.gz" -C runtime-smoke
           runtime-smoke/bin/python runtime-smoke/bin/conda-unpack
