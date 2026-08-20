@@ -69,6 +69,14 @@ except (ImportError, ValueError):
 apply_pdf_style()
 
 
+def _finite_scale(*standard_deviations):
+    """Return a finite positive scale for standardized mean differences."""
+
+    values = [abs(float(value)) for value in standard_deviations if np.isfinite(value)]
+    scale = float(np.mean(values)) if values else 0.0
+    return max(scale, float(np.finfo(float).eps))
+
+
 def dict_to_tab(dict_list, fname, chosen_columns, header=False):
     out_str = ("\t".join(chosen_columns) + "\n") if header else ""
     out_str += "\n".join(["\t".join([str(line[c]) for c in chosen_columns]) for line in dict_list])
@@ -456,20 +464,24 @@ def process_tfbs(TF_name, args, log2fc_params, bed_rows=None):
             n_obs = len(observed_log2fcs)
 
             if obs_mean != bg_mean:
-                change = (obs_mean - bg_mean) / np.mean([obs_std, bg_std])
+                change = (obs_mean - bg_mean) / _finite_scale(obs_std, bg_std)
                 info_table.at[TF_name, base + "_change"] = np.round(change, 5)
+
+                np.random.seed(n_obs)
+                sample_changes = []
+                for _ in range(100):
+                    sample = scipy.stats.norm.rvs(bg_mean, bg_std, size=n_obs)
+                    sm, ss = float(np.mean(sample)), float(np.std(sample))
+                    sample_changes.append((sm - bg_mean) / _finite_scale(ss, bg_std))
+                ttest = scipy.stats.ttest_1samp(
+                    sample_changes,
+                    float(info_table.at[TF_name, base + "_change"]),
+                )
+                pvalue = float(ttest.pvalue)
+                info_table.at[TF_name, base + "_pvalue"] = pvalue if np.isfinite(pvalue) else 1.0
             else:
                 info_table.at[TF_name, base + "_change"] = 0
                 info_table.at[TF_name, base + "_pvalue"] = 1
-
-            np.random.seed(n_obs)
-            sample_changes = []
-            for _ in range(100):
-                sample = scipy.stats.norm.rvs(bg_mean, bg_std, size=n_obs)
-                sm, ss = float(np.mean(sample)), float(np.std(sample))
-                sample_changes.append((sm - bg_mean) / np.mean([ss, bg_std]))
-            ttest = scipy.stats.ttest_1samp(sample_changes, float(info_table.at[TF_name, base + "_change"]))
-            info_table.at[TF_name, base + "_pvalue"] = ttest[1]
 
             if write_per_motif_plots:
                 fig, ax = plt.subplots(1, 1)

@@ -338,8 +338,24 @@ class RegionList(list):
 		"""Merge overlapping regions into their geometric union.
 
 		Book-ended regions remain separate. If ``name`` is true, regions are
-		only merged when their names are identical (used in ``count_overlaps``).
+		merged independently within each chromosome/name group before genomic
+		sorting is restored (used in ``count_overlaps``).
 		"""
+
+		if name:
+			grouped_regions = {}
+			for region in self:
+				grouped_regions.setdefault((region.chrom, region.name), []).append(region)
+
+			merged_regions = []
+			for regions in grouped_regions.values():
+				group = RegionList(regions)
+				group.merge(name=False)
+				merged_regions.extend(group)
+
+			self[:] = merged_regions
+			self.loc_sort()
+			return(self)
 
 		self.loc_sort()		#sort before overlapping
 		no = self.count()	#number of regions
@@ -351,12 +367,7 @@ class RegionList(list):
 			prev_chrom, prev_start, prev_end = self[i-1].chrom, self[i-1].start, self[i-1].end
 			curr_chrom, curr_start, curr_end = self[i].chrom, self[i].start, self[i].end
 
-			#Check naming
-			merge_flag = True
-			if name == True:
-				merge_flag = True if self[i-1].name == self[i].name else False
-
-			if curr_chrom == prev_chrom and curr_start < prev_end and merge_flag == True:		#if overlapping regions
+			if curr_chrom == prev_chrom and curr_start < prev_end:		#if overlapping regions
 					self[i].start = prev_start
 					self[i][1] = prev_start
 
