@@ -42,13 +42,28 @@ jobs:
           cache-environment: true
       - name: Pack and inspect runtime
         shell: bash -el {0}
+        env:
+          COMPONENT: ${{ matrix.component }}
         run: |
           mkdir -p runtime-out runtime-smoke
           conda-pack -p "${MAMBA_ROOT_PREFIX}/envs/runtime" -o "runtime-out/${{ matrix.component }}.tar.gz"
           micromamba list -n runtime --json > "runtime-out/${{ matrix.component }}-sbom.json"
           tar -xzf "runtime-out/${{ matrix.component }}.tar.gz" -C runtime-smoke
           runtime-smoke/bin/python runtime-smoke/bin/conda-unpack
-          runtime-smoke/bin/python -c "import json; json.load(open('runtime-out/${{ matrix.component }}-sbom.json'))"
+          runtime-smoke/bin/python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          json.load(open(f"runtime-out/{os.environ['COMPONENT']}-sbom.json"))
+          manifest = json.load(open("src/fp_tools/resources/runtime_manifest.json"))
+          missing = [
+              name
+              for name in manifest["components"][os.environ["COMPONENT"]]["commands"]
+              if not (Path("runtime-smoke/bin") / name).exists()
+          ]
+          assert not missing, f"Runtime is missing commands: {missing}"
+          PY
       - name: Log in to GHCR
         if: startsWith(github.ref, 'refs/tags/')
         uses: docker/login-action@v4
