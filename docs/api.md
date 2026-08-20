@@ -44,7 +44,7 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 
 **Primary inputs**
 
-- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [ENCODE and local examples](get-started/workflows/bulk-atac-seq.md#optional-fastq-preparation-on-linux).
+- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [bulk workflow guide](get-started/workflows/bulk-atac-seq.md).
 - `--genome` — packaged `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.
 
@@ -199,24 +199,17 @@ bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv 
 | `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for the workflow stages. |
 | `{project}/logs/bulk_footprinting/{stage}.stdout.log` and `{stage}.stderr.log` | Stage-specific logs for troubleshooting. |
 
-Linux CLI and Linux container users may instead use `--reads-table` for FASTQ
-or public-run preprocessing. This option and its associated preparation flags
-are unavailable in the GUI and native macOS/Windows installations.
+FASTQ preprocessing is intentionally separate. Linux users can run
+[`prepare-atac`](#prepare-atac) first, then provide its generated
+`metadata/samples.tsv` to this command.
 
 **Complete options**
 
 ```text
-usage: bulk-footprinting [-h]
-                         (--sample-table SAMPLE_TABLE | --reads-table READS_TABLE)
-                         --comparison-table COMPARISON_TABLE --genome GENOME
-                         [--blacklist BLACKLIST] [--config CONFIG]
-                         [--profile {modern,homer-atac}]
-                         [--reference-dir REFERENCE_DIR] [--fasta FASTA]
-                         [--bowtie2-index BOWTIE2_INDEX] [--tss TSS]
-                         [--macs-genome-size MACS_GENOME_SIZE]
-                         [--max-parallel-samples MAX_PARALLEL_SAMPLES]
-                         [--memory-gb MEMORY_GB] [--keep-intermediates]
-                         [--motifs [MOTIFS ...]] [--motif-db MOTIF_DB]
+usage: bulk-footprinting [-h] --sample-table SAMPLE_TABLE --comparison-table
+                         COMPARISON_TABLE --genome GENOME
+                         [--blacklist BLACKLIST] [--motifs [MOTIFS ...]]
+                         [--motif-db MOTIF_DB]
                          [--normalization {none,condition-quantile,sample-quantile}]
                          [--plot-aggregate {sig,all,top,off}]
                          [--review-format {auto,bundle,standalone,none}]
@@ -230,32 +223,11 @@ options:
   -h, --help            show this help message and exit
   --sample-table SAMPLE_TABLE
                         TSV with sample, condition, BAM, and peak BED columns.
-  --reads-table READS_TABLE
-                        Linux CLI/container only: TSV/CSV with local FASTQ
-                        paths or public run accessions; runs preparation
-                        before footprinting.
   --comparison-table COMPARISON_TABLE
                         TSV with comparison, cond1, and cond2 columns.
-  --genome GENOME       Reference FASTA for aligned input, or hg38/mm10/custom
-                        label for raw reads.
+  --genome GENOME       Reference FASTA matching the BAM and peak coordinates.
   --blacklist BLACKLIST
                         Optional blacklist BED used during bias correction.
-  --config CONFIG       Optional prepare-atac YAML for raw reads.
-  --profile {modern,homer-atac}
-                        Raw-read processing profile (default: modern).
-  --reference-dir REFERENCE_DIR
-                        Reference cache root for raw reads.
-  --fasta FASTA         Custom reference FASTA for raw reads.
-  --bowtie2-index BOWTIE2_INDEX
-                        Existing Bowtie2 index prefix for raw reads.
-  --tss TSS             Optional TSS BED for raw-read QC.
-  --macs-genome-size MACS_GENOME_SIZE
-                        MACS3 genome size for a custom genome.
-  --max-parallel-samples MAX_PARALLEL_SAMPLES
-                        Maximum raw-read samples processed concurrently.
-  --memory-gb MEMORY_GB
-                        Total memory budget for raw-read processing.
-  --keep-intermediates  Keep raw-read intermediate files.
   --motifs [MOTIFS ...]
                         Optional motif files.
   --motif-db MOTIF_DB   Built-in motif database (default:

@@ -282,12 +282,11 @@ class DocsEntryPointContractTest(unittest.TestCase):
         guide = (
             ROOT / "docs" / "get-started" / "workflows" / "bulk-atac-seq.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("encode_hepg2_k562_fastq_urls.tsv", guide)
         self.assertIn("encode_hepg2_k562_bams.tsv", guide)
         self.assertIn("encode_hepg2_k562_comparisons.tsv", guide)
-        self.assertIn("local_fastq_template.tsv", guide)
         self.assertIn("local_bam_peak_template.tsv", guide)
-        self.assertIn("bulk-footprinting --reads-table", guide)
+        self.assertIn('??? note "Optional FASTQ-to-BAM preparation"', guide)
+        self.assertIn("prepare-atac --samples", guide)
         self.assertIn("bulk-footprinting --sample-table", guide)
         self.assertEqual(guide.count("```bash"), 2)
         for unnecessary_detail in (

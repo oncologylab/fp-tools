@@ -19,8 +19,8 @@ starts from coordinate-sorted BAM/BAI files and matching peak BED files.
 Download the app for your computer, then open it. The GUI starts in your
 browser.
 
-[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc8/fp-tools-gui-windows-x64.exe){ .md-button }
-[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc8/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
+[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc9/fp-tools-gui-windows-x64.exe){ .md-button }
+[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc9/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
 
 The preview apps are unsigned. Windows may ask you to confirm the download. On
 macOS, Control-click the app and choose **Open** the first time.
@@ -63,6 +63,13 @@ server address. The port must be permitted by the server firewall.
 
     The Linux container also supports FASTQ-to-BAM preparation with
     `prepare-atac`; native Windows and macOS installations do not.
+
+??? note "Optional FASTQ-to-BAM preparation"
+
+    The footprinting workflows start from BAM/BAI and peak BED files. Linux
+    users who need read preprocessing can run
+    [`prepare-atac`](commands/prepare-atac.md) separately before starting the
+    bulk workflow.
 
 ## Start an analysis
 

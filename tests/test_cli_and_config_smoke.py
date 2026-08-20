@@ -28,7 +28,7 @@ CONFIG_DIR = ROOT / "examples" / "gui_configs"
 
 
 class CliAndConfigSmokeTest(unittest.TestCase):
-    def test_bulk_config_accepts_exactly_one_input_level(self):
+    def test_bulk_config_requires_aligned_sample_table(self):
         base = {
             "tool": "bulk-footprinting",
             "comparison_table": "comparisons.tsv",
@@ -41,9 +41,9 @@ class CliAndConfigSmokeTest(unittest.TestCase):
             "samples": [{**base, "reads_table": "reads.tsv", "sample_table": "samples.tsv"}],
             "comparisons": [],
         }
-        self.assertEqual(validate_config(raw), [])
         self.assertEqual(validate_config(aligned), [])
-        self.assertTrue(any("exactly one" in value for value in validate_config(both)))
+        self.assertTrue(any("run 'prepare-atac' separately" in value for value in validate_config(raw)))
+        self.assertTrue(any("run 'prepare-atac' separately" in value for value in validate_config(both)))
 
     def test_gui_accepts_bam_bulk_config_and_rejects_raw_reads(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -58,10 +58,11 @@ Primary current API checks:
 
 Platform contract checks:
 
-- Linux CLI and the Linux container support `prepare-atac` and
-  `bulk-footprinting --reads-table`.
-- Native macOS and Windows commands reject raw-read mode before downloads or
-  output creation while keeping `prepare-atac --help` available.
+- Linux CLI and the Linux container support FASTQ preprocessing through the
+  separate `prepare-atac` command.
+- `bulk-footprinting` accepts only BAM/BAI plus peak BED sample tables on every
+  platform. Native macOS and Windows keep `prepare-atac --help` available but
+  reject execution before downloads or output creation.
 - Every GUI and both desktop bundles accept BAM/BAI plus peak BED inputs and
   reject `prepare-atac`, `reads_table`, and equivalent extra arguments.
 - Non-Linux runtime manifests expose the optional MEME component only; Linux

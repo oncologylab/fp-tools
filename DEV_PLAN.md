@@ -27,8 +27,9 @@ a separately planned breaking release explicitly changes the contract.
   complete Linux container retained as an explicit backend.
 - Cross-platform one-command bulk analysis from coordinate-sorted BAM/BAI and
   matching peak BED files through portable multi-comparison HTML reports.
-- Optional Linux CLI/container bulk analysis from FASTQ files or public run
-  accessions through the same downstream workflow.
+- Separate Linux CLI/container FASTQ preparation through `prepare-atac`, which
+  writes the BAM/BAI and peak BED sample table accepted by the downstream bulk
+  workflow.
 - Tn5 bias correction, background scaling, footprint scoring, candidate calls,
   known-motif matching, de novo motif preparation, and aggregate plotting.
 - Replicate-aware differential footprint reports, including per-sample motif
