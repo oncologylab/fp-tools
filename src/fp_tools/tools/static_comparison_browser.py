@@ -70,6 +70,9 @@ def write_embedded_static_browser(review_payload: dict, output: str | Path) -> P
     document = template_root.joinpath("index.html").read_text(encoding="utf-8")
     stylesheet = template_root.joinpath("styles.css").read_text(encoding="utf-8")
     application = template_root.joinpath("app.js").read_text(encoding="utf-8")
+    plot_controls = template_root.joinpath("plot_controls.js").read_text(
+        encoding="utf-8"
+    )
     title = html.escape(
         str(
             review_payload.get("title")
@@ -85,6 +88,10 @@ def write_embedded_static_browser(review_payload: dict, output: str | Path) -> P
     document = document.replace(
         '<link rel="stylesheet" href="styles.css" />',
         f"<style>\n{stylesheet}\n</style>",
+    )
+    document = document.replace(
+        '<script src="plot_controls.js" defer></script>',
+        f"<script>\n{plot_controls}\n</script>",
     )
     document = document.replace(
         '<script src="app.js" defer></script>',
@@ -376,7 +383,7 @@ def build_static_browser(
     (data_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
 
     template_root = files("fp_tools.resources.static_browser")
-    for name in ("index.html", "app.js", "styles.css"):
+    for name in ("index.html", "plot_controls.js", "app.js", "styles.css"):
         (output_dir / name).write_bytes(template_root.joinpath(name).read_bytes())
     return output_dir / "index.html"
 

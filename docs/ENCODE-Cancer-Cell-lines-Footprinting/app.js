@@ -1,9 +1,14 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
+const bootstrap = window.fpToolsBrowserBootstrap || { mode: "bundle" };
+const plotControls = window.fpToolsPlotControls;
 const state = {
+  mode: bootstrap.mode === "embedded" ? "embedded" : "bundle",
+  review: null,
   metadata: null,
   entry: null,
+  comparisonIndex: 0,
   payload: null,
   motifs: [],
   aggregate: new Map(),
@@ -18,9 +23,10 @@ const state = {
   colors: { first: "#dc2626", second: "#2563eb", neutral: "#8a94a6" },
   request: 0,
   renderRequest: 0,
+  hasAggregates: true,
 };
 const plotSvgStyle =
-  "svg,text{font-family:Helvetica,Arial,sans-serif}.plot-title{font-size:15px;font-weight:900;fill:#172033}.axis{stroke:#344256;stroke-width:1.2}.zero{stroke:#7c8798;stroke-width:1.1;stroke-dasharray:4 4}.grid{stroke:#e3eaf3;stroke-width:1}.tick{font-size:11px;fill:#526176;font-weight:700}.axis-label{font-size:12px;fill:#243247;font-weight:900}.rank-bar.active{stroke:#111827;stroke-width:1.5}.pt.selected{filter:drop-shadow(0 1px 2px rgba(15,23,42,.28))}";
+  "svg,text{font-family:Helvetica,Arial,sans-serif}.plot-title{font-size:15px;font-weight:900;fill:#172033}.summary-label{font-size:10px;font-weight:700;fill:#64748b}.axis{stroke:#344256;stroke-width:1.2}.zero{stroke:#7c8798;stroke-width:1.1;stroke-dasharray:4 4}.grid{stroke:#e3eaf3;stroke-width:1}.tick{font-size:11px;fill:#526176;font-weight:700}.axis-label{font-size:12px;fill:#243247;font-weight:900}.rank-bar.active{stroke:#111827;stroke-width:1.5}.pt.selected{filter:drop-shadow(0 1px 2px rgba(15,23,42,.28))}.volcano-user-label{font-size:12px;font-weight:900;fill:#111827}.volcano-label-line{stroke:#475569;stroke-width:1}";
 const aggregateLegendLineWidth = 3;
 
 function esc(value) {
@@ -54,6 +60,14 @@ function motifLabel(motif) {
   return motif
     ? `${motif.name}${motif.motif_id ? ` (${motif.motif_id})` : ""}`
     : "";
+}
+function sampleDisplayName(sample, condition = "") {
+  if (sample && typeof sample === "object" && sample.display_name)
+    return String(sample.display_name);
+  const name = String(sample?.name ?? sample ?? "");
+  if (name.includes("::")) return name.split("::").slice(1).join("::");
+  const prefix = condition ? `${condition}_` : "";
+  return prefix && name.startsWith(prefix) ? name.slice(prefix.length) : name;
 }
 function logp(value) {
   return -Math.log10(Math.max(1e-300, finite(value, 1)));
@@ -115,6 +129,63 @@ async function fetchGzipJson(path) {
   return JSON.parse(await new Response(stream).text());
 }
 
+async function decodeEmbeddedPayload(payloadB64) {
+  if (!("DecompressionStream" in window))
+    throw new Error(
+      "This report needs a modern browser with gzip DecompressionStream support.",
+    );
+  const bytes = Uint8Array.from(atob(payloadB64), (character) =>
+      character.charCodeAt(0),
+    ),
+    stream = new Blob([bytes])
+      .stream()
+      .pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
+}
+
+function payloadHasAggregates(payload) {
+  return Boolean(payload?.aggregate?.motifs?.length);
+}
+
+function embeddedMetadata(review) {
+  const comparisons = (review.comparisons || []).map((record, index) => {
+      const payload = record.payload || {},
+        conditions = payload.conditions || ["condition1", "condition2"];
+      return {
+        comparison: `comparison-${index + 1}`,
+        ordinal: index,
+        label: String(record.label || `Comparison ${index + 1}`),
+        condition1: String(conditions[0] || "condition1"),
+        condition2: String(conditions[1] || "condition2"),
+        payload,
+        aggregate_motifs: payload.aggregate?.motifs?.length || 0,
+      };
+    }),
+    conditions = [];
+  comparisons.forEach((record) => {
+    [record.condition1, record.condition2].forEach((name) => {
+      if (!conditions.some((item) => item.name === name))
+        conditions.push({ name, samples: [] });
+    });
+  });
+  return {
+    schema: "fp-tools.static-comparison-browser.v1",
+    selector_mode: "comparison",
+    title: review.title || "Review multiple differential footprint comparisons",
+    comparisons,
+    conditions,
+    default_aggregate_plots: comparisons.some(
+      (record) => record.aggregate_motifs,
+    )
+      ? 4
+      : 1,
+    default_aggregate_motifs: [],
+    documentation_url: "",
+    downloads: {},
+    logos: {},
+  };
+}
+
 function fetchGzipJsonCached(path) {
   if (state.payloadCache.has(path)) return state.payloadCache.get(path);
   const request = fetchGzipJson(path).catch((error) => {
@@ -140,6 +211,10 @@ function comparisonEntry(first, second) {
 function orientedMotif(point, reversed) {
   const aggregate = state.aggregate.get(point.prefix),
     effect = (reversed ? -1 : 1) * finite(point.change),
+    rawCiLower = Number(point.ci_lower),
+    rawCiUpper = Number(point.ci_upper),
+    ciLower = reversed && Number.isFinite(rawCiUpper) ? -rawCiUpper : point.ci_lower,
+    ciUpper = reversed && Number.isFinite(rawCiLower) ? -rawCiLower : point.ci_upper,
     significant = point.group !== "n.s.",
     group = significant
       ? `${effect >= 0 ? state.first : state.second}_up`
@@ -153,6 +228,14 @@ function orientedMotif(point, reversed) {
     significant,
     group,
     n_sites: aggregate?.n_sites ?? "",
+    ci_lower: ciLower,
+    ci_upper: ciUpper,
+    n_motif_regions_set_1: reversed
+      ? point.n_motif_regions_set_2
+      : point.n_motif_regions_set_1,
+    n_motif_regions_set_2: reversed
+      ? point.n_motif_regions_set_1
+      : point.n_motif_regions_set_2,
   };
 }
 
@@ -167,36 +250,49 @@ function conditionSamples(condition) {
   );
 }
 function plotCount() {
+  if (!state.hasAggregates) return 1;
   return Math.max(1, Math.min(12, Number($("plot-count").value) || 4));
 }
+function selectableMotifs() {
+  return state.hasAggregates
+    ? state.motifs.filter((item) => state.aggregate.has(item.prefix))
+    : state.motifs.slice();
+}
 function sortedMotifs() {
-  return state.motifs.slice().sort((a, b) =>
-    motifLabel(a).localeCompare(motifLabel(b), undefined, {
-      sensitivity: "base",
-    }),
-  );
+  return selectableMotifs()
+    .sort((a, b) =>
+      motifLabel(a).localeCompare(motifLabel(b), undefined, {
+        sensitivity: "base",
+      }),
+    );
 }
 
 function defaultSelected(target) {
-  const withProfiles = state.motifs.filter((item) =>
-      state.aggregate.has(item.prefix),
-    ),
-    positive = withProfiles
+  const candidates = selectableMotifs(),
+    positive = candidates
       .filter((item) => item.effect > 0)
       .sort((a, b) => b.effect - a.effect || a.pvalue - b.pvalue);
-  const negative = withProfiles
+  const negative = candidates
     .filter((item) => item.effect < 0)
     .sort((a, b) => a.effect - b.effect || a.pvalue - b.pvalue);
   const output = [],
     negativeCount = Math.floor(target / 2),
     positiveCount = target - negativeCount;
+  (state.metadata.default_aggregate_motifs || []).forEach((prefix) => {
+    if (
+      output.length < target &&
+      candidates.some((item) => item.prefix === prefix) &&
+      !output.includes(prefix)
+    )
+      output.push(prefix);
+  });
   [
     ...positive.slice(0, positiveCount),
     ...negative.slice(0, negativeCount),
   ].forEach((item) => {
     if (!output.includes(item.prefix)) output.push(item.prefix);
   });
-  withProfiles
+  candidates
     .slice()
     .sort(
       (a, b) => Math.abs(b.effect) - Math.abs(a.effect) || a.pvalue - b.pvalue,
@@ -223,11 +319,16 @@ function ensureSelected(reset = false) {
 }
 
 function updateHeader() {
+  const collectionTitle = state.metadata?.title || "Differential footprint report",
+    title = state.mode === "embedded"
+      ? state.entry?.label || collectionTitle
+      : collectionTitle;
+  $("report-title").textContent = title;
   $("title-cond1").textContent = state.first;
   $("title-cond2").textContent = state.second;
   $("title-cond1").style.color = state.colors.first;
   $("title-cond2").style.color = state.colors.second;
-  document.title = `Differential footprint report (${state.first} vs ${state.second})`;
+  document.title = `${title} (${state.first} vs ${state.second})`;
   $("report-method").textContent = state.payload?.report_label || "";
 }
 
@@ -259,7 +360,7 @@ function defaultSampleStyle(sample, condition, index) {
   return {
     visible: true,
     color: conditionColor,
-    alpha: 0.9,
+    alpha: 0.38,
     width: 2,
     type: "solid",
   };
@@ -284,7 +385,8 @@ function renderSampleStyles() {
       const rows = samples
         .map((sample, index) => {
           const style = sampleStyle(sample, condition, index);
-          return `<div class="sample-style-row"><input type="checkbox" data-sample-visible="${esc(sample)}" ${style.visible ? "checked" : ""} aria-label="Show ${esc(sample)}"><span class="sample-style-name" title="${esc(sample)}">${esc(sample)}</span><input type="color" data-sample-color="${esc(sample)}" value="${style.color}" aria-label="Color for ${esc(sample)}"><input type="number" data-sample-alpha="${esc(sample)}" min="0.1" max="1" step="0.1" value="${style.alpha}" aria-label="Opacity for ${esc(sample)}"><input type="number" data-sample-width="${esc(sample)}" min="0.3" max="4" step="0.1" value="${style.width}" aria-label="Width for ${esc(sample)}"><select data-sample-type="${esc(sample)}" aria-label="Line type for ${esc(sample)}"><option value="solid" ${style.type === "solid" ? "selected" : ""}>Solid</option><option value="dash" ${style.type === "dash" ? "selected" : ""}>Dash</option><option value="dot" ${style.type === "dot" ? "selected" : ""}>Dot</option></select></div>`;
+          const label = sampleDisplayName(sample, condition);
+          return `<div class="sample-style-row"><input type="checkbox" data-sample-visible="${esc(sample)}" ${style.visible ? "checked" : ""} aria-label="Show ${esc(label)}"><span class="sample-style-name" title="${esc(label)}">${esc(label)}</span><input type="color" data-sample-color="${esc(sample)}" value="${style.color}" aria-label="Color for ${esc(label)}"><input type="number" data-sample-alpha="${esc(sample)}" min="0.1" max="1" step="0.1" value="${style.alpha}" aria-label="Opacity for ${esc(label)}"><input type="number" data-sample-width="${esc(sample)}" min="0.3" max="4" step="0.1" value="${style.width}" aria-label="Width for ${esc(label)}"><select data-sample-type="${esc(sample)}" aria-label="Line type for ${esc(label)}"><option value="solid" ${style.type === "solid" ? "selected" : ""}>Solid</option><option value="dash" ${style.type === "dash" ? "selected" : ""}>Dash</option><option value="dot" ${style.type === "dot" ? "selected" : ""}>Dot</option></select></div>`;
         })
         .join("");
       return `<div class="sample-style-group"><div class="sample-style-group-title"><i class="sample-style-dot" style="background:${conditionColor}"></i>${esc(condition)}</div><div class="sample-style-row sample-style-head"><span>Show</span><span>Sample</span><span>Color</span><span>Alpha</span><span>Width</span><span>Type</span></div>${rows}</div>`;
@@ -335,12 +437,134 @@ function logoPath(prefix) {
   return `${base}/${encodeURIComponent(prefix)}.png`;
 }
 
+function embeddedLogoUri(prefix) {
+  if (state.mode !== "embedded") return "";
+  const record = state.payload?.logos?.[prefix] || {};
+  return [record.svg, record.png, record.uri, record.data_uri].find(
+    (value) => typeof value === "string" && value.startsWith("data:image/"),
+  ) || "";
+}
+
+function motifLogoSvg(prefix, attributes = "") {
+  const counts = state.payload?.motif_matrices?.[prefix];
+  if (
+    !Array.isArray(counts) ||
+    counts.length !== 4 ||
+    !Array.isArray(counts[0]) ||
+    !counts[0].length
+  )
+    return "";
+  const width = 420,
+    height = 150,
+    bases = ["A", "C", "G", "T"],
+    colors = { A: "#198754", C: "#0d6efd", G: "#f59f00", T: "#dc3545" },
+    left = 46,
+    right = 14,
+    top = 16,
+    bottom = 32,
+    plotWidth = width - left - right,
+    plotHeight = height - top - bottom,
+    positions = counts[0].length,
+    columnWidth = plotWidth / Math.max(1, positions),
+    bits = [[], [], [], []],
+    attributeText = attributes ? ` ${attributes}` : "",
+    parts = [
+      `<svg${attributeText} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(prefix)} motif logo"><rect width="100%" height="100%" fill="#fff"/><line x1="${left}" y1="${top + plotHeight}" x2="${left + plotWidth}" y2="${top + plotHeight}" stroke="#3b4552" stroke-width="1.2"/><line x1="${left}" y1="${top}" x2="${left}" y2="${top + plotHeight}" stroke="#3b4552" stroke-width="1.2"/><text x="18" y="${top + plotHeight / 2}" transform="rotate(-90 18 ${top + plotHeight / 2})" text-anchor="middle" font-size="12" font-weight="700" fill="#152133">bits</text><text x="${left + plotWidth / 2}" y="${height - 7}" text-anchor="middle" font-size="12" font-weight="700" fill="#152133">position</text>`,
+    ];
+  for (let position = 0; position < positions; position += 1) {
+    const total =
+        counts.reduce(
+          (sum, row) => sum + (Number(row[position]) || 0),
+          0,
+        ) || 1,
+      frequencies = counts.map(
+        (row) => (Number(row[position]) || 0) / total,
+      ),
+      entropy = -frequencies.reduce(
+        (sum, value) =>
+          sum +
+          (value > 0 ? value * Math.log2(Math.max(value, 1e-12)) : 0),
+        0,
+      ),
+      information = Math.max(0, 2 - entropy);
+    frequencies.forEach(
+      (frequency, base) => (bits[base][position] = frequency * information),
+    );
+  }
+  [0, 1, 2].forEach((tick) => {
+    const y = top + plotHeight - (tick / 2) * plotHeight;
+    parts.push(
+      `<line x1="${left - 4}" y1="${y.toFixed(2)}" x2="${left}" y2="${y.toFixed(2)}" stroke="#3b4552"/><text x="${left - 8}" y="${(y + 4).toFixed(2)}" text-anchor="end" font-size="11" font-weight="700" fill="#56616f">${tick}</text>`,
+    );
+  });
+  for (let position = 0; position < positions; position += 1) {
+    let y = top + plotHeight;
+    const order = [0, 1, 2, 3].sort(
+        (first, second) => bits[first][position] - bits[second][position],
+      ),
+      x = left + position * columnWidth + columnWidth / 2;
+    if (
+      positions <= 18 ||
+      position === 0 ||
+      position === positions - 1 ||
+      (position + 1) % 5 === 0
+    )
+      parts.push(
+        `<text x="${x.toFixed(2)}" y="${top + plotHeight + 13}" text-anchor="middle" font-size="9" font-weight="700" fill="#56616f">${position + 1}</text>`,
+      );
+    order.forEach((baseIndex) => {
+      const value = bits[baseIndex][position];
+      if (value <= 0.015) return;
+      const letterHeight = Math.max(3, (value / 2) * plotHeight),
+        base = bases[baseIndex],
+        fontSize = Math.max(8, Math.min(40, letterHeight * 1.25));
+      y -= letterHeight;
+      parts.push(
+        `<text x="${x.toFixed(2)}" y="${(y + letterHeight * 0.88).toFixed(2)}" text-anchor="middle" font-family="Arial Black,Helvetica,Arial,sans-serif" font-size="${fontSize.toFixed(2)}" font-weight="900" fill="${colors[base]}">${base}</text>`,
+      );
+    });
+  }
+  parts.push("</svg>");
+  return parts.join("");
+}
+
 function motifLogoHtml(prefix) {
+  const svg = motifLogoSvg(prefix);
+  if (svg) return svg;
+  const embedded = embeddedLogoUri(prefix);
+  if (embedded)
+    return `<img alt="${esc(prefix)} motif logo" src="${esc(embedded)}" width="1000" height="250" style="display:block;max-width:100%;max-height:60px;width:auto;height:auto;object-fit:contain">`;
+  if (state.mode === "embedded")
+    return '<span class="logo-empty">Logo unavailable</span>';
   return `<img alt="${esc(prefix)} motif logo" src="${esc(logoPath(prefix))}" width="1000" height="250" style="display:block;max-width:100%;max-height:60px;width:auto;height:auto;object-fit:contain">`;
 }
 
 function logoDataUri(prefix) {
   if (state.logoDataCache.has(prefix)) return state.logoDataCache.get(prefix);
+  const svg = motifLogoSvg(prefix);
+  if (svg) {
+    const uri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    const request = Promise.resolve(uri);
+    state.logoDataCache.set(prefix, request);
+    return request;
+  }
+  const embedded = embeddedLogoUri(prefix);
+  if (embedded) {
+    const request = Promise.resolve(embedded);
+    state.logoDataCache.set(prefix, request);
+    return request;
+  }
+  if (state.mode === "embedded") {
+    const label = motifLabel(
+        state.motifs.find((item) => item.prefix === prefix) || { name: prefix },
+      ),
+      placeholder = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 150"><rect width="420" height="150" fill="#fff"/><rect x="1" y="1" width="418" height="148" rx="7" fill="none" stroke="#d8e2ef"/><text x="210" y="78" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="16" font-weight="700" fill="#64748b">${esc(label)}</text></svg>`,
+      request = Promise.resolve(
+        `data:image/svg+xml;charset=utf-8,${encodeURIComponent(placeholder)}`,
+      );
+    state.logoDataCache.set(prefix, request);
+    return request;
+  }
   const request = fetch(logoPath(prefix))
     .then((response) => {
       if (!response.ok)
@@ -378,7 +602,7 @@ function renderSelectedCards() {
           )
           .join(""),
         group = groupFor(motif);
-      return `<article class="selected-motif${index === state.active ? " active" : ""}" data-selected-panel="${index}"><div class="selected-head"><select class="panel-tf" data-panel-tf="${index}" aria-label="Motif for aggregate plot ${index + 1}">${options}</select></div><div class="motif-logo">${motifLogoHtml(prefix)}</div><div class="detail-grid"><p class="motif-group" style="color:${colorFor(motif)}">${esc(group)}</p><p class="metric-line">ΔFP = ${fmt(motif.effect, 4)}</p><p class="metric-line">FDR = ${fmtSci(motif.qvalue)}</p></div></article>`;
+      return `<article class="selected-motif${index === state.active ? " active" : ""}" data-selected-panel="${index}"><div class="selected-head"><select class="panel-tf" data-panel-tf="${index}" aria-label="Selected motif ${index + 1}">${options}</select></div><div class="motif-logo">${motifLogoHtml(prefix)}</div><div class="detail-grid"><p class="motif-group" style="color:${colorFor(motif)}">${esc(group)}</p><p class="metric-line">ΔFP = ${fmt(motif.effect, 4)}</p><p class="metric-line">FDR = ${fmtSci(motif.qvalue)}</p></div></article>`;
     })
     .join("");
   $("selected-grid")
@@ -405,12 +629,51 @@ function visibleSelected() {
   return new Set(state.selected.slice(0, plotCount()));
 }
 
+function rankMode() {
+  return $("rank-sort-toggle").checked ? "significance" : "effect";
+}
+
+function comparisonTitle() {
+  return String(
+    state.entry?.label || `${state.first || "condition1"} vs ${state.second || "condition2"}`,
+  );
+}
+
+function volcanoLabelLayout(items, sx, sy, bounds) {
+  const minimumGap = 15,
+    middle = (bounds.left + bounds.right) / 2,
+    groups = { left: [], right: [] };
+  items.forEach((item) => {
+    const pointX = sx(item.effect),
+      pointY = sy(item.neglog10p),
+      side = pointX > middle ? "left" : "right";
+    groups[side].push({ item, pointX, pointY, labelY: pointY, side });
+  });
+  Object.values(groups).forEach((rows) => {
+    rows.sort((a, b) => a.pointY - b.pointY);
+    rows.forEach((row, index) => {
+      row.labelY = Math.max(
+        bounds.top,
+        row.pointY,
+        index ? rows[index - 1].labelY + minimumGap : bounds.top,
+      );
+    });
+    for (let index = rows.length - 1; index >= 0; index -= 1) {
+      const maximum = index === rows.length - 1
+        ? bounds.bottom
+        : rows[index + 1].labelY - minimumGap;
+      rows[index].labelY = Math.min(rows[index].labelY, maximum);
+    }
+  });
+  return [...groups.left, ...groups.right];
+}
+
 function renderVolcano() {
   const width = 760,
     height = 760,
-    margin = { top: 34, right: 48, bottom: 60, left: 84 },
+    margin = { top: 54, right: 48, bottom: 60, left: 84 },
     innerWidth = width - margin.left - margin.right,
-    innerHeight = height - margin.top - margin.bottom,
+    innerHeight = innerWidth,
     xValues = state.motifs.map((item) => item.effect),
     yValues = state.motifs.map((item) => item.neglog10p),
     xLimit = niceLimit(
@@ -425,9 +688,11 @@ function renderVolcano() {
       "font-size:15px;font-weight:900;font-family:Helvetica,Arial,sans-serif",
     axisStyle =
       "font-size:17px;font-weight:900;font-family:Helvetica,Arial,sans-serif",
-    selected = visibleSelected(),
+    selected = $("volcano-highlight").value === "none"
+      ? new Set()
+      : visibleSelected(),
     parts = [
-      `<style>${plotSvgStyle}</style><rect width="${width}" height="${height}" fill="#fff"/><rect x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}" fill="#fbfdff" stroke="#d9e2ec"/>`,
+      `<style>${plotSvgStyle}</style><text x="${width / 2}" y="24" class="plot-title" text-anchor="middle">Comparison: ${esc(comparisonTitle())}</text><rect x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}" fill="none" stroke="#d9e2ec"/>`,
     ];
   niceTicks(0, yMax, 7).forEach((value) =>
     parts.push(
@@ -450,6 +715,24 @@ function renderVolcano() {
         `<circle class="pt${isSelected ? " selected" : ""}" data-prefix="${esc(item.prefix)}" cx="${sx(item.effect).toFixed(2)}" cy="${sy(item.neglog10p).toFixed(2)}" r="${isSelected ? 7.2 : 4.2}" fill="${colorFor(item)}" fill-opacity="${isSelected ? 0.98 : 0.76}" stroke="${isSelected ? "#111827" : "#fff"}" stroke-width="${isSelected ? 2.7 : 0.9}"><title>${esc(motifLabel(item))}: ΔFP ${fmt(item.effect, 4)}, FDR ${fmtSci(item.qvalue)}</title></circle>`,
       ),
     );
+  const labelItems = plotControls.matchingMotifs(
+      state.motifs,
+      $("volcano-labels").value,
+    ),
+    labelLayout = volcanoLabelLayout(labelItems, sx, sy, {
+      left: margin.left + 8,
+      right: margin.left + innerWidth - 8,
+      top: margin.top + 10,
+      bottom: margin.top + innerHeight - 10,
+    });
+  labelLayout.forEach(({ item, pointX, pointY, labelY, side }) => {
+    const direction = side === "right" ? 1 : -1,
+      labelX = pointX + direction * 12,
+      anchor = side === "right" ? "start" : "end";
+    parts.push(
+      `<line class="volcano-label-line" x1="${pointX.toFixed(2)}" y1="${pointY.toFixed(2)}" x2="${labelX.toFixed(2)}" y2="${labelY.toFixed(2)}" stroke="#475569" stroke-width="1"/><text class="volcano-user-label" x="${(labelX + direction * 2).toFixed(2)}" y="${(labelY + 4).toFixed(2)}" text-anchor="${anchor}" font-family="Helvetica,Arial,sans-serif" font-size="12" font-weight="900" fill="#111827" stroke="none">${esc(item.name || motifLabel(item))}</text>`,
+    );
+  });
   $("chart").innerHTML = parts.join("");
   $("chart")
     .querySelectorAll("[data-prefix]")
@@ -465,21 +748,16 @@ function drawRank() {
       2,
       Math.min(200, Math.floor(Number($("rank-rows").value) || 20)),
     ),
-    perDirection = Math.max(1, Math.floor(limit / 2)),
-    positive = state.motifs
-      .filter((item) => item.effect > 0)
-      .sort((a, b) => b.effect - a.effect || a.pvalue - b.pvalue)
-      .slice(0, perDirection),
-    negative = state.motifs
-      .filter((item) => item.effect < 0)
-      .sort((a, b) => a.effect - b.effect || a.pvalue - b.pvalue)
-      .slice(0, perDirection),
+    mode = rankMode(),
+    ranked = plotControls.rankMotifs(state.motifs, mode, limit),
+    positive = ranked.positive,
+    negative = ranked.negative,
     shown = [...negative, ...positive],
     width = 380,
     rowHeight = 14,
     rowGap = 3,
     sectionGap = 8,
-    margin = { top: 64, bottom: 68, left: 128, right: 14 },
+    margin = { top: 110, bottom: 68, left: 128, right: 14 },
     height = Math.max(
       430,
       margin.top +
@@ -490,13 +768,46 @@ function drawRank() {
     xMiddle = 246,
     xWidth = 112,
     maxAbs = niceLimit(
-      Math.max(...shown.map((item) => Math.abs(item.effect)), 1e-9),
+      Math.max(
+        ...shown.map((item) => Math.abs(plotControls.rankMetric(item, mode))),
+        1e-9,
+      ),
     ),
     sx = (value) => xMiddle + (value / maxAbs) * xWidth,
     axisY = height - 60,
     selected = visibleSelected(),
+    effectColorMax = Math.max(
+      ...shown.map((item) => Math.abs(item.effect)),
+      1e-9,
+    ),
+    significanceColorMax = Math.max(
+      ...shown.map((item) => plotControls.negLog10P(item)),
+      1e-9,
+    ),
+    colorDomain = mode === "significance"
+      ? { maxAbs: effectColorMax }
+      : { max: significanceColorMax },
+    colorOptions = {
+      first: state.colors.first,
+      second: state.colors.second,
+      neutralCenter: "#f8fafc",
+    },
+    axisLabel = mode === "significance"
+      ? "Signed −log10(p-value)"
+      : state.payload?.change_label || "Differential footprint score",
+    legendLabel = mode === "significance"
+      ? state.payload?.change_label || "Differential footprint score"
+      : "−log10(p-value)",
+    legendLow = mode === "significance"
+      ? -effectColorMax
+      : significanceColorMax,
+    legendCenter = 0,
+    legendHigh = mode === "significance"
+      ? effectColorMax
+      : significanceColorMax,
+    gradientStops = `<stop offset="0%" stop-color="${state.colors.second}"/><stop offset="50%" stop-color="#f8fafc"/><stop offset="100%" stop-color="${state.colors.first}"/>`,
     parts = [
-      `<style>${plotSvgStyle}</style><rect width="${width}" height="${height}" fill="#fff"/><text x="${width / 2}" y="18" class="plot-title" text-anchor="middle">Top differential motifs</text><line x1="${xMiddle}" y1="${margin.top - 36}" x2="${xMiddle}" y2="${axisY}" stroke="#172033" stroke-width="2.2"/><text x="${xMiddle - 6}" y="${margin.top - 22}" text-anchor="end" font-size="14" font-weight="900" fill="${state.colors.second}">${esc(state.second)}_up</text><text x="${xMiddle + 6}" y="${margin.top - 22}" text-anchor="start" font-size="14" font-weight="900" fill="${state.colors.first}">${esc(state.first)}_up</text>`,
+      `<style>${plotSvgStyle}</style><defs><linearGradient id="rank-color-gradient" x1="0" x2="1">${gradientStops}</linearGradient></defs><text x="${width / 2}" y="16" class="plot-title" text-anchor="middle">Top differential motifs</text><text x="${width / 2}" y="34" class="summary-label" text-anchor="middle">Comparison: ${esc(comparisonTitle())}</text><text x="8" y="49" class="summary-label">Color: ${esc(legendLabel)}</text><rect x="8" y="54" width="104" height="7" rx="2" fill="url(#rank-color-gradient)"/><text x="8" y="72" class="tick">${fmt(legendLow, 2)}</text><text x="60" y="72" class="tick" text-anchor="middle">${fmt(legendCenter, 2)}</text><text x="112" y="72" class="tick" text-anchor="end">${fmt(legendHigh, 2)}</text><line x1="${xMiddle}" y1="${margin.top - 20}" x2="${xMiddle}" y2="${axisY}" stroke="#172033" stroke-width="2.2"/><text x="${xMiddle - 6}" y="${margin.top - 27}" text-anchor="end" font-size="14" font-weight="900" fill="${state.colors.second}">${esc(state.second)}_up</text><text x="${xMiddle + 6}" y="${margin.top - 27}" text-anchor="start" font-size="14" font-weight="900" fill="${state.colors.first}">${esc(state.first)}_up</text>`,
     ];
   niceTicks(-maxAbs, maxAbs, 5).forEach((value) =>
     parts.push(
@@ -504,18 +815,21 @@ function drawRank() {
     ),
   );
   parts.push(
-    `<line x1="${sx(-maxAbs)}" y1="${axisY}" x2="${sx(maxAbs)}" y2="${axisY}" class="axis"/><text x="${xMiddle}" y="${height - 8}" class="axis-label" text-anchor="middle">${esc(state.payload?.change_label || "Differential footprint score")}</text>`,
+    `<line x1="${sx(-maxAbs)}" y1="${axisY}" x2="${sx(maxAbs)}" y2="${axisY}" class="axis"/><text x="${xMiddle}" y="${height - 8}" class="axis-label" text-anchor="middle">${esc(axisLabel)}</text>`,
   );
   let y = margin.top;
   const drawRows = (rows) =>
     rows.forEach((item) => {
-      const barWidth = (Math.abs(item.effect) / maxAbs) * xWidth,
-        x = item.effect >= 0 ? xMiddle : xMiddle - barWidth,
+      const metric = plotControls.rankMetric(item, mode),
+        opposite = plotControls.oppositeMetric(item, mode),
+        barWidth = (Math.abs(metric) / maxAbs) * xWidth,
+        x = metric >= 0 ? xMiddle : xMiddle - barWidth,
         isSelected = selected.has(item.prefix),
         name = motifLabel(item).slice(0, 20),
-        labelY = y + rowHeight - 2;
+        labelY = y + rowHeight - 2,
+        fill = plotControls.rankColor(item, mode, colorDomain, colorOptions);
       parts.push(
-        `<text class="rank-name${isSelected ? " active" : ""}" data-prefix="${esc(item.prefix)}" x="6" y="${labelY}" font-size="10" font-weight="${isSelected ? 900 : 700}" fill="${isSelected ? colorFor(item) : "#526176"}">${esc(name)}</text><rect class="rank-bar${isSelected ? " active" : ""}" data-prefix="${esc(item.prefix)}" x="${x}" y="${y}" width="${Math.max(1, barWidth)}" height="${rowHeight}" fill="${colorFor(item)}" fill-opacity="${isSelected ? 0.95 : 0.72}"><title>${esc(motifLabel(item))}: ${fmt(item.effect, 4)}</title></rect><text x="${item.effect >= 0 ? x - 3 : x + barWidth + 3}" y="${labelY}" class="tick" text-anchor="${item.effect >= 0 ? "end" : "start"}">${fmt(item.effect, 3)}</text>`,
+        `<text class="rank-name${isSelected ? " active" : ""}" data-prefix="${esc(item.prefix)}" x="6" y="${labelY}" font-size="10" font-weight="${isSelected ? 900 : 700}" fill="${isSelected ? fill : "#526176"}">${esc(name)}</text><rect class="rank-bar${isSelected ? " active" : ""}" data-prefix="${esc(item.prefix)}" x="${x}" y="${y}" width="${Math.max(1, barWidth)}" height="${rowHeight}" fill="${fill}" fill-opacity="${isSelected ? 1 : 0.82}"><title>${esc(motifLabel(item))}: ΔFP ${fmt(item.effect, 4)}; −log10(p-value) ${fmt(plotControls.negLog10P(item), 3)}</title></rect><text x="${metric >= 0 ? x - 3 : x + barWidth + 3}" y="${labelY}" class="tick" text-anchor="${metric >= 0 ? "end" : "start"}">${fmt(opposite, mode === "significance" ? 3 : 2)}</text>`,
       );
       y += rowHeight + rowGap;
     });
@@ -549,14 +863,23 @@ async function profileRecord(prefix) {
     if (!motif) throw new Error(`Profile shard does not contain ${prefix}`);
   }
   const samples = {},
-    sampleMeta = {};
+    sampleMeta = {},
+    conditionCounts = {};
   motif.conditions.forEach((condition) =>
-    condition.samples.forEach((sample) => {
-      samples[sample.name] = sample.profile;
-      sampleMeta[sample.name] = sample;
-    }),
+    {
+      conditionCounts[condition.name] = Number(condition.n_sites || 0);
+      condition.samples.forEach((sample) => {
+        samples[sample.name] = sample.profile;
+        sampleMeta[sample.name] = sample;
+      });
+    },
   );
-  return { samples, sampleMeta, n_profile_sites: motif.n_sites || 0 };
+  return {
+    samples,
+    sampleMeta,
+    conditionCounts,
+    n_profile_sites: motif.n_sites || 0,
+  };
 }
 
 function dashAttribute(type) {
@@ -599,7 +922,21 @@ function profileSvg(record, motif, index) {
         });
     }),
   );
-  const values = series.flatMap((item) => item.profile),
+  const means = [state.first, state.second]
+      .map((condition) => {
+        const rows = series.filter((item) => item.condition === condition);
+        if (!rows.length) return null;
+        return {
+          condition,
+          profile: rows[0].profile.map(
+            (_value, point) =>
+              rows.reduce((sum, row) => sum + row.profile[point], 0) /
+              rows.length,
+          ),
+        };
+      })
+      .filter(Boolean),
+    values = series.flatMap((item) => item.profile),
     rawMin = Math.min(...values, 0),
     rawMax = Math.max(...values, 1e-9),
     padding = Math.max((rawMax - rawMin || 1) * 0.18, 1e-6),
@@ -607,7 +944,7 @@ function profileSvg(record, motif, index) {
     yMax = rawMax + padding,
     width = 300,
     height = 300,
-    margin = { top: 30, right: 8, bottom: 34, left: 36 },
+    margin = { top: 42, right: 8, bottom: 34, left: 36 },
     innerWidth = width - margin.left - margin.right,
     innerHeight = height - margin.top - margin.bottom,
     sx = (value) =>
@@ -618,7 +955,7 @@ function profileSvg(record, motif, index) {
       innerHeight -
       ((value - yMin) / (yMax - yMin || 1)) * innerHeight,
     parts = [
-      `<svg class="aggregate-panel" data-panel="${index}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><style>${plotSvgStyle}</style><rect width="${width}" height="${height}" fill="#fff"/><text x="${width / 2}" y="18" class="plot-title" text-anchor="middle">${esc(motifLabel(motif))}</text>`,
+      `<svg class="aggregate-panel" data-panel="${index}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><style>${plotSvgStyle}</style><rect width="${width}" height="${height}" fill="#fff"/><text x="${width / 2}" y="17" class="plot-title" text-anchor="middle">${esc(motifLabel(motif))}</text><text x="${width / 2}" y="32" class="summary-label" text-anchor="middle">regions: ${Number(record.conditionCounts[state.first] || 0).toLocaleString()} / ${Number(record.conditionCounts[state.second] || 0).toLocaleString()}</text>`,
     ];
   niceTicks(yMin, yMax, 4).forEach((value) =>
     parts.push(
@@ -631,15 +968,20 @@ function profileSvg(record, motif, index) {
     ),
   );
   parts.push(
-    `<line x1="${margin.left}" y1="${margin.top + innerHeight}" x2="${margin.left + innerWidth}" y2="${margin.top + innerHeight}" class="axis"/><line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + innerHeight}" class="axis"/><text x="${margin.left + 7}" y="${margin.top + innerHeight - 8}" class="tick" fill="#94a3b8">${record.n_profile_sites.toLocaleString()}</text>`,
+    `<line x1="${margin.left}" y1="${margin.top + innerHeight}" x2="${margin.left + innerWidth}" y2="${margin.top + innerHeight}" class="axis"/><line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + innerHeight}" class="axis"/>`,
   );
   series
     .sort((a, b) => b.fpScore - a.fpScore)
     .forEach((item) =>
       parts.push(
-        `<path d="${linePath(item.profile, axis, sx, sy)}" fill="none" stroke="${item.style.color}" stroke-width="${item.style.width}"${dashAttribute(item.style.type)} stroke-opacity="${item.style.alpha}"><title>${esc(item.sample)}</title></path>`,
+        `<path d="${linePath(item.profile, axis, sx, sy)}" fill="none" stroke="${item.style.color}" stroke-width="${item.style.width}"${dashAttribute(item.style.type)} stroke-opacity="${item.style.alpha}"><title>${esc(sampleDisplayName(record.sampleMeta[item.sample], item.condition))}</title></path>`,
       ),
     );
+  means.forEach((item) =>
+    parts.push(
+      `<path d="${linePath(item.profile, axis, sx, sy)}" fill="none" stroke="${item.condition === state.first ? state.colors.first : state.colors.second}" stroke-width="3" stroke-opacity="1"><title>${esc(item.condition)} mean</title></path>`,
+    ),
+  );
   parts.push(
     `<text x="${margin.left + innerWidth / 2}" y="${height - 6}" class="axis-label" text-anchor="middle">${esc(state.payload?.aggregate?.x_label || "Distance from motif center (bp)")}</text><text x="10" y="${margin.top + innerHeight / 2}" class="axis-label" text-anchor="middle" transform="rotate(-90 10 ${margin.top + innerHeight / 2})">${esc(state.payload?.aggregate?.y_label || "Corrected cut-site signal")}</text></svg>`,
   );
@@ -651,6 +993,7 @@ function aggregateShape(count) {
   if (count <= 2) return { columns: 2, rows: 1 };
   if (count <= 4) return { columns: 2, rows: 2 };
   if (count <= 6) return { columns: 3, rows: 2 };
+  if (count <= 8) return { columns: 4, rows: 2 };
   if (count <= 9) return { columns: 3, rows: 3 };
   return { columns: 4, rows: 3 };
 }
@@ -675,10 +1018,10 @@ function renderLegend() {
   $("aggregate-legend").innerHTML = groups
     .map(
       (group) =>
-        `<div class="legend-group"><div class="legend-group-title" title="${esc(group.condition)}">${esc(group.condition)}</div>${group.rows
+        `<div class="legend-group"><div class="legend-group-title" title="${esc(group.condition)}">${esc(group.condition)}</div><div class="legend-row"><i class="legend-line" style="border-top-color:${group.condition === state.first ? state.colors.first : state.colors.second};border-top-width:3px"></i><span>Mean</span></div>${group.rows
           .map(
             (row) =>
-              `<div class="legend-row"><i class="legend-line" style="border-top-color:${row.style.color};border-top-style:${row.style.type === "dash" ? "dashed" : row.style.type === "dot" ? "dotted" : "solid"};opacity:${row.style.alpha}"></i><span title="${esc(row.sample)}">${esc(row.sample)}</span></div>`,
+              `<div class="legend-row"><i class="legend-line" style="border-top-color:${row.style.color};border-top-width:${aggregateLegendLineWidth}px;border-top-style:${row.style.type === "dash" ? "dashed" : row.style.type === "dot" ? "dotted" : "solid"};opacity:${row.style.alpha}"></i><span title="${esc(sampleDisplayName(row.sample, row.condition))}">${esc(sampleDisplayName(row.sample, row.condition))}</span></div>`,
           )
           .join("")}</div>`,
     )
@@ -721,6 +1064,11 @@ async function renderAggregateGrid() {
 }
 
 function setSelectedMotif(prefix) {
+  if (state.hasAggregates && !state.aggregate.has(prefix)) {
+    const motif = state.motifs.find((item) => item.prefix === prefix);
+    $("status").textContent = `${motifLabel(motif || { name: prefix })} has a statistical result, but no embedded aggregate profile.`;
+    return;
+  }
   state.selected[state.active] = prefix;
   renderAll(false);
 }
@@ -730,33 +1078,57 @@ function renderAll(refreshControls = true) {
   updateHeader();
   if (refreshControls) {
     renderColorControls();
-    renderSampleStyles();
+    if (state.hasAggregates) renderSampleStyles();
   }
   renderSelectedCards();
   drawRank();
   renderVolcano();
-  renderLegend();
-  renderAggregateGrid();
+  if (state.hasAggregates) {
+    renderLegend();
+    renderAggregateGrid();
+  }
 }
 
 async function loadComparison(reset = true) {
-  const first = $("condition-1").value,
+  let entry,
+    payload,
+    first,
+    second,
+    reversed = false;
+  if (state.mode === "embedded") {
+    state.comparisonIndex = Math.max(
+      0,
+      Math.min(
+        state.metadata.comparisons.length - 1,
+        Number($("comparison-selector").value) || 0,
+      ),
+    );
+    entry = state.metadata.comparisons[state.comparisonIndex];
+    payload = entry?.payload;
+    [first, second] = payload?.conditions || [];
+  } else {
+    first = $("condition-1").value;
     second = $("condition-2").value;
-  if (first === second) return;
+    if (first === second) return;
+    ({ entry } = comparisonEntry(first, second));
+  }
+  if (!entry || (!payload && state.mode === "embedded"))
+    throw new Error("The selected comparison payload is unavailable");
   state.first = first;
   state.second = second;
   const token = ++state.request;
-  $("status").textContent = `Loading ${first} vs ${second}…`;
-  const { entry } = comparisonEntry(first, second),
-    payload = await fetchGzipJsonCached(entry.file);
+  $("status").textContent = `Loading ${entry.label || `${first} vs ${second}`}…`;
+  if (state.mode === "bundle") payload = await fetchGzipJsonCached(entry.file);
   if (token !== state.request) return;
   state.entry = entry;
   state.payload = payload;
+  state.hasAggregates = payloadHasAggregates(payload);
+  document.body.classList.toggle("no-aggregate", !state.hasAggregates);
   state.aggregate = new Map(
     (payload.aggregate?.motifs || []).map((item) => [item.prefix, item]),
   );
   state.profileAxis = payload.aggregate?.x || [];
-  const reversed = payload.conditions[0] !== first;
+  if (state.mode === "bundle") reversed = payload.conditions[0] !== first;
   if (
     new Set(payload.conditions).size !== 2 ||
     !payload.conditions.includes(first) ||
@@ -764,18 +1136,20 @@ async function loadComparison(reset = true) {
   )
     throw new Error(`Payload conditions do not match ${first} and ${second}`);
   state.motifs = payload.points.map((item) => orientedMotif(item, reversed));
+  const colors = payload.colors || {};
   state.colors = {
-    first: payload.colors[`${first}_up`] || "#dc2626",
-    second: payload.colors[`${second}_up`] || "#2563eb",
-    neutral: payload.colors["n.s."] || "#8a94a6",
+    first: colors[`${first}_up`] || "#dc2626",
+    second: colors[`${second}_up`] || "#2563eb",
+    neutral: colors["n.s."] || "#8a94a6",
   };
   state.sampleStyles = new Map();
+  state.logoDataCache = new Map();
   state.active = 0;
   ensureSelected(reset);
   renderAll(true);
   const significant = state.motifs.filter((item) => item.significant).length;
   $("status").textContent =
-    `${state.motifs.length.toLocaleString()} motifs | ${significant.toLocaleString()} significant | ${first} minus ${second}`;
+    `${entry.label || `${first} vs ${second}`} | ${state.motifs.length.toLocaleString()} motifs | ${significant.toLocaleString()} significant | ${first} minus ${second}`;
 }
 
 function handleConditionChange(changed) {
@@ -810,11 +1184,16 @@ function comparisonTsv() {
       "name",
       "motif_id",
       "group",
-      "n_sites",
+      "n_profile_sites",
+      "n_motif_regions_condition1",
+      "n_motif_regions_condition2",
       "effect",
+      "ci_lower",
+      "ci_upper",
       "pvalue",
       "qvalue",
       "significant",
+      "statistical_method",
     ],
     rows = [columns.join("\t")];
   state.motifs.forEach((motif) =>
@@ -822,10 +1201,69 @@ function comparisonTsv() {
       [
         state.first,
         state.second,
-        ...columns.slice(2).map((key) => motif[key] ?? ""),
+        motif.prefix ?? "",
+        motif.name ?? "",
+        motif.motif_id ?? "",
+        motif.group ?? "",
+        motif.n_sites ?? "",
+        motif.n_motif_regions_set_1 ?? "",
+        motif.n_motif_regions_set_2 ?? "",
+        motif.effect ?? "",
+        motif.ci_lower ?? "",
+        motif.ci_upper ?? "",
+        motif.pvalue ?? "",
+        motif.qvalue ?? "",
+        motif.significant ?? "",
+        motif.statistical_method ?? "",
       ].join("\t"),
     ),
   );
+  return rows.join("\n") + "\n";
+}
+
+function allComparisonsTsv() {
+  const columns = [
+      "comparison",
+      "condition1",
+      "condition2",
+      "prefix",
+      "name",
+      "motif_id",
+      "group",
+      "effect",
+      "ci_lower",
+      "ci_upper",
+      "pvalue",
+      "qvalue",
+      "significant",
+      "statistical_method",
+    ],
+    rows = [columns.join("\t")];
+  (state.review?.comparisons || []).forEach((record, index) => {
+    const payload = record.payload || {},
+      conditions = payload.conditions || ["condition1", "condition2"],
+      label = record.label || `Comparison ${index + 1}`;
+    (payload.points || []).forEach((point) =>
+      rows.push(
+        [
+          label,
+          conditions[0] ?? "",
+          conditions[1] ?? "",
+          point.prefix ?? "",
+          point.name ?? "",
+          point.motif_id ?? "",
+          point.group ?? "",
+          point.change ?? "",
+          point.ci_lower ?? "",
+          point.ci_upper ?? "",
+          point.pvalue ?? "",
+          point.fdr ?? "",
+          point.group !== "n.s.",
+          point.statistical_method ?? "",
+        ].join("\t"),
+      ),
+    );
+  });
   return rows.join("\n") + "\n";
 }
 
@@ -874,7 +1312,7 @@ function aggregateGridSvg() {
     gridWidth = shape.columns * plotWidth,
     gridHeight = shape.rows * plotHeight,
     groups = legendGroups(),
-    legendRows = Math.max(0, ...groups.map((group) => group.rows.length)),
+    legendRows = Math.max(0, ...groups.map((group) => group.rows.length + 1)),
     legendHeight = groups.length ? 25 + legendRows * 16 : 0,
     totalWidth = gridWidth,
     totalHeight = gridHeight + legendHeight,
@@ -898,8 +1336,13 @@ function aggregateGridSvg() {
       parts.push(
         `<text x="${x}" y="14" class="tick" font-weight="900">${esc(group.condition)}</text>`,
       );
+      const meanColor =
+        group.condition === state.first ? state.colors.first : state.colors.second;
+      parts.push(
+        `<line x1="${x}" y1="25" x2="${x + 30}" y2="25" stroke="${meanColor}" stroke-width="3"/><text x="${x + 36}" y="28" class="tick">Mean</text>`,
+      );
       group.rows.forEach((row, index) => {
-        const y = 28 + index * 16,
+        const y = 44 + index * 16,
           dash =
           row.style.type === "dash"
             ? ' stroke-dasharray="7 4"'
@@ -907,7 +1350,7 @@ function aggregateGridSvg() {
               ? ' stroke-dasharray="2 3"'
               : "";
         parts.push(
-          `<line x1="${x}" y1="${y - 3}" x2="${x + 30}" y2="${y - 3}" stroke="${row.style.color}" stroke-width="${aggregateLegendLineWidth}"${dash} stroke-opacity="${row.style.alpha}"/><text x="${x + 36}" y="${y}" class="tick">${esc(row.sample)}</text>`,
+          `<line x1="${x}" y1="${y - 3}" x2="${x + 30}" y2="${y - 3}" stroke="${row.style.color}" stroke-width="${aggregateLegendLineWidth}"${dash} stroke-opacity="${row.style.alpha}"/><text x="${x + 36}" y="${y}" class="tick">${esc(sampleDisplayName(row.sample, row.condition))}</text>`,
         );
       });
     });
@@ -920,11 +1363,6 @@ function aggregateGridSvg() {
 function combinedPanelSvg() {
   const rank = styledClone($("rank-chart")),
     volcano = styledClone($("chart")),
-    aggregate = aggregateGridSvg(),
-    aggregateDocument = new DOMParser().parseFromString(
-      aggregate,
-      "image/svg+xml",
-    ).documentElement,
     rankBox = rank.viewBox.baseVal,
     rankWidth = rankBox.width || 380,
     rankHeight = rankBox.height || 600,
@@ -932,13 +1370,22 @@ function combinedPanelSvg() {
     panelHeight = Math.max(760, rankHeight),
     rankScale = panelHeight / rankHeight,
     rankDisplayWidth = rankWidth * rankScale,
+    gap = 20;
+  rank.querySelector("style")?.remove();
+  volcano.querySelector("style")?.remove();
+  if (!state.hasAggregates) {
+    const totalWidth = rankDisplayWidth + volcanoSize + gap;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${panelHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/><g transform="scale(${rankScale})">${rank.innerHTML}</g><g transform="translate(${rankDisplayWidth + gap},0)">${volcano.innerHTML}</g></svg>`;
+  }
+  const aggregate = aggregateGridSvg(),
+    aggregateDocument = new DOMParser().parseFromString(
+      aggregate,
+      "image/svg+xml",
+    ).documentElement,
     aggregateBox = aggregateDocument.viewBox.baseVal,
     aggregateScale = panelHeight / (aggregateBox.height || 600),
     aggregateWidth = (aggregateBox.width || 600) * aggregateScale,
-    gap = 20,
     totalWidth = rankDisplayWidth + volcanoSize + aggregateWidth + gap * 2;
-  rank.querySelector("style")?.remove();
-  volcano.querySelector("style")?.remove();
   aggregateDocument.querySelector("style")?.remove();
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${panelHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/><g transform="scale(${rankScale})">${rank.innerHTML}</g><g transform="translate(${rankDisplayWidth + gap},0)">${volcano.innerHTML}</g><g transform="translate(${rankDisplayWidth + volcanoSize + gap * 2},0) scale(${aggregateScale})">${aggregateDocument.innerHTML}</g></svg>`;
 }
@@ -999,7 +1446,10 @@ function exportSvg(svg, name) {
 }
 
 function exportName(suffix) {
-  return `${state.first}_vs_${state.second}_${suffix}`.replace(
+  const base = state.mode === "embedded" && state.entry?.label
+    ? state.entry.label
+    : `${state.first}_vs_${state.second}`;
+  return `${base}_${suffix}`.replace(
     /[^A-Za-z0-9_.-]+/g,
     "_",
   );
@@ -1029,9 +1479,19 @@ function bindExports() {
       new Blob([comparisonTsv()], {
         type: "text/tab-separated-values;charset=utf-8",
       }),
-      `${state.first}_vs_${state.second}_fp_tools.tsv`,
+      `${exportName("fp_tools")}.tsv`,
     ),
   );
+  if (state.mode === "embedded")
+    $("download-all").addEventListener("click", (event) => {
+      event.preventDefault();
+      downloadBlob(
+        new Blob([allComparisonsTsv()], {
+          type: "text/tab-separated-values;charset=utf-8",
+        }),
+        "fp_tools_all_comparisons.tsv",
+      );
+    });
 }
 
 function syncRows(source) {
@@ -1050,27 +1510,61 @@ function showError(error) {
 
 async function init() {
   try {
-    const metadata = await fetchJson("data/metadata.json");
+    let metadata;
+    if (state.mode === "embedded") {
+      state.review = await decodeEmbeddedPayload(bootstrap.payloadB64 || "");
+      if (state.review.schema !== "fp-tools.review-multi-comparisons.v1")
+        throw new Error("Unsupported embedded review payload");
+      if (!state.review.comparisons?.length)
+        throw new Error("The embedded review contains no comparisons");
+      metadata = embeddedMetadata(state.review);
+    } else {
+      metadata = await fetchJson("data/metadata.json");
+    }
     state.metadata = metadata;
-    const names = metadata.conditions.map((item) => item.name);
-    $("condition-1").innerHTML = optionMarkup(names);
-    const preferred = metadata.default_comparison ||
-      metadata.comparisons.find(
-        (record) => record.condition1 === "K562" && record.condition2 === "HepG2"
-      ) || metadata.comparisons[0];
-    state.first = preferred?.condition1 || names[0] || "";
-    const partners = availablePartners(state.first);
-    state.second = preferred?.condition2 || partners[0] || "";
-    $("condition-2").innerHTML = optionMarkup(partners);
-    $("condition-1").value = state.first;
-    $("condition-2").value = state.second;
-    $("download-all").href = metadata.downloads.all_results;
-    $("condition-1").addEventListener("change", () =>
-      handleConditionChange("first"),
+    if (metadata.documentation_url) {
+      $("documentation-return").href = metadata.documentation_url;
+      $("documentation-return").hidden = false;
+    }
+    const initialPlotCount = Math.max(
+      1,
+      Math.min(12, Number(metadata.default_aggregate_plots) || 4),
     );
-    $("condition-2").addEventListener("change", () =>
-      handleConditionChange("second"),
-    );
+    $("plot-count").value = String(initialPlotCount);
+    if (state.mode === "embedded") {
+      $("comparison-selector-control").hidden = false;
+      $("condition-selector-controls").hidden = true;
+      $("comparison-selector").innerHTML = metadata.comparisons
+        .map(
+          (record, index) =>
+            `<option value="${index}">${esc(record.label)}</option>`,
+        )
+        .join("");
+      $("comparison-selector").addEventListener("change", () =>
+        loadComparison(true).catch(showError),
+      );
+      $("download-all").removeAttribute("href");
+    } else {
+      const names = metadata.conditions.map((item) => item.name);
+      $("condition-1").innerHTML = optionMarkup(names);
+      const preferred = metadata.default_comparison ||
+        metadata.comparisons.find(
+          (record) => record.condition1 === "K562" && record.condition2 === "HepG2"
+        ) || metadata.comparisons[0];
+      state.first = preferred?.condition1 || names[0] || "";
+      const partners = availablePartners(state.first);
+      state.second = preferred?.condition2 || partners[0] || "";
+      $("condition-2").innerHTML = optionMarkup(partners);
+      $("condition-1").value = state.first;
+      $("condition-2").value = state.second;
+      $("download-all").href = metadata.downloads.all_results;
+      $("condition-1").addEventListener("change", () =>
+        handleConditionChange("first"),
+      );
+      $("condition-2").addEventListener("change", () =>
+        handleConditionChange("second"),
+      );
+    }
     $("plot-count").addEventListener("change", () => {
       ensureSelected();
       renderAll(false);
@@ -1079,6 +1573,9 @@ async function init() {
     $("rank-rows-slider").addEventListener("input", (event) =>
       syncRows(event.target),
     );
+    $("rank-sort-toggle").addEventListener("change", drawRank);
+    $("volcano-highlight").addEventListener("change", renderVolcano);
+    $("volcano-labels").addEventListener("input", renderVolcano);
     bindExports();
     if (window.innerWidth >= 1100 && window.innerHeight < 900)
       $("options").removeAttribute("open");

@@ -1370,7 +1370,7 @@ review-multi-comparisons --inputs project/comparisons --output-dir project/repor
 | Path | Meaning |
 | --- | --- |
 | `{bundle}/index.html` | Browser entry point; open or publish this file together with the full bundle. |
-| `{bundle}/app.js` and `{bundle}/styles.css` | Local application code and styling. |
+| `{bundle}/app.js`, `{bundle}/plot_controls.js`, and `{bundle}/styles.css` | Local application code, shared plot behavior, and styling. |
 | `{bundle}/data/metadata.json` | Comparison index and payload checksums. |
 | `{bundle}/data/reports/{comparison}.json.gz` | Compact data for one comparison. |
 | `{bundle}/data/profiles/` | Aggregate-profile shards loaded on demand. |
@@ -1388,6 +1388,16 @@ path passed to `--output-html`; it is one portable HTML file with coordinated
 volcano, ranked-motif, logo, and SVG-export views. Aggregate controls appear
 only when profiles exist. One **Comparison** list selects the exact input record
 in `--labels` order, so repeated condition pairs remain distinct.
+
+The ranked-motif waterfall has a compact switch between differential footprint
+score and `-log10(p-value)`. Bar color and the printed row value show the other
+metric: blue/red preserves the direction in both modes, while color strength
+shows the active color metric. The volcano uses a stable square plotting area.
+The volcano highlight selector includes `(none)`, and the **Label TFs**
+field accepts comma-separated TF names, motif IDs, or output prefixes. These
+controls work identically with and without aggregate profiles and are preserved
+in SVG exports. Waterfall, volcano, and combined-panel SVGs include the active
+comparison label inside the figure.
 
 ```bash
 review-multi-comparisons --inputs baseline/report.html dose1/report.html dose2/report.html \

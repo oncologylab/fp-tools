@@ -15,6 +15,9 @@
 * {
   box-sizing: border-box;
 }
+[hidden] {
+  display: none !important;
+}
 html,
 body {
   width: 100%;
@@ -78,6 +81,14 @@ a {
   gap: 7px;
   flex: 0 0 auto;
   padding-bottom: 2px;
+}
+.condition-selector-controls {
+  display: flex;
+  align-items: end;
+  gap: 7px;
+}
+#comparison-selector-control select {
+  width: min(360px, 42vw);
 }
 .documentation-link {
   display: inline-flex;
@@ -247,6 +258,67 @@ a {
 }
 .rows-control input[type="number"] {
   width: 50px;
+}
+.rank-sort-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  color: #526176;
+  font-size: 9px;
+  font-weight: 900;
+}
+.rank-sort-control span:last-child {
+  text-align: right;
+}
+#rank-sort-toggle {
+  appearance: none;
+  position: relative;
+  width: 34px;
+  height: 18px;
+  margin: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  cursor: pointer;
+}
+#rank-sort-toggle::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.3);
+  transition: transform 120ms ease;
+}
+#rank-sort-toggle:checked {
+  background: #4c1d95;
+}
+#rank-sort-toggle:checked::before {
+  transform: translateX(16px);
+}
+#rank-sort-toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.volcano-highlight-control,
+.volcano-label-control {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  color: #526176;
+  font-size: 10px;
+  font-weight: 900;
+}
+.volcano-highlight-control select,
+.volcano-label-control input {
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  padding: 2px 5px;
 }
 .sample-style-panel {
   display: grid;
@@ -527,9 +599,14 @@ a {
   height: 100%;
 }
 .volcano-card #chart {
-  max-width: 100%;
-  max-height: 100%;
+  width: min(100%, calc(100vh - 398px));
+  height: auto;
+  flex: 0 0 auto;
+  max-height: none;
   aspect-ratio: 1/1;
+}
+.report:has(.options:not([open])) .volcano-card #chart {
+  width: min(100%, calc(100vh - 142px));
 }
 .aggregate-panel {
   max-width: 100%;
@@ -540,6 +617,11 @@ a {
   font-size: 15px;
   font-weight: 900;
   fill: #172033;
+}
+.summary-label {
+  font-size: 10px;
+  font-weight: 700;
+  fill: #64748b;
 }
 .axis {
   stroke: #344256;
@@ -687,6 +769,10 @@ input {
   .aggregate-card {
     height: 760px;
   }
+  .volcano-card #chart,
+  .report:has(.options:not([open])) .volcano-card #chart {
+    width: min(100%, 600px);
+  }
 }
 @media (max-width: 720px) {
   body {
@@ -705,6 +791,9 @@ input {
     margin-top: 8px;
     flex-wrap: wrap;
     justify-content: flex-start;
+  }
+  .condition-selector-controls {
+    width: 100%;
   }
   .documentation-link {
     flex-basis: 100%;
