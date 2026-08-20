@@ -97,7 +97,7 @@ def main() -> int:
                 "--signals",
                 str(fixture_root / "Bcell_corrected.bw"),
                 "--regions",
-                str(fixture_root / "merged_peaks.bed"),
+                str(fixture_root / "plot_regions.bed"),
                 "--outdir",
                 str(call_output),
                 "--score",

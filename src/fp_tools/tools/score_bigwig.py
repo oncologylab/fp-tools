@@ -13,10 +13,12 @@ import sys
 import argparse
 import copy
 import bisect
+import queue
 import numpy as np
 from fp_tools.utils import bigwig as pyBigWig
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 
 # Internal functions and classes (fp_tools namespace)
@@ -378,8 +380,13 @@ def _run_scorebigwig_single(args):
     logger.arguments_overview(parser, args)
     logger.output_files([args.output, getattr(args, "output_multiscale_npz", None), getattr(args, "output_bed", None)])
 
+    # A one-core run stays entirely in-process.  This is materially faster for
+    # frozen desktop applications on Windows because spawning each worker
+    # would otherwise unpack the full one-file executable again.
+    args.cores = check_cores(args.cores, logger)
     logger.debug("Setting up listener for log")
-    logger.start_logger_queue()
+    if args.cores > 1:
+        logger.start_logger_queue()
     args.log_q = logger.queue
 
     # ------------------------------------------------------------------------- #
@@ -442,9 +449,41 @@ def _run_scorebigwig_single(args):
     logger.info("Calculating footprints in regions...")
     regions_chunks = regions.chunks(args.split)
 
-    args.cores = check_cores(args.cores, logger)
     logger.debug(f"Worker cores: {args.cores}")
     logger.debug("Writer cores: 1")
+
+    if args.cores == 1:
+        writer_queue = queue.Queue()
+        writer_args = copy.copy(args)
+        worker_args = copy.copy(args)
+        worker_args.writer_qs = {"scores": writer_queue}
+        results = []
+        with ThreadPoolExecutor(max_workers=1) as writer_executor:
+            writer_future = writer_executor.submit(
+                bigwig_writer,
+                writer_queue,
+                {"scores": args.output},
+                header,
+                regions,
+                writer_args,
+            )
+            try:
+                for chunk in regions_chunks:
+                    results.append(calculate_scores(chunk, copy.copy(worker_args)))
+            finally:
+                writer_queue.put((None, None, None))
+            writer_future.result()
+
+        if getattr(args, "output_multiscale_npz", None):
+            records = [record for chunk_records in results for record in chunk_records]
+            records.sort(key=lambda item: (reference_chroms.index(item[0][0]), item[0][1]))
+            write_multiscale_npz(args.output_multiscale_npz, records, args.scales, args.multiscale_summary)
+
+        _validate_bigwig_output(args.output, logger)
+        if getattr(args, "output_bed", None):
+            _write_candidate_bed(args.output, regions, args.output_bed, args, chrom_info, logger)
+        logger.end()
+        return
 
     manager = mp.Manager()
     pool = None
