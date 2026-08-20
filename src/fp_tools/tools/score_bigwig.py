@@ -464,7 +464,7 @@ def _run_scorebigwig_single(args):
                 writer_queue,
                 {"scores": args.output},
                 header,
-                regions,
+                copy.deepcopy(regions),
                 writer_args,
             )
             try:
