@@ -8,58 +8,23 @@ from fp_tools.tools.bulk_footprinting import (
     _stage_complete,
     build_commands,
     build_parser,
-    build_prepare_command,
     run_bulk_footprinting,
 )
 from fp_tools.tools.find_signature_fp import read_marker_sites_from_diff
 
 
 class WorkflowWrapperTest(unittest.TestCase):
-    def test_bulk_wrapper_accepts_raw_reads_as_alternative_input(self):
-        args = build_parser().parse_args(
-            [
-                "--reads-table", "reads.tsv",
-                "--comparison-table", "comparisons.tsv",
-                "--genome", "hg38",
-                "--outdir", "project",
-                "--cores", "8",
-            ]
-        )
-        command = build_prepare_command(args)
-        self.assertEqual(command[0], "prepare-atac")
-        self.assertEqual(command[command.index("--samples") + 1], "reads.tsv")
-        self.assertEqual(command[command.index("--runtime") + 1], "system")
-        self.assertIn("--profile", command)
-
-    def test_raw_read_dry_run_prints_the_complete_chain(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            comparisons = root / "comparisons.tsv"
-            comparisons.write_text(
-                "comparison\tcond1\tcond2\nA_vs_B\tA\tB\n", encoding="utf-8"
-            )
-            args = build_parser().parse_args(
+    def test_bulk_wrapper_rejects_raw_read_input(self):
+        with self.assertRaises(SystemExit) as raised:
+            build_parser().parse_args(
                 [
-                    "--reads-table", str(root / "reads.tsv"),
-                    "--comparison-table", str(comparisons),
-                    "--genome", "hg38",
-                    "--outdir", str(root / "project"),
-                    "--dry-run",
+                    "--reads-table", "reads.tsv",
+                    "--comparison-table", "comparisons.tsv",
+                    "--genome", "hg38.fa",
+                    "--outdir", "project",
                 ]
             )
-            output = io.StringIO()
-            with contextlib.redirect_stdout(output):
-                self.assertEqual(run_bulk_footprinting(args), 0)
-            text = output.getvalue()
-            for stage in (
-                "prepare-atac",
-                "atac-correct",
-                "call-footprints",
-                "match-motifs",
-                "diff-footprints",
-                "review-multi-comparisons",
-            ):
-                self.assertIn(f"[{stage}]", text)
+        self.assertEqual(raised.exception.code, 2)
 
     def test_bulk_wrapper_plans_complete_command_chain(self):
         with tempfile.TemporaryDirectory() as tmpdir:

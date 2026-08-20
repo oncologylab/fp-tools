@@ -22,9 +22,11 @@ unless the user explicitly asks to publish the manuscript source.
 - Every GUI and the Windows/macOS desktop applications start bulk workflows
   from coordinate-sorted BAM/BAI and matching peak BED files. Do not expose
   FASTQ-to-BAM preparation through GUI forms, GUI YAML, or desktop dispatch.
-- `prepare-atac` and `bulk-footprinting --reads-table` are supported only by
-  the Linux CLI and Linux container. Native macOS/Windows commands must reject
-  raw-read mode before downloads, filesystem writes, or runtime setup.
+- `bulk-footprinting` starts only from coordinate-sorted BAM/BAI and matching
+  peak BED files on every platform. FASTQ-to-BAM preparation is a separate
+  `prepare-atac` command supported only by the Linux CLI and Linux container.
+  Native macOS/Windows `prepare-atac` execution must reject before downloads,
+  filesystem writes, or runtime setup.
 - Use the current public command names in docs and examples:
   `prepare-atac`, `bulk-footprinting`, `atac-correct`, `call-footprints`,
   `match-motifs`, `diff-footprints`, `normalize-bigwig`, `plot-aggregate`,

@@ -361,10 +361,13 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
             if tool == "bulk-footprinting":
                 reads_table = str(item.get("reads_table") or "").strip()
                 sample_table = str(item.get("sample_table") or "").strip()
-                if bool(reads_table) == bool(sample_table):
+                if reads_table:
                     errors.append(
-                        f"{job_name}: provide exactly one of 'reads_table' or 'sample_table'"
+                        f"{job_name}: 'bulk-footprinting' starts from 'sample_table'; "
+                        "run 'prepare-atac' separately for FASTQ inputs"
                     )
+                if not sample_table:
+                    errors.append(f"{job_name}: missing required field 'sample_table'")
             if tool == "diff-footprints":
                 comparison_axis = str(item.get("comparison_axis") or item.get("comparison-axis") or "conditions")
                 signals = item.get("signals") or []

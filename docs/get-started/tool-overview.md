@@ -5,8 +5,8 @@ The guides below cover common inputs and outputs. See the
 
 If you are new to fp-tools, start with the [bulk ATAC-seq workflow](workflows/bulk-atac-seq.md):
 it includes a BAM/peak sample sheet, an explicit comparison table, ENCODE
-downloads, and the expected output layout. A separate section on the same page
-covers optional Linux-only FASTQ preparation.
+downloads, and the expected output layout. Optional Linux-only FASTQ
+preprocessing is kept separate under `prepare-atac`.
 
 ## Core analysis
 

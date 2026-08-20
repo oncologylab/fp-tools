@@ -26,21 +26,18 @@ bulk-footprinting --sample-table encode_hepg2_k562_bams.tsv \
 Repeated condition names in a sample sheet define biological replicates. BAM,
 peak, blacklist, and genome files must use the same genome assembly.
 
-## Optional FASTQ preparation on Linux
+??? note "Optional FASTQ-to-BAM preparation"
 
-The Linux CLI and Linux container can also run the workflow from local FASTQ
-files or public run accessions. This route is not exposed in any GUI or native
-macOS/Windows installation.
+    On Linux, [`prepare-atac`](../commands/prepare-atac.md) can prepare FASTQ
+    files as BAM/BAI and peak BED inputs. Run it separately before
+    `bulk-footprinting`:
 
-Download the [ENCODE FASTQ sample sheet](../../demos/data/encode/encode_hepg2_k562_fastq_urls.tsv)
-and the [HepG2/K562 comparison file](../../demos/data/encode/encode_hepg2_k562_comparisons.tsv).
-For your own data, begin with the [local FASTQ template](../../demos/data/encode/local_fastq_template.tsv).
+    ```bash
+    prepare-atac --samples reads.tsv --genome hg38 --outdir prepared_project
+    ```
 
-```bash
-bulk-footprinting --reads-table encode_hepg2_k562_fastq_urls.tsv \
-  --comparison-table encode_hepg2_k562_comparisons.tsv --genome hg38 \
-  --outdir project --cores 8
-```
+    Use the generated `metadata/samples.tsv` with `bulk-footprinting`. This
+    preprocessing step is not part of the bulk footprinting wrapper.
 
 ## Review the results
 

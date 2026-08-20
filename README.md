@@ -62,9 +62,9 @@ The wrapper runs `atac-correct`, `call-footprints`, `match-motifs`,
 directly. `diff-footprints --comparison-axis regions` compares matched genomic
 region sets within one sample or across biological replicates.
 
-FASTQ-to-BAM preparation is available through `prepare-atac` on the Linux CLI
-and in the Linux container. The GUI and native macOS/Windows installations
-start from BAM/BAI and peak BED files.
+Optional FASTQ-to-BAM preparation is a separate `prepare-atac` command on the
+Linux CLI and in the Linux container. `bulk-footprinting`, the GUI, and native
+macOS/Windows installations start from BAM/BAI and peak BED files.
 
 ## Single-cell ATAC-seq
 

@@ -37,6 +37,6 @@ bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv 
 | `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for the workflow stages. |
 | `{project}/logs/bulk_footprinting/{stage}.stdout.log` and `{stage}.stderr.log` | Stage-specific logs for troubleshooting. |
 
-Linux CLI and Linux container users may instead use `--reads-table` for FASTQ
-or public-run preprocessing. This option and its associated preparation flags
-are unavailable in the GUI and native macOS/Windows installations.
+FASTQ preprocessing is intentionally separate. Linux users can run
+[`prepare-atac`](prepare-atac.md) first, then provide its generated
+`metadata/samples.tsv` to this command.
