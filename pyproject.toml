@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fp-tools-bio"
-version = "0.2.0rc4"
+version = "0.2.0rc5"
 description = "Standalone footprint tools with vendored Cython internals"
 readme = "README.md"
 license = "MIT"
@@ -85,6 +85,7 @@ bulk-footprinting = "fp_tools.tools.bulk_footprinting:main"
 run-yaml-workflow = "fp_tools.cli_batch:main"
 run-workflow = "fp_tools.cli_compat:run_workflow_main"
 fp-tools-gui = "fp_tools.cli_gui:main"
+fp-tools-runtime = "fp_tools.cli_runtime:main"
 discover-motifs = "fp_tools.tools.motif_discovery:motif_discovery_plan_main"
 summarize-motifs = "fp_tools.tools.motif_discovery:motif_report_main"
 motif-discovery = "fp_tools.cli_compat:motif_discovery_main"
@@ -99,6 +100,7 @@ public-console-scripts = [
   "prepare-atac", "bulk-footprinting", "atac-correct", "call-footprints",
   "match-motifs", "diff-footprints", "normalize-bigwig", "plot-aggregate",
   "review-multi-comparisons", "run-yaml-workflow", "fp-tools-gui",
+  "fp-tools-runtime",
   "discover-motifs", "summarize-motifs", "pseudobulk-fragments",
   "find-signature-fp", "sc-footprinting"
 ]
@@ -119,6 +121,7 @@ include = ["fp_tools*"]
 [tool.setuptools.package-data]
 "fp_tools.utils" = ["*.pyx", "*.pxd"]
 "fp_tools.resources.motifs" = ["*.txt"]
+"fp_tools.resources" = ["*.json"]
 "fp_tools.resources.static_browser" = ["*.html", "*.js", "*.css"]
 
 [tool.pytest.ini_options]
@@ -143,7 +146,7 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
 # --- Poetry mirror of the important bits so `poetry build` works too ---
 [tool.poetry]
 name = "fp-tools-bio"
-version = "0.2.0rc4"
+version = "0.2.0rc5"
 description = "Standalone footprint tools with vendored Cython internals"
 authors = ["Yaoxiang Li"]
 readme = "README.md"
@@ -196,6 +199,7 @@ bulk-footprinting = "fp_tools.tools.bulk_footprinting:main"
 run-yaml-workflow = "fp_tools.cli_batch:main"
 run-workflow = "fp_tools.cli_compat:run_workflow_main"
 fp-tools-gui = "fp_tools.cli_gui:main"
+fp-tools-runtime = "fp_tools.cli_runtime:main"
 discover-motifs = "fp_tools.tools.motif_discovery:motif_discovery_plan_main"
 summarize-motifs = "fp_tools.tools.motif_discovery:motif_report_main"
 motif-discovery = "fp_tools.cli_compat:motif_discovery_main"

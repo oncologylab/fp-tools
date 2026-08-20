@@ -1,0 +1,10 @@
+name: fp-tools-runtime-homer
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12
+  - conda-pack>=0.8
+  - trim-galore>=0.6
+  - picard>=2.26
+  - homer>=4.11

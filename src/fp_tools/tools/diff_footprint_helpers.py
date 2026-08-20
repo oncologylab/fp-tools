@@ -444,8 +444,19 @@ def process_tfbs(TF_name, args, log2fc_params, bed_rows=None):
                                                                        subset.iloc[:, 2].values)]
             observed_log2fcs = subset.groupby('peak_id')[base + '_log2fc'].mean().reset_index()[base + "_log2fc"].values
             observed_deltas = subset.groupby('peak_id')[base + '_delta_fp'].mean().reset_index()[base + "_delta_fp"].values
-            info_table.at[TF_name, base + "_mean_delta_fp"] = np.round(float(np.mean(observed_deltas)), 5) if len(observed_deltas) else np.nan
-            info_table.at[TF_name, base + "_mean_log2fc"] = np.round(float(np.mean(observed_log2fcs)), 5) if len(observed_log2fcs) else np.nan
+            if len(observed_log2fcs) == 0:
+                # Motif sites can exist while every compared score is zero.
+                # There is no evidence of a differential footprint in that
+                # case, and attempting a distribution fit would emit warnings
+                # and propagate NaN values into comparison-wide thresholds.
+                info_table.at[TF_name, base + "_mean_delta_fp"] = 0.0
+                info_table.at[TF_name, base + "_mean_log2fc"] = 0.0
+                info_table.at[TF_name, base + "_change"] = 0.0
+                info_table.at[TF_name, base + "_pvalue"] = 1.0
+                continue
+
+            info_table.at[TF_name, base + "_mean_delta_fp"] = np.round(float(np.mean(observed_deltas)), 5)
+            info_table.at[TF_name, base + "_mean_log2fc"] = np.round(float(np.mean(observed_log2fcs)), 5)
             n1 = max(1, args.condition_replicates.get(cond1, 1))
             n2 = max(1, args.condition_replicates.get(cond2, 1))
             sd1 = pd.to_numeric(subset[cond1 + "_score_sd"], errors="coerce").to_numpy(dtype=float)
@@ -535,8 +546,10 @@ def plot_diff_footprints(motifs, cluster_obj, conditions, args):
         for m in motifs
     }
 
-    xvalues = np.array([v["change"] for v in diff_scores.values()])
-    yvalues = np.array([v["log10pvalue"] for v in diff_scores.values()])
+    xvalues = np.array([v["change"] for v in diff_scores.values()], dtype=float)
+    yvalues = np.array([v["log10pvalue"] for v in diff_scores.values()], dtype=float)
+    xvalues = np.where(np.isfinite(xvalues), xvalues, 0.0)
+    yvalues = np.where(np.isfinite(yvalues), yvalues, 0.0)
 
     y_min = np.percentile(yvalues[yvalues < -np.log10(1e-300)], 95) if (yvalues < -np.log10(1e-300)).any() else np.percentile(yvalues, 95)
     x_min, x_max = np.percentile(xvalues, [5, 95])

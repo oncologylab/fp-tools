@@ -1,6 +1,7 @@
 FROM mambaorg/micromamba:2.0.5
 
 WORKDIR /opt/fp-tools
+ENV FP_TOOLS_RUNTIME=system
 USER root
 RUN chown "$MAMBA_USER:$MAMBA_USER" /opt/fp-tools
 USER $MAMBA_USER

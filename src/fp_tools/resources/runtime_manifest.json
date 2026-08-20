@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "runtime_version": "0.2.0rc5",
+  "repository": "ghcr.io/oncologylab/fp-tools-runtime",
+  "components": {
+    "core": {
+      "commands": [
+        "fastp",
+        "fastqc",
+        "bowtie2",
+        "bowtie2-build",
+        "samtools",
+        "bedtools",
+        "macs3",
+        "multiqc",
+        "prefetch",
+        "vdb-validate",
+        "fasterq-dump",
+        "pigz",
+        "curl",
+        "bedGraphToBigWig"
+      ]
+    },
+    "meme": {
+      "commands": ["meme", "dreme", "streme", "tomtom"]
+    },
+    "homer": {
+      "commands": [
+        "trim_galore",
+        "picard",
+        "makeTagDirectory",
+        "makeUCSCfile",
+        "findPeaks",
+        "pos2bed.pl"
+      ]
+    }
+  },
+  "artifacts": {
+    "linux-x86_64": {
+      "core": {"tag": "core-0.2.0rc5-linux-x86_64"},
+      "meme": {"tag": "meme-0.2.0rc5-linux-x86_64"},
+      "homer": {"tag": "homer-0.2.0rc5-linux-x86_64"}
+    },
+    "linux-arm64": {
+      "core": {"tag": "core-0.2.0rc5-linux-arm64"},
+      "meme": {"tag": "meme-0.2.0rc5-linux-arm64"},
+      "homer": {"tag": "homer-0.2.0rc5-linux-arm64"}
+    },
+    "macos-x86_64": {
+      "core": {"tag": "core-0.2.0rc5-macos-x86_64"},
+      "meme": {"tag": "meme-0.2.0rc5-macos-x86_64"},
+      "homer": {"tag": "homer-0.2.0rc5-macos-x86_64"}
+    },
+    "macos-arm64": {
+      "core": {"tag": "core-0.2.0rc5-macos-arm64"},
+      "meme": {"tag": "meme-0.2.0rc5-macos-arm64"},
+      "homer": {"tag": "homer-0.2.0rc5-macos-arm64"}
+    },
+    "windows-x86_64": {
+      "core": {"tag": "wsl-core-0.2.0rc5-linux-x86_64"},
+      "meme": {"tag": "wsl-core-0.2.0rc5-linux-x86_64"},
+      "homer": {"tag": "wsl-core-0.2.0rc5-linux-x86_64"}
+    }
+  }
+}

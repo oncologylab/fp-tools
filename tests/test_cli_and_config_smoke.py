@@ -20,6 +20,23 @@ CONFIG_DIR = ROOT / "examples" / "gui_configs"
 
 
 class CliAndConfigSmokeTest(unittest.TestCase):
+    def test_bulk_config_accepts_exactly_one_input_level(self):
+        base = {
+            "tool": "bulk-footprinting",
+            "comparison_table": "comparisons.tsv",
+            "genome": "hg38",
+            "outdir": "results",
+        }
+        raw = {"samples": [{**base, "reads_table": "reads.tsv"}], "comparisons": []}
+        aligned = {"samples": [{**base, "sample_table": "samples.tsv"}], "comparisons": []}
+        both = {
+            "samples": [{**base, "reads_table": "reads.tsv", "sample_table": "samples.tsv"}],
+            "comparisons": [],
+        }
+        self.assertEqual(validate_config(raw), [])
+        self.assertEqual(validate_config(aligned), [])
+        self.assertTrue(any("exactly one" in value for value in validate_config(both)))
+
     def test_region_comparison_yaml_does_not_require_peaks(self):
         config = {
             "version": 1,
@@ -114,6 +131,7 @@ class CliAndConfigSmokeTest(unittest.TestCase):
             "plot-aggregate",
             "review-multi-comparisons",
             "bulk-footprinting",
+            "fp-tools-runtime",
             "run-yaml-workflow",
             "discover-motifs",
             "summarize-motifs",

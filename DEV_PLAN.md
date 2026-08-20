@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-19
+Last updated: 2026-08-20
 
 ## Current Baseline
 
@@ -21,6 +21,11 @@ a separately planned breaking release explicitly changes the contract.
 ## Completed Capabilities
 
 - Raw-read ATAC preparation with modern and legacy processing profiles.
+- A managed, versioned external-tool runtime downloaded on first use, with
+  native Linux/macOS archives, a private WSL2 runtime for Windows, and the
+  complete container retained as an explicit backend.
+- One-command bulk analysis from FASTQ files or public run accessions through
+  portable multi-comparison HTML reports.
 - Tn5 bias correction, background scaling, footprint scoring, candidate calls,
   known-motif matching, de novo motif preparation, and aggregate plotting.
 - Replicate-aware differential footprint reports, including per-sample motif
@@ -85,10 +90,9 @@ a separately planned breaking release explicitly changes the contract.
 8. Keep region-set examples outcome-independent: define groups from external
    annotations, match baseline signal before testing, report all motifs, and
    use explicit display motifs only to configure the initial browser view.
-9. Maintain binary-wheel and desktop-bundle installation and scientific I/O
-   parity on Windows, macOS, and Linux. Keep the complete multi-architecture
-   container as the one-command route for raw FASTQ preparation and external
-   MEME programs.
+9. Maintain binary-wheel and desktop-app scientific I/O parity on Windows,
+   macOS, and Linux. Test managed-runtime artifacts and keep the complete
+   multi-architecture container as a reproducible alternative backend.
 
 ## Deferred or Experimental Work
 

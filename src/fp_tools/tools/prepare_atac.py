@@ -27,6 +27,12 @@ from typing import Any, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from fp_tools.utils import bigwig as pyBigWig
+from fp_tools.runtime import (
+    RuntimeProvisionError,
+    activate_runtime,
+    add_runtime_argument,
+    prepare_command_runtime,
+)
 try:
     import pysam
 except ImportError:  # Raw-read preparation is documented through WSL on Windows.
@@ -1822,17 +1828,29 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         help="Write the fully documented default YAML and exit.",
     )
+    add_runtime_argument(parser)
     return parser
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
+    raw_args = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
-    args = parser.parse_args()
-    if args.doctor:
-        raise SystemExit(doctor(args.profile or "modern"))
+    args = parser.parse_args(raw_args)
     if args.write_default_config:
         print(write_default_config(args.write_default_config, args.profile or "modern"))
-        return
+        return 0
+    if args.doctor:
+        try:
+            delegated = prepare_command_runtime(
+                "prepare-atac", raw_args, args.runtime, "core", set()
+            )
+            if delegated is not None:
+                return delegated
+            if normalize_profile(args.profile or "modern") == "homer-atac":
+                activate_runtime("homer", args.runtime)
+        except RuntimeProvisionError as exc:
+            parser.exit(2, f"prepare-atac: runtime error: {exc}\n")
+        return doctor(args.profile or "modern")
     missing = [
         flag for flag in ("samples", "genome", "outdir") if not getattr(args, flag)
     ]
@@ -1841,8 +1859,29 @@ def main() -> None:
             "the following arguments are required for a run: "
             + ", ".join("--" + value for value in missing)
         )
+    if not args.dry_run:
+        path_flags = {
+            "--samples",
+            "--outdir",
+            "--config",
+            "--reference-dir",
+            "--fasta",
+            "--bowtie2-index",
+            "--blacklist",
+            "--tss",
+        }
+        try:
+            delegated = prepare_command_runtime(
+                "prepare-atac", raw_args, args.runtime, "core", path_flags
+            )
+            if delegated is not None:
+                return delegated
+            if normalize_profile(args.profile or "modern") == "homer-atac":
+                activate_runtime("homer", args.runtime)
+        except RuntimeProvisionError as exc:
+            parser.exit(2, f"prepare-atac: runtime error: {exc}\n")
     try:
-        raise SystemExit(run_preprocessing(args))
+        return run_preprocessing(args)
     except (
         ValueError,
         RuntimeError,
@@ -1850,7 +1889,8 @@ def main() -> None:
         subprocess.CalledProcessError,
     ) as exc:
         parser.exit(2, f"prepare-atac: error: {exc}\n")
+    return 2
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

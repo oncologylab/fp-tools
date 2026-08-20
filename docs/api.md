@@ -9,8 +9,8 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 
 | Command | Purpose |
 | --- | --- |
-| [`prepare-atac`](#prepare-atac) | Download public ATAC-seq reads or use local FASTQ files, then trim, align, filter, call peaks, calculate alignment coverage, and write QC files. Use this command when the analysis starts from reads; skip it when filtered BAM and peak files already exist. Before a large job, run `prepare-atac --doctor --profile modern` to check external programs. |
-| [`bulk-footprinting`](#bulk-footprinting) | Run the complete bulk ATAC-seq workflow from aligned BAM files, peak BED files, and an explicit comparison table. |
+| [`prepare-atac`](#prepare-atac) | Download public ATAC-seq reads or use local FASTQ files, then trim, align, filter, call peaks, calculate alignment coverage, and write QC files. Use this command when the analysis starts from reads; skip it when filtered BAM and peak files already exist. The default runtime downloads its pinned external tools on first use. |
+| [`bulk-footprinting`](#bulk-footprinting) | Run bulk ATAC-seq from raw reads or aligned inputs through interactive reports. |
 | [`atac-correct`](#atac-correct) | Estimate Tn5 sequence bias from aligned ATAC-seq fragments and subtract the expected bias contribution from the observed cut-site signal. Run this before footprint scoring. |
 | [`call-footprints`](#call-footprints) | Calculate a continuous footprint score from bias-corrected cut-site signal within accessible regions. Higher local depletion relative to flanking signal produces stronger footprint evidence. |
 | [`match-motifs`](#match-motifs) | Scan accessible regions for motif instances, measure the footprint score at each instance, and classify sample-specific bound and unbound sites. Run this when motif locations and per-sample motif summaries are needed. |
@@ -20,6 +20,7 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 | [`review-multi-comparisons`](#review-multi-comparisons) | Combine differential-footprint reports as a scalable browser bundle or one self-contained HTML report. |
 | [`run-yaml-workflow`](#run-yaml-workflow) | Run one or more fp-tools jobs from a reusable YAML configuration. |
 | [`fp-tools-gui`](#fp-tools-gui) | Launch the browser interface for configuring and running fp-tools commands. |
+| [`fp-tools-runtime`](#fp-tools-runtime) | Inspect, install, or repair the private external-tool runtime used by raw-read and de novo motif workflows. |
 | [`discover-motifs`](#discover-motifs) | Prepare or run de novo motif discovery from candidate footprint intervals or an existing FASTA file. |
 | [`summarize-motifs`](#summarize-motifs) | Summarize MEME, STREME, DREME, and Tomtom results in a compact report. |
 | [`pseudobulk-fragments`](#pseudobulk-fragments) | Group single-cell ATAC fragments by a cell-annotation column to create pseudobulk inputs. |
@@ -33,16 +34,13 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 Download public ATAC-seq reads or use local FASTQ files, then trim, align,
 filter, call peaks, calculate alignment coverage, and write QC files. Use this
 command when the analysis starts from reads; skip it when filtered BAM and peak
-files already exist. Before a large job, run
-`prepare-atac --doctor --profile modern` to check external programs.
+files already exist. The default runtime downloads its pinned external tools
+on first use.
 
 **Example command**
 
 ```bash
-prepare-atac \
-  --samples metadata.tsv \
-  --genome hg38 \
-  --outdir project
+prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 ```
 
 **Primary inputs**
@@ -99,6 +97,7 @@ usage: prepare-atac [-h] [--samples SAMPLES] [--genome GENOME]
                     [--memory-gb MEMORY_GB] [--keep-intermediates]
                     [--no-resume] [--fail-fast] [--dry-run] [--doctor]
                     [--write-default-config PATH]
+                    [--runtime {auto,managed,system,container}]
 
 Download single- or paired-end ATAC-seq reads and prepare filtered BAM, peak
 BED, sequencing-depth-normalized alignment coverage bigWig, and QC files.
@@ -152,6 +151,10 @@ options:
   --doctor              Report external preprocessing dependencies and exit.
   --write-default-config PATH
                         Write the fully documented default YAML and exit.
+  --runtime {auto,managed,system,container}
+                        External-tool runtime: auto/managed provisions the
+                        pinned fp-tools runtime, system uses PATH, and
+                        container uses the complete image (default: auto).
 ```
 
 </div>
@@ -160,8 +163,7 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Run the complete bulk ATAC-seq workflow from aligned BAM files, peak BED files,
-and an explicit comparison table.
+Run bulk ATAC-seq from raw reads or aligned inputs through interactive reports.
 
 The [bulk workflow guide](get-started/workflows/bulk-atac-seq.md) provides a runnable
 six-sample ENCODE design and the complete seven-cell-line tables.
@@ -169,41 +171,17 @@ six-sample ENCODE design and the complete seven-cell-line tables.
 **Example command**
 
 ```bash
-bulk-footprinting \
-  --sample-table samples.tsv \
-  --comparison-table comparisons.tsv \
-  --genome hg38.fa.gz \
-  --blacklist hg38.blacklist.bed \
-  --plot-aggregate all \
-  --review-format auto \
-  --outdir project \
-  --cores 8
+bulk-footprinting --reads-table reads.tsv --comparison-table comparisons.tsv --genome hg38 \
+  --outdir project --cores 8
 ```
 
 **Primary inputs**
 
-- `--sample-table` — sample, condition, BAM, and peak BED columns.
+- `--reads-table` — sample, condition, and local FASTQ or public run-accession columns.
 - `--comparison-table` — comparison, condition 1, and condition 2 columns.
-- `--genome` — reference FASTA.
-- `--blacklist` — optional blacklist BED.
+- `--genome` — `hg38`, `mm10`, or a custom genome label.
 - `--outdir` — project output directory.
 - `--cores` — total worker cores.
-- `--plot-aggregate` — `sig`, `all` (default), `top`, or `off`.
-- `--review-format` — `auto` (default), `bundle`, `standalone`, or `none`.
-
-With `--review-format auto`, aggregate-free runs produce one standalone HTML;
-other runs retain the static browser bundle.
-
-```bash
-bulk-footprinting \
-  --sample-table samples.tsv \
-  --comparison-table comparisons.tsv \
-  --genome hg38.fa.gz \
-  --plot-aggregate off \
-  --review-format auto \
-  --outdir project \
-  --cores 8
-```
 
 **Main outputs**
 
@@ -219,27 +197,34 @@ bulk-footprinting \
 | `{project}/comparisons/{comparison}/diff_footprints_{cond1}_{cond2}.html` | Portable interactive comparison report. |
 | `{project}/reports/review_multi_comparisons/index.html` | Static browser combining every requested comparison. |
 | `{project}/reports/review_multi_comparisons.html` | Aggregate-free portable review written when standalone HTML review mode is selected. |
-| `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for all five stages. |
+| `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for the workflow stages. |
 | `{project}/logs/bulk_footprinting/{stage}.stdout.log` and `{stage}.stderr.log` | Stage-specific logs for troubleshooting. |
 
-The wrapper does not run `normalize-bigwig`; `--normalization` controls only
-the differential stage. See the workflow guide for how this differs from the
-pair-specific ENCODE demo method.
-
-FASTQ preparation is a separate optional step with [`prepare-atac`](#prepare-atac).
+Use `--sample-table` instead of `--reads-table` to start from prepared BAM and
+peak files. `--runtime auto` downloads the pinned external tools only when raw
+reads require them. `--runtime system` and `--runtime container` are optional
+advanced backends.
 
 **Complete options**
 
 ```text
-usage: bulk-footprinting [-h] --sample-table SAMPLE_TABLE --comparison-table
-                         COMPARISON_TABLE --genome GENOME
-                         [--blacklist BLACKLIST] [--motifs [MOTIFS ...]]
-                         [--motif-db MOTIF_DB]
+usage: bulk-footprinting [-h]
+                         (--sample-table SAMPLE_TABLE | --reads-table READS_TABLE)
+                         --comparison-table COMPARISON_TABLE --genome GENOME
+                         [--blacklist BLACKLIST] [--config CONFIG]
+                         [--profile {modern,homer-atac}]
+                         [--reference-dir REFERENCE_DIR] [--fasta FASTA]
+                         [--bowtie2-index BOWTIE2_INDEX] [--tss TSS]
+                         [--macs-genome-size MACS_GENOME_SIZE]
+                         [--max-parallel-samples MAX_PARALLEL_SAMPLES]
+                         [--memory-gb MEMORY_GB] [--keep-intermediates]
+                         [--motifs [MOTIFS ...]] [--motif-db MOTIF_DB]
                          [--normalization {none,condition-quantile,sample-quantile}]
                          [--plot-aggregate {sig,all,top,off}]
                          [--review-format {auto,bundle,standalone,none}]
                          --outdir OUTDIR [--cores CORES] [--resume] [--force]
                          [--dry-run] [--fail-fast]
+                         [--runtime {auto,managed,system,container}]
 
 Run the complete bulk ATAC-seq footprinting workflow for explicit comparisons.
 
@@ -247,11 +232,31 @@ options:
   -h, --help            show this help message and exit
   --sample-table SAMPLE_TABLE
                         TSV with sample, condition, BAM, and peak BED columns.
+  --reads-table READS_TABLE
+                        TSV/CSV with local FASTQ paths or public run
+                        accessions; runs preparation before footprinting.
   --comparison-table COMPARISON_TABLE
                         TSV with comparison, cond1, and cond2 columns.
-  --genome GENOME       Reference genome FASTA.
+  --genome GENOME       Reference FASTA for aligned input, or hg38/mm10/custom
+                        label for raw reads.
   --blacklist BLACKLIST
                         Optional blacklist BED used during bias correction.
+  --config CONFIG       Optional prepare-atac YAML for raw reads.
+  --profile {modern,homer-atac}
+                        Raw-read processing profile (default: modern).
+  --reference-dir REFERENCE_DIR
+                        Reference cache root for raw reads.
+  --fasta FASTA         Custom reference FASTA for raw reads.
+  --bowtie2-index BOWTIE2_INDEX
+                        Existing Bowtie2 index prefix for raw reads.
+  --tss TSS             Optional TSS BED for raw-read QC.
+  --macs-genome-size MACS_GENOME_SIZE
+                        MACS3 genome size for a custom genome.
+  --max-parallel-samples MAX_PARALLEL_SAMPLES
+                        Maximum raw-read samples processed concurrently.
+  --memory-gb MEMORY_GB
+                        Total memory budget for raw-read processing.
+  --keep-intermediates  Keep raw-read intermediate files.
   --motifs [MOTIFS ...]
                         Optional motif files.
   --motif-db MOTIF_DB   Built-in motif database (default:
@@ -272,6 +277,10 @@ options:
   --dry-run             Validate inputs and print the commands without running
                         them.
   --fail-fast           Stop at the first failed stage.
+  --runtime {auto,managed,system,container}
+                        External-tool runtime: auto/managed provisions the
+                        pinned fp-tools runtime, system uses PATH, and
+                        container uses the complete image (default: auto).
 ```
 
 </div>
@@ -287,11 +296,7 @@ footprint scoring.
 **Example command**
 
 ```bash
-atac-correct \
-  --sample-table project/metadata/samples.tsv \
-  --genome hg38.fa.gz \
-  --blacklist hg38.blacklist.bed \
-  --outdir project
+atac-correct --sample-table project/metadata/samples.tsv --genome hg38.fa.gz --blacklist hg38.blacklist.bed --outdir project
 ```
 
 **Primary inputs**
@@ -464,11 +469,8 @@ produces stronger footprint evidence.
 **Example command**
 
 ```bash
-call-footprints \
-  --signals A_corrected.bw B_corrected.bw \
-  --sample-names A B \
-  --regions merged_peaks.bed \
-  --sample-output-root project/samples
+call-footprints --signals A_corrected.bw B_corrected.bw --sample-names A B \
+  --regions merged_peaks.bed --sample-output-root project/samples
 ```
 
 **Primary inputs**
@@ -624,13 +626,8 @@ when motif locations and per-sample motif summaries are needed.
 **Example command**
 
 ```bash
-match-motifs \
-  --signals A_footprints.bw B_footprints.bw \
-  --sample-names A B \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --sample-output-root project/samples
+match-motifs --signals A_footprints.bw B_footprints.bw --sample-names A B --genome hg38.fa.gz \
+  --peaks merged_peaks.bed --motif-db jaspar2026_vertebrates --sample-output-root project/samples
 ```
 
 **Primary inputs**
@@ -828,13 +825,8 @@ user-defined region sets measured in the same sample(s).
 **Example command**
 
 ```bash
-diff-footprints \
-  --sample-table project/metadata/samples.tsv \
-  --comparison-table project/metadata/comparisons.tsv \
-  --genome hg38.fa.gz \
-  --peaks project/peaks/merged_peaks_filtered.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project
+diff-footprints --sample-table project/metadata/samples.tsv --comparison-table project/metadata/comparisons.tsv \
+  --genome hg38.fa.gz --peaks project/peaks/merged_peaks_filtered.bed --motif-db jaspar2026_vertebrates --outdir project
 ```
 
 **Primary inputs**
@@ -1102,13 +1094,8 @@ shared signal scale before downstream scoring or plotting.
 **Example command**
 
 ```bash
-normalize-bigwig \
-  --sample-table project/metadata/samples.tsv \
-  --background project/peaks/merged_peaks_filtered.bed \
-  --outdir project \
-  --method background-scale \
-  --stat q95 \
-  --target median
+normalize-bigwig --sample-table project/metadata/samples.tsv --background project/peaks/merged_peaks_filtered.bed \
+  --outdir project --method background-scale --stat q95 --target median
 ```
 
 **Primary inputs**
@@ -1203,11 +1190,7 @@ Multiple user-defined BED files are supported through `--TFBS`. Multiple
 **Example command**
 
 ```bash
-plot-aggregate \
-  --sample-table project/metadata/samples.tsv \
-  --motifs SPIB CEBPB \
-  --site-set bound \
-  --outdir project
+plot-aggregate --sample-table project/metadata/samples.tsv --motifs SPIB CEBPB --site-set bound --outdir project
 ```
 
 **Primary inputs**
@@ -1394,13 +1377,10 @@ self-contained HTML report.
 **Example command**
 
 ```bash
-review-multi-comparisons \
-  --inputs project/comparisons \
-  --output-dir project/reports/review_multi_comparisons \
+review-multi-comparisons --inputs project/comparisons --output-dir project/reports/review_multi_comparisons \
   --default-comparison "HNF4A + FOXA2" "No HNF4A/FOXA2" \
   --default-aggregate-motifs MA1494.2 MA0484.3 MA0047.4 MA0148.5 MA0046.3 MA0153.2 MA0102.5 MA0466.4 \
-  --default-aggregate-plots 8 \
-  --documentation-url https://oncologylab.github.io/fp-tools/
+  --default-aggregate-plots 8 --documentation-url https://oncologylab.github.io/fp-tools/
 ```
 
 **Primary inputs**
@@ -1438,10 +1418,8 @@ volcano, ranked-motif, logo, and SVG-export views. Aggregate controls appear
 only when profiles exist.
 
 ```bash
-review-multi-comparisons \
-  --inputs baseline/report.html dose1/report.html dose2/report.html \
-  --labels Baseline "Dose 1" "Dose 2" \
-  --output-html review.html
+review-multi-comparisons --inputs baseline/report.html dose1/report.html dose2/report.html \
+  --labels Baseline "Dose 1" "Dose 2" --output-html review.html
 ```
 
 **Complete options**
@@ -1519,8 +1497,7 @@ Run one or more fp-tools jobs from a reusable YAML configuration.
 **Example command**
 
 ```bash
-run-yaml-workflow \
-  --config examples/gui_configs/diff_footprints_single.yml
+run-yaml-workflow --config examples/gui_configs/diff_footprints_single.yml
 ```
 
 **Primary inputs**
@@ -1565,14 +1542,14 @@ options:
 
 Launch the browser interface for configuring and running fp-tools commands.
 
+The GUI is available through the Python package, the complete container, and
+the self-contained desktop downloads on the
+[release page](https://github.com/oncologylab/fp-tools/releases).
+
 **Example command**
 
 ```bash
-fp-tools-gui \
-  --host 127.0.0.1 \
-  --port 8891 \
-  --run-dir project/gui_runs \
-  --no-browser
+fp-tools-gui --host 127.0.0.1 --port 8891 --run-dir project/gui_runs --no-browser
 ```
 
 **Primary inputs**
@@ -1594,8 +1571,8 @@ Files under `{run_dir}` are local run state. A saved YAML remains runnable with
 
 ## Local computer
 
-Run `fp-tools-gui`. A browser opens after the server is ready. If it does not,
-open the local URL printed in the terminal.
+Open the desktop executable or run `fp-tools-gui`. A browser opens after the
+server is ready. If it does not, open the local URL printed in the terminal.
 
 ## Remote Linux server
 
@@ -1633,6 +1610,49 @@ options:
 
 </div>
 
+## `fp-tools-runtime`
+
+<div class="fp-api-card" markdown="1">
+
+Inspect, install, or repair the private external-tool runtime used by raw-read
+and de novo motif workflows.
+
+**Example command**
+
+```bash
+fp-tools-runtime status
+```
+
+**Primary inputs**
+
+The `status` action takes no input files.
+
+**Main outputs**
+
+The command reports each runtime component, platform, installation state, and
+cache location. `install core` prepares raw-read tools; MEME Suite and HOMER
+components are installed only when requested by their workflows.
+
+**Complete options**
+
+```text
+usage: fp-tools-runtime [-h] {status,install,repair} ...
+
+Inspect, install, or repair the managed fp-tools runtime.
+
+positional arguments:
+  {status,install,repair}
+    status              Report managed runtime availability and installation
+                        state.
+    install             Install a runtime component.
+    repair              Repair a runtime component.
+
+options:
+  -h, --help            show this help message and exit
+```
+
+</div>
+
 ## `discover-motifs`
 
 <div class="fp-api-card" markdown="1">
@@ -1643,13 +1663,8 @@ an existing FASTA file.
 **Example command**
 
 ```bash
-discover-motifs \
-  --candidates project/samples/sample/footprints/sample_candidate_footprints.bed \
-  --genome hg38.fa.gz \
-  --flank 75 \
-  --method streme \
-  --known-motif-db jaspar2026_vertebrates \
-  --outdir project/de_novo/sample
+discover-motifs --candidates project/samples/sample/footprints/sample_candidate_footprints.bed --genome hg38.fa.gz \
+  --flank 75 --method streme --known-motif-db jaspar2026_vertebrates --outdir project/de_novo/sample --execute
 ```
 
 **Primary inputs**
@@ -1660,6 +1675,7 @@ discover-motifs \
 - `--method` — discovery method; the example uses STREME.
 - `--known-motif-db` — optional known-motif database for Tomtom matching.
 - `--outdir` — directory for candidate FASTA files and discovery results.
+- `--execute` — run discovery immediately using the managed MEME Suite runtime.
 
 **Main outputs**
 
@@ -1682,6 +1698,7 @@ usage: discover-motifs [-h] (--fasta FASTA | --candidates CANDIDATES)
                        [--known-motifs KNOWN_MOTIFS]
                        [--known-motif-db KNOWN_MOTIF_DB] [--list-motif-dbs]
                        [--extra-args ...] [--execute]
+                       [--runtime {auto,managed,system,container}]
 
 Prepare or run a de novo motif discovery command plan.
 
@@ -1706,6 +1723,10 @@ options:
   --list-motif-dbs      List available built-in motif databases and exit.
   --extra-args ...      Additional arguments appended to MEME/DREME/STREME.
   --execute             Run the generated script immediately.
+  --runtime {auto,managed,system,container}
+                        External-tool runtime: auto/managed provisions the
+                        pinned fp-tools runtime, system uses PATH, and
+                        container uses the complete image (default: auto).
 ```
 
 </div>
@@ -1719,10 +1740,8 @@ Summarize MEME, STREME, DREME, and Tomtom results in a compact report.
 **Example command**
 
 ```bash
-summarize-motifs \
-  --meme-txt project/de_novo/sample/streme/streme.txt \
-  --tomtom-tsv project/de_novo/sample/tomtom/tomtom.tsv \
-  --out-tsv project/de_novo/sample/motif_summary.tsv
+summarize-motifs --meme-txt project/de_novo/sample/streme/streme.txt \
+  --tomtom-tsv project/de_novo/sample/tomtom/tomtom.tsv --out-tsv project/de_novo/sample/motif_summary.tsv
 ```
 
 **Primary inputs**
@@ -1770,13 +1789,8 @@ pseudobulk inputs.
 **Example command**
 
 ```bash
-pseudobulk-fragments \
-  --fragments pbmc_fragments.tsv.gz \
-  --annotations cell_annotations.tsv \
-  --group-by cell_type \
-  --genome-sizes hg38.chrom.sizes \
-  --write-cutsite-bigwigs \
-  --outdir project/pseudobulk/fragments
+pseudobulk-fragments --fragments pbmc_fragments.tsv.gz --annotations cell_annotations.tsv --group-by cell_type \
+  --genome-sizes hg38.chrom.sizes --write-cutsite-bigwigs --outdir project/pseudobulk/fragments
 ```
 
 **Primary inputs**
@@ -1876,12 +1890,8 @@ motif analyses.
 **Example command**
 
 ```bash
-find-signature-fp \
-  --annotations cell_annotations.tsv \
-  --fragments pbmc_fragments.tsv.gz \
-  --h5ad pbmc_embedding.h5ad \
-  --tf-site-dir marker_motif_sites \
-  --all-motif-results project/pseudobulk/pseudobulk_diff_footprints_results.txt \
+find-signature-fp --annotations cell_annotations.tsv --fragments pbmc_fragments.tsv.gz --h5ad pbmc_embedding.h5ad \
+  --tf-site-dir marker_motif_sites --all-motif-results project/pseudobulk/pseudobulk_diff_footprints_results.txt \
   --outdir project/pseudobulk/signature_fp
 ```
 
@@ -2036,16 +2046,9 @@ signature reporting for single-cell ATAC-seq data.
 **Example command**
 
 ```bash
-sc-footprinting \
-  --fragments pbmc_fragments.tsv.gz \
-  --annotations cell_annotations.tsv \
-  --h5ad cell_embedding.h5ad \
-  --group-by cell_type \
-  --genome-sizes hg38.chrom.sizes \
-  --genome hg38.fa.gz \
-  --peaks merged_peaks.bed \
-  --motif-db jaspar2026_vertebrates \
-  --outdir project/pseudobulk
+sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations.tsv --h5ad cell_embedding.h5ad \
+  --group-by cell_type --genome-sizes hg38.chrom.sizes --genome hg38.fa.gz --peaks merged_peaks.bed \
+  --motif-db jaspar2026_vertebrates --outdir project/pseudobulk
 ```
 
 **Primary inputs**

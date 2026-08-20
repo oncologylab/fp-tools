@@ -7,7 +7,7 @@ an existing FASTA file.
 
 ```bash
 discover-motifs --candidates project/samples/sample/footprints/sample_candidate_footprints.bed --genome hg38.fa.gz \
-  --flank 75 --method streme --known-motif-db jaspar2026_vertebrates --outdir project/de_novo/sample
+  --flank 75 --method streme --known-motif-db jaspar2026_vertebrates --outdir project/de_novo/sample --execute
 ```
 
 ## Primary inputs
@@ -18,6 +18,7 @@ discover-motifs --candidates project/samples/sample/footprints/sample_candidate_
 - `--method` — discovery method; the example uses STREME.
 - `--known-motif-db` — optional known-motif database for Tomtom matching.
 - `--outdir` — directory for candidate FASTA files and discovery results.
+- `--execute` — run discovery immediately using the managed MEME Suite runtime.
 
 ## Main outputs
 

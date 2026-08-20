@@ -24,6 +24,7 @@ COMMAND_TARGETS: dict[str, str] = {
     "review-multi-comparisons": "fp_tools.tools.review_multi_comparisons:main",
     "run-yaml-workflow": "fp_tools.cli_batch:main",
     "fp-tools-gui": "fp_tools.cli_gui:main",
+    "fp-tools-runtime": "fp_tools.cli_runtime:main",
     "discover-motifs": "fp_tools.tools.motif_discovery:motif_discovery_plan_main",
     "summarize-motifs": "fp_tools.tools.motif_discovery:motif_report_main",
     "pseudobulk-fragments": "fp_tools.tools.pseudobulk:main",

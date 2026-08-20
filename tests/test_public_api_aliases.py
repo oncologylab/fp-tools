@@ -26,6 +26,7 @@ class PublicApiAliasesTest(unittest.TestCase):
             "run-yaml-workflow": "fp_tools.cli_batch:main",
             "run-workflow": "fp_tools.cli_compat:run_workflow_main",
             "fp-tools-gui": "fp_tools.cli_gui:main",
+            "fp-tools-runtime": "fp_tools.cli_runtime:main",
             "discover-motifs": "fp_tools.tools.motif_discovery:motif_discovery_plan_main",
             "summarize-motifs": "fp_tools.tools.motif_discovery:motif_report_main",
             "motif-discovery": "fp_tools.cli_compat:motif_discovery_main",

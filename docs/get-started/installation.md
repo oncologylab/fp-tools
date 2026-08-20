@@ -11,17 +11,17 @@ the GUI. Python does not need to be installed.
 
     Download `fp-tools-gui-windows-x64.exe` from the
     [release page](https://github.com/oncologylab/fp-tools/releases),
-    then open it.
+    then open it. This preview is unsigned, so Windows may ask you to confirm.
 
 === "macOS Apple Silicon"
 
-    Download `fp-tools-gui-macos-apple-silicon.tar.gz`, extract it, and open
-    `fp-tools-gui`.
+    Download `fp-tools-gui-macos-apple-silicon.dmg`, open it, and launch
+    `fp-tools`. This preview is unsigned; on first launch, Control-click the app
+    and choose **Open**.
 
-The desktop executable covers the GUI and native fp-tools analyses from BAM,
-fragment, bigWig, BED, and motif inputs. Use the complete container when a run
-also needs raw-read programs or MEME Suite. Linux and macOS Intel users should
-use the Python package below.
+The app downloads its pinned analysis runtime on the first FASTQ or motif-
+discovery run. Windows uses a private WSL2 distribution; fp-tools enables it
+with permission if needed, and Windows may request one restart.
 
 ## Complete container
 
@@ -75,20 +75,19 @@ atac-correct --help
 diff-footprints --help
 ```
 
-## External analysis programs
+## Managed analysis runtime
 
-Raw-read preparation uses external genomics programs. The default `modern`
-profile requires Fastp, Bowtie2 (including `bowtie2-build`), Samtools, Bedtools,
-and MACS3. Check the active environment before downloading data:
+Raw-read and motif-discovery commands automatically install their pinned tools
+in the fp-tools cache. Inspect or prepare that cache with:
 
 ```bash
-prepare-atac --doctor --profile modern
+fp-tools-runtime status
+fp-tools-runtime install core
 ```
 
-The alternative `homer-atac` profile uses Trim Galore, Bowtie2, Picard,
-Samtools, Bedtools, and HOMER. The doctor report identifies every missing
-program. Commands that start from existing bigWigs do not require the complete
-raw-read toolchain.
+Use `--runtime system` to use programs already on `PATH`, or `--runtime
+container` to run the complete public image. Workflows starting from BAM,
+bigWig, BED, or fragment inputs do not download the raw-read runtime.
 
 ## GUI
 

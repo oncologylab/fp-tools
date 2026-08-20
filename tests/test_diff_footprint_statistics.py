@@ -1,11 +1,13 @@
 import tempfile
 import unittest
+import warnings
 from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
 
 from fp_tools.tools import diff_footprint_helpers
+from fp_tools.tools.diff_footprints import _finite_highlight_thresholds
 
 
 class DifferentialFootprintStatisticsTest(unittest.TestCase):
@@ -65,6 +67,35 @@ class DifferentialFootprintStatisticsTest(unittest.TestCase):
 
         self.assertTrue(np.isfinite(float(result.at["TF1", "A_B_change"])))
         self.assertTrue(np.isfinite(float(result.at["TF1", "A_B_pvalue"])))
+
+    def test_all_zero_scores_are_neutral_without_runtime_warnings(self):
+        with tempfile.TemporaryDirectory() as tmpdir, warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            result = diff_footprint_helpers.process_tfbs(
+                "TF1",
+                self._args(tmpdir),
+                {("A", "B"): (0.0, 0.5)},
+                bed_rows=[self._row(0, 0.0, 0.0)],
+            )
+
+        self.assertEqual(caught, [])
+        self.assertEqual(float(result.at["TF1", "A_B_change"]), 0.0)
+        self.assertEqual(float(result.at["TF1", "A_B_pvalue"]), 1.0)
+        self.assertEqual(float(result.at["TF1", "A_B_mean_delta_fp"]), 0.0)
+        self.assertEqual(float(result.at["TF1", "A_B_mean_log2fc"]), 0.0)
+
+    def test_nonfinite_motif_cannot_poison_highlight_thresholds(self):
+        changes = np.array([np.nan, -3.0, 0.0, 4.0])
+        pvalues = np.array([1.0, 0.01, 0.5, 0.001])
+
+        change_min, change_max, pvalue_min = _finite_highlight_thresholds(
+            changes, pvalues
+        )
+
+        self.assertTrue(np.isfinite([change_min, change_max, pvalue_min]).all())
+        self.assertLess(change_min, 0.0)
+        self.assertGreater(change_max, 0.0)
+        self.assertLessEqual(pvalue_min, 0.01)
 
 
 if __name__ == "__main__":
