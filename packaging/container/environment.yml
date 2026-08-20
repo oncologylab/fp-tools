@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python=3.12
   - pip
+  - c-compiler
   - bedtools>=2.31
   - samtools>=1.23
   - bowtie2>=2.5

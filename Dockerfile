@@ -7,7 +7,7 @@ USER $MAMBA_USER
 COPY --chown=$MAMBA_USER:$MAMBA_USER packaging/container/environment.yml /tmp/fp-tools-container.yml
 RUN micromamba install -y -n base -f /tmp/fp-tools-container.yml && micromamba clean --all --yes
 
-COPY --chown=$MAMBA_USER:$MAMBA_USER pyproject.toml README.md LICENSE ./
+COPY --chown=$MAMBA_USER:$MAMBA_USER pyproject.toml setup.py README.md LICENSE ./
 COPY --chown=$MAMBA_USER:$MAMBA_USER src ./src
 RUN micromamba run -n base python -m pip install --no-cache-dir . \
     && micromamba run -n base python -m pip check
