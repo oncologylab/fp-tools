@@ -5,6 +5,13 @@ on:
   push:
     tags:
       - "v*"
+  pull_request:
+    paths:
+      - packaging/desktop/**
+      - scripts/smoke_desktop_bundle.py
+      - pyproject.toml
+      - src/**
+      - .github/workflows/desktop.yml
 
 permissions:
   contents: write
