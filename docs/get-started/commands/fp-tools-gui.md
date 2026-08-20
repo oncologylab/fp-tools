@@ -2,6 +2,10 @@
 
 Launch the browser interface for configuring and running fp-tools commands.
 
+Bulk GUI workflows start from coordinate-sorted BAM/BAI files and matching
+peak BED files. The GUI does not perform FASTQ-to-BAM preprocessing.
+Missing inputs and unsupported options are reported before a run starts.
+
 The GUI is available through the Python package, the complete container, and
 the self-contained desktop downloads on the
 [release page](https://github.com/oncologylab/fp-tools/releases).

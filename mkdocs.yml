@@ -54,12 +54,13 @@ nav:
           - De novo motif discovery: get-started/workflows/de-novo-motif-discovery.md
       - Commands:
           - Core analysis:
-              - prepare-atac: get-started/commands/prepare-atac.md
               - atac-correct: get-started/commands/atac-correct.md
               - call-footprints: get-started/commands/call-footprints.md
               - match-motifs: get-started/commands/match-motifs.md
               - diff-footprints: get-started/commands/diff-footprints.md
               - normalize-bigwig: get-started/commands/normalize-bigwig.md
+          - Linux preprocessing:
+              - prepare-atac: get-started/commands/prepare-atac.md
           - Visualization and review:
               - plot-aggregate: get-started/commands/plot-aggregate.md
               - review-multi-comparisons: get-started/commands/review-multi-comparisons.md

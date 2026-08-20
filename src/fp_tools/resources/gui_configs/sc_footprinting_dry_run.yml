@@ -1,0 +1,16 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: sc_footprinting_plan
+    tool: sc-footprinting
+    fragments: data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz
+    annotations: data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv
+    h5ad: data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad.h5ad
+    group_by: cell_type
+    outdir: examples/gui_demo_outputs/sc_footprinting
+    genome_sizes: data/public/processed/pseudobulk_pbmc5k_scatac/hg38.chrom.sizes
+    genome: data/public/raw/genome/hg38.fa
+    peaks: data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_snatac2_selected_bins.demo.bed
+    motif_db: jaspar2026_vertebrates
+    dry_run: true
+comparisons: []

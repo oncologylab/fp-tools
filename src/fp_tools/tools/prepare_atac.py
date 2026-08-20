@@ -1,4 +1,4 @@
-"""Prepare raw ATAC-seq reads as stable inputs for fp-tools.
+"""Prepare raw ATAC-seq reads as stable inputs for fp-tools on Linux.
 
 The module intentionally remains an orchestration layer.  It validates sample
 metadata, resolves public FASTQs, invokes established command-line tools, and
@@ -33,9 +33,10 @@ from fp_tools.runtime import (
     add_runtime_argument,
     prepare_command_runtime,
 )
+from fp_tools.platform_support import require_raw_read_preparation_support
 try:
     import pysam
-except ImportError:  # Raw-read preparation is documented through WSL on Windows.
+except ImportError:  # Non-Linux wheels retain the help/error entry point only.
     pysam = None
 import yaml
 
@@ -1573,11 +1574,7 @@ def _available_memory_gb() -> float:
 
 
 def run_preprocessing(args: argparse.Namespace) -> int:
-    if os.name == "nt":
-        raise SystemExit(
-            "prepare-atac requires Unix bioinformatics executables. On Windows, run it in WSL; "
-            "the downstream fp-tools commands and GUI run natively."
-        )
+    require_raw_read_preparation_support()
     overrides: dict[str, Any] = {"profile": args.profile} if args.profile else {}
     resource_overrides = {
         key: value
@@ -1836,6 +1833,10 @@ def main(argv: list[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
     args = parser.parse_args(raw_args)
+    try:
+        require_raw_read_preparation_support()
+    except ValueError as exc:
+        parser.error(str(exc))
     if args.write_default_config:
         print(write_default_config(args.write_default_config, args.profile or "modern"))
         return 0

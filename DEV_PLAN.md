@@ -20,12 +20,15 @@ a separately planned breaking release explicitly changes the contract.
 
 ## Completed Capabilities
 
-- Raw-read ATAC preparation with modern and legacy processing profiles.
+- Linux CLI/container raw-read ATAC preparation with modern and legacy
+  processing profiles.
 - A managed, versioned external-tool runtime downloaded on first use, with
-  native Linux/macOS archives, a private WSL2 runtime for Windows, and the
-  complete container retained as an explicit backend.
-- One-command bulk analysis from FASTQ files or public run accessions through
-  portable multi-comparison HTML reports.
+  Linux raw-read components, cross-platform optional MEME components, and the
+  complete Linux container retained as an explicit backend.
+- Cross-platform one-command bulk analysis from coordinate-sorted BAM/BAI and
+  matching peak BED files through portable multi-comparison HTML reports.
+- Optional Linux CLI/container bulk analysis from FASTQ files or public run
+  accessions through the same downstream workflow.
 - Tn5 bias correction, background scaling, footprint scoring, candidate calls,
   known-motif matching, de novo motif preparation, and aggregate plotting.
 - Replicate-aware differential footprint reports, including per-sample motif
@@ -47,9 +50,10 @@ a separately planned breaking release explicitly changes the contract.
   PyPI publication.
 - A complete amd64/arm64 container with the external genomics toolchain and a
   browser GUI as its default entry point.
-- Self-contained GUI executables for Windows x64 and Apple Silicon, with
-  frozen-safe command and workflow dispatch. Linux and Intel macOS use the
-  Python package; the complete container remains available on amd64 and arm64.
+- BAM-first self-contained GUI executables for Windows x64 and Apple Silicon,
+  with frozen-safe command and workflow dispatch. Every GUI starts from BAM/BAI
+  plus peak BED files. Linux and Intel macOS use the Python package; the
+  complete container remains available on amd64 and arm64.
 - Branded GitHub and MkDocs presentation with responsive embedded report and
   GUI demos plus automated desktop/mobile browser audits.
 - A manifest-pinned, storage-conscious ENCODE workflow for 17 biological
@@ -92,10 +96,10 @@ a separately planned breaking release explicitly changes the contract.
 8. Keep region-set examples outcome-independent: define groups from external
    annotations, match baseline signal before testing, report all motifs, and
    use explicit display motifs only to configure the initial browser view.
-9. Maintain binary-wheel scientific I/O parity on Windows, macOS, and Linux,
-   plus desktop-app parity on Windows x64 and Apple Silicon. Test public,
-   repository-linked managed-runtime artifacts and keep the complete
-   multi-architecture container as a reproducible alternative backend.
+9. Maintain BAM/peak scientific I/O parity on Windows, macOS, and Linux, plus
+   desktop-app parity on Windows x64 and Apple Silicon. Test Linux raw-read and
+   cross-platform MEME runtime artifacts separately, and keep the complete
+   multi-architecture Linux container as a reproducible alternative backend.
 
 ## Deferred or Experimental Work
 
@@ -119,5 +123,5 @@ instructions belong only in `RELEASE_CHECKLIST.md`.
 
 The GUI remains a thin wrapper included in the standard installation. Future
 GUI changes must keep direct CLI use primary, retain reusable YAML, avoid
-hosted-service assumptions, and use the current static demo and layout as the
-visual baseline.
+hosted-service assumptions, enforce the BAM/BAI plus peak BED starting point,
+and use the current static demo and layout as the visual baseline.

@@ -1,0 +1,16 @@
+version: 1
+run_mode: batch
+samples:
+  - sample_id: call_footprints_bcell
+    tool: call-footprints
+    signal: test_data/Bcell_corrected.bw
+    regions: test_data/merged_peaks.bed
+    output: examples/gui_demo_outputs/call_call_footprints_batch/Bcell_footprints.bw
+    score: footprint
+  - sample_id: call_footprints_tcell
+    tool: call-footprints
+    signal: test_data/Tcell_corrected.bw
+    regions: test_data/merged_peaks.bed
+    output: examples/gui_demo_outputs/call_call_footprints_batch/Tcell_footprints.bw
+    score: footprint
+comparisons: []

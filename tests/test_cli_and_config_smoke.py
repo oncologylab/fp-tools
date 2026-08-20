@@ -6,10 +6,18 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 
 from fp_tools.cli_batch import run_config_file
-from fp_tools.gui_config import build_cli_command, expand_jobs, load_yaml_config, normalize_config, validate_config
+from fp_tools.gui_config import (
+    build_cli_command,
+    expand_jobs,
+    load_yaml_config,
+    normalize_config,
+    validate_config,
+    validate_gui_config,
+)
 from fp_tools.parsers import add_aggregate_arguments, add_atacorrect_arguments, add_diff_footprints_arguments, add_scorebigwig_arguments
 from fp_tools.tools import diff_footprints
 from fp_tools.tools.diff_footprints import _prepare_condition_metadata
@@ -36,6 +44,89 @@ class CliAndConfigSmokeTest(unittest.TestCase):
         self.assertEqual(validate_config(raw), [])
         self.assertEqual(validate_config(aligned), [])
         self.assertTrue(any("exactly one" in value for value in validate_config(both)))
+
+    def test_gui_accepts_bam_bulk_config_and_rejects_raw_reads(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            bam = root / "sample.bam"
+            bai = root / "sample.bam.bai"
+            peaks = root / "peaks.bed"
+            genome = root / "genome.fa"
+            comparisons = root / "comparisons.tsv"
+            samples = root / "samples.tsv"
+            for path in (bam, bai, peaks, genome):
+                path.write_bytes(b"fixture")
+            comparisons.write_text("comparison\tcond1\tcond2\n", encoding="utf-8")
+            samples.write_text(
+                f"sample\tcondition\tbam\tpeaks\nsample\tA\t{bam}\t{peaks}\n",
+                encoding="utf-8",
+            )
+            base = {
+                "tool": "bulk-footprinting",
+                "comparison_table": str(comparisons),
+                "genome": str(genome),
+                "outdir": str(root / "results"),
+            }
+            aligned = {"samples": [{**base, "sample_table": str(samples)}], "comparisons": []}
+            raw = {"samples": [{**base, "reads_table": "reads.tsv"}], "comparisons": []}
+            raw_extra = {
+                "samples": [
+                    {**base, "sample_table": str(samples), "extra_args": ["--reads-table=reads.tsv"]}
+                ],
+                "comparisons": [],
+            }
+            self.assertEqual(validate_gui_config(aligned), [])
+            self.assertTrue(any("GUI bulk workflows" in error for error in validate_gui_config(raw)))
+            self.assertTrue(any("GUI bulk workflows" in error for error in validate_gui_config(raw_extra)))
+
+    def test_gui_rejects_prepare_atac_even_on_linux(self):
+        config = {
+            "samples": [
+                {
+                    "tool": "prepare-atac",
+                    "samples": "reads.tsv",
+                    "genome": "hg38",
+                    "outdir": "project",
+                }
+            ],
+            "comparisons": [],
+        }
+        self.assertTrue(any("GUI starts from BAM/BAI" in error for error in validate_gui_config(config)))
+
+    def test_gui_rejects_invalid_enum_values_loaded_from_yaml(self):
+        config = {
+            "samples": [
+                {
+                    "tool": "bulk-footprinting",
+                    "sample_table": "missing.tsv",
+                    "comparison_table": "missing-comparisons.tsv",
+                    "genome": "missing.fa",
+                    "outdir": "results",
+                    "review_format": "not-a-format",
+                    "plot_aggregate": "not-a-mode",
+                    "normalization": "not-a-normalization",
+                }
+            ],
+            "comparisons": [],
+        }
+        errors = validate_gui_config(config)
+        self.assertTrue(any("unsupported 'review_format'" in error for error in errors))
+        self.assertTrue(any("unsupported 'plot_aggregate'" in error for error in errors))
+        self.assertTrue(any("unsupported 'normalization'" in error for error in errors))
+
+    def test_gui_requires_motif_summary_input(self):
+        config = {
+            "samples": [
+                {
+                    "tool": "summarize-motifs",
+                    "meme_txt": "",
+                    "tomtom_tsv": "",
+                    "out_tsv": "summary.tsv",
+                }
+            ],
+            "comparisons": [],
+        }
+        self.assertTrue(any("provide 'meme_txt' or 'tomtom_tsv'" in error for error in validate_gui_config(config)))
 
     def test_region_comparison_yaml_does_not_require_peaks(self):
         config = {

@@ -1,0 +1,15 @@
+version: 1
+run_mode: single
+defaults: {}
+samples:
+  - sample_id: bulk_footprinting_bam
+    tool: bulk-footprinting
+    sample_table: docs/demos/data/encode/encode_hepg2_k562_bams.tsv
+    comparison_table: docs/demos/data/encode/encode_hepg2_k562_comparisons.tsv
+    genome: hg38.fa.gz
+    blacklist: hg38.blacklist.bed
+    motif_db: jaspar2026_vertebrates
+    outdir: examples/gui_demo_outputs/bulk_footprinting
+    cores: 4
+    dry_run: true
+comparisons: []

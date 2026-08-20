@@ -9,8 +9,8 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 
 | Command | Purpose |
 | --- | --- |
-| [`prepare-atac`](#prepare-atac) | Download public ATAC-seq reads or use local FASTQ files, then trim, align, filter, call peaks, calculate alignment coverage, and write QC files. Use this command when the analysis starts from reads; skip it when filtered BAM and peak files already exist. The default runtime downloads its pinned external tools on first use. |
-| [`bulk-footprinting`](#bulk-footprinting) | Run bulk ATAC-seq from raw reads or aligned inputs through interactive reports. |
+| [`prepare-atac`](#prepare-atac) | **Linux CLI or Linux container only.** Download public ATAC-seq reads or use local FASTQ files, then trim, align, filter, call peaks, calculate alignment coverage, and write QC files. The GUI and native macOS/Windows installations start from filtered BAM/BAI and peak BED files. |
+| [`bulk-footprinting`](#bulk-footprinting) | Run bulk ATAC-seq from BAM/BAI and peak BED inputs through interactive reports. |
 | [`atac-correct`](#atac-correct) | Estimate Tn5 sequence bias from aligned ATAC-seq fragments and subtract the expected bias contribution from the observed cut-site signal. Run this before footprint scoring. |
 | [`call-footprints`](#call-footprints) | Calculate a continuous footprint score from bias-corrected cut-site signal within accessible regions. Higher local depletion relative to flanking signal produces stronger footprint evidence. |
 | [`match-motifs`](#match-motifs) | Scan accessible regions for motif instances, measure the footprint score at each instance, and classify sample-specific bound and unbound sites. Run this when motif locations and per-sample motif summaries are needed. |
@@ -20,7 +20,7 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 | [`review-multi-comparisons`](#review-multi-comparisons) | Combine differential-footprint reports as a scalable browser bundle or one self-contained HTML report. |
 | [`run-yaml-workflow`](#run-yaml-workflow) | Run one or more fp-tools jobs from a reusable YAML configuration. |
 | [`fp-tools-gui`](#fp-tools-gui) | Launch the browser interface for configuring and running fp-tools commands. |
-| [`fp-tools-runtime`](#fp-tools-runtime) | Inspect, install, or repair the managed external-tool runtime used by raw-read and de novo motif workflows. |
+| [`fp-tools-runtime`](#fp-tools-runtime) | Inspect, install, or repair the private external-tool runtime. Linux provides raw-read and de novo motif components; macOS and Windows provide the optional de novo motif component. |
 | [`discover-motifs`](#discover-motifs) | Prepare or run de novo motif discovery from candidate footprint intervals or an existing FASTA file. |
 | [`summarize-motifs`](#summarize-motifs) | Summarize MEME, STREME, DREME, and Tomtom results in a compact report. |
 | [`pseudobulk-fragments`](#pseudobulk-fragments) | Group single-cell ATAC fragments by a cell-annotation column to create pseudobulk inputs. |
@@ -31,11 +31,10 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 
 <div class="fp-api-card" markdown="1">
 
-Download public ATAC-seq reads or use local FASTQ files, then trim, align,
-filter, call peaks, calculate alignment coverage, and write QC files. Use this
-command when the analysis starts from reads; skip it when filtered BAM and peak
-files already exist. The default runtime downloads its pinned external tools
-on first use.
+**Linux CLI or Linux container only.** Download public ATAC-seq reads or use
+local FASTQ files, then trim, align, filter, call peaks, calculate alignment
+coverage, and write QC files. The GUI and native macOS/Windows installations
+start from filtered BAM/BAI and peak BED files.
 
 **Example command**
 
@@ -45,7 +44,7 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 
 **Primary inputs**
 
-- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [ENCODE and local examples](get-started/workflows/bulk-atac-seq.md#start-from-fastq-files).
+- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [ENCODE and local examples](get-started/workflows/bulk-atac-seq.md#optional-fastq-preparation-on-linux).
 - `--genome` — packaged `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.
 
@@ -163,23 +162,23 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Run bulk ATAC-seq from raw reads or aligned inputs through interactive reports.
+Run bulk ATAC-seq from BAM/BAI and peak BED inputs through interactive reports.
 
 The [bulk workflow guide](get-started/workflows/bulk-atac-seq.md) provides a runnable
-six-sample ENCODE design and the complete seven-cell-line tables.
+HepG2-versus-K562 ENCODE example.
 
 **Example command**
 
 ```bash
-bulk-footprinting --reads-table reads.tsv --comparison-table comparisons.tsv --genome hg38 \
+bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv --genome hg38.fa.gz \
   --outdir project --cores 8
 ```
 
 **Primary inputs**
 
-- `--reads-table` — sample, condition, and local FASTQ or public run-accession columns.
+- `--sample-table` — sample, condition, coordinate-sorted BAM, and peak BED columns.
 - `--comparison-table` — comparison, condition 1, and condition 2 columns.
-- `--genome` — `hg38`, `mm10`, or a custom genome label.
+- `--genome` — reference FASTA matching the BAM and peak coordinates.
 - `--outdir` — project output directory.
 - `--cores` — total worker cores.
 
@@ -200,10 +199,9 @@ bulk-footprinting --reads-table reads.tsv --comparison-table comparisons.tsv --g
 | `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for the workflow stages. |
 | `{project}/logs/bulk_footprinting/{stage}.stdout.log` and `{stage}.stderr.log` | Stage-specific logs for troubleshooting. |
 
-Use `--sample-table` instead of `--reads-table` to start from prepared BAM and
-peak files. `--runtime auto` downloads the pinned external tools only when raw
-reads require them. `--runtime system` and `--runtime container` are optional
-advanced backends.
+Linux CLI and Linux container users may instead use `--reads-table` for FASTQ
+or public-run preprocessing. This option and its associated preparation flags
+are unavailable in the GUI and native macOS/Windows installations.
 
 **Complete options**
 
@@ -233,8 +231,9 @@ options:
   --sample-table SAMPLE_TABLE
                         TSV with sample, condition, BAM, and peak BED columns.
   --reads-table READS_TABLE
-                        TSV/CSV with local FASTQ paths or public run
-                        accessions; runs preparation before footprinting.
+                        Linux CLI/container only: TSV/CSV with local FASTQ
+                        paths or public run accessions; runs preparation
+                        before footprinting.
   --comparison-table COMPARISON_TABLE
                         TSV with comparison, cond1, and cond2 columns.
   --genome GENOME       Reference FASTA for aligned input, or hg38/mm10/custom
@@ -1543,6 +1542,10 @@ options:
 
 Launch the browser interface for configuring and running fp-tools commands.
 
+Bulk GUI workflows start from coordinate-sorted BAM/BAI files and matching
+peak BED files. The GUI does not perform FASTQ-to-BAM preprocessing.
+Missing inputs and unsupported options are reported before a run starts.
+
 The GUI is available through the Python package, the complete container, and
 the self-contained desktop downloads on the
 [release page](https://github.com/oncologylab/fp-tools/releases).
@@ -1615,8 +1618,9 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Inspect, install, or repair the private external-tool runtime used by raw-read
-and de novo motif workflows.
+Inspect, install, or repair the private external-tool runtime. Linux provides
+raw-read and de novo motif components; macOS and Windows provide the optional
+de novo motif component.
 
 **Example command**
 
@@ -1631,8 +1635,9 @@ The `status` action takes no input files.
 **Main outputs**
 
 The command reports each runtime component, platform, installation state, and
-cache location. `install core` prepares raw-read tools; MEME Suite and HOMER
-components are installed only when requested by their workflows.
+cache location. `install core` and `install homer` are Linux-only raw-read
+components. The MEME Suite component is installed only when requested by de
+novo motif discovery.
 
 **Complete options**
 

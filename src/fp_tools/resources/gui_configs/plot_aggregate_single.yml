@@ -1,0 +1,16 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: plot_aggregate_single
+    tool: plot-aggregate
+    TFBS:
+      - examples/plotaggregate_tfbs_dir/BATF_all.bed
+      - examples/plotaggregate_tfbs_dir/IRF1_all.bed
+    signals:
+      - test_data/Bcell_corrected.bw
+      - test_data/Tcell_corrected.bw
+    output: examples/gui_demo_outputs/plot_aggregate_single/plot_aggregate.pdf
+    output_aggregated_scores: examples/gui_demo_outputs/plot_aggregate_single/plotaggregate_scores.csv
+    output_aggregated_signals: examples/gui_demo_outputs/plot_aggregate_single/plotaggregate_signals.csv
+    grid: 2x2
+comparisons: []

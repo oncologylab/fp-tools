@@ -1,9 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 """Cross-platform one-file fp-tools GUI bundle."""
 
+from importlib.util import find_spec
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_all, copy_metadata
+from PyInstaller.utils.hooks import collect_all, collect_data_files, copy_metadata
 
 
 root = Path.cwd().resolve()
@@ -18,6 +19,26 @@ for package in ("fp_tools", "streamlit"):
     datas += package_data
     binaries += package_binaries
     hiddenimports += package_hidden
+
+# Cython modules are imported lazily by several command targets. Resolve their
+# installed extension files explicitly so one-file bundles cannot silently
+# fall back to the source-only package tree.
+for module in (
+    "fp_tools.utils.sequences",
+    "fp_tools.utils.ngs",
+    "fp_tools.utils.signals",
+):
+    module_spec = find_spec(module)
+    if module_spec is None or not module_spec.origin:
+        raise RuntimeError(f"Desktop build is missing compiled extension {module}")
+    binaries.append((module_spec.origin, "fp_tools/utils"))
+    hiddenimports.append(module)
+
+# Windows uses bamnostic in place of pysam. bamnostic reads its version from a
+# package-data file during import, including for command --help.
+if find_spec("bamnostic") is not None:
+    datas += collect_data_files("bamnostic")
+    hiddenimports.append("bamnostic")
 
 for distribution in ("fp-tools-bio", "streamlit"):
     datas += copy_metadata(distribution, recursive=True)
@@ -41,6 +62,8 @@ analysis = Analysis(
     hookspath=[],
     runtime_hooks=[],
     excludes=[
+        "fp_tools.tools.prepare_atac",
+        "fp_tools.tools.prepare_atac_legacy",
         "pytest",
         "sphinx",
         "mkdocs",

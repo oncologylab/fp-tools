@@ -1,22 +1,22 @@
 # [`bulk-footprinting`](../../api.md#bulk-footprinting)
 
-Run bulk ATAC-seq from raw reads or aligned inputs through interactive reports.
+Run bulk ATAC-seq from BAM/BAI and peak BED inputs through interactive reports.
 
 The [bulk workflow guide](../workflows/bulk-atac-seq.md) provides a runnable
-HepG2-versus-K562 ENCODE example from FASTQ or aligned inputs.
+HepG2-versus-K562 ENCODE example.
 
 ## Example command
 
 ```bash
-bulk-footprinting --reads-table reads.tsv --comparison-table comparisons.tsv --genome hg38 \
+bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv --genome hg38.fa.gz \
   --outdir project --cores 8
 ```
 
 ## Primary inputs
 
-- `--reads-table` — sample, condition, and local FASTQ or public run-accession columns.
+- `--sample-table` — sample, condition, coordinate-sorted BAM, and peak BED columns.
 - `--comparison-table` — comparison, condition 1, and condition 2 columns.
-- `--genome` — `hg38`, `mm10`, or a custom genome label.
+- `--genome` — reference FASTA matching the BAM and peak coordinates.
 - `--outdir` — project output directory.
 - `--cores` — total worker cores.
 
@@ -37,7 +37,6 @@ bulk-footprinting --reads-table reads.tsv --comparison-table comparisons.tsv --g
 | `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for the workflow stages. |
 | `{project}/logs/bulk_footprinting/{stage}.stdout.log` and `{stage}.stderr.log` | Stage-specific logs for troubleshooting. |
 
-Use `--sample-table` instead of `--reads-table` to start from prepared BAM and
-peak files. `--runtime auto` downloads the pinned external tools only when raw
-reads require them. `--runtime system` and `--runtime container` are optional
-advanced backends.
+Linux CLI and Linux container users may instead use `--reads-table` for FASTQ
+or public-run preprocessing. This option and its associated preparation flags
+are unavailable in the GUI and native macOS/Windows installations.

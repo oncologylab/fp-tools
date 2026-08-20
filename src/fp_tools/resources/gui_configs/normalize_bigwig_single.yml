@@ -1,0 +1,14 @@
+version: 1
+run_mode: single
+samples:
+  - sample_id: normalize_bigwig_demo
+    tool: normalize-bigwig
+    bigwigs:
+      - test_data/Bcell_corrected.bw
+      - test_data/Tcell_corrected.bw
+    background: test_data/merged_peaks.bed
+    outdir: examples/gui_demo_outputs/normalize_bigwig
+    method: background-scale
+    stat: q95
+    target: median
+comparisons: []
