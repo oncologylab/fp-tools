@@ -2,6 +2,10 @@
 
 Launch the browser interface for configuring and running fp-tools commands.
 
+The GUI is available through the Python package, the complete container, and
+the self-contained desktop downloads on the
+[release page](https://github.com/oncologylab/fp-tools/releases/latest).
+
 ## Example command
 
 ```bash
@@ -30,8 +34,8 @@ Open the [GUI Demo](../../gui.md), or see the
 
 ## Local computer
 
-Run `fp-tools-gui`. A browser opens after the server is ready. If it does not,
-open the local URL printed in the terminal.
+Open the desktop executable or run `fp-tools-gui`. A browser opens after the
+server is ready. If it does not, open the local URL printed in the terminal.
 
 ## Remote Linux server
 

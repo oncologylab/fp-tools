@@ -84,6 +84,16 @@ python -m venv /tmp/fp-tools-pypi-smoke
 /tmp/fp-tools-pypi-smoke/bin/fp-tools-gui --help >/dev/null
 ```
 
+The `Desktop bundles` workflow must produce and smoke-test Windows x64, macOS
+Intel, macOS Apple Silicon, Linux x64, and Linux ARM64 executables. Its live
+health check verifies that the bundled Streamlit application starts, and its
+command check verifies frozen child-process dispatch. Release assets include a
+SHA-256 checksum manifest.
+
+The `Container` workflow builds and tests the complete environment, then
+publishes `linux/amd64` and `linux/arm64` images to
+`ghcr.io/oncologylab/fp-tools` for tagged releases.
+
 The manual GitHub Actions `Publish` workflow uses the repository
 `PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or
 committed files. Rotate any token that was exposed outside a secret manager.

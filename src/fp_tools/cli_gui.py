@@ -18,13 +18,13 @@ from pathlib import Path
 from fp_tools.gui_jobs import default_gui_run_dir
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Launch the fp-tools browser interface.")
     parser.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1).")
     parser.add_argument("--port", type=int, default=None, help="Optional fixed port (default: first free port from 8891).")
     parser.add_argument("--run-dir", default=str(default_gui_run_dir()), help="Directory for GUI-managed runs.")
     parser.add_argument("--no-browser", action="store_true", help="Do not open a local browser automatically.")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if importlib.util.find_spec("streamlit") is None:
         raise SystemExit("Streamlit is missing. Reinstall with: python -m pip install --upgrade fp-tools-bio")
@@ -42,23 +42,44 @@ def main() -> None:
     app_path = Path(__file__).with_name("gui_app.py")
     env = os.environ.copy()
     env["FP_TOOLS_GUI_RUN_DIR"] = str(Path(args.run_dir).expanduser())
-    command = [
-        sys.executable,
-        "-m",
-        "streamlit",
-        "run",
-        str(app_path),
-        "--server.address",
-        args.host,
-        "--server.port",
-        str(port),
-        "--server.headless",
-        "true",
-        "--browser.gatherUsageStats",
-        "false",
-    ]
     try:
-        return_code = subprocess.run(command, env=env).returncode
+        if getattr(sys, "frozen", False):
+            os.environ["STREAMLIT_GLOBAL_DEVELOPMENT_MODE"] = "false"
+            from streamlit.web import bootstrap
+
+            os.environ.update(env)
+            flag_options = {
+                "global_developmentMode": False,
+                "server_address": args.host,
+                "server_port": port,
+                "server_headless": True,
+                "browser_gatherUsageStats": False,
+            }
+            bootstrap.load_config_options(flag_options)
+            bootstrap.run(
+                str(app_path),
+                False,
+                [],
+                flag_options,
+            )
+            return_code = 0
+        else:
+            command = [
+                sys.executable,
+                "-m",
+                "streamlit",
+                "run",
+                str(app_path),
+                "--server.address",
+                args.host,
+                "--server.port",
+                str(port),
+                "--server.headless",
+                "true",
+                "--browser.gatherUsageStats",
+                "false",
+            ]
+            return_code = subprocess.run(command, env=env).returncode
     except KeyboardInterrupt:
         return_code = 130
     raise SystemExit(return_code)

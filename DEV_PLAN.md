@@ -38,6 +38,11 @@ a separately planned breaking release explicitly changes the contract.
 - Streamlit GUI whose saved YAML runs through `run-yaml-workflow`.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
   PyPI publication.
+- A complete amd64/arm64 container with the external genomics toolchain and a
+  browser GUI as its default entry point.
+- Self-contained GUI executables for Windows x64, macOS Intel and Apple
+  Silicon, and Linux x64 and ARM64, with frozen-safe command and workflow
+  dispatch.
 - Branded GitHub and MkDocs presentation with responsive embedded report and
   GUI demos plus automated desktop/mobile browser audits.
 - A manifest-pinned, storage-conscious ENCODE workflow for 17 biological
@@ -80,9 +85,10 @@ a separately planned breaking release explicitly changes the contract.
 8. Keep region-set examples outcome-independent: define groups from external
    annotations, match baseline signal before testing, report all motifs, and
    use explicit display motifs only to configure the initial browser view.
-9. Maintain binary-wheel installation and scientific I/O parity on Windows,
-   macOS, and Linux for Python 3.11–3.13. Raw FASTQ preparation and external
-   MEME programs remain explicit system-tool integrations.
+9. Maintain binary-wheel and desktop-bundle installation and scientific I/O
+   parity on Windows, macOS, and Linux. Keep the complete multi-architecture
+   container as the one-command route for raw FASTQ preparation and external
+   MEME programs.
 
 ## Deferred or Experimental Work
 

@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -20,13 +19,7 @@ from fp_tools.utils.project_layout import (
     read_comparison_table,
     read_sample_table,
 )
-
-
-def _resolve_executable(name: str) -> str:
-    local = Path(sys.executable).parent / name
-    if local.exists():
-        return str(local)
-    return shutil.which(name) or name
+from fp_tools.utils.subprocess_commands import resolve_fp_tools_subprocess
 
 
 def _quote(command: list[str]) -> str:
@@ -34,8 +27,7 @@ def _quote(command: list[str]) -> str:
 
 
 def _run(command: list[str], stdout_path: Path, stderr_path: Path) -> int:
-    resolved = list(command)
-    resolved[0] = _resolve_executable(resolved[0])
+    resolved = resolve_fp_tools_subprocess(command)
     env = os.environ.copy()
     env.setdefault("MPLCONFIGDIR", str(stdout_path.parent / ".mplconfig"))
     env.setdefault("XDG_CACHE_HOME", str(stdout_path.parent / ".cache"))

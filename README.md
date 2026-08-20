@@ -25,14 +25,23 @@ footprint signatures. The GUI and YAML runner call the same commands.
 
 ## Install
 
+Choose one route:
+
+| Route | Best for | Start |
+| --- | --- | --- |
+| Desktop executable | GUI without Python | [Download for Windows, macOS, or Linux](https://github.com/oncologylab/fp-tools/releases/latest) |
+| Complete container | GUI plus raw-read and motif-discovery programs | `docker run --rm -p 8891:8891 ghcr.io/oncologylab/fp-tools:latest` |
+| Python package | Direct commands in an existing Python environment | `python -m pip install fp-tools-bio` |
+
+Python package example:
+
 ```bash
 python -m pip install fp-tools-bio
 fp-tools-gui
 ```
 
-Python 3.11–3.13 is supported on Windows, macOS, and Linux. Core analysis and
-the GUI install from wheels; raw FASTQ preprocessing uses standard external
-bioinformatics tools (WSL on Windows).
+Python 3.11–3.13 is supported on Windows, macOS, and Linux. The container is
+the complete environment for raw FASTQ processing and external MEME tools.
 
 ## Bulk ATAC-seq
 
