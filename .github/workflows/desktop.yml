@@ -28,17 +28,8 @@ jobs:
           - os: windows-latest
             label: windows-x64
             executable: dist/fp-tools-gui.exe
-          - os: macos-15-intel
-            label: macos-intel
-            executable: dist/fp-tools-gui
           - os: macos-15
             label: macos-apple-silicon
-            executable: dist/fp-tools-gui
-          - os: ubuntu-22.04
-            label: linux-x64
-            executable: dist/fp-tools-gui
-          - os: ubuntu-24.04-arm
-            label: linux-arm64
             executable: dist/fp-tools-gui
     steps:
       - uses: actions/checkout@v7

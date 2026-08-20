@@ -18,22 +18,10 @@ the GUI. Python does not need to be installed.
     Download `fp-tools-gui-macos-apple-silicon.tar.gz`, extract it, and open
     `fp-tools-gui`.
 
-=== "macOS Intel"
-
-    Download `fp-tools-gui-macos-intel.tar.gz`, extract it, and open
-    `fp-tools-gui`.
-
-=== "Linux x64 / ARM64"
-
-    Download the matching `fp-tools-gui-linux-*.tar.gz`, extract it, and run:
-
-    ```bash
-    ./fp-tools-gui
-    ```
-
 The desktop executable covers the GUI and native fp-tools analyses from BAM,
 fragment, bigWig, BED, and motif inputs. Use the complete container when a run
-also needs raw-read programs or MEME Suite.
+also needs raw-read programs or MEME Suite. Linux and macOS Intel users should
+use the Python package below.
 
 ## Complete container
 
@@ -127,11 +115,12 @@ See the [API Reference](../api.md) for complete command options.
 
 ## Platform support
 
-| Platform | Desktop / Python | Complete container |
-| --- | --- | --- |
-| Windows 10/11 x64 | Native | Docker Desktop |
-| macOS Intel/Apple Silicon | Native | Docker Desktop |
-| Linux x86_64/ARM64 | Native | Docker Engine |
+| Platform | Desktop executable | Python package | Complete container |
+| --- | --- | --- | --- |
+| Windows 10/11 x64 | Available | Available | Docker Desktop |
+| macOS Apple Silicon | Available | Available | Docker Desktop |
+| macOS Intel | — | Available | Docker Desktop |
+| Linux x86_64/ARM64 | — | Available | Docker Engine |
 
 `prepare-atac` orchestrates tools such as Bowtie 2, SAMtools, BEDTools, fastp,
 and MACS3. De novo discovery can call STREME and Tomtom. The complete container

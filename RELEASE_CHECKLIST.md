@@ -84,11 +84,11 @@ python -m venv /tmp/fp-tools-pypi-smoke
 /tmp/fp-tools-pypi-smoke/bin/fp-tools-gui --help >/dev/null
 ```
 
-The `Desktop bundles` workflow must produce and smoke-test Windows x64, macOS
-Intel, macOS Apple Silicon, Linux x64, and Linux ARM64 executables. Its live
-health check verifies that the bundled Streamlit application starts, and its
-command check verifies frozen child-process dispatch. Release assets include a
-SHA-256 checksum manifest.
+The `Desktop bundles` workflow must produce and smoke-test Windows x64 and
+macOS Apple Silicon executables. Its live health check verifies that the
+bundled Streamlit application starts, and its command check verifies frozen
+child-process dispatch. Release assets include a SHA-256 checksum manifest.
+macOS Intel and Linux users install the Python package instead.
 
 The `Container` workflow builds and tests the complete environment, then
 publishes `linux/amd64` and `linux/arm64` images to
