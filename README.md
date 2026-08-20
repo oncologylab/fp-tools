@@ -29,14 +29,14 @@ Choose one route:
 
 | Route | Best for | Start |
 | --- | --- | --- |
-| Desktop executable | GUI without Python | [Download for Windows, macOS, or Linux](https://github.com/oncologylab/fp-tools/releases/latest) |
+| Desktop executable | GUI without Python | [Download for Windows, macOS, or Linux](https://github.com/oncologylab/fp-tools/releases) |
 | Complete container | GUI plus raw-read and motif-discovery programs | `docker run --rm -p 8891:8891 ghcr.io/oncologylab/fp-tools:latest` |
 | Python package | Direct commands in an existing Python environment | `python -m pip install fp-tools-bio` |
 
 Python package example:
 
 ```bash
-python -m pip install fp-tools-bio
+python -m pip install --pre fp-tools-bio
 fp-tools-gui
 ```
 

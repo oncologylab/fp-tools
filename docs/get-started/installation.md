@@ -10,7 +10,7 @@ the GUI. Python does not need to be installed.
 === "Windows"
 
     Download `fp-tools-gui-windows-x64.exe` from the
-    [latest release](https://github.com/oncologylab/fp-tools/releases/latest),
+    [release page](https://github.com/oncologylab/fp-tools/releases),
     then open it.
 
 === "macOS Apple Silicon"
@@ -71,13 +71,13 @@ docker run --rm -v "$PWD:/work" ghcr.io/oncologylab/fp-tools:latest atac-correct
 === "Windows PowerShell"
 
     ```powershell
-    py -m pip install --upgrade fp-tools-bio
+    py -m pip install --upgrade --pre fp-tools-bio
     ```
 
 === "macOS / Linux"
 
     ```bash
-    python3 -m pip install --upgrade fp-tools-bio
+    python3 -m pip install --upgrade --pre fp-tools-bio
     ```
 
 Confirm that the commands are available:

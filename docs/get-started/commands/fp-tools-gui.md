@@ -4,7 +4,7 @@ Launch the browser interface for configuring and running fp-tools commands.
 
 The GUI is available through the Python package, the complete container, and
 the self-contained desktop downloads on the
-[release page](https://github.com/oncologylab/fp-tools/releases/latest).
+[release page](https://github.com/oncologylab/fp-tools/releases).
 
 ## Example command
 
