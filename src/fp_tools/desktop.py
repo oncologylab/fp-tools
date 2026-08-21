@@ -13,6 +13,8 @@ INTERNAL_MATCH_BEDS_FLAG = "--fp-tools-internal-match-beds"
 INTERNAL_PYTHON_SCRIPT_FLAG = "--fp-tools-internal-python-script"
 INTERNAL_LIST_EXAMPLES_FLAG = "--fp-tools-internal-list-gui-examples"
 INTERNAL_SMOKE_HELPS_FLAG = "--fp-tools-internal-smoke-command-helps"
+INTERNAL_GUI_SERVER_FLAG = "--fp-tools-internal-gui-server"
+INTERNAL_NATIVE_SMOKE_FLAG = "--fp-tools-internal-native-window-smoke"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -64,10 +66,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             sys.argv = previous
         return 0
 
-    from fp_tools.cli_gui import main as gui_main
+    if arguments and arguments[0] == INTERNAL_GUI_SERVER_FLAG:
+        from fp_tools.cli_gui import main as gui_main
 
-    gui_main(arguments)
-    return 0
+        gui_main([*arguments[1:], "--no-browser"])
+        return 0
+
+    from fp_tools.desktop_window import DesktopLaunchError, launch_native_gui, show_desktop_error
+
+    auto_close = bool(arguments and arguments[0] == INTERNAL_NATIVE_SMOKE_FLAG)
+    if auto_close:
+        arguments = arguments[1:]
+    try:
+        return launch_native_gui(arguments, auto_close=auto_close)
+    except DesktopLaunchError as exc:
+        return show_desktop_error(str(exc))
 
 
 if __name__ == "__main__":

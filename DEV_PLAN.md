@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-20
+Last updated: 2026-08-21
 
 ## Current Baseline
 
@@ -56,15 +56,24 @@ a separately planned breaking release explicitly changes the contract.
 - A complete amd64/arm64 container with the external genomics toolchain and a
   browser GUI as its default entry point.
 - BAM-first self-contained GUI executables for Windows x64 and Apple Silicon,
-  with frozen-safe command and workflow dispatch. Every GUI starts from BAM/BAI
-  plus peak BED files. Linux and Intel macOS use the Python package; the
-  complete container remains available on amd64 and arm64.
+  with branded operating-system icons, a bundled native application window,
+  and frozen-safe command and workflow dispatch. Every GUI starts from BAM/BAI
+  plus peak BED files. Linux and Intel macOS use the browser-based Python
+  package; the complete container remains available on amd64 and arm64.
+- The Apple Silicon download remains an explicitly unsigned preview. Its DMG
+  includes the same one-line quarantine-removal instruction shown on the
+  installation page, and CI verifies the ad-hoc bundle signature, ARM64
+  executable, DMG contents, quarantine removal, and native-window launch.
 - Branded GitHub and MkDocs presentation with responsive embedded report and
   GUI demos plus automated desktop/mobile browser audits.
 - Responsive GUI validation output with contained long paths and locally
   scrolling YAML previews, verified in the native Windows and macOS audits.
+  Path messages use forced cross-platform line breaking, and failed desktop
+  audits retain screenshots as CI artifacts for diagnosis.
 - Browser-verified plot controls and SVG exports for aggregate and
   aggregate-free reports, including explicit subplot-bound checks.
+- Command-aware logging across shared analysis engines, so `match-motifs` and
+  `diff-footprints` retain their public names in direct and wrapper-run logs.
 - A manifest-pinned, storage-conscious ENCODE workflow for 17 biological
   replicates from seven cancer cell lines. Its resumable runner uses a
   pair-specific union of released IDR-thresholded peaks, peak-q95 scaling, and

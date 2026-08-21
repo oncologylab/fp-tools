@@ -2,8 +2,13 @@ import json
 import pathlib
 import subprocess
 import sys
+import tempfile
 import tomllib
 import unittest
+
+from PIL import Image
+
+from scripts.build_desktop_icons import build_icons
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -38,6 +43,49 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertIn(f"<string>{version}</string>", info_plist)
         example = (ROOT / "examples/nutrient_stress_project/run_ctrl_vs_10fbs.sh").read_text(encoding="utf-8")
         self.assertIn(f'VERSION="${{FP_TOOLS_VERSION:-{version}}}"', example)
+
+    def test_desktop_bundles_have_branded_native_window_assets(self):
+        info_plist = (ROOT / "packaging/desktop/Info.plist").read_text(encoding="utf-8")
+        self.assertIn("<key>CFBundleIconFile</key><string>fp-tools.icns</string>", info_plist)
+
+        spec = (ROOT / "packaging/desktop/fp-tools-gui.spec").read_text(encoding="utf-8")
+        self.assertIn('icon=str(icon_path)', spec)
+        self.assertIn('hide_console="hide-early"', spec)
+        self.assertIn("fp_tools_logo_icon_1024.png", spec)
+
+        workflow = (ROOT / ".github/workflows/desktop.yml").read_text(encoding="utf-8")
+        self.assertIn("scripts/build_desktop_icons.py", workflow)
+        self.assertIn("PySide6", workflow)
+        self.assertIn("Contents/Resources/fp-tools.icns", workflow)
+        self.assertIn("codesign --verify --deep --strict", workflow)
+        self.assertIn("lipo -archs", workflow)
+        self.assertIn("xattr -dr com.apple.quarantine", workflow)
+        self.assertIn('hdiutil verify "${dmg}"', workflow)
+        self.assertIn("OPEN-FIRST-macOS.txt", workflow)
+
+        first_launch = (ROOT / "packaging/desktop/OPEN-FIRST-macOS.txt").read_text(
+            encoding="utf-8"
+        )
+        instruction = (
+            "xattr -dr com.apple.quarantine /Applications/fp-tools.app "
+            "&& open /Applications/fp-tools.app"
+        )
+        self.assertIn(instruction, first_launch)
+        installation = (ROOT / "docs/get-started/installation.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(instruction, installation)
+
+        with tempfile.TemporaryDirectory() as directory:
+            ico_path, icns_path = build_icons(
+                ROOT / "docs/assets/fp_tools_logo_icon_1024.png",
+                pathlib.Path(directory),
+            )
+            with Image.open(ico_path) as icon:
+                self.assertIn((16, 16), icon.ico.sizes())
+                self.assertIn((256, 256), icon.ico.sizes())
+            with Image.open(icns_path) as icon:
+                self.assertEqual(icon.size, (1024, 1024))
 
     def test_release_checklist_documents_required_gates(self):
         checklist = (ROOT / "RELEASE_CHECKLIST.md").read_text(encoding="utf-8")

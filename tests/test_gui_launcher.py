@@ -6,7 +6,13 @@ from unittest.mock import MagicMock, patch
 
 from fp_tools import gui_app
 from fp_tools.command_registry import COMMAND_TARGETS, dispatch_command
-from fp_tools.desktop import INTERNAL_LIST_EXAMPLES_FLAG, main as desktop_main
+from fp_tools.desktop import (
+    INTERNAL_GUI_SERVER_FLAG,
+    INTERNAL_LIST_EXAMPLES_FLAG,
+    INTERNAL_NATIVE_SMOKE_FLAG,
+    main as desktop_main,
+)
+from fp_tools.desktop_window import DesktopLaunchError, _parse_desktop_args, _server_command
 from fp_tools.gui_app import (
     GENERIC_TOOL_DEFAULTS,
     _all_example_files,
@@ -23,6 +29,36 @@ from fp_tools.utils.subprocess_commands import (
 
 
 class GuiLauncherTests(unittest.TestCase):
+    def test_desktop_default_opens_native_window(self):
+        with patch("fp_tools.desktop_window.launch_native_gui", return_value=0) as launch:
+            self.assertEqual(desktop_main(["--run-dir", "runs"]), 0)
+        launch.assert_called_once_with(["--run-dir", "runs"], auto_close=False)
+
+    def test_desktop_native_smoke_uses_auto_close(self):
+        with patch("fp_tools.desktop_window.launch_native_gui", return_value=0) as launch:
+            self.assertEqual(
+                desktop_main([INTERNAL_NATIVE_SMOKE_FLAG, "--run-dir", "runs"]),
+                0,
+            )
+        launch.assert_called_once_with(["--run-dir", "runs"], auto_close=True)
+
+    def test_desktop_internal_server_never_opens_browser(self):
+        with patch("fp_tools.cli_gui.main") as launch:
+            self.assertEqual(
+                desktop_main([INTERNAL_GUI_SERVER_FLAG, "--port", "8898"]),
+                0,
+            )
+        launch.assert_called_once_with(["--port", "8898", "--no-browser"])
+
+    def test_desktop_window_is_local_and_spawns_private_server(self):
+        args = _parse_desktop_args(["--port", "8899", "--run-dir", "runs"])
+        self.assertEqual(args.port, 8899)
+        command = _server_command(args.port, Path(args.run_dir))
+        self.assertEqual(command[1], INTERNAL_GUI_SERVER_FLAG)
+        self.assertIn("--no-browser", command)
+        with self.assertRaises(DesktopLaunchError):
+            _parse_desktop_args(["--host", "0.0.0.0"])
+
     def test_validation_error_markup_wraps_paths_and_escapes_html(self):
         markup = _validation_errors_markup(
             [
@@ -35,6 +71,13 @@ class GuiLauncherTests(unittest.TestCase):
         self.assertEqual(markup.count("<li>"), 2)
         self.assertIn("&lt;sample&gt; &amp; comparison", markup)
         self.assertNotIn("<sample>", markup)
+
+        fake_streamlit = MagicMock()
+        with patch.object(gui_app, "st", fake_streamlit):
+            gui_app._apply_page_style()
+        style = fake_streamlit.markdown.call_args.args[0]
+        self.assertIn("overflow-wrap: anywhere !important", style)
+        self.assertIn("word-break: break-all !important", style)
 
     def test_run_control_state_tracks_validation_and_keeps_launch_guard(self):
         normalized = {
