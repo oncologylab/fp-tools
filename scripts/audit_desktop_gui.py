@@ -246,9 +246,11 @@ def _audit_page(
         raise RuntimeError(f"{page_name} at {width}px has horizontal overflow")
     if page.locator("[data-testid='stException']").count():
         raise RuntimeError(f"{page_name} at {width}px rendered a Streamlit exception")
-    visible_labels = page.locator(
+    label_locator = page.locator(
         "[data-testid='stMain'] [data-testid='stWidgetLabel']"
-    ).evaluate_all(
+    )
+    label_locator.first.wait_for(state="visible", timeout=30_000)
+    visible_labels = label_locator.evaluate_all(
         """elements => elements.filter(element => {
           const text = (element.innerText || element.textContent || '').trim();
           const style = getComputedStyle(element);
