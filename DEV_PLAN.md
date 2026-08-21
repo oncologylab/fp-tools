@@ -68,6 +68,8 @@ a separately planned breaking release explicitly changes the contract.
   GUI demos plus automated desktop/mobile browser audits.
 - Responsive GUI validation output with contained long paths and locally
   scrolling YAML previews, verified in the native Windows and macOS audits.
+  Path messages use forced cross-platform line breaking, and failed desktop
+  audits retain screenshots as CI artifacts for diagnosis.
 - Browser-verified plot controls and SVG exports for aggregate and
   aggregate-free reports, including explicit subplot-bound checks.
 - Command-aware logging across shared analysis engines, so `match-motifs` and

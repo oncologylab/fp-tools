@@ -726,14 +726,17 @@ def _apply_page_style() -> None:
             margin: 0.35rem 0 0.55rem;
             padding-left: 1.2rem;
             white-space: normal;
+            overflow-x: hidden;
         }
-        .fp-validation-errors li {
+        .fp-validation-errors li,
+        .fp-validation-errors li * {
+            box-sizing: border-box;
             min-width: 0;
             max-width: 100%;
             margin: 0.24rem 0;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            white-space: normal;
+            overflow-wrap: anywhere !important;
+            word-break: break-all !important;
+            white-space: normal !important;
         }
         .fp-tutorial-panel {
             background: #eaf2ff;

@@ -72,6 +72,13 @@ class GuiLauncherTests(unittest.TestCase):
         self.assertIn("&lt;sample&gt; &amp; comparison", markup)
         self.assertNotIn("<sample>", markup)
 
+        fake_streamlit = MagicMock()
+        with patch.object(gui_app, "st", fake_streamlit):
+            gui_app._apply_page_style()
+        style = fake_streamlit.markdown.call_args.args[0]
+        self.assertIn("overflow-wrap: anywhere !important", style)
+        self.assertIn("word-break: break-all !important", style)
+
     def test_run_control_state_tracks_validation_and_keeps_launch_guard(self):
         normalized = {
             "version": 1,

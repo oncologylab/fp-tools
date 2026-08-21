@@ -52,6 +52,7 @@ jobs:
       - name: Audit responsive desktop GUI
         run: python scripts/audit_desktop_gui.py "${{ matrix.executable }}"
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: desktop-audit-${{ matrix.label }}
           path: desktop-gui-audit/*.png
