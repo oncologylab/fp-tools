@@ -566,8 +566,8 @@ def _audit_loaded_config_sync(
         ).first
         normalizer_loader.evaluate("element => { element.open = true; }")
         example_select = page.get_by_label("Example YAML", exact=True)
-        example_select.click()
-        page.get_by_text("normalize_bigwig_single.yml", exact=True).click()
+        example_select.click(force=True)
+        page.get_by_text("normalize_bigwig_single.yml", exact=True).click(force=True)
         page.get_by_role("button", name="Load example", exact=True).click(force=True)
         page.get_by_label("Background", exact=True).wait_for(timeout=30_000)
         if not page.get_by_label("Background", exact=True).input_value().strip():
