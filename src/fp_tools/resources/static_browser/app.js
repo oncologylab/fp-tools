@@ -1375,7 +1375,7 @@ function combinedPanelSvg() {
   volcano.querySelector("style")?.remove();
   if (!state.hasAggregates) {
     const totalWidth = rankDisplayWidth + volcanoSize + gap;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${panelHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/><g transform="scale(${rankScale})">${rank.innerHTML}</g><g transform="translate(${rankDisplayWidth + gap},0)">${volcano.innerHTML}</g></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${panelHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/><g data-export-cell="rank" data-source-width="${rankWidth}" data-source-height="${rankHeight}" data-cell-width="${rankDisplayWidth}" data-cell-height="${panelHeight}" data-scale="${rankScale}" transform="scale(${rankScale})">${rank.innerHTML}</g><g data-export-cell="volcano" data-source-width="${volcanoSize}" data-source-height="${volcanoSize}" data-cell-width="${volcanoSize}" data-cell-height="${panelHeight}" data-scale="1" transform="translate(${rankDisplayWidth + gap},0)">${volcano.innerHTML}</g></svg>`;
   }
   const aggregate = aggregateGridSvg(),
     aggregateDocument = new DOMParser().parseFromString(
@@ -1387,7 +1387,8 @@ function combinedPanelSvg() {
     aggregateWidth = (aggregateBox.width || 600) * aggregateScale,
     totalWidth = rankDisplayWidth + volcanoSize + aggregateWidth + gap * 2;
   aggregateDocument.querySelector("style")?.remove();
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${panelHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/><g transform="scale(${rankScale})">${rank.innerHTML}</g><g transform="translate(${rankDisplayWidth + gap},0)">${volcano.innerHTML}</g><g transform="translate(${rankDisplayWidth + volcanoSize + gap * 2},0) scale(${aggregateScale})">${aggregateDocument.innerHTML}</g></svg>`;
+  aggregateDocument.querySelector(":scope > rect")?.remove();
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${panelHeight}" font-family="Helvetica,Arial,sans-serif"><style>${plotSvgStyle}</style><rect width="100%" height="100%" fill="#fff"/><g data-export-cell="rank" data-source-width="${rankWidth}" data-source-height="${rankHeight}" data-cell-width="${rankDisplayWidth}" data-cell-height="${panelHeight}" data-scale="${rankScale}" transform="scale(${rankScale})">${rank.innerHTML}</g><g data-export-cell="volcano" data-source-width="${volcanoSize}" data-source-height="${volcanoSize}" data-cell-width="${volcanoSize}" data-cell-height="${panelHeight}" data-scale="1" transform="translate(${rankDisplayWidth + gap},0)">${volcano.innerHTML}</g><g data-export-cell="aggregate" data-source-width="${aggregateBox.width || 600}" data-source-height="${aggregateBox.height || 600}" data-cell-width="${aggregateWidth}" data-cell-height="${panelHeight}" data-scale="${aggregateScale}" transform="translate(${rankDisplayWidth + volcanoSize + gap * 2},0) scale(${aggregateScale})">${aggregateDocument.innerHTML}</g></svg>`;
 }
 
 function svgDimensions(svg) {

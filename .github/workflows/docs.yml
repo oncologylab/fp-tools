@@ -39,6 +39,9 @@ jobs:
         run: |
           mkdocs build --clean --strict
           python scripts/audit_docs.py --site-dir site
+          python scripts/audit_report_plot_controls.py \
+            --fixture-dir /tmp/fp-tools-report-control-fixtures \
+            site/ENCODE-Cancer-Cell-lines-Footprinting/index.html
 
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'

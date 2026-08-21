@@ -12,6 +12,7 @@ from fp_tools.gui_app import (
     _all_example_files,
     _format_extra_args,
     _parse_extra_args,
+    _validation_errors_markup,
 )
 from fp_tools.cli_gui import _access_urls, _startup_messages
 from fp_tools.utils.subprocess_commands import (
@@ -22,6 +23,19 @@ from fp_tools.utils.subprocess_commands import (
 
 
 class GuiLauncherTests(unittest.TestCase):
+    def test_validation_error_markup_wraps_paths_and_escapes_html(self):
+        markup = _validation_errors_markup(
+            [
+                r"Missing fragments: C:\Users\Researcher\a very long project\inputs\cells.fragments.tsv.gz",
+                "Invalid <sample> & comparison",
+            ]
+        )
+
+        self.assertIn('class="fp-validation-errors"', markup)
+        self.assertEqual(markup.count("<li>"), 2)
+        self.assertIn("&lt;sample&gt; &amp; comparison", markup)
+        self.assertNotIn("<sample>", markup)
+
     def test_run_control_state_tracks_validation_and_keeps_launch_guard(self):
         normalized = {
             "version": 1,
