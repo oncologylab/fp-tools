@@ -97,7 +97,7 @@ def _write_valid_bulk_fixture(root: Path) -> tuple[Path, Path, Path]:
     """Create existence-only inputs for the GUI validation state transition."""
 
     fixture = root / "valid-bulk-inputs"
-    fixture.mkdir()
+    fixture.mkdir(exist_ok=True)
     genome = fixture / "genome.fa"
     peaks = fixture / "peaks.bed"
     for path in (genome, peaks):
