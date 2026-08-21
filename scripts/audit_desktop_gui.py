@@ -599,7 +599,7 @@ def _audit_loaded_config_sync(
         print("Audited loaded bulk-footprinting config", flush=True)
 
         new_outdir = str(workdir / "changed output only")
-        page.get_by_label("Outdir", exact=True).fill(new_outdir)
+        _submit_text_control(page, "Outdir", new_outdir)
         page.get_by_role("button", name="Update page config", exact=True).evaluate(
             "element => element.click()"
         )
