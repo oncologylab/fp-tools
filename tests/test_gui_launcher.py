@@ -104,6 +104,11 @@ class GuiLauncherTests(unittest.TestCase):
         self.assertIn(".fp-workspace-path", style)
         self.assertIn('[data-testid="stMain"] [data-testid="stWidgetLabel"]', style)
         self.assertIn("-webkit-text-fill-color: var(--fp-text) !important", style)
+        self.assertIn("flex-direction: column !important", style)
+        self.assertIn(
+            '[data-testid="stHorizontalBlock"] > [data-testid="stColumn"]',
+            style,
+        )
         self.assertNotIn(".fp-sidebar-brand-subtitle", style)
         self.assertNotIn(".fp-run-dir-pill", style)
 

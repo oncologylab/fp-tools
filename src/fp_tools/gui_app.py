@@ -914,6 +914,17 @@ def _apply_page_style() -> None:
             .fp-card-grid, .fp-example-grid, .fp-summary-strip, .fp-tool-shell, .fp-tutorial-panel ol {
                 grid-template-columns: 1fr;
             }
+            [data-testid="stMain"] [data-testid="stHorizontalBlock"] {
+                align-items: stretch !important;
+                flex-direction: column !important;
+                gap: 0.72rem !important;
+                width: 100% !important;
+            }
+            [data-testid="stMain"] [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                width: 100% !important;
+            }
             .fp-run-card {
                 position: static;
             }
