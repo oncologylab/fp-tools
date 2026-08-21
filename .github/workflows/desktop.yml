@@ -40,9 +40,11 @@ jobs:
       - name: Install fp-tools and bundler
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --only-binary=:all: . "pyinstaller>=6.19,<7" "playwright>=1.55,<2"
+          python -m pip install --only-binary=:all: . "pyinstaller>=6.19,<7" "playwright>=1.55,<2" "PySide6>=6.8,<7"
           python -m playwright install chromium
           python -m pip check
+      - name: Build branded application icons
+        run: python scripts/build_desktop_icons.py
       - name: Build one-file desktop executable
         run: pyinstaller --clean --noconfirm packaging/desktop/fp-tools-gui.spec
       - name: Smoke-test command dispatch and GUI startup
@@ -74,9 +76,11 @@ jobs:
         run: |
           app="release/fp-tools.app"
           dmg="release/fp-tools-gui-macos-apple-silicon.dmg"
-          mkdir -p "${app}/Contents/MacOS"
+          mkdir -p "${app}/Contents/MacOS" "${app}/Contents/Resources"
           cp dist/fp-tools-gui "${app}/Contents/MacOS/fp-tools-gui"
           cp packaging/desktop/Info.plist "${app}/Contents/Info.plist"
+          cp build/desktop-icons/fp-tools.icns "${app}/Contents/Resources/fp-tools.icns"
+          plutil -lint "${app}/Contents/Info.plist"
           for attempt in 1 2 3; do
             if hdiutil create -volname "fp-tools" -srcfolder "${app}" \
               -ov -format UDZO "${dmg}"; then

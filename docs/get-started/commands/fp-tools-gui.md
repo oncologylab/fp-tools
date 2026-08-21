@@ -1,6 +1,8 @@
 # [`fp-tools-gui`](../../api.md#fp-tools-gui)
 
 Launch the browser interface for configuring and running fp-tools commands.
+The Windows and Apple Silicon desktop downloads present the same interface in
+a native fp-tools application window.
 
 Bulk GUI workflows start from coordinate-sorted BAM/BAI files and matching
 peak BED files. The GUI does not perform FASTQ-to-BAM preprocessing.
@@ -38,8 +40,9 @@ Open the [GUI Demo](../../gui.md), or see the
 
 ## Local computer
 
-Open the desktop executable or run `fp-tools-gui`. A browser opens after the
-server is ready. If it does not, open the local URL printed in the terminal.
+Open the desktop executable to use the native application window. When using
+the Python package, run `fp-tools-gui`; a browser opens after the server is
+ready. If it does not, open the local URL printed in the terminal.
 
 ## Remote Linux server
 

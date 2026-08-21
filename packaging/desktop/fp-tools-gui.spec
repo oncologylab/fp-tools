@@ -3,11 +3,16 @@
 
 from importlib.util import find_spec
 from pathlib import Path
+import sys
 
 from PyInstaller.utils.hooks import collect_all, collect_data_files, copy_metadata
 
 
 root = Path.cwd().resolve()
+icon_suffix = ".ico" if sys.platform == "win32" else ".icns"
+icon_path = root / "build" / "desktop-icons" / f"fp-tools{icon_suffix}"
+if not icon_path.is_file():
+    raise RuntimeError(f"Desktop icon has not been built: {icon_path}")
 datas = []
 binaries = []
 hiddenimports = []
@@ -52,6 +57,12 @@ hiddenimports = [
 # Streamlit executes the application from a source path.  Keeping this source
 # file as data is intentional even though the module is also frozen.
 datas.append((str(root / "src" / "fp_tools" / "gui_app.py"), "fp_tools"))
+datas.append(
+    (
+        str(root / "docs" / "assets" / "fp_tools_logo_icon_1024.png"),
+        "fp_tools/resources",
+    )
+)
 
 analysis = Analysis(
     [str(root / "packaging" / "desktop" / "launcher.py")],
@@ -92,5 +103,7 @@ executable = EXE(
     strip=False,
     upx=False,
     console=True,
+    hide_console="hide-early",
+    icon=str(icon_path),
     disable_windowed_traceback=False,
 )

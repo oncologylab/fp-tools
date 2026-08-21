@@ -150,7 +150,15 @@ def main() -> int:
 
         port = free_port()
         process = subprocess.Popen(
-            [str(executable), "--no-browser", "--port", str(port), "--run-dir", run_dir],
+            [
+                str(executable),
+                "--fp-tools-internal-gui-server",
+                "--port",
+                str(port),
+                "--run-dir",
+                run_dir,
+                "--no-browser",
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -161,6 +169,7 @@ def main() -> int:
         try:
             deadline = time.monotonic() + args.timeout
             last_error: Exception | None = None
+            ready = False
             while time.monotonic() < deadline:
                 if process.poll() is not None:
                     output = process.stdout.read() if process.stdout else ""
@@ -169,15 +178,42 @@ def main() -> int:
                     with urllib.request.urlopen(f"http://127.0.0.1:{port}/_stcore/health", timeout=2) as response:
                         if response.status == 200:
                             print(f"Desktop GUI ready on port {port}")
-                            return 0
+                            ready = True
+                            break
                 except Exception as exc:  # startup polling
                     last_error = exc
                     time.sleep(0.5)
-            raise SystemExit(f"GUI did not become ready within {args.timeout:g} seconds: {last_error}")
+            if not ready:
+                raise SystemExit(f"GUI did not become ready within {args.timeout:g} seconds: {last_error}")
         finally:
             output = stop_process_tree(process)
             if process.returncode not in (0, -15, 1):
                 print(output)
+
+        native_run = subprocess.run(
+            [
+                str(executable),
+                "--fp-tools-internal-native-window-smoke",
+                "--run-dir",
+                str(run_path / "native-window"),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=max(args.timeout, 150.0),
+            cwd=run_dir,
+            env={
+                **os.environ,
+                "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false",
+                "QTWEBENGINE_CHROMIUM_FLAGS": "--disable-gpu",
+            },
+        )
+        if native_run.returncode != 0:
+            raise SystemExit(
+                "Native desktop-window smoke failed:\n"
+                f"{native_run.stdout}\n{native_run.stderr}"
+            )
+        print("Native fp-tools window rendered successfully")
+        return 0
 
 
 if __name__ == "__main__":

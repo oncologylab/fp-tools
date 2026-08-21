@@ -16,8 +16,8 @@ starts from coordinate-sorted BAM/BAI files and matching peak BED files.
 
 ## Desktop app
 
-Download the app for your computer, then open it. The GUI starts in your
-browser.
+Download the app for your computer, then open it. fp-tools opens in its own
+application window; no browser or Python installation is required.
 
 [Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc12/fp-tools-gui-windows-x64.exe){ .md-button }
 [Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc12/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
@@ -36,7 +36,7 @@ python -m pip install --upgrade --pre fp-tools-bio
 fp-tools-gui
 ```
 
-The GUI normally opens automatically. If it does not, open
+The Python-package GUI normally opens in your browser. If it does not, open
 `http://127.0.0.1:8891`.
 
 On Windows, use `py` instead of `python` if needed.

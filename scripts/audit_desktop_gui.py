@@ -410,7 +410,15 @@ def main() -> int:
         run_dir = workdir_path / "runs"
         runtime_cache = workdir_path / "runtime-cache"
         process = subprocess.Popen(
-            [str(executable), "--no-browser", "--port", str(port), "--run-dir", str(run_dir)],
+            [
+                str(executable),
+                "--fp-tools-internal-gui-server",
+                "--port",
+                str(port),
+                "--run-dir",
+                str(run_dir),
+                "--no-browser",
+            ],
             cwd=workdir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
