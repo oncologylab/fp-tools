@@ -249,7 +249,9 @@ def _audit_page(
     label_locator = page.locator(
         "[data-testid='stMain'] [data-testid='stWidgetLabel']"
     )
-    label_locator.first.wait_for(state="visible", timeout=30_000)
+    page.locator(
+        "[data-testid='stMain'] [data-testid='stWidgetLabel']:visible"
+    ).first.wait_for(state="visible", timeout=30_000)
     visible_labels = label_locator.evaluate_all(
         """elements => elements.filter(element => {
           const text = (element.innerText || element.textContent || '').trim();
