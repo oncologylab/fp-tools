@@ -1,0 +1,7 @@
+fp-tools for Apple silicon (unsigned preview)
+
+Drag fp-tools.app to Applications, then run once in Terminal:
+
+xattr -dr com.apple.quarantine /Applications/fp-tools.app && open /Applications/fp-tools.app
+
+Use this only for fp-tools downloaded from https://github.com/oncologylab/fp-tools/releases

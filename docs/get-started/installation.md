@@ -22,8 +22,15 @@ application window; no browser or Python installation is required.
 [Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc12/fp-tools-gui-windows-x64.exe){ .md-button }
 [Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc12/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
 
-The preview apps are unsigned. Windows may ask you to confirm the download. On
-macOS, Control-click the app and choose **Open** the first time.
+Windows may ask you to confirm the unsigned preview download. For the unsigned
+Mac preview, drag `fp-tools.app` to Applications and run this once in Terminal:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/fp-tools.app && open /Applications/fp-tools.app
+```
+
+Use this command only for fp-tools downloaded from the official OncologyLab
+GitHub release page.
 
 Optional de novo motif discovery prepares its external tools on first use.
 

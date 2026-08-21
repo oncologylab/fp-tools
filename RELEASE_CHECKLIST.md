@@ -102,8 +102,12 @@ The `Desktop bundles` workflow must produce and smoke-test a Windows x64
 executable and an unsigned Apple Silicon macOS DMG. Both artifacts must use the
 fp-tools icon and open the command-backed GUI in a native application window.
 The live checks verify the private Streamlit server, native window rendering,
-and frozen child-process dispatch. Release assets include a SHA-256 checksum
-manifest. macOS Intel and Linux users install the Python package instead.
+and frozen child-process dispatch. The Mac job must ad-hoc sign and strictly
+verify the application bundle, confirm its ARM64 executable, exercise the
+documented quarantine-removal command, verify and mount the DMG, and confirm
+that the first-launch instruction is included. Release assets include a
+SHA-256 checksum manifest. macOS Intel and Linux users install the Python
+package instead.
 
 The `Container` workflow builds and tests the complete environment on
 `linux/amd64` and `linux/arm64`, then attaches both loadable image archives and

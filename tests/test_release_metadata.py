@@ -57,6 +57,24 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertIn("scripts/build_desktop_icons.py", workflow)
         self.assertIn("PySide6", workflow)
         self.assertIn("Contents/Resources/fp-tools.icns", workflow)
+        self.assertIn("codesign --verify --deep --strict", workflow)
+        self.assertIn("lipo -archs", workflow)
+        self.assertIn("xattr -dr com.apple.quarantine", workflow)
+        self.assertIn('hdiutil verify "${dmg}"', workflow)
+        self.assertIn("OPEN-FIRST-macOS.txt", workflow)
+
+        first_launch = (ROOT / "packaging/desktop/OPEN-FIRST-macOS.txt").read_text(
+            encoding="utf-8"
+        )
+        instruction = (
+            "xattr -dr com.apple.quarantine /Applications/fp-tools.app "
+            "&& open /Applications/fp-tools.app"
+        )
+        self.assertIn(instruction, first_launch)
+        installation = (ROOT / "docs/get-started/installation.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(instruction, installation)
 
         with tempfile.TemporaryDirectory() as directory:
             ico_path, icns_path = build_icons(

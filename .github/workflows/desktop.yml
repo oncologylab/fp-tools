@@ -74,15 +74,33 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          app="release/fp-tools.app"
+          stage="release/macos-dmg"
+          app="${stage}/fp-tools.app"
           dmg="release/fp-tools-gui-macos-apple-silicon.dmg"
           mkdir -p "${app}/Contents/MacOS" "${app}/Contents/Resources"
           cp dist/fp-tools-gui "${app}/Contents/MacOS/fp-tools-gui"
           cp packaging/desktop/Info.plist "${app}/Contents/Info.plist"
           cp build/desktop-icons/fp-tools.icns "${app}/Contents/Resources/fp-tools.icns"
+          cp packaging/desktop/OPEN-FIRST-macOS.txt "${stage}/OPEN-FIRST-macOS.txt"
+          ln -s /Applications "${stage}/Applications"
           plutil -lint "${app}/Contents/Info.plist"
+          codesign --force --deep --sign - "${app}"
+          codesign --verify --deep --strict --verbose=2 "${app}"
+          lipo -archs "${app}/Contents/MacOS/fp-tools-gui" | grep -qw arm64
+
+          xattr -w com.apple.quarantine "0083;00000000;GitHub;" "${app}"
+          xattr -p com.apple.quarantine "${app}" >/dev/null
+          xattr -dr com.apple.quarantine "${app}"
+          if xattr -p com.apple.quarantine "${app}" >/dev/null 2>&1; then
+            echo "The documented quarantine-removal command did not clear the app" >&2
+            exit 1
+          fi
+          "${app}/Contents/MacOS/fp-tools-gui" \
+            --fp-tools-internal-native-window-smoke \
+            --run-dir "${RUNNER_TEMP}/fp-tools-dmg-native-smoke"
+
           for attempt in 1 2 3; do
-            if hdiutil create -volname "fp-tools" -srcfolder "${app}" \
+            if hdiutil create -volname "fp-tools" -srcfolder "${stage}" \
               -ov -format UDZO "${dmg}"; then
               break
             fi
@@ -93,7 +111,17 @@ jobs:
             echo "hdiutil was temporarily unavailable; retrying..." >&2
             sleep 5
           done
-          rm -rf "${app}"
+          hdiutil verify "${dmg}"
+
+          mount_point="${RUNNER_TEMP}/fp-tools-dmg-mount"
+          mkdir -p "${mount_point}"
+          hdiutil attach -nobrowse -readonly -mountpoint "${mount_point}" "${dmg}"
+          test -d "${mount_point}/fp-tools.app"
+          test -f "${mount_point}/OPEN-FIRST-macOS.txt"
+          test -L "${mount_point}/Applications"
+          codesign --verify --deep --strict --verbose=2 "${mount_point}/fp-tools.app"
+          hdiutil detach "${mount_point}"
+          rm -rf "${stage}"
       - uses: actions/upload-artifact@v7
         with:
           name: fp-tools-gui-${{ matrix.label }}

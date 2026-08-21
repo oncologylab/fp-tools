@@ -60,6 +60,10 @@ a separately planned breaking release explicitly changes the contract.
   and frozen-safe command and workflow dispatch. Every GUI starts from BAM/BAI
   plus peak BED files. Linux and Intel macOS use the browser-based Python
   package; the complete container remains available on amd64 and arm64.
+- The Apple Silicon download remains an explicitly unsigned preview. Its DMG
+  includes the same one-line quarantine-removal instruction shown on the
+  installation page, and CI verifies the ad-hoc bundle signature, ARM64
+  executable, DMG contents, quarantine removal, and native-window launch.
 - Branded GitHub and MkDocs presentation with responsive embedded report and
   GUI demos plus automated desktop/mobile browser audits.
 - Responsive GUI validation output with contained long paths and locally
