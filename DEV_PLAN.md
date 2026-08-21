@@ -70,6 +70,12 @@ a separately planned breaking release explicitly changes the contract.
   scrolling YAML previews, verified in the native Windows and macOS audits.
   Path messages use forced cross-platform line breaking, and failed desktop
   audits retain screenshots as CI artifacts for diagnosis.
+- Responsive GUI navigation and forms across every destination: the mobile
+  sidebar has named open/close controls, the persistent sidebar header stays
+  compact, workspace details remain available on demand, loaded YAML refreshes
+  all form controls, and main-panel labels use explicit high-contrast colors.
+  Frozen Windows and Apple Silicon audits exercise every page at desktop and
+  narrow widths and retain screenshots for visual review.
 - Browser-verified plot controls and SVG exports for aggregate and
   aggregate-free reports, including explicit subplot-bound checks.
 - Command-aware logging across shared analysis engines, so `match-motifs` and
