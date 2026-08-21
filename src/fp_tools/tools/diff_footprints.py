@@ -681,6 +681,12 @@ def _load_reuse_motif_lookup(args, logger):
     return motif_lookup
 
 
+def _logical_command_name(args):
+    """Return the public command name for the shared motif-analysis engine."""
+
+    return "match-motifs" if getattr(args, "match_only", False) else "diff-footprints"
+
+
 def run_diff_footprints_reuse_existing_results(args):
     """Regenerate final diff-footprints reports from completed motif-level outputs."""
 
@@ -2107,9 +2113,10 @@ def run_diff_footprints(args):
         outfiles.append(os.path.abspath(os.path.join(args.outdir, args.prefix + "_results_skewness_report.pdf")))
 
     # ------------------------------ logger/pools ------------------------------ #
-    logger = FpToolsLogger("diff-footprints", args.verbosity)
+    command_name = _logical_command_name(args)
+    logger = FpToolsLogger(command_name, args.verbosity)
     logger.begin()
-    parser = add_diff_footprints_arguments(argparse.ArgumentParser())
+    parser = add_diff_footprints_arguments(argparse.ArgumentParser(), command_name=command_name)
     logger.arguments_overview(parser, args)
     logger.output_files(outfiles)
 
@@ -2740,7 +2747,10 @@ def run_diff_footprints(args):
 
     # ------------------------------ plots ------------------------------------ #
     if no_conditions > 1:
-        logger.info("Creating diff-footprints plot(s)")
+        if getattr(args, "match_only", False):
+            logger.info("Creating match-motifs summary output(s)")
+        else:
+            logger.info("Creating diff-footprints plot(s)")
         change_cols = [c for c in info_table.columns if "_change" in c]
         pvalue_cols = [c for c in info_table.columns if "_pvalue" in c]
         info_table[change_cols] = info_table[change_cols].fillna(0)

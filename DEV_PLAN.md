@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-20
+Last updated: 2026-08-21
 
 ## Current Baseline
 
@@ -65,6 +65,8 @@ a separately planned breaking release explicitly changes the contract.
   scrolling YAML previews, verified in the native Windows and macOS audits.
 - Browser-verified plot controls and SVG exports for aggregate and
   aggregate-free reports, including explicit subplot-bound checks.
+- Command-aware logging across shared analysis engines, so `match-motifs` and
+  `diff-footprints` retain their public names in direct and wrapper-run logs.
 - A manifest-pinned, storage-conscious ENCODE workflow for 17 biological
   replicates from seven cancer cell lines. Its resumable runner uses a
   pair-specific union of released IDR-thresholded peaks, peak-q95 scaling, and

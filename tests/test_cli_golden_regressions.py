@@ -330,7 +330,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
     def test_diff_footprints_summary_mode_skips_per_motif_exports(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             outdir = pathlib.Path(tmpdir) / "diff_footprints_summary"
-            run_command(
+            completed = run_command(
                 [
                     BIN / "diff-footprints",
                     "--signals",
@@ -357,17 +357,61 @@ class CliGoldenRegressionTest(unittest.TestCase):
                     "--motif-outputs",
                     "summary",
                     "--verbosity",
-                    "1",
+                    "2",
                 ],
                 timeout=120,
             )
             results = pd.read_csv(outdir / "diff_footprints_probe_results.txt", sep="\t")
 
+        self.assertIn("diff-footprints (run started", completed.stdout)
+        self.assertIn("Creating diff-footprints plot(s)", completed.stdout)
+        self.assertIn("Finished diff-footprints run", completed.stdout)
         self.assertEqual(len(results), 1)
         self.assertEqual(int(results.iloc[0]["total_tfbs"]), 3269)
         self.assertAlmostEqual(float(results.iloc[0]["Bcell_Tcell_change"]), 0.35168, places=5)
         self.assertFalse((outdir / "IRF1_MA0050.2" / "beds" / "IRF1_MA0050.2_all.bed").exists())
         self.assertFalse((outdir / "IRF1_MA0050.2" / "IRF1_MA0050.2_overview.txt").exists())
+
+    def test_match_motifs_logs_use_public_command_name(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            outdir = pathlib.Path(tmpdir) / "match_motifs_logging"
+            completed = run_command(
+                [
+                    BIN / "match-motifs",
+                    "--signals",
+                    "test_data/Bcell_footprints.bw",
+                    "test_data/Tcell_footprints.bw",
+                    "--motifs",
+                    "test_data/individual_motifs/MA0050.2.jaspar",
+                    "--genome",
+                    "test_data/genome.fa.gz",
+                    "--peaks",
+                    "test_data/merged_peaks.bed",
+                    "--sample-names",
+                    "Bcell",
+                    "Tcell",
+                    "--cond-names",
+                    "Bcell",
+                    "Tcell",
+                    "--outdir",
+                    outdir,
+                    "--cores",
+                    max_cores(),
+                    "--skip-excel",
+                    "--plot-aggregate",
+                    "off",
+                    "--motif-outputs",
+                    "summary",
+                    "--verbosity",
+                    "2",
+                ],
+                timeout=120,
+            )
+
+        self.assertIn("match-motifs (run started", completed.stdout)
+        self.assertIn("Creating match-motifs summary output(s)", completed.stdout)
+        self.assertIn("Finished match-motifs run", completed.stdout)
+        self.assertNotIn("diff-footprints", completed.stdout)
 
     def test_match_motifs_auto_writes_compact_cache_and_per_motif_beds(self):
         with tempfile.TemporaryDirectory() as tmpdir:
