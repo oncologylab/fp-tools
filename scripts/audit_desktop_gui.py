@@ -14,7 +14,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
+import yaml
+from playwright.sync_api import expect, sync_playwright
 
 
 SIDEBAR_FIRST_PAGES = (
@@ -27,6 +28,23 @@ SIDEBAR_FIRST_PAGES = (
     ("Configuration", "Config"),
 )
 MINIMUM_SIDEBAR_GAP_PX = 2.0
+GUI_RUN_PAGES = (
+    "atac-correct",
+    "call-footprints",
+    "match-motifs",
+    "diff-footprints",
+    "normalize-bigwig",
+    "plot-aggregate",
+    "bulk-footprinting",
+    "review-multi-comparisons",
+    "discover-motifs",
+    "summarize-motifs",
+    "pseudobulk-fragments",
+    "find-signature-fp",
+    "sc-footprinting",
+    "Config",
+)
+SIMPLE_GUI_PAGES = ("Home", "Run History")
 
 
 def _free_port() -> int:
@@ -102,6 +120,88 @@ def _write_valid_bulk_fixture(root: Path) -> tuple[Path, Path, Path]:
     return samples, comparisons, genome
 
 
+def _write_loaded_bulk_config(root: Path) -> tuple[Path, dict[str, object]]:
+    samples, comparisons, genome = _write_valid_bulk_fixture(root)
+    motif = root / "motifs" / "MA0139.1.jaspar"
+    motif.parent.mkdir()
+    motif.write_text(">MA0139.1 CTCF\nA [1]\nC [0]\nG [0]\nT [0]\n", encoding="utf-8")
+    values: dict[str, object] = {
+        "sample_table": str(samples),
+        "comparison_table": str(comparisons),
+        "genome": str(genome),
+        "outdir": str(root / "bulk project with spaces"),
+        "cores": 2,
+        "normalization": "sample-quantile",
+        "plot_aggregate": "top",
+        "review_format": "bundle",
+        "motifs": [str(motif)],
+        "dry_run": True,
+    }
+    config = root / "loaded-bulk.yml"
+    config.write_text(
+        yaml.safe_dump(
+            {
+                "version": 1,
+                "run_mode": "single",
+                "defaults": {},
+                "samples": [
+                    {
+                        "sample_id": "loaded_bulk",
+                        "tool": "bulk-footprinting",
+                        **values,
+                    }
+                ],
+                "comparisons": [],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    return config, values
+
+
+def _write_uploaded_diff_config(root: Path) -> tuple[Path, dict[str, object]]:
+    values: dict[str, object] = {
+        "comparison_axis": "regions",
+        "motifs": [
+            str(root / "motif one.jaspar"),
+            str(root / "motif two.jaspar"),
+        ],
+        "motif_db": "jaspar2026_vertebrates",
+        "signals": [str(root / "replicate 1.bw"), str(root / "replicate 2.bw")],
+        "sample_names": ["replicate_1", "replicate_2"],
+        "cond_names": ["K562", "K562"],
+        "regions": [str(root / "CTCF bound.bed"), str(root / "matched control.bed")],
+        "region_labels": ["CTCF bound", "matched control"],
+        "region_strata_column": 4,
+        "genome": str(root / "genome.fa"),
+        "outdir": str(root / "region comparison"),
+        "cores": 3,
+        "skip_excel": True,
+    }
+    config = root / "uploaded-diff.yml"
+    config.write_text(
+        yaml.safe_dump(
+            {
+                "version": 1,
+                "run_mode": "single",
+                "defaults": {},
+                "samples": [
+                    {
+                        "sample_id": "uploaded_regions",
+                        "tool": "diff-footprints",
+                        **values,
+                    }
+                ],
+                "comparisons": [],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    return config, values
+
+
 def _audit_page(
     browser,
     base_url: str,
@@ -113,6 +213,13 @@ def _audit_page(
 ) -> None:
     context = browser.new_context(viewport={"width": width, "height": height})
     page = context.new_page()
+    console_errors: list[str] = []
+    page.on(
+        "console",
+        lambda message: console_errors.append(message.text)
+        if message.type == "error"
+        else None,
+    )
     page.goto(
         f"{base_url}/?page={urllib.parse.quote(page_name)}",
         wait_until="domcontentloaded",
@@ -137,7 +244,77 @@ def _audit_page(
         raise RuntimeError(f"{page_name} at {width}px permits mid-word summary breaks")
     if metrics["overflow"]:
         raise RuntimeError(f"{page_name} at {width}px has horizontal overflow")
-    if capture_screenshots:
+    if page.locator("[data-testid='stException']").count():
+        raise RuntimeError(f"{page_name} at {width}px rendered a Streamlit exception")
+    visible_labels = page.locator(
+        "[data-testid='stMain'] [data-testid='stWidgetLabel']"
+    ).evaluate_all(
+        """elements => elements.filter(element => {
+          const text = (element.innerText || element.textContent || '').trim();
+          const style = getComputedStyle(element);
+          const box = element.getBoundingClientRect();
+          return text && box.width > 0 && box.height > 0 && style.display !== 'none';
+        }).map(element => {
+          const style = getComputedStyle(element);
+          const match = style.color.match(/[\\d.]+/g) || [];
+          const rgb = match.slice(0, 3).map(Number);
+          return {
+            text: (element.innerText || element.textContent || '').trim().slice(0, 80),
+            color: style.color,
+            opacity: Number(style.opacity),
+            visibility: style.visibility,
+            nearlyWhite: rgb.length === 3 && rgb.every(value => value > 235)
+          };
+        })"""
+    )
+    if not visible_labels:
+        raise RuntimeError(f"{page_name} at {width}px has no visible form labels")
+    unreadable_labels = [
+        label
+        for label in visible_labels
+        if label["opacity"] < 0.95
+        or label["visibility"] != "visible"
+        or label["nearlyWhite"]
+        or label["color"] == "rgba(0, 0, 0, 0)"
+    ]
+    if unreadable_labels:
+        raise RuntimeError(
+            f"{page_name} at {width}px has unreadable form labels: "
+            f"{unreadable_labels[:5]}"
+        )
+    field_metrics = page.locator(
+        "[data-testid='stMain'] input, [data-testid='stMain'] textarea, "
+        "[data-testid='stMain'] button, [data-testid='stMain'] label"
+    ).evaluate_all(
+        """elements => elements.filter(element => {
+          const style = getComputedStyle(element);
+          const box = element.getBoundingClientRect();
+          return style.display !== 'none' && style.visibility !== 'hidden' && box.width > 0;
+        }).map(element => {
+          const box = element.getBoundingClientRect();
+          return {
+            tag: element.tagName,
+            text: (element.innerText || element.textContent || '').trim().slice(0, 80),
+            outside: Math.max(0, -box.left, box.right - window.innerWidth),
+            clipped: element.scrollWidth - element.clientWidth
+          };
+        })"""
+    )
+    bad_fields = [
+        metric
+        for metric in field_metrics
+        if metric["outside"] > 1 or (metric["tag"] != "INPUT" and metric["clipped"] > 2)
+    ]
+    if bad_fields:
+        raise RuntimeError(
+            f"{page_name} at {width}px has clipped/out-of-viewport controls: "
+            f"{bad_fields[:5]}"
+        )
+    if console_errors:
+        raise RuntimeError(
+            f"{page_name} at {width}px logged browser errors: {console_errors[:3]}"
+        )
+    if capture_screenshots and width in {1280, 390}:
         page.screenshot(
             path=str(output / f"{page_name}-{width}.png"),
             full_page=False,
@@ -146,6 +323,287 @@ def _audit_page(
         )
     print(f"Audited {page_name} at {width}x{height}", flush=True)
     context.close()
+
+
+def _audit_simple_page(
+    browser,
+    base_url: str,
+    page_name: str,
+    width: int,
+    height: int,
+    output: Path,
+    capture_screenshots: bool,
+) -> None:
+    context = browser.new_context(viewport={"width": width, "height": height})
+    page = context.new_page()
+    try:
+        page.goto(
+            f"{base_url}/?page={urllib.parse.quote(page_name)}",
+            wait_until="domcontentloaded",
+        )
+        if page_name == "Home":
+            page.locator(".fp-hero h1").wait_for(timeout=60_000)
+        else:
+            page.locator(".fp-page-heading h1", has_text=page_name).wait_for(timeout=60_000)
+        metrics = page.evaluate(
+            """() => ({
+              overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+              exceptions: document.querySelectorAll('[data-testid="stException"]').length
+            })"""
+        )
+        if metrics["overflow"] > 1 or metrics["exceptions"]:
+            raise RuntimeError(f"{page_name} at {width}px is not rendered cleanly: {metrics}")
+        if capture_screenshots and width in {1280, 390}:
+            page.screenshot(
+                path=str(output / f"{page_name.replace(' ', '-')}-{width}.png"),
+                full_page=False,
+                animations="disabled",
+                timeout=30_000,
+            )
+    finally:
+        context.close()
+
+
+def _audit_compact_sidebar(
+    browser,
+    base_url: str,
+    output: Path,
+    capture_screenshots: bool,
+) -> None:
+    context = browser.new_context(viewport={"width": 1280, "height": 720})
+    page = context.new_page()
+    try:
+        page.goto(f"{base_url}/?page=Home", wait_until="domcontentloaded")
+        page.locator(".fp-sidebar-brand-title", has_text="fp-tools").wait_for(timeout=60_000)
+        sidebar = page.locator("[data-testid='stSidebar']")
+        text = sidebar.inner_text()
+        if "Command-first footprinting workflows" in text:
+            raise RuntimeError("Sidebar still shows the persistent branding tagline")
+        if "Current run directory" in text:
+            raise RuntimeError("Collapsed Workspace exposes the current run directory")
+        overview_top = page.locator(".fp-nav-group", has_text="Overview").bounding_box()
+        if not overview_top or overview_top["y"] > 175:
+            raise RuntimeError(f"Sidebar navigation starts too low: {overview_top}")
+        workspace = page.locator("details", has_text="Workspace").first
+        workspace.evaluate("element => { element.open = true; }")
+        page.get_by_text("Current run directory", exact=True).wait_for(timeout=30_000)
+        path = page.locator(".fp-workspace-path")
+        path_text = path.inner_text().strip()
+        if "very long" not in path_text and "very\\long" not in path_text:
+            raise RuntimeError(f"Workspace does not expose the complete test path: {path_text}")
+        path_metrics = path.evaluate(
+            """element => {
+              const box = element.getBoundingClientRect();
+              const sidebar = element.closest('[data-testid="stSidebar"]').getBoundingClientRect();
+              return {
+                outside: Math.max(sidebar.left - box.left, box.right - sidebar.right),
+                overflow: element.scrollWidth - element.clientWidth
+              };
+            }"""
+        )
+        if path_metrics["outside"] > 1 or path_metrics["overflow"] > 1:
+            raise RuntimeError(f"Workspace path overflows the sidebar: {path_metrics}")
+        if capture_screenshots:
+            page.screenshot(
+                path=str(output / "sidebar-workspace-expanded-1280.png"),
+                full_page=False,
+                animations="disabled",
+                timeout=30_000,
+            )
+    finally:
+        context.close()
+
+
+def _audit_mobile_sidebar_navigation(
+    browser,
+    base_url: str,
+    output: Path,
+    capture_screenshots: bool,
+) -> None:
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    page = context.new_page()
+    try:
+        page.goto(f"{base_url}/?page=Home", wait_until="domcontentloaded")
+        page.locator(".fp-hero h1").wait_for(timeout=60_000)
+        open_button = page.get_by_role("button", name="Open navigation")
+        open_button.wait_for(state="visible", timeout=30_000)
+        box = open_button.bounding_box()
+        if not box or min(box["width"], box["height"]) < 40:
+            raise RuntimeError(f"Mobile navigation control is too small: {box}")
+        open_button.click()
+        page.wait_for_function(
+            """() => {
+              const sidebar = document.querySelector('[data-testid="stSidebar"]');
+              return sidebar && sidebar.getBoundingClientRect().left >= -1;
+            }""",
+            timeout=30_000,
+        )
+        close_button = page.get_by_role("button", name="Close navigation")
+        close_button.wait_for(state="visible", timeout=30_000)
+        target = page.get_by_role("button", name="bulk-footprinting", exact=True)
+        target.scroll_into_view_if_needed()
+        target.click()
+        page.locator(".fp-page-heading h1", has_text="bulk-footprinting").wait_for(
+            timeout=60_000
+        )
+        reopened = page.get_by_role("button", name="Open navigation")
+        reopened.wait_for(state="visible", timeout=30_000)
+        reopened.click()
+        page.get_by_role("button", name="Close navigation").click()
+        reopened.wait_for(state="visible", timeout=30_000)
+        metrics = page.evaluate(
+            """() => ({
+              overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+              exceptions: document.querySelectorAll('[data-testid="stException"]').length
+            })"""
+        )
+        if metrics["overflow"] > 1 or metrics["exceptions"]:
+            raise RuntimeError(f"Mobile navigation left a broken page: {metrics}")
+        if capture_screenshots:
+            reopened.click()
+            page.screenshot(
+                path=str(output / "mobile-sidebar-open-390.png"),
+                full_page=False,
+                animations="disabled",
+                timeout=30_000,
+            )
+    finally:
+        context.close()
+
+
+def _assert_control_value(page, label: str, expected: object) -> None:
+    control = page.get_by_label(label, exact=True)
+    control.wait_for(state="visible", timeout=30_000)
+    if isinstance(expected, bool):
+        if expected:
+            expect(control).to_be_checked(timeout=30_000)
+        else:
+            expect(control).not_to_be_checked(timeout=30_000)
+        actual = control.is_checked()
+    else:
+        try:
+            expect(control).to_have_value(str(expected), timeout=30_000)
+            actual = control.input_value()
+        except Exception:
+            actual = control.inner_text().strip()
+    if str(actual) != str(expected):
+        raise RuntimeError(
+            f"Control {label!r} shows {actual!r}; expected {expected!r}"
+        )
+
+
+def _audit_loaded_config_sync(
+    browser,
+    base_url: str,
+    workdir: Path,
+    output: Path,
+    capture_screenshots: bool,
+) -> None:
+    """Loaded files, examples, and uploads must replace visible widget state."""
+
+    context = browser.new_context(viewport={"width": 1440, "height": 960})
+    page = context.new_page()
+    try:
+        bulk_path, values = _write_loaded_bulk_config(workdir)
+        page.goto(f"{base_url}/?page=bulk-footprinting", wait_until="domcontentloaded")
+        page.locator(".fp-page-heading h1", has_text="bulk-footprinting").wait_for(
+            timeout=60_000
+        )
+        loader = page.locator("details", has_text="Load bulk-footprinting config").first
+        loader.evaluate("element => { element.open = true; }")
+        page.get_by_label("Config path", exact=True).fill(str(bulk_path))
+        page.get_by_role("button", name="Load YAML from path", exact=True).click()
+        page.get_by_label("Sample Table", exact=True).wait_for(timeout=30_000)
+        for label, key in (
+            ("Sample Table", "sample_table"),
+            ("Comparison Table", "comparison_table"),
+            ("Genome", "genome"),
+            ("Outdir", "outdir"),
+            ("Cores", "cores"),
+            ("Normalization", "normalization"),
+            ("Plot Aggregate", "plot_aggregate"),
+            ("Review Format", "review_format"),
+        ):
+            _assert_control_value(page, label, values[key])
+        _assert_control_value(page, "Motifs", str(values["motifs"][0]))
+        _assert_control_value(page, "Dry Run", True)
+
+        new_outdir = str(workdir / "changed output only")
+        page.get_by_label("Outdir", exact=True).fill(new_outdir)
+        page.get_by_role("button", name="Update page config", exact=True).click()
+        page.get_by_label("Outdir", exact=True).wait_for(timeout=30_000)
+        _assert_control_value(page, "Outdir", new_outdir)
+        for label, key in (
+            ("Sample Table", "sample_table"),
+            ("Comparison Table", "comparison_table"),
+            ("Genome", "genome"),
+            ("Cores", "cores"),
+            ("Normalization", "normalization"),
+            ("Plot Aggregate", "plot_aggregate"),
+            ("Review Format", "review_format"),
+        ):
+            _assert_control_value(page, label, values[key])
+
+        page.goto(f"{base_url}/?page=normalize-bigwig", wait_until="domcontentloaded")
+        page.locator(".fp-page-heading h1", has_text="normalize-bigwig").wait_for(
+            timeout=60_000
+        )
+        normalizer_loader = page.locator(
+            "details", has_text="Load normalize-bigwig config"
+        ).first
+        normalizer_loader.evaluate("element => { element.open = true; }")
+        example_select = page.get_by_label("Example YAML", exact=True)
+        example_select.click()
+        page.get_by_text("normalize_bigwig_single.yml", exact=True).click()
+        page.get_by_role("button", name="Load example", exact=True).click()
+        page.get_by_label("Background", exact=True).wait_for(timeout=30_000)
+        if not page.get_by_label("Background", exact=True).input_value().strip():
+            raise RuntimeError("Example YAML did not refresh normalize-bigwig fields")
+
+        diff_path, diff_values = _write_uploaded_diff_config(workdir)
+        page.goto(f"{base_url}/?page=diff-footprints", wait_until="domcontentloaded")
+        page.locator(".fp-page-heading h1", has_text="diff-footprints").wait_for(
+            timeout=60_000
+        )
+        diff_loader = page.locator("details", has_text="Load diff-footprints config").first
+        diff_loader.evaluate("element => { element.open = true; }")
+        page.locator("input[type='file']").set_input_files(str(diff_path))
+        page.get_by_role("button", name="Apply uploaded YAML", exact=True).click()
+        page.get_by_label("Comparison axis", exact=True).wait_for(timeout=30_000)
+        _assert_control_value(page, "Comparison axis", diff_values["comparison_axis"])
+        _assert_control_value(page, "Motifs", "\n".join(diff_values["motifs"]))
+        _assert_control_value(page, "Signals", "\n".join(diff_values["signals"]))
+        _assert_control_value(
+            page,
+            "Condition names",
+            "\n".join(diff_values["cond_names"]),
+        )
+        _assert_control_value(
+            page,
+            "Region-set BED files",
+            "\n".join(diff_values["regions"]),
+        )
+        _assert_control_value(
+            page,
+            "Region labels",
+            ",".join(diff_values["region_labels"]),
+        )
+        _assert_control_value(
+            page,
+            "Matching-stratum BED column (0 = none)",
+            diff_values["region_strata_column"],
+        )
+        _assert_control_value(page, "Cores", diff_values["cores"])
+        _assert_control_value(page, "Skip Excel", True)
+        if capture_screenshots:
+            page.screenshot(
+                path=str(output / "loaded-config-sync-diff-footprints.png"),
+                full_page=False,
+                animations="disabled",
+                timeout=30_000,
+            )
+    finally:
+        context.close()
 
 
 def _audit_sidebar_navigation(
@@ -407,7 +865,12 @@ def main() -> int:
     base_url = f"http://127.0.0.1:{port}"
     with tempfile.TemporaryDirectory(prefix="fp-tools-desktop-browser-") as workdir:
         workdir_path = Path(workdir)
-        run_dir = workdir_path / "runs"
+        run_dir = (
+            workdir_path
+            / "very long workspace path"
+            / "nested analysis project"
+            / "fp-tools runs"
+        )
         runtime_cache = workdir_path / "runtime-cache"
         process = subprocess.Popen(
             [
@@ -438,7 +901,7 @@ def main() -> int:
                     args=["--disable-dev-shm-usage"],
                 )
                 try:
-                    for page_name in ("plot-aggregate", "bulk-footprinting", "review-multi-comparisons"):
+                    for page_name in GUI_RUN_PAGES:
                         for width, height in ((1920, 1080), (1280, 720), (390, 844)):
                             _audit_page(
                                 browser,
@@ -449,6 +912,31 @@ def main() -> int:
                                 output,
                                 not args.skip_screenshots,
                             )
+
+                    for page_name in SIMPLE_GUI_PAGES:
+                        for width, height in ((1280, 720), (390, 844)):
+                            _audit_simple_page(
+                                browser,
+                                base_url,
+                                page_name,
+                                width,
+                                height,
+                                output,
+                                not args.skip_screenshots,
+                            )
+
+                    _audit_compact_sidebar(
+                        browser,
+                        base_url,
+                        output,
+                        not args.skip_screenshots,
+                    )
+                    _audit_mobile_sidebar_navigation(
+                        browser,
+                        base_url,
+                        output,
+                        not args.skip_screenshots,
+                    )
 
                     for width, height, scale in (
                         (1920, 1080, 2.0),
@@ -484,6 +972,14 @@ def main() -> int:
                                 output,
                                 not args.skip_screenshots,
                             )
+
+                    _audit_loaded_config_sync(
+                        browser,
+                        base_url,
+                        workdir_path,
+                        output,
+                        not args.skip_screenshots,
+                    )
 
                     context = browser.new_context(viewport={"width": 1280, "height": 720})
                     page = context.new_page()

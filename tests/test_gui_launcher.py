@@ -16,8 +16,12 @@ from fp_tools.desktop_window import DesktopLaunchError, _parse_desktop_args, _se
 from fp_tools.gui_app import (
     GENERIC_TOOL_DEFAULTS,
     _all_example_files,
+    _config_form_mode,
+    _config_widget_key,
     _format_extra_args,
     _parse_extra_args,
+    _set_config,
+    _updated_single_config,
     _validation_errors_markup,
 )
 from fp_tools.cli_gui import _access_urls, _startup_messages
@@ -29,6 +33,16 @@ from fp_tools.utils.subprocess_commands import (
 
 
 class GuiLauncherTests(unittest.TestCase):
+    class _SessionState(dict):
+        def __getattr__(self, name):
+            try:
+                return self[name]
+            except KeyError as exc:
+                raise AttributeError(name) from exc
+
+        def __setattr__(self, name, value):
+            self[name] = value
+
     def test_desktop_default_opens_native_window(self):
         with patch("fp_tools.desktop_window.launch_native_gui", return_value=0) as launch:
             self.assertEqual(desktop_main(["--run-dir", "runs"]), 0)
@@ -78,6 +92,94 @@ class GuiLauncherTests(unittest.TestCase):
         style = fake_streamlit.markdown.call_args.args[0]
         self.assertIn("overflow-wrap: anywhere !important", style)
         self.assertIn("word-break: break-all !important", style)
+
+    def test_mobile_navigation_and_compact_sidebar_styles_are_present(self):
+        fake_streamlit = MagicMock()
+        with patch.object(gui_app, "st", fake_streamlit):
+            gui_app._apply_page_style()
+        style = fake_streamlit.markdown.call_args.args[0]
+        self.assertIn('[data-testid="stExpandSidebarButton"]', style)
+        self.assertIn('content: "Open navigation"', style)
+        self.assertIn('content: "Close navigation"', style)
+        self.assertIn(".fp-workspace-path", style)
+        self.assertIn('[data-testid="stMain"] [data-testid="stWidgetLabel"]', style)
+        self.assertIn("-webkit-text-fill-color: var(--fp-text) !important", style)
+        self.assertNotIn(".fp-sidebar-brand-subtitle", style)
+        self.assertNotIn(".fp-run-dir-pill", style)
+
+    def test_set_config_advances_widget_revision_and_reruns(self):
+        state = self._SessionState(config_revision=3)
+        fake_streamlit = MagicMock(session_state=state)
+        config = {
+            "version": 1,
+            "run_mode": "single",
+            "defaults": {},
+            "samples": [{"sample_id": "loaded", "tool": "bulk-footprinting"}],
+            "comparisons": [],
+        }
+        with patch.object(gui_app, "st", fake_streamlit):
+            _set_config(config)
+            self.assertEqual(_config_widget_key("sample_table"), "cfg_4_sample_table")
+        self.assertEqual(state["current_config"]["samples"], config["samples"])
+        self.assertIsNone(state["current_config"]["run_root"])
+        self.assertEqual(state["config_revision"], 4)
+        self.assertEqual(state["config_update_notice"], "Current config updated.")
+        fake_streamlit.rerun.assert_called_once_with()
+
+    def test_loaded_single_config_preserves_metadata_defaults_and_hidden_fields(self):
+        state = self._SessionState(
+            config_revision=2,
+            current_config={
+                "version": 1,
+                "run_mode": "single",
+                "run_root": "runs",
+                "defaults": {"cores": 2, "normalization": "sample-quantile"},
+                "samples": [
+                    {
+                        "sample_id": "loaded_bulk",
+                        "tool": "bulk-footprinting",
+                        "sample_table": r"C:\\project path\\samples.tsv",
+                        "hidden_future_option": "keep-me",
+                    }
+                ],
+                "comparisons": [],
+            },
+        )
+        fake_streamlit = MagicMock(session_state=state)
+        with patch.object(gui_app, "st", fake_streamlit):
+            self.assertEqual(_config_form_mode("bulk-footprinting"), "Single run")
+            self.assertEqual(gui_app._current_single_params("bulk-footprinting")["cores"], 2)
+            updated = _updated_single_config(
+                "bulk-footprinting",
+                {"outdir": r"C:\\project path\\changed", "cores": 6},
+                job_id="fallback",
+            )
+        item = updated["samples"][0]
+        self.assertEqual(item["sample_id"], "loaded_bulk")
+        self.assertEqual(item["hidden_future_option"], "keep-me")
+        self.assertEqual(item["outdir"], r"C:\\project path\\changed")
+        self.assertEqual(updated["run_root"], "runs")
+        self.assertEqual(updated["defaults"]["normalization"], "sample-quantile")
+
+    def test_loaded_batch_config_selects_matching_editor_mode(self):
+        fake_streamlit = MagicMock(
+            session_state=self._SessionState(
+                current_config={
+                    "version": 1,
+                    "run_mode": "batch",
+                    "defaults": {},
+                    "samples": [],
+                    "comparisons": [
+                        {"comparison_id": "a_vs_b", "tool": "diff-footprints"}
+                    ],
+                }
+            )
+        )
+        with patch.object(gui_app, "st", fake_streamlit):
+            self.assertEqual(
+                _config_form_mode("diff-footprints"),
+                "Batch comparison list",
+            )
 
     def test_run_control_state_tracks_validation_and_keeps_launch_guard(self):
         normalized = {
