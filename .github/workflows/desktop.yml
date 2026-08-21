@@ -73,11 +73,22 @@ jobs:
         shell: bash
         run: |
           app="release/fp-tools.app"
+          dmg="release/fp-tools-gui-macos-apple-silicon.dmg"
           mkdir -p "${app}/Contents/MacOS"
           cp dist/fp-tools-gui "${app}/Contents/MacOS/fp-tools-gui"
           cp packaging/desktop/Info.plist "${app}/Contents/Info.plist"
-          hdiutil create -volname "fp-tools" -srcfolder "${app}" \
-            -ov -format UDZO "release/fp-tools-gui-macos-apple-silicon.dmg"
+          for attempt in 1 2 3; do
+            if hdiutil create -volname "fp-tools" -srcfolder "${app}" \
+              -ov -format UDZO "${dmg}"; then
+              break
+            fi
+            if [[ "${attempt}" -eq 3 ]]; then
+              echo "hdiutil failed after ${attempt} attempts" >&2
+              exit 1
+            fi
+            echo "hdiutil was temporarily unavailable; retrying..." >&2
+            sleep 5
+          done
           rm -rf "${app}"
       - uses: actions/upload-artifact@v7
         with:
