@@ -65,6 +65,24 @@ class ReportPlotControlsTest(unittest.TestCase):
             '<rect width="${width}" height="${height}" fill="#fff"/><text x="${width / 2}" y="24"',
             app,
         )
+        self.assertEqual(app.count('data-export-cell="'), 5)
+        for attribute in (
+            "data-source-width",
+            "data-source-height",
+            "data-cell-width",
+            "data-cell-height",
+            "data-scale",
+        ):
+            self.assertIn(attribute, app)
+        self.assertIn('querySelector(":scope > rect")?.remove()', app)
+
+    def test_controls_precede_exports_in_the_scrollable_action_column(self):
+        document = (RESOURCE_ROOT / "index.html").read_text(encoding="utf-8")
+        actions = document.split('<section class="option-col options-actions">', 1)[1].split(
+            "</section>", 1
+        )[0]
+
+        self.assertLess(actions.index(">Groups<"), actions.index(">Export<"))
 
     def test_bundle_and_embedded_reports_share_plot_control_code(self):
         review = {

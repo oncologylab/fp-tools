@@ -61,6 +61,10 @@ a separately planned breaking release explicitly changes the contract.
   complete container remains available on amd64 and arm64.
 - Branded GitHub and MkDocs presentation with responsive embedded report and
   GUI demos plus automated desktop/mobile browser audits.
+- Responsive GUI validation output with contained long paths and locally
+  scrolling YAML previews, verified in the native Windows and macOS audits.
+- Browser-verified plot controls and SVG exports for aggregate and
+  aggregate-free reports, including explicit subplot-bound checks.
 - A manifest-pinned, storage-conscious ENCODE workflow for 17 biological
   replicates from seven cancer cell lines. Its resumable runner uses a
   pair-specific union of released IDR-thresholded peaks, peak-q95 scaling, and

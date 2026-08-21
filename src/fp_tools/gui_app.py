@@ -470,6 +470,27 @@ def _apply_page_style() -> None:
             padding-left: clamp(1rem, 1.7vw, 2.2rem);
             padding-right: clamp(1rem, 1.7vw, 2.2rem);
         }
+        [data-testid="stMain"],
+        [data-testid="stMain"] [data-testid="stMainBlockContainer"],
+        [data-testid="stMain"] [data-testid="stHorizontalBlock"],
+        [data-testid="stMain"] [data-testid="stColumn"],
+        [data-testid="stMain"] [data-testid="stColumn"] > [data-testid="stVerticalBlock"],
+        [data-testid="stMain"] [data-testid="stElementContainer"] {
+            min-width: 0 !important;
+            max-width: 100% !important;
+        }
+        [data-testid="stMain"] [data-testid="stCode"],
+        [data-testid="stMain"] [data-testid="stCodeBlock"] {
+            min-width: 0 !important;
+            max-width: 100% !important;
+            overflow: hidden !important;
+        }
+        [data-testid="stMain"] [data-testid="stCode"] pre,
+        [data-testid="stMain"] [data-testid="stCodeBlock"] pre {
+            min-width: 0 !important;
+            max-width: 100% !important;
+            overflow-x: auto !important;
+        }
         .fp-sidebar-brand {
             background: #101d33;
             color: #ffffff;
@@ -696,6 +717,23 @@ def _apply_page_style() -> None:
             overflow-wrap: normal;
             word-break: normal;
             hyphens: none;
+        }
+        .fp-validation-errors {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+            margin: 0.35rem 0 0.55rem;
+            padding-left: 1.2rem;
+            white-space: normal;
+        }
+        .fp-validation-errors li {
+            min-width: 0;
+            max-width: 100%;
+            margin: 0.24rem 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            white-space: normal;
         }
         .fp-tutorial-panel {
             background: #eaf2ff;
@@ -1466,6 +1504,14 @@ def _render_page_loader(tool: str) -> None:
             _set_config(normalize_config(load_yaml_config(path_text.strip())))
 
 
+def _validation_errors_markup(messages: list[str]) -> str:
+    items = "".join(f"<li>{escape(message)}</li>" for message in messages)
+    return (
+        '<ul class="fp-validation-errors" '
+        f'aria-label="Configuration validation errors">{items}</ul>'
+    )
+
+
 def _render_run_controls(run_dir: Path, label: str) -> None:
     normalized = normalize_config(st.session_state.current_config)
     validation_errors = validate_gui_config(normalized)
@@ -1487,8 +1533,10 @@ def _render_run_controls(run_dir: Path, label: str) -> None:
         )
         if validation_errors:
             st.error("Config needs fixes before launch.")
-            for message in validation_errors:
-                st.write(f"- {message}")
+            st.markdown(
+                _validation_errors_markup(validation_errors),
+                unsafe_allow_html=True,
+            )
         else:
             st.success("Config is ready to run.")
         with st.expander("Preview runnable YAML", expanded=False):

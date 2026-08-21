@@ -267,6 +267,127 @@ def _audit_sidebar_navigation(
         context.close()
 
 
+def _audit_validation_layout(
+    browser,
+    base_url: str,
+    page_name: str,
+    width: int,
+    height: int,
+    device_scale_factor: float,
+    output: Path,
+    capture_screenshots: bool,
+) -> None:
+    """Keep long validation paths and YAML previews inside the Run column."""
+
+    context = browser.new_context(
+        viewport={"width": width, "height": height},
+        device_scale_factor=device_scale_factor,
+    )
+    page = context.new_page()
+    try:
+        initial_page = "sc-footprinting" if page_name == "Config" else page_name
+        page.goto(
+            f"{base_url}/?page={urllib.parse.quote(initial_page)}",
+            wait_until="domcontentloaded",
+        )
+        page.locator(".fp-page-heading h1", has_text=initial_page).wait_for(timeout=60_000)
+        page.locator(".fp-validation-errors").first.wait_for(timeout=30_000)
+        if page_name == "Config":
+            page.get_by_role("button", name="Config", exact=True).click(force=True)
+            page.locator(".fp-page-heading h1", has_text="Config").wait_for(timeout=60_000)
+            page.locator(".fp-validation-errors").first.wait_for(timeout=30_000)
+
+        errors = page.locator(".fp-validation-errors").first
+        run_column = errors.locator(
+            "xpath=ancestor::*[@data-testid='stColumn'][1]"
+        )
+        main = page.locator("[data-testid='stMain']")
+        measurements = errors.evaluate(
+            """element => {
+              const runColumn = element.closest('[data-testid="stColumn"]');
+              const main = element.closest('[data-testid="stMain"]');
+              const columnBox = runColumn.getBoundingClientRect();
+              return {
+                mainOverflow: main.scrollWidth - main.clientWidth,
+                listOverflow: element.scrollWidth - element.clientWidth,
+                outsideLeft: columnBox.left - element.getBoundingClientRect().left,
+                outsideRight: element.getBoundingClientRect().right - columnBox.right,
+                itemOverflow: [...element.querySelectorAll('li')].map(
+                  item => item.scrollWidth - item.clientWidth
+                ),
+                itemOutside: [...element.querySelectorAll('li')].map(item => {
+                  const box = item.getBoundingClientRect();
+                  return Math.max(columnBox.left - box.left, box.right - columnBox.right);
+                })
+              };
+            }"""
+        )
+        failures = []
+        if measurements["mainOverflow"] > 1:
+            failures.append(f"main pane overflows by {measurements['mainOverflow']:.1f}px")
+        if measurements["listOverflow"] > 1:
+            failures.append(f"validation list overflows by {measurements['listOverflow']:.1f}px")
+        if max(measurements["outsideLeft"], measurements["outsideRight"]) > 1:
+            failures.append("validation list extends outside the Run column")
+        if any(value > 1 for value in measurements["itemOverflow"]):
+            failures.append("a validation message has horizontal overflow")
+        if any(value > 1 for value in measurements["itemOutside"]):
+            failures.append("a validation message extends outside the Run column")
+        if not page.get_by_role("button", name="Start run", exact=True).is_disabled():
+            failures.append("Start run is enabled for an invalid configuration")
+
+        page.get_by_text("Preview runnable YAML", exact=True).evaluate(
+            "element => { element.closest('details').open = true; }"
+        )
+        code = run_column.locator("[data-testid='stCode'], [data-testid='stCodeBlock']").first
+        code.wait_for(timeout=30_000)
+        code_metrics = code.evaluate(
+            """element => {
+              const main = element.closest('[data-testid="stMain"]');
+              const column = element.closest('[data-testid="stColumn"]');
+              const box = element.getBoundingClientRect();
+              const columnBox = column.getBoundingClientRect();
+              const pre = element.querySelector('pre');
+              return {
+                mainOverflow: main.scrollWidth - main.clientWidth,
+                outside: Math.max(columnBox.left - box.left, box.right - columnBox.right),
+                localOverflow: pre ? pre.scrollWidth - pre.clientWidth : 0,
+                preOverflowX: pre ? getComputedStyle(pre).overflowX : ''
+              };
+            }"""
+        )
+        if code_metrics["mainOverflow"] > 1:
+            failures.append("YAML preview creates main-pane overflow")
+        if code_metrics["outside"] > 1:
+            failures.append("YAML preview extends outside the Run column")
+        if code_metrics["localOverflow"] > 1 and code_metrics["preOverflowX"] not in {
+            "auto",
+            "scroll",
+        }:
+            failures.append("wide YAML does not scroll within its own code block")
+
+        if failures:
+            screenshot = output / f"validation-{page_name}-{width}-failure.png"
+            if capture_screenshots:
+                page.screenshot(
+                    path=str(screenshot),
+                    full_page=False,
+                    animations="disabled",
+                    timeout=30_000,
+                )
+            raise RuntimeError(
+                f"Validation-layout audit failed for {page_name} at {width}px: "
+                + "; ".join(failures)
+            )
+        print(
+            f"Audited validation layout for {page_name} at {width}x{height}, "
+            f"DPR {device_scale_factor}",
+            flush=True,
+        )
+    finally:
+        context.close()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("executable")
@@ -334,6 +455,27 @@ def main() -> int:
                             output,
                             not args.skip_screenshots,
                         )
+
+                    for width, height, scale in (
+                        (1920, 1080, 2.0),
+                        (1280, 720, 1.25),
+                    ):
+                        for page_name in (
+                            "sc-footprinting",
+                            "pseudobulk-fragments",
+                            "find-signature-fp",
+                            "Config",
+                        ):
+                            _audit_validation_layout(
+                                browser,
+                                base_url,
+                                page_name,
+                                width,
+                                height,
+                                scale,
+                                output,
+                                not args.skip_screenshots,
+                            )
 
                     context = browser.new_context(viewport={"width": 1280, "height": 720})
                     page = context.new_page()

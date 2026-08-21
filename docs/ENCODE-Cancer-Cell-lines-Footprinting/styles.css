@@ -168,6 +168,8 @@ a {
   min-width: 0;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .section-title {
   margin: 0 0 5px;

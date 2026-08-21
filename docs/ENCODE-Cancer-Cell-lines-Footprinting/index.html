@@ -62,31 +62,7 @@
           <summary>Show/Hide</summary>
           <div class="options-grid">
             <section class="option-col options-actions">
-              <p class="section-title">Export</p>
-              <div class="card export-stack">
-                <label class="format-row"
-                  >Format
-                  <select id="figure-format" aria-label="Figure export format">
-                    <option value="svg">Editable SVG</option>
-                    <option value="png">PNG</option>
-                    <option value="pdf">Print / PDF</option>
-                  </select>
-                </label>
-                <button id="download-logo" type="button">Motif logos</button>
-                <button id="download-rank" type="button">Bar plot</button>
-                <button id="download-volcano" type="button">Volcano plot</button>
-                <button id="download-aggregate" class="aggregate-only" type="button">Aggregate plots</button>
-                <button id="download-panel" type="button">Combined panel</button>
-                <button id="download-tsv" type="button">Comparison TSV</button>
-                <a
-                  id="download-all"
-                  class="button-link"
-                  href="data/all_pairwise_results.tsv.gz"
-                  download
-                  >All results</a
-                >
-              </div>
-              <p class="section-title group-title">Groups</p>
+              <p class="section-title">Groups</p>
               <div class="card control-stack">
                 <div id="color-controls" class="color-controls"></div>
                 <label class="rank-sort-control" title="Switch the waterfall ranking metric">
@@ -130,6 +106,30 @@
                     title="Comma-separated TF names, motif IDs, or output prefixes"
                   />
                 </label>
+              </div>
+              <p class="section-title group-title">Export</p>
+              <div class="card export-stack">
+                <label class="format-row"
+                  >Format
+                  <select id="figure-format" aria-label="Figure export format">
+                    <option value="svg">Editable SVG</option>
+                    <option value="png">PNG</option>
+                    <option value="pdf">Print / PDF</option>
+                  </select>
+                </label>
+                <button id="download-logo" type="button">Motif logos</button>
+                <button id="download-rank" type="button">Bar plot</button>
+                <button id="download-volcano" type="button">Volcano plot</button>
+                <button id="download-aggregate" class="aggregate-only" type="button">Aggregate plots</button>
+                <button id="download-panel" type="button">Combined panel</button>
+                <button id="download-tsv" type="button">Comparison TSV</button>
+                <a
+                  id="download-all"
+                  class="button-link"
+                  href="data/all_pairwise_results.tsv.gz"
+                  download
+                  >All results</a
+                >
               </div>
             </section>
 
