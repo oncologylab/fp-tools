@@ -450,6 +450,11 @@ def _audit_mobile_sidebar_navigation(
         page.locator(".fp-page-heading h1", has_text="bulk-footprinting").wait_for(
             timeout=60_000
         )
+        close_after_navigation = page.get_by_role(
+            "button", name="Close navigation"
+        )
+        if close_after_navigation.is_visible():
+            close_after_navigation.click()
         reopened = page.get_by_role("button", name="Open navigation")
         reopened.wait_for(state="visible", timeout=30_000)
         reopened.click()
