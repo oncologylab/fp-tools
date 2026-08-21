@@ -962,7 +962,7 @@ def _config_widget_key(name: str) -> str:
 def _render_config_update_notice() -> None:
     message = st.session_state.pop("config_update_notice", "")
     if message:
-        st.toast(str(message), icon="✓")
+        st.toast(str(message))
 
 
 def _tool_pages() -> set[str]:
@@ -1025,15 +1025,13 @@ def _default_config_for_tool(tool: str) -> dict[str, Any]:
 
 
 def _current_page_from_query() -> str:
-    session_page = st.session_state.get("gui_page")
-    if session_page in PAGE_OPTIONS:
-        return str(session_page)
     raw_page = st.query_params.get("page", "Home")
     if isinstance(raw_page, list):
         raw_page = raw_page[0] if raw_page else "Home"
     page = str(raw_page)
     if page not in PAGE_OPTIONS:
-        page = "Home"
+        session_page = st.session_state.get("gui_page")
+        page = str(session_page) if session_page in PAGE_OPTIONS else "Home"
     st.session_state.gui_page = page
     return page
 

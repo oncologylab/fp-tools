@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import socket
 import signal
 import subprocess
@@ -480,20 +481,52 @@ def _audit_mobile_sidebar_navigation(
         context.close()
 
 
-def _assert_control_value(page, label: str, expected: object) -> None:
+def _control_by_label(page, label: str):
+    """Locate a Streamlit control, including BaseWeb select boxes."""
+
     control = page.get_by_label(label, exact=True)
-    control.wait_for(state="visible", timeout=30_000)
+    if control.count():
+        return control
+    label_node = page.locator(
+        "[data-testid='stWidgetLabel']",
+        has_text=re.compile(rf"^{re.escape(label)}$"),
+    ).first
+    container = label_node.locator(
+        "xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), "
+        "' stElementContainer ')][1]"
+    )
+    return container.get_by_role("combobox")
+
+
+def _assert_control_value(page, label: str, expected: object) -> None:
+    control = _control_by_label(page, label)
     if isinstance(expected, bool):
+        control.wait_for(state="attached", timeout=30_000)
         if expected:
             expect(control).to_be_checked(timeout=30_000)
         else:
             expect(control).not_to_be_checked(timeout=30_000)
         actual = control.is_checked()
     else:
-        try:
+        control.wait_for(state="visible", timeout=30_000)
+        tag_name = control.evaluate("element => element.tagName")
+        role = control.get_attribute("role")
+        if role == "combobox":
+            selected_pattern = re.compile(
+                rf"^Selected {re.escape(str(expected))}\."
+            )
+            expect(control).to_have_attribute(
+                "aria-label",
+                selected_pattern,
+                timeout=30_000,
+            )
+            aria_label = control.get_attribute("aria-label") or ""
+            actual = aria_label.removeprefix("Selected ").split(".", 1)[0]
+        elif tag_name in {"INPUT", "TEXTAREA", "SELECT"}:
             expect(control).to_have_value(str(expected), timeout=30_000)
             actual = control.input_value()
-        except Exception:
+        else:
+            expect(control).to_have_text(str(expected), timeout=30_000)
             actual = control.inner_text().strip()
     if str(actual) != str(expected):
         raise RuntimeError(
@@ -504,8 +537,17 @@ def _assert_control_value(page, label: str, expected: object) -> None:
 def _open_expander(details) -> None:
     """Open a Streamlit expander through the same summary control a user clicks."""
 
-    details.locator("summary").click()
+    details.locator("summary").evaluate("element => element.click()")
     expect(details).to_have_attribute("open", "", timeout=30_000)
+
+
+def _submit_text_control(page, label: str, value: str) -> None:
+    """Enter a text value and wait until Streamlit records it server-side."""
+
+    control = _control_by_label(page, label)
+    control.fill(value)
+    control.press("Enter")
+    expect(page.get_by_label(label, exact=True)).to_have_value(value, timeout=30_000)
 
 
 def _audit_loaded_config_sync(
@@ -527,9 +569,17 @@ def _audit_loaded_config_sync(
         )
         loader = page.locator("details", has_text="Load bulk-footprinting config").first
         _open_expander(loader)
-        page.get_by_label("Config path", exact=True).fill(str(bulk_path))
-        page.get_by_role("button", name="Load YAML from path", exact=True).click()
-        page.get_by_label("Sample Table", exact=True).wait_for(timeout=30_000)
+        _submit_text_control(page, "Config path", str(bulk_path))
+        loader = page.locator("details", has_text="Load bulk-footprinting config").first
+        if loader.get_attribute("open") is None:
+            _open_expander(loader)
+        page.get_by_role("button", name="Load YAML from path", exact=True).evaluate(
+            "element => element.click()"
+        )
+        expect(page.get_by_label("Sample Table", exact=True)).to_have_value(
+            str(values["sample_table"]),
+            timeout=30_000,
+        )
         for label, key in (
             ("Sample Table", "sample_table"),
             ("Comparison Table", "comparison_table"),
@@ -543,10 +593,13 @@ def _audit_loaded_config_sync(
             _assert_control_value(page, label, values[key])
         _assert_control_value(page, "Motifs", str(values["motifs"][0]))
         _assert_control_value(page, "Dry Run", True)
+        print("Audited loaded bulk-footprinting config", flush=True)
 
         new_outdir = str(workdir / "changed output only")
         page.get_by_label("Outdir", exact=True).fill(new_outdir)
-        page.get_by_role("button", name="Update page config", exact=True).click()
+        page.get_by_role("button", name="Update page config", exact=True).evaluate(
+            "element => element.click()"
+        )
         page.get_by_label("Outdir", exact=True).wait_for(timeout=30_000)
         _assert_control_value(page, "Outdir", new_outdir)
         for label, key in (
@@ -559,6 +612,7 @@ def _audit_loaded_config_sync(
             ("Review Format", "review_format"),
         ):
             _assert_control_value(page, label, values[key])
+        print("Audited edited bulk-footprinting config", flush=True)
 
         page.goto(f"{base_url}/?page=normalize-bigwig", wait_until="domcontentloaded")
         page.locator(".fp-page-heading h1", has_text="normalize-bigwig").wait_for(
@@ -568,13 +622,18 @@ def _audit_loaded_config_sync(
             "details", has_text="Load normalize-bigwig config"
         ).first
         _open_expander(normalizer_loader)
-        example_select = page.get_by_label("Example YAML", exact=True)
-        example_select.click()
-        page.get_by_text("normalize_bigwig_single.yml", exact=True).click()
-        page.get_by_role("button", name="Load example", exact=True).click()
+        example_select = _control_by_label(page, "Example YAML")
+        example_select.evaluate("element => element.click()")
+        page.get_by_text("normalize_bigwig_single.yml", exact=True).evaluate(
+            "element => element.click()"
+        )
+        page.get_by_role("button", name="Load example", exact=True).evaluate(
+            "element => element.click()"
+        )
         page.get_by_label("Background", exact=True).wait_for(timeout=30_000)
         if not page.get_by_label("Background", exact=True).input_value().strip():
             raise RuntimeError("Example YAML did not refresh normalize-bigwig fields")
+        print("Audited loaded normalize-bigwig example", flush=True)
 
         diff_path, diff_values = _write_uploaded_diff_config(workdir)
         page.goto(f"{base_url}/?page=diff-footprints", wait_until="domcontentloaded")
@@ -584,8 +643,9 @@ def _audit_loaded_config_sync(
         diff_loader = page.locator("details", has_text="Load diff-footprints config").first
         _open_expander(diff_loader)
         page.locator("input[type='file']").set_input_files(str(diff_path))
-        page.get_by_role("button", name="Apply uploaded YAML", exact=True).click()
-        page.get_by_label("Comparison axis", exact=True).wait_for(timeout=30_000)
+        page.get_by_role("button", name="Apply uploaded YAML", exact=True).evaluate(
+            "element => element.click()"
+        )
         _assert_control_value(page, "Comparison axis", diff_values["comparison_axis"])
         _assert_control_value(page, "Motifs", "\n".join(diff_values["motifs"]))
         _assert_control_value(page, "Signals", "\n".join(diff_values["signals"]))
@@ -611,6 +671,7 @@ def _audit_loaded_config_sync(
         )
         _assert_control_value(page, "Cores", diff_values["cores"])
         _assert_control_value(page, "Skip Excel", True)
+        print("Audited uploaded diff-footprints config", flush=True)
         if capture_screenshots:
             page.screenshot(
                 path=str(output / "loaded-config-sync-diff-footprints.png"),

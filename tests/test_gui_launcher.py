@@ -131,6 +131,25 @@ class GuiLauncherTests(unittest.TestCase):
         self.assertEqual(state["config_update_notice"], "Current config updated.")
         fake_streamlit.rerun.assert_called_once_with()
 
+    def test_config_update_notice_uses_streamlit_default_icon(self):
+        state = self._SessionState(config_update_notice="Current config updated.")
+        fake_streamlit = MagicMock(session_state=state)
+        with patch.object(gui_app, "st", fake_streamlit):
+            gui_app._render_config_update_notice()
+        fake_streamlit.toast.assert_called_once_with("Current config updated.")
+        self.assertNotIn("config_update_notice", state)
+
+    def test_query_page_overrides_stale_session_navigation(self):
+        state = self._SessionState(gui_page="bulk-footprinting")
+        fake_streamlit = MagicMock(
+            session_state=state,
+            query_params={"page": "normalize-bigwig"},
+        )
+        with patch.object(gui_app, "st", fake_streamlit):
+            page = gui_app._current_page_from_query()
+        self.assertEqual(page, "normalize-bigwig")
+        self.assertEqual(state["gui_page"], "normalize-bigwig")
+
     def test_loaded_single_config_preserves_metadata_defaults_and_hidden_fields(self):
         state = self._SessionState(
             config_revision=2,
