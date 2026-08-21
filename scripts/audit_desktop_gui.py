@@ -495,7 +495,7 @@ def _control_by_label(page, label: str):
         "xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), "
         "' stElementContainer ')][1]"
     )
-    return container.get_by_role("combobox")
+    return container.locator("input, textarea, [role='combobox']").first
 
 
 def _assert_control_value(page, label: str, expected: object) -> None:
