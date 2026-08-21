@@ -512,16 +512,19 @@ def _assert_control_value(page, label: str, expected: object) -> None:
         tag_name = control.evaluate("element => element.tagName")
         role = control.get_attribute("role")
         if role == "combobox":
-            selected_pattern = re.compile(
-                rf"^Selected {re.escape(str(expected))}\."
-            )
-            expect(control).to_have_attribute(
-                "aria-label",
-                selected_pattern,
-                timeout=30_000,
-            )
-            aria_label = control.get_attribute("aria-label") or ""
-            actual = aria_label.removeprefix("Selected ").split(".", 1)[0]
+            deadline = time.monotonic() + 30
+            actual = ""
+            while time.monotonic() < deadline:
+                control = _control_by_label(page, label)
+                input_value = control.input_value()
+                if input_value:
+                    actual = input_value
+                else:
+                    aria_label = control.get_attribute("aria-label") or ""
+                    actual = aria_label.removeprefix("Selected ").split(".", 1)[0]
+                if str(actual) == str(expected):
+                    break
+                page.wait_for_timeout(100)
         elif tag_name in {"INPUT", "TEXTAREA", "SELECT"}:
             expect(control).to_have_value(str(expected), timeout=30_000)
             actual = control.input_value()
