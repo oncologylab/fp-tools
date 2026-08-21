@@ -521,7 +521,9 @@ def _audit_loaded_config_sync(
         loader = page.locator("details", has_text="Load bulk-footprinting config").first
         loader.evaluate("element => { element.open = true; }")
         page.get_by_label("Config path", exact=True).fill(str(bulk_path))
-        page.get_by_role("button", name="Load YAML from path", exact=True).click()
+        page.get_by_role("button", name="Load YAML from path", exact=True).click(
+            force=True
+        )
         page.get_by_label("Sample Table", exact=True).wait_for(timeout=30_000)
         for label, key in (
             ("Sample Table", "sample_table"),
@@ -539,7 +541,9 @@ def _audit_loaded_config_sync(
 
         new_outdir = str(workdir / "changed output only")
         page.get_by_label("Outdir", exact=True).fill(new_outdir)
-        page.get_by_role("button", name="Update page config", exact=True).click()
+        page.get_by_role("button", name="Update page config", exact=True).click(
+            force=True
+        )
         page.get_by_label("Outdir", exact=True).wait_for(timeout=30_000)
         _assert_control_value(page, "Outdir", new_outdir)
         for label, key in (
@@ -564,7 +568,7 @@ def _audit_loaded_config_sync(
         example_select = page.get_by_label("Example YAML", exact=True)
         example_select.click()
         page.get_by_text("normalize_bigwig_single.yml", exact=True).click()
-        page.get_by_role("button", name="Load example", exact=True).click()
+        page.get_by_role("button", name="Load example", exact=True).click(force=True)
         page.get_by_label("Background", exact=True).wait_for(timeout=30_000)
         if not page.get_by_label("Background", exact=True).input_value().strip():
             raise RuntimeError("Example YAML did not refresh normalize-bigwig fields")
@@ -577,7 +581,9 @@ def _audit_loaded_config_sync(
         diff_loader = page.locator("details", has_text="Load diff-footprints config").first
         diff_loader.evaluate("element => { element.open = true; }")
         page.locator("input[type='file']").set_input_files(str(diff_path))
-        page.get_by_role("button", name="Apply uploaded YAML", exact=True).click()
+        page.get_by_role("button", name="Apply uploaded YAML", exact=True).click(
+            force=True
+        )
         page.get_by_label("Comparison axis", exact=True).wait_for(timeout=30_000)
         _assert_control_value(page, "Comparison axis", diff_values["comparison_axis"])
         _assert_control_value(page, "Motifs", "\n".join(diff_values["motifs"]))
