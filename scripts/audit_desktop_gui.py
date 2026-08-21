@@ -626,10 +626,8 @@ def _audit_loaded_config_sync(
         ).first
         _open_expander(normalizer_loader)
         example_select = _control_by_label(page, "Example YAML")
-        example_select.evaluate("element => element.click()")
-        page.get_by_text("normalize_bigwig_single.yml", exact=True).evaluate(
-            "element => element.click()"
-        )
+        example_select.click(force=True)
+        page.get_by_text("normalize_bigwig_single.yml", exact=True).click(force=True)
         page.get_by_role("button", name="Load example", exact=True).evaluate(
             "element => element.click()"
         )
