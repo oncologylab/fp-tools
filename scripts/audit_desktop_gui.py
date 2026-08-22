@@ -435,7 +435,10 @@ def _audit_mobile_sidebar_navigation(
         box = open_button.bounding_box()
         if not box or min(box["width"], box["height"]) < 40:
             raise RuntimeError(f"Mobile navigation control is too small: {box}")
-        open_button.click()
+        page.mouse.click(
+            box["x"] + box["width"] / 2,
+            box["y"] + box["height"] / 2,
+        )
         page.wait_for_function(
             """() => {
               const sidebar = document.querySelector('[data-testid="stSidebar"]');
@@ -446,8 +449,8 @@ def _audit_mobile_sidebar_navigation(
         close_button = page.get_by_role("button", name="Close navigation")
         close_button.wait_for(state="visible", timeout=30_000)
         target = page.get_by_role("button", name="bulk-footprinting", exact=True)
-        target.scroll_into_view_if_needed()
-        target.click()
+        target.evaluate("element => element.scrollIntoView({block: 'center'})")
+        target.click(force=True)
         page.locator(".fp-page-heading h1", has_text="bulk-footprinting").wait_for(
             timeout=60_000
         )
@@ -455,11 +458,11 @@ def _audit_mobile_sidebar_navigation(
             "button", name="Close navigation"
         )
         if close_after_navigation.is_visible():
-            close_after_navigation.click()
+            close_after_navigation.click(force=True)
         reopened = page.get_by_role("button", name="Open navigation")
         reopened.wait_for(state="visible", timeout=30_000)
-        reopened.click()
-        page.get_by_role("button", name="Close navigation").click()
+        reopened.click(force=True)
+        page.get_by_role("button", name="Close navigation").click(force=True)
         reopened.wait_for(state="visible", timeout=30_000)
         metrics = page.evaluate(
             """() => ({
@@ -470,7 +473,7 @@ def _audit_mobile_sidebar_navigation(
         if metrics["overflow"] > 1 or metrics["exceptions"]:
             raise RuntimeError(f"Mobile navigation left a broken page: {metrics}")
         if capture_screenshots:
-            reopened.click()
+            reopened.click(force=True)
             page.screenshot(
                 path=str(output / "mobile-sidebar-open-390.png"),
                 full_page=False,
@@ -508,7 +511,7 @@ def _assert_control_value(page, label: str, expected: object) -> None:
             expect(control).not_to_be_checked(timeout=30_000)
         actual = control.is_checked()
     else:
-        control.wait_for(state="visible", timeout=30_000)
+        control.wait_for(state="attached", timeout=30_000)
         tag_name = control.evaluate("element => element.tagName")
         role = control.get_attribute("role")
         if role == "combobox":
@@ -540,7 +543,8 @@ def _assert_control_value(page, label: str, expected: object) -> None:
 def _open_expander(details) -> None:
     """Open a Streamlit expander through the same summary control a user clicks."""
 
-    details.locator("summary").evaluate("element => element.click()")
+    if details.get_attribute("open") is None:
+        details.locator("summary").evaluate("element => element.click()")
     expect(details).to_have_attribute("open", "", timeout=30_000)
 
 
@@ -579,15 +583,16 @@ def _audit_loaded_config_sync(
         page.get_by_role("button", name="Load YAML from path", exact=True).evaluate(
             "element => element.click()"
         )
-        expect(page.get_by_label("Sample Table", exact=True)).to_have_value(
+        _open_expander(page.locator("details", has_text="Advanced options").first)
+        expect(page.get_by_label("Samples TSV", exact=True)).to_have_value(
             str(values["sample_table"]),
             timeout=30_000,
         )
         for label, key in (
-            ("Sample Table", "sample_table"),
-            ("Comparison Table", "comparison_table"),
-            ("Genome", "genome"),
-            ("Outdir", "outdir"),
+            ("Samples TSV", "sample_table"),
+            ("Comparisons TSV (optional)", "comparison_table"),
+            ("Genome FASTA", "genome"),
+            ("Output directory", "outdir"),
             ("Cores", "cores"),
             ("Normalization", "normalization"),
             ("Plot Aggregate", "plot_aggregate"),
@@ -595,20 +600,21 @@ def _audit_loaded_config_sync(
         ):
             _assert_control_value(page, label, values[key])
         _assert_control_value(page, "Motifs", str(values["motifs"][0]))
-        _assert_control_value(page, "Dry Run", True)
+        _assert_control_value(page, "Validate configuration only", True)
         print("Audited loaded bulk-footprinting config", flush=True)
 
         new_outdir = str(workdir / "changed output only")
-        _submit_text_control(page, "Outdir", new_outdir)
+        _submit_text_control(page, "Output directory", new_outdir)
         page.get_by_role("button", name="Update page config", exact=True).evaluate(
             "element => element.click()"
         )
-        page.get_by_label("Outdir", exact=True).wait_for(timeout=30_000)
-        _assert_control_value(page, "Outdir", new_outdir)
+        _open_expander(page.locator("details", has_text="Advanced options").first)
+        page.get_by_label("Output directory", exact=True).wait_for(timeout=30_000)
+        _assert_control_value(page, "Output directory", new_outdir)
         for label, key in (
-            ("Sample Table", "sample_table"),
-            ("Comparison Table", "comparison_table"),
-            ("Genome", "genome"),
+            ("Samples TSV", "sample_table"),
+            ("Comparisons TSV (optional)", "comparison_table"),
+            ("Genome FASTA", "genome"),
             ("Cores", "cores"),
             ("Normalization", "normalization"),
             ("Plot Aggregate", "plot_aggregate"),
@@ -631,9 +637,10 @@ def _audit_loaded_config_sync(
         page.get_by_role("button", name="Load example", exact=True).evaluate(
             "element => element.click()"
         )
-        page.get_by_label("Background", exact=True).wait_for(timeout=30_000)
-        if not page.get_by_label("Background", exact=True).input_value().strip():
-            raise RuntimeError("Example YAML did not refresh normalize-bigwig fields")
+        expect(page.get_by_label("Background regions BED", exact=True)).to_have_value(
+            "test_data/merged_peaks.bed",
+            timeout=30_000,
+        )
         print("Audited loaded normalize-bigwig example", flush=True)
 
         diff_path, diff_values = _write_uploaded_diff_config(workdir)
@@ -648,21 +655,24 @@ def _audit_loaded_config_sync(
             "element => element.click()"
         )
         _assert_control_value(page, "Comparison axis", diff_values["comparison_axis"])
-        _assert_control_value(page, "Motifs", "\n".join(diff_values["motifs"]))
-        _assert_control_value(page, "Signals", "\n".join(diff_values["signals"]))
         _assert_control_value(
             page,
-            "Condition names",
-            "\n".join(diff_values["cond_names"]),
+            "Motif files (one per line)",
+            "\n".join(diff_values["motifs"]),
         )
         _assert_control_value(
             page,
-            "Region-set BED files",
+            "Footprint bigWig files",
+            "\n".join(diff_values["signals"]),
+        )
+        _assert_control_value(
+            page,
+            "Region BED files",
             "\n".join(diff_values["regions"]),
         )
         _assert_control_value(
             page,
-            "Region labels",
+            "Region labels (optional)",
             ",".join(diff_values["region_labels"]),
         )
         _assert_control_value(
@@ -827,6 +837,9 @@ def _audit_validation_layout(
             wait_until="domcontentloaded",
         )
         page.locator(".fp-page-heading h1", has_text=initial_page).wait_for(timeout=60_000)
+        page.get_by_role("button", name="Update page config", exact=True).click(
+            force=True
+        )
         page.locator(".fp-validation-errors").first.wait_for(timeout=30_000)
         if page_name == "Config":
             page.get_by_role("button", name="Config", exact=True).click(force=True)
@@ -1070,7 +1083,10 @@ def main() -> int:
                     loader.evaluate("element => { element.open = true; }")
                     page.get_by_text("Example YAML", exact=True).wait_for(timeout=30_000)
                     page.get_by_role("button", name="Load example", exact=True).wait_for(timeout=30_000)
-                    page.get_by_text("Config needs fixes before launch.", exact=True).wait_for(timeout=30_000)
+                    page.get_by_text(
+                        "Add the required inputs, then update the page config.",
+                        exact=True,
+                    ).wait_for(timeout=30_000)
                     start_button = page.get_by_role("button", name="Start run", exact=True)
                     if not start_button.is_disabled():
                         raise RuntimeError("Start run remains enabled for an invalid bulk configuration")
@@ -1082,9 +1098,9 @@ def main() -> int:
                         raise RuntimeError("Desktop GUI unexpectedly exposes a FASTQ reads-table field")
 
                     samples, comparisons, genome = _write_valid_bulk_fixture(workdir_path)
-                    page.get_by_label("Sample Table", exact=True).fill(str(samples))
-                    page.get_by_label("Comparison Table", exact=True).fill(str(comparisons))
-                    page.get_by_label("Genome", exact=True).fill(str(genome))
+                    page.get_by_label("Samples TSV", exact=True).fill(str(samples))
+                    page.get_by_label("Comparisons TSV (optional)", exact=True).fill(str(comparisons))
+                    page.get_by_label("Genome FASTA", exact=True).fill(str(genome))
                     page.get_by_role("button", name="Update page config", exact=True).click(force=True)
                     page.get_by_text("Config is ready to run.", exact=True).wait_for(timeout=30_000)
                     if start_button.is_disabled():

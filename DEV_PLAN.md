@@ -66,16 +66,20 @@ a separately planned breaking release explicitly changes the contract.
   executable, DMG contents, quarantine removal, and native-window launch.
 - Branded GitHub and MkDocs presentation with responsive embedded report and
   GUI demos plus automated desktop/mobile browser audits.
-- Responsive GUI validation output with contained long paths and locally
+- Responsive GUI validation output with readable wrapped paths and locally
   scrolling YAML previews, verified in the native Windows and macOS audits.
-  Path messages use forced cross-platform line breaking, and failed desktop
-  audits retain screenshots as CI artifacts for diagnosis.
+  Validation uses concise field names, preserves whole words where possible,
+  and failed desktop audits retain screenshots as CI artifacts for diagnosis.
 - Responsive GUI navigation and forms across every destination: the mobile
   sidebar has named open/close controls, the persistent sidebar header stays
   compact, workspace details remain available on demand, loaded YAML refreshes
   all form controls, and main-panel labels use explicit high-contrast colors.
   Frozen Windows and Apple Silicon audits exercise every page at desktop and
   narrow widths and retain screenshots for visual review.
+- A task-oriented GUI home page, neutral first-open forms, centralized field
+  labels, compact advanced options, clearly disabled launch controls, and
+  responsive form/run panels. Fresh desktop installations no longer open with
+  repository-relative example paths presented as user inputs.
 - Browser-verified plot controls and SVG exports for aggregate and
   aggregate-free reports, including explicit subplot-bound checks.
 - Command-aware logging across shared analysis engines, so `match-motifs` and

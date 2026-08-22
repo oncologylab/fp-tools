@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shlex
 from html import escape
 from importlib import resources
@@ -66,11 +67,11 @@ NAV_GROUPS = [
 GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
     "bulk-footprinting": {
         "sample_id": "bulk_footprinting_run",
-        "sample_table": "samples.tsv",
-        "comparison_table": "comparisons.tsv",
-        "genome": "genome.fa.gz",
+        "sample_table": "",
+        "comparison_table": "",
+        "genome": "",
         "blacklist": "",
-        "outdir": "results/bulk_footprinting",
+        "outdir": "",
         "motif_db": "jaspar2026_vertebrates",
         "plot_aggregate": "all",
         "review_format": "auto",
@@ -78,29 +79,29 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
     },
     "review-multi-comparisons": {
         "sample_id": "comparison_browser_run",
-        "inputs": ["results/bulk_footprinting/comparisons"],
+        "inputs": [],
         "labels": [],
-        "output_dir": "results/bulk_footprinting/reports/review_multi_comparisons",
+        "output_dir": "",
         "output_html": "",
         "layout": "custom",
         "title": "Review multiple differential footprint comparisons",
     },
     "match-motifs": {
         "sample_id": "match_motifs_run",
-        "signals": "test_data/Bcell_footprints.bw",
-        "genome": "test_data/genome.fa.gz",
-        "peaks": "test_data/merged_peaks_annotated.bed",
-        "peak_header": "test_data/merged_peaks_annotated_header.txt",
-        "outdir": "examples/gui_demo_outputs/match_motifs_single",
+        "signals": "",
+        "genome": "",
+        "peaks": "",
+        "peak_header": "",
+        "outdir": "",
         "cond_names": "Bcell",
         "motif_db": "jaspar2026_vertebrates",
         "skip_excel": True,
     },
     "normalize-bigwig": {
         "sample_id": "normalize_bigwig_run",
-        "bigwigs": "test_data/Bcell_corrected.bw\ntest_data/Tcell_corrected.bw",
-        "background": "test_data/merged_peaks.bed",
-        "outdir": "examples/gui_demo_outputs/normalize_bigwig",
+        "bigwigs": "",
+        "background": "",
+        "outdir": "",
         "method": "background-scale",
         "stat": "q95",
         "target": "median",
@@ -109,10 +110,10 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
     },
     "discover-motifs": {
         "sample_id": "motif_discovery_run",
-        "candidates": "test_data/merged_peaks.bed",
+        "candidates": "",
         "fasta": "",
-        "genome": "test_data/genome.fa.gz",
-        "outdir": "examples/gui_demo_outputs/motif_discovery",
+        "genome": "",
+        "outdir": "",
         "method": "streme",
         "known_motif_db": "jaspar2026_vertebrates",
         "known_motifs": "",
@@ -124,43 +125,43 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "sample_id": "motif_summary_run",
         "meme_txt": "",
         "tomtom_tsv": "",
-        "out_tsv": "examples/gui_demo_outputs/motif_summary/motif_summary.tsv",
-        "out_html": "examples/gui_demo_outputs/motif_summary/motif_summary.html",
+        "out_tsv": "",
+        "out_html": "",
         "title": "fp-tools motif summary",
     },
     "pseudobulk-fragments": {
         "sample_id": "pseudobulk_fragments_run",
-        "fragments": "data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz",
-        "annotations": "data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv",
+        "fragments": "",
+        "annotations": "",
         "group_by": "cell_type",
-        "outdir": "examples/gui_demo_outputs/pseudobulk_fragments",
+        "outdir": "",
         "min_cells": 1,
         "min_fragments": 1,
         "index_output": True,
     },
     "find-signature-fp": {
         "sample_id": "signature_fp_run",
-        "fragments": "data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz",
-        "annotations": "data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv",
-        "h5ad": "data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad.h5ad",
-        "tf_site_dir": "data/public/processed/pseudobulk_pbmc5k_scatac/footprint_demo/tf_sites",
-        "outdir": "examples/gui_demo_outputs/signature_fp",
+        "fragments": "",
+        "annotations": "",
+        "h5ad": "",
+        "tf_site_dir": "",
+        "outdir": "",
         "markers": "STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3",
         "summary_output_prefix": "single_cell_footprinting",
         "max_motifs": 25,
     },
     "sc-footprinting": {
         "sample_id": "pseudobulk_footprints_run",
-        "fragments": "data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_nextgem_fragments.tsv.gz",
-        "annotations": "data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad_annotations.tsv",
-        "h5ad": "data/public/processed/pseudobulk_pbmc5k_scatac/pbmc5k_scprinter_broad.h5ad",
+        "fragments": "",
+        "annotations": "",
+        "h5ad": "",
         "group_by": "cell_type",
-        "outdir": "examples/gui_demo_outputs/pseudobulk_footprints",
-        "genome_sizes": "data/public/processed/pseudobulk_pbmc5k_scatac/hg38.chrom.sizes",
-        "genome": "data/public/raw/genome/hg38.fa",
-        "peaks": "data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_snatac2_selected_bins.demo.bed",
+        "outdir": "",
+        "genome_sizes": "",
+        "genome": "",
+        "peaks": "",
         "motif_db": "jaspar2026_vertebrates",
-        "dry_run": True,
+        "dry_run": False,
     },
 }
 
@@ -180,6 +181,66 @@ LIST_TEXT_FIELDS = {
     "known_motifs",
     "TFBS",
     "read_shift",
+    "markers",
+}
+
+GUI_FIELD_LABELS = {
+    "TFBS": "Region BED files",
+    "annotations": "Cell annotations",
+    "background": "Background regions BED",
+    "bigwigs": "Signal bigWig files",
+    "candidates": "Candidate regions BED",
+    "chrom_sizes": "Chromosome sizes",
+    "comparison_table": "Comparisons TSV (optional)",
+    "cond_names": "Condition names",
+    "fasta": "Candidate sequences FASTA (optional)",
+    "fragments": "Fragments file",
+    "genome": "Genome FASTA",
+    "genome_sizes": "Chromosome sizes",
+    "group_by": "Annotation column",
+    "h5ad": "Annotated h5ad file",
+    "input_html": "Report HTML files",
+    "inputs": "Comparison result folders",
+    "known_motif_db": "Known motif database",
+    "known_motifs": "Known motif files (optional)",
+    "markers": "Marker motifs (one per line)",
+    "meme_txt": "MEME motif file",
+    "motif_db": "Motif database",
+    "dry_run": "Validate configuration only",
+    "out_html": "Output HTML",
+    "out_tsv": "Output TSV",
+    "outdir": "Output directory",
+    "output_dir": "Output directory",
+    "output_html": "Output HTML (optional)",
+    "peak_header": "Peak annotation header (optional)",
+    "peaks": "Accessible regions BED",
+    "sample_table": "Samples TSV",
+    "signals": "Footprint bigWig files",
+    "tf_site_dir": "Motif-site directory",
+    "tomtom_tsv": "TOMTOM matches TSV",
+}
+
+GUI_TOOL_DESCRIPTIONS = {
+    "bulk-footprinting": "Run the complete bulk ATAC-seq footprinting workflow from BAM and peak files.",
+    "match-motifs": "Scan accessible regions and summarize motif-associated footprint scores.",
+    "review-multi-comparisons": "Combine completed differential-footprint results into one interactive report.",
+    "normalize-bigwig": "Normalize multiple bigWig tracks over shared background regions.",
+    "discover-motifs": "Discover motifs from candidate footprint regions.",
+    "summarize-motifs": "Summarize discovered motifs and known-motif matches.",
+    "pseudobulk-fragments": "Group single-cell ATAC fragments using cell annotations.",
+    "find-signature-fp": "Identify and visualize cell-type footprint signatures.",
+    "sc-footprinting": "Run the complete single-cell ATAC-seq footprinting workflow.",
+}
+
+GUI_ADVANCED_FIELDS = {
+    "bulk-footprinting": {"blacklist", "plot_aggregate", "review_format", "cores"},
+    "review-multi-comparisons": {"layout", "title", "output_html"},
+    "match-motifs": {"peak_header", "skip_excel"},
+    "normalize-bigwig": {"chrom_sizes", "workers", "stat", "target"},
+    "discover-motifs": {"known_motifs", "script", "execute", "runtime"},
+    "pseudobulk-fragments": {"min_cells", "min_fragments", "index_output"},
+    "find-signature-fp": {"max_motifs", "summary_output_prefix"},
+    "sc-footprinting": {"dry_run"},
 }
 
 GUI_FIELD_HELP: dict[str, dict[str, str]] = {
@@ -387,11 +448,19 @@ def _apply_page_style() -> None:
         }
         [data-testid="stTextInputRootElement"] > div,
         [data-baseweb="base-input"],
-        textarea {
+        textarea,
+        [data-baseweb="select"] > div {
             background: var(--fp-surface) !important;
-            border-color: var(--fp-border) !important;
+            border-color: #aebccc !important;
             border-radius: var(--fp-radius-control) !important;
             box-shadow: none !important;
+        }
+        [data-testid="stTextInputRootElement"] > div:focus-within,
+        [data-baseweb="base-input"]:focus-within,
+        [data-baseweb="select"] > div:focus-within,
+        textarea:focus {
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.14) !important;
         }
         [data-testid="stTextInputRootElement"] input,
         textarea {
@@ -453,6 +522,22 @@ def _apply_page_style() -> None:
         .stDownloadButton > button:hover {
             background: var(--fp-accent-hover) !important;
             border-color: var(--fp-accent-hover) !important;
+        }
+        .stButton > button:disabled,
+        .stButton > button:disabled:hover,
+        .stDownloadButton > button:disabled,
+        .stDownloadButton > button:disabled:hover {
+            background: #e5e7eb !important;
+            border-color: #cbd5e1 !important;
+            color: #64748b !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+            opacity: 1 !important;
+        }
+        [data-testid="stMain"] [data-baseweb="radio"] [aria-checked="true"] > div,
+        [data-testid="stMain"] [data-baseweb="checkbox"] [aria-checked="true"] > div {
+            background-color: #2563eb !important;
+            border-color: #2563eb !important;
         }
         [data-testid="stCodeBlock"] pre,
         code {
@@ -716,13 +801,7 @@ def _apply_page_style() -> None:
             margin: 0.18rem 0 0;
         }
         .fp-run-card {
-            background: #ffffff;
-            border: 1px solid var(--fp-border-soft);
-            border-radius: 8px;
-            padding: 0.78rem 0.86rem;
-            box-shadow: var(--fp-shadow);
-            position: sticky;
-            top: 0.75rem;
+            padding: 0.08rem 0.08rem 0;
         }
         .fp-run-card h3 {
             font-size: 1rem;
@@ -773,7 +852,7 @@ def _apply_page_style() -> None:
             max-width: 100%;
             margin: 0.24rem 0;
             overflow-wrap: anywhere !important;
-            word-break: break-all !important;
+            word-break: normal !important;
             white-space: normal !important;
         }
         .fp-tutorial-panel {
@@ -806,6 +885,16 @@ def _apply_page_style() -> None:
             }
             .fp-run-summary div:first-child {
                 grid-column: 1 / -1;
+            }
+            [data-testid="stMain"] [class*="st-key-fp_tool_shell_"] > div > [data-testid="stHorizontalBlock"] {
+                align-items: stretch !important;
+                flex-direction: column !important;
+                gap: 0.72rem !important;
+            }
+            [data-testid="stMain"] [class*="st-key-fp_tool_shell_"] > div > [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                width: 100% !important;
             }
         }
         @media (max-width: 900px) {
@@ -871,6 +960,18 @@ def _apply_page_style() -> None:
             [data-testid="stSidebar"] {
                 min-width: 300px !important;
                 max-width: 300px !important;
+            }
+            [data-testid="stSidebar"][aria-expanded="true"] {
+                transition: none !important;
+                transform: none !important;
+                width: 300px !important;
+            }
+            [data-testid="stSidebar"][aria-expanded="false"] {
+                transition: none !important;
+                transform: translateX(-300px) !important;
+            }
+            [data-testid="stMain"] .block-container {
+                padding-top: 4.25rem !important;
             }
             [data-testid="stSidebarHeader"] {
                 align-items: center !important;
@@ -952,6 +1053,15 @@ def _ensure_session_config() -> None:
         )
     if "gui_run_dir" not in st.session_state:
         st.session_state.gui_run_dir = os.environ.get("FP_TOOLS_GUI_RUN_DIR", str(default_gui_run_dir()))
+    if "touched_tools" not in st.session_state:
+        st.session_state.touched_tools = set()
+
+
+def _tool_layout(label: str):
+    """Keep form and run controls together, then stack them on narrower screens."""
+
+    with st.container(key=f"fp_tool_shell_{label.replace('-', '_')}"):
+        return st.columns([0.67, 0.33], gap="large")
 
 
 def _config_widget_key(name: str) -> str:
@@ -1060,43 +1170,27 @@ def _render_sidebar_nav(active_page: str) -> None:
 
 def _render_home(run_dir: Path) -> None:
     st.markdown(
-        f"""
+        """
         <section class="fp-hero">
-          <div class="fp-kicker">fp-tools GUI</div>
-          <h1>Run footprint workflows from one clean control surface</h1>
-          <p>Choose a command, load an example, review the YAML, and launch the same reproducible workflow used by the command line.</p>
-          <div class="fp-pill-row">
-            <span class="fp-pill">Public bind ready</span>
-            <span class="fp-pill">YAML-first</span>
-            <span class="fp-pill">Batch aware</span>
-            <span class="fp-pill">Run history</span>
-          </div>
+          <h1>fp-tools</h1>
+          <p>Choose a workflow, enter your files, and run ATAC-seq footprinting.</p>
         </section>
-        <div class="fp-section-title">Typical workflow</div>
-        <div class="fp-card-grid">
-          <div class="fp-gui-card"><h3>1. Choose command</h3><p>Open bulk ATAC, motif, report, pseudobulk, or signature tools.</p></div>
-          <div class="fp-gui-card"><h3>2. Load example</h3><p>Start from bundled YAML or paste your own paths.</p></div>
-          <div class="fp-gui-card"><h3>3. Review YAML</h3><p>Check the exact config before running.</p></div>
-          <div class="fp-gui-card"><h3>4. Inspect outputs</h3><p>Open logs, tables, bigWigs, and HTML reports.</p></div>
-        </div>
         """,
         unsafe_allow_html=True,
     )
-    st.caption(
-        "Remote access: launch `fp-tools-gui --host 0.0.0.0 --port 8891`, open the printed URL, "
-        "and allow that TCP port in the firewall or cloud security group."
-    )
-    files = [path.name for path in _all_example_files()]
-    if files:
-        example_items = "\n".join(f'<div class="fp-example-item">{escape(name)}</div>' for name in files[:12])
-        st.markdown(
-            f"""
-            <div class="fp-section-title">Example YAML configs</div>
-            <div class="fp-example-grid">{example_items}</div>
-            """,
-            unsafe_allow_html=True,
-        )
-    _render_home_config_snapshot()
+    columns = st.columns(3)
+    actions = [
+        ("Bulk workflow", "BAM and peak inputs", "bulk-footprinting"),
+        ("Single-cell workflow", "Fragments and cell annotations", "sc-footprinting"),
+        ("Load YAML", "Open or edit a saved workflow", "Config"),
+    ]
+    for column, (title, description, page) in zip(columns, actions):
+        with column:
+            st.markdown(f"### {title}\n{description}")
+            if st.button(f"Open {title}", key=f"home_{page}", width="stretch"):
+                st.session_state.gui_page = page
+                st.query_params["page"] = page
+                st.rerun()
 
 
 def _render_home_config_snapshot() -> None:
@@ -1174,7 +1268,18 @@ def _render_run_history(run_dir: Path) -> None:
                     }
                 )
     if not rows:
-        st.caption("No run history yet.")
+        st.info("No runs yet. Start a workflow to see its status, logs, and outputs here.")
+        left, right = st.columns(2)
+        with left:
+            if st.button("Start bulk workflow", width="stretch"):
+                st.session_state.gui_page = "bulk-footprinting"
+                st.query_params["page"] = "bulk-footprinting"
+                st.rerun()
+        with right:
+            if st.button("Start single-cell workflow", width="stretch"):
+                st.session_state.gui_page = "sc-footprinting"
+                st.query_params["page"] = "sc-footprinting"
+                st.rerun()
         return
 
     history = pd.DataFrame(rows)
@@ -1229,7 +1334,7 @@ def _render_run_history(run_dir: Path) -> None:
 
 def _render_atacorrect_page(run_dir: Path) -> None:
     _render_page_heading("atac-correct", "Bias-correct ATAC-seq cut-site signal from BAM, genome, peaks, and blacklist inputs.")
-    form_col, run_col = st.columns([0.64, 0.36], gap="large")
+    form_col, run_col = _tool_layout("atac-correct")
     with form_col:
         _render_page_loader("atac-correct")
         mode_options = ["Single run", "Batch sample list"]
@@ -1254,7 +1359,7 @@ def _render_atacorrect_page(run_dir: Path) -> None:
                     if isinstance(bams_value, list):
                         bams_value = "\n".join(str(value) for value in bams_value)
                     bams = st.text_area(
-                        "BAMs",
+                        "BAM files (one per line)",
                         value=str(bams_value),
                         height=82,
                         help="One BAM path per line",
@@ -1272,7 +1377,7 @@ def _render_atacorrect_page(run_dir: Path) -> None:
                     )
                 with right:
                     blacklist = st.text_input(
-                        "Blacklist BED",
+                        "Blacklist BED (optional)",
                         value=str(single.get("blacklist", "")),
                         key=_config_widget_key("atacorrect_blacklist"),
                     )
@@ -1322,7 +1427,7 @@ def _render_atacorrect_page(run_dir: Path) -> None:
 
 def _render_footprintscores_page(run_dir: Path) -> None:
     _render_page_heading("call-footprints", "Score footprint signal over genomic regions from corrected signal tracks.")
-    form_col, run_col = st.columns([0.64, 0.36], gap="large")
+    form_col, run_col = _tool_layout("call-footprints")
     with form_col:
         _render_page_loader("call-footprints")
         mode_options = ["Single run", "Batch sample list"]
@@ -1407,7 +1512,7 @@ def _render_footprintscores_page(run_dir: Path) -> None:
 
 def _render_diff_footprints_page(run_dir: Path) -> None:
     _render_page_heading("diff-footprints", "Run motif-aware differential footprint detection across conditions or comparisons.")
-    form_col, run_col = st.columns([0.64, 0.36], gap="large")
+    form_col, run_col = _tool_layout("diff-footprints")
     with form_col:
         _render_page_loader("diff-footprints")
         mode_options = [
@@ -1417,10 +1522,15 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
         ]
         mode_default = _config_form_mode("diff-footprints")
         mode = st.radio(
-            "Mode",
+            "Comparison setup",
             mode_options,
             index=mode_options.index(mode_default),
             horizontal=True,
+            format_func={
+                "Single condition": "One comparison",
+                "Batch single-condition list": "Batch samples",
+                "Batch comparison list": "Batch comparisons",
+            }.get,
             key=_config_widget_key("diff_footprints_mode"),
         )
         single = _current_single_params("diff-footprints")
@@ -1461,21 +1571,21 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
             ],
         )
         if mode == "Single condition":
+            comparison_axis = st.selectbox(
+                "Comparison axis",
+                ["conditions", "regions"],
+                index=0 if str(single.get("comparison_axis", "conditions")) == "conditions" else 1,
+                help="Compare samples or compare region sets measured in the same sample(s).",
+                key=_config_widget_key("diff_footprints_comparison_axis"),
+            )
             with st.form(_config_widget_key("diff_footprints_single_form")):
-                comparison_axis = st.selectbox(
-                    "Comparison axis",
-                    ["conditions", "regions"],
-                    index=0 if str(single.get("comparison_axis", "conditions")) == "conditions" else 1,
-                    help="Compare conditions, or compare two or more region sets in the same biological sample(s).",
-                    key=_config_widget_key("diff_footprints_comparison_axis"),
-                )
                 left, right = st.columns(2)
                 with left:
                     motifs_value = single.get("motifs", "")
                     if isinstance(motifs_value, list):
                         motifs_value = _join_multi(motifs_value)
                     motifs = st.text_area(
-                        "Motifs",
+                        "Motif files (one per line)",
                         value=str(motifs_value),
                         height=76,
                         key=_config_widget_key("diff_footprints_motifs"),
@@ -1497,7 +1607,7 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
                     )
                 with right:
                     peak_header = st.text_input(
-                        "Peak header",
+                        "Peak annotation header (optional)",
                         value=str(single.get("peak_header", "")),
                         key=_config_widget_key("diff_footprints_peak_header"),
                     )
@@ -1519,37 +1629,43 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
                         key=_config_widget_key("diff_footprints_skip_excel"),
                     )
                 signals = st.text_area(
-                    "Signals",
+                    "Footprint bigWig files",
                     value=_join_multi(single.get("signals", [])),
                     height=94,
                     key=_config_widget_key("diff_footprints_signals"),
                 )
-                cond_names = st.text_area(
-                    "Condition names",
-                    value=_join_multi(single.get("cond_names", ["Bcell"])),
-                    height=76,
-                    key=_config_widget_key("diff_footprints_cond_names"),
-                )
-                regions = st.text_area(
-                    "Region-set BED files",
-                    value=_join_multi(single.get("regions", [])),
-                    height=76,
-                    help="Required only for region comparisons; one BED path per line.",
-                    key=_config_widget_key("diff_footprints_regions"),
-                )
-                region_labels = st.text_input(
-                    "Region labels",
-                    value=",".join(single.get("region_labels", [])),
-                    help="Optional comma-separated labels in the same order as the BED files.",
-                    key=_config_widget_key("diff_footprints_region_labels"),
-                )
-                region_strata_column = st.number_input(
-                    "Matching-stratum BED column (0 = none)",
-                    min_value=0,
-                    value=int(single.get("region_strata_column", 0) or 0),
-                    step=1,
-                    key=_config_widget_key("diff_footprints_region_strata_column"),
-                )
+                cond_names = _join_multi(single.get("cond_names", ["Bcell"]))
+                regions = _join_multi(single.get("regions", []))
+                region_labels = ",".join(single.get("region_labels", []))
+                region_strata_column = int(single.get("region_strata_column", 0) or 0)
+                if comparison_axis == "conditions":
+                    cond_names = st.text_area(
+                        "Condition names",
+                        value=cond_names,
+                        height=76,
+                        key=_config_widget_key("diff_footprints_cond_names"),
+                    )
+                else:
+                    regions = st.text_area(
+                        "Region BED files",
+                        value=regions,
+                        height=76,
+                        help="One region set per line.",
+                        key=_config_widget_key("diff_footprints_regions"),
+                    )
+                    region_labels = st.text_input(
+                        "Region labels (optional)",
+                        value=region_labels,
+                        help="Comma-separated labels in the same order as the BED files.",
+                        key=_config_widget_key("diff_footprints_region_labels"),
+                    )
+                    region_strata_column = st.number_input(
+                        "Matching-stratum BED column (0 = none)",
+                        min_value=0,
+                        value=region_strata_column,
+                        step=1,
+                        key=_config_widget_key("diff_footprints_region_strata_column"),
+                    )
                 submitted = st.form_submit_button("Update page config")
             if submitted:
                 _set_config(
@@ -1622,7 +1738,7 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
 
 def _render_plotaggregate_page(run_dir: Path) -> None:
     _render_page_heading("plot-aggregate", "Create aggregate footprint plots and optional aggregate score tables.")
-    form_col, run_col = st.columns([0.64, 0.36], gap="large")
+    form_col, run_col = _tool_layout("plot-aggregate")
     with form_col:
         _render_page_loader("plot-aggregate")
         mode_options = ["Single run", "Batch sample list"]
@@ -1654,13 +1770,13 @@ def _render_plotaggregate_page(run_dir: Path) -> None:
                 left, right = st.columns(2)
                 with left:
                     tfbs = st.text_area(
-                        "TFBS paths",
+                        "Region BED files",
                         value=_join_multi(single.get("TFBS", [])),
                         height=92,
                         key=_config_widget_key("plotaggregate_tfbs"),
                     )
                     signals = st.text_area(
-                        "Signal paths",
+                        "Signal bigWig files",
                         value=_join_multi(single.get("signals", [])),
                         height=92,
                         key=_config_widget_key("plotaggregate_signals"),
@@ -1672,17 +1788,17 @@ def _render_plotaggregate_page(run_dir: Path) -> None:
                         key=_config_widget_key("plotaggregate_output"),
                     )
                     grid = st.text_input(
-                        "Grid (optional, e.g. 2x5)",
+                        "Panel grid (optional; for example, 2x5)",
                         value=str(single.get("grid", "")),
                         key=_config_widget_key("plotaggregate_grid"),
                     )
                     score_csv = st.text_input(
-                        "Aggregated score CSV",
+                        "Aggregated score CSV (optional)",
                         value=str(single.get("output_aggregated_scores", "")),
                         key=_config_widget_key("plotaggregate_score_csv"),
                     )
                     signal_csv = st.text_input(
-                        "Aggregated signal CSV",
+                        "Aggregated signal CSV (optional)",
                         value=str(single.get("output_aggregated_signals", "")),
                         key=_config_widget_key("plotaggregate_signal_csv"),
                     )
@@ -1723,35 +1839,44 @@ def _render_plotaggregate_page(run_dir: Path) -> None:
 
 def _render_generic_tool_page(run_dir: Path, tool: str) -> None:
     tool = canonical_tool_name(tool)
-    _render_page_heading(tool, "Configure this command as YAML, then run it here or from the CLI.")
-    form_col, run_col = st.columns([0.64, 0.36], gap="large")
+    _render_page_heading(tool, GUI_TOOL_DESCRIPTIONS.get(tool, "Configure and run this fp-tools command."))
+    form_col, run_col = _tool_layout(tool)
     with form_col:
         _render_page_loader(tool)
         defaults = GENERIC_TOOL_DEFAULTS.get(tool, {"sample_id": f"{tool.replace('-', '_')}_run"})
         current = {**_drop_single_meta(defaults), **_current_single_params(tool)}
-        st.caption("This page writes the same YAML config used by run-yaml-workflow and the direct CLI.")
         with st.form(_config_widget_key(f"{tool}_generic_form")):
             edited: dict[str, Any] = {}
-            simple_fields: list[tuple[str, Any]] = []
-            wide_fields: list[tuple[str, Any]] = []
+            core_simple: list[tuple[str, Any]] = []
+            core_wide: list[tuple[str, Any]] = []
+            advanced: list[tuple[str, Any]] = []
+            advanced_keys = GUI_ADVANCED_FIELDS.get(tool, set())
             for key, default_value in current.items():
                 if key in {"tool", "sample_id", "job_id", "comparison_id", "extra_args"}:
                     continue
-                if key in LIST_TEXT_FIELDS or isinstance(default_value, list):
-                    wide_fields.append((key, default_value))
+                if key in advanced_keys:
+                    advanced.append((key, default_value))
+                elif key in LIST_TEXT_FIELDS or isinstance(default_value, list):
+                    core_wide.append((key, default_value))
                 else:
-                    simple_fields.append((key, default_value))
+                    core_simple.append((key, default_value))
             columns = st.columns(2)
-            for idx, (key, default_value) in enumerate(simple_fields):
+            for idx, (key, default_value) in enumerate(core_simple):
                 with columns[idx % 2]:
                     edited[key] = _render_generic_field(tool, key, default_value)
-            for key, default_value in wide_fields:
+            for key, default_value in core_wide:
                 edited[key] = _render_generic_field(tool, key, default_value)
-            extra_args = st.text_input(
-                "Extra CLI args",
-                value=_format_extra_args(current.get("extra_args", [])),
-                key=_config_widget_key(f"{tool}_extra_args"),
-            )
+            with st.expander("Advanced options", expanded=False):
+                advanced_columns = st.columns(2)
+                for idx, (key, default_value) in enumerate(advanced):
+                    with advanced_columns[idx % 2]:
+                        edited[key] = _render_generic_field(tool, key, default_value)
+                extra_args = st.text_input(
+                    "Additional CLI arguments",
+                    value=_format_extra_args(current.get("extra_args", [])),
+                    help="Optional arguments not represented by the fields above.",
+                    key=_config_widget_key(f"{tool}_extra_args"),
+                )
             submitted = st.form_submit_button("Update page config")
         if submitted:
             config = _prepare_generic_params(tool, edited)
@@ -1779,7 +1904,7 @@ def _render_generic_tool_page(run_dir: Path, tool: str) -> None:
 
 def _render_config_page(run_dir: Path) -> None:
     _render_page_heading("Config", "Download, load, edit, save, and run YAML workflow configs.")
-    form_col, run_col = st.columns([0.64, 0.36], gap="large")
+    form_col, run_col = _tool_layout("config")
     with form_col:
         st.download_button(
             "Download current YAML",
@@ -1848,12 +1973,29 @@ def _validation_errors_markup(messages: list[str]) -> str:
     )
 
 
+def _friendly_validation_message(message: str) -> str:
+    """Translate validator diagnostics into concise GUI guidance."""
+
+    text = re.sub(r"^[A-Za-z0-9_.-]+:\s*", "", str(message), count=1)
+    text = text.replace("file does not exist:", "File not found:")
+    text = text.replace("directory does not exist:", "Folder not found:")
+    text = text.replace("is required", "is required.")
+    text = text.replace("'sample_table'", "Samples TSV")
+    text = text.replace("'comparison_table'", "Comparisons TSV")
+    text = text.replace("'extra_args'", "Additional CLI arguments")
+    for field, label in GUI_FIELD_LABELS.items():
+        text = text.replace(f"'{field}'", label)
+    return text[:1].upper() + text[1:] if text else "Check this configuration."
+
+
 def _render_run_controls(run_dir: Path, label: str) -> None:
     normalized = normalize_config(st.session_state.current_config)
     validation_errors = validate_gui_config(normalized)
     has_validation_errors = bool(validation_errors)
     tool = _current_config_tool() or "none"
-    with st.container(border=True):
+    touched = tool in set(st.session_state.get("touched_tools", set()))
+    friendly_errors = [_friendly_validation_message(message) for message in validation_errors]
+    with st.container(border=True, key=f"fp_run_panel_{label}"):
         st.markdown(
             f"""
             <div class="fp-run-card">
@@ -1867,12 +2009,11 @@ def _render_run_controls(run_dir: Path, label: str) -> None:
             """,
             unsafe_allow_html=True,
         )
-        if validation_errors:
-            st.error("Config needs fixes before launch.")
-            st.markdown(
-                _validation_errors_markup(validation_errors),
-                unsafe_allow_html=True,
-            )
+        if validation_errors and touched:
+            st.error("Check the highlighted setup details before starting.")
+            st.markdown(_validation_errors_markup(friendly_errors), unsafe_allow_html=True)
+        elif validation_errors:
+            st.info("Add the required inputs, then update the page config.")
         else:
             st.success("Config is ready to run.")
         with st.expander("Preview runnable YAML", expanded=False):
@@ -2073,7 +2214,11 @@ def _render_generic_field(tool: str, key: str, default_value: Any) -> Any:
 
 
 def _human_label(key: str) -> str:
-    return key.replace("_", " ").replace("tfbs", "TFBS").title()
+    if key in GUI_FIELD_LABELS:
+        return GUI_FIELD_LABELS[key]
+    replacements = {"h5ad": "h5ad", "id": "ID", "tsv": "TSV", "html": "HTML", "pdf": "PDF"}
+    words = [replacements.get(word.lower(), word.capitalize()) for word in key.split("_")]
+    return " ".join(words)
 
 
 def _set_config(
@@ -2083,6 +2228,12 @@ def _set_config(
     notify: bool = True,
 ) -> None:
     st.session_state.current_config = normalize_config(config)
+    if notify:
+        touched = set(st.session_state.get("touched_tools", set()))
+        current_tool = _current_config_tool()
+        if current_tool:
+            touched.add(current_tool)
+        st.session_state.touched_tools = touched
     st.session_state.config_revision = int(st.session_state.get("config_revision", 0)) + 1
     if notify:
         st.session_state.config_update_notice = "Current config updated."
