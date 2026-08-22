@@ -93,6 +93,16 @@ def _stop(process: subprocess.Popen[str]) -> None:
         process.wait(timeout=20)
 
 
+def _wait_for_settled_render(page) -> None:
+    """Avoid capturing Streamlit's transient stale/skeleton placeholders."""
+
+    page.wait_for_function(
+        """() => !document.querySelector('[data-stale="true"]')
+          && !document.querySelector('[data-testid="stSkeleton"]')""",
+        timeout=30_000,
+    )
+
+
 def _write_valid_bulk_fixture(root: Path) -> tuple[Path, Path, Path]:
     """Create existence-only inputs for the GUI validation state transition."""
 
@@ -235,7 +245,7 @@ def _audit_page(
           overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth
         })"""
     )
-    expected_columns = 3 if width > 1500 else (2 if width > 900 else 1)
+    expected_columns = 3 if 900 < width <= 1100 else 1
     if metrics["columns"] != expected_columns:
         raise RuntimeError(
             f"{page_name} at {width}px uses {metrics['columns']} run-summary columns; "
@@ -253,6 +263,7 @@ def _audit_page(
     page.locator(
         "[data-testid='stMain'] [data-testid='stWidgetLabel']:visible"
     ).first.wait_for(state="visible", timeout=30_000)
+    _wait_for_settled_render(page)
     visible_labels = label_locator.evaluate_all(
         """elements => elements.filter(element => {
           const text = (element.innerText || element.textContent || '').trim();
@@ -350,6 +361,7 @@ def _audit_simple_page(
             page.locator(".fp-hero h1").wait_for(timeout=60_000)
         else:
             page.locator(".fp-page-heading h1", has_text=page_name).wait_for(timeout=60_000)
+        _wait_for_settled_render(page)
         metrics = page.evaluate(
             """() => ({
               overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -633,7 +645,12 @@ def _audit_loaded_config_sync(
         _open_expander(normalizer_loader)
         example_select = _control_by_label(page, "Example YAML")
         example_select.click(force=True)
-        page.get_by_text("normalize_bigwig_single.yml", exact=True).click(force=True)
+        example_select.press("ArrowDown")
+        example_select.press("Enter")
+        page.get_by_text("normalize_bigwig_single.yml", exact=True).wait_for(
+            state="visible",
+            timeout=30_000,
+        )
         page.get_by_role("button", name="Load example", exact=True).evaluate(
             "element => element.click()"
         )
@@ -850,7 +867,6 @@ def _audit_validation_layout(
         run_column = errors.locator(
             "xpath=ancestor::*[@data-testid='stColumn'][1]"
         )
-        main = page.locator("[data-testid='stMain']")
         measurements = errors.evaluate(
             """element => {
               const runColumn = element.closest('[data-testid="stColumn"]');

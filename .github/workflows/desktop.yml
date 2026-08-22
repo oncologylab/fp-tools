@@ -2,6 +2,11 @@ name: Desktop bundles
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_version:
+        description: Existing package version to rebuild, for example 0.2.0rc14
+        required: false
+        type: string
   push:
     tags:
       - "v*"
@@ -130,7 +135,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || inputs.publish_version != ''
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -144,17 +149,22 @@ jobs:
       - name: Upload executables to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          PUBLISH_VERSION: ${{ inputs.publish_version }}
         shell: bash
         run: |
-          if ! gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+          release_tag="${GITHUB_REF_NAME}"
+          if [[ "${GITHUB_REF}" != refs/tags/* ]]; then
+            release_tag="v${PUBLISH_VERSION#v}"
+          fi
+          if ! gh release view "${release_tag}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             release_flags=()
-            if [[ "${GITHUB_REF_NAME}" == *rc* ]]; then
+            if [[ "${release_tag}" == *rc* ]]; then
               release_flags+=(--prerelease)
             fi
-            gh release create "${GITHUB_REF_NAME}" \
+            gh release create "${release_tag}" \
               --repo "${GITHUB_REPOSITORY}" \
-              --title "fp-tools ${GITHUB_REF_NAME}" \
+              --title "fp-tools ${release_tag}" \
               --generate-notes \
               "${release_flags[@]}"
           fi
-          gh release upload "${GITHUB_REF_NAME}" release/* --repo "${GITHUB_REPOSITORY}" --clobber
+          gh release upload "${release_tag}" release/* --repo "${GITHUB_REPOSITORY}" --clobber
