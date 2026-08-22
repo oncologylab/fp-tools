@@ -91,7 +91,25 @@ class GuiLauncherTests(unittest.TestCase):
             gui_app._apply_page_style()
         style = fake_streamlit.markdown.call_args.args[0]
         self.assertIn("overflow-wrap: anywhere !important", style)
-        self.assertIn("word-break: break-all !important", style)
+        self.assertIn("word-break: normal !important", style)
+        self.assertIn("button:disabled", style)
+        self.assertIn("padding-top: 4.25rem !important", style)
+
+    def test_fresh_gui_defaults_do_not_assume_repository_paths(self):
+        self.assertEqual(GENERIC_TOOL_DEFAULTS["match-motifs"]["signals"], "")
+        self.assertEqual(GENERIC_TOOL_DEFAULTS["bulk-footprinting"]["sample_table"], "")
+        self.assertEqual(GENERIC_TOOL_DEFAULTS["sc-footprinting"]["fragments"], "")
+        self.assertFalse(GENERIC_TOOL_DEFAULTS["sc-footprinting"]["dry_run"])
+
+    def test_validation_messages_are_humanized_without_losing_context(self):
+        self.assertEqual(
+            gui_app._friendly_validation_message("bulk_run: 'sample_table' file does not exist: /work/samples.tsv"),
+            "Samples TSV File not found: /work/samples.tsv",
+        )
+        self.assertEqual(
+            gui_app._friendly_validation_message("Missing fragments: C:\\work\\cells.tsv.gz"),
+            "Missing fragments: C:\\work\\cells.tsv.gz",
+        )
 
     def test_mobile_navigation_and_compact_sidebar_styles_are_present(self):
         fake_streamlit = MagicMock()
