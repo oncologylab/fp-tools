@@ -222,7 +222,9 @@ def _audit_page(
     output: Path,
     capture_screenshots: bool,
 ) -> None:
-    context = browser.new_context(viewport={"width": width, "height": height})
+    context = browser.new_context(
+        viewport={"width": width, "height": height}, color_scheme="dark"
+    )
     page = context.new_page()
     console_errors: list[str] = []
     page.on(
@@ -242,7 +244,10 @@ def _audit_page(
         """element => ({
           columns: getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length,
           wordBreaks: [...element.querySelectorAll('strong')].map(node => getComputedStyle(node).wordBreak),
-          overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth
+          overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          colorScheme: getComputedStyle(document.documentElement).colorScheme,
+          background: getComputedStyle(document.body).backgroundColor,
+          textColor: getComputedStyle(document.body).color
         })"""
     )
     expected_columns = 3 if width > 1500 else 2 if width > 900 else 1
@@ -255,6 +260,18 @@ def _audit_page(
         raise RuntimeError(f"{page_name} at {width}px permits mid-word summary breaks")
     if metrics["overflow"]:
         raise RuntimeError(f"{page_name} at {width}px has horizontal overflow")
+    if "light" not in metrics["colorScheme"].split():
+        raise RuntimeError(
+            f"{page_name} at {width}px does not force light mode: {metrics}"
+        )
+    if metrics["background"] != "rgb(243, 246, 250)":
+        raise RuntimeError(
+            f"{page_name} at {width}px has unexpected page background: {metrics}"
+        )
+    if metrics["textColor"] != "rgb(17, 24, 39)":
+        raise RuntimeError(
+            f"{page_name} at {width}px has unexpected text color: {metrics}"
+        )
     if page.locator("[data-testid='stException']").count():
         raise RuntimeError(f"{page_name} at {width}px rendered a Streamlit exception")
     label_locator = page.locator(
@@ -350,7 +367,9 @@ def _audit_simple_page(
     output: Path,
     capture_screenshots: bool,
 ) -> None:
-    context = browser.new_context(viewport={"width": width, "height": height})
+    context = browser.new_context(
+        viewport={"width": width, "height": height}, color_scheme="dark"
+    )
     page = context.new_page()
     try:
         page.goto(
@@ -387,7 +406,9 @@ def _audit_compact_sidebar(
     output: Path,
     capture_screenshots: bool,
 ) -> None:
-    context = browser.new_context(viewport={"width": 1280, "height": 720})
+    context = browser.new_context(
+        viewport={"width": 1280, "height": 720}, color_scheme="dark"
+    )
     page = context.new_page()
     try:
         page.goto(f"{base_url}/?page=Home", wait_until="domcontentloaded")
@@ -437,7 +458,9 @@ def _audit_mobile_sidebar_navigation(
     output: Path,
     capture_screenshots: bool,
 ) -> None:
-    context = browser.new_context(viewport={"width": 390, "height": 844})
+    context = browser.new_context(
+        viewport={"width": 390, "height": 844}, color_scheme="dark"
+    )
     page = context.new_page()
     try:
         page.goto(f"{base_url}/?page=Home", wait_until="domcontentloaded")
@@ -579,7 +602,9 @@ def _audit_loaded_config_sync(
 ) -> None:
     """Loaded files, examples, and uploads must replace visible widget state."""
 
-    context = browser.new_context(viewport={"width": 1440, "height": 960})
+    context = browser.new_context(
+        viewport={"width": 1440, "height": 960}, color_scheme="dark"
+    )
     page = context.new_page()
     try:
         bulk_path, values = _write_loaded_bulk_config(workdir)
@@ -725,6 +750,7 @@ def _audit_sidebar_navigation(
     context = browser.new_context(
         viewport={"width": width, "height": height},
         device_scale_factor=device_scale_factor,
+        color_scheme="dark",
     )
     page = context.new_page()
     try:
@@ -845,6 +871,7 @@ def _audit_validation_layout(
     context = browser.new_context(
         viewport={"width": width, "height": height},
         device_scale_factor=device_scale_factor,
+        color_scheme="dark",
     )
     page = context.new_page()
     try:
@@ -1088,7 +1115,10 @@ def main() -> int:
                         not args.skip_screenshots,
                     )
 
-                    context = browser.new_context(viewport={"width": 1280, "height": 720})
+                    context = browser.new_context(
+                        viewport={"width": 1280, "height": 720},
+                        color_scheme="dark",
+                    )
                     page = context.new_page()
                     page.goto(f"{base_url}/?page=bulk-footprinting", wait_until="domcontentloaded")
                     page.locator(".fp-page-heading h1", has_text="bulk-footprinting").wait_for(

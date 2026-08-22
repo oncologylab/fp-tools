@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fp-tools-bio"
-version = "0.2.0rc14"
+version = "0.2.0rc15"
 description = "Standalone footprint tools with vendored Cython internals"
 readme = "README.md"
 license = "MIT"
@@ -147,7 +147,7 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
 # --- Poetry mirror of the important bits so `poetry build` works too ---
 [tool.poetry]
 name = "fp-tools-bio"
-version = "0.2.0rc14"
+version = "0.2.0rc15"
 description = "Standalone footprint tools with vendored Cython internals"
 authors = ["Yaoxiang Li"]
 readme = "README.md"

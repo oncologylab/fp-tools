@@ -152,9 +152,14 @@ class DocsEntryPointContractTest(unittest.TestCase):
         self.assertIn("font: false", config)
         self.assertIn("toc_depth: 3", config)
         self.assertIn("javascripts/layout.js", config)
+        self.assertIn("scheme: default", config)
+        self.assertNotIn("scheme: slate", config)
+        self.assertNotIn("Switch to dark mode", config)
         styles = (ROOT / "docs" / "stylesheets" / "extra.css").read_text(
             encoding="utf-8"
         )
+        self.assertIn("color-scheme: light", styles)
+        self.assertNotIn('[data-md-color-scheme="slate"]', styles)
         self.assertIn('"Helvetica Neue", Helvetica, Arial, sans-serif', styles)
         self.assertRegex(styles, r"\.md-typeset h1 \{[^}]*font-size: 1\.25rem;")
         self.assertRegex(styles, r"\.md-typeset h2 \{[^}]*font-size: 1rem;")

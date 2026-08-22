@@ -18,6 +18,28 @@ from pathlib import Path
 from fp_tools.gui_jobs import default_gui_run_dir
 
 
+STREAMLIT_LIGHT_THEME = {
+    "theme.base": "light",
+    "theme.primaryColor": "#2563eb",
+    "theme.backgroundColor": "#f3f6fa",
+    "theme.secondaryBackgroundColor": "#ffffff",
+    "theme.textColor": "#111827",
+    "theme.font": "sans serif",
+}
+
+
+def _streamlit_theme_cli_args() -> list[str]:
+    """Return explicit CLI flags so user-level settings cannot enable dark mode."""
+
+    return [part for key, value in STREAMLIT_LIGHT_THEME.items() for part in (f"--{key}", value)]
+
+
+def _streamlit_theme_bootstrap_options() -> dict[str, str]:
+    """Return Streamlit bootstrap keys for the frozen desktop server."""
+
+    return {key.replace(".", "_"): value for key, value in STREAMLIT_LIGHT_THEME.items()}
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Launch the fp-tools browser interface.")
     parser.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1).")
@@ -54,6 +76,7 @@ def main(argv: list[str] | None = None) -> None:
                 "server_port": port,
                 "server_headless": True,
                 "browser_gatherUsageStats": False,
+                **_streamlit_theme_bootstrap_options(),
             }
             bootstrap.load_config_options(flag_options)
             bootstrap.run(
@@ -78,6 +101,7 @@ def main(argv: list[str] | None = None) -> None:
                 "true",
                 "--browser.gatherUsageStats",
                 "false",
+                *_streamlit_theme_cli_args(),
             ]
             return_code = subprocess.run(command, env=env).returncode
     except KeyboardInterrupt:

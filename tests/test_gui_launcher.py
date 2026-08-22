@@ -12,7 +12,12 @@ from fp_tools.desktop import (
     INTERNAL_NATIVE_SMOKE_FLAG,
     main as desktop_main,
 )
-from fp_tools.desktop_window import DesktopLaunchError, _parse_desktop_args, _server_command
+from fp_tools.desktop_window import (
+    NATIVE_LIGHT_COLORS,
+    DesktopLaunchError,
+    _parse_desktop_args,
+    _server_command,
+)
 from fp_tools.gui_app import (
     GENERIC_TOOL_DEFAULTS,
     _all_example_files,
@@ -24,7 +29,13 @@ from fp_tools.gui_app import (
     _updated_single_config,
     _validation_errors_markup,
 )
-from fp_tools.cli_gui import _access_urls, _startup_messages
+from fp_tools.cli_gui import (
+    STREAMLIT_LIGHT_THEME,
+    _access_urls,
+    _startup_messages,
+    _streamlit_theme_bootstrap_options,
+    _streamlit_theme_cli_args,
+)
 from fp_tools.utils.subprocess_commands import (
     fp_tools_subprocess_command,
     python_script_subprocess_command,
@@ -73,6 +84,23 @@ class GuiLauncherTests(unittest.TestCase):
         with self.assertRaises(DesktopLaunchError):
             _parse_desktop_args(["--host", "0.0.0.0"])
 
+    def test_gui_launchers_force_the_light_theme(self):
+        self.assertEqual(STREAMLIT_LIGHT_THEME["theme.base"], "light")
+        cli_args = _streamlit_theme_cli_args()
+        self.assertEqual(cli_args[cli_args.index("--theme.base") + 1], "light")
+        bootstrap = _streamlit_theme_bootstrap_options()
+        self.assertEqual(bootstrap["theme_base"], "light")
+        self.assertEqual(
+            bootstrap["theme_backgroundColor"],
+            STREAMLIT_LIGHT_THEME["theme.backgroundColor"],
+        )
+        config = (Path(__file__).resolve().parents[1] / ".streamlit" / "config.toml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('base = "light"', config)
+        self.assertEqual(NATIVE_LIGHT_COLORS["window"], "#f3f6fa")
+        self.assertEqual(NATIVE_LIGHT_COLORS["text"], "#111827")
+
     def test_validation_error_markup_wraps_paths_and_escapes_html(self):
         markup = _validation_errors_markup(
             [
@@ -90,6 +118,7 @@ class GuiLauncherTests(unittest.TestCase):
         with patch.object(gui_app, "st", fake_streamlit):
             gui_app._apply_page_style()
         style = fake_streamlit.markdown.call_args.args[0]
+        self.assertIn("color-scheme: light", style)
         self.assertIn("overflow-wrap: anywhere !important", style)
         self.assertIn("word-break: normal !important", style)
         self.assertIn("button:disabled", style)

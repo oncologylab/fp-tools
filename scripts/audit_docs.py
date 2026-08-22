@@ -84,20 +84,6 @@ DOCUMENTATION_RETURN_PAGES = {
     "demos/gui/fp-tools-gui-static-demo.html",
     "ENCODE-Cancer-Cell-lines-Footprinting/",
 }
-DARK_MODE_PAGES = {
-    "",
-    "get-started/tool-overview/",
-    "get-started/workflows/bulk-atac-seq/",
-    "get-started/commands/diff-footprints/",
-    "get-started/output-examples/bulk-atac-seq/",
-    "get-started/output-examples/single-cell-atac-seq/",
-    "get-started/output-examples/region-set-comparison/",
-    "api/",
-    "gui/",
-    "reports/",
-}
-
-
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format: str, *args) -> None:
         return
@@ -418,10 +404,10 @@ def audit(site_dir: Path) -> None:
     with serve(site_dir) as base_url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         for relative in PAGES:
-            schemes = ("light", "dark") if relative in DARK_MODE_PAGES else ("light",)
             for width, height in VIEWPORTS:
-                for scheme in schemes:
+                for scheme in ("light",):
                     page = browser.new_page(viewport={"width": width, "height": height})
+                    page.emulate_media(color_scheme="dark")
                     page.route(
                         re.compile(r"^https?://(?!127\.0\.0\.1)"),
                         lambda route: route.fulfill(status=204, body=""),
@@ -450,11 +436,6 @@ def audit(site_dir: Path) -> None:
                     response = page.goto(
                         base_url + relative, wait_until="networkidle", timeout=60_000
                     )
-                    if scheme == "dark":
-                        page.locator('label[for^="__palette"]:visible').first.evaluate(
-                            "element => element.click()"
-                        )
-                        page.wait_for_timeout(100)
                     if relative.endswith("diff_footprints_K562_HepG2.html"):
                         page.locator(".selected-motif").first.wait_for(
                             state="visible", timeout=60_000
@@ -517,9 +498,24 @@ def audit(site_dir: Path) -> None:
                           ).map(image => image.src),
                           duplicateIds: [...document.querySelectorAll("[id]")]
                             .map(node => node.id)
-                            .filter((id, index, values) => values.indexOf(id) !== index)
+                            .filter((id, index, values) => values.indexOf(id) !== index),
+                          colorScheme: getComputedStyle(document.documentElement).colorScheme,
+                          mkdocsScheme: document.body.getAttribute("data-md-color-scheme"),
+                          paletteControls: document.querySelectorAll('label[for^="__palette"]').length
                         })"""
                     )
+                    if "light" not in metrics["colorScheme"].split():
+                        failures.append(
+                            f"{label}: page does not force a light color scheme "
+                            f"under a dark system preference ({metrics['colorScheme']})"
+                        )
+                    if relative not in STANDALONE_DEMO_PAGES:
+                        if metrics["mkdocsScheme"] != "default":
+                            failures.append(
+                                f"{label}: unexpected MkDocs palette {metrics['mkdocsScheme']}"
+                            )
+                        if metrics["paletteControls"]:
+                            failures.append(f"{label}: theme toggle should be absent")
                     if metrics["h1"] != 1:
                         failures.append(f"{label}: expected one h1, found {metrics['h1']}")
                     if metrics["scrollWidth"] > metrics["clientWidth"]:
@@ -893,7 +889,7 @@ def audit(site_dir: Path) -> None:
         raise SystemExit("Documentation browser audit failed:\n- " + "\n- ".join(failures))
     print(
         f"OK: audited {len(PAGES)} pages at {len(VIEWPORTS)} viewport sizes "
-        "in supported color schemes"
+        "while emulating a dark system preference"
     )
 
 

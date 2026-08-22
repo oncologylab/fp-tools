@@ -16,6 +16,18 @@ from fp_tools.cli_gui import _find_free_port, _state_dir
 from fp_tools.gui_jobs import default_gui_run_dir
 
 
+NATIVE_LIGHT_COLORS = {
+    "window": "#f3f6fa",
+    "base": "#ffffff",
+    "alternate_base": "#f9fafb",
+    "text": "#111827",
+    "muted_text": "#64748b",
+    "button": "#ffffff",
+    "highlight": "#2563eb",
+    "highlighted_text": "#ffffff",
+}
+
+
 class DesktopLaunchError(RuntimeError):
     """Raised when the bundled GUI cannot be started safely."""
 
@@ -54,6 +66,7 @@ def show_desktop_error(message: str) -> int:
         return 1
 
     application = QApplication.instance() or QApplication(["fp-tools"])
+    _apply_native_light_theme(application)
     QMessageBox.critical(None, "fp-tools", message)
     if QApplication.instance() is application:
         application.processEvents()
@@ -161,7 +174,7 @@ def _run_window(url: str, state_dir: Path, *, auto_close: bool) -> int:
             os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     try:
         from PySide6.QtCore import QTimer, QUrl
-        from PySide6.QtGui import QIcon
+        from PySide6.QtGui import QColor, QIcon
         from PySide6.QtWebEngineCore import QWebEngineProfile
         from PySide6.QtWebEngineWidgets import QWebEngineView
         from PySide6.QtWidgets import QApplication, QMainWindow
@@ -171,6 +184,7 @@ def _run_window(url: str, state_dir: Path, *, auto_close: bool) -> int:
         ) from exc
 
     application = QApplication.instance() or QApplication(["fp-tools"])
+    _apply_native_light_theme(application)
     application.setApplicationDisplayName("fp-tools")
     application.setApplicationName("fp-tools")
     icon_path = _bundled_icon_path()
@@ -186,6 +200,7 @@ def _run_window(url: str, state_dir: Path, *, auto_close: bool) -> int:
     if icon_path is not None:
         window.setWindowIcon(QIcon(str(icon_path)))
     view = QWebEngineView(window)
+    view.page().setBackgroundColor(QColor(NATIVE_LIGHT_COLORS["window"]))
     window.setCentralWidget(view)
     window.setMinimumSize(900, 640)
     geometry = application.primaryScreen().availableGeometry()
@@ -213,6 +228,43 @@ def _run_window(url: str, state_dir: Path, *, auto_close: bool) -> int:
             "The fp-tools interface could not be rendered in the desktop window."
         )
     return int(return_code)
+
+
+def _apply_native_light_theme(application) -> None:
+    """Apply a fixed light Qt palette independent of the operating-system theme."""
+
+    from PySide6.QtGui import QColor, QPalette
+
+    colors = NATIVE_LIGHT_COLORS
+    palette = QPalette()
+    palette.setColor(QPalette.ColorRole.Window, QColor(colors["window"]))
+    palette.setColor(QPalette.ColorRole.WindowText, QColor(colors["text"]))
+    palette.setColor(QPalette.ColorRole.Base, QColor(colors["base"]))
+    palette.setColor(QPalette.ColorRole.AlternateBase, QColor(colors["alternate_base"]))
+    palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(colors["base"]))
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor(colors["text"]))
+    palette.setColor(QPalette.ColorRole.Text, QColor(colors["text"]))
+    palette.setColor(QPalette.ColorRole.Button, QColor(colors["button"]))
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor(colors["text"]))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor("#dc2626"))
+    palette.setColor(QPalette.ColorRole.Link, QColor(colors["highlight"]))
+    palette.setColor(QPalette.ColorRole.Highlight, QColor(colors["highlight"]))
+    palette.setColor(
+        QPalette.ColorRole.HighlightedText,
+        QColor(colors["highlighted_text"]),
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.Text,
+        QColor(colors["muted_text"]),
+    )
+    palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.ButtonText,
+        QColor(colors["muted_text"]),
+    )
+    application.setStyle("Fusion")
+    application.setPalette(palette)
 
 
 def _bundled_icon_path() -> Path | None:

@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --fp-teal: #1f9d55;
   --fp-blue: #103a5c;
   --fp-header: #103a5c;
@@ -19,18 +20,6 @@ input,
 select,
 textarea {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
-[data-md-color-scheme="slate"] {
-  --fp-teal: #7ddf9f;
-  --fp-blue: #9ec5ee;
-  --fp-teal-dark: #9cf0b8;
-  --fp-teal-soft: rgba(31, 157, 85, 0.18);
-  --fp-ink: #e5f4f3;
-  --fp-muted: #b5c9ca;
-  --fp-line: rgba(148, 163, 184, 0.24);
-  --fp-panel: #111827;
-  --fp-header: #0b2940;
 }
 
 .md-header,

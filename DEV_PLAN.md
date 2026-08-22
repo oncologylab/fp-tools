@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-21
+Last updated: 2026-08-22
 
 ## Current Baseline
 
@@ -76,6 +76,10 @@ a separately planned breaking release explicitly changes the contract.
   all form controls, and main-panel labels use explicit high-contrast colors.
   Frozen Windows and Apple Silicon audits exercise every page at desktop and
   narrow widths and retain screenshots for visual review.
+- The documentation, browser GUI, static demos, and native Windows/macOS
+  windows use one explicit light theme regardless of the operating-system
+  preference. Browser audits emulate a dark system preference to guard this
+  presentation contract.
 - A task-oriented GUI home page, neutral first-open forms, centralized field
   labels, compact advanced options, clearly disabled launch controls, and
   responsive form/run panels. Every route now reuses the Home page's light
