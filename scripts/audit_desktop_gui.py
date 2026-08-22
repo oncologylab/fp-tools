@@ -245,7 +245,7 @@ def _audit_page(
           overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth
         })"""
     )
-    expected_columns = 3 if 900 < width <= 1100 else 1
+    expected_columns = 3 if width > 1500 else 2 if width > 900 else 1
     if metrics["columns"] != expected_columns:
         raise RuntimeError(
             f"{page_name} at {width}px uses {metrics['columns']} run-summary columns; "

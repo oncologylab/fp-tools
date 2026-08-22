@@ -94,6 +94,20 @@ class GuiLauncherTests(unittest.TestCase):
         self.assertIn("word-break: normal !important", style)
         self.assertIn("button:disabled", style)
         self.assertIn("padding-top: 4.25rem !important", style)
+        self.assertIn('[data-testid="stTextInputRootElement"]', style)
+        self.assertIn('[data-testid="stTextAreaRootElement"]', style)
+        self.assertIn('[data-testid="stNumberInputContainer"]', style)
+        self.assertIn(".stFormSubmitButton > button", style)
+        self.assertIn("@media (max-width: 1500px)", style)
+
+    def test_page_heading_reuses_the_home_hero_card(self):
+        fake_streamlit = MagicMock()
+        with patch.object(gui_app, "st", fake_streamlit):
+            gui_app._render_page_heading("call-footprints", "Score corrected signal.")
+        markup = fake_streamlit.markdown.call_args.args[0]
+        self.assertIn('class="fp-hero fp-page-heading"', markup)
+        self.assertIn("call-footprints", markup)
+        self.assertIn("Score corrected signal.", markup)
 
     def test_fresh_gui_defaults_do_not_assume_repository_paths(self):
         self.assertEqual(GENERIC_TOOL_DEFAULTS["match-motifs"]["signals"], "")

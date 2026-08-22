@@ -455,7 +455,18 @@ def _apply_page_style() -> None:
             border-radius: var(--fp-radius-control) !important;
             box-shadow: none !important;
         }
-        [data-testid="stTextInputRootElement"] > div:focus-within,
+        [data-testid="stTextInputRootElement"],
+        [data-testid="stTextAreaRootElement"],
+        [data-testid="stNumberInputContainer"],
+        [data-baseweb="select"] > div {
+            background: var(--fp-surface) !important;
+            border: 1px solid #aebccc !important;
+            border-radius: var(--fp-radius-control) !important;
+            box-shadow: none !important;
+        }
+        [data-testid="stTextInputRootElement"]:focus-within,
+        [data-testid="stTextAreaRootElement"]:focus-within,
+        [data-testid="stNumberInputContainer"]:focus-within,
         [data-baseweb="base-input"]:focus-within,
         [data-baseweb="select"] > div:focus-within,
         textarea:focus {
@@ -480,7 +491,18 @@ def _apply_page_style() -> None:
             background: var(--fp-surface) !important;
             border: 1px solid var(--fp-border-soft) !important;
             box-shadow: var(--fp-shadow) !important;
+        }
+        [data-testid="stForm"] {
+            padding: 0.78rem 0.86rem !important;
+        }
+        [data-testid="stExpander"],
+        [data-testid="stAlert"] {
             padding: 0.35rem 0.55rem !important;
+        }
+        [data-testid="stFileUploaderDropzone"] {
+            background: var(--fp-surface-soft) !important;
+            border: 1px dashed #aebccc !important;
+            border-radius: var(--fp-radius-control) !important;
         }
         [data-testid="stMarkdownContainer"] h1,
         [data-testid="stMarkdownContainer"] h2,
@@ -508,7 +530,8 @@ def _apply_page_style() -> None:
             font-weight: 760 !important;
         }
         .stButton > button,
-        .stDownloadButton > button {
+        .stDownloadButton > button,
+        .stFormSubmitButton > button {
             background: var(--fp-accent) !important;
             color: #ffffff !important;
             border: 1px solid var(--fp-accent) !important;
@@ -519,14 +542,17 @@ def _apply_page_style() -> None:
             box-shadow: var(--fp-shadow) !important;
         }
         .stButton > button:hover,
-        .stDownloadButton > button:hover {
+        .stDownloadButton > button:hover,
+        .stFormSubmitButton > button:hover {
             background: var(--fp-accent-hover) !important;
             border-color: var(--fp-accent-hover) !important;
         }
         .stButton > button:disabled,
         .stButton > button:disabled:hover,
         .stDownloadButton > button:disabled,
-        .stDownloadButton > button:disabled:hover {
+        .stDownloadButton > button:disabled:hover,
+        .stFormSubmitButton > button:disabled,
+        .stFormSubmitButton > button:disabled:hover {
             background: #e5e7eb !important;
             border-color: #cbd5e1 !important;
             color: #64748b !important;
@@ -788,17 +814,17 @@ def _apply_page_style() -> None:
             align-items: start;
         }
         .fp-page-heading {
-            margin: 0 0 0.55rem;
+            margin: 0 0 0.68rem;
         }
         .fp-page-heading h1 {
-            font-size: clamp(1.42rem, 1.14vw, 1.84rem);
-            margin: 0;
+            font-size: clamp(1.58rem, 1.45vw, 2.05rem);
+            margin: 0 0 0.25rem;
         }
         .fp-page-heading p {
             color: var(--fp-text-muted);
-            font-size: 0.92rem;
-            line-height: 1.35;
-            margin: 0.18rem 0 0;
+            font-size: clamp(0.95rem, 0.7vw, 1.08rem);
+            line-height: 1.38;
+            margin: 0;
         }
         .fp-run-card {
             padding: 0.08rem 0.08rem 0;
@@ -834,6 +860,12 @@ def _apply_page_style() -> None:
             overflow-wrap: normal;
             word-break: normal;
             hyphens: none;
+        }
+        [data-testid="stMain"] [class*="st-key-fp_run_panel_"] {
+            background: var(--fp-surface) !important;
+            border: 1px solid var(--fp-border-soft) !important;
+            border-radius: var(--fp-radius-card) !important;
+            box-shadow: var(--fp-shadow) !important;
         }
         .fp-validation-errors {
             box-sizing: border-box;
@@ -1236,10 +1268,10 @@ def _render_page_heading(title: str, description: str = "") -> None:
     desc_html = f"<p>{escape(description)}</p>" if description else ""
     st.markdown(
         f"""
-        <div class="fp-page-heading">
+        <section class="fp-hero fp-page-heading">
           <h1>{escape(title)}</h1>
           {desc_html}
-        </div>
+        </section>
         """,
         unsafe_allow_html=True,
     )

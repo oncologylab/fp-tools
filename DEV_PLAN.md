@@ -78,8 +78,12 @@ a separately planned breaking release explicitly changes the contract.
   narrow widths and retain screenshots for visual review.
 - A task-oriented GUI home page, neutral first-open forms, centralized field
   labels, compact advanced options, clearly disabled launch controls, and
-  responsive form/run panels. Fresh desktop installations no longer open with
-  repository-relative example paths presented as user inputs.
+  responsive form/run panels. Every route now reuses the Home page's light
+  hero-card, typography, borders, controls, and action colors; form controls
+  remain visibly bounded on white cards, and the form/run layout is compact at
+  desktop widths before stacking cleanly at narrower breakpoints. Fresh desktop
+  installations no longer open with repository-relative example paths
+  presented as user inputs.
 - Browser-verified plot controls and SVG exports for aggregate and
   aggregate-free reports, including explicit subplot-bound checks.
 - Command-aware logging across shared analysis engines, so `match-motifs` and
