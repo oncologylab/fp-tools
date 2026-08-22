@@ -1117,6 +1117,9 @@ def main() -> int:
                     page.get_by_label("Samples TSV", exact=True).fill(str(samples))
                     page.get_by_label("Comparisons TSV (optional)", exact=True).fill(str(comparisons))
                     page.get_by_label("Genome FASTA", exact=True).fill(str(genome))
+                    page.get_by_label("Output directory", exact=True).fill(
+                        str(workdir_path / "valid-bulk-output")
+                    )
                     page.get_by_role("button", name="Update page config", exact=True).click(force=True)
                     page.get_by_text("Config is ready to run.", exact=True).wait_for(timeout=30_000)
                     if start_button.is_disabled():
