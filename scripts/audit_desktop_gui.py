@@ -536,7 +536,8 @@ def _assert_control_value(page, label: str, expected: object) -> None:
                     actual = input_value
                 else:
                     aria_label = control.get_attribute("aria-label") or ""
-                    actual = aria_label.removeprefix("Selected ").split(".", 1)[0]
+                    actual = aria_label.removeprefix("Selected ")
+                    actual = actual.removesuffix(f". {label}")
                 if str(actual) == str(expected):
                     break
                 page.wait_for_timeout(100)
@@ -645,14 +646,8 @@ def _audit_loaded_config_sync(
         _open_expander(normalizer_loader)
         example_select = _control_by_label(page, "Example YAML")
         example_select.click(force=True)
-        example_option = page.get_by_role(
-            "option", name="normalize_bigwig_single.yml", exact=True
-        )
-        example_option.wait_for(
-            state="visible",
-            timeout=30_000,
-        )
-        example_option.click(force=True)
+        example_select.press("ArrowDown")
+        example_select.press("Enter")
         _assert_control_value(
             page, "Example YAML", "normalize_bigwig_single.yml"
         )
