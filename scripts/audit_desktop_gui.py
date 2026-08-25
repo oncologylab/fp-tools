@@ -234,11 +234,20 @@ def _audit_page(
         if message.type == "error"
         else None,
     )
-    page.goto(
-        f"{base_url}/?page={urllib.parse.quote(page_name)}",
-        wait_until="domcontentloaded",
-    )
-    page.locator(".fp-page-heading h1", has_text=page_name).wait_for(timeout=60_000)
+    page_url = f"{base_url}/?page={urllib.parse.quote(page_name)}"
+    heading = page.locator(".fp-page-heading h1", has_text=page_name)
+    last_error: Exception | None = None
+    for attempt in range(2):
+        page.goto(page_url, wait_until="domcontentloaded")
+        try:
+            heading.wait_for(timeout=30_000 if attempt == 0 else 60_000)
+            break
+        except PlaywrightTimeoutError as error:
+            last_error = error
+    else:
+        raise RuntimeError(
+            f"{page_name} at {width}px did not finish loading after two attempts"
+        ) from last_error
     summary = page.locator(".fp-run-summary").first
     summary.wait_for(timeout=30_000)
     page.wait_for_function(
