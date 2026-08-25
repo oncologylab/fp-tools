@@ -16,6 +16,7 @@ import urllib.request
 from pathlib import Path
 
 import yaml
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import expect, sync_playwright
 
 
@@ -584,9 +585,19 @@ def _assert_control_value(page, label: str, expected: object) -> None:
 def _open_expander(details) -> None:
     """Open a Streamlit expander through the same summary control a user clicks."""
 
-    if details.get_attribute("open") is None:
-        details.locator("summary").evaluate("element => element.click()")
-    expect(details).to_have_attribute("open", "", timeout=30_000)
+    deadline = time.monotonic() + 30
+    last_error: Exception | None = None
+    while time.monotonic() < deadline:
+        if details.get_attribute("open") is not None:
+            return
+        try:
+            details.locator("summary").click(timeout=5_000)
+            expect(details).to_have_attribute("open", "", timeout=2_000)
+            return
+        except (AssertionError, PlaywrightTimeoutError) as error:
+            last_error = error
+            time.sleep(0.2)
+    raise RuntimeError("Streamlit expander did not remain open") from last_error
 
 
 def _submit_text_control(page, label: str, value: str) -> None:
@@ -626,6 +637,7 @@ def _audit_loaded_config_sync(
         page.get_by_role("button", name="Load YAML from path", exact=True).evaluate(
             "element => element.click()"
         )
+        _wait_for_settled_render(page)
         _open_expander(page.locator("details", has_text="Advanced options").first)
         expect(page.get_by_label("Samples TSV", exact=True)).to_have_value(
             str(values["sample_table"]),
