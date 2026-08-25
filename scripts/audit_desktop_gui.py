@@ -240,6 +240,11 @@ def _audit_page(
     page.locator(".fp-page-heading h1", has_text=page_name).wait_for(timeout=60_000)
     summary = page.locator(".fp-run-summary").first
     summary.wait_for(timeout=30_000)
+    page.wait_for_function(
+        "element => getComputedStyle(element).display === 'grid'",
+        arg=summary.element_handle(),
+        timeout=30_000,
+    )
     metrics = summary.evaluate(
         """element => ({
           columns: getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length,
