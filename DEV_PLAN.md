@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-22
+Last updated: 2026-08-25
 
 ## Current Baseline
 

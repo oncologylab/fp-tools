@@ -319,6 +319,9 @@ def _apply_page_style() -> None:
             --fp-radius-control: 8px;
             --fp-radius-card: 8px;
             --fp-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+            --fp-font-body: 1rem;
+            --fp-font-label: 0.92rem;
+            --fp-control-height: 2.7rem;
         }
         html, body, [class*="css"], [data-testid="stAppViewContainer"] {
             font-family: Arial, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
@@ -490,14 +493,27 @@ def _apply_page_style() -> None:
         [data-testid="stAlert"] {
             background: var(--fp-surface) !important;
             border: 1px solid var(--fp-border-soft) !important;
-            box-shadow: var(--fp-shadow) !important;
         }
         [data-testid="stForm"] {
-            padding: 0.78rem 0.86rem !important;
+            padding: 1rem 1.05rem !important;
+            box-shadow: var(--fp-shadow) !important;
         }
         [data-testid="stExpander"],
         [data-testid="stAlert"] {
-            padding: 0.35rem 0.55rem !important;
+            padding: 0.32rem 0.5rem !important;
+            box-shadow: none !important;
+        }
+        [data-testid="stMain"] [data-testid="stForm"] [data-testid="stVerticalBlock"] {
+            gap: 0.7rem !important;
+        }
+        [data-testid="stMain"] [data-testid="stExpander"] summary {
+            min-height: var(--fp-control-height) !important;
+            padding: 0 0.45rem !important;
+        }
+        [data-testid="stMain"] [data-testid="stExpander"] summary p {
+            color: var(--fp-text) !important;
+            font-size: var(--fp-font-label) !important;
+            font-weight: 700 !important;
         }
         [data-testid="stFileUploaderDropzone"] {
             background: var(--fp-surface-soft) !important;
@@ -618,6 +634,28 @@ def _apply_page_style() -> None:
             -webkit-text-fill-color: var(--fp-text) !important;
             visibility: visible !important;
         }
+        [data-testid="stMain"] [data-testid="stWidgetLabel"] p,
+        [data-testid="stMain"] [role="radiogroup"] label p,
+        [data-testid="stMain"] [data-baseweb="checkbox"] label p,
+        [data-testid="stMain"] [data-baseweb="radio"] label p {
+            font-size: var(--fp-font-label) !important;
+            font-weight: 700 !important;
+            line-height: 1.35 !important;
+        }
+        [data-testid="stMain"] [data-testid="stTextInputRootElement"],
+        [data-testid="stMain"] [data-testid="stNumberInputContainer"],
+        [data-testid="stMain"] [data-baseweb="select"] > div {
+            min-height: var(--fp-control-height) !important;
+        }
+        [data-testid="stMain"] input,
+        [data-testid="stMain"] textarea,
+        [data-testid="stMain"] [data-baseweb="select"] * {
+            font-size: 0.95rem !important;
+        }
+        [data-testid="stMain"] p,
+        [data-testid="stMain"] li {
+            line-height: 1.45;
+        }
         [data-testid="stMain"] input,
         [data-testid="stMain"] textarea,
         [data-testid="stMain"] [data-baseweb="input"] input {
@@ -710,7 +748,7 @@ def _apply_page_style() -> None:
         }
         .fp-hero p {
             color: var(--fp-text-muted);
-            font-size: clamp(0.95rem, 0.7vw, 1.08rem);
+            font-size: var(--fp-font-body);
             line-height: 1.38;
             max-width: 980px;
             margin: 0;
@@ -822,7 +860,7 @@ def _apply_page_style() -> None:
         }
         .fp-page-heading p {
             color: var(--fp-text-muted);
-            font-size: clamp(0.95rem, 0.7vw, 1.08rem);
+            font-size: var(--fp-font-body);
             line-height: 1.38;
             margin: 0;
         }

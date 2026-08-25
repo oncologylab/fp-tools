@@ -1,6 +1,11 @@
-fp-tools for Apple silicon (unsigned preview)
+fp-tools for Apple silicon (unsigned and not notarized by Apple)
 
-Drag fp-tools.app to Applications, then run once in Terminal:
+Download only from the official OncologyLab GitHub release page and verify the
+published SHA-256 checksum. Drag fp-tools.app to Applications and try to open
+it once. If macOS blocks it, open System Settings > Privacy & Security and
+select Open Anyway. A managed Mac may require administrator approval.
+
+Advanced fallback in Terminal:
 
 xattr -dr com.apple.quarantine /Applications/fp-tools.app && open /Applications/fp-tools.app
 

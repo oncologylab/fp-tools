@@ -19,18 +19,28 @@ starts from coordinate-sorted BAM/BAI files and matching peak BED files.
 Download the app for your computer, then open it. fp-tools opens in its own
 application window; no browser or Python installation is required.
 
-[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc15/fp-tools-gui-windows-x64.exe){ .md-button }
-[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0rc15/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
+[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0/fp-tools-gui-windows-x64.exe){ .md-button }
+[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
 
-Windows may ask you to confirm the unsigned preview download. For the unsigned
-Mac preview, drag `fp-tools.app` to Applications and run this once in Terminal:
+Windows may ask you to confirm the unsigned preview download. The macOS preview
+is unsigned and has not been notarized by Apple, so Gatekeeper may report that
+Apple cannot verify the developer. Download it only from the official
+OncologyLab GitHub release page and verify the published SHA-256 checksum.
+
+On macOS, drag `fp-tools.app` to Applications and try to open it once. If macOS
+blocks it, open **System Settings > Privacy & Security**, find the fp-tools
+message, and select **Open Anyway**. On a managed Mac, an administrator may need
+to approve the app.
+
+As an advanced fallback, remove the quarantine attribute in Terminal and open
+the app:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/fp-tools.app && open /Applications/fp-tools.app
 ```
 
-Use this command only for fp-tools downloaded from the official OncologyLab
-GitHub release page.
+Use this command only after downloading fp-tools from the official OncologyLab
+GitHub release page and verifying its checksum.
 
 Optional de novo motif discovery prepares its external tools on first use.
 
@@ -39,7 +49,7 @@ Optional de novo motif discovery prepares its external tools on first use.
 Use Python 3.11–3.13:
 
 ```bash
-python -m pip install --upgrade --pre fp-tools-bio
+python -m pip install --upgrade fp-tools-bio
 fp-tools-gui
 ```
 

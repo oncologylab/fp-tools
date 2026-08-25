@@ -128,6 +128,11 @@ class GuiLauncherTests(unittest.TestCase):
         self.assertIn('[data-testid="stNumberInputContainer"]', style)
         self.assertIn(".stFormSubmitButton > button", style)
         self.assertIn("@media (max-width: 1500px)", style)
+        self.assertIn("--fp-font-body: 1rem", style)
+        self.assertIn("--fp-font-label: 0.92rem", style)
+        self.assertIn("--fp-control-height: 2.7rem", style)
+        self.assertIn('[data-testid="stMain"] [data-testid="stWidgetLabel"] p', style)
+        self.assertIn("box-shadow: none !important", style)
 
     def test_page_heading_reuses_the_home_hero_card(self):
         fake_streamlit = MagicMock()
