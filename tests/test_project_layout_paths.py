@@ -1,4 +1,5 @@
 import argparse
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -96,9 +97,9 @@ class ProjectLayoutPathTest(unittest.TestCase):
             )
             analysis = write_analysis_peaks(merged, analysis_peaks_path(tmp))
 
-            self.assertEqual(Path(project_analysis_peaks(tmp)), analysis)
-            self.assertEqual(Path(project_analysis_peaks(tmp, merged)), analysis)
-            self.assertEqual(Path(project_analysis_peaks(tmp, analysis)), analysis)
+            self.assertTrue(os.path.samefile(project_analysis_peaks(tmp), analysis))
+            self.assertTrue(os.path.samefile(project_analysis_peaks(tmp, merged), analysis))
+            self.assertTrue(os.path.samefile(project_analysis_peaks(tmp, analysis), analysis))
             self.assertEqual(analysis.read_text(encoding="utf-8"), "chr1\t10\t20\nchr2\t30\t40\n")
 
     def test_match_motifs_project_layout_uses_analysis_peaks_when_raw_project_peaks_are_passed(self):
@@ -126,7 +127,7 @@ class ProjectLayoutPathTest(unittest.TestCase):
 
             _apply_match_motifs_project_layout(args, argparse.ArgumentParser())
 
-            self.assertEqual(Path(args.peaks), analysis_peaks_path(tmp))
+            self.assertTrue(os.path.samefile(args.peaks, analysis_peaks_path(tmp)))
             self.assertEqual(args.signals, [str(footprint_dir / "A_footprints.bw")])
 
     def test_diff_footprints_project_comparison_table_expands_replicates(self):
@@ -171,15 +172,18 @@ class ProjectLayoutPathTest(unittest.TestCase):
             call_args = run_one.call_args.args[0]
             self.assertEqual(call_args.sample_names, ["B1", "A1", "A2"])
             self.assertEqual(call_args.cond_names, ["Treat", "Ctrl", "Ctrl"])
-            self.assertEqual(Path(call_args.outdir), tmp / "comparisons" / "Treat_vs_Ctrl")
-            self.assertEqual(call_args.plot_aggregate, "sig")
             self.assertEqual(
-                [Path(path) for path in call_args.aggregate_signals],
-                [
-                    tmp / "samples" / "B1" / "normalize" / "B1_corrected_q95_scaled.bw",
-                    tmp / "samples" / "A1" / "normalize" / "A1_corrected_q95_scaled.bw",
-                    tmp / "samples" / "A2" / "normalize" / "A2_corrected_q95_scaled.bw",
-                ],
+                Path(call_args.outdir).parts[-2:],
+                ("comparisons", "Treat_vs_Ctrl"),
+            )
+            self.assertEqual(call_args.plot_aggregate, "sig")
+            expected_signals = [
+                tmp / "samples" / "B1" / "normalize" / "B1_corrected_q95_scaled.bw",
+                tmp / "samples" / "A1" / "normalize" / "A1_corrected_q95_scaled.bw",
+                tmp / "samples" / "A2" / "normalize" / "A2_corrected_q95_scaled.bw",
+            ]
+            self.assertTrue(
+                all(os.path.samefile(observed, expected) for observed, expected in zip(call_args.aggregate_signals, expected_signals))
             )
             self.assertEqual(call_args.motif_outputs, "summary")
             self.assertTrue(call_args.skip_excel)

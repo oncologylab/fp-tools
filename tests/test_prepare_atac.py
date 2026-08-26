@@ -1,5 +1,6 @@
 import argparse
 import hashlib
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -42,6 +43,7 @@ from fp_tools.tools.prepare_atac_legacy import (
 
 
 class PrepareAtacMetadataTest(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX executable fixture")
     def test_tool_version_replaces_invalid_utf8(self):
         with tempfile.TemporaryDirectory() as tmp:
             tool = Path(tmp) / "invalid-version"

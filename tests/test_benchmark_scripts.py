@@ -1,7 +1,9 @@
 import csv
 import importlib.util
 import pathlib
+import shutil
 import sys
+import sysconfig
 import tempfile
 import unittest
 
@@ -17,6 +19,11 @@ except ImportError:
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+
+def console_script(name):
+    scripts_dir = pathlib.Path(sysconfig.get_path("scripts"))
+    return shutil.which(name, path=str(scripts_dir)) or str(scripts_dir / name)
 
 
 def load_module(name, path):
@@ -107,7 +114,7 @@ class EngineeringBenchmarkHelperTest(unittest.TestCase):
                     "signal": ROOT / "test_data" / "Bcell_corrected.bw",
                     "regions": regions,
                     "outdir": tmp / "kernel_benchmark",
-                    "call_footprints": str(ROOT / ".venv" / "bin" / "call-footprints"),
+                    "call_footprints": console_script("call-footprints"),
                     "cores": 1,
                     "chunk_size": 1_000_000,
                     "verbosity": 1,
@@ -119,8 +126,8 @@ class EngineeringBenchmarkHelperTest(unittest.TestCase):
                     "genome": None,
                     "motifs": None,
                     "motif_db": None,
-                    "match_motifs": str(ROOT / ".venv" / "bin" / "match-motifs"),
-                    "diff_footprints": str(ROOT / ".venv" / "bin" / "diff-footprints"),
+                    "match_motifs": console_script("match-motifs"),
+                    "diff_footprints": console_script("diff-footprints"),
                 },
             )()
             summary = benchmark_footprint_kernel.run_kernel_benchmark(args)

@@ -195,16 +195,18 @@ class _StreamingBigWigWriter:
             self._error = exc
 
     def addEntries(self, chroms, starts, ends=None, values=None, span=1, **_kwargs) -> None:
+        if values is None:
+            raise ValueError("values are required when writing bigWig entries")
+        values = list(values)
         if isinstance(chroms, str):
             if isinstance(starts, (int, np.integer)):
-                starts = [int(starts)]
+                first_start = int(starts)
+                step = int(_kwargs.get("step", 1))
+                starts = [first_start + index * step for index in range(len(values))]
             chrom_values = [chroms] * len(starts)
         else:
             chrom_values = list(chroms)
             starts = list(starts)
-        if values is None:
-            raise ValueError("values are required when writing bigWig entries")
-        values = list(values)
         if ends is None:
             end_values = [int(start) + int(span) for start in starts]
         else:

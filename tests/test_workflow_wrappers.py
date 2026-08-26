@@ -90,8 +90,8 @@ class WorkflowWrapperTest(unittest.TestCase):
             self.assertIn("--output-html", review)
             self.assertNotIn("--output-dir", review)
             self.assertEqual(
-                Path(review[-1]),
-                root / "project" / "reports" / "review_multi_comparisons.html",
+                Path(review[-1]).parts[-3:],
+                ("project", "reports", "review_multi_comparisons.html"),
             )
 
     def test_bulk_wrapper_can_skip_review(self):

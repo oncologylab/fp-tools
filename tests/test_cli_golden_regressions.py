@@ -1,6 +1,8 @@
 import os
 import pathlib
+import shutil
 import subprocess
+import sysconfig
 import tempfile
 import unittest
 
@@ -19,7 +21,11 @@ from fp_tools.utils.signals import (
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-BIN = ROOT / ".venv" / "bin"
+BIN = pathlib.Path(sysconfig.get_path("scripts"))
+
+
+def console_script(name: str) -> str:
+    return shutil.which(name, path=str(BIN)) or str(BIN / name)
 
 
 def max_cores() -> str:
@@ -147,7 +153,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             output = pathlib.Path(tmpdir) / "footprints_sum.bw"
             run_command(
                 [
-                    BIN / "call-footprints",
+                    console_script("call-footprints"),
                     "--signal",
                     "test_data/Bcell_corrected.bw",
                     "--regions",
@@ -182,7 +188,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
                 output = tmp / f"footprints_sum_cores_{cores}.bw"
                 run_command(
                     [
-                        BIN / "call-footprints",
+                        console_script("call-footprints"),
                         "--signal",
                         "test_data/Bcell_corrected.bw",
                         "--regions",
@@ -215,7 +221,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             out_b = tmp / "Tcell_batch_sum.bw"
             run_command(
                 [
-                    BIN / "call-footprints",
+                    console_script("call-footprints"),
                     "--signals",
                     "test_data/Bcell_corrected.bw",
                     "test_data/Tcell_corrected.bw",
@@ -249,7 +255,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             output_txt = tmp / "aggregate.txt"
             run_command(
                 [
-                    BIN / "plot-aggregate",
+                    console_script("plot-aggregate"),
                     "--TFBS",
                     "test_data/IRF1_all.bed",
                     "--signals",
@@ -278,7 +284,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             outdir = pathlib.Path(tmpdir) / "diff_footprints"
             run_command(
                 [
-                    BIN / "diff-footprints",
+                    console_script("diff-footprints"),
                     "--signals",
                     "test_data/Bcell_footprints.bw",
                     "test_data/Tcell_footprints.bw",
@@ -332,7 +338,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             outdir = pathlib.Path(tmpdir) / "diff_footprints_summary"
             completed = run_command(
                 [
-                    BIN / "diff-footprints",
+                    console_script("diff-footprints"),
                     "--signals",
                     "test_data/Bcell_footprints.bw",
                     "test_data/Tcell_footprints.bw",
@@ -377,7 +383,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             outdir = pathlib.Path(tmpdir) / "match_motifs_logging"
             completed = run_command(
                 [
-                    BIN / "match-motifs",
+                    console_script("match-motifs"),
                     "--signals",
                     "test_data/Bcell_footprints.bw",
                     "test_data/Tcell_footprints.bw",
@@ -418,7 +424,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             outdir = pathlib.Path(tmpdir) / "match_motifs_auto"
             run_command(
                 [
-                    BIN / "match-motifs",
+                    console_script("match-motifs"),
                     "--signals",
                     "test_data/Bcell_footprints.bw",
                     "--motifs",
@@ -473,7 +479,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
                     os.symlink(ROOT / "test_data" / fixture, footprint_dir / f"{sample}_footprints.bw")
 
             base = [
-                BIN / "match-motifs",
+                console_script("match-motifs"),
                 "--genome",
                 "test_data/genome.fa.gz",
                 "--motifs",
@@ -545,7 +551,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
 
             run_command(
                 [
-                    BIN / "match-motifs",
+                    console_script("match-motifs"),
                     "--sample-table",
                     project / "samples.tsv",
                     "--genome",
@@ -580,7 +586,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             outdir = pathlib.Path(tmpdir) / "diff_footprints_reps"
             run_command(
                 [
-                    BIN / "diff-footprints",
+                    console_script("diff-footprints"),
                     "--signals",
                     "test_data/demo_Bcell_rep1_footprints.bw",
                     "test_data/demo_Bcell_rep2_footprints.bw",
@@ -648,7 +654,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
             outdir = pathlib.Path(tmpdir)
             run_command(
                 [
-                    BIN / "atac-correct",
+                    console_script("atac-correct"),
                     "--bams",
                     "test_data/Bcell.bam",
                     "--genome",

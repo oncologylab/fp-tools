@@ -2,6 +2,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import sysconfig
 import tempfile
 import tomllib
 import unittest
@@ -204,7 +205,7 @@ class ReleaseMetadataTest(unittest.TestCase):
         helper = ROOT / "scripts" / "smoke_console_scripts.py"
         self.assertTrue(helper.is_file())
         result = subprocess.run(
-            [sys.executable, str(helper), "--bin-dir", str(pathlib.Path(sys.executable).parent)],
+            [sys.executable, str(helper), "--bin-dir", sysconfig.get_path("scripts")],
             cwd=ROOT,
             check=False,
             capture_output=True,

@@ -31,7 +31,7 @@ import multiprocessing as mp
 import itertools
 import pandas as pd
 import seaborn as sns
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from collections import Counter
 from types import SimpleNamespace
 import warnings
@@ -894,7 +894,8 @@ def _ensure_match_motif_shard_caches(cached_dirs, motif_names, workers=1):
             for task in tasks:
                 _build_match_motif_shards_for_sample(task)
         else:
-            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            executor_class = ThreadPoolExecutor if os.name == "nt" else ProcessPoolExecutor
+            with executor_class(max_workers=max_workers) as executor:
                 futures = [executor.submit(_build_match_motif_shards_for_sample, task) for task in tasks]
                 for future in as_completed(futures):
                     future.result()
