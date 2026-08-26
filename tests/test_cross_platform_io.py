@@ -152,7 +152,7 @@ class CrossPlatformIoTests(unittest.TestCase):
                 fasta_module._open_pyfastx("genome.fa.gz", index)
             self.assertEqual(attempts, 2)
 
-    def test_windows_fasta_indexes_are_instance_local_and_removed(self):
+    def test_windows_fasta_indexes_are_process_local_and_removed_at_exit(self):
         class FakeRecord:
             def __len__(self):
                 return 4
@@ -180,16 +180,18 @@ class CrossPlatformIoTests(unittest.TestCase):
                 mock.patch.object(fasta_module, "pyfastx", FakePyfastx),
                 mock.patch.object(fasta_module, "_cache_root", return_value=root),
                 mock.patch.object(fasta_module, "_use_process_local_index", return_value=True),
+                mock.patch.object(fasta_module, "_PROCESS_INDEX_TOKEN", "process-token"),
+                mock.patch.object(fasta_module, "_PROCESS_INDEXES", set()),
             ):
                 first = fasta_module.FastaFile(genome)
                 second = fasta_module.FastaFile(genome)
-                self.assertNotEqual(first.index_path, second.index_path)
-                first_index = first.index_path
-                second_index = second.index_path
+                self.assertEqual(first.index_path, second.index_path)
+                index = first.index_path
                 first.close()
                 second.close()
-            self.assertFalse(first_index.exists())
-            self.assertFalse(second_index.exists())
+                self.assertTrue(index.exists())
+                fasta_module._cleanup_process_indexes()
+                self.assertFalse(index.exists())
 
     def test_fasta_adapter_reports_reference_length(self):
         with open_fasta(ROOT / "test_data" / "genome.fa.gz") as fasta:

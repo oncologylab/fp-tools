@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import hashlib
 import errno
 import os
@@ -18,6 +19,23 @@ if pysam is None:  # pragma: no cover - exercised by Windows CI
     import pyfastx
 else:
     pyfastx = None
+
+
+_PROCESS_INDEX_TOKEN = uuid.uuid4().hex
+_PROCESS_INDEXES: set[Path] = set()
+
+
+def _cleanup_process_indexes() -> None:
+    for index_path in tuple(_PROCESS_INDEXES):
+        try:
+            index_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        else:
+            _PROCESS_INDEXES.discard(index_path)
+
+
+atexit.register(_cleanup_process_indexes)
 
 
 def _cache_root() -> Path:
@@ -69,11 +87,13 @@ class FastaFile:
         source = Path(self.filename)
         identity = f"{self.filename}:{source.stat().st_size}:{source.stat().st_mtime_ns}"
         index_name = hashlib.sha256(identity.encode("utf-8")).hexdigest() + ".fxi"
-        self._delete_index = _use_process_local_index()
-        if self._delete_index:
-            index_name = f"{index_name}.{uuid.uuid4().hex}"
+        self._process_local_index = _use_process_local_index()
+        if self._process_local_index:
+            index_name = f"{index_name}.{_PROCESS_INDEX_TOKEN}"
         self.index_path = _cache_root() / index_name
         self._fasta = _open_pyfastx(self.filename, self.index_path)
+        if self._process_local_index:
+            _PROCESS_INDEXES.add(self.index_path)
         self._pysam = False
 
     def __enter__(self):
@@ -116,8 +136,6 @@ class FastaFile:
                 close()
             del fasta
         self._fasta = None
-        if not self._pysam and self._delete_index:
-            self.index_path.unlink(missing_ok=True)
 
 
 def open_fasta(path: str | os.PathLike[str]) -> FastaFile:
