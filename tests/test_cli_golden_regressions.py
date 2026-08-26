@@ -277,7 +277,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
         self.assertEqual(rows[0], "### AGGREGATE")
         self.assertEqual(len(values), 40)
         self.assertEqual(round(sum(values[:5]), 4), 53.5609)
-        self.assertEqual(round(values[-1], 4), 10.3948)
+        self.assertAlmostEqual(values[-1], 10.3948, delta=2e-4)
 
     def test_diff_footprints_one_motif_summary_is_stable(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import threading
+import time
 import unittest
 import shutil
 import subprocess
@@ -13,6 +14,7 @@ from unittest import mock
 import numpy as np
 
 from fp_tools.utils import bigwig
+from fp_tools.utils import fasta as fasta_module
 from fp_tools.utils.alignment import FragmentAlignment, _BamnosticRecord
 from fp_tools.utils.fasta import open_fasta
 from fp_tools.utils.intervals import IntervalIndex, intersect_bed
@@ -83,7 +85,7 @@ class CrossPlatformIoTests(unittest.TestCase):
                 output = Path(tmp) / "portable.bw"
                 writer = bigwig.open(output, "w")
                 writer.addHeader([("chr1", 20)])
-                writer.addEntries("chr1", [2, 8], values=[1.5, -2.0], span=1)
+                writer.addEntries("chr1", 2, values=[1.5, -2.0], span=1, step=6)
                 writer.close()
                 with bigwig.open(output) as reader:
                     self.assertEqual(reader.chroms(), {"chr1": 20})
@@ -91,6 +93,37 @@ class CrossPlatformIoTests(unittest.TestCase):
                     self.assertEqual(reader.header()["nBasesCovered"], 2)
         finally:
             bigwig._pybigwig = native
+
+    def test_pyfastx_index_creation_is_serialized(self):
+        active = 0
+        maximum_active = 0
+        state_lock = threading.Lock()
+
+        class FakePyfastx:
+            @staticmethod
+            def Fasta(_filename, **_kwargs):
+                nonlocal active, maximum_active
+                with state_lock:
+                    active += 1
+                    maximum_active = max(maximum_active, active)
+                time.sleep(0.1)
+                with state_lock:
+                    active -= 1
+                return object()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            index = Path(tmp) / "shared.fxi"
+            with mock.patch.object(fasta_module, "pyfastx", FakePyfastx):
+                threads = [
+                    threading.Thread(target=fasta_module._open_pyfastx, args=("genome.fa.gz", index))
+                    for _ in range(4)
+                ]
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join()
+            self.assertEqual(maximum_active, 1)
+            self.assertFalse(index.with_suffix(".fxi.lock").exists())
 
     def test_fasta_adapter_reports_reference_length(self):
         with open_fasta(ROOT / "test_data" / "genome.fa.gz") as fasta:

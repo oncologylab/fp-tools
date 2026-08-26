@@ -128,7 +128,8 @@ class ProjectLayoutPathTest(unittest.TestCase):
             _apply_match_motifs_project_layout(args, argparse.ArgumentParser())
 
             self.assertTrue(os.path.samefile(args.peaks, analysis_peaks_path(tmp)))
-            self.assertEqual(args.signals, [str(footprint_dir / "A_footprints.bw")])
+            self.assertEqual(len(args.signals), 1)
+            self.assertTrue(os.path.samefile(args.signals[0], footprint_dir / "A_footprints.bw"))
 
     def test_diff_footprints_project_comparison_table_expands_replicates(self):
         with tempfile.TemporaryDirectory() as tmpdir:

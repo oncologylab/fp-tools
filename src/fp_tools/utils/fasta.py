@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 from pathlib import Path
+import time
 
 try:
     import pysam
@@ -27,6 +28,26 @@ def _cache_root() -> Path:
     return path
 
 
+def _open_pyfastx(filename: str, index_path: Path):
+    """Open pyfastx while serializing creation of its shared SQLite index."""
+
+    lock_path = index_path.with_suffix(index_path.suffix + ".lock")
+    deadline = time.monotonic() + 120
+    lock_fd = None
+    while lock_fd is None:
+        try:
+            lock_fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"Timed out waiting for FASTA index lock: {lock_path}")
+            time.sleep(0.05)
+    try:
+        return pyfastx.Fasta(filename, index_file=str(index_path), full_name=False)
+    finally:
+        os.close(lock_fd)
+        lock_path.unlink(missing_ok=True)
+
+
 class FastaFile:
     """Subset of :class:`pysam.FastaFile` used by fp-tools."""
 
@@ -41,7 +62,7 @@ class FastaFile:
         identity = f"{self.filename}:{source.stat().st_size}:{source.stat().st_mtime_ns}"
         index_name = hashlib.sha256(identity.encode("utf-8")).hexdigest() + ".fxi"
         self.index_path = _cache_root() / index_name
-        self._fasta = pyfastx.Fasta(self.filename, index_file=str(self.index_path), full_name=False)
+        self._fasta = _open_pyfastx(self.filename, self.index_path)
         self._pysam = False
 
     def __enter__(self):
