@@ -5,7 +5,7 @@ set -euo pipefail
 #
 # Before running on a new server:
 # 1. Install fp-tools:
-#      python -m pip install fp-tools-bio==0.2.0
+#      python -m pip install fp-tools-bio==0.2.1
 #
 # 2. Prepare raw data under RAW:
 #      RAW/ATAC_Nutrients_hg38_*.txt
@@ -37,7 +37,7 @@ RAW="${RAW:-$ROOT/data/public/raw/nutrient_project}"
 PROJECT="${PROJECT:-$ROOT/data/public/processed/nutrient_project_ctrl_vs_10fbs}"
 REF_ROOT="${REF_ROOT:-$RAW/references}"
 CORES="${CORES:-$(nproc)}"
-VERSION="${FP_TOOLS_VERSION:-0.2.0}"
+VERSION="${FP_TOOLS_VERSION:-0.2.1}"
 MOTIF_DB="${MOTIF_DB:-jaspar2026_vertebrates}"
 
 if [[ -d "$ROOT/.venv/bin" ]]; then

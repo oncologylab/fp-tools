@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_version:
-        description: Existing package version to rebuild, for example 0.2.0rc8
+        description: Existing package version to rebuild, for example 0.2.1
         required: false
         type: string
   push:
