@@ -31,6 +31,11 @@ Required coverage before release:
 - progress logging behavior
 - stable fixture summaries for existing bigWig/BED test data
 
+GitHub Actions must also complete the full pytest suite on Windows for Python
+3.11, 3.12, and 3.13. Tests that require Linux-only BAM writing or indexing
+may skip explicitly; collection errors, separator-only failures, and
+locale-dependent decoding failures are release blockers.
+
 ## 3. CLI Smoke Checks
 
 Primary current API checks:

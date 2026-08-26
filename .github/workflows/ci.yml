@@ -41,6 +41,12 @@ jobs:
           python scripts/smoke_console_scripts.py
           python -m unittest discover -s tests -p "test_cross_platform_io.py" -v
           python -m unittest discover -s tests -p "test_gui_launcher.py" -v
+      - name: Install Windows test runner
+        if: runner.os == 'Windows'
+        run: python -m pip install pytest
+      - name: Full Windows test suite
+        if: runner.os == 'Windows'
+        run: python -m pytest -q
 
   test:
     runs-on: ubuntu-latest

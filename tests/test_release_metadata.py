@@ -164,6 +164,15 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertNotIn("pypa/gh-action-pypi-publish", workflow)
         self.assertNotIn("id-token: write", workflow)
 
+    def test_ci_runs_full_pytest_suite_across_supported_windows_pythons(self):
+        workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('os: [ubuntu-latest, macos-latest, windows-latest]', workflow)
+        self.assertIn('python: ["3.11", "3.12", "3.13"]', workflow)
+        self.assertIn("if: runner.os == 'Windows'", workflow)
+        self.assertIn("python -m pytest -q", workflow)
+
     def test_workflows_use_node24_compatible_action_versions(self):
         workflows = "\n".join(
             path.read_text(encoding="utf-8")
