@@ -161,8 +161,8 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
                 default_aggregate_plots=2,
                 documentation_url="../../../",
             )
-            metadata = json.loads((root / "browser/data/metadata.json").read_text())
-            app = (root / "browser/app.js").read_text()
+            metadata = json.loads((root / "browser/data/metadata.json").read_text(encoding="utf-8"))
+            app = (root / "browser/app.js").read_text(encoding="utf-8")
 
         self.assertEqual(metadata["default_comparison"], {"condition1": "B", "condition2": "A"})
         self.assertEqual(metadata["default_aggregate_motifs"], ["TF2", "TF1"])

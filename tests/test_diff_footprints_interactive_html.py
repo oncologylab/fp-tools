@@ -57,7 +57,7 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
                 aggregate_data=aggregate_data,
                 report_label="Method: test label",
             )
-            html = out.read_text()
+            html = out.read_text(encoding="utf-8")
         self.assertIn("const reportPayloadB64=", html)
         self.assertIn("DecompressionStream", html)
         self.assertIn("Download motif logo panel", html)
@@ -268,7 +268,7 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "report.html"
             plot_interactive_diff_footprints([motif], ["Bcell", "Tcell"], str(out))
-            html = out.read_text()
+            html = out.read_text(encoding="utf-8")
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
         self.assertIsNotNone(match)
         payload = json.loads(gzip.decompress(base64.b64decode(match.group(1))).decode("utf-8"))
@@ -285,7 +285,7 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
                 str(out),
                 change_label="Mean unique-footprint log2FC",
             )
-            html = out.read_text()
+            html = out.read_text(encoding="utf-8")
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
         self.assertIsNotNone(match)
         payload = json.loads(gzip.decompress(base64.b64decode(match.group(1))).decode("utf-8"))
@@ -524,10 +524,10 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
 
     def test_bound_site_set_uses_condition_specific_bound_beds(self):
         paths = diff_footprint_helpers._aggregate_bed_paths("out", "TF1", ("Bcell", "Tcell"), "bound")
-        self.assertEqual(paths["Bcell"], "out/TF1/beds/TF1_Bcell_bound.bed")
-        self.assertEqual(paths["Tcell"], "out/TF1/beds/TF1_Tcell_bound.bed")
+        self.assertEqual(Path(paths["Bcell"]), Path("out") / "TF1" / "beds" / "TF1_Bcell_bound.bed")
+        self.assertEqual(Path(paths["Tcell"]), Path("out") / "TF1" / "beds" / "TF1_Tcell_bound.bed")
         all_paths = diff_footprint_helpers._aggregate_bed_paths("out", "TF1", ("Bcell", "Tcell"), "all")
-        self.assertEqual(set(all_paths.values()), {"out/TF1/beds/TF1_all.bed"})
+        self.assertEqual({Path(path) for path in all_paths.values()}, {Path("out") / "TF1" / "beds" / "TF1_all.bed"})
 
     def test_aggregate_center_limit_is_deterministic(self):
         centers = [("chr1", idx) for idx in range(10)]
@@ -574,12 +574,13 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
             motif_dir = outdir / "TF1_MA0001.1"
             beds_dir = motif_dir / "beds"
             beds_dir.mkdir(parents=True)
-            (beds_dir / "TF1_MA0001.1_all.bed").write_text("chr1\t10\t20\n")
+            (beds_dir / "TF1_MA0001.1_all.bed").write_text("chr1\t10\t20\n", encoding="utf-8")
             (motif_dir / "TF1_MA0001.1.png").write_bytes(b"not-a-real-png")
             (outdir / "diff_footprints_results.txt").write_text(
                 "output_prefix\tname\tmotif_id\tcluster\ttotal_tfbs\tBcell_mean_score\tTcell_mean_score\t"
                 "Bcell_n_replicates\tTcell_n_replicates\tBcell_Tcell_change\tBcell_Tcell_pvalue\tBcell_Tcell_highlighted\n"
-                "TF1_MA0001.1\tTF1\tMA0001.1\tTF1\t1\t1.0\t0.5\t1\t1\t1.25\t1.0E-04\tTrue\n"
+                "TF1_MA0001.1\tTF1\tMA0001.1\tTF1\t1\t1.0\t0.5\t1\t1\t1.25\t1.0E-04\tTrue\n",
+                encoding="utf-8",
             )
             parser = add_diff_footprints_arguments(argparse.ArgumentParser())
             args = parser.parse_args([
@@ -595,7 +596,7 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
             with patch.object(diff_footprints, "scan_and_score", side_effect=AssertionError("scan should not run")):
                 with patch.object(diff_footprints, "build_diff_footprint_aggregate_payload", return_value=aggregate_data):
                     diff_footprints.run_diff_footprints(args)
-            html = (outdir / "diff_footprints_Bcell_Tcell.html").read_text()
+            html = (outdir / "diff_footprints_Bcell_Tcell.html").read_text(encoding="utf-8")
         self.assertIn("const reportPayloadB64=", html)
         match = re.search(r'const reportPayloadB64="([^"]+)"', html)
         payload = json.loads(gzip.decompress(base64.b64decode(match.group(1))).decode("utf-8"))

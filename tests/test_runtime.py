@@ -90,7 +90,7 @@ class RuntimeManagerTest(unittest.TestCase):
                 second = runtime.ensure_native_runtime("core")
             self.assertEqual(first.prefix, second.prefix)
             self.assertTrue((first.prefix / "bin" / "fastp").is_file())
-            marker = json.loads((first.prefix / ".fp-tools-runtime.json").read_text())
+            marker = json.loads((first.prefix / ".fp-tools-runtime.json").read_text(encoding="utf-8"))
             self.assertEqual(marker["sha256"], digest)
 
     def test_release_artifact_uses_public_checksum_sidecar(self):

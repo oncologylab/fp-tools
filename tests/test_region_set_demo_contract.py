@@ -34,7 +34,7 @@ class RegionSetDemoContractTest(unittest.TestCase):
             self.assertTrue(path.is_file())
             counts = {}
             rows = 0
-            with gzip.open(path, "rt") as handle:
+            with gzip.open(path, "rt", encoding="utf-8") as handle:
                 for line in handle:
                     chrom, start, end, stratum, _signal = line.rstrip("\n").split("\t")
                     coordinate = (chrom, int(start), int(end))
@@ -48,7 +48,7 @@ class RegionSetDemoContractTest(unittest.TestCase):
         self.assertTrue(all(counts == stratum_counts[0] for counts in stratum_counts[1:]))
 
     def test_browser_contains_complete_results_and_curated_defaults(self):
-        metadata = json.loads((BROWSER / "data/metadata.json").read_text())
+        metadata = json.loads((BROWSER / "data/metadata.json").read_text(encoding="utf-8"))
         self.assertEqual(
             metadata["default_comparison"],
             {"condition1": "HNF4A + FOXA2", "condition2": "No HNF4A/FOXA2"},
@@ -67,7 +67,7 @@ class RegionSetDemoContractTest(unittest.TestCase):
             }
             == {"HNF4A + FOXA2", "No HNF4A/FOXA2"}
         )
-        with gzip.open(BROWSER / default_record["file"], "rt") as handle:
+        with gzip.open(BROWSER / default_record["file"], "rt", encoding="utf-8") as handle:
             payload = json.load(handle)
         motifs = (payload.get("aggregate") or {}).get("motifs") or []
         self.assertEqual([motif["motif_id"] for motif in motifs], list(DEFAULT_MOTIFS))
@@ -78,7 +78,7 @@ class RegionSetDemoContractTest(unittest.TestCase):
             self.assertGreaterEqual(sum(counts), 500)
 
     def test_source_manifest_records_only_compact_public_inputs(self):
-        manifest = (DATA / "region_set_HepG2_source_manifest.tsv").read_text()
+        manifest = (DATA / "region_set_HepG2_source_manifest.tsv").read_text(encoding="utf-8")
         for accession in (
             "ENCFF624SON",
             "ENCFF926KFU",

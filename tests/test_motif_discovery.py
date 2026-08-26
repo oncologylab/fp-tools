@@ -115,7 +115,7 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
 
         self.assertIn("streme --p", text)
-        self.assertIn("streme/streme.txt", text)
+        self.assertIn("streme/streme.txt", text.replace("\\", "/"))
         self.assertIn("--nmotifs 5", text)
 
     def test_parse_meme_tomtom_and_write_reports(self):

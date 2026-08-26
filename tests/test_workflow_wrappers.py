@@ -89,7 +89,10 @@ class WorkflowWrapperTest(unittest.TestCase):
             self.assertEqual(differential[differential.index("--plot-aggregate") + 1], "off")
             self.assertIn("--output-html", review)
             self.assertNotIn("--output-dir", review)
-            self.assertTrue(review[-1].endswith("reports/review_multi_comparisons.html"))
+            self.assertEqual(
+                Path(review[-1]),
+                root / "project" / "reports" / "review_multi_comparisons.html",
+            )
 
     def test_bulk_wrapper_can_skip_review(self):
         with tempfile.TemporaryDirectory() as tmpdir:
