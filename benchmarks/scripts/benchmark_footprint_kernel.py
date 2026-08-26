@@ -7,7 +7,6 @@ import argparse
 import csv
 import json
 import os
-import resource
 import shlex
 import subprocess
 import sys
@@ -16,7 +15,12 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
+
+try:
+    import resource
+except ImportError:  # Windows does not provide the POSIX resource module.
+    resource = None
 
 
 def run_timed(command: list[str], log_path: Path) -> dict[str, object]:
@@ -24,7 +28,7 @@ def run_timed(command: list[str], log_path: Path) -> dict[str, object]:
     with log_path.open("w", encoding="utf-8") as log:
         completed = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, check=False)
     elapsed = time.perf_counter() - start
-    after = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    after = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss if resource else 0
     return {
         "command": " ".join(shlex.quote(str(part)) for part in command),
         "exit_code": completed.returncode,

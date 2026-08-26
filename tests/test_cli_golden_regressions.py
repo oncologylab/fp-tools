@@ -6,7 +6,7 @@ import unittest
 
 import numpy as np
 import pandas as pd
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 from fp_tools.utils.signals import (
     add_bias_prediction_window,
     atac_correct_arrays,

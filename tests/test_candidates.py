@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 
 import numpy as np
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 
 from fp_tools.tools.candidates import call_candidates_from_array, generate_candidates
 

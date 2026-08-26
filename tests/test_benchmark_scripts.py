@@ -10,6 +10,11 @@ import pandas as pd
 
 from fp_tools.utils.multiscale import write_multiscale_npz
 
+try:
+    import pysam
+except ImportError:
+    pysam = None
+
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -175,9 +180,8 @@ class FootprintFromBamTest(unittest.TestCase):
         counts = np.array([0, 0, 0, 9, 9, 9, 0, 0, 0], dtype=float)
         self.assertLess(footprint_from_bam.footprint_score(counts, 3, 6, 3), 0)
 
+    @unittest.skipUnless(pysam is not None, "pysam is required to write BAM fixtures")
     def test_build_cutsites_counts_tn5_insertions(self):
-        import pysam
-
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = pathlib.Path(tmpdir)
             bam_path = tmp / "mini.bam"
@@ -247,15 +251,14 @@ class PlotMethodComparisonTest(unittest.TestCase):
 class ScorePeaksWithPwmTest(unittest.TestCase):
 
     def test_best_pwm_match_ranks_motif_bearing_peak_higher(self):
-        import pysam
-
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = pathlib.Path(tmpdir)
             # Synthetic contig: a strong A-run motif planted in peak 1, absent in peak 2.
             seq = ("A" * 40) + ("AAAAAAAA") + ("C" * 40) + ("CGCGCGCG") + ("C" * 40)
             fa = tmp / "mini.fa"
             fa.write_text(f">chrT\n{seq}\n", encoding="utf-8")
-            pysam.faidx(str(fa))
+            if pysam is not None:
+                pysam.faidx(str(fa))
 
             # MEME motif favouring poly-A (length 8).
             meme = tmp / "polyA.meme"
@@ -279,13 +282,12 @@ class ScorePeaksWithPwmTest(unittest.TestCase):
             self.assertGreater(by_name["peak_A"], by_name["peak_C"])
 
     def test_chroms_not_in_genome_are_skipped(self):
-        import pysam
-
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = pathlib.Path(tmpdir)
             fa = tmp / "mini.fa"
             fa.write_text(">chrT\n" + "ACGT" * 20 + "\n", encoding="utf-8")
-            pysam.faidx(str(fa))
+            if pysam is not None:
+                pysam.faidx(str(fa))
             meme = tmp / "m.meme"
             meme.write_text(
                 "MEME version 4\n\nALPHABET= ACGT\n\nMOTIF m M\n"

@@ -11,8 +11,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-import pyBigWig
-import pysam
+from fp_tools.utils import bigwig as pyBigWig
+from fp_tools.utils.alignment import open_alignment
 
 
 def bam_metrics(path: Path) -> dict[str, float | int]:
@@ -25,7 +25,7 @@ def bam_metrics(path: Path) -> dict[str, float | int]:
         "mapq_sum": 0,
     }
     lengths = [0] * 1001
-    with pysam.AlignmentFile(path, "rb") as bam:
+    with open_alignment(path, "rb") as bam:
         for read in bam.fetch(until_eof=True):
             metrics["records"] += 1
             if not read.is_unmapped:
@@ -85,7 +85,7 @@ def frip(bam: Path, peaks: Path) -> float:
 
 def write_name_hashes(bam_path: Path, output: Path) -> None:
     with (
-        pysam.AlignmentFile(bam_path, "rb") as bam,
+        open_alignment(bam_path, "rb") as bam,
         output.open("w", encoding="ascii") as handle,
     ):
         for read in bam.fetch(until_eof=True):

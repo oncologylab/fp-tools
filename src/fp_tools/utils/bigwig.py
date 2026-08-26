@@ -95,6 +95,24 @@ class _BigWigReader:
         result = dict(self._handle.chroms())
         return result.get(chrom) if chrom is not None else result
 
+    def header(self) -> dict[str, float | int]:
+        """Return the pyBigWig-compatible summary header."""
+
+        info = self._handle.info()
+        summary = info.get("summary") or {}
+        covered = int(summary.get("basesCovered", 0) or 0)
+        mean = float(summary.get("mean", 0.0) or 0.0)
+        std = float(summary.get("std", 0.0) or 0.0)
+        return {
+            "version": int(info.get("version", 0) or 0),
+            "nLevels": int(info.get("zoomLevels", 0) or 0),
+            "nBasesCovered": covered,
+            "minVal": float(summary.get("min", 0.0) or 0.0),
+            "maxVal": float(summary.get("max", 0.0) or 0.0),
+            "sumData": mean * covered,
+            "sumSquared": (std * std + mean * mean) * covered,
+        }
+
     def values(self, chrom: str, start: int, end: int, numpy: bool = False):
         values = list(self._handle.values(chrom, int(start), int(end), fillna=None))
         return np.asarray(values, dtype=float) if numpy else values

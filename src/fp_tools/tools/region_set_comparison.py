@@ -16,8 +16,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyBigWig
-import pysam
+
+from fp_tools.utils import bigwig as pyBigWig
+from fp_tools.utils.fasta import open_fasta
 
 from fp_tools.tools.diff_footprint_helpers import (
     plot_interactive_diff_footprints,
@@ -219,7 +220,7 @@ def _bootstrap_ci(frame, label_1, label_2, value_column, n_bootstrap, rng):
 
 
 def _scan_region_scores(records, motifs, genome, signals, sample_names):
-    fasta = pysam.FastaFile(genome)
+    fasta = open_fasta(genome)
     bigwigs = [pyBigWig.open(path, "rb") for path in signals]
     motif_rows = defaultdict(list)
     try:
@@ -559,7 +560,7 @@ def run_region_set_comparison(args):
     balance_long.to_csv(balance_path, sep="\t", index=False)
 
     logger.info("Reading motifs and scanning region sequences")
-    fasta = pysam.FastaFile(args.genome)
+    fasta = open_fasta(args.genome)
     try:
         sequences = [fasta.fetch(record.chrom, record.start, record.end) for record in records]
     finally:

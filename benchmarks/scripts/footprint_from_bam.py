@@ -17,19 +17,20 @@ from pathlib import Path
 import sys
 
 import numpy as np
-import pysam
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent.parent / "src"))
 
 from fp_tools.tools.variants import read_pwm_motifs, reverse_complement, score_pwm_window  # noqa: E402
+from fp_tools.utils.alignment import open_alignment  # noqa: E402
+from fp_tools.utils.fasta import open_fasta  # noqa: E402
 
 
 def build_cutsites(bam_path: str, chrom: str, chrom_len: int, shift_fwd: int = 4, shift_rev: int = -5) -> np.ndarray:
     """Return a per-base Tn5 insertion-count array for one chromosome."""
 
     counts = np.zeros(chrom_len, dtype=np.int32)
-    bam = pysam.AlignmentFile(bam_path, "rb")
+    bam = open_alignment(bam_path, "rb")
     for read in bam.fetch(chrom):
         if read.is_unmapped or read.is_duplicate or read.is_secondary or read.is_supplementary:
             continue
@@ -69,7 +70,7 @@ def footprint_score(counts: np.ndarray, lo: int, hi: int, flank: int) -> float:
 def score_peaks(peaks, genome, motif_file, bam, output, chrom="chr4", motif_index=0, flank=50) -> int:
     motif = read_pwm_motifs(motif_file)[motif_index]
     width = len(motif.probabilities)
-    fasta = pysam.FastaFile(str(genome))
+    fasta = open_fasta(genome)
     chrom_len = fasta.get_reference_length(chrom)
     counts = build_cutsites(str(bam), chrom, chrom_len)
 

@@ -16,7 +16,6 @@ from pathlib import Path
 import sys
 
 import numpy as np
-import pysam
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
@@ -25,6 +24,7 @@ sys.path.insert(0, str(SCRIPT_DIR.parent.parent / "src"))
 from footprint_from_bam import best_match, build_cutsites, footprint_score  # noqa: E402
 from build_label_overlap_benchmark import read_label_intervals, overlap_bp  # noqa: E402
 from fp_tools.tools.variants import read_pwm_motifs  # noqa: E402
+from fp_tools.utils.fasta import open_fasta  # noqa: E402
 
 
 def read_accessibility(path: str | Path) -> dict[str, float]:
@@ -61,7 +61,7 @@ def build_table(
 ) -> int:
     motif = read_pwm_motifs(motif_file)[motif_index]
     width = len(motif.probabilities)
-    fasta = pysam.FastaFile(str(genome))
+    fasta = open_fasta(genome)
     access = read_accessibility(peaks)
     labels = read_label_intervals(labels_bed)
     counts = build_cutsites(str(bam), chrom, fasta.get_reference_length(chrom)) if bam else None

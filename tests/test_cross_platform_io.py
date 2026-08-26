@@ -14,6 +14,7 @@ import numpy as np
 
 from fp_tools.utils import bigwig
 from fp_tools.utils.alignment import FragmentAlignment, _BamnosticRecord
+from fp_tools.utils.fasta import open_fasta
 from fp_tools.utils.intervals import IntervalIndex, intersect_bed
 from fp_tools.utils.logger import FpToolsLogger
 from fp_tools.utils.motifs import MotifList, _NumpyMotifScanner, _threshold_from_p
@@ -87,8 +88,14 @@ class CrossPlatformIoTests(unittest.TestCase):
                 with bigwig.open(output) as reader:
                     self.assertEqual(reader.chroms(), {"chr1": 20})
                     self.assertEqual(reader.intervals("chr1"), [(2, 3, 1.5), (8, 9, -2.0)])
+                    self.assertEqual(reader.header()["nBasesCovered"], 2)
         finally:
             bigwig._pybigwig = native
+
+    def test_fasta_adapter_reports_reference_length(self):
+        with open_fasta(ROOT / "test_data" / "genome.fa.gz") as fasta:
+            reference = fasta.references[0]
+            self.assertEqual(fasta.get_reference_length(reference), fasta.lengths[0])
 
     def test_interval_index_and_bed_intersection(self):
         with tempfile.TemporaryDirectory() as tmp:

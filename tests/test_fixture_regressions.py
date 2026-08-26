@@ -1,7 +1,7 @@
 import pathlib
 import unittest
 
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]

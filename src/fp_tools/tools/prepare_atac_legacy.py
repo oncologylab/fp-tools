@@ -8,7 +8,15 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-import pysam
+try:
+    import pysam
+except ImportError:  # Native Windows keeps command help available only.
+    pysam = None
+
+
+def _require_pysam() -> None:
+    if pysam is None:
+        raise RuntimeError("The legacy FASTQ preprocessing route requires pysam on Linux")
 
 
 def _concatenate(inputs: list[Path], output: Path) -> Path:
@@ -22,6 +30,7 @@ def _concatenate(inputs: list[Path], output: Path) -> Path:
 
 
 def _remove_xs(input_bam: Path, output_bam: Path) -> int:
+    _require_pysam()
     kept = 0
     with (
         pysam.AlignmentFile(input_bam, "rb") as source,
@@ -130,6 +139,7 @@ def process_legacy_sample(
     sample, root: Path, reference, settings: dict[str, Any], resume: bool = True
 ) -> dict[str, str]:
     """Run the HOMER-based ATAC route while retaining standard project metadata."""
+    _require_pysam()
     from fp_tools.tools.prepare_atac import (
         MITO_CHROMS,
         _bam_count,

@@ -13,13 +13,12 @@ import argparse
 from pathlib import Path
 import sys
 
-import pysam
-
 SCRIPT_DIR = Path(__file__).resolve().parent
 SRC = SCRIPT_DIR.parent.parent / "src"
 sys.path.insert(0, str(SRC))
 
 from fp_tools.tools.variants import best_pwm_score, read_pwm_motifs  # noqa: E402
+from fp_tools.utils.fasta import open_fasta  # noqa: E402
 
 
 def read_peaks(path: str | Path, chroms: set[str] | None = None):
@@ -53,7 +52,7 @@ def score_peaks_with_pwm(
     if not motifs:
         raise ValueError(f"No motifs parsed from {motif_file}")
     motif = motifs[motif_index]
-    fasta = pysam.FastaFile(str(genome))
+    fasta = open_fasta(genome)
     available = set(fasta.references)
 
     out = Path(output)

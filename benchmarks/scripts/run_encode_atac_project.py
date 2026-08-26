@@ -27,9 +27,14 @@ from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
-import pyBigWig
-import pysam
 from scipy.stats import spearmanr
+
+from fp_tools.utils import bigwig as pyBigWig
+
+try:
+    import pysam
+except ImportError:  # The public-data runner is Linux-only, but its helpers are portable.
+    pysam = None
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -533,6 +538,8 @@ def local_bam(row: object, hct_source: Path) -> Path | None:
 
 
 def ensure_bam(row: object, scratch: Path, hct_source: Path, curl: str, log: Path) -> tuple[Path, bool]:
+    if pysam is None:
+        raise RuntimeError("The ENCODE project runner requires pysam on Linux")
     existing = local_bam(row, hct_source)
     if existing is not None:
         bam = existing

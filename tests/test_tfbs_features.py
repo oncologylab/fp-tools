@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 
 from fp_tools.tools.tfbs_features import build_feature_table
 

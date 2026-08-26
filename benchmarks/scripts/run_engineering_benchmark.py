@@ -10,24 +10,28 @@ from __future__ import annotations
 import argparse
 import csv
 import os
-import resource
 import shlex
 import subprocess
 import time
 from pathlib import Path
+
+try:
+    import resource
+except ImportError:  # Windows does not provide the POSIX resource module.
+    resource = None
 
 
 def run_benchmark(command: list[str], output: Path, label: str, cores: int | None = None) -> dict[str, object]:
     start = time.perf_counter()
     completed = subprocess.run(command, check=False)
     elapsed = time.perf_counter() - start
-    usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+    peak_rss_kb = int(resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss) if resource else 0
     row = {
         "label": label,
         "command": " ".join(shlex.quote(part) for part in command),
         "exit_code": completed.returncode,
         "wall_seconds": round(elapsed, 3),
-        "peak_rss_kb": int(usage.ru_maxrss),
+        "peak_rss_kb": peak_rss_kb,
         "cores": cores if cores is not None else "",
         "cwd": os.getcwd(),
     }

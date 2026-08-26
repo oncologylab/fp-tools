@@ -6,8 +6,12 @@ import gzip
 import subprocess
 import sys
 
-import pyBigWig
-import pysam
+from fp_tools.utils import bigwig as pyBigWig
+
+try:
+    import pysam
+except ImportError:
+    pysam = None
 
 from fp_tools.tools.pseudobulk import group_bam_by_tag, group_fragments, write_cutsite_bigwig, write_downstream_commands, write_pseudo_paired_bam
 from fp_tools.tools.pseudobulk_footprints import build_parser as build_sc_footprinting_parser
@@ -44,6 +48,7 @@ class PseudobulkTest(unittest.TestCase):
             self.assertTrue((outdir / "pseudobulk_manifest.tsv").exists())
             self.assertTrue((outdir / "fp_tools_manifest.yml").exists())
 
+    @unittest.skipUnless(pysam is not None, "pysam is required for tabix indexing")
     def test_10x_suffix_csv_chrom_filter_and_bigwig(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -96,6 +101,7 @@ class PseudobulkTest(unittest.TestCase):
             finally:
                 bw.close()
 
+    @unittest.skipUnless(pysam is not None, "pysam is required to write BAM outputs")
     def test_write_pseudo_paired_bam_preserves_cutsite_positions(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -122,6 +128,7 @@ class PseudobulkTest(unittest.TestCase):
                         cuts.append(read.reference_start + 1)
                 self.assertEqual(cuts, [11, 11, 20, 20])
 
+    @unittest.skipUnless(pysam is not None, "pysam is required to write BAM outputs")
     def test_group_fragments_writes_pseudo_bams_for_kept_groups(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
@@ -159,6 +166,7 @@ class PseudobulkTest(unittest.TestCase):
             self.assertTrue(kept_bam.with_suffix(kept_bam.suffix + ".bai").exists())
             self.assertEqual(filtered["pseudo_bam"], "")
 
+    @unittest.skipUnless(pysam is not None, "pysam is required to write BAM fixtures")
     def test_group_bam_by_tag_writes_real_pseudobulk_bams(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)

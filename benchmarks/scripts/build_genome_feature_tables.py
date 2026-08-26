@@ -26,7 +26,6 @@ from pathlib import Path
 import sys
 
 import numpy as np
-import pysam
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
@@ -35,6 +34,7 @@ sys.path.insert(0, str(SCRIPT_DIR.parent.parent / "src"))
 from footprint_from_bam import build_cutsites, footprint_score  # noqa: E402
 from build_label_overlap_benchmark import overlap_bp  # noqa: E402
 from fp_tools.tools.variants import read_pwm_motifs  # noqa: E402
+from fp_tools.utils.fasta import open_fasta  # noqa: E402
 
 BASE_TO_CODE = np.full(256, -1, dtype=np.int8)
 for _i, _b in enumerate("ACGT"):
@@ -138,7 +138,7 @@ def build_for_cell(
 ) -> dict[str, int]:
     chroms = chroms or DEFAULT_CHROMS
     chrom_set = set(chroms)
-    fasta = pysam.FastaFile(str(genome))
+    fasta = open_fasta(genome)
     available = set(fasta.references)
     chroms = [c for c in chroms if c in available]
 

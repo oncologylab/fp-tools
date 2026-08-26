@@ -17,13 +17,13 @@ from pathlib import Path
 import sys
 
 import numpy as np
-import pyBigWig
-import pysam
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent.parent / "src"))
 
 from fp_tools.tools.variants import read_pwm_motifs, reverse_complement, score_pwm_window  # noqa: E402
+from fp_tools.utils import bigwig as pyBigWig  # noqa: E402
+from fp_tools.utils.fasta import open_fasta  # noqa: E402
 
 
 def best_match(sequence: str, motif) -> tuple[float, int]:
@@ -68,7 +68,7 @@ def score_peaks(
 
     motif = read_pwm_motifs(motif_file)[motif_index]
     width = len(motif.probabilities)
-    fasta = pysam.FastaFile(str(genome))
+    fasta = open_fasta(genome)
     bw = pyBigWig.open(str(signal_bw))
     chroms = set(fasta.references) & set(bw.chroms().keys())
 

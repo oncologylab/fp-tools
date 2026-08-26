@@ -18,7 +18,6 @@ import argparse
 import base64
 import concurrent.futures
 from datetime import datetime, timezone
-import fcntl
 import gzip
 import hashlib
 import itertools
@@ -31,6 +30,16 @@ import subprocess
 import urllib.request
 
 import pandas as pd
+
+try:
+    import fcntl
+except ImportError:  # Windows can inspect fixtures but cannot run concurrent jobs.
+    fcntl = None
+
+
+def _lock_file(handle) -> None:
+    if fcntl is not None:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -140,7 +149,7 @@ def verify_file(path: Path, size: int, checksum: str) -> bool:
     cache_dir.mkdir(parents=True, exist_ok=True)
     marker = cache_dir / f"{cache_key}.json"
     with (cache_dir / f"{cache_key}.lock").open("a", encoding="utf-8") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        _lock_file(lock)
         expected = {
             "path": str(path.resolve()),
             "size": size,
@@ -165,7 +174,7 @@ def download(accession: str, suffix: str, size: int, checksum: str, destination:
     destination.parent.mkdir(parents=True, exist_ok=True)
     lock_path = destination.with_name(destination.name + ".lock")
     with lock_path.open("a", encoding="utf-8") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        _lock_file(lock)
         if verify_file(destination, size, checksum):
             return destination
         partial = destination.with_name(destination.name + ".part")
@@ -348,7 +357,7 @@ def seed_reference(project: Path = PROJECT) -> Path:
     pair = project / "pairs/HepG2_vs_K562"
     pair.mkdir(parents=True, exist_ok=True)
     with (pair / "analysis.lock").open("a", encoding="utf-8") as seed_lock:
-        fcntl.flock(seed_lock.fileno(), fcntl.LOCK_EX)
+        _lock_file(seed_lock)
         return seed_reference_locked(pair)
 
 
@@ -452,7 +461,7 @@ def run_pair(comparison: str, *, cores: int, allow_download: bool, keep_work: bo
     pair_dir = PROJECT / "pairs" / comparison
     pair_dir.mkdir(parents=True, exist_ok=True)
     pair_lock = (pair_dir / "analysis.lock").open("a", encoding="utf-8")
-    fcntl.flock(pair_lock.fileno(), fcntl.LOCK_EX)
+    _lock_file(pair_lock)
     completed = pair_dir / "complete.json"
     payload_path = pair_dir / "results/report_payload.json.gz"
     if completed.is_file() and payload_path.is_file():
@@ -621,6 +630,8 @@ def download_inputs(workers: int) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if fcntl is None:
+        raise RuntimeError("The concurrent ENCODE benchmark runner requires POSIX file locking")
     if args.command == "preflight":
         preflight()
     elif args.command == "seed-reference":

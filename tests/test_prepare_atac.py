@@ -5,8 +5,12 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-import pyBigWig
-import pysam
+from fp_tools.utils import bigwig as pyBigWig
+
+try:
+    import pysam
+except ImportError:
+    pysam = None
 
 from fp_tools.tools.prepare_atac import (
     DEFAULTS,
@@ -348,6 +352,7 @@ class PrepareAtacOutputTest(unittest.TestCase):
             with pyBigWig.open(str(output)) as bw:
                 self.assertEqual(bw.values("chr1", 2, 5), [3.5, 3.5, 3.5])
 
+    @unittest.skipUnless(pysam is not None, "pysam is required to write BAM fixtures")
     def test_legacy_xs_filter_retains_only_unique_alignments(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -372,6 +377,7 @@ class PrepareAtacOutputTest(unittest.TestCase):
             with pysam.AlignmentFile(output, "rb") as bam:
                 self.assertEqual(sum(1 for _ in bam.fetch(until_eof=True)), 1)
 
+    @unittest.skipUnless(pysam is not None, "pysam is required to write BAM fixtures")
     def test_tss_enrichment_uses_shifted_cut_sites(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

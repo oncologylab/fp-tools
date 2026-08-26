@@ -59,6 +59,13 @@ class FastaFile:
     def lengths(self) -> tuple[int, ...]:
         return tuple(self._fasta.lengths) if self._pysam else tuple(len(self._fasta[name]) for name in self.references)
 
+    def get_reference_length(self, reference: str) -> int:
+        """Return the length of one reference sequence."""
+
+        if self._pysam:
+            return int(self._fasta.get_reference_length(str(reference)))
+        return int(len(self._fasta[str(reference)]))
+
     def fetch(self, reference: str, start: int | None = None, end: int | None = None) -> str:
         if self._pysam:
             return str(self._fasta.fetch(str(reference), start, end))

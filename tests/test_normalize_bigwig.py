@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 import numpy as np
-import pyBigWig
+from fp_tools.utils import bigwig as pyBigWig
 
 from fp_tools.tools.normalize_bigwig import corrected_scaled_output_path, normalize_bigwigs
 from fp_tools.tools.normalize_bigwig import _stat

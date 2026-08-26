@@ -5,8 +5,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyBigWig
-import pysam
+
+from fp_tools.utils import bigwig as pyBigWig
+
+try:
+    import pysam
+except ImportError:
+    pysam = None
 
 from fp_tools.parsers import add_diff_footprints_arguments
 from fp_tools.tools.region_set_comparison import (
@@ -65,8 +70,8 @@ class RegionSetComparisonTest(unittest.TestCase):
     def test_overlapping_region_sets_are_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "a.bed").write_text("chr1\t10\t20\n")
-            (root / "b.bed").write_text("chr1\t19\t30\n")
+            (root / "a.bed").write_text("chr1\t10\t20\n", encoding="utf-8")
+            (root / "b.bed").write_text("chr1\t19\t30\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "mutually non-overlapping"):
                 _read_region_sets([root / "a.bed", root / "b.bed"], ["A", "B"])
 
@@ -74,8 +79,9 @@ class RegionSetComparisonTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             fasta = root / "genome.fa"
-            fasta.write_text(">chr1\n" + "ACGT" * 600 + "\n")
-            pysam.faidx(str(fasta))
+            fasta.write_text(">chr1\n" + "ACGT" * 600 + "\n", encoding="utf-8")
+            if pysam is not None:
+                pysam.faidx(str(fasta))
             motif = root / "motif.pfm"
             motif.write_text(
                 ">M1 TEST\n"
@@ -87,12 +93,13 @@ class RegionSetComparisonTest(unittest.TestCase):
                 "A [10 0 0 0]\n"
                 "C [0 10 0 0]\n"
                 "G [0 0 10 0]\n"
-                "T [0 0 0 10]\n"
+                "T [0 0 0 10]\n",
+                encoding="utf-8",
             )
             regions_a = root / "a.bed"
             regions_b = root / "b.bed"
-            regions_a.write_text("".join(f"chr1\t{40+i*20}\t{56+i*20}\t{i%2}\n" for i in range(10)))
-            regions_b.write_text("".join(f"chr1\t{500+i*20}\t{516+i*20}\t{i%2}\n" for i in range(10)))
+            regions_a.write_text("".join(f"chr1\t{40+i*20}\t{56+i*20}\t{i%2}\n" for i in range(10)), encoding="utf-8")
+            regions_b.write_text("".join(f"chr1\t{500+i*20}\t{516+i*20}\t{i%2}\n" for i in range(10)), encoding="utf-8")
             signal = root / "sample.bw"
             values = np.ones(2400, dtype=float)
             for i in range(10):
@@ -119,7 +126,7 @@ class RegionSetComparisonTest(unittest.TestCase):
             self.assertTrue((outdir / "test_results.txt").exists())
             report = outdir / "test_bound_vs_control.html"
             self.assertTrue(report.exists())
-            html = report.read_text()
+            html = report.read_text(encoding="utf-8")
             self.assertIn("Region-set footprint report", html)
             self.assertIn("Download results TSV", html)
 
