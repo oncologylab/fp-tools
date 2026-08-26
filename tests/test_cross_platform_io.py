@@ -152,6 +152,45 @@ class CrossPlatformIoTests(unittest.TestCase):
                 fasta_module._open_pyfastx("genome.fa.gz", index)
             self.assertEqual(attempts, 2)
 
+    def test_windows_fasta_indexes_are_instance_local_and_removed(self):
+        class FakeRecord:
+            def __len__(self):
+                return 4
+
+        class FakeFasta:
+            def __init__(self, _filename, *, index_file, full_name):
+                self.index_file = Path(index_file)
+                self.index_file.touch()
+
+            def keys(self):
+                return ["chr1"]
+
+            def __getitem__(self, _reference):
+                return FakeRecord()
+
+        class FakePyfastx:
+            Fasta = FakeFasta
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            genome = root / "genome.fa"
+            genome.write_text(">chr1\nACGT\n", encoding="utf-8")
+            with (
+                mock.patch.object(fasta_module, "pysam", None),
+                mock.patch.object(fasta_module, "pyfastx", FakePyfastx),
+                mock.patch.object(fasta_module, "_cache_root", return_value=root),
+                mock.patch.object(fasta_module, "_use_process_local_index", return_value=True),
+            ):
+                first = fasta_module.FastaFile(genome)
+                second = fasta_module.FastaFile(genome)
+                self.assertNotEqual(first.index_path, second.index_path)
+                first_index = first.index_path
+                second_index = second.index_path
+                first.close()
+                second.close()
+            self.assertFalse(first_index.exists())
+            self.assertFalse(second_index.exists())
+
     def test_fasta_adapter_reports_reference_length(self):
         with open_fasta(ROOT / "test_data" / "genome.fa.gz") as fasta:
             reference = fasta.references[0]

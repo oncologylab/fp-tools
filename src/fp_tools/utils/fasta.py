@@ -7,6 +7,7 @@ import errno
 import os
 from pathlib import Path
 import time
+import uuid
 
 try:
     import pysam
@@ -51,6 +52,10 @@ def _open_pyfastx(filename: str, index_path: Path):
         lock_path.unlink(missing_ok=True)
 
 
+def _use_process_local_index() -> bool:
+    return os.name == "nt"
+
+
 class FastaFile:
     """Subset of :class:`pysam.FastaFile` used by fp-tools."""
 
@@ -64,6 +69,9 @@ class FastaFile:
         source = Path(self.filename)
         identity = f"{self.filename}:{source.stat().st_size}:{source.stat().st_mtime_ns}"
         index_name = hashlib.sha256(identity.encode("utf-8")).hexdigest() + ".fxi"
+        self._delete_index = _use_process_local_index()
+        if self._delete_index:
+            index_name = f"{index_name}.{uuid.uuid4().hex}"
         self.index_path = _cache_root() / index_name
         self._fasta = _open_pyfastx(self.filename, self.index_path)
         self._pysam = False
@@ -101,7 +109,15 @@ class FastaFile:
     def close(self) -> None:
         if self._pysam and self._fasta is not None:
             self._fasta.close()
+        elif self._fasta is not None:
+            fasta = self._fasta
+            close = getattr(fasta, "close", None)
+            if close is not None:
+                close()
+            del fasta
         self._fasta = None
+        if not self._pysam and self._delete_index:
+            self.index_path.unlink(missing_ok=True)
 
 
 def open_fasta(path: str | os.PathLike[str]) -> FastaFile:
