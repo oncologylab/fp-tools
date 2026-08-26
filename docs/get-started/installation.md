@@ -19,8 +19,8 @@ starts from coordinate-sorted BAM/BAI files and matching peak BED files.
 Download the app for your computer, then open it. fp-tools opens in its own
 application window; no browser or Python installation is required.
 
-[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0/fp-tools-gui-windows-x64.exe){ .md-button }
-[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.0/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
+[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.1/fp-tools-gui-windows-x64.exe){ .md-button }
+[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.1/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
 
 Windows may ask you to confirm the unsigned preview download. The macOS preview
 is unsigned and has not been notarized by Apple, so Gatekeeper may report that
