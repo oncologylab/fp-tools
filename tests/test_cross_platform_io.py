@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 import threading
 import time
+import errno
 import unittest
 import shutil
 import subprocess
@@ -124,6 +125,32 @@ class CrossPlatformIoTests(unittest.TestCase):
                     thread.join()
             self.assertEqual(maximum_active, 1)
             self.assertFalse(index.with_suffix(".fxi.lock").exists())
+
+    def test_pyfastx_lock_treats_windows_access_denied_as_contention(self):
+        real_open = fasta_module.os.open
+        attempts = 0
+
+        class FakePyfastx:
+            @staticmethod
+            def Fasta(_filename, **_kwargs):
+                return object()
+
+        def windows_open(path, flags):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise PermissionError(errno.EACCES, "lock file exists", str(path))
+            return real_open(path, flags)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            index = Path(tmp) / "shared.fxi"
+            with (
+                mock.patch.object(fasta_module, "pyfastx", FakePyfastx),
+                mock.patch.object(fasta_module.os, "open", side_effect=windows_open),
+                mock.patch.object(fasta_module.time, "sleep"),
+            ):
+                fasta_module._open_pyfastx("genome.fa.gz", index)
+            self.assertEqual(attempts, 2)
 
     def test_fasta_adapter_reports_reference_length(self):
         with open_fasta(ROOT / "test_data" / "genome.fa.gz") as fasta:

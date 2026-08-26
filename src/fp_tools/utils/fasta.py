@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import errno
 import os
 from pathlib import Path
 import time
@@ -37,7 +38,9 @@ def _open_pyfastx(filename: str, index_path: Path):
     while lock_fd is None:
         try:
             lock_fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
+        except OSError as exc:
+            if exc.errno not in {errno.EACCES, errno.EEXIST}:
+                raise
             if time.monotonic() >= deadline:
                 raise TimeoutError(f"Timed out waiting for FASTA index lock: {lock_path}")
             time.sleep(0.05)
