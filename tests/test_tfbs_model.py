@@ -4,10 +4,36 @@ from pathlib import Path
 
 import pandas as pd
 
-from fp_tools.tools.tfbs_model import infer_feature_columns, predict_tabular_model, train_tabular_model
+from fp_tools.tools.tfbs_model import fuse_ranked_evidence, infer_feature_columns, predict_tabular_model, train_tabular_model
 
 
 class TfbsModelTest(unittest.TestCase):
+    def test_fuse_ranked_evidence_is_grouped_label_free_soft_or(self):
+        frame = pd.DataFrame(
+            {
+                "tf": ["A", "A", "A", "B", "B"],
+                "footprint": [1.0, 2.0, 3.0, 10.0, 20.0],
+                "pwm": [3.0, 2.0, 1.0, 5.0, 5.0],
+                "label": [1, 0, 1, 0, 1],
+            }
+        )
+        out = fuse_ranked_evidence(frame, ["footprint", "pwm"], ["tf"])
+        self.assertAlmostEqual(out.loc[0, "footprint_percentile"], 1.0 / 3.0)
+        self.assertAlmostEqual(out.loc[0, "pwm_percentile"], 1.0)
+        self.assertAlmostEqual(out.loc[0, "evidence_fusion_score"], 1.0)
+        self.assertAlmostEqual(out.loc[3, "pwm_percentile"], 0.75)
+        self.assertGreater(out.loc[4, "evidence_fusion_score"], out.loc[3, "evidence_fusion_score"])
+        self.assertEqual(out["label"].tolist(), frame["label"].tolist())
+
+    def test_fuse_ranked_evidence_rejects_missing_or_single_input(self):
+        frame = pd.DataFrame({"a": [1.0], "group": ["x"]})
+        with self.assertRaisesRegex(ValueError, "at least two"):
+            fuse_ranked_evidence(frame, ["a"])
+        with self.assertRaisesRegex(ValueError, "Missing evidence columns"):
+            fuse_ranked_evidence(frame, ["a", "b"])
+        with self.assertRaisesRegex(ValueError, "Missing evidence group"):
+            fuse_ranked_evidence(frame.assign(b=2.0), ["a", "b"], ["missing"])
+
     def test_train_and_predict_tabular_model_roundtrip(self):
         frame = pd.DataFrame(
             {

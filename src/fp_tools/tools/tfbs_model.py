@@ -18,6 +18,54 @@ from sklearn.preprocessing import StandardScaler
 MODEL_VERSION = "fp-tools-tfbs-tabular-v1"
 
 
+def fuse_ranked_evidence(
+    frame: pd.DataFrame,
+    evidence_columns: list[str],
+    group_columns: list[str] | None = None,
+    output_column: str = "evidence_fusion_score",
+) -> pd.DataFrame:
+    """Combine complementary site evidence without fitted parameters.
+
+    Each evidence column is converted to a percentile rank within the requested
+    biological group (normally one cell/TF or sample/motif). The ranks are
+    joined with ``1 - product(1 - rank)``. A strong footprint or a strong
+    sequence match can therefore retain a site, and monotonic rescaling of an
+    input score cannot change the result.
+
+    Missing evidence contributes zero. Constant evidence contributes the same
+    value to every row in its group and cannot alter the ordering supplied by
+    another input. This helper is label-free; an independent occupancy
+    benchmark is still required before promoting a fused score.
+    """
+
+    if len(evidence_columns) < 2:
+        raise ValueError("Evidence fusion requires at least two score columns.")
+    missing = [column for column in evidence_columns if column not in frame.columns]
+    if missing:
+        raise ValueError("Missing evidence columns: " + ", ".join(missing))
+    group_columns = list(group_columns or [])
+    missing_groups = [column for column in group_columns if column not in frame.columns]
+    if missing_groups:
+        raise ValueError("Missing evidence group columns: " + ", ".join(missing_groups))
+
+    output = frame.copy()
+    complements = []
+    for column in evidence_columns:
+        values = pd.to_numeric(output[column], errors="coerce")
+        if group_columns:
+            ranks = values.groupby(
+                [output[group] for group in group_columns],
+                dropna=False,
+            ).rank(method="average", pct=True, na_option="keep")
+        else:
+            ranks = values.rank(method="average", pct=True, na_option="keep")
+        rank_column = f"{column}_percentile"
+        output[rank_column] = ranks.fillna(0.0).clip(0.0, 1.0)
+        complements.append(1.0 - output[rank_column].to_numpy(dtype=float))
+    output[output_column] = 1.0 - np.prod(np.vstack(complements), axis=0)
+    return output
+
+
 def infer_feature_columns(frame: pd.DataFrame, label_column: str | None = None, id_columns: list[str] | None = None) -> list[str]:
     """Infer numeric feature columns from a table."""
 

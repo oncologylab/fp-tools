@@ -6,6 +6,28 @@ from fp_tools.tools.rerank import read_table, rerank_sites
 
 
 class CandidateRerankTest(unittest.TestCase):
+    def test_evidence_fusion_ranks_within_motif_groups(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            sites = tmp / "sites.tsv"
+            sites.write_text(
+                "chrom\tstart\tend\tmotif_id\tfootprint\tpwm\n"
+                "chr1\t0\t1\tA\t1\t3\n"
+                "chr1\t1\t2\tA\t2\t2\n"
+                "chr1\t2\t3\tA\t3\t1\n",
+                encoding="utf-8",
+            )
+            out = rerank_sites(
+                sites,
+                tmp / "out.tsv",
+                score_columns=["footprint", "pwm"],
+                evidence_fusion=True,
+                evidence_group_columns=["motif_id"],
+            )
+            self.assertEqual(out.iloc[0]["start"], 0)
+            self.assertIn("footprint_percentile", out.columns)
+            self.assertIn("pwm_percentile", out.columns)
+
     def test_rerank_sites_combines_scores_and_family_map(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)

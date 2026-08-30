@@ -53,6 +53,10 @@ ablation_runner = load_module(
     "run_footprint_ablation_plan",
     "benchmarks/scripts/run_footprint_ablation_plan.py",
 )
+evidence_fusion = load_module(
+    "evaluate_site_evidence_fusion",
+    "benchmarks/scripts/evaluate_site_evidence_fusion.py",
+)
 
 
 class FootprintStudySpecTest(unittest.TestCase):
@@ -75,6 +79,83 @@ class FootprintStudySpecTest(unittest.TestCase):
         errors = study.validate_spec(spec)
         self.assertTrue(any("multiple splits" in error for error in errors))
         self.assertTrue(any("duplicate task" in error for error in errors))
+
+
+class SiteEvidenceFusionStudyTest(unittest.TestCase):
+    def test_locked_holdout_requires_explicit_unlock(self):
+        spec = {
+            "chromosome_split": {
+                "train": ["chr1"],
+                "validation": ["chr17"],
+                "test": ["chr19"],
+            },
+            "tasks": [
+                {"cell": "K562", "tf": "CTCF", "split": "development", "role": "positive_control", "motif_family": "CTCF"},
+                {"cell": "A549", "tf": "CTCF", "split": "locked_holdout", "role": "positive_control", "motif_family": "CTCF"},
+            ],
+        }
+        rows = []
+        for cell in ("K562", "A549"):
+            for chrom in ("chr17", "chr19"):
+                for index, label in enumerate((0, 1)):
+                    rows.append(
+                        {
+                            "cell": cell,
+                            "tf": "CTCF",
+                            "TFBS_chr": chrom,
+                            "TFBS_start": index,
+                            "TFBS_end": index + 1,
+                            "chip_label": label,
+                            "footprint_score": float(index),
+                            "pwm_score": float(index),
+                        }
+                    )
+        frame = evidence_fusion.add_candidate_scores(
+            evidence_fusion.attach_design(pd.DataFrame(rows), spec)
+        )
+        validation = evidence_fusion.select_evaluation_rows(
+            frame,
+            unlock_development_test=False,
+            unlock_holdout=False,
+        )
+        self.assertEqual(set(validation["cell"]), {"K562"})
+        self.assertEqual(set(validation["TFBS_chr"]), {"chr17"})
+        unlocked = evidence_fusion.select_evaluation_rows(
+            frame,
+            unlock_development_test=True,
+            unlock_holdout=True,
+        )
+        self.assertEqual(set(unlocked["cell"]), {"K562", "A549"})
+        self.assertEqual(
+            set(unlocked.loc[unlocked["cell"] == "A549", "TFBS_chr"]),
+            {"chr19"},
+        )
+
+    def test_paired_chromosome_bootstrap_reports_candidate_probability(self):
+        rows = []
+        for chrom in ("chr17", "chr18"):
+            for index in range(20):
+                label = int(index >= 10)
+                rows.append(
+                    {
+                        "cell_split": "development",
+                        "chromosome_split": "validation",
+                        "cell": "K562",
+                        "tf": "CTCF",
+                        "role": "positive_control",
+                        "motif_family": "CTCF",
+                        "TFBS_chr": chrom,
+                        "chip_label": label,
+                        "footprint_score": float(index % 3),
+                        "evidence_fusion_score": float(index),
+                    }
+                )
+        result = evidence_fusion.paired_chromosome_bootstrap(
+            pd.DataFrame(rows), n_bootstrap=20, seed=4
+        )
+        self.assertEqual(set(result["metric"]), {"auroc", "auprc"})
+        self.assertTrue((result["successful_bootstraps"] == 20).all())
+        self.assertTrue((result["probability_delta_gt_zero"] == 1.0).all())
 
 
 class FootprintSiteLabelTest(unittest.TestCase):

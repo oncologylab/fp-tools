@@ -9,6 +9,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from fp_tools.tools.tfbs_model import fuse_ranked_evidence
+
 
 def read_table(path: str | Path) -> pd.DataFrame:
     """Read TSV/BED-like tables, including fp-tools candidate files with # headers."""
@@ -61,6 +63,8 @@ def rerank_sites(
     motif_column: str = "motif_id",
     family_bonus: float = 0.0,
     top_per_family: int | None = None,
+    evidence_fusion: bool = False,
+    evidence_group_columns: list[str] | None = None,
 ) -> pd.DataFrame:
     """Rank sites using normalized score columns and optional motif family grouping."""
 
@@ -70,11 +74,22 @@ def rerank_sites(
     if len(weights) != len(score_columns):
         raise ValueError("--weights must match --score-columns length")
 
-    rank_score = pd.Series(np.zeros(len(frame)), index=frame.index, dtype=float)
-    for column, weight in zip(score_columns, weights):
-        norm_column = f"{column}_norm"
-        frame[norm_column] = _minmax(_numeric_series(frame, column))
-        rank_score += float(weight) * frame[norm_column]
+    if evidence_fusion:
+        if weights != [1.0] * len(score_columns):
+            raise ValueError("--weights cannot be combined with --evidence-fusion")
+        frame = fuse_ranked_evidence(
+            frame,
+            score_columns,
+            group_columns=evidence_group_columns,
+            output_column="rank_score",
+        )
+        rank_score = frame["rank_score"]
+    else:
+        rank_score = pd.Series(np.zeros(len(frame)), index=frame.index, dtype=float)
+        for column, weight in zip(score_columns, weights):
+            norm_column = f"{column}_norm"
+            frame[norm_column] = _minmax(_numeric_series(frame, column))
+            rank_score += float(weight) * frame[norm_column]
 
     mapping = read_family_map(family_map)
     if mapping and motif_column in frame.columns:
@@ -110,6 +125,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--motif-column", default="motif_id", help="Motif identifier column for --family-map.")
     parser.add_argument("--family-bonus", type=float, default=0.0, help="Bonus weight for motif families with multiple motifs.")
     parser.add_argument("--top-per-family", type=int, default=None, help="Keep at most N rows per motif family after ranking.")
+    parser.add_argument("--evidence-fusion", action="store_true", help="Fuse within-group percentile ranks with a label-free probabilistic OR instead of a weighted min-max sum.")
+    parser.add_argument("--evidence-group-columns", nargs="*", default=[], help="Columns defining independent percentile-rank groups, such as cell and tf.")
     args = parser.parse_args(argv)
 
     frame = rerank_sites(
@@ -121,6 +138,8 @@ def main(argv: list[str] | None = None) -> int:
         motif_column=args.motif_column,
         family_bonus=args.family_bonus,
         top_per_family=args.top_per_family,
+        evidence_fusion=args.evidence_fusion,
+        evidence_group_columns=args.evidence_group_columns,
     )
     print(f"Wrote {len(frame)} ranked sites to {args.out}")
     return 0
