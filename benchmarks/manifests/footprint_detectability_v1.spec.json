@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "study_id": "footprint_detectability_v1",
+  "assembly": "GRCh38",
+  "motif_database": "jaspar2026_vertebrates",
+  "random_seed": 2026,
+  "development_cells": ["K562", "HepG2"],
+  "locked_holdout_cells": ["MCF-7", "A549", "HCT116", "Panc1"],
+  "chromosome_split": {
+    "train": ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16"],
+    "validation": ["chr17", "chr18"],
+    "test": ["chr19", "chr20", "chr21", "chr22", "chrX"]
+  },
+  "depth_fragments": [10000000, 25000000, 50000000, 75000000, 100000000, "full"],
+  "depth_randomizations": 5,
+  "profile_flank_bp": 100,
+  "profile_scales_bp": [4, 8, 16, 32, 64, 128, 200],
+  "site_labels": {
+    "positive_summit_distance_bp": 100,
+    "negative_peak_distance_bp": 500,
+    "matched_negative_ratio": 1,
+    "matching_features": ["motif_score", "accessibility", "gc", "mappability", "tss_distance", "regulatory_class"]
+  },
+  "diagnostic_thresholds": {
+    "minimum_positive_sites": 500,
+    "correction_delta_auroc": 0.03,
+    "scorer_delta_auroc": 0.05,
+    "scorer_relative_delta_auprc": 0.10,
+    "information_limit_auroc": 0.65,
+    "weak_auroc": 0.70,
+    "detectable_auroc": 0.75
+  },
+  "promotion_gates": {
+    "minimum_relative_auprc_gain": 0.10,
+    "minimum_auroc_gain": 0.03,
+    "maximum_strong_control_auroc_loss": 0.02,
+    "minimum_difficult_tf_families_improved": 2,
+    "minimum_holdout_cells_improved": 2,
+    "primary_fdr": 0.05,
+    "minimum_detectability_probability": 0.80
+  },
+  "native_corrections": ["raw", "fp_tools_pwm", "fp_tools_dwm", "fp_tools_reused_bias"],
+  "whole_methods": ["accessibility", "motif", "motif_accessibility", "fp_tools", "TOBIAS", "HINT_ATAC", "PRINT", "TraceBind", "ChromBPNet"],
+  "tasks": [
+    {"cell": "K562", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "development"},
+    {"cell": "K562", "tf": "MYC", "motif_id": "MA0147.4", "motif_family": "MYC_MAX", "role": "positive_control", "split": "development"},
+    {"cell": "K562", "tf": "FOXA1", "motif_id": "MA0148.5", "motif_family": "FOX", "role": "transfer", "split": "development"},
+    {"cell": "K562", "tf": "TCF7L2", "motif_id": "MA0523.2", "motif_family": "TCF7", "role": "transfer", "split": "development"},
+    {"cell": "K562", "tf": "MEF2A", "motif_id": "MA0052.5", "motif_family": "MEF2", "role": "weak_shape", "split": "development"},
+    {"cell": "K562", "tf": "MEF2D", "motif_id": "MA0773.1", "motif_family": "MEF2", "role": "weak_shape", "split": "development"},
+    {"cell": "K562", "tf": "TBP", "motif_id": "MA0108.3", "motif_family": "TBP", "role": "weak_shape", "split": "development"},
+    {"cell": "K562", "tf": "ZNF384", "motif_id": "MA1125.2", "motif_family": "ZNF362_ZNF384", "role": "motif_ambiguity", "split": "development"},
+    {"cell": "K562", "tf": "ARID3A", "motif_id": "MA0151.1", "motif_family": "ARID3", "role": "motif_ambiguity", "split": "development"},
+
+    {"cell": "HepG2", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "development"},
+    {"cell": "HepG2", "tf": "MYC", "motif_id": "MA0147.4", "motif_family": "MYC_MAX", "role": "positive_control", "split": "development"},
+    {"cell": "HepG2", "tf": "FOXA1", "motif_id": "MA0148.5", "motif_family": "FOX", "role": "transfer", "split": "development"},
+    {"cell": "HepG2", "tf": "TCF7L2", "motif_id": "MA0523.2", "motif_family": "TCF7", "role": "transfer", "split": "development"},
+    {"cell": "HepG2", "tf": "HMGA1", "motif_id": "MA2124.1", "motif_family": "HMGA1", "role": "weak_shape", "split": "development"},
+    {"cell": "HepG2", "tf": "MEF2A", "motif_id": "MA0052.5", "motif_family": "MEF2", "role": "weak_shape", "split": "development"},
+    {"cell": "HepG2", "tf": "MEF2D", "motif_id": "MA0773.1", "motif_family": "MEF2", "role": "weak_shape", "split": "development"},
+    {"cell": "HepG2", "tf": "TBP", "motif_id": "MA0108.3", "motif_family": "TBP", "role": "weak_shape", "split": "development"},
+    {"cell": "HepG2", "tf": "ZNF362", "motif_id": "MA2593.1", "motif_family": "ZNF362_ZNF384", "role": "motif_ambiguity", "split": "development"},
+    {"cell": "HepG2", "tf": "ZNF384", "motif_id": "MA1125.2", "motif_family": "ZNF362_ZNF384", "role": "motif_ambiguity", "split": "development"},
+    {"cell": "HepG2", "tf": "ZNF558", "motif_id": "MA2335.1", "motif_family": "ZNF558", "role": "weak_shape", "split": "development"},
+    {"cell": "HepG2", "tf": "ARID3A", "motif_id": "MA0151.1", "motif_family": "ARID3", "role": "motif_ambiguity", "split": "development"},
+
+    {"cell": "MCF-7", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "locked_holdout"},
+    {"cell": "MCF-7", "tf": "MYC", "motif_id": "MA0147.4", "motif_family": "MYC_MAX", "role": "positive_control", "split": "locked_holdout"},
+    {"cell": "MCF-7", "tf": "GATA3", "motif_id": "MA0037.5", "motif_family": "GATA", "role": "difficult", "split": "locked_holdout"},
+    {"cell": "MCF-7", "tf": "FOXA1", "motif_id": "MA0148.5", "motif_family": "FOX", "role": "difficult", "split": "locked_holdout"},
+    {"cell": "MCF-7", "tf": "TCF7L2", "motif_id": "MA0523.2", "motif_family": "TCF7", "role": "transfer", "split": "locked_holdout"},
+    {"cell": "MCF-7", "tf": "ARID3A", "motif_id": "MA0151.1", "motif_family": "ARID3", "role": "motif_ambiguity", "split": "locked_holdout"},
+
+    {"cell": "A549", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "locked_holdout"},
+    {"cell": "A549", "tf": "MYC", "motif_id": "MA0147.4", "motif_family": "MYC_MAX", "role": "positive_control", "split": "locked_holdout"},
+    {"cell": "A549", "tf": "GATA3", "motif_id": "MA0037.5", "motif_family": "GATA", "role": "transfer", "split": "locked_holdout"},
+    {"cell": "A549", "tf": "FOXA1", "motif_id": "MA0148.5", "motif_family": "FOX", "role": "transfer", "split": "locked_holdout"},
+
+    {"cell": "HCT116", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "locked_holdout"},
+    {"cell": "HCT116", "tf": "TCF7L2", "motif_id": "MA0523.2", "motif_family": "TCF7", "role": "transfer", "split": "locked_holdout"},
+    {"cell": "Panc1", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "locked_holdout"},
+    {"cell": "Panc1", "tf": "TCF7L2", "motif_id": "MA0523.2", "motif_family": "TCF7", "role": "difficult", "split": "locked_holdout"}
+  ],
+  "nutrient_application": {
+    "discovery_cell": "AsPC-1",
+    "transfer_cells": ["HPAF-II", "Panc1"],
+    "primary_contrast": "severe_glucose_limitation_vs_full_serum",
+    "shared_secondary_contrasts": ["0.4_FBS", "0_BCAA", "0_Lys", "0_Trp"],
+    "external_pdac_accession": "GSE144833",
+    "external_mechanistic_accession": "GSE137034",
+    "candidate_rules": {
+      "required_directional_cell_lines": 3,
+      "top_fraction_absolute_change": 0.10,
+      "minimum_top_cell_lines": 2,
+      "minimum_rna_concordant_cell_lines": 2,
+      "minimum_external_reversal_fraction": 0.50,
+      "external_fdr": 0.05
+    }
+  }
+}
