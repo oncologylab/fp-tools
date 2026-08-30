@@ -1,0 +1,77 @@
+# Footprint improvement experiment, 2026-08-30
+
+## Scope
+
+This time-boxed run used branch `research/footprint-improvement-20260830` and
+did not change `main`. The locked study is
+`manifests/footprint_detectability_v1.spec.json`. Generated public-data outputs
+remain under the ignored `results/footprint_detectability_v1/` directory.
+
+The complete executable design contains 206 signal jobs and 17,430 downstream
+evaluation tasks. The local evidence matrix comprised 704,615 ChIP-labeled
+motif-site records across K562, HepG2, HCT116, A549, MCF-7, and Panc1. Input
+paths, byte sizes, and SHA-256 hashes are recorded in the generated evaluation
+summary.
+
+## Frozen candidate
+
+The first candidate combined within-cell/TF percentile ranks of the existing
+footprint score and PWM score without using ChIP labels:
+
+`1 - (1 - footprint_rank) * (1 - PWM_rank)`
+
+Candidate parameters were frozen after K562/HepG2 development, then evaluated
+once on the MCF-7/A549/HCT116/Panc1 cell-line holdout. Chromosomes 17 and 18
+were validation chromosomes; chromosomes 19, 20, 21, 22, and X were test
+chromosomes. Confidence intervals used 1,000 chromosome-block bootstrap
+replicates.
+
+| Split | Baseline AUROC | Candidate AUROC | Delta | Baseline AUPRC | Candidate AUPRC | Relative AUPRC gain |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Development validation | 0.7975 | 0.8515 | +0.0540 | 0.6490 | 0.7820 | +20.5% |
+| Development test | 0.7856 | 0.8380 | +0.0524 | 0.5956 | 0.7294 | +22.5% |
+| Locked cell-line test | 0.7397 | 0.7499 | +0.0102 | 0.5611 | 0.5930 | +5.7% |
+
+The candidate failed the prespecified locked-holdout mean AUROC, relative
+AUPRC, and strong-positive non-regression gates. Its maximum positive-control
+AUROC loss was 0.0647. It is rejected, is not a production default, and must
+not be retuned on this holdout.
+
+## Biological diagnosis
+
+The result is TF-family dependent rather than a uniform absence of footprint
+information:
+
+- CTCF improved in A549 (+0.0487 AUROC), HCT116 (+0.0926), and MCF-7
+  (+0.0346), all supported by chromosome-block bootstrap intervals.
+- TCF7L2 improved in Panc1 (+0.0256 AUROC), also with bootstrap support.
+- MYC regressed in A549 (-0.0647 AUROC) and MCF-7 (-0.0492). In these tasks,
+  the existing footprint signal was strong and the PWM ranking was weak.
+- FOXA1 (-0.0069) and GATA3 (+0.0013) were not rescued. Their PWM ranking was
+  also weak, so adding motif evidence cannot solve their detectability problem.
+- REST was consistently weak by footprint score but strong by PWM evidence;
+  fusion substantially rescued REST in the supplemental K562, HepG2, and
+  HCT116 checks.
+
+These results reject one global evidence-fusion rule. They support the next
+hypothesis: estimate a label-free evidence-reliability or abstention state and
+combine evidence only when the auxiliary channel is demonstrably informative.
+That candidate requires a new independent holdout, naked-DNA bias controls,
+and perturbation or orthogonal occupancy validation.
+
+## Engineering outcomes
+
+- Added an opt-in, label-free evidence-fusion primitive and a locked evaluator
+  that records rejected candidates and input provenance.
+- Added fixed-site bigWig evaluation so raw, PWM-corrected, and DWM-corrected
+  arms can be compared at identical ChIP-labeled motif centers.
+- Removed a redundant full BAM counting pass when a validated fragment count
+  is supplied to deterministic downsampling.
+- Bound generated correction commands to the selected Python environment. A
+  provenance check caught and quarantined partial output from an older global
+  fp-tools 0.1.8 executable before it entered the evidence matrix.
+- Made `python -m fp_tools.cli` a supported execution path for environment-bound
+  `atac-correct` plans.
+
+The production footprint scorer remains unchanged because the scientific
+promotion gates did not pass.

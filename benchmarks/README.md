@@ -21,6 +21,8 @@ Commit manifests and scripts, not downloaded BAMs, bigWigs, or full outputs.
 The site-evidence fusion evaluator preserves the one-way validation sequence
 and records rejected candidates as well as successful ones. A rejected
 candidate is not retuned against the same holdout.
+The dated [`FOOTPRINT_IMPROVEMENT_20260830.md`](FOOTPRINT_IMPROVEMENT_20260830.md)
+report records the first candidate decision and its reproducible engineering outcomes.
 
 ## Deferred Benchmark Scaffolds
 
