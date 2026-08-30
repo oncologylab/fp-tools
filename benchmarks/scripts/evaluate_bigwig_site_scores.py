@@ -103,6 +103,78 @@ def evaluate(sites: pd.DataFrame, signals: pd.DataFrame) -> tuple[pd.DataFrame, 
     return predictions, pd.DataFrame(metric_rows)
 
 
+def paired_chromosome_bootstrap(
+    predictions: pd.DataFrame,
+    baseline_method: str,
+    n_bootstrap: int,
+    seed: int,
+) -> pd.DataFrame:
+    """Bootstrap paired method-minus-baseline metrics by chromosome."""
+
+    if n_bootstrap <= 0 or predictions.empty:
+        return pd.DataFrame()
+    index = [
+        "cell", "tf", "TFBS_chr", "TFBS_start", "TFBS_end", "chip_label",
+    ]
+    wide = predictions.pivot(index=index, columns="method", values="score").reset_index()
+    if baseline_method not in wide:
+        raise ValueError(f"baseline method is absent from predictions: {baseline_method}")
+    rng = np.random.default_rng(seed)
+    rows = []
+    for (cell, tf), group in wide.groupby(["cell", "tf"], sort=True):
+        if group[baseline_method].isna().any():
+            raise ValueError(f"baseline method {baseline_method} is missing for {cell}/{tf}")
+        methods = [
+            method
+            for method in sorted(predictions["method"].unique())
+            if method != baseline_method and method in group and group[method].notna().all()
+        ]
+        blocks = [
+            np.flatnonzero(group["TFBS_chr"].to_numpy() == chromosome)
+            for chromosome in sorted(group["TFBS_chr"].unique())
+        ]
+        labels = group["chip_label"].to_numpy(dtype=int)
+        baseline = group[baseline_method].to_numpy(dtype=float)
+        for method in methods:
+            candidate = group[method].to_numpy(dtype=float)
+            distributions = {"auroc": [], "auprc": []}
+            for _ in range(n_bootstrap):
+                selected = rng.integers(0, len(blocks), size=len(blocks))
+                positions = np.concatenate([blocks[block_index] for block_index in selected])
+                sample_labels = labels[positions]
+                if len(np.unique(sample_labels)) != 2:
+                    continue
+                sample_baseline = baseline[positions]
+                sample_candidate = candidate[positions]
+                distributions["auroc"].append(
+                    roc_auc_score(sample_labels, sample_candidate)
+                    - roc_auc_score(sample_labels, sample_baseline)
+                )
+                distributions["auprc"].append(
+                    average_precision_score(sample_labels, sample_candidate)
+                    - average_precision_score(sample_labels, sample_baseline)
+                )
+            for metric, values in distributions.items():
+                array = np.asarray(values, dtype=float)
+                rows.append(
+                    {
+                        "cell": str(cell),
+                        "tf": str(tf),
+                        "baseline_method": baseline_method,
+                        "method": method,
+                        "metric": metric,
+                        "ci_low": float(np.quantile(array, 0.025)) if len(array) else np.nan,
+                        "ci_high": float(np.quantile(array, 0.975)) if len(array) else np.nan,
+                        "probability_delta_gt_zero": float(np.mean(array > 0)) if len(array) else np.nan,
+                        "successful_bootstraps": int(len(array)),
+                        "requested_bootstraps": int(n_bootstrap),
+                        "resampling_unit": "chromosome",
+                        "n_blocks": int(len(blocks)),
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sites", nargs="+", type=Path, required=True)
@@ -110,6 +182,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--outdir", type=Path, required=True)
     parser.add_argument("--chromosomes", nargs="*", default=[])
     parser.add_argument("--write-predictions", action="store_true")
+    parser.add_argument("--baseline-method", default="raw")
+    parser.add_argument("--bootstrap", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=2026)
     args = parser.parse_args(argv)
 
     sites = read_sites(args.sites)
@@ -118,6 +193,14 @@ def main(argv: list[str] | None = None) -> int:
     predictions, metrics = evaluate(sites, read_signals(args.signals))
     args.outdir.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(args.outdir / "bigwig_site_metrics.tsv", sep="\t", index=False)
+    bootstrap = paired_chromosome_bootstrap(
+        predictions,
+        baseline_method=args.baseline_method,
+        n_bootstrap=args.bootstrap,
+        seed=args.seed,
+    )
+    if not bootstrap.empty:
+        bootstrap.to_csv(args.outdir / "bigwig_site_bootstrap.tsv", sep="\t", index=False)
     if args.write_predictions:
         predictions.to_csv(
             args.outdir / "bigwig_site_predictions.tsv.gz",

@@ -129,6 +129,33 @@ class BigwigSiteScoreTest(unittest.TestCase):
             self.assertEqual(len(predictions), 6)
             self.assertEqual(set(metrics["n_sites"]), {3})
 
+    def test_paired_chromosome_bootstrap_uses_matched_blocks(self):
+        rows = []
+        for chrom in ("chr17", "chr18"):
+            for index, label in enumerate([0, 0, 1, 1]):
+                for method, score in (
+                    ("raw", float(index % 2)),
+                    ("candidate", float(index)),
+                ):
+                    rows.append(
+                        {
+                            "cell": "K562",
+                            "tf": "CTCF",
+                            "TFBS_chr": chrom,
+                            "TFBS_start": index,
+                            "TFBS_end": index + 1,
+                            "chip_label": label,
+                            "method": method,
+                            "score": score,
+                        }
+                    )
+        result = evaluate_bigwig_site_scores.paired_chromosome_bootstrap(
+            pd.DataFrame(rows), baseline_method="raw", n_bootstrap=20, seed=4
+        )
+        self.assertEqual(set(result["metric"]), {"auroc", "auprc"})
+        self.assertTrue((result["successful_bootstraps"] == 20).all())
+        self.assertTrue((result["probability_delta_gt_zero"] == 1.0).all())
+
 
 class ManifestValidationTest(unittest.TestCase):
     def test_committed_manifests_validate(self):
