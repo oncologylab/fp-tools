@@ -52,6 +52,11 @@ information:
 - REST was consistently weak by footprint score but strong by PWM evidence;
   fusion substantially rescued REST in the supplemental K562, HepG2, and
   HCT116 checks.
+- JUND was context dependent: footprint discrimination was strong in K562 and
+  HepG2 but weak in HCT116, arguing against a universal JUND failure.
+- The available MAX and GATA1 site tables had constant PWM evidence (AUROC
+  0.5). This is a motif-evidence coverage or mapping audit flag, not evidence
+  that those TFs lack an ATAC footprint.
 
 These results reject one global evidence-fusion rule. They support the next
 hypothesis: estimate a label-free evidence-reliability or abstention state and
