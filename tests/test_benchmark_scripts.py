@@ -480,6 +480,46 @@ class BenchmarkScriptsTest(unittest.TestCase):
         self.assertGreaterEqual(float(auprc["ci_high"]), float(auprc["ci_low"]))
         self.assertGreater(int(auprc["successful_bootstraps"]), 0)
 
+    def test_compute_binary_metrics_resamples_complete_genomic_blocks(self):
+        df = pd.DataFrame(
+            {
+                "chrom": ["chr1", "chr1", "chr2", "chr2", "chr3", "chr3"],
+                "label": [1, 0, 1, 0, 1, 0],
+                "score": [0.95, 0.05, 0.80, 0.10, 0.70, 0.20],
+            }
+        )
+        first = compute_binary_metrics.bootstrap_confidence_intervals(
+            df,
+            "label",
+            "score",
+            [],
+            n_bootstrap=20,
+            seed=11,
+            block_cols=["chrom"],
+        )
+        second = compute_binary_metrics.bootstrap_confidence_intervals(
+            df,
+            "label",
+            "score",
+            [],
+            n_bootstrap=20,
+            seed=11,
+            block_cols=["chrom"],
+        )
+        pd.testing.assert_frame_equal(first, second)
+        self.assertEqual(set(first["resampling_unit"]), {"chrom"})
+        self.assertEqual(set(first["n_blocks"]), {3})
+
+        with self.assertRaisesRegex(ValueError, "block columns are missing"):
+            compute_binary_metrics.bootstrap_confidence_intervals(
+                df,
+                "label",
+                "score",
+                [],
+                n_bootstrap=2,
+                block_cols=["peak_id"],
+            )
+
     def test_compute_binary_metrics_allows_raw_non_probability_scores(self):
         df = pd.DataFrame(
             {

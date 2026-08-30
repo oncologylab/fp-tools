@@ -73,12 +73,23 @@ def bootstrap_confidence_intervals(
     n_bootstrap: int = 1000,
     seed: int = 2026,
     ci: float = 0.95,
+    block_cols: list[str] | None = None,
 ) -> pd.DataFrame:
-    """Compute bootstrap confidence intervals for binary benchmark metrics."""
+    """Compute row- or genomic-block bootstrap intervals for benchmark metrics.
+
+    When ``block_cols`` is supplied, complete blocks (for example chromosomes
+    or peak identifiers) are sampled with replacement.  This retains local
+    dependence among nearby motif sites instead of treating every site as an
+    independent observation.
+    """
 
     rng = np.random.default_rng(seed)
     alpha = (1.0 - ci) / 2.0
     rows = []
+    block_cols = list(block_cols or [])
+    missing_blocks = [column for column in block_cols if column not in df.columns]
+    if missing_blocks:
+        raise ValueError(f"bootstrap block columns are missing: {', '.join(missing_blocks)}")
 
     def add_group(group_name: str, group_df: pd.DataFrame) -> None:
         y_true = group_df[label_col].to_numpy()
@@ -88,8 +99,22 @@ def bootstrap_confidence_intervals(
         n = len(group_df)
         if n == 0:
             return
+        block_indices: list[np.ndarray] = []
+        if block_cols:
+            block_frame = group_df.reset_index(drop=True)
+            block_grouper = block_cols[0] if len(block_cols) == 1 else block_cols
+            block_indices = [
+                np.asarray(index, dtype=int)
+                for index in block_frame.groupby(
+                    block_grouper, dropna=False, sort=True
+                ).indices.values()
+            ]
         for _ in range(int(n_bootstrap)):
-            indices = rng.integers(0, n, size=n)
+            if block_indices:
+                sampled_blocks = rng.integers(0, len(block_indices), size=len(block_indices))
+                indices = np.concatenate([block_indices[index] for index in sampled_blocks])
+            else:
+                indices = rng.integers(0, n, size=n)
             boot = summarize(y_true[indices], y_score[indices], group=group_name)
             for metric in SCORE_METRICS:
                 value = boot[metric]
@@ -106,6 +131,8 @@ def bootstrap_confidence_intervals(
                     "ci_high": float(np.quantile(values, 1.0 - alpha)) if len(values) else np.nan,
                     "n_bootstrap": int(n_bootstrap),
                     "successful_bootstraps": int(len(values)),
+                    "resampling_unit": "/".join(block_cols) if block_cols else "row",
+                    "n_blocks": len(block_indices) if block_indices else n,
                 }
             )
 
@@ -128,6 +155,12 @@ def main() -> int:
     parser.add_argument("--bootstrap", type=int, default=0, help="If >0, compute bootstrap confidence intervals with this many resamples.")
     parser.add_argument("--out-bootstrap", help="Optional output TSV for long-form bootstrap confidence intervals.")
     parser.add_argument("--seed", type=int, default=2026, help="Random seed for bootstrap confidence intervals.")
+    parser.add_argument(
+        "--block-cols",
+        nargs="*",
+        default=[],
+        help="Optional columns defining spatial bootstrap blocks, such as chrom or peak_id.",
+    )
     args = parser.parse_args()
 
     df = pd.read_csv(args.predictions, sep="	")
@@ -147,6 +180,7 @@ def main() -> int:
             group_cols,
             n_bootstrap=args.bootstrap,
             seed=args.seed,
+            block_cols=args.block_cols,
         )
         out_bootstrap = Path(args.out_bootstrap)
         out_bootstrap.parent.mkdir(parents=True, exist_ok=True)
