@@ -111,7 +111,9 @@ def build_signal_plan(
                 dwm_job = f"correct:{subset_id}:fp_tools_dwm"
                 dwm_dir = subset_dir / "fp_tools_dwm"
                 dwm_command = [
-                    "atac-correct",
+                    python,
+                    "-m",
+                    "fp_tools.cli",
                     "--bams",
                     str(bam),
                     "--genome",
