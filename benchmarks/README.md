@@ -10,9 +10,14 @@ Large public data and generated benchmark results are intentionally ignored by g
 - `results/`: ignored output directory for benchmark runs.
 - `download_reports/`: ignored reports from resumable public-data downloads.
 
-## First benchmark priority
+## Footprint improvement study
 
-Start with released human GRCh38 ENCODE bulk ATAC-seq experiments matched to TF ChIP-seq or CUT&RUN labels. Commit manifests and scripts, not downloaded BAMs, bigWigs, or full outputs.
+`manifests/footprint_detectability_v1.spec.json` is the locked design for the
+next scientific method iteration. It separates K562/HepG2 development from
+MCF-7/A549/HCT116/Panc1 holdout tasks, defines fixed chromosome partitions,
+and pins the depth, correction, comparator, promotion, and nutrient-replication
+rules. Start with released human GRCh38 ATAC-seq matched to TF ChIP-seq labels.
+Commit manifests and scripts, not downloaded BAMs, bigWigs, or full outputs.
 
 ## Deferred Benchmark Scaffolds
 

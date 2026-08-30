@@ -105,6 +105,13 @@ a separately planned breaking release explicitly changes the contract.
   separate matched-label classifier applies prespecified correction, scoring,
   coverage, ambiguity, and information-limit diagnoses without treating low
   aggregate scores as evidence of TF absence.
+- A locked footprint-improvement study with 35 ENCODE cell/TF tasks,
+  development/holdout and chromosome partitions, summit-supported motif-site
+  labels, matched negative controls, deterministic nested depth subsets,
+  raw/PWM/DWM/reused-bias correction arms, genomic-block uncertainty,
+  depth/correction summaries, one-time holdout promotion gates, and tiered
+  nutrient-stress replication. The external nutrient resources are pinned to
+  GSE144833 and GSE137034 (including GSE137031/GSE137032).
 
 ## Current ENCODE Resource
 
@@ -143,11 +150,13 @@ a separately planned breaking release explicitly changes the contract.
    desktop-app parity on Windows x64 and Apple Silicon. Test Linux raw-read and
    cross-platform MEME runtime artifacts separately, and keep the complete
    multi-architecture Linux container as a reproducible alternative backend.
-10. Expand the footprint detectability audit with matched, replicate-supported
-    occupancy labels and correction/scoring ablations. Keep nutrient data as a
-    locked prospective application rather than model-training data, and do not
-    promote a new scorer until held-out performance, calibration, naked-DNA
-    false-discovery control, and strong-positive non-regression gates pass.
+10. Execute the locked footprint detectability matrix, starting with K562 and
+    HepG2 labels and depth/correction diagnostics. Freeze a candidate only if
+    the development gates pass, then unlock MCF-7/A549/HCT116/Panc1 once. Keep
+    nutrient data as a prospective application rather than model-training data,
+    and do not promote a new scorer until held-out performance, calibration,
+    naked-DNA false-discovery control, and strong-positive non-regression gates
+    pass.
 
 ## Deferred or Experimental Work
 

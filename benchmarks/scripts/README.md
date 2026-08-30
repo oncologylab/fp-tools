@@ -4,14 +4,21 @@ Benchmark and validation helpers:
 
 - `build_encode_manifest.py`: query ENCODE and write a public-data manifest without downloading files.
 - `download_manifest.py`: resumable downloads plus checksum and path reports.
-- `compute_binary_metrics.py`: AUROC, AUPRC, recall@FDR, Brier score summaries, and optional bootstrap confidence intervals from scored labels.
+- `compute_binary_metrics.py`: AUROC, AUPRC, recall@FDR, Brier score summaries, and optional row or genomic-block bootstrap confidence intervals from scored labels.
 - `compute_calibration.py`: reliability-bin, expected calibration error, maximum calibration error, and Brier summaries from probability-like predictions.
 - `build_label_overlap_benchmark.py`: convert scored BED-like prediction intervals plus ChIP/CUT&RUN label BEDs into metrics-ready binary label/score tables.
 - `build_motif_removal_benchmark.py`: create long-form motif-removal recovery benchmark tables from baseline, motif-free, supervised, or reranked site scores.
 - `run_benchmark_pipeline.py`: combine labeled prediction TSVs, compute metrics/calibration/bootstrap summaries, and write PDF/SVG/PNG benchmark figures.
 - `benchmark_footprint_kernel.py`: run `call-footprints` with the legacy and fast footprint kernels, measure wall time, and compare output bigWigs and candidate BEDs.
 - `build_footprint_detectability_atlas.py`: collapse repeated ENCODE and nutrient comparisons to independent biological contexts and rank expression-supported weak aggregate-shape hypotheses.
+- `build_footprint_site_labels.py`: create summit-supported positive, distant negative, and explicitly indeterminate motif-site labels with optional matched controls.
+- `downsample_bam_fragments.py`: create deterministic pair-preserving BAM depth subsets that remain nested for a fixed seed.
+- `build_footprint_ablation_plan.py`: write the depth, correction, and method task matrices from the locked study specification.
+- `run_footprint_ablation_plan.py`: execute the signal plan with dependency, resume, and expected-output checks.
+- `summarize_footprint_ablation.py`: collapse depth randomizations and report depth plateaus and correction gains.
 - `classify_footprint_failure_modes.py`: apply prespecified diagnostic rules to matched-label correction/scoring ablations without interpreting low scores as TF absence.
+- `evaluate_footprint_promotion.py`: compare a frozen candidate with the current method under the prespecified development or locked-holdout gates.
+- `evaluate_nutrient_footprint_replication.py`: apply local cross-cell-line, RNA, external recovery, and occupancy replication tiers.
 - `manuscript/scripts/plot_benchmark_panels.py`: PDF/SVG/PNG multi-panel benchmark figures for the BioMedInformatics manuscript.
 - `manuscript/scripts/plot_calibration_panels.py`: PDF/SVG/PNG reliability curves and ECE panels.
 - `manuscript/scripts/plot_multiscale_npz.py`: PDF/SVG/PNG multiscale tensor summary figures from `call-footprints --output-multiscale-npz`.
@@ -82,6 +89,92 @@ are accepted as aliases. The `atac_information_limited` status is emitted only
 when adequate orthogonal labels, protein support, and a depth plateau are all
 recorded.
 
+## Locked Footprint Improvement Study
+
+Validate the preregistered cells, chromosome splits, depth series, method arms,
+diagnostic thresholds, promotion gates, and external nutrient datasets:
+
+```bash
+.venv/bin/python benchmarks/scripts/validate_footprint_study.py
+```
+
+Create motif-site labels from a motif BED and an IDR peak file. Only sites
+inside a peak and within the configured distance of its summit are positive.
+Sites close to a peak without summit support remain indeterminate.
+
+```bash
+.venv/bin/python benchmarks/scripts/build_footprint_site_labels.py \
+  --sites data/public/processed/K562/CTCF_sites.bed \
+  --chip-peaks data/public/raw/encode/K562.CTCF.narrowPeak.gz \
+  --features data/public/processed/K562/CTCF_site_features.tsv \
+  --match-columns motif_score accessibility gc mappability tss_distance regulatory_class \
+  --out benchmarks/results/footprint_detectability_v1/K562_CTCF_labels.tsv \
+  --matched-out benchmarks/results/footprint_detectability_v1/K562_CTCF_matched.tsv \
+  --indeterminate-out benchmarks/results/footprint_detectability_v1/K562_CTCF_indeterminate.tsv
+```
+
+The ablation sample TSV has five required columns: `sample`, `cell`, `bam`,
+`peaks`, and the number of usable `fragments`. Build and inspect the executable
+plan before starting large jobs:
+
+```bash
+.venv/bin/python benchmarks/scripts/build_footprint_ablation_plan.py \
+  --samples benchmarks/results/footprint_detectability_v1/ablation_samples.tsv \
+  --genome data/public/reference/hg38.fa.gz \
+  --blacklist data/public/reference/hg38-blacklist.v2.bed \
+  --outdir benchmarks/results/footprint_detectability_v1/ablation \
+  --cores 16 \
+  --check-paths
+
+.venv/bin/python benchmarks/scripts/run_footprint_ablation_plan.py \
+  --plan benchmarks/results/footprint_detectability_v1/ablation/ablation_commands.tsv \
+  --dry-run
+```
+
+The same query-name hash and seed are reused across correction arms; increasing
+depths for one seed are nested. The plan includes raw signal, PWM and DWM bias
+models, and a full-depth bias model reused at lower depths. It writes a separate
+evaluation matrix for fp-tools and the locked comparator methods.
+
+Summarize site-label metrics only after all methods have been evaluated on the
+same sites:
+
+```bash
+.venv/bin/python benchmarks/scripts/summarize_footprint_ablation.py \
+  --metrics benchmarks/results/footprint_detectability_v1/ablation_metrics.tsv \
+  --outdir benchmarks/results/footprint_detectability_v1/diagnostics
+
+.venv/bin/python benchmarks/scripts/compute_binary_metrics.py \
+  --predictions benchmarks/results/footprint_detectability_v1/site_predictions.tsv \
+  --group-cols cell tf method \
+  --block-cols chrom \
+  --bootstrap 1000 \
+  --out benchmarks/results/footprint_detectability_v1/site_metrics.tsv \
+  --out-bootstrap benchmarks/results/footprint_detectability_v1/site_metric_ci.tsv
+```
+
+Candidate development uses K562 and HepG2 only. After its code and parameters
+are frozen, unlock the MCF-7, A549, HCT116, and Panc1 holdout exactly once:
+
+```bash
+.venv/bin/python benchmarks/scripts/evaluate_footprint_promotion.py \
+  --metrics benchmarks/results/footprint_detectability_v1/frozen_method_metrics.tsv \
+  --candidate fp-tools-candidate \
+  --baseline fp-tools \
+  --negative-controls benchmarks/results/footprint_detectability_v1/naked_dna_false_positives.tsv \
+  --split locked_holdout \
+  --unlock-holdout \
+  --outdir benchmarks/results/footprint_detectability_v1/promotion
+```
+
+The nutrient application stays outside model training. Its locked external
+resources are GSE144833 (SUIT-2 non-adapted, adapted, and reverse-adapted ATAC
+and RNA) and GSE137034/GSE137031/GSE137032 (full, low, and no-arginine ATAC
+with ATF4 and CEBPB occupancy). The strongest evidence tier from
+`evaluate_nutrient_footprint_replication.py` requires local three-cell-line
+directionality, RNA concordance, external stress and recovery, and concordant
+orthogonal occupancy.
+
 ## End-to-End Benchmark Result Folder
 
 After creating one or more labeled prediction TSVs, run the summary pipeline to create a reproducible result folder with combined predictions, metrics, calibration summaries, optional bootstrap CIs, and manuscript-ready figure panels:
@@ -91,6 +184,7 @@ python benchmarks/scripts/run_benchmark_pipeline.py \
   --predictions benchmarks/results/ctcf_labeled_predictions.tsv benchmarks/results/irf1_labeled_predictions.tsv \
   --outdir benchmarks/results/public_tfbs_benchmark \
   --bootstrap 1000 \
+  --block-cols chrom \
   --bins 10 \
   --title "fp-tools public TFBS benchmark"
 ```
