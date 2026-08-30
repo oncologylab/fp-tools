@@ -132,7 +132,10 @@ plan before starting large jobs:
 ```
 
 The same query-name hash and seed are reused across correction arms; increasing
-depths for one seed are nested. The plan includes raw signal, PWM and DWM bias
+depths for one seed are nested. The validated `fragments` count in the sample
+table is passed to the downsampler so each large BAM needs only one streaming
+pass; omit `--available-fragments` when using the downsampler directly if the
+count is not already known. The plan includes raw signal, PWM and DWM bias
 models, and a full-depth bias model reused at lower depths. It writes a separate
 evaluation matrix for fp-tools and the locked comparator methods.
 
