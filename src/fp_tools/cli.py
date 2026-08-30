@@ -6,3 +6,7 @@ def main():
     parser = add_atacorrect_arguments(argparse.ArgumentParser())
     args = parser.parse_args()
     run_atacorrect(args)
+
+
+if __name__ == "__main__":
+    main()

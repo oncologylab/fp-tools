@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import pathlib
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -217,6 +218,15 @@ class FootprintSiteLabelTest(unittest.TestCase):
 
 
 class FootprintAblationPlanTest(unittest.TestCase):
+    def test_atac_correct_module_is_executable(self):
+        completed = subprocess.run(
+            [sys.executable, "-m", "fp_tools.cli", "--help"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertIn("usage:", completed.stdout)
+
     def test_fragment_hash_is_deterministic_and_depth_subsets_are_nested(self):
         first = [
             name
