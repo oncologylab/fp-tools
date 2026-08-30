@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -18,6 +19,18 @@ REQUIRED_COLUMNS = {
     "cell", "tf", "TFBS_chr", "TFBS_start", "TFBS_end",
     "chip_label", "footprint_score", "pwm_score",
 }
+
+
+def file_record(path: Path) -> dict[str, object]:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(8 * 1024 * 1024), b""):
+            digest.update(block)
+    return {
+        "path": str(path.resolve()),
+        "bytes": int(path.stat().st_size),
+        "sha256": digest.hexdigest(),
+    }
 
 
 def load_study(path: Path) -> dict[str, object]:
@@ -113,6 +126,7 @@ def task_metrics(frame: pd.DataFrame) -> pd.DataFrame:
             continue
         for method, column in (
             ("fp-tools footprint", "footprint_score"),
+            ("PWM", "pwm_score"),
             ("fp-tools evidence fusion", "evidence_fusion_score"),
         ):
             scores = group[column].to_numpy(dtype=float)
@@ -146,6 +160,9 @@ def paired_task_deltas(metrics: pd.DataFrame) -> pd.DataFrame:
         wide[f"delta_{metric}"] = (
             wide[f"{metric}__fp-tools evidence fusion"]
             - wide[f"{metric}__fp-tools footprint"]
+        )
+        wide[f"pwm_minus_footprint_{metric}"] = (
+            wide[f"{metric}__PWM"] - wide[f"{metric}__fp-tools footprint"]
         )
     return wide
 
@@ -306,6 +323,14 @@ def main(argv: list[str] | None = None) -> int:
             index=False,
         )
     payload = summary_payload(deltas, study)
+    payload["study"] = file_record(args.study)
+    payload["site_score_inputs"] = [file_record(path) for path in args.site_scores]
+    payload["evaluation_scope"] = {
+        "unlock_development_test": bool(args.unlock_development_test),
+        "unlock_holdout": bool(args.unlock_holdout),
+        "bootstrap": int(args.bootstrap),
+        "seed": int(args.seed),
+    }
     (args.outdir / "site_evidence_fusion_summary.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
