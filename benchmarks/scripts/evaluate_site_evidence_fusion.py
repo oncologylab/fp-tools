@@ -141,6 +141,7 @@ def task_metrics(frame: pd.DataFrame) -> pd.DataFrame:
                     "method": method,
                     "n_sites": int(len(group)),
                     "positive_sites": int(labels.sum()),
+                    "unique_scores": int(pd.Series(scores).nunique(dropna=True)),
                     "auroc": float(roc_auc_score(labels, scores)),
                     "auprc": float(average_precision_score(labels, scores)),
                 }
@@ -153,7 +154,11 @@ def paired_task_deltas(metrics: pd.DataFrame) -> pd.DataFrame:
         "cell_split", "chromosome_split", "cell", "tf", "role", "motif_family",
         "n_sites", "positive_sites",
     ]
-    wide = metrics.pivot(index=identifiers, columns="method", values=["auroc", "auprc"])
+    wide = metrics.pivot(
+        index=identifiers,
+        columns="method",
+        values=["auroc", "auprc", "unique_scores"],
+    )
     wide.columns = [f"{metric}__{method}" for metric, method in wide.columns]
     wide = wide.reset_index()
     for metric in ("auroc", "auprc"):

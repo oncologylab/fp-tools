@@ -83,6 +83,26 @@ class FootprintStudySpecTest(unittest.TestCase):
 
 
 class SiteEvidenceFusionStudyTest(unittest.TestCase):
+    def test_reports_constant_auxiliary_evidence(self):
+        frame = pd.DataFrame(
+            {
+                "cell_split": ["development"] * 4,
+                "chromosome_split": ["validation"] * 4,
+                "cell": ["K562"] * 4,
+                "tf": ["MAX"] * 4,
+                "role": ["supplemental"] * 4,
+                "motif_family": ["MAX"] * 4,
+                "chip_label": [0, 0, 1, 1],
+                "footprint_score": [0.0, 1.0, 2.0, 3.0],
+                "pwm_score": [8.0] * 4,
+                "evidence_fusion_score": [0.0, 1.0, 2.0, 3.0],
+            }
+        )
+        deltas = evidence_fusion.paired_task_deltas(
+            evidence_fusion.task_metrics(frame)
+        )
+        self.assertEqual(int(deltas.loc[0, "unique_scores__PWM"]), 1)
+
     def test_locked_holdout_requires_explicit_unlock(self):
         spec = {
             "chromosome_split": {
