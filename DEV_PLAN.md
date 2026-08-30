@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-25
+Last updated: 2026-08-30
 
 ## Current Baseline
 
@@ -98,6 +98,13 @@ a separately planned breaking release explicitly changes the contract.
   the same differential workflow as the preserved three-replicate
   K562-HepG2 report. The dependency-free static browser has two directional
   selectors and reads compact canonical report payloads.
+- Benchmark-only footprint detectability auditing that ranks motifs within
+  source analyses, collapses repeated pairwise/control rows to independent
+  biological contexts, joins exact-name RNA evidence, records hashed inputs,
+  and emits both machine-readable tables and a searchable HTML report. A
+  separate matched-label classifier applies prespecified correction, scoring,
+  coverage, ambiguity, and information-limit diagnoses without treating low
+  aggregate scores as evidence of TF absence.
 
 ## Current ENCODE Resource
 
@@ -136,6 +143,11 @@ a separately planned breaking release explicitly changes the contract.
    desktop-app parity on Windows x64 and Apple Silicon. Test Linux raw-read and
    cross-platform MEME runtime artifacts separately, and keep the complete
    multi-architecture Linux container as a reproducible alternative backend.
+10. Expand the footprint detectability audit with matched, replicate-supported
+    occupancy labels and correction/scoring ablations. Keep nutrient data as a
+    locked prospective application rather than model-training data, and do not
+    promote a new scorer until held-out performance, calibration, naked-DNA
+    false-discovery control, and strong-positive non-regression gates pass.
 
 ## Deferred or Experimental Work
 
@@ -145,6 +157,10 @@ a separately planned breaking release explicitly changes the contract.
 - Footprint competition or nucleosome-decomposition claims.
 - Cross-study RNA/ATAC causal interpretation where study and cell state are
   confounded.
+- Detectability-aware occupancy probabilities, abstention statuses, and
+  TF-family hierarchical models. The benchmark schemas are available, but
+  these remain experimental until the matched-label and perturbation gates in
+  the footprint detectability study are satisfied.
 
 These areas may have scaffolding under `benchmarks/` or internal tool modules,
 but they are not promoted as primary package workflows until their datasets,

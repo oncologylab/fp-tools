@@ -10,6 +10,8 @@ Benchmark and validation helpers:
 - `build_motif_removal_benchmark.py`: create long-form motif-removal recovery benchmark tables from baseline, motif-free, supervised, or reranked site scores.
 - `run_benchmark_pipeline.py`: combine labeled prediction TSVs, compute metrics/calibration/bootstrap summaries, and write PDF/SVG/PNG benchmark figures.
 - `benchmark_footprint_kernel.py`: run `call-footprints` with the legacy and fast footprint kernels, measure wall time, and compare output bigWigs and candidate BEDs.
+- `build_footprint_detectability_atlas.py`: collapse repeated ENCODE and nutrient comparisons to independent biological contexts and rank expression-supported weak aggregate-shape hypotheses.
+- `classify_footprint_failure_modes.py`: apply prespecified diagnostic rules to matched-label correction/scoring ablations without interpreting low scores as TF absence.
 - `manuscript/scripts/plot_benchmark_panels.py`: PDF/SVG/PNG multi-panel benchmark figures for the BioMedInformatics manuscript.
 - `manuscript/scripts/plot_calibration_panels.py`: PDF/SVG/PNG reliability curves and ECE panels.
 - `manuscript/scripts/plot_multiscale_npz.py`: PDF/SVG/PNG multiscale tensor summary figures from `call-footprints --output-multiscale-npz`.
@@ -32,6 +34,53 @@ python benchmarks/scripts/build_label_overlap_benchmark.py \
 ```
 
 The output can be passed directly to `compute_binary_metrics.py`, `compute_calibration.py`, and the paper figure scripts.
+
+## Footprint Detectability Atlas
+
+Build the first-stage audit from the seven-line ENCODE comparison resource,
+the three nutrient-stress projects, and the matched nutrient RNA table:
+
+```bash
+.venv/bin/python benchmarks/scripts/build_footprint_detectability_atlas.py \
+  --outdir benchmarks/results/footprint_detectability_atlas
+```
+
+The workflow ranks motifs within each source report, then collapses the six
+pairwise appearances of each ENCODE cell line and repeated nutrient control
+rows to one independent biological context. This is required because the raw
+score scales differ between the Q95-normalized ENCODE resource and the
+nutrient projects. The output folder contains:
+
+- `detectability_context_scores.tsv.gz`: one motif row per independent context;
+- `detectability_motif_summary.tsv`: all motifs with cohort-specific rank and expression summaries;
+- `detectability_candidates.tsv`: expression-supported motifs consistently in the configured low percentile;
+- `detectability_input_manifest.tsv`: portable paths, sizes, and SHA-256 hashes for every input;
+- `detectability_atlas.html`: searchable standalone report;
+- `detectability_metadata.json`: schema version, thresholds, and context counts.
+
+These candidates are weak aggregate-shape hypotheses. They are not evidence
+that the TF is absent, that bias correction failed, or that ATAC-seq contains
+no occupancy information. Those diagnoses require matched orthogonal
+occupancy labels plus correction and depth ablations.
+
+After producing one long-form metrics table with one row per
+cell/TF/motif/method, classify the matched-label tasks:
+
+```bash
+.venv/bin/python benchmarks/scripts/classify_footprint_failure_modes.py \
+  --metrics benchmarks/results/footprint_method_ablation_metrics.tsv \
+  --current-method "fp-tools footprint" \
+  --raw-method "raw footprint" \
+  --out benchmarks/results/footprint_failure_modes.tsv
+```
+
+Required columns are `cell`, `tf`, `motif_id`, `method`, and `auroc`;
+`auprc`, `positive_sites`, `coverage_pass`, `depth_plateau`,
+`protein_supported`, `motif_ambiguous`, and `bias_residual` add stronger
+diagnostic evidence. Existing tables using `motif` and `chip_positive_sites`
+are accepted as aliases. The `atac_information_limited` status is emitted only
+when adequate orthogonal labels, protein support, and a depth plateau are all
+recorded.
 
 ## End-to-End Benchmark Result Folder
 
