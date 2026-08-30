@@ -167,6 +167,26 @@ are frozen, unlock the MCF-7, A549, HCT116, and Panc1 holdout exactly once:
   --outdir benchmarks/results/footprint_detectability_v1/promotion
 ```
 
+Evaluate the label-free footprint/PWM percentile-fusion hypothesis in the same
+order. The first command exposes development validation chromosomes only. Add
+`--unlock-development-test` only after freezing the fusion rule, and add
+`--unlock-holdout` once for the final cell-line holdout. The evaluator records
+paired candidate-minus-current metrics and optional chromosome-block bootstrap
+support; it never changes the package default.
+
+```bash
+.venv/bin/python benchmarks/scripts/evaluate_site_evidence_fusion.py \
+  --site-scores benchmarks/results/public_chip_site_scores.tsv.gz \
+  --outdir benchmarks/results/footprint_detectability_v1/evidence_fusion/development \
+  --bootstrap 1000
+```
+
+The first frozen candidate tested on 2026-08-30 used
+`1 - (1 - footprint percentile) * (1 - PWM percentile)`. It passed the
+available K562/HepG2 development slice but failed the locked holdout gates,
+principally because MYC regressed. It therefore remains an opt-in reranking
+experiment and must not replace the default footprint score.
+
 The nutrient application stays outside model training. Its locked external
 resources are GSE144833 (SUIT-2 non-adapted, adapted, and reverse-adapted ATAC
 and RNA) and GSE137034/GSE137031/GSE137032 (full, low, and no-arginine ATAC

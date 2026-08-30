@@ -112,6 +112,11 @@ a separately planned breaking release explicitly changes the contract.
   depth/correction summaries, one-time holdout promotion gates, and tiered
   nutrient-stress replication. The external nutrient resources are pinned to
   GSE144833 and GSE137034 (including GSE137031/GSE137032).
+- A label-free percentile-rank evidence-fusion primitive and locked evaluator.
+  Its first footprint/PWM soft-OR candidate passed the available K562/HepG2
+  development slice but failed the one-time cell-line holdout because it did
+  not meet mean-gain or strong-positive non-regression gates. It remains
+  experimental; the production footprint score is unchanged.
 
 ## Current ENCODE Resource
 
@@ -150,9 +155,11 @@ a separately planned breaking release explicitly changes the contract.
    desktop-app parity on Windows x64 and Apple Silicon. Test Linux raw-read and
    cross-platform MEME runtime artifacts separately, and keep the complete
    multi-architecture Linux container as a reproducible alternative backend.
-10. Execute the locked footprint detectability matrix, starting with K562 and
-    HepG2 labels and depth/correction diagnostics. Freeze a candidate only if
-    the development gates pass, then unlock MCF-7/A549/HCT116/Panc1 once. Keep
+10. Continue the locked footprint detectability matrix, starting with the
+    pending K562/HepG2 depth/correction diagnostics. The first label-free
+    footprint/PWM fusion candidate has been rejected after its one-time
+    MCF-7/A549/HCT116/Panc1 evaluation and must not be retuned on that holdout.
+    Keep
     nutrient data as a prospective application rather than model-training data,
     and do not promote a new scorer until held-out performance, calibration,
     naked-DNA false-discovery control, and strong-positive non-regression gates

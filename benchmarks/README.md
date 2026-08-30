@@ -18,6 +18,9 @@ MCF-7/A549/HCT116/Panc1 holdout tasks, defines fixed chromosome partitions,
 and pins the depth, correction, comparator, promotion, and nutrient-replication
 rules. Start with released human GRCh38 ATAC-seq matched to TF ChIP-seq labels.
 Commit manifests and scripts, not downloaded BAMs, bigWigs, or full outputs.
+The site-evidence fusion evaluator preserves the one-way validation sequence
+and records rejected candidates as well as successful ones. A rejected
+candidate is not retuned against the same holdout.
 
 ## Deferred Benchmark Scaffolds
 
