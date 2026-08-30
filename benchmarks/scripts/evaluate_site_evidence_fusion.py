@@ -249,10 +249,11 @@ def summary_payload(deltas: pd.DataFrame, study: dict[str, object]) -> dict[str,
             np.maximum(0.0, -positive_controls["delta_auroc"]).max()
         ) if len(positive_controls) else None
         probability_column = "probability_delta_gt_zero_auroc"
+        has_bootstrap = probability_column in group
         confident = (
             group[probability_column] >= gates["minimum_detectability_probability"]
-            if probability_column in group
-            else group["delta_auroc"] > 0
+            if has_bootstrap
+            else pd.Series(False, index=group.index)
         )
         summaries.append(
             {
@@ -261,7 +262,11 @@ def summary_payload(deltas: pd.DataFrame, study: dict[str, object]) -> dict[str,
                 "tasks": int(len(group)),
                 "cells": int(group["cell"].nunique()),
                 "families_improved_auroc": int(group.loc[group["delta_auroc"] > 0, "motif_family"].nunique()),
-                "families_improved_with_bootstrap_support": int(group.loc[(group["delta_auroc"] > 0) & confident, "motif_family"].nunique()),
+                "families_improved_with_bootstrap_support": (
+                    int(group.loc[(group["delta_auroc"] > 0) & confident, "motif_family"].nunique())
+                    if has_bootstrap
+                    else None
+                ),
                 "mean_baseline_auroc": float(group["auroc__fp-tools footprint"].mean()),
                 "mean_candidate_auroc": float(group["auroc__fp-tools evidence fusion"].mean()),
                 "mean_delta_auroc": float(group["delta_auroc"].mean()),
