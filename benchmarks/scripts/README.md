@@ -167,8 +167,14 @@ centers without rerunning motif discovery:
   --sites benchmarks/results/footprint_detectability_v1/development_sites.tsv.gz \
   --signals benchmarks/results/footprint_detectability_v1/ablation_signals.tsv \
   --chromosomes chr17 chr18 \
+  --baseline-method raw \
+  --bootstrap 1000 \
   --outdir benchmarks/results/footprint_detectability_v1/correction_metrics
 ```
+
+Metrics use the common finite site set across methods. With `--bootstrap`, the
+script also reports paired method-minus-baseline confidence intervals using
+chromosomes as resampling blocks.
 
 Candidate development uses K562 and HepG2 only. After its code and parameters
 are frozen, unlock the MCF-7, A549, HCT116, and Panc1 holdout exactly once:
