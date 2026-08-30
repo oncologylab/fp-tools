@@ -54,6 +54,7 @@ def run_benchmark_pipeline(
     bins: int = 10,
     bootstrap: int = 0,
     seed: int = 2026,
+    block_cols: list[str] | None = None,
     title: str = "fp-tools public benchmark",
 ) -> dict[str, Path | list[Path]]:
     """Run metrics, calibration, and figure generation from labeled predictions."""
@@ -89,6 +90,7 @@ def run_benchmark_pipeline(
             group_cols,
             n_bootstrap=bootstrap,
             seed=seed,
+            block_cols=block_cols,
         )
         ci.to_csv(bootstrap_path, sep="\t", index=False)
         outputs["binary_metrics_bootstrap"] = bootstrap_path
@@ -120,6 +122,12 @@ def main() -> int:
     parser.add_argument("--bins", type=int, default=10)
     parser.add_argument("--bootstrap", type=int, default=0, help="Optional number of bootstrap resamples.")
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument(
+        "--block-cols",
+        nargs="*",
+        default=[],
+        help="Optional spatial bootstrap blocks, normally chrom or peak_id.",
+    )
     parser.add_argument("--title", default="fp-tools public benchmark")
     args = parser.parse_args()
 
@@ -132,6 +140,7 @@ def main() -> int:
         bins=args.bins,
         bootstrap=args.bootstrap,
         seed=args.seed,
+        block_cols=args.block_cols,
         title=args.title,
     )
     for label, value in outputs.items():

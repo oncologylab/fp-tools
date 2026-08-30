@@ -82,10 +82,21 @@ def evaluate_table(
 
     rows = []
     for method, score in methods.items():
-        sub = pd.DataFrame({"label": frame["label"], "score": score}).dropna()
+        sub_columns = {"label": frame["label"], "score": score}
+        if held_out == "chrom" and "chrom" in frame:
+            sub_columns["chrom"] = frame["chrom"]
+        sub = pd.DataFrame(sub_columns).dropna(subset=["label", "score"])
         if sub.empty:
             continue
-        b = bootstrap_confidence_intervals(sub, "label", "score", [], n_bootstrap=n_bootstrap, seed=seed)
+        b = bootstrap_confidence_intervals(
+            sub,
+            "label",
+            "score",
+            [],
+            n_bootstrap=n_bootstrap,
+            seed=seed,
+            block_cols=["chrom"] if "chrom" in sub else None,
+        )
         g = b[b["group"] == "global"]
         au = g[g["metric"] == "auroc"].iloc[0]
         ap = g[g["metric"] == "auprc"].iloc[0]
