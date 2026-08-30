@@ -53,6 +53,7 @@ def validate_spec(spec: dict) -> list[str]:
         "depth_fragments",
         "diagnostic_thresholds",
         "promotion_gates",
+        "negative_control_resources",
         "tasks",
         "nutrient_application",
     ):
@@ -67,6 +68,9 @@ def validate_spec(spec: dict) -> list[str]:
         errors.append("assembly must be GRCh38 for v1")
     if not isinstance(spec["random_seed"], int):
         errors.append("random_seed must be an integer")
+    negative_controls = spec["negative_control_resources"]
+    if not negative_controls.get("naked_dna_accession") or not negative_controls.get("runs"):
+        errors.append("negative_control_resources must lock naked-DNA accession and runs")
 
     chromosome_split = spec["chromosome_split"]
     expected_split_names = {"train", "validation", "test"}
@@ -148,10 +152,25 @@ def validate_spec(spec: dict) -> list[str]:
         "primary_contrast",
         "external_pdac_accession",
         "external_mechanistic_accession",
+        "external_resources",
         "candidate_rules",
     ):
         if key not in nutrient:
             errors.append(f"nutrient_application missing: {key}")
+    resources = nutrient.get("external_resources", {})
+    for accession_key in ("external_pdac_accession", "external_mechanistic_accession"):
+        accession = nutrient.get(accession_key)
+        if accession and accession not in resources:
+            errors.append(f"external_resources missing locked accession: {accession}")
+    pdac = resources.get(nutrient.get("external_pdac_accession"), {})
+    for assay in ("atac_runs", "rna_runs"):
+        states = pdac.get(assay, {})
+        if set(states) != {"non_adapted", "adapted", "reverse_adapted"}:
+            errors.append(f"external PDAC {assay} must lock all three adaptation states")
+            continue
+        runs = [run for state_runs in states.values() for run in state_runs]
+        if len(runs) != len(set(runs)):
+            errors.append(f"external PDAC {assay} contains duplicate run accessions")
     return errors
 
 

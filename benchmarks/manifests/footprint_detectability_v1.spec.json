@@ -37,7 +37,15 @@
     "minimum_difficult_tf_families_improved": 2,
     "minimum_holdout_cells_improved": 2,
     "primary_fdr": 0.05,
-    "minimum_detectability_probability": 0.80
+    "minimum_detectability_probability": 0.80,
+    "maximum_naked_dna_false_positive_rate": 0.05,
+    "maximum_naked_dna_false_positive_rate_increase": 0.01
+  },
+  "negative_control_resources": {
+    "naked_dna_accession": "GSE164997",
+    "cell": "K562",
+    "runs": ["SRR13450940", "SRR13450941", "SRR13450942"],
+    "purpose": "Measure motif-centered structure and false footprint calls when no chromatin-bound TF can create a footprint."
   },
   "native_corrections": ["raw", "fp_tools_pwm", "fp_tools_dwm", "fp_tools_reused_bias"],
   "whole_methods": ["accessibility", "motif", "motif_accessibility", "fp_tools", "TOBIAS", "HINT_ATAC", "PRINT", "TraceBind", "ChromBPNet"],
@@ -89,6 +97,29 @@
     "shared_secondary_contrasts": ["0.4_FBS", "0_BCAA", "0_Lys", "0_Trp"],
     "external_pdac_accession": "GSE144833",
     "external_mechanistic_accession": "GSE137034",
+    "external_resources": {
+      "GSE144833": {
+        "design": "SUIT-2 non-adapted, nutrient-adapted, and reverse-adapted RNA-seq and ATAC-seq",
+        "atac_runs": {
+          "non_adapted": ["SRR11033351", "SRR11033352"],
+          "adapted": ["SRR11033353", "SRR11033354"],
+          "reverse_adapted": ["SRR11033355", "SRR11033356"]
+        },
+        "rna_runs": {
+          "non_adapted": ["SRR11033336", "SRR11033337", "SRR11033338"],
+          "adapted": ["SRR11033339", "SRR11033340", "SRR11033341"],
+          "reverse_adapted": ["SRR11033342", "SRR11033343", "SRR11033344"]
+        }
+      },
+      "GSE137034": {
+        "design": "Full, low, and no-arginine ATAC-seq with ATF4 and CEBPB ChIP-seq",
+        "atac_subseries": "GSE137032",
+        "chip_subseries": "GSE137031",
+        "cells": ["THP1", "CD4 T-cell"],
+        "conditions": ["fullArg", "lowArg", "noArg"],
+        "occupancy_factors": ["ATF4", "CEBPB"]
+      }
+    },
     "candidate_rules": {
       "required_directional_cell_lines": 3,
       "top_fraction_absolute_change": 0.10,

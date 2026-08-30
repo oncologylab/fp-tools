@@ -29,6 +29,30 @@ labels = load_module(
     "build_footprint_site_labels",
     "benchmarks/scripts/build_footprint_site_labels.py",
 )
+downsample = load_module(
+    "downsample_bam_fragments",
+    "benchmarks/scripts/downsample_bam_fragments.py",
+)
+ablation = load_module(
+    "build_footprint_ablation_plan",
+    "benchmarks/scripts/build_footprint_ablation_plan.py",
+)
+ablation_summary = load_module(
+    "summarize_footprint_ablation",
+    "benchmarks/scripts/summarize_footprint_ablation.py",
+)
+promotion = load_module(
+    "evaluate_footprint_promotion",
+    "benchmarks/scripts/evaluate_footprint_promotion.py",
+)
+nutrient = load_module(
+    "evaluate_nutrient_footprint_replication",
+    "benchmarks/scripts/evaluate_nutrient_footprint_replication.py",
+)
+ablation_runner = load_module(
+    "run_footprint_ablation_plan",
+    "benchmarks/scripts/run_footprint_ablation_plan.py",
+)
 
 
 class FootprintStudySpecTest(unittest.TestCase):
@@ -109,6 +133,221 @@ class FootprintSiteLabelTest(unittest.TestCase):
         )
         self.assertEqual(first["label"].value_counts().to_dict(), {1: 10, 0: 10})
         pd.testing.assert_frame_equal(first, second)
+
+
+class FootprintAblationPlanTest(unittest.TestCase):
+    def test_fragment_hash_is_deterministic_and_depth_subsets_are_nested(self):
+        first = [
+            name
+            for name in (f"fragment-{index}" for index in range(1000))
+            if downsample.fragment_uniform(name, 9) < 0.2
+        ]
+        second = [
+            name
+            for name in (f"fragment-{index}" for index in range(1000))
+            if downsample.fragment_uniform(name, 9) < 0.5
+        ]
+        repeated = [
+            name
+            for name in (f"fragment-{index}" for index in range(1000))
+            if downsample.fragment_uniform(name, 9) < 0.2
+        ]
+        self.assertEqual(first, repeated)
+        self.assertTrue(set(first).issubset(second))
+        self.assertNotEqual(
+            downsample.fragment_uniform("fragment-1", 9),
+            downsample.fragment_uniform("fragment-1", 10),
+        )
+
+    def test_ablation_plan_reuses_each_depth_subset_across_corrections(self):
+        spec = {
+            "random_seed": 20,
+            "depth_randomizations": 2,
+            "depth_fragments": [10_000_000, "full"],
+            "native_corrections": [
+                "raw",
+                "fp_tools_pwm",
+                "fp_tools_dwm",
+                "fp_tools_reused_bias",
+            ],
+            "whole_methods": ["fp_tools", "TOBIAS"],
+            "tasks": [
+                {
+                    "cell": "K562",
+                    "tf": "CTCF",
+                    "motif_id": "MA0139.2",
+                    "motif_family": "CTCF",
+                    "role": "positive_control",
+                    "split": "development",
+                }
+            ],
+        }
+        samples = pd.DataFrame(
+            [
+                {
+                    "sample": "K562_rep1",
+                    "cell": "K562",
+                    "bam": "/inputs/a sample.bam",
+                    "peaks": "/inputs/peaks.bed",
+                    "fragments": 100_000_000,
+                }
+            ]
+        )
+        signal_plan = ablation.build_signal_plan(
+            spec,
+            samples,
+            pathlib.Path("/ref/genome.fa"),
+            pathlib.Path("/ref/blacklist.bed"),
+            pathlib.Path("/results"),
+            python="python",
+            cores=2,
+        )
+        self.assertEqual(len(signal_plan), 13)
+        downsample_jobs = signal_plan[signal_plan["stage"] == "downsample"]
+        self.assertEqual(len(downsample_jobs), 2)
+        subset = signal_plan[(signal_plan["depth"] == 10_000_000) & (signal_plan["seed"] == 20)]
+        self.assertEqual(set(subset["correction"]), {"", "raw", "fp_tools_pwm", "fp_tools_dwm", "fp_tools_reused_bias"})
+        correction_jobs = subset[subset["stage"] == "correction"]
+        self.assertTrue(all("downsample:K562_rep1.10m.s20" in value for value in correction_jobs["depends_on"]))
+        self.assertIn("'/inputs/a sample.bam'", downsample_jobs.iloc[0]["command"])
+
+        evaluation = ablation.build_evaluation_plan(spec, signal_plan)
+        self.assertEqual(len(evaluation), 22)
+        self.assertEqual(set(evaluation["split"]), {"development"})
+
+    def test_ablation_summary_detects_plateau_and_correction_gain(self):
+        rows = []
+        for correction, values in {
+            "raw": [0.60, 0.61, 0.61],
+            "fp_tools_dwm": [0.68, 0.70, 0.705],
+        }.items():
+            for depth, auroc in zip([10_000_000, 50_000_000, "full"], values):
+                for seed in [1, 2]:
+                    rows.append(
+                        {
+                            "cell": "K562",
+                            "tf": "CTCF",
+                            "motif_id": "MA0139.2",
+                            "correction": correction,
+                            "method": "fp_tools",
+                            "depth": depth,
+                            "seed": seed,
+                            "auroc": auroc,
+                            "auprc": auroc - 0.1,
+                        }
+                    )
+        aggregated = ablation_summary.aggregate_randomizations(pd.DataFrame(rows))
+        depth = ablation_summary.depth_diagnostics(aggregated, plateau_delta=0.01)
+        dwm = depth[depth["correction"] == "fp_tools_dwm"].iloc[0]
+        self.assertTrue(bool(dwm["depth_plateau"]))
+        correction = ablation_summary.correction_diagnostics(aggregated)
+        self.assertAlmostEqual(float(correction.iloc[0]["correction_gain_auroc"]), 0.095)
+
+    def test_promotion_gate_uses_locked_roles_and_clustered_bootstrap(self):
+        tasks = []
+        rows = []
+        for index, (cell, family, role) in enumerate(
+            [
+                ("A549", "CTCF", "positive_control"),
+                ("A549", "FOX", "difficult"),
+                ("MCF-7", "GATA", "difficult"),
+                ("MCF-7", "TCF7", "transfer"),
+            ]
+        ):
+            tf = f"TF{index}"
+            motif_id = f"MA{index}"
+            tasks.append(
+                {
+                    "cell": cell,
+                    "tf": tf,
+                    "motif_id": motif_id,
+                    "motif_family": family,
+                    "role": role,
+                    "split": "locked_holdout",
+                }
+            )
+            rows.extend(
+                [
+                    {"cell": cell, "tf": tf, "motif_id": motif_id, "method": "baseline", "auroc": 0.70, "auprc": 0.40},
+                    {"cell": cell, "tf": tf, "motif_id": motif_id, "method": "candidate", "auroc": 0.75, "auprc": 0.46},
+                ]
+            )
+        gates = {
+            "minimum_relative_auprc_gain": 0.10,
+            "minimum_auroc_gain": 0.03,
+            "maximum_strong_control_auroc_loss": 0.02,
+            "minimum_difficult_tf_families_improved": 2,
+            "minimum_holdout_cells_improved": 2,
+            "minimum_detectability_probability": 0.80,
+            "maximum_naked_dna_false_positive_rate": 0.05,
+            "maximum_naked_dna_false_positive_rate_increase": 0.01,
+        }
+        study_spec = {"tasks": tasks, "promotion_gates": gates}
+        pairs = promotion.prepare_pairs(
+            pd.DataFrame(rows), study_spec, "candidate", "baseline", "locked_holdout"
+        )
+        paired, summary = promotion.evaluate_gates(
+            pairs,
+            gates,
+            n_bootstrap=100,
+            seed=12,
+            negative_controls=pd.DataFrame(
+                {
+                    "method": ["baseline", "candidate"],
+                    "false_positive_rate": [0.04, 0.045],
+                }
+            ),
+        )
+        self.assertTrue(summary["passed"])
+        self.assertTrue(paired["improved"].all())
+        self.assertEqual(summary["improved_cells"], 2)
+
+    def test_nutrient_candidate_requires_local_rna_recovery_and_occupancy(self):
+        rows = [
+            {
+                "cohort": "local",
+                "cell": cell,
+                "contrast_class": "stress",
+                "motif_id": "MA0833.3",
+                "tf": "ATF4",
+                "delta_footprint": delta,
+                "fdr": 0.01,
+                "rna_log2fc": 1.2,
+                "rna_fdr": 0.01,
+            }
+            for cell, delta in [("AsPC-1", 1.0), ("HPAF-II", 0.8), ("Panc1", 0.7)]
+        ]
+        rows.extend(
+            [
+                {"cohort": "external_pdac", "cell": "SUIT-2", "contrast_class": "stress", "motif_id": "MA0833.3", "tf": "ATF4", "delta_footprint": 0.6, "fdr": 0.01},
+                {"cohort": "external_pdac", "cell": "SUIT-2", "contrast_class": "recovery", "motif_id": "MA0833.3", "tf": "ATF4", "delta_footprint": -0.5, "fdr": 0.01},
+                {"cohort": "external_mechanistic", "cell": "THP1", "contrast_class": "occupancy", "motif_id": "MA0833.3", "tf": "ATF4", "delta_footprint": np.nan, "fdr": np.nan, "occupancy_log2fc": 1.1, "occupancy_fdr": 0.01},
+            ]
+        )
+        rules = {
+            "required_directional_cell_lines": 3,
+            "top_fraction_absolute_change": 1.0,
+            "minimum_top_cell_lines": 2,
+            "minimum_rna_concordant_cell_lines": 2,
+            "minimum_external_reversal_fraction": 0.5,
+            "external_fdr": 0.05,
+        }
+        result = nutrient.evaluate_replication(pd.DataFrame(rows), rules)
+        self.assertEqual(result.iloc[0]["evidence_tier"], "mechanism_supported")
+        self.assertTrue(bool(result.iloc[0]["mechanism_pass"]))
+
+    def test_ablation_runner_resolves_dependencies_in_dry_run(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            plan = pd.DataFrame(
+                [
+                    {"job_id": "second", "stage": "correction", "depends_on": "first", "expected_output": f"{tmpdir}/second", "command": "tool second"},
+                    {"job_id": "first", "stage": "downsample", "depends_on": "", "expected_output": f"{tmpdir}/first", "command": "tool first"},
+                ]
+            )
+            status = pathlib.Path(tmpdir) / "status.tsv"
+            result = ablation_runner.execute_plan(plan, status, dry_run=True)
+            self.assertEqual(result["job_id"].tolist(), ["first", "second"])
+            self.assertTrue(status.exists())
 
 
 if __name__ == "__main__":
