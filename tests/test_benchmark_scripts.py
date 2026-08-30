@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from fp_tools.utils.multiscale import write_multiscale_npz
+from fp_tools.utils import bigwig as pyBigWig
 
 try:
     import pysam
@@ -65,6 +66,35 @@ evaluate_methods = load_module("evaluate_methods", ROOT / "benchmarks" / "script
 plot_method_comparison = load_optional_module("plot_method_comparison", ROOT / "manuscript" / "scripts" / "plot_method_comparison.py")
 validate_manifests = load_module("validate_manifests", ROOT / "benchmarks" / "scripts" / "validate_manifests.py")
 run_engineering_benchmark = load_module("run_engineering_benchmark", ROOT / "benchmarks" / "scripts" / "run_engineering_benchmark.py")
+evaluate_bigwig_site_scores = load_module("evaluate_bigwig_site_scores", ROOT / "benchmarks" / "scripts" / "evaluate_bigwig_site_scores.py")
+
+
+class BigwigSiteScoreTest(unittest.TestCase):
+    def test_scores_fixed_site_centers_and_computes_metrics(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            signal = root / "scores.bw"
+            handle = pyBigWig.open(str(signal), "w")
+            handle.addHeader([("chr1", 20)])
+            handle.addEntries("chr1", 0, values=[float(value) for value in range(20)], span=1, step=1)
+            handle.close()
+            sites = pd.DataFrame(
+                {
+                    "cell": ["K562"] * 4,
+                    "tf": ["CTCF"] * 4,
+                    "TFBS_chr": ["chr1"] * 4,
+                    "TFBS_start": [0, 2, 10, 12],
+                    "TFBS_end": [2, 4, 12, 14],
+                    "chip_label": [0, 0, 1, 1],
+                }
+            )
+            signals = pd.DataFrame(
+                {"cell": ["K562"], "method": ["candidate"], "signal": [str(signal)]}
+            )
+            predictions, metrics = evaluate_bigwig_site_scores.evaluate(sites, signals)
+            self.assertEqual(predictions["score"].tolist(), [1.0, 3.0, 11.0, 13.0])
+            self.assertEqual(float(metrics.loc[0, "auroc"]), 1.0)
+            self.assertEqual(float(metrics.loc[0, "auprc"]), 1.0)
 
 
 class ManifestValidationTest(unittest.TestCase):
