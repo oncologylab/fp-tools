@@ -18,6 +18,8 @@ Benchmark and validation helpers:
 - `summarize_footprint_ablation.py`: collapse depth randomizations and report depth plateaus and correction gains.
 - `classify_footprint_failure_modes.py`: apply prespecified diagnostic rules to matched-label correction/scoring ablations without interpreting low scores as TF absence.
 - `evaluate_footprint_promotion.py`: compare a frozen candidate with the current method under the prespecified development or locked-holdout gates.
+- `evaluate_site_evidence_fusion.py`: test a frozen label-free footprint/PWM site-ranking candidate in the locked chromosome/cell sequence.
+- `evaluate_bigwig_site_scores.py`: extract base-resolution scores from correction/scoring ablation bigWigs at fixed ChIP-labeled motif centers.
 - `evaluate_nutrient_footprint_replication.py`: apply local cross-cell-line, RNA, external recovery, and occupancy replication tiers.
 - `manuscript/scripts/plot_benchmark_panels.py`: PDF/SVG/PNG multi-panel benchmark figures for the BioMedInformatics manuscript.
 - `manuscript/scripts/plot_calibration_panels.py`: PDF/SVG/PNG reliability curves and ECE panels.
@@ -154,6 +156,18 @@ same sites:
   --bootstrap 1000 \
   --out benchmarks/results/footprint_detectability_v1/site_metrics.tsv \
   --out-bootstrap benchmarks/results/footprint_detectability_v1/site_metric_ci.tsv
+```
+
+For signal arms that already produced footprint-score bigWigs, create a small
+manifest with `cell`, `method`, and `signal`, then score the exact same motif
+centers without rerunning motif discovery:
+
+```bash
+.venv/bin/python benchmarks/scripts/evaluate_bigwig_site_scores.py \
+  --sites benchmarks/results/footprint_detectability_v1/development_sites.tsv.gz \
+  --signals benchmarks/results/footprint_detectability_v1/ablation_signals.tsv \
+  --chromosomes chr17 chr18 \
+  --outdir benchmarks/results/footprint_detectability_v1/correction_metrics
 ```
 
 Candidate development uses K562 and HepG2 only. After its code and parameters
