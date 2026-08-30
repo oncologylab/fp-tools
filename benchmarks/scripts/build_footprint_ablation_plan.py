@@ -88,6 +88,8 @@ def build_signal_plan(
                         str(bam),
                         "--target-fragments",
                         str(depth),
+                        "--available-fragments",
+                        str(available),
                         "--seed",
                         str(seed),
                     ]

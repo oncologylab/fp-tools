@@ -52,6 +52,7 @@ def downsample_bam(
     target_fragments: int,
     seed: int,
     create_index: bool = True,
+    available_fragments: int | None = None,
 ) -> dict[str, object]:
     try:
         import pysam
@@ -59,7 +60,13 @@ def downsample_bam(
         raise RuntimeError("pysam is required to downsample BAM files") from exc
     if target_fragments <= 0:
         raise ValueError("target_fragments must be positive")
-    available = count_fragments(source)
+    if available_fragments is not None and available_fragments <= 0:
+        raise ValueError("available_fragments must be positive when supplied")
+    available = (
+        int(available_fragments)
+        if available_fragments is not None
+        else count_fragments(source)
+    )
     if available == 0:
         raise ValueError(f"{source} contains no usable fragments")
     fraction = min(1.0, target_fragments / available)
@@ -80,6 +87,7 @@ def downsample_bam(
         "output_bam": str(output),
         "seed": int(seed),
         "available_fragments": int(available),
+        "available_fragments_source": "provided" if available_fragments is not None else "counted",
         "target_fragments": int(target_fragments),
         "sampling_fraction": float(fraction),
         "selected_fragments": int(selected),
@@ -93,6 +101,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--bam", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--target-fragments", type=int, required=True)
+    parser.add_argument(
+        "--available-fragments",
+        type=int,
+        help="Validated usable-fragment count; avoids a separate full BAM counting pass.",
+    )
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--metadata-out", type=Path)
     parser.add_argument("--no-index", action="store_true")
@@ -104,6 +117,7 @@ def main(argv: list[str] | None = None) -> int:
         args.target_fragments,
         args.seed,
         create_index=not args.no_index,
+        available_fragments=args.available_fragments,
     )
     metadata_out = args.metadata_out or args.out.with_suffix(".downsampling.json")
     metadata_out.parent.mkdir(parents=True, exist_ok=True)

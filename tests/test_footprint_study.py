@@ -291,6 +291,7 @@ class FootprintAblationPlanTest(unittest.TestCase):
         correction_jobs = subset[subset["stage"] == "correction"]
         self.assertTrue(all("downsample:K562_rep1.10m.s20" in value for value in correction_jobs["depends_on"]))
         self.assertIn("'/inputs/a sample.bam'", downsample_jobs.iloc[0]["command"])
+        self.assertIn("--available-fragments 100000000", downsample_jobs.iloc[0]["command"])
 
         evaluation = ablation.build_evaluation_plan(spec, signal_plan)
         self.assertEqual(len(evaluation), 22)
