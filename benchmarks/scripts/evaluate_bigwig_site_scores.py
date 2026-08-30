@@ -66,30 +66,39 @@ def score_centers(sites: pd.DataFrame, signal: Path) -> np.ndarray:
 def evaluate(sites: pd.DataFrame, signals: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     prediction_frames = []
     metric_rows = []
-    for signal_row in signals.itertuples(index=False):
-        subset = sites[sites["cell"] == signal_row.cell].copy().reset_index(drop=True)
+    for cell, cell_signals in signals.groupby("cell", sort=True):
+        subset = sites[sites["cell"] == cell].copy().reset_index(drop=True)
         if subset.empty:
             continue
-        subset["method"] = str(signal_row.method)
-        subset["score"] = score_centers(subset, Path(signal_row.signal))
-        subset = subset[np.isfinite(subset["score"])].copy()
-        prediction_frames.append(subset)
-        for tf, group in subset.groupby("tf", sort=True):
-            labels = group["chip_label"].to_numpy(dtype=int)
-            scores = group["score"].to_numpy(dtype=float)
-            if len(np.unique(labels)) != 2:
-                continue
-            metric_rows.append(
-                {
-                    "cell": str(signal_row.cell),
-                    "tf": str(tf),
-                    "method": str(signal_row.method),
-                    "n_sites": int(len(group)),
-                    "positive_sites": int(labels.sum()),
-                    "auroc": float(roc_auc_score(labels, scores)),
-                    "auprc": float(average_precision_score(labels, scores)),
-                }
-            )
+        method_scores = {
+            str(signal_row.method): score_centers(subset, Path(signal_row.signal))
+            for signal_row in cell_signals.itertuples(index=False)
+        }
+        common = np.logical_and.reduce(
+            [np.isfinite(scores) for scores in method_scores.values()]
+        )
+        matched = subset.loc[common].copy().reset_index(drop=True)
+        for method, scores in method_scores.items():
+            predictions = matched.copy()
+            predictions["method"] = method
+            predictions["score"] = scores[common]
+            prediction_frames.append(predictions)
+            for tf, group in predictions.groupby("tf", sort=True):
+                labels = group["chip_label"].to_numpy(dtype=int)
+                tf_scores = group["score"].to_numpy(dtype=float)
+                if len(np.unique(labels)) != 2:
+                    continue
+                metric_rows.append(
+                    {
+                        "cell": str(cell),
+                        "tf": str(tf),
+                        "method": method,
+                        "n_sites": int(len(group)),
+                        "positive_sites": int(labels.sum()),
+                        "auroc": float(roc_auc_score(labels, tf_scores)),
+                        "auprc": float(average_precision_score(labels, tf_scores)),
+                    }
+                )
     predictions = pd.concat(prediction_frames, ignore_index=True) if prediction_frames else pd.DataFrame()
     return predictions, pd.DataFrame(metric_rows)
 

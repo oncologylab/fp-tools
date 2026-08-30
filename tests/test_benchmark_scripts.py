@@ -96,6 +96,39 @@ class BigwigSiteScoreTest(unittest.TestCase):
             self.assertEqual(float(metrics.loc[0, "auroc"]), 1.0)
             self.assertEqual(float(metrics.loc[0, "auprc"]), 1.0)
 
+    def test_uses_common_finite_sites_across_methods(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            full_signal = root / "full.bw"
+            short_signal = root / "short.bw"
+            for path, length in ((full_signal, 20), (short_signal, 12)):
+                handle = pyBigWig.open(str(path), "w")
+                handle.addHeader([("chr1", length)])
+                handle.addEntries(
+                    "chr1", 0, values=[float(value) for value in range(length)], span=1, step=1
+                )
+                handle.close()
+            sites = pd.DataFrame(
+                {
+                    "cell": ["K562"] * 4,
+                    "tf": ["CTCF"] * 4,
+                    "TFBS_chr": ["chr1"] * 4,
+                    "TFBS_start": [0, 2, 10, 12],
+                    "TFBS_end": [2, 4, 12, 14],
+                    "chip_label": [0, 0, 1, 1],
+                }
+            )
+            signals = pd.DataFrame(
+                {
+                    "cell": ["K562", "K562"],
+                    "method": ["full", "short"],
+                    "signal": [str(full_signal), str(short_signal)],
+                }
+            )
+            predictions, metrics = evaluate_bigwig_site_scores.evaluate(sites, signals)
+            self.assertEqual(len(predictions), 6)
+            self.assertEqual(set(metrics["n_sites"]), {3})
+
 
 class ManifestValidationTest(unittest.TestCase):
     def test_committed_manifests_validate(self):
