@@ -55,6 +55,22 @@ CHANNEL_SETS = {
     ),
 }
 
+# Keep the raw observed/expected strand counts available to downstream
+# label-free count models as well as the derived residual channels used by the
+# supervised template ceiling.  Loading them here also keeps all consumers on
+# the same checksum and site-order validation path.
+PROFILE_ARRAYS = tuple(
+    dict.fromkeys(
+        (
+            "plus_observed",
+            "minus_observed",
+            "plus_expected",
+            "minus_expected",
+            *(name for names in CHANNEL_SETS.values() for name in names),
+        )
+    )
+)
+
 
 def file_sha256(path: str | Path) -> str:
     digest = sha256()
@@ -93,10 +109,12 @@ def load_artifact(path: Path, expected_cell: str, study: dict) -> tuple[pd.DataF
         if not np.array_equal(arrays["site_hash"], site_hashes(sites)):
             raise ValueError(f"site order hash mismatch: {path}")
         valid = np.asarray(arrays["valid"], dtype=bool)
+        missing = sorted(set(PROFILE_ARRAYS).difference(arrays.files))
+        if missing:
+            raise ValueError(f"strand artifact is missing profile arrays {missing}: {path}")
         profiles = {
             name: np.asarray(arrays[name], dtype=np.float64)
-            for names in CHANNEL_SETS.values()
-            for name in names
+            for name in PROFILE_ARRAYS
         }
     eligible = valid & sites["chromosome_split"].isin(["train", "validation"]).to_numpy()
     return sites.loc[eligible].reset_index(drop=True), {

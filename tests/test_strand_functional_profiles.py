@@ -16,8 +16,13 @@ from build_strand_functional_profiles import (  # noqa: E402
     write_profiles,
 )
 from evaluate_strand_functional_templates import (  # noqa: E402
+    load_artifact,
     parse_artifact,
     stack_channels,
+)
+from evaluate_strand_label_free_models import (  # noqa: E402
+    candidate_grid as label_free_candidate_grid,
+    validate_unlabeled_training_sites,
 )
 from render_functional_aggregate_comparison import (  # noqa: E402
     combined_strand_shape,
@@ -88,6 +93,45 @@ def test_strand_profile_artifact_is_safe_and_hashed(tmp_path: Path) -> None:
     assert dotted_npz.name == "K562.selma10.shift_4_-4.npz"
     assert dotted_metadata.name == "K562.selma10.shift_4_-4.json"
     assert dotted_sites.name == "K562.selma10.shift_4_-4.sites.tsv.gz"
+
+
+def test_loaded_strand_artifact_includes_raw_counts(tmp_path: Path) -> None:
+    sites = _sites().assign(cell="K562")
+    plus = np.ones((2, 21), dtype=float)
+    minus = np.full((2, 21), 2.0)
+    profiles = construct_strand_functional_profiles(
+        plus, minus, plus, minus, sites["TFBS_strand"]
+    )
+    _npz, metadata, _site_table = write_profiles(
+        tmp_path / "profiles",
+        sites,
+        profiles,
+        np.asarray([True, True]),
+        {"labels_used": False},
+    )
+    study = {
+        "chromosome_split": {
+            "train": ["chr1"],
+            "validation": [],
+            "internal_test": [],
+        }
+    }
+    loaded_sites, loaded_profiles, _document = load_artifact(metadata, "K562", study)
+    assert len(loaded_sites) == 2
+    for name in ("plus_observed", "minus_observed", "plus_expected", "minus_expected"):
+        assert loaded_profiles[name].shape == (2, 21)
+
+
+def test_label_free_grid_and_label_firewall() -> None:
+    candidates = label_free_candidate_grid()
+    assert len(candidates) == 30
+    assert {candidate.family for candidate in candidates} == {"count", "fda", "hybrid"}
+    validate_unlabeled_training_sites(pd.DataFrame({"tf": ["A"]}), "safe.tsv")
+    with pytest.raises(ValueError, match="chip_label"):
+        validate_unlabeled_training_sites(
+            pd.DataFrame({"tf": ["A"], "chip_label": [1]}),
+            "leaky.tsv",
+        )
 
 
 def test_strand_channel_sets_preserve_site_position_axes() -> None:
