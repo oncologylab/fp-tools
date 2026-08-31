@@ -219,9 +219,11 @@ def write_profiles(
     metadata: dict,
 ) -> tuple[Path, Path, Path]:
     prefix = Path(prefix)
-    npz_path = prefix.with_suffix(".npz")
-    json_path = prefix.with_suffix(".json")
-    sites_path = prefix.with_suffix(".sites.tsv.gz")
+    # ``prefix`` is an opaque filename prefix, not a path with an extension.
+    # Appending preserves model/version tokens such as ``sample.loglinear81``.
+    npz_path = Path(str(prefix) + ".npz")
+    json_path = Path(str(prefix) + ".json")
+    sites_path = Path(str(prefix) + ".sites.tsv.gz")
     npz_path.parent.mkdir(parents=True, exist_ok=True)
     arrays = {
         "plus_observed": profiles.plus_observed,

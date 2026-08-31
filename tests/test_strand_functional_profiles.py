@@ -74,6 +74,17 @@ def test_strand_profile_artifact_is_safe_and_hashed(tmp_path: Path) -> None:
         assert np.array_equal(arrays["site_hash"], site_hashes(sites))
         assert "antisymmetric_strand_residual" in arrays
 
+    dotted_npz, dotted_metadata, dotted_sites = write_profiles(
+        tmp_path / "K562.selma10.shift_4_-4",
+        sites,
+        profiles,
+        np.asarray([True, True]),
+        {"test": True},
+    )
+    assert dotted_npz.name == "K562.selma10.shift_4_-4.npz"
+    assert dotted_metadata.name == "K562.selma10.shift_4_-4.json"
+    assert dotted_sites.name == "K562.selma10.shift_4_-4.sites.tsv.gz"
+
 
 def test_strand_channel_sets_preserve_site_position_axes() -> None:
     values = {
