@@ -21,6 +21,13 @@ Commit manifests and scripts, not downloaded BAMs, bigWigs, or full outputs.
 The site-evidence fusion evaluator preserves the one-way validation sequence
 and records rejected candidates as well as successful ones. A rejected
 candidate is not retuned against the same holdout.
+The per-TF follow-up is implemented by the `discover_encode_chip_peaks.py`,
+`build_encode_tf_site_matrix.py`, `match_tf_sites_on_accessibility.py`,
+`search_tf_footprint_models.py`, `compare_frozen_tf_candidates.py`,
+`evaluate_tf_correction_transfer.py`, `evaluate_tf_signal_panel.py`, and
+`plot_frozen_tf_profiles.py` helpers. Together they keep occupancy-label
+discovery, accessibility matching, model selection, correction transfer,
+depth/replicate transfer, uncertainty, and visual aggregate checks separate.
 The dated [`FOOTPRINT_IMPROVEMENT_20260830.md`](FOOTPRINT_IMPROVEMENT_20260830.md)
 report records the first candidate decision and its reproducible engineering outcomes.
 

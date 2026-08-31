@@ -231,3 +231,26 @@ arm reversed on test and raw was best post hoc. Thus correction can be the
 principal problem for particular TF/context pairs, but it is not globally
 under- or over-correcting. Correction disagreement and cross-split instability
 should become abstention evidence rather than a label-tuned automatic choice.
+
+The exhaustive follow-up expanded the quick screen to roughly six thousand
+configurations per TF. It preserved the CTCF result and modestly increased the
+exploratory K562 MEF2A and ARID3A point estimates, but did not broadly rescue
+the remaining TFs. Some selected configurations transferred worse than the
+smaller screen. This is direct evidence that a larger geometry search can add
+selection overfit without adding footprint information; exhaustive search is
+therefore a development stress test, not a method improvement by itself.
+
+Full-depth DWM signals from all three available replicates per cell line were
+then scored with the frozen quick-screen geometries. Replicate averaging raised
+CTCF AUROC from 0.761 to 0.803 in HepG2 and from 0.773 to 0.818 in K562. It also
+raised HepG2 ZNF362 and ZNF384 by about 0.069 AUROC, although both remained
+below a strong-information threshold. K562 MEF2D increased by 0.015. In
+contrast, HepG2 MEF2A stayed at chance, HepG2 MYC fell by 0.036 with DWM, and
+K562 MEF2A fell by 0.024. More reads and replicate averaging therefore rescue
+sampling-limited tasks such as CTCF, but do not repair a wrong correction arm,
+an unstable aggregate shape, or absent occupancy information.
+
+No production scorer is promoted from this matrix. A substantial next method
+must combine TF/family-specific geometry with correction-reliability and
+minimum-information gates, and it must report `not detected` or `underpowered`
+instead of manufacturing a confident score for unsupported TF/context pairs.
