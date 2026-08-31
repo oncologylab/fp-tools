@@ -518,9 +518,12 @@ def main(argv: list[str] | None = None) -> int:
         "locked_test_labels_read": False,
         "training_labels_used": False,
         "motif_or_accessibility_features_used": any(
-            candidate.family == "anchored-fda" for candidate in candidates
+            candidate.family in {"anchored-fda", "residualized-fda"}
+            for candidate in candidates
         ),
-        "evaluation_motif_or_accessibility_features_used": False,
+        "evaluation_motif_or_accessibility_features_used": any(
+            candidate.family == "residualized-fda" for candidate in candidates
+        ),
         "study": str(args.study),
         "study_sha256": file_sha256(args.study),
         "artifacts": input_rows,
