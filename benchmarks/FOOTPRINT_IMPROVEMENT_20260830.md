@@ -427,4 +427,38 @@ choice was also made after observing the first null-calibration behavior.
 Consequently it is a mechanistic advance and a preregistered hypothesis for a
 new holdout, not a package promotion. Independent naked-DNA replicates and a
 new cell/TF occupancy panel are still required. No Box performance folder is
-created from these results.
+created from these label-free results.
+
+The shifted-ATAC calibration was then made fourfold cross-fitted: every null
+score is produced by a model that did not fit that site's fold. Thresholds
+calibrated on offsets -45, -35, +35, and +45 bp transferred to separate -40
+and +40 bp offsets. All 15 candidate groups passed the 5% ceiling; the maximum
+all-site and informative-site rates were 3.50% and 3.59%. A prespecified
+secondary tail of 2.5% was retained because 5% raised the maximum held-out
+informative rate to 7.40% and left only 7 of 15 candidates passing. The 1%
+tail also passed but discarded more true cellular signal.
+
+Applying the cross-fitted dual thresholds to the full-depth first naked-DNA
+replicate again left all candidate groups below 5%, with maxima of 3.00% over
+all sites and 3.21% over informative sites. The count-GP MEF2 and TBP routes
+made no false calls in that panel. This is useful depth transfer, but it is
+not independent replication because the 10M calibration and full-depth panel
+come from the same biological library. A second library is being processed
+without pooling so that replicate consistency can be measured directly.
+
+Finite-null empirical p-values and Benjamini-Hochberg q-values were added as
+an audit output. They generated no false discoveries in naked DNA, but also no
+true calls in development ATAC: roughly 800 null scores per TF do not provide
+the tail resolution needed for site-level FDR across approximately one
+thousand sites. Generalized-Pareto tail extrapolation was tested and rejected;
+it removed useful count-model calls and produced unsafe FOXA1 artifacts. The
+supported result is therefore conservative TF-level detectability plus
+dual-null thresholded candidates, not calibrated site-level FDR.
+
+Separately, the earlier CTCF geometry result now has concise research-only
+before/after reports in the yilab Box folder
+`Yaoxiang/fp-tools/2026-08-31_CTCF_footprint_improvement_research`. The reports
+show the held-out paired ROC/PR curves, aggregate profiles, chromosome-block
+bootstrap intervals, and three-biological-replicate transfer. Their scope is
+explicitly CTCF-specific; this upload does not change the package default or
+override the external-validation requirements for a general method.
