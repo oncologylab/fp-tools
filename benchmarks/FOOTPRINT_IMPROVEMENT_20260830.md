@@ -254,3 +254,29 @@ No production scorer is promoted from this matrix. A substantial next method
 must combine TF/family-specific geometry with correction-reliability and
 minimum-information gates, and it must report `not detected` or `underpowered`
 instead of manufacturing a confident score for unsupported TF/context pairs.
+
+## Learned-profile stress test
+
+To test whether the hand-built score was hiding a more complex footprint, each
+cell/TF task was also evaluated with 152 learned-profile hypotheses. The matrix
+crossed raw, PWM, DWM, and three-signal features; full and symmetry-folded
+profiles; unscaled and outer-flank RMS-normalized inputs; and matched-template,
+regularized logistic, shrinkage-LDA, and ExtraTrees models. Model and feature
+choice used chromosomes 17--18 only, followed by refitting on development
+chromosomes and one evaluation on chromosomes 19--22/X.
+
+The validation-selected learned models reached AUROC/AUPRC 0.799/0.808 for
+HepG2 CTCF and 0.800/0.777 for K562 CTCF. They did not rescue the adequately
+powered ZNF384 tasks (0.565/0.554 HepG2 and 0.607/0.592 K562), and HepG2 MEF2A
+and MEF2D remained near chance. HepG2 FOXA1 reached 0.778 AUROC and K562 MYC
+0.825, but their positive and negative sites retained large accessibility
+imbalances (absolute SMD 0.822 and 0.842), so those values cannot be attributed
+to footprint shape.
+
+The learned models therefore agree with the geometry, correction-transfer,
+depth, and aggregate-profile experiments: CTCF contains strong transferable
+shape information, a few low-count tasks are promising but unresolved, and
+several TFs lack a stable discriminative profile in the available ATAC data.
+The generated complete experiment matrix assigns every cell/TF task a power,
+confounding, response, and likely-driver state so unsupported tasks cannot be
+silently averaged into an attractive global result.
