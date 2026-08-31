@@ -107,6 +107,15 @@ def parse_key_path(value: str) -> tuple[str, str, Path]:
     return fields[0], fields[1], Path(fields[2])
 
 
+def parse_replicate_key_path(value: str) -> tuple[str, str, str, Path]:
+    fields = value.split(",", 3)
+    if len(fields) != 4 or not all(fields):
+        raise argparse.ArgumentTypeError(
+            "replicate artifact must use REPLICATE,MODEL,CELL,JSON"
+        )
+    return fields[0], fields[1], fields[2], Path(fields[3])
+
+
 def parse_cell_path(value: str) -> tuple[str, Path]:
     if "=" not in value:
         raise argparse.ArgumentTypeError("site source must use CELL=TSV")
@@ -280,6 +289,56 @@ def validate_exact_site_alignment(artifacts: dict[tuple[str, str], Artifact]) ->
                 )
 
 
+def validate_replicate_artifacts(
+    artifacts: dict[tuple[str, str], Artifact],
+    replicate_artifacts: dict[tuple[str, str, str], Artifact],
+    routes: pd.DataFrame,
+) -> None:
+    """Validate complete per-cell replicate groups against pooled site sources."""
+
+    if not replicate_artifacts:
+        raise ValueError("at least two biological replicate artifact groups are required")
+    for cell in sorted(routes["cell"].astype(str).unique()):
+        required_models = {"DWM"}.union(
+            routes.loc[
+                routes["cell"].astype(str).eq(cell), "bias_configuration"
+            ].astype(str)
+        )
+        replicates = sorted(
+            {
+                replicate
+                for replicate, _model, item_cell in replicate_artifacts
+                if item_cell == cell
+            }
+        )
+        if len(replicates) < 2:
+            raise ValueError(f"{cell} requires at least two biological replicate groups")
+        pooled_reference = artifacts[("DWM", cell)]
+        for replicate in replicates:
+            observed_models = {
+                model
+                for item_replicate, model, item_cell in replicate_artifacts
+                if item_replicate == replicate and item_cell == cell
+            }
+            if observed_models != required_models:
+                raise ValueError(
+                    f"{cell}/{replicate} replicate models differ from frozen routes; "
+                    f"expected {sorted(required_models)}, observed {sorted(observed_models)}"
+                )
+            group = {
+                (model, cell): replicate_artifacts[(replicate, model, cell)]
+                for model in required_models
+            }
+            validate_exact_site_alignment(group)
+            replicate_reference = group[("DWM", cell)]
+            pooled_hashes = np.asarray(pooled_reference.profiles["site_hash"], dtype=np.uint64)
+            replicate_hashes = np.asarray(replicate_reference.profiles["site_hash"], dtype=np.uint64)
+            if not np.array_equal(pooled_hashes, replicate_hashes):
+                raise ValueError(
+                    f"{cell}/{replicate} DWM sites differ from the pooled DWM artifact"
+                )
+
+
 def reference_to_candidate_indexes(
     reference: Artifact, candidate: Artifact
 ) -> np.ndarray:
@@ -294,6 +353,35 @@ def reference_to_candidate_indexes(
         np.asarray(candidate.profiles["site_hash"], dtype=np.uint64)
     ):
         output[lookup[int(value)]] = candidate_index
+    return output
+
+
+def map_indexes_by_hash(
+    source: Artifact, target: Artifact, source_indexes: np.ndarray
+) -> np.ndarray:
+    """Map selected source rows into a target artifact by immutable site hash."""
+
+    target_lookup = {
+        int(value): index
+        for index, value in enumerate(
+            np.asarray(target.profiles["site_hash"], dtype=np.uint64)
+        )
+    }
+    source_hashes = np.asarray(source.profiles["site_hash"], dtype=np.uint64)
+    mapped = np.asarray(
+        [target_lookup.get(int(source_hashes[index]), -1) for index in source_indexes],
+        dtype=int,
+    )
+    if np.any(mapped < 0):
+        raise ValueError("selected pooled sites are absent from a replicate artifact")
+    return mapped
+
+
+def valid_on_reference(reference: Artifact, target: Artifact) -> np.ndarray:
+    mapping = reference_to_candidate_indexes(reference, target)
+    available = mapping >= 0
+    output = np.zeros(len(reference.sites), dtype=bool)
+    output[available] = target.valid[mapping[available]]
     return output
 
 
@@ -362,6 +450,7 @@ def freeze_options(args: argparse.Namespace) -> dict[str, Any]:
 def build_freeze_document(
     args: argparse.Namespace,
     artifacts: dict[tuple[str, str], Artifact],
+    replicate_artifacts: dict[tuple[str, str, str], Artifact],
     site_sources: dict[str, Path],
     routes: pd.DataFrame,
 ) -> dict[str, Any]:
@@ -390,6 +479,17 @@ def build_freeze_document(
             }
             for (model, cell), artifact in sorted(artifacts.items())
         },
+        "replicate_artifacts": {
+            f"{replicate}|{model}|{cell}": {
+                "document": hash_record(artifact.path),
+                "profiles": hash_record(_resolve_recorded_path(artifact.path, artifact.document["profiles_npz"])),
+                "sites": hash_record(_resolve_recorded_path(artifact.path, artifact.document["sites"])),
+                "schema": artifact.schema,
+                "sites_total": len(artifact.sites),
+                "sites_valid": int(artifact.valid.sum()),
+            }
+            for (replicate, model, cell), artifact in sorted(replicate_artifacts.items())
+        },
         "options": freeze_options(args),
         "frozen_routes": routes.sort_values(["cell", "tf"], kind="mergesort").to_dict("records"),
     }
@@ -411,6 +511,7 @@ def verify_freeze(
     freeze_path: Path,
     args: argparse.Namespace,
     artifacts: dict[tuple[str, str], Artifact],
+    replicate_artifacts: dict[tuple[str, str, str], Artifact],
     site_sources: dict[str, Path],
     routes: pd.DataFrame,
 ) -> dict[str, Any]:
@@ -421,7 +522,9 @@ def verify_freeze(
     if freeze_id != canonical_hash(freeze):
         raise ValueError(f"{freeze_path} freeze_id is invalid")
     freeze["freeze_id"] = freeze_id
-    expected = build_freeze_document(args, artifacts, site_sources, routes)
+    expected = build_freeze_document(
+        args, artifacts, replicate_artifacts, site_sources, routes
+    )
     if expected != freeze:
         raise ValueError("current evaluator inputs/options differ from the locked freeze")
     for key in ("evaluator", "study", "routes", "policy", "chip_manifest_metadata_only", "genome"):
@@ -429,6 +532,9 @@ def verify_freeze(
     for record in freeze["site_sources"].values():
         verify_hash_record(record)
     for artifact in freeze["artifacts"].values():
+        for key in ("document", "profiles", "sites"):
+            verify_hash_record(artifact[key])
+    for artifact in freeze["replicate_artifacts"].values():
         for key in ("document", "profiles", "sites"):
             verify_hash_record(artifact[key])
     return freeze
@@ -534,7 +640,7 @@ def fit_combined_route(
     )
     dispersion = estimate_nb_dispersion(observed[family_train], expected[family_train])
     if candidate.family in {"spline", "gp"}:
-        cache_key = (artifact.cell, candidate_id, family)
+        cache_key = (str(artifact.path), candidate_id, family)
         if cache_key not in prior_cache:
             global_prior = None
             if candidate.shrinkage > 0:
@@ -655,7 +761,7 @@ def fit_strand_route(
         raise ValueError(f"{artifact.cell}/{tf} has insufficient unlabeled training sites")
     dispersion = estimate_nb_dispersion(observed[family_train], expected[family_train])
     if candidate.family == "count":
-        cache_key = (artifact.cell, candidate_id, family)
+        cache_key = (str(artifact.path), candidate_id, family)
         if cache_key not in prior_cache:
             family_model = BiasAwareFunctionalMixture(
                 positions,
@@ -1058,6 +1164,11 @@ def promotion_summary(metrics: pd.DataFrame, study: dict[str, Any]) -> dict[str,
         "matching_balance": bool(
             len(ok) and ok["matching_pass"].astype(bool).all()
         ),
+        "biological_replicate_direction_stable": bool(
+            len(promoted)
+            and "replicate_direction_stable" in promoted
+            and promoted["replicate_direction_stable"].fillna(False).astype(bool).all()
+        ),
     }
     return {
         "promoted_task_rows": int(len(promoted)),
@@ -1078,6 +1189,7 @@ def run_evaluation(
     policy: pd.DataFrame,
     chip: pd.DataFrame,
     artifacts: dict[tuple[str, str], Artifact],
+    replicate_artifacts: dict[tuple[str, str, str], Artifact],
     freeze: dict[str, Any],
 ) -> int:
     positions = np.arange(
@@ -1088,6 +1200,7 @@ def run_evaluation(
     score_frames: list[pd.DataFrame] = []
     profile_rows: list[dict[str, Any]] = []
     matching_rows: list[dict[str, Any]] = []
+    replicate_metric_rows: list[dict[str, Any]] = []
     combined_prior_cache: dict[tuple[str, str, str], tuple[np.ndarray | None, float]] = {}
     strand_prior_cache: dict[tuple[str, str, str], tuple[np.ndarray, float]] = {}
     for route in routes.sort_values(["cell", "tf"], kind="mergesort").itertuples(index=False):
@@ -1102,6 +1215,19 @@ def run_evaluation(
             candidate_map[candidate_available]
         ]
         joint_valid = reference_artifact.valid & candidate_valid_on_reference
+        for replicate in sorted(
+            {
+                item_replicate
+                for item_replicate, _model, item_cell in replicate_artifacts
+                if item_cell == cell
+            }
+        ):
+            replicate_reference = replicate_artifacts[(replicate, "DWM", cell)]
+            replicate_candidate = replicate_artifacts[
+                (replicate, str(route.bias_configuration), cell)
+            ]
+            joint_valid &= valid_on_reference(reference_artifact, replicate_reference)
+            joint_valid &= valid_on_reference(reference_artifact, replicate_candidate)
         chip_row = chip[
             chip["cell"].astype(str).eq(cell) & chip["tf"].astype(str).eq(tf)
         ].iloc[0]
@@ -1238,6 +1364,107 @@ def run_evaluation(
                 **bootstrap,
             }
             metric_rows.append(row)
+            cell_replicates = sorted(
+                {
+                    replicate
+                    for replicate, _model, item_cell in replicate_artifacts
+                    if item_cell == cell
+                }
+            )
+            for replicate in cell_replicates:
+                replicate_reference_artifact = replicate_artifacts[
+                    (replicate, "DWM", cell)
+                ]
+                replicate_candidate_artifact = replicate_artifacts[
+                    (replicate, str(route.bias_configuration), cell)
+                ]
+                replicate_reference_indexes = map_indexes_by_hash(
+                    reference_artifact, replicate_reference_artifact, indexes
+                )
+                replicate_candidate_indexes = map_indexes_by_hash(
+                    reference_artifact, replicate_candidate_artifact, indexes
+                )
+                replicate_base = {
+                    "cell": cell,
+                    "tf": tf,
+                    "motif_family": family,
+                    "role": str(route.role),
+                    "replicate": replicate,
+                    "bias_configuration": str(route.bias_configuration),
+                    "candidate_id": str(route.candidate_id),
+                    "reference_candidate_id": base["reference_candidate_id"],
+                    "training_labels_used": False,
+                }
+                try:
+                    if str(route.bias_configuration) == "DWM":
+                        replicate_candidate = fit_combined_route(
+                            replicate_reference_artifact,
+                            str(route.candidate_id),
+                            tf,
+                            family,
+                            replicate_reference_indexes,
+                            positions,
+                            args.maximum_train_per_tf,
+                            args.seed,
+                            combined_prior_cache,
+                        )
+                    else:
+                        replicate_candidate = fit_strand_route(
+                            replicate_candidate_artifact,
+                            str(route.candidate_id),
+                            tf,
+                            family,
+                            replicate_candidate_indexes,
+                            positions,
+                            args.maximum_train_per_tf,
+                            args.seed,
+                            strand_prior_cache,
+                        )
+                    replicate_reference = fit_combined_route(
+                        replicate_reference_artifact,
+                        base["reference_candidate_id"],
+                        tf,
+                        family,
+                        replicate_reference_indexes,
+                        positions,
+                        args.maximum_train_per_tf,
+                        args.seed,
+                        combined_prior_cache,
+                    )
+                    candidate_rep_metrics = binary_metrics(
+                        labels, replicate_candidate.probabilities
+                    )
+                    reference_rep_metrics = binary_metrics(
+                        labels, replicate_reference.probabilities
+                    )
+                    replicate_metric_rows.append(
+                        {
+                            **replicate_base,
+                            "status": "ok",
+                            "positive_sites": int(candidate_rep_metrics["positive_sites"]),
+                            "negative_sites": int(candidate_rep_metrics["negative_sites"]),
+                            "candidate_auroc": float(candidate_rep_metrics["auroc"]),
+                            "candidate_auprc": float(candidate_rep_metrics["auprc"]),
+                            "reference_auroc": float(reference_rep_metrics["auroc"]),
+                            "reference_auprc": float(reference_rep_metrics["auprc"]),
+                            "auroc_gain": float(candidate_rep_metrics["auroc"])
+                            - float(reference_rep_metrics["auroc"]),
+                            "relative_auprc_gain": (
+                                float(candidate_rep_metrics["auprc"])
+                                - float(reference_rep_metrics["auprc"])
+                            ) / max(float(reference_rep_metrics["auprc"]), 1e-8),
+                            "candidate_converged": replicate_candidate.converged,
+                            "reference_converged": replicate_reference.converged,
+                        }
+                    )
+                except Exception as error:
+                    replicate_metric_rows.append(
+                        {
+                            **replicate_base,
+                            "status": "error",
+                            "error": f"{type(error).__name__}: {error}",
+                        }
+                    )
             score = matched[
                 [
                     "cell", "tf", "motif_id", "motif_family", "TFBS_chr",
@@ -1283,6 +1510,26 @@ def run_evaluation(
                 {**base, "status": "error", "error": f"{type(error).__name__}: {error}"}
             )
     metrics = pd.DataFrame(metric_rows).sort_values(["cell", "tf"], kind="mergesort")
+    replicate_metrics = pd.DataFrame(replicate_metric_rows).sort_values(
+        ["cell", "tf", "replicate"], kind="mergesort"
+    )
+    replicate_ok = replicate_metrics[replicate_metrics["status"].eq("ok")].copy()
+    if len(replicate_ok):
+        stability = (
+            replicate_ok.groupby(["cell", "tf"], sort=True)
+            .agg(
+                biological_replicates=("replicate", "nunique"),
+                replicate_min_auroc_gain=("auroc_gain", "min"),
+                replicate_max_auroc_gain=("auroc_gain", "max"),
+                replicate_mean_auroc_gain=("auroc_gain", "mean"),
+                replicate_min_relative_auprc_gain=("relative_auprc_gain", "min"),
+            )
+            .reset_index()
+        )
+        stability["replicate_direction_stable"] = (
+            stability["replicate_min_auroc_gain"] >= 0
+        )
+        metrics = metrics.merge(stability, on=["cell", "tf"], how="left", validate="one_to_one")
     scores = pd.concat(score_frames, ignore_index=True) if score_frames else pd.DataFrame()
     profiles = pd.DataFrame(profile_rows)
     matching_frame = pd.DataFrame(matching_rows).sort_values(["cell", "tf"], kind="mergesort")
@@ -1290,11 +1537,13 @@ def run_evaluation(
     scores_path = args.outdir / "locked_holdout_site_scores.tsv.gz"
     profiles_path = args.outdir / "locked_holdout_aggregate_profiles.tsv.gz"
     matching_path = args.outdir / "locked_holdout_matching_diagnostics.tsv"
+    replicate_metrics_path = args.outdir / "locked_holdout_replicate_metrics.tsv"
     pdf_path = args.outdir / "locked_holdout_aggregate_panels.pdf"
     metrics.to_csv(metrics_path, sep="\t", index=False)
     scores.to_csv(scores_path, sep="\t", index=False)
     profiles.to_csv(profiles_path, sep="\t", index=False)
     matching_frame.to_csv(matching_path, sep="\t", index=False)
+    replicate_metrics.to_csv(replicate_metrics_path, sep="\t", index=False)
     render_pdf(metrics, profiles, pdf_path)
     promotion = promotion_summary(metrics, study)
     manifest = {
@@ -1316,6 +1565,7 @@ def run_evaluation(
             "site_scores": hash_record(scores_path),
             "aggregate_profiles": hash_record(profiles_path),
             "matching_diagnostics": hash_record(matching_path),
+            "replicate_metrics": hash_record(replicate_metrics_path),
             "aggregate_pdf": hash_record(pdf_path),
         },
     }
@@ -1329,6 +1579,13 @@ def run_evaluation(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifact", action="append", type=parse_key_path, required=True, metavar="MODEL,CELL,JSON")
+    parser.add_argument(
+        "--replicate-artifact",
+        action="append",
+        type=parse_replicate_key_path,
+        required=True,
+        metavar="REPLICATE,MODEL,CELL,JSON",
+    )
     parser.add_argument("--site-source", action="append", type=parse_cell_path, required=True, metavar="CELL=TSV")
     parser.add_argument("--study", type=Path, default=Path("benchmarks/manifests/footprint_functional_v1.spec.json"))
     parser.add_argument("--routes", type=Path, default=Path("benchmarks/manifests/compact/functional_holdout_routes_v1.tsv"))
@@ -1371,6 +1628,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         key: load_artifact(key[0], key[1], path) for key, path in sorted(artifact_paths.items())
     }
     validate_exact_site_alignment(artifacts)
+    replicate_paths = {
+        (replicate, model, cell): path
+        for replicate, model, cell, path in args.replicate_artifact
+    }
+    if len(replicate_paths) != len(args.replicate_artifact):
+        raise SystemExit("duplicate REPLICATE,MODEL,CELL artifact keys")
+    replicate_artifacts = {
+        key: load_artifact(key[1], key[2], path)
+        for key, path in sorted(replicate_paths.items())
+    }
+    validate_replicate_artifacts(artifacts, replicate_artifacts, routes)
     site_sources = dict(args.site_source)
     if set(site_sources) != set(routes["cell"].astype(str)):
         raise SystemExit("site-source cells must exactly match route cells")
@@ -1381,7 +1649,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             raise SystemExit("labels remain locked; provide --freeze-out to preregister inputs")
         if args.freeze is not None or args.outdir is not None:
             raise SystemExit("freeze mode does not accept --freeze or --outdir")
-        document = build_freeze_document(args, artifacts, site_sources, routes)
+        document = build_freeze_document(
+            args, artifacts, replicate_artifacts, site_sources, routes
+        )
         args.freeze_out.parent.mkdir(parents=True, exist_ok=True)
         args.freeze_out.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(f"wrote locked holdout freeze {document['freeze_id']} to {args.freeze_out}")
@@ -1391,10 +1661,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise SystemExit("--unlock-holdout requires --freeze and --outdir")
     if args.freeze_out is not None:
         raise SystemExit("evaluation mode does not accept --freeze-out")
-    freeze = verify_freeze(args.freeze, args, artifacts, site_sources, routes)
+    freeze = verify_freeze(
+        args.freeze, args, artifacts, replicate_artifacts, site_sources, routes
+    )
     validate_chip_files(chip)
     with threadpool_limits(limits=1):
-        return run_evaluation(args, study, routes, policy, chip, artifacts, freeze)
+        return run_evaluation(
+            args,
+            study,
+            routes,
+            policy,
+            chip,
+            artifacts,
+            replicate_artifacts,
+            freeze,
+        )
 
 
 if __name__ == "__main__":

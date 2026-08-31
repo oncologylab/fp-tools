@@ -155,6 +155,61 @@ def test_candidate_artifact_may_be_an_exact_dwm_site_subset():
     )
     mapping = module.reference_to_candidate_indexes(reference, candidate)
     assert mapping.tolist() == [0, -1, 1, -1, -1, 2, -1, -1, 3, -1]
+    projected = module.valid_on_reference(reference, candidate)
+    assert projected.tolist() == [True, False, True, False, False, True, False, False, True, False]
+
+
+def test_replicate_groups_require_two_complete_site_aligned_replicates():
+    frame = _synthetic_sites()
+    hashes = module.site_hashes(frame)
+    arrays = {"valid": np.ones(len(frame), dtype=bool), "site_hash": hashes}
+    pooled = module.Artifact(
+        "DWM",
+        "Fixture",
+        Path("pooled.json"),
+        {"schema": "fp-tools-combined-functional-profiles-v1"},
+        frame,
+        arrays,
+    )
+    rep1 = module.Artifact(
+        "DWM",
+        "Fixture",
+        Path("rep1.json"),
+        {"schema": "fp-tools-combined-functional-profiles-v1"},
+        frame.copy(),
+        {"valid": np.ones(len(frame), dtype=bool), "site_hash": hashes.copy()},
+    )
+    rep2 = module.Artifact(
+        "DWM",
+        "Fixture",
+        Path("rep2.json"),
+        {"schema": "fp-tools-combined-functional-profiles-v1"},
+        frame.copy(),
+        {"valid": np.ones(len(frame), dtype=bool), "site_hash": hashes.copy()},
+    )
+    routes = pd.DataFrame(
+        {
+            "cell": ["Fixture"],
+            "tf": ["TFX"],
+            "bias_configuration": ["DWM"],
+        }
+    )
+    module.validate_replicate_artifacts(
+        {("DWM", "Fixture"): pooled},
+        {
+            ("rep1", "DWM", "Fixture"): rep1,
+            ("rep2", "DWM", "Fixture"): rep2,
+        },
+        routes,
+    )
+    mapped = module.map_indexes_by_hash(pooled, rep2, np.array([1, 4, 7]))
+    assert mapped.tolist() == [1, 4, 7]
+    with pytest.raises(ValueError, match="at least two"):
+        module.validate_replicate_artifacts(
+            {("DWM", "Fixture"): pooled},
+            {("rep1", "DWM", "Fixture"): rep1},
+            routes,
+        )
 
 
 def test_frozen_combined_count_and_strand_routes_fit_without_labels():
