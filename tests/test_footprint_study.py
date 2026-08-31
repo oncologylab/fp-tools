@@ -10,6 +10,8 @@ import unittest
 import numpy as np
 import pandas as pd
 
+from fp_tools.utils import bigwig as pyBigWig
+
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -514,6 +516,20 @@ class FootprintAblationPlanTest(unittest.TestCase):
             result = ablation_runner.execute_plan(plan, status, dry_run=True)
             self.assertEqual(result["job_id"].tolist(), ["first", "second"])
             self.assertTrue(status.exists())
+
+    def test_ablation_runner_rejects_header_only_bigwig_as_complete(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            empty = root / "empty.bw"
+            populated = root / "populated.bw"
+            with pyBigWig.open(str(empty), "w") as handle:
+                handle.addHeader([("chr1", 20)])
+            with pyBigWig.open(str(populated), "w") as handle:
+                handle.addHeader([("chr1", 20)])
+                handle.addEntries(["chr1"], [4], ends=[5], values=[1.0])
+            self.assertFalse(ablation_runner.output_is_complete(empty))
+            self.assertTrue(ablation_runner.output_is_complete(populated))
+            self.assertTrue(ablation_runner.output_is_complete(root / "missing-marker") is False)
 
     def test_ablation_runner_filters_matrix_and_closes_dependencies(self):
         plan = pd.DataFrame(

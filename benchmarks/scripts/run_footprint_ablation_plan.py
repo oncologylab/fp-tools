@@ -14,8 +14,36 @@ import subprocess
 import numpy as np
 import pandas as pd
 
+from fp_tools.utils import bigwig as pyBigWig
+
 
 REQUIRED_COLUMNS = ["job_id", "stage", "depends_on", "expected_output", "command"]
+
+
+def output_is_complete(path: str | Path) -> bool:
+    """Return whether an expected artifact is safe to treat as resumable.
+
+    File existence is insufficient for bigWigs: interrupted writers can leave
+    a parseable header and hundreds of megabytes of index data while covering
+    zero genomic bases.  Other output types retain the historical existence
+    check because some plan fixtures are intentionally empty marker files.
+    """
+
+    output = Path(path)
+    if not output.is_file():
+        return False
+    if output.suffix.lower() not in {".bw", ".bigwig"}:
+        return True
+    try:
+        handle = pyBigWig.open(str(output))
+        try:
+            header = handle.header()
+            chromosomes = handle.chroms()
+        finally:
+            handle.close()
+    except Exception:
+        return False
+    return bool(chromosomes) and int(header.get("nBasesCovered", 0)) > 0
 
 
 def order_plan(frame: pd.DataFrame, order: str) -> pd.DataFrame:
@@ -99,7 +127,7 @@ def execute_plan(
     completed = {
         job
         for job, row in known.iterrows()
-        if Path(str(row.expected_output)).exists()
+        if output_is_complete(row.expected_output)
     }
     records: list[dict[str, object]] = []
     running = {}
@@ -143,8 +171,10 @@ def execute_plan(
         else:
             subprocess.run(shlex.split(str(row.command)), check=True)
         output = Path(str(row.expected_output))
-        if not output.exists():
-            raise RuntimeError(f"job {job} completed without expected output {output}")
+        if not output_is_complete(output):
+            raise RuntimeError(
+                f"job {job} completed without a nonempty valid expected output {output}"
+            )
         return "completed", job_log
 
     try:
@@ -159,7 +189,7 @@ def execute_plan(
                     continue
                 output = Path(str(row.expected_output))
                 timestamp = datetime.now(timezone.utc).isoformat()
-                if output.exists():
+                if output_is_complete(output):
                     record(job, row, "skipped_existing", timestamp, None)
                 elif dry_run:
                     record(job, row, "planned", timestamp, None)

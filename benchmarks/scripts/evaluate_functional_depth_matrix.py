@@ -39,6 +39,7 @@ from evaluate_functional_template_transfer import (  # noqa: E402
     selection_score,
     training_indexes,
 )
+from run_footprint_ablation_plan import output_is_complete  # noqa: E402
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     FunctionalTemplateDetector,
     normalize_functional_profiles,
@@ -85,7 +86,7 @@ def discover_signal_matrix(
         prefix = corrected.name.removesuffix("_corrected.bw")
         raw = corrected.parent / f"{prefix}_uncorrected.bw"
         expected = corrected.parent / f"{prefix}_expected.bw"
-        files_complete = corrected.is_file() and raw.is_file() and expected.is_file()
+        files_complete = all(output_is_complete(path) for path in (corrected, raw, expected))
         runner_complete = completed_jobs is None or str(row.job_id) in completed_jobs
         complete = files_complete and runner_complete
         if require_complete and not complete:

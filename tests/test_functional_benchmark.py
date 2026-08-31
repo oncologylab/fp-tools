@@ -39,10 +39,17 @@ from fp_tools.tools.parametric_bias import (  # noqa: E402
     BiasFeatureSpec,
     ConditionalSequenceBiasModel,
 )
+from fp_tools.utils import bigwig as pyBigWig  # noqa: E402
 
 
 SPEC = Path(__file__).resolve().parents[1] / "benchmarks" / "manifests" / "footprint_functional_v1.spec.json"
 NAKED_DNA = Path(__file__).resolve().parents[1] / "benchmarks" / "manifests" / "naked_dna_gse164997.tsv"
+
+
+def _write_nonempty_bigwig(path: Path) -> None:
+    with pyBigWig.open(str(path), "w") as handle:
+        handle.addHeader([("chr1", 20)])
+        handle.addEntries(["chr1"], [4], ends=[5], values=[1.0])
 
 
 def test_functional_spec_is_locked_and_complete() -> None:
@@ -299,7 +306,7 @@ def test_depth_signal_discovery_requires_raw_and_expected_tracks(tmp_path: Path)
     outdir.mkdir()
     prefix = "K562_rep1.25m.s2026"
     for suffix in ("corrected", "uncorrected", "expected"):
-        (outdir / f"{prefix}_{suffix}.bw").touch()
+        _write_nonempty_bigwig(outdir / f"{prefix}_{suffix}.bw")
     plan = pd.DataFrame(
         [
             {
@@ -329,7 +336,7 @@ def test_depth_signal_discovery_can_select_randomization_seeds(tmp_path: Path) -
         outdir.mkdir(parents=True)
         prefix = f"K562_rep1.25m.s{seed}"
         for suffix in ("corrected", "uncorrected", "expected"):
-            (outdir / f"{prefix}_{suffix}.bw").touch()
+            _write_nonempty_bigwig(outdir / f"{prefix}_{suffix}.bw")
         rows.append(
             {
                 "job_id": f"correct:{seed}",
@@ -355,7 +362,7 @@ def test_depth_signal_discovery_excludes_files_still_being_written(tmp_path: Pat
     outdir.mkdir()
     prefix = "K562_rep1.25m.s2026"
     for suffix in ("corrected", "uncorrected", "expected"):
-        (outdir / f"{prefix}_{suffix}.bw").write_bytes(b"partial-or-complete")
+        _write_nonempty_bigwig(outdir / f"{prefix}_{suffix}.bw")
     job_id = "correct:K562_rep1.25m.s2026:fp_tools_dwm"
     plan = pd.DataFrame(
         [
