@@ -20,6 +20,7 @@ false-footprint rates can be checked for replicate consistency before pooling.
 - `downsample_bam_depth_matrix.py`: create all missing depth/seed BAM subsets in one source-BAM scan while preserving the same deterministic nested-fragment rule.
 - `evaluate_functional_template_transfer.py`: measure shape-only same-cell, cross-cell TF, leave-TF-out family, and global functional-template ceilings without opening locked holdouts.
 - `evaluate_functional_depth_matrix.py`: apply 10M-frozen TF shape settings across deterministic 10M/25M/50M/full matrices, classify depth limits, and render per-TF depth/aggregate panels.
+- `ensemble_parametric_bias_models.py`: combine compatible seed fits into one checksummed geometric coefficient ensemble for prespecified crossed controls.
 - `build_footprint_ablation_plan.py`: write the depth, correction, and method task matrices from the locked study specification.
 - `run_footprint_ablation_plan.py`: execute the signal plan with dependency, resume, and expected-output checks.
 - `summarize_footprint_ablation.py`: collapse depth randomizations and report depth plateaus and correction gains.
