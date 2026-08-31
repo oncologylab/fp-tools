@@ -11,10 +11,50 @@ import re
 import shlex
 import subprocess
 
+import numpy as np
 import pandas as pd
 
 
 REQUIRED_COLUMNS = ["job_id", "stage", "depends_on", "expected_output", "command"]
+
+
+def order_plan(frame: pd.DataFrame, order: str) -> pd.DataFrame:
+    """Order jobs for either strict plan fidelity or breadth-first coverage."""
+
+    if order == "plan":
+        return frame.reset_index(drop=True)
+    if order != "breadth-first":
+        raise ValueError(f"unknown scheduling order: {order}")
+    required = {"sample", "depth", "seed", "stage"}
+    missing = required.difference(frame.columns)
+    if missing:
+        raise ValueError(
+            "breadth-first scheduling requires columns: " + ", ".join(sorted(missing))
+        )
+    ordered = frame.copy()
+    numeric_depth = pd.to_numeric(ordered["depth"], errors="coerce")
+    finite_depths = numeric_depth[np.isfinite(numeric_depth)]
+    full_rank = float(finite_depths.max() + 1) if len(finite_depths) else 1.0
+    ordered["_depth_order"] = numeric_depth.fillna(full_rank)
+    ordered["_seed_order"] = pd.to_numeric(ordered["seed"], errors="coerce").fillna(-1)
+    ordered["_stage_order"] = ordered["stage"].map(
+        {"downsample": 0, "correction": 1, "derived_signal": 2}
+    ).fillna(3)
+    ordered["_plan_order"] = np.arange(len(ordered))
+    ordered = ordered.sort_values(
+        [
+            "_depth_order",
+            "_seed_order",
+            "sample",
+            "_stage_order",
+            "correction",
+            "_plan_order",
+        ],
+        kind="mergesort",
+    )
+    return ordered.drop(
+        columns=["_depth_order", "_seed_order", "_stage_order", "_plan_order"]
+    ).reset_index(drop=True)
 
 
 def dependencies(value: object) -> list[str]:
@@ -197,6 +237,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--depth", action="append", default=[])
     parser.add_argument("--correction", action="append", default=[])
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument(
+        "--order",
+        choices=("plan", "breadth-first"),
+        default="plan",
+        help="Breadth-first alternates cells/seeds at lower depths before deeper jobs.",
+    )
     parser.add_argument("--log-dir", type=Path)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
@@ -212,7 +258,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     status = args.status or args.plan.with_name("ablation_status.tsv")
     execute_plan(
-        frame,
+        order_plan(frame, args.order),
         status,
         selected_jobs=selected,
         dry_run=args.dry_run,

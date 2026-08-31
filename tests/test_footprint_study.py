@@ -534,6 +534,32 @@ class FootprintAblationPlanTest(unittest.TestCase):
         )
         self.assertEqual(selected, {"down25", "dwm25"})
 
+    def test_breadth_first_ablation_order_prioritizes_cross_sample_depth_coverage(self):
+        rows = []
+        for sample in ("HepG2", "K562"):
+            for depth in ("10000000", "25000000", "full"):
+                for seed in (2026, 2027):
+                    rows.append(
+                        {
+                            "job_id": f"{sample}.{depth}.{seed}",
+                            "stage": "correction",
+                            "sample": sample,
+                            "depth": depth,
+                            "seed": seed,
+                            "correction": "fp_tools_dwm",
+                            "depends_on": "",
+                            "expected_output": f"/tmp/{sample}.{depth}.{seed}",
+                            "command": "tool",
+                        }
+                    )
+        plan = pd.DataFrame(rows)
+        ordered = ablation_runner.order_plan(plan, "breadth-first")
+        first = ordered.head(4)[["sample", "depth", "seed"]]
+        self.assertEqual(set(first["sample"]), {"HepG2", "K562"})
+        self.assertEqual(set(first["depth"]), {"10000000"})
+        self.assertEqual(set(first["seed"]), {2026, 2027})
+        self.assertEqual(ordered.tail(1)["depth"].item(), "full")
+
     def test_parallel_ablation_runner_executes_and_logs_independent_jobs(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = pathlib.Path(tmpdir)
