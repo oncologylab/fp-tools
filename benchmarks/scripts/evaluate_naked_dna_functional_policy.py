@@ -41,6 +41,7 @@ from search_functional_model_grid import (  # noqa: E402
 from select_count_models_by_unlabeled_likelihood import make_model  # noqa: E402
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
+    CovariateAnchoredFdaModel,
     FdaMixtureModel,
     HybridFdaGpModel,
     deviance_profiles,
@@ -249,7 +250,20 @@ def fit_strand_detector(
     observed, _expected = _count_arrays(profiles)
     weights = np.sqrt(np.maximum(observed[indexes].sum(axis=1), 1.0))
     model_seed = stable_seed(tf, motif_family, candidate.candidate_id, seed=seed)
-    if candidate.family == "fda":
+    if candidate.family == "anchored-fda":
+        coverage = observed[indexes].sum(axis=1)
+        model = CovariateAnchoredFdaModel(
+            max_components=20,
+            anchor_strength=candidate.anchor_strength,
+            seed=model_seed,
+        ).fit(
+            values,
+            motif_score=sites.iloc[indexes]["motif_score"].to_numpy(dtype=float),
+            accessibility=coverage,
+            positions=positions,
+            sample_weight=weights,
+        )
+    elif candidate.family == "fda":
         model = FdaMixtureModel(max_components=20, seed=model_seed).fit(
             values, positions=positions, sample_weight=weights
         )
@@ -366,7 +380,13 @@ def predict_detector(
             residual = profiles[fitted.channel]
         else:
             residual = deviance_profiles(observed, expected, fitted.dispersion)
-        probabilities = fitted.model.predict_proba(residual)
+        if fitted.model_family == "anchored-fda":
+            shape_log_odds, _anchor = fitted.model.predict_log_odds_components(
+                residual
+            )
+            probabilities = expit(np.clip(shape_log_odds, -40.0, 40.0))
+        else:
+            probabilities = fitted.model.predict_proba(residual)
     return np.asarray(probabilities, dtype=float), total_signal, residual
 
 

@@ -50,6 +50,52 @@ def test_frozen_candidate_ids_resolve_to_implemented_models():
     assert set(promoted["reference_candidate_id"]).issubset(dwm)
 
 
+def test_anchored_fda_uses_covariates_only_for_training_orientation():
+    rng = np.random.default_rng(9)
+    positions = np.arange(-10, 11, dtype=float)
+    sites = pd.DataFrame(
+        {
+            "tf": ["MAX"] * 160,
+            "motif_family": ["MYC_MAX"] * 160,
+            "motif_score": np.linspace(-2.0, 2.0, 160),
+        }
+    )
+    observed = rng.poisson(3.0, size=(160, len(positions))).astype(float)
+    expected = np.full_like(observed, 3.0)
+    residual = rng.normal(size=observed.shape)
+    residual[:, 8:13] -= np.linspace(0.0, 1.5, 160)[:, None]
+    profiles = {
+        "plus_observed": observed / 2.0,
+        "minus_observed": observed / 2.0,
+        "plus_expected": expected / 2.0,
+        "minus_expected": expected / 2.0,
+        "combined_residual": residual,
+        "shared_strand_residual": residual,
+        "antisymmetric_strand_residual": np.zeros_like(residual),
+    }
+    candidate = module._candidate_lookup()[0][
+        "anchored-fda.shared_strand_residual.pool_family.anchor_2p0"
+    ]
+    fitted = module.fit_strand_detector(
+        candidate,
+        sites,
+        profiles,
+        tf="MAX",
+        motif_family="MYC_MAX",
+        positions=positions,
+        seed=2026,
+    )
+    assert fitted.model_family == "anchored-fda"
+    probabilities, total_signal, predicted_residual = module.predict_detector(
+        fitted, profiles
+    )
+    assert probabilities.shape == (160,)
+    assert np.isfinite(probabilities).all()
+    assert np.all((probabilities >= 0.0) & (probabilities <= 1.0))
+    assert np.array_equal(total_signal, observed.sum(axis=1))
+    assert np.array_equal(predicted_residual, residual)
+
+
 def test_promotion_false_positive_table_maps_exact_paired_methods():
     rows = []
     for method, rate in (
