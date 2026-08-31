@@ -25,8 +25,9 @@ The per-TF follow-up is implemented by the `discover_encode_chip_peaks.py`,
 `build_encode_tf_site_matrix.py`, `match_tf_sites_on_accessibility.py`,
 `search_tf_footprint_models.py`, `compare_frozen_tf_candidates.py`,
 `evaluate_tf_correction_transfer.py`, `evaluate_tf_signal_panel.py`,
-`search_tf_profile_classifiers.py`, `assemble_tf_experiment_matrix.py`, and
-`plot_frozen_tf_profiles.py` helpers. Together they keep occupancy-label
+`search_tf_profile_classifiers.py`, `evaluate_tf_classifier_signal_panel.py`,
+`assemble_tf_experiment_matrix.py`, and `plot_frozen_tf_profiles.py` helpers.
+Together they keep occupancy-label
 discovery, accessibility matching, model selection, correction transfer,
 depth/replicate transfer, uncertainty, and visual aggregate checks separate.
 The dated [`FOOTPRINT_IMPROVEMENT_20260830.md`](FOOTPRINT_IMPROVEMENT_20260830.md)

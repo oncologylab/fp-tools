@@ -280,3 +280,14 @@ several TFs lack a stable discriminative profile in the available ATAC data.
 The generated complete experiment matrix assigns every cell/TF task a power,
 confounding, response, and likely-driver state so unsupported tasks cannot be
 silently averaged into an attractive global result.
+
+Finally, DWM-only learned profiles were frozen from the development
+chromosomes and transferred independently to all three full-depth biological
+replicates. The replicate-mean classifier reached AUROC/AUPRC 0.837/0.853 in
+HepG2 CTCF and 0.834/0.812 in K562 CTCF. Individual replicate AUROCs were
+0.823--0.835 (standard deviation 0.006) and 0.822--0.830 (standard deviation
+0.004), respectively. This is the strongest evidence in the matrix that the
+CTCF improvement is a stable shape result rather than a one-sample artifact.
+Powered ZNF384 remained reproducibly weak (individual AUROC 0.616--0.622 in
+HepG2 and 0.617--0.636 in K562), so additional reads alone do not turn its
+aggregate depletion into occupancy discrimination.
