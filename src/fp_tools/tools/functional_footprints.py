@@ -1720,6 +1720,202 @@ class CovariateAnchoredFdaModel:
         return profiles[1] - profiles[0]
 
 
+class CovariateResidualizedFdaModel:
+    """Functional-PC mixture after removing label-free covariate trends.
+
+    Accessibility and motif strength can induce broad profile modes that an
+    unsupervised mixture mistakes for occupancy. This model regresses those
+    covariates from the functional-PC scores before fitting the two-state
+    mixture. Covariates are used only to remove their fitted contribution;
+    they are not added to the binding log odds.
+    """
+
+    def __init__(
+        self,
+        *,
+        variance_threshold: float = 0.95,
+        max_components: int = 20,
+        covariate_ridge: float = 10.0,
+        seed: int = 2026,
+    ):
+        if covariate_ridge < 0:
+            raise ValueError("covariate_ridge must be non-negative")
+        self.fpca = FunctionalPCA(variance_threshold, max_components, seed)
+        self.covariate_ridge = float(covariate_ridge)
+        self.seed = int(seed)
+        self.mixture: GaussianMixture | None = None
+        self.binding_component_: int | None = None
+        self.positions_: np.ndarray | None = None
+        self.covariate_coefficients_: np.ndarray | None = None
+        self.motif_location_: float = 0.0
+        self.motif_scale_: float = 1.0
+        self.accessibility_location_: float = 0.0
+        self.accessibility_scale_: float = 1.0
+        self.temperature_: float = 1.0
+
+    def _design(
+        self,
+        motif_score: np.ndarray | None,
+        accessibility: np.ndarray | None,
+        length: int,
+        *,
+        fit: bool,
+    ) -> np.ndarray:
+        motif, motif_location, motif_scale = _standardize(
+            motif_score,
+            length,
+            location=None if fit else self.motif_location_,
+            scale=None if fit else self.motif_scale_,
+        )
+        log_accessibility = (
+            None
+            if accessibility is None
+            else np.log1p(np.maximum(np.asarray(accessibility, dtype=float), 0.0))
+        )
+        access, access_location, access_scale = _standardize(
+            log_accessibility,
+            length,
+            location=None if fit else self.accessibility_location_,
+            scale=None if fit else self.accessibility_scale_,
+        )
+        if fit:
+            self.motif_location_, self.motif_scale_ = motif_location, motif_scale
+            self.accessibility_location_, self.accessibility_scale_ = (
+                access_location,
+                access_scale,
+            )
+        return np.column_stack([np.ones(length), motif, access])
+
+    @staticmethod
+    def _component_log_probabilities(
+        scores: np.ndarray,
+        mixture: GaussianMixture,
+    ) -> np.ndarray:
+        covariance = np.maximum(mixture.covariances_, 1e-8)
+        difference = scores[:, None, :] - mixture.means_[None, :, :]
+        log_density = -0.5 * np.sum(
+            np.square(difference) / covariance[None, :, :]
+            + np.log(2.0 * np.pi * covariance)[None, :, :],
+            axis=2,
+        )
+        return log_density + np.log(np.maximum(mixture.weights_, 1e-12))[None, :]
+
+    def fit(
+        self,
+        residual_profiles: np.ndarray,
+        *,
+        motif_score: np.ndarray | None = None,
+        accessibility: np.ndarray | None = None,
+        positions: np.ndarray | None = None,
+        sample_weight: np.ndarray | None = None,
+    ) -> "CovariateResidualizedFdaModel":
+        raw = _validate_profiles(residual_profiles)
+        x = (
+            np.asarray(positions, dtype=float)
+            if positions is not None
+            else np.arange(raw.shape[1], dtype=float) - raw.shape[1] // 2
+        )
+        values = normalize_functional_profiles(raw, x)
+        weights = (
+            np.ones(len(values), dtype=float)
+            if sample_weight is None
+            else np.asarray(sample_weight, dtype=float)
+        )
+        if weights.shape != (len(values),) or np.any(weights < 0) or not np.any(weights > 0):
+            raise ValueError("sample_weight must be non-negative with one positive value")
+        regression_weights = weights / np.mean(weights)
+        scores = self.fpca.fit_transform(values, sample_weight=weights)
+        design = self._design(motif_score, accessibility, len(values), fit=True)
+        penalty = np.eye(design.shape[1], dtype=float) * self.covariate_ridge
+        penalty[0, 0] = 1e-8
+        system = design.T @ (design * regression_weights[:, None]) + penalty
+        right = design.T @ (scores * regression_weights[:, None])
+        self.covariate_coefficients_ = np.linalg.solve(system, right)
+        residual_scores = scores - design @ self.covariate_coefficients_
+
+        residual_profiles_pc = residual_scores @ self.fpca.components_
+        position_span = float(np.max(np.abs(x)))
+        center_limit = min(5.0, max(1.0, position_span * 0.2))
+        flank_start = min(15.0, max(center_limit + 1.0, position_span * 0.3))
+        flank_end = min(40.0, max(flank_start + 1.0, position_span * 0.8))
+        center_mask = np.abs(x) <= center_limit
+        flank_mask = (np.abs(x) >= flank_start) & (np.abs(x) <= flank_end)
+        if not np.any(center_mask) or not np.any(flank_mask):
+            raise ValueError("positions do not span usable center and flank intervals")
+        center = residual_profiles_pc[:, center_mask].mean(axis=1)
+        flanks = residual_profiles_pc[:, flank_mask].mean(axis=1)
+        shape_score = flanks - center
+        lower = residual_scores[shape_score <= np.quantile(shape_score, 0.35)]
+        upper = residual_scores[shape_score >= np.quantile(shape_score, 0.65)]
+        means_init = None
+        if len(lower) and len(upper):
+            means_init = np.vstack([np.mean(lower, axis=0), np.mean(upper, axis=0)])
+        self.mixture = GaussianMixture(
+            n_components=2,
+            covariance_type="diag",
+            reg_covar=1e-5,
+            n_init=5,
+            random_state=self.seed,
+            means_init=means_init,
+        ).fit(residual_scores)
+        component_profiles = self.fpca.inverse_transform(self.mixture.means_)
+        descriptors = [profile_descriptors(profile, x) for profile in component_profiles]
+        self.binding_component_ = int(np.argmax([item.depletion for item in descriptors]))
+        self.positions_ = x
+        other = 1 - self.binding_component_
+        log_probabilities = self._component_log_probabilities(
+            residual_scores, self.mixture
+        )
+        log_ratio = (
+            log_probabilities[:, self.binding_component_] - log_probabilities[:, other]
+        )
+        finite = np.abs(log_ratio[np.isfinite(log_ratio)])
+        robust_range = float(np.quantile(finite, 0.95)) if len(finite) else 1.0
+        self.temperature_ = max(1.0, robust_range / 8.0)
+        return self
+
+    def transform_residual_scores(
+        self,
+        residual_profiles: np.ndarray,
+        *,
+        motif_score: np.ndarray | None = None,
+        accessibility: np.ndarray | None = None,
+    ) -> np.ndarray:
+        if self.positions_ is None or self.covariate_coefficients_ is None:
+            raise ValueError("covariate-residualized FDA model has not been fitted")
+        values = normalize_functional_profiles(residual_profiles, self.positions_)
+        scores = self.fpca.transform(values)
+        design = self._design(motif_score, accessibility, len(values), fit=False)
+        return scores - design @ self.covariate_coefficients_
+
+    def predict_proba(
+        self,
+        residual_profiles: np.ndarray,
+        *,
+        motif_score: np.ndarray | None = None,
+        accessibility: np.ndarray | None = None,
+    ) -> np.ndarray:
+        if self.mixture is None or self.binding_component_ is None:
+            raise ValueError("covariate-residualized FDA model has not been fitted")
+        scores = self.transform_residual_scores(
+            residual_profiles,
+            motif_score=motif_score,
+            accessibility=accessibility,
+        )
+        other = 1 - self.binding_component_
+        log_probabilities = self._component_log_probabilities(scores, self.mixture)
+        log_ratio = (
+            log_probabilities[:, self.binding_component_] - log_probabilities[:, other]
+        )
+        return expit(np.clip(log_ratio / self.temperature_, -30.0, 30.0))
+
+    def profile_difference(self) -> np.ndarray:
+        if self.mixture is None or self.binding_component_ is None:
+            raise ValueError("covariate-residualized FDA model has not been fitted")
+        profiles = self.fpca.inverse_transform(self.mixture.means_)
+        return profiles[self.binding_component_] - profiles[1 - self.binding_component_]
+
+
 class HybridFdaGpModel:
     """FDA initialization followed by a GP-smoothed profile likelihood."""
 

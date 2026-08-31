@@ -31,6 +31,7 @@ from evaluate_strand_functional_templates import load_artifact  # noqa: E402
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
     CovariateAnchoredFdaModel,
+    CovariateResidualizedFdaModel,
     FdaMixtureModel,
     HybridFdaGpModel,
     normalize_functional_profiles,
@@ -57,6 +58,7 @@ class Candidate:
     channel: str = "combined_residual"
     training_pool: str = "tf"
     anchor_strength: float = 0.0
+    covariate_ridge: float = 0.0
 
 
 def candidate_grid() -> list[Candidate]:
@@ -95,6 +97,17 @@ def candidate_grid() -> list[Candidate]:
                         channel=channel,
                         training_pool=training_pool,
                         anchor_strength=anchor_strength,
+                    )
+                )
+            for covariate_ridge in (1.0, 10.0, 100.0):
+                ridge_label = str(covariate_ridge).replace(".", "p")
+                candidates.append(
+                    Candidate(
+                        f"residualized-fda.{channel}.pool_{training_pool}.ridge_{ridge_label}",
+                        "residualized-fda",
+                        channel=channel,
+                        training_pool=training_pool,
+                        covariate_ridge=covariate_ridge,
                     )
                 )
     return candidates
@@ -169,8 +182,10 @@ def _evaluate_candidate(
         "bias_configuration": bias_configuration,
         **asdict(candidate),
         "training_labels_used": False,
-        "motif_or_accessibility_features_used": candidate.family == "anchored-fda",
-        "evaluation_motif_or_accessibility_features_used": False,
+        "motif_or_accessibility_features_used": candidate.family
+        in {"anchored-fda", "residualized-fda"},
+        "evaluation_motif_or_accessibility_features_used": candidate.family
+        == "residualized-fda",
         "tf_training_sites": int(len(tf_train)),
         "family_training_sites": int(len(family_train)),
         "validation_sites": int(len(validation)),
@@ -280,6 +295,38 @@ def _evaluate_candidate(
                 profile = model.profile_difference()
                 converged = bool(model.converged_)
                 iterations = int(model.iterations_)
+            elif candidate.family == "residualized-fda":
+                coverage = (
+                    train_profiles["plus_observed"][indexes]
+                    + train_profiles["minus_observed"][indexes]
+                ).sum(axis=1)
+                evaluation_coverage = (
+                    evaluation_profiles["plus_observed"][validation]
+                    + evaluation_profiles["minus_observed"][validation]
+                ).sum(axis=1)
+                model = CovariateResidualizedFdaModel(
+                    max_components=20,
+                    covariate_ridge=candidate.covariate_ridge,
+                    seed=model_seed,
+                ).fit(
+                    train_shape,
+                    motif_score=train_sites.iloc[indexes]["motif_score"].to_numpy(
+                        dtype=float
+                    ),
+                    accessibility=coverage,
+                    positions=positions,
+                    sample_weight=weights,
+                )
+                probabilities = model.predict_proba(
+                    validation_shape,
+                    motif_score=evaluation_sites.iloc[validation]["motif_score"].to_numpy(
+                        dtype=float
+                    ),
+                    accessibility=evaluation_coverage,
+                )
+                profile = model.profile_difference()
+                converged = True
+                iterations = int(model.mixture.n_iter_) if model.mixture is not None else 0
             elif candidate.family == "fda":
                 model = FdaMixtureModel(max_components=20, seed=model_seed).fit(
                     train_shape,

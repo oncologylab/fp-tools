@@ -126,16 +126,26 @@ def test_loaded_strand_artifact_includes_raw_counts(tmp_path: Path) -> None:
 
 def test_label_free_grid_and_label_firewall() -> None:
     candidates = label_free_candidate_grid()
-    assert len(candidates) == 48
+    assert len(candidates) == 66
     assert {candidate.family for candidate in candidates} == {
         "count",
         "fda",
         "hybrid",
         "anchored-fda",
+        "residualized-fda",
     }
     anchored = [candidate for candidate in candidates if candidate.family == "anchored-fda"]
     assert len(anchored) == 18
     assert {candidate.anchor_strength for candidate in anchored} == {0.5, 1.0, 2.0}
+    residualized = [
+        candidate for candidate in candidates if candidate.family == "residualized-fda"
+    ]
+    assert len(residualized) == 18
+    assert {candidate.covariate_ridge for candidate in residualized} == {
+        1.0,
+        10.0,
+        100.0,
+    }
     validate_unlabeled_training_sites(
         pd.DataFrame({"tf": ["A"], "chromosome_split": ["train"]}),
         "safe.tsv",

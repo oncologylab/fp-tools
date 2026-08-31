@@ -9,6 +9,7 @@ from sklearn.metrics import roc_auc_score
 from fp_tools.tools.functional_footprints import (
     BiasAwareFunctionalMixture,
     CovariateAnchoredFdaModel,
+    CovariateResidualizedFdaModel,
     construct_strand_functional_profiles,
     ExactAdditiveGPSmoother,
     FdaMixtureModel,
@@ -356,6 +357,43 @@ def test_covariate_anchored_fda_separates_shape_from_prior() -> None:
     assert model.converged_
     assert roc_auc_score(labels, shape) > 0.70
     assert shape.shape == prior.shape == labels.shape
+    assert model.profile_difference().shape == _positions().shape
+
+
+def test_covariate_residualized_fda_removes_accessibility_pc_trend() -> None:
+    observed, expected, labels, motif_score = _synthetic_counts(seed=31)
+    residuals = deviance_profiles(observed, expected, dispersion=0.02)
+    accessibility = observed.sum(axis=1)
+    model = CovariateResidualizedFdaModel(
+        max_components=12,
+        covariate_ridge=1.0,
+        seed=9,
+    ).fit(
+        residuals,
+        motif_score=motif_score,
+        accessibility=accessibility,
+        positions=_positions(),
+        sample_weight=np.sqrt(accessibility),
+    )
+    scores = model.transform_residual_scores(
+        residuals,
+        motif_score=motif_score,
+        accessibility=accessibility,
+    )
+    standardized_accessibility = (
+        np.log1p(accessibility) - np.mean(np.log1p(accessibility))
+    ) / np.std(np.log1p(accessibility))
+    correlations = [
+        abs(float(np.corrcoef(scores[:, index], standardized_accessibility)[0, 1]))
+        for index in range(scores.shape[1])
+    ]
+    probabilities = model.predict_proba(
+        residuals,
+        motif_score=motif_score,
+        accessibility=accessibility,
+    )
+    assert max(correlations) < 0.1
+    assert roc_auc_score(labels, probabilities) > 0.65
     assert model.profile_difference().shape == _positions().shape
 
 

@@ -42,6 +42,7 @@ from select_count_models_by_unlabeled_likelihood import make_model  # noqa: E402
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
     CovariateAnchoredFdaModel,
+    CovariateResidualizedFdaModel,
     FdaMixtureModel,
     HybridFdaGpModel,
     deviance_profiles,
@@ -299,6 +300,19 @@ def fit_strand_detector(
             positions=positions,
             sample_weight=weights,
         )
+    elif candidate.family == "residualized-fda":
+        coverage = observed[indexes].sum(axis=1)
+        model = CovariateResidualizedFdaModel(
+            max_components=20,
+            covariate_ridge=candidate.covariate_ridge,
+            seed=model_seed,
+        ).fit(
+            values,
+            motif_score=sites.iloc[indexes]["motif_score"].to_numpy(dtype=float),
+            accessibility=coverage,
+            positions=positions,
+            sample_weight=weights,
+        )
     elif candidate.family == "fda":
         model = FdaMixtureModel(max_components=20, seed=model_seed).fit(
             values, positions=positions, sample_weight=weights
@@ -401,6 +415,7 @@ def fit_dwm_detector(
 def predict_detector(
     fitted: FittedDetector,
     profiles: dict[str, np.ndarray],
+    sites: pd.DataFrame | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     observed, expected = _count_arrays(profiles)
     total_signal = observed.sum(axis=1)
@@ -421,6 +436,14 @@ def predict_detector(
                 residual
             )
             probabilities = expit(np.clip(shape_log_odds, -40.0, 40.0))
+        elif fitted.model_family == "residualized-fda":
+            if sites is None:
+                raise ValueError("residualized FDA prediction requires motif sites")
+            probabilities = fitted.model.predict_proba(
+                residual,
+                motif_score=sites["motif_score"].to_numpy(dtype=float),
+                accessibility=total_signal,
+            )
         else:
             probabilities = fitted.model.predict_proba(residual)
     return np.asarray(probabilities, dtype=float), total_signal, residual
@@ -640,7 +663,9 @@ def evaluate(
                 ("frozen_policy_candidate", candidate_model, naked_strand, candidate_id),
                 ("frozen_dwm_reference", reference_model, naked_dwm, reference_id),
             ):
-                probabilities, total_signal, residual = predict_detector(fitted, profiles)
+                probabilities, total_signal, residual = predict_detector(
+                    fitted, profiles, naked_sites
+                )
                 metrics, informative, calls = summarize_false_positives(
                     probabilities,
                     total_signal,

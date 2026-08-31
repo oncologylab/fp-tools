@@ -47,6 +47,7 @@ from evaluate_strand_label_free_models import (  # noqa: E402
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
     CovariateAnchoredFdaModel,
+    CovariateResidualizedFdaModel,
     FdaMixtureModel,
     HybridFdaGpModel,
     deviance_profiles,
@@ -914,6 +915,30 @@ def fit_strand_route(
             footprint = model.profile_difference()
             converged = bool(model.converged_)
             iterations = int(model.iterations_)
+        elif candidate.family == "residualized-fda":
+            model = CovariateResidualizedFdaModel(
+                max_components=20,
+                covariate_ridge=candidate.covariate_ridge,
+                seed=model_seed,
+            ).fit(
+                train_profiles,
+                motif_score=artifact.sites.iloc[indexes]["motif_score"].to_numpy(
+                    dtype=float
+                ),
+                accessibility=observed[indexes].sum(axis=1),
+                positions=positions,
+                sample_weight=weights,
+            )
+            probabilities = model.predict_proba(
+                evaluation_profiles,
+                motif_score=artifact.sites.iloc[evaluation_indexes]["motif_score"].to_numpy(
+                    dtype=float
+                ),
+                accessibility=observed[evaluation_indexes].sum(axis=1),
+            )
+            footprint = model.profile_difference()
+            converged = True
+            iterations = int(model.mixture.n_iter_) if model.mixture is not None else 0
         elif candidate.family == "fda":
             model = FdaMixtureModel(max_components=20, seed=model_seed).fit(
                 train_profiles, positions=positions, sample_weight=weights
