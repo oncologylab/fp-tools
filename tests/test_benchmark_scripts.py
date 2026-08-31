@@ -393,6 +393,11 @@ class TfFootprintModelSearchTest(unittest.TestCase):
         self.assertEqual(int(result.loc[0, "replicates"]), 2)
         self.assertAlmostEqual(float(result.loc[0, "auroc_mean"]), 0.85)
 
+    def test_classifier_panel_manifest_can_carry_explicit_cache(self):
+        row = next(pd.DataFrame([{"sample": "r1", "profile_cache": "/tmp/profile.npz"}]).itertuples(index=False))
+        result = evaluate_tf_classifier_signal_panel.resolve_profile_cache(row, pathlib.Path("cache"), 100)
+        self.assertEqual(result, pathlib.Path("/tmp/profile.npz"))
+
     def test_random_seed_comparison_reports_stable_winner(self):
         first = pd.DataFrame(
             [

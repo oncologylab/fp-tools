@@ -44,6 +44,13 @@ def feature_from_row(row) -> FeatureSpec:
     )
 
 
+def resolve_profile_cache(signal, panel_cache: Path, flank: int) -> Path:
+    explicit = getattr(signal, "profile_cache", None)
+    if explicit is not None and pd.notna(explicit):
+        return Path(explicit)
+    return panel_cache / f"{signal.sample}.flank{flank}.npz"
+
+
 def evaluate(
     development_sites: pd.DataFrame,
     test_sites: pd.DataFrame,
@@ -81,7 +88,7 @@ def evaluate(
 
         scores_by_depth: dict[str, dict[str, list[np.ndarray]]] = {}
         for signal in panel[panel["cell"] == cell].itertuples(index=False):
-            cache = panel_cache / f"{signal.sample}.flank{flank}.npz"
+            cache = resolve_profile_cache(signal, panel_cache, flank)
             profiles = np.load(cache)["profiles"]
             if len(profiles) != len(cell_test):
                 raise ValueError(f"site/profile row mismatch: {cache}")
