@@ -148,6 +148,14 @@ a separately planned breaking release explicitly changes the contract.
   Model files use checksummed NPZ plus JSON rather than executable pickle.
   These APIs remain research-only until the GM12878/IMR-90, naked-DNA,
   uncertainty, runtime, and non-regression gates pass.
+- A label-free parametric-bias benchmark now extracts GC-matched low-signal
+  nonpeak or mitochondrial control windows, tests +4/-5 and +4/-4, fits
+  SELMA-equivalent adjacent-simplex and 81-bp interaction models, and compares
+  sample, pooled, and pooled-plus-adapted estimates. Validation likelihood must
+  improve over the uniform conditional control before any model advances. The
+  functional benchmark can consume a frozen NPZ model directly and derive
+  total-preserving expected motif-site profiles without producing genome-wide
+  intermediate tracks.
 
 ## Current ENCODE Resource
 

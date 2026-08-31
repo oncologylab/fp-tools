@@ -15,11 +15,16 @@ from evaluate_functional_footprints import (  # noqa: E402
     build_unlabeled_training_sites,
     chromosome_split,
     classify_failures,
+    derive_parametric_expected_profiles,
     fit_supervised_ceiling,
     residual_score,
     site_hashes,
     stable_seed,
     validate_sites,
+)
+from fp_tools.tools.parametric_bias import (  # noqa: E402
+    BiasFeatureSpec,
+    ConditionalSequenceBiasModel,
 )
 
 
@@ -195,3 +200,45 @@ def test_failure_classification_separates_assay_and_shape_limits() -> None:
     assert classified.loc["NO_INFO", "classification"] == "assay_limited_or_motif_ambiguous"
     assert classified.loc["DETECTABLE", "classification"] == "detectable"
     assert classified.loc["MODEL_LIMIT", "classification"] == "shape_model_limited"
+
+
+def test_parametric_expected_profiles_preserve_site_totals(tmp_path: Path) -> None:
+    pysam = pytest.importorskip("pysam")
+    genome = tmp_path / "genome.fa"
+    genome.write_text(">chr1\n" + "ACGT" * 300 + "\n", encoding="utf-8")
+    pysam.faidx(str(genome))
+    model = ConditionalSequenceBiasModel(BiasFeatureSpec.selma10())
+    model.main[4, 0] = 1.5
+    model.main[4] -= model.main[4].mean()
+    model_path, _ = model.save(tmp_path / "bias")
+    sites = pd.DataFrame(
+        {
+            "TFBS_chr": ["chr1", "chr1"],
+            "TFBS_start": [480, 680],
+            "TFBS_end": [490, 690],
+            "TFBS_strand": ["+", "-"],
+            "tf": ["A", "A"],
+        }
+    )
+    observed = np.zeros((2, 101), dtype=np.float32)
+    observed[0, 20:80] = 2.0
+    observed[1, 10:90] = 1.0
+    expected = derive_parametric_expected_profiles(
+        sites,
+        observed,
+        model_path,
+        genome,
+        tmp_path / "expected.npz",
+        flank=50,
+    )
+    assert np.allclose(expected.sum(axis=1), observed.sum(axis=1))
+    assert np.std(expected[0]) > 0
+    cached = derive_parametric_expected_profiles(
+        sites,
+        observed,
+        model_path,
+        genome,
+        tmp_path / "expected.npz",
+        flank=50,
+    )
+    assert np.array_equal(cached, expected)

@@ -398,6 +398,33 @@ both directions of all 21 unordered comparisons through two selectors.
 
 ### Functional footprint research
 
+`evaluate_parametric_bias.py` runs the enzyme-bias stage before functional
+model selection. It compares +4/-5 with +4/-4, fits the SELMA-style 10-mer and
+81-bp log-linear models, and evaluates sample-specific, cross-cell pooled, and
+pooled-plus-adapted fits using held-out control likelihood. A configuration is
+not retained unless it beats the uniform conditional control on validation
+chromosomes. Control-window caches include every extraction parameter and
+input file identity.
+
+```bash
+.venv/bin/python benchmarks/scripts/evaluate_parametric_bias.py \
+  --study benchmarks/manifests/footprint_functional_v1.spec.json \
+  --sample K562=<K562-coordinate-sorted.bam> \
+  --sample HepG2=<HepG2-coordinate-sorted.bam> \
+  --genome <hg38.fa> \
+  --peaks <merged-peaks.bed> \
+  --blacklist <hg38-blacklist.bed> \
+  --source gc_matched_low_signal_nonpeak \
+  --outdir benchmarks/results/footprint_parametric_v1/nonpeak
+```
+
+Use matched unfiltered BAMs with `--source mitochondrial`; the fixed chrM
+windows are deterministically divided into development and validation
+partitions. Training-depth arms use binomial thinning with recorded seeds. The
+benchmark writes strand-aligned cut motifs, likelihood/calibration metrics,
+safe model artifacts, and the two configurations eligible for the downstream
+functional screen. It never reads the locked test chromosomes.
+
 `evaluate_functional_footprints.py` compares label-free spline, FDA,
 Gaussian-process-equivalent, and hybrid footprint models on identical matched
 motif sites. Its deployable candidates train on motif pools that contain no
@@ -413,6 +440,16 @@ reported supervised information ceiling. Test scoring requires
   --unlabeled-sites HepG2=<HepG2-motif-sites.tsv.gz> \
   --tracks <raw-expected-track-manifest.tsv> \
   --outdir benchmarks/results/footprint_functional_v1/development
+```
+
+For a retained parametric model, add a `parametric_model` row beside the raw
+track in the track manifest and supply `--genome`. Expected site profiles are
+then derived from the frozen model and retain each site's observed total:
+
+```text
+cell   model            track              signal
+K562   loglinear81_v1   raw                <K562-uncorrected.bw>
+K562   loglinear81_v1   parametric_model   <K562-loglinear81.npz>
 ```
 
 The output records input hashes, frozen model choices, per-site probabilities,

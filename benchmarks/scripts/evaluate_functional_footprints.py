@@ -10,7 +10,6 @@ separate supervised information ceiling.  Test data cannot be scored unless
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict
 from hashlib import blake2b, sha256
 import json
 from pathlib import Path
@@ -41,10 +40,13 @@ from fp_tools.tools.functional_footprints import (  # noqa: E402
     orient_profiles,
 )
 from fp_tools.tools.parametric_bias import (  # noqa: E402
+    ConditionalSequenceBiasModel,
     calibrated_residuals,
     center_flank_likelihood_score,
+    combined_strand_log_bias,
     estimate_nb_dispersion,
 )
+from fp_tools.utils.fasta import open_fasta  # noqa: E402
 
 
 LABEL_FREE_MODELS = ("spline", "gp", "fda", "hybrid")
@@ -206,19 +208,104 @@ def load_or_extract_profiles(
 ) -> np.ndarray:
     cache_path = Path(cache)
     expected_hashes = site_hashes(sites)
+    signal_path = Path(signal).expanduser().resolve()
+    signal_stat = signal_path.stat()
+    signal_identity = f"{signal_path}:{signal_stat.st_size}:{signal_stat.st_mtime_ns}"
     if cache_path.is_file():
         with np.load(cache_path, allow_pickle=False) as arrays:
             profiles = np.asarray(arrays["profiles"], dtype=np.float32)
             hashes = np.asarray(arrays["site_hash"], dtype=np.uint64)
-        if profiles.shape != (len(sites), flank * 2 + 1) or not np.array_equal(hashes, expected_hashes):
-            raise ValueError(f"profile cache does not match the requested sites: {cache_path}")
-        return profiles
-    profiles, valid = extract_profiles(sites, Path(signal), flank)
+            cached_identity = str(arrays["signal_identity"].item()) if "signal_identity" in arrays else ""
+        if (
+            profiles.shape == (len(sites), flank * 2 + 1)
+            and np.array_equal(hashes, expected_hashes)
+            and cached_identity == signal_identity
+        ):
+            return profiles
+    profiles, valid = extract_profiles(sites, signal_path, flank)
     if not np.all(valid):
         profiles = np.nan_to_num(profiles, nan=0.0)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(cache_path, profiles=profiles, valid=valid, site_hash=expected_hashes)
+    np.savez_compressed(
+        cache_path,
+        profiles=profiles,
+        valid=valid,
+        site_hash=expected_hashes,
+        signal_identity=np.asarray(signal_identity),
+    )
     return profiles
+
+
+def derive_parametric_expected_profiles(
+    sites: pd.DataFrame,
+    observed: np.ndarray,
+    model_path: str | Path,
+    genome: str | Path,
+    cache: str | Path,
+    flank: int,
+) -> np.ndarray:
+    """Predict site-level expected cuts from a frozen parametric bias model."""
+
+    cache_path = Path(cache)
+    expected_hashes = site_hashes(sites)
+    model_path = Path(model_path).expanduser().resolve()
+    model_digest = file_sha256(model_path)
+    raw_digest = sha256(np.ascontiguousarray(observed, dtype=np.float32).tobytes()).hexdigest()
+    genome_path = Path(genome).expanduser().resolve()
+    genome_stat = genome_path.stat()
+    genome_identity = f"{genome_path}:{genome_stat.st_size}:{genome_stat.st_mtime_ns}"
+    if cache_path.is_file():
+        with np.load(cache_path, allow_pickle=False) as arrays:
+            profiles = np.asarray(arrays["profiles"], dtype=np.float32)
+            hashes = np.asarray(arrays["site_hash"], dtype=np.uint64)
+            cached_model = str(arrays["model_sha256"].item())
+            cached_raw = str(arrays["raw_sha256"].item())
+            cached_genome = str(arrays["genome_identity"].item())
+        if (
+            profiles.shape == observed.shape
+            and np.array_equal(hashes, expected_hashes)
+            and cached_model == model_digest
+            and cached_raw == raw_digest
+            and cached_genome == genome_identity
+        ):
+            return profiles
+
+    model = ConditionalSequenceBiasModel.load(model_path)
+    width = flank * 2 + 1
+    if observed.shape != (len(sites), width):
+        raise ValueError("observed profiles do not match sites and flank")
+    margin = max(41, model.feature_spec.context_length // 2 + 1)
+    positions = margin + np.arange(width)
+    expected = np.zeros_like(observed, dtype=np.float32)
+    with open_fasta(genome_path) as fasta:
+        lengths = dict(zip(fasta.references, fasta.lengths))
+        for index, row in enumerate(sites.itertuples(index=False)):
+            chromosome = str(row.TFBS_chr)
+            center = (int(row.TFBS_start) + int(row.TFBS_end)) // 2
+            start = center - flank - margin
+            end = center + flank + margin + 1
+            if chromosome not in lengths or start < 0 or end > lengths[chromosome]:
+                continue
+            sequence = fasta.fetch(chromosome, start, end).upper()
+            log_bias = combined_strand_log_bias(model, sequence, positions)
+            finite = np.isfinite(log_bias)
+            total = float(np.sum(observed[index]))
+            if total <= 0 or not finite.any():
+                continue
+            centered = np.where(finite, log_bias - np.max(log_bias[finite]), -np.inf)
+            propensity = np.exp(centered)
+            propensity /= max(float(propensity.sum()), np.finfo(float).tiny)
+            expected[index] = (total * propensity).astype(np.float32)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        cache_path,
+        profiles=expected,
+        site_hash=expected_hashes,
+        model_sha256=np.asarray(model_digest),
+        raw_sha256=np.asarray(raw_digest),
+        genome_identity=np.asarray(genome_identity),
+    )
+    return expected
 
 
 def binary_metrics(labels: np.ndarray, scores: np.ndarray) -> dict[str, float | int]:
@@ -386,24 +473,38 @@ def _evaluation_profiles(
     cache_dir: Path,
     cache_label: str,
     flank: int,
+    genome: Path | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     selected = tracks[(tracks["cell"] == cell) & (tracks["model"] == correction)]
     paths = {str(row.track): Path(row.signal) for row in selected.itertuples(index=False)}
-    missing = {"raw", "expected"}.difference(paths)
-    if missing:
-        raise ValueError(f"tracks are missing {cell}/{correction}: {', '.join(sorted(missing))}")
+    if "raw" not in paths:
+        raise ValueError(f"tracks are missing {cell}/{correction}: raw")
     raw = load_or_extract_profiles(
         sites,
         paths["raw"],
         cache_dir / f"{cache_label}.{cell}.{correction}.raw.flank{flank}.npz",
         flank,
     )
-    expected = load_or_extract_profiles(
-        sites,
-        paths["expected"],
-        cache_dir / f"{cache_label}.{cell}.{correction}.expected.flank{flank}.npz",
-        flank,
-    )
+    if "expected" in paths:
+        expected = load_or_extract_profiles(
+            sites,
+            paths["expected"],
+            cache_dir / f"{cache_label}.{cell}.{correction}.expected.flank{flank}.npz",
+            flank,
+        )
+    elif "parametric_model" in paths:
+        if genome is None:
+            raise ValueError("--genome is required when a parametric_model track is supplied")
+        expected = derive_parametric_expected_profiles(
+            sites,
+            raw,
+            paths["parametric_model"],
+            genome,
+            cache_dir / f"{cache_label}.{cell}.{correction}.parametric_expected.flank{flank}.npz",
+            flank,
+        )
+    else:
+        raise ValueError(f"tracks are missing {cell}/{correction}: expected or parametric_model")
     strands = sites["TFBS_strand"].astype(str).to_numpy()
     return orient_profiles(raw, strands), orient_profiles(expected, strands)
 
@@ -541,6 +642,7 @@ def evaluate(
     flank: int,
     minimum_evaluation_sites: int,
     seed: int,
+    genome: Path | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     tasks = pd.DataFrame(study["tasks"])
     tasks = tasks[tasks["split"] == "development"].copy()
@@ -584,6 +686,7 @@ def evaluate(
                 cache_dir,
                 "unlabeled",
                 flank,
+                genome,
             )
             dispersion = estimate_nb_dispersion(train_observed, train_expected)
             development_observed, development_expected = _evaluation_profiles(
@@ -594,6 +697,7 @@ def evaluate(
                 cache_dir,
                 "development",
                 flank,
+                genome,
             )
             cell_development["accessibility"] = development_observed.sum(axis=1)
             test_profiles = (
@@ -605,6 +709,7 @@ def evaluate(
                     cache_dir,
                     "test",
                     flank,
+                    genome,
                 )
                 if cell_test is not None and len(cell_test)
                 else None
@@ -854,6 +959,7 @@ def main(argv: list[str] | None = None) -> int:
         metavar="CELL=PATH",
     )
     parser.add_argument("--tracks", type=Path, required=True)
+    parser.add_argument("--genome", type=Path)
     parser.add_argument("--outdir", type=Path, required=True)
     parser.add_argument("--corrections", nargs="+", default=["DWM", "PWM"])
     parser.add_argument("--models", nargs="+", choices=LABEL_FREE_MODELS, default=list(LABEL_FREE_MODELS))
@@ -899,6 +1005,7 @@ def main(argv: list[str] | None = None) -> int:
         flank=args.flank,
         minimum_evaluation_sites=args.minimum_evaluation_sites,
         seed=args.seed,
+        genome=args.genome,
     )
     metrics.to_csv(args.outdir / "functional_metrics.tsv", sep="\t", index=False)
     scores.to_csv(args.outdir / "functional_site_scores.tsv.gz", sep="\t", index=False)
@@ -920,6 +1027,8 @@ def main(argv: list[str] | None = None) -> int:
         },
         "tracks": str(args.tracks),
         "tracks_sha256": file_sha256(args.tracks),
+        "genome": str(args.genome) if args.genome else None,
+        "genome_sha256": file_sha256(args.genome) if args.genome else None,
         "corrections": args.corrections,
         "models": args.models,
         "maximum_unlabeled_sites_per_tf": args.maximum_unlabeled_sites_per_tf,

@@ -55,9 +55,16 @@ class BiasFeatureSpec:
 
     @classmethod
     def selma10(cls) -> "BiasFeatureSpec":
-        """Compact 10-mer model with adjacent and Tn5-dimer interactions."""
+        """SELMA-style 10-mer simplex basis.
 
-        return cls("selma10", 10, (1, 9))
+        With sum-to-zero nucleotide effects and double-centered adjacent
+        interactions this is algebraically equivalent to SELMA's tetrahedral
+        mononucleotide and outer-product dinucleotide encoding: 3 parameters
+        per base and 9 per adjacent pair.  Strand orientation is handled by
+        reverse-complementing reverse-cut contexts before scoring.
+        """
+
+        return cls("selma10", 10, (1,))
 
     @classmethod
     def loglinear81(cls) -> "BiasFeatureSpec":
@@ -177,7 +184,6 @@ class ConditionalSequenceBiasModel:
         scores = np.zeros(len(flat), dtype=np.float64)
         valid_flat = flat[valid]
         if len(valid_flat):
-            row_index = np.arange(len(valid_flat))
             for position in range(self.feature_spec.context_length):
                 scores[valid] += self.main[position, valid_flat[:, position]]
             for distance, coefficients in self.pairs.items():
@@ -460,6 +466,38 @@ def expected_from_log_bias(
     if expected_sum > 0:
         expected *= observed_sum / expected_sum
     return expected
+
+
+def combined_strand_log_bias(
+    model: ConditionalSequenceBiasModel,
+    sequence: str | np.ndarray,
+    positions: Iterable[int],
+) -> np.ndarray:
+    """Score combined forward- and reverse-strand cut propensity.
+
+    This is useful when the observed cut track does not retain strand.  The
+    returned value is the log of the equal-weight mixture of a forward context
+    and the reverse-complemented context at each genomic position.  Invalid
+    boundary or ambiguous-base positions are returned as ``-inf``.
+    """
+
+    position_array = np.asarray(list(positions), dtype=np.int64)
+    forward, forward_valid = contexts_from_sequence(
+        sequence,
+        position_array,
+        model.feature_spec.context_length,
+    )
+    reverse, reverse_valid = contexts_from_sequence(
+        sequence,
+        position_array,
+        model.feature_spec.context_length,
+        strands=np.ones(len(position_array), dtype=bool),
+    )
+    forward_scores = model.log_scores(forward[None, :, :])[0]
+    reverse_scores = model.log_scores(reverse[None, :, :])[0]
+    scores = logsumexp(np.stack([forward_scores, reverse_scores]), axis=0) - np.log(2.0)
+    scores[~(forward_valid & reverse_valid)] = -np.inf
+    return scores
 
 
 def estimate_nb_dispersion(observed: np.ndarray, expected: np.ndarray) -> float:

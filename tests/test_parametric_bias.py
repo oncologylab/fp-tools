@@ -10,6 +10,7 @@ from fp_tools.tools.parametric_bias import (
     ConditionalSequenceBiasModel,
     calibrated_residuals,
     center_flank_likelihood_score,
+    combined_strand_log_bias,
     contexts_from_sequence,
     encode_sequence,
     estimate_nb_dispersion,
@@ -120,6 +121,24 @@ def test_calibrated_residuals_and_expected_signal() -> None:
     assert predicted.sum() == pytest.approx(6.0)
 
 
+def test_combined_strand_bias_is_reverse_complement_symmetric() -> None:
+    contexts, counts = _synthetic_conditional_data()
+    model = ConditionalSequenceBiasModel(BiasFeatureSpec("test", 5, (1,))).fit(
+        contexts,
+        counts,
+        epochs=20,
+        batch_windows=45,
+        seed=4,
+    )
+    sequence = "AACCGTTAGCTAGGCTAACCGT"
+    positions = np.arange(3, len(sequence) - 3)
+    forward = combined_strand_log_bias(model, sequence, positions)
+    reverse_sequence = "".join({"A": "T", "C": "G", "G": "C", "T": "A"}[base] for base in sequence[::-1])
+    reverse_positions = len(sequence) - 1 - positions[::-1]
+    reverse = combined_strand_log_bias(model, reverse_sequence, reverse_positions)
+    assert np.allclose(forward, reverse[::-1])
+
+
 def test_center_flank_likelihood_detects_protection() -> None:
     expected = np.full((2, 101), 5.0)
     observed = expected.copy()
@@ -134,4 +153,3 @@ def test_center_flank_likelihood_detects_protection() -> None:
     )
     assert scores[0] > 0
     assert scores[1] < 0
-
