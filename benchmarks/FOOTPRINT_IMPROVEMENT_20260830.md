@@ -158,3 +158,57 @@ so it is a hypothesis for a new preregistered experiment, not a validated
 promotion result. The full matrix now includes an explicit `fp_tools_hybrid`
 method arm so that hypothesis can be tested without overwriting the standard
 score.
+
+## Per-TF geometry search with accessibility-matched labels
+
+The universal hybrid was too small and inconsistent to justify production.
+The next experiment therefore searched each TF separately across raw, PWM,
+and DWM signals; 5--49 bp centers; 4--64 bp shoulders; 0--12 bp gaps; mean or
+minimum shoulders; mean, minimum, or lower-quartile centers; five local scale
+models; and four asymmetry penalties. Geometry was screened on chromosomes
+1--16, candidates were shortlisted on chromosomes 17--18, and chromosomes
+19--22/X were not read until the candidates were frozen.
+
+ENCODE discovery found released replicate-aware GRCh38 IDR ChIP peaks for all
+21 K562/HepG2 development tasks. Twelve unique JASPAR 2026 motifs produced
+cell-specific motif scans within each cell line's released ATAC peaks.
+Positive labels required ChIP peak and summit support; ambiguous near-peak
+sites were excluded. A fivefold negative pool was optimally matched to
+positives on motif score and local raw ATAC coverage. Tasks without common
+support or adequate positive counts remain explicitly confounded or
+underpowered.
+
+The quick staged search evaluated roughly two thousand hypotheses per TF and
+selected different correction/geometry families rather than one global rule.
+The frozen matched-site test produced:
+
+| Task | Test AUROC delta | Test AUPRC delta | Candidate test AUROC |
+| --- | ---: | ---: | ---: |
+| K562 CTCF | +0.1615 | +0.1809 | 0.7732 |
+| HepG2 CTCF | +0.1383 | +0.1651 | 0.7531 |
+| K562 MEF2A | +0.1439 | +0.1312 | 0.6639 |
+| K562 ARID3A | +0.0752 | +0.0579 | 0.5931 |
+| HepG2 MYC | +0.0768 | +0.0379 | 0.6075 |
+| K562 MEF2D | +0.0593 | +0.0517 | 0.6005 |
+
+The same test rejected universal application: K562 FOXA1, MYC, and TCF7L2;
+HepG2 FOXA1, ZNF384, and ZNF558 were flat or worse, and several had inadequate
+common support or fewer than 100 positive test sites. Aggregate figures show a
+large, visually distinct CTCF depletion and paired shoulders, while many weak
+TFs retain overlapping, noisy positive/negative profiles. Thus the principal
+problem is a mixture of fixed-kernel mismatch, TF-specific correction effects,
+low depth, underpowered occupancy labels, and genuine absence of stable
+aggregate shape—not correction alone.
+
+Applying the prespecified minimum of 500 positive sites plus matching-balance
+checks leaves only K562 and HepG2 CTCF as strong, balanced, point-gain-passing
+results. HepG2/K562 ZNF384 are adequately powered but not detected; HepG2
+ZNF362 and K562 MYC remain accessibility-confounded; the remaining tasks are
+underpowered on test chromosomes even when their exploratory deltas are large.
+This separation prevents attractive small-sample gains from being presented as
+validated TF improvements.
+
+These results justify continued depth, randomization, replicate, and new-cell
+validation, but not a main-branch scorer change. A future implementation must
+route only validated TF/family geometries and abstain when positive-site count,
+matching balance, replicate stability, or aggregate-shape reliability fails.

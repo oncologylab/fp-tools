@@ -128,6 +128,17 @@ a separately planned breaking release explicitly changes the contract.
   reproducibly improved CTCF and REST on locked K562/HepG2 chromosomes but
   regressed some JUND/MAX tasks, so it remains experimental and cannot replace
   the production `footprint` default.
+- A staged per-TF footprint research engine that searches correction arm,
+  center/shoulder geometry, local normalization, center statistic, and
+  asymmetry penalty on train chromosomes, freezes candidates on validation
+  chromosomes, and evaluates identical finite sites only after test unlock.
+  Reproducible ENCODE peak discovery, cell-specific motif scans, summit-based
+  labels, optimal motif/accessibility matching, matched legacy comparisons,
+  and bound/unbound aggregate figures support the experiment. The first
+  10-million-fragment test produced large CTCF gains and selective MEF2A,
+  MEF2D, ARID3A, and MYC gains, but also clear TF/context regressions and
+  underpowered tasks. It remains research-only and does not change the default
+  scorer.
 
 ## Current ENCODE Resource
 

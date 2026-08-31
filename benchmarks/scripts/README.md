@@ -20,6 +20,13 @@ Benchmark and validation helpers:
 - `evaluate_footprint_promotion.py`: compare a frozen candidate with the current method under the prespecified development or locked-holdout gates.
 - `evaluate_site_evidence_fusion.py`: test a frozen label-free footprint/PWM site-ranking candidate in the locked chromosome/cell sequence.
 - `evaluate_bigwig_site_scores.py`: extract base-resolution scores from correction/scoring ablation bigWigs at fixed ChIP-labeled motif centers.
+- `discover_encode_chip_peaks.py`: select unperturbed replicate-aware GRCh38 IDR ChIP peaks for the locked TF tasks and extract the required motif subset.
+- `build_encode_tf_site_matrix.py`: combine cell-specific motif scans with conservative ENCODE ChIP summit labels.
+- `search_tf_footprint_models.py`: run staged per-TF correction, geometry, normalization, and symmetry searches using train/validation chromosome separation.
+- `match_tf_sites_on_accessibility.py`: optimally match positive and negative motif sites on motif score and local raw ATAC coverage.
+- `compare_frozen_tf_candidates.py`: compare frozen TF candidates with legacy scores on identical finite sites.
+- `plot_frozen_tf_profiles.py`: plot matched ChIP-positive and ChIP-negative aggregate profiles for frozen candidates.
+- `summarize_tf_footprint_search.py`: apply prespecified site-count, matching-balance, detectability, and point-gain statuses to frozen tests.
 - `evaluate_nutrient_footprint_replication.py`: apply local cross-cell-line, RNA, external recovery, and occupancy replication tiers.
 - `manuscript/scripts/plot_benchmark_panels.py`: PDF/SVG/PNG multi-panel benchmark figures for the BioMedInformatics manuscript.
 - `manuscript/scripts/plot_calibration_panels.py`: PDF/SVG/PNG reliability curves and ECE panels.
@@ -175,6 +182,25 @@ centers without rerunning motif discovery:
 Metrics use the common finite site set across methods. With `--bootstrap`, the
 script also reports paired method-minus-baseline confidence intervals using
 chromosomes as resampling blocks.
+
+For TF-specific geometry experiments, first discover the locked ENCODE ChIP
+resources and build the cell-specific label matrix, then run the staged search.
+The search never reads test chromosomes unless `--profiles-only
+--chromosome-splits test` is explicitly requested after candidates are frozen.
+
+```bash
+.venv/bin/python benchmarks/scripts/discover_encode_chip_peaks.py \
+  --study benchmarks/manifests/footprint_detectability_v1.spec.json \
+  --outdir benchmarks/results/footprint_detectability_v1/encode_labels \
+  --motif-database data/public/raw/jaspar/2026/JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt \
+  --download
+
+.venv/bin/python benchmarks/scripts/search_tf_footprint_models.py \
+  --sites benchmarks/results/footprint_detectability_v1/encode_tf_site_labels.tsv.gz \
+  --signals benchmarks/results/footprint_detectability_v1/correction_signals.tsv \
+  --study benchmarks/manifests/footprint_detectability_v1.spec.json \
+  --outdir benchmarks/results/footprint_detectability_v1/per_tf_search
+```
 
 Candidate development uses K562 and HepG2 only. After its code and parameters
 are frozen, unlock the MCF-7, A549, HCT116, and Panc1 holdout exactly once:
