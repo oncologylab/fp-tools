@@ -12,6 +12,7 @@ from fp_tools.tools.functional_footprints import (
     construct_strand_functional_profiles,
     ExactAdditiveGPSmoother,
     FdaMixtureModel,
+    FunctionalTemplateDetector,
     FunctionalPCA,
     HybridFdaGpModel,
     PenalizedSplineSmoother,
@@ -65,6 +66,49 @@ def test_standardized_functional_separation_detects_curve_difference() -> None:
     )
     assert separated > 0.5
     assert separated > absent * 3
+
+
+@pytest.mark.parametrize("smoother", ["spline", "gp"])
+def test_shape_only_template_detector_transfers_footprint(smoother: str) -> None:
+    rng = np.random.default_rng(92)
+    x = _positions()
+    shape = _footprint_shape(x)
+
+    def sample(n: int) -> tuple[np.ndarray, np.ndarray]:
+        labels = rng.integers(0, 2, size=n)
+        broad = rng.normal(scale=0.2, size=(n, 1)) * (x / 50.0)[None, :]
+        profiles = broad + rng.normal(scale=0.45, size=(n, len(x)))
+        profiles += labels[:, None] * shape
+        return profiles, labels
+
+    train, train_labels = sample(500)
+    transfer, transfer_labels = sample(300)
+    model = FunctionalTemplateDetector(
+        x,
+        smoother=smoother,
+        window_limit=45,
+    ).fit(train, train_labels)
+    scores = model.decision_function(transfer)
+    assert roc_auc_score(transfer_labels, scores) > 0.85
+    assert model.positive_sites_ > 100
+    assert model.negative_sites_ > 100
+    assert np.all(model.footprint_template_[np.abs(x) >= 45] == 0)
+
+
+def test_template_detector_supports_hierarchical_prior() -> None:
+    rng = np.random.default_rng(17)
+    x = _positions()
+    labels = np.repeat([0, 1], 50)
+    profiles = rng.normal(scale=0.8, size=(len(labels), len(x)))
+    profiles[labels == 1] += _footprint_shape(x)
+    prior = 2.0 * _footprint_shape(x)
+    model = FunctionalTemplateDetector(x).fit(
+        profiles,
+        labels,
+        prior_template=prior,
+        prior_strength=500,
+    )
+    assert np.corrcoef(model.raw_template_, prior)[0, 1] > 0.95
 
 
 def test_strand_functional_profiles_reverse_and_swap_channels() -> None:

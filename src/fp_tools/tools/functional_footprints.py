@@ -611,6 +611,164 @@ class ExactAdditiveGPSmoother:
         return SmoothResult(mean, standard_error, len(indexes))
 
 
+class FunctionalTemplateDetector:
+    """Shape-only diagonal-LDA detector with spline or sparse-GP templates.
+
+    This model is primarily an information-ceiling and transfer diagnostic. It
+    deliberately excludes motif score and accessibility. Broad per-site trends
+    are removed before a positive-minus-negative functional template is learned,
+    and a pooled diagonal covariance converts the template to a fast matched
+    filter. An optional prior template supports TF-to-family-to-global shrinkage.
+    """
+
+    def __init__(
+        self,
+        positions: np.ndarray,
+        *,
+        smoother: str = "spline",
+        window_limit: float = 50.0,
+        spline_penalty: float = 10.0,
+        long_length_scale: float = 50.0,
+        short_length_scale: float = 10.0,
+        gp_ridge: float = 1.0,
+        variance_shrinkage: float = 0.5,
+        variance_floor: float = 0.05,
+    ):
+        self.positions = np.asarray(positions, dtype=np.float64)
+        if self.positions.ndim != 1 or len(self.positions) < 5:
+            raise ValueError("positions must be one-dimensional with at least five values")
+        if window_limit <= 0 or window_limit > float(np.max(np.abs(self.positions))):
+            raise ValueError("window_limit must be within the profile coordinates")
+        if not 0 <= variance_shrinkage <= 1 or variance_floor <= 0:
+            raise ValueError("variance shrinkage and floor are invalid")
+        if smoother == "spline":
+            self.smoother = PenalizedSplineSmoother(
+                self.positions,
+                n_basis=min(25, len(self.positions)),
+                penalty=spline_penalty,
+            )
+        elif smoother == "gp":
+            self.smoother = SparseAdditiveGPSmoother(
+                self.positions,
+                inducing_points=min(25, len(self.positions)),
+                long_length_scale=long_length_scale,
+                short_length_scale=short_length_scale,
+                short_taper=window_limit,
+                ridge=gp_ridge,
+            )
+        else:
+            raise ValueError("smoother must be spline or gp")
+        self.smoother_name = smoother
+        self.window_limit = float(window_limit)
+        self.variance_shrinkage = float(variance_shrinkage)
+        self.variance_floor = float(variance_floor)
+
+    @staticmethod
+    def _weighted_mean(values: np.ndarray, weights: np.ndarray) -> np.ndarray:
+        return np.average(values, axis=0, weights=weights)
+
+    @staticmethod
+    def _effective_sample_size(weights: np.ndarray) -> float:
+        total = float(np.sum(weights))
+        squared = float(np.sum(np.square(weights)))
+        return total * total / max(squared, np.finfo(float).eps)
+
+    def fit(
+        self,
+        profiles: np.ndarray,
+        labels: Iterable[int | bool],
+        *,
+        sample_weight: np.ndarray | None = None,
+        prior_template: np.ndarray | None = None,
+        prior_strength: float = 0.0,
+    ) -> "FunctionalTemplateDetector":
+        values = normalize_functional_profiles(profiles, self.positions)
+        group = np.asarray(list(labels), dtype=bool)
+        if group.shape != (len(values),) or np.sum(group) < 2 or np.sum(~group) < 2:
+            raise ValueError("labels must define at least two sites in each class")
+        weights = (
+            np.ones(len(values), dtype=np.float64)
+            if sample_weight is None
+            else np.asarray(sample_weight, dtype=np.float64)
+        )
+        if weights.shape != (len(values),) or np.any(~np.isfinite(weights)) or np.any(weights <= 0):
+            raise ValueError("sample weights must be finite and positive")
+        positive_weights = weights[group]
+        negative_weights = weights[~group]
+        positive_mean = self._weighted_mean(values[group], positive_weights)
+        negative_mean = self._weighted_mean(values[~group], negative_weights)
+        positive_variance = self._weighted_mean(
+            np.square(values[group] - positive_mean), positive_weights
+        )
+        negative_variance = self._weighted_mean(
+            np.square(values[~group] - negative_mean), negative_weights
+        )
+        n_positive = self._effective_sample_size(positive_weights)
+        n_negative = self._effective_sample_size(negative_weights)
+        pooled_variance = (
+            max(n_positive - 1.0, 1.0) * positive_variance
+            + max(n_negative - 1.0, 1.0) * negative_variance
+        ) / max(n_positive + n_negative - 2.0, 2.0)
+        finite_variance = pooled_variance[np.isfinite(pooled_variance) & (pooled_variance > 0)]
+        variance_center = float(np.median(finite_variance)) if len(finite_variance) else 1.0
+        pooled_variance = (
+            (1.0 - self.variance_shrinkage) * np.nan_to_num(pooled_variance, nan=variance_center)
+            + self.variance_shrinkage * variance_center
+        )
+        pooled_variance = np.maximum(pooled_variance, self.variance_floor * variance_center)
+
+        raw_template = positive_mean - negative_mean
+        effective_sites = 2.0 / (1.0 / n_positive + 1.0 / n_negative)
+        if prior_template is not None:
+            prior = np.asarray(prior_template, dtype=np.float64)
+            if prior.shape != self.positions.shape or prior_strength < 0:
+                raise ValueError("prior template must match positions and strength must be non-negative")
+            fraction = effective_sites / max(effective_sites + float(prior_strength), np.finfo(float).eps)
+            raw_template = fraction * raw_template + (1.0 - fraction) * prior
+        standard_error = np.sqrt(
+            pooled_variance * (1.0 / max(n_positive, 1.0) + 1.0 / max(n_negative, 1.0))
+        )
+        smooth_weights = 1.0 / np.maximum(np.square(standard_error), 1e-6)
+        smoothed = self.smoother.fit(raw_template, smooth_weights)
+        inner = max(0.0, self.window_limit - min(10.0, self.window_limit / 2.0))
+        taper = _flat_top_taper(self.positions, inner, self.window_limit)
+        template = smoothed.mean * taper
+        discriminant = template / pooled_variance
+        norm = float(np.sqrt(max(np.dot(template, discriminant), 0.0)))
+        if not np.isfinite(norm) or norm <= 1e-10:
+            raise ValueError("training profiles do not define a non-zero functional template")
+        discriminant /= norm
+        midpoint = 0.5 * float(np.dot(positive_mean + negative_mean, discriminant))
+        training_scores = values @ discriminant - midpoint
+        score_scale = float(np.std(training_scores))
+        if not np.isfinite(score_scale) or score_scale <= 1e-8:
+            score_scale = 1.0
+
+        self.positive_mean_ = positive_mean
+        self.negative_mean_ = negative_mean
+        self.raw_template_ = raw_template
+        self.footprint_template_ = template
+        self.template_standard_error_ = smoothed.standard_error
+        self.pooled_variance_ = pooled_variance
+        self.discriminant_ = discriminant
+        self.midpoint_ = midpoint
+        self.score_scale_ = score_scale
+        self.positive_sites_ = int(np.sum(group))
+        self.negative_sites_ = int(np.sum(~group))
+        self.effective_sites_ = float(effective_sites)
+        self.prior_strength_ = float(prior_strength)
+        return self
+
+    def decision_function(self, profiles: np.ndarray) -> np.ndarray:
+        if not hasattr(self, "discriminant_"):
+            raise RuntimeError("fit must be called before prediction")
+        values = normalize_functional_profiles(profiles, self.positions)
+        return (values @ self.discriminant_ - self.midpoint_) / self.score_scale_
+
+    def predict_proba(self, profiles: np.ndarray) -> np.ndarray:
+        return expit(self.decision_function(profiles))
+
+
 def site_accessibility_background(
     observed_profiles: np.ndarray,
     expected_profiles: np.ndarray,
