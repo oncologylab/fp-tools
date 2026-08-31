@@ -5,6 +5,7 @@ import json
 import sys
 
 import pandas as pd
+import pytest
 
 SCRIPT_DIR = Path(__file__).resolve().parents[1] / "benchmarks" / "scripts"
 sys.path.insert(0, str(SCRIPT_DIR))
@@ -145,3 +146,32 @@ def test_functional_promotion_fails_closed_when_evidence_is_missing() -> None:
     assert not summary["passed"]
     assert not summary["checks"]["naked_dna_false_positive_control"]
     assert not summary["checks"]["functional_uncertainty_coverage"]
+
+
+def test_prepare_pairs_rejects_incomplete_frozen_task_coverage() -> None:
+    study, _pairs = _study_and_pairs()
+    tasks = pd.DataFrame(study["tasks"])
+    metrics = []
+    for row in tasks.iloc[:-1].itertuples(index=False):
+        for candidate, auroc, auprc in (
+            ("DWM:spline", 0.70, 0.30),
+            ("LOG:gp", 0.76, 0.38),
+        ):
+            metrics.append(
+                {
+                    "cell": row.cell,
+                    "tf": row.tf,
+                    "candidate_id": candidate,
+                    "auroc": auroc,
+                    "auprc": auprc,
+                    "split": "validation",
+                }
+            )
+    with pytest.raises(ValueError, match="exactly cover"):
+        prepare_pairs(
+            pd.DataFrame(metrics),
+            study,
+            "LOG:gp",
+            "DWM:spline",
+            "development",
+        )

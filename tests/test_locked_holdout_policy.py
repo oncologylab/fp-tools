@@ -293,3 +293,46 @@ def test_frozen_combined_count_and_strand_routes_fit_without_labels():
     assert np.isfinite(combined_result.probabilities).all()
     assert np.isfinite(strand_result.probabilities).all()
     assert combined_result.converged and strand_result.converged
+
+
+def test_promotion_tables_preserve_paired_metrics_and_fail_closed_stability():
+    metrics = pd.DataFrame(
+        [
+            {
+                "cell": "Fixture",
+                "tf": "TFX",
+                "motif_id": "MA0000.1",
+                "motif_family": "FIX",
+                "role": "difficult",
+                "status": "ok",
+                "bias_configuration": "NEW",
+                "candidate_id": "hybrid.fixture",
+                "reference_candidate_id": "spline.fixture",
+                "candidate_auroc": 0.72,
+                "candidate_auprc": 0.41,
+                "candidate_brier": 0.20,
+                "candidate_ece": 0.06,
+                "reference_auroc": 0.66,
+                "reference_auprc": 0.34,
+                "reference_brier": 0.23,
+                "reference_ece": 0.09,
+                "candidate_positive_depletion": 1.4,
+                "candidate_negative_depletion": 0.4,
+                "reference_positive_depletion": 1.0,
+                "reference_negative_depletion": 0.5,
+                "replicate_direction_stable": False,
+                "biological_replicates": 2,
+            }
+        ]
+    )
+    long_metrics = module.promotion_metric_table(metrics)
+    assert long_metrics["method"].tolist() == [
+        module.PROMOTION_CANDIDATE,
+        module.PROMOTION_REFERENCE,
+    ]
+    assert long_metrics["auroc"].tolist() == [0.72, 0.66]
+    descriptors = module.promotion_descriptor_table(metrics)
+    assert len(descriptors) == 4
+    stability = module.promotion_stability_table(metrics)
+    assert stability["candidate_id"].tolist() == [module.PROMOTION_CANDIDATE]
+    assert not bool(stability.loc[0, "direction_consistent"])

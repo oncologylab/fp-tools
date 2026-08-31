@@ -53,6 +53,9 @@ def prepare_pairs(
     keys = ["cell", "tf"]
     if "motif_id" in selected and "motif_id" in tasks:
         keys.append("motif_id")
+    expected_tasks = tasks[keys].drop_duplicates()
+    if len(expected_tasks) != len(tasks):
+        raise ValueError("study contains duplicate promotion task keys")
     if selected.duplicated(keys + [method_column]).any():
         raise ValueError("metrics contain duplicate task/candidate rows")
     wide = selected.pivot(index=keys, columns=method_column, values=["auroc", "auprc"])
@@ -66,6 +69,20 @@ def prepare_pairs(
         else column
         for column in wide.columns
     ]
+    observed_tasks = wide[keys].drop_duplicates()
+    coverage = expected_tasks.merge(
+        observed_tasks,
+        on=keys,
+        how="outer",
+        indicator=True,
+    )
+    if not coverage["_merge"].eq("both").all():
+        missing = int(coverage["_merge"].eq("left_only").sum())
+        unexpected = int(coverage["_merge"].eq("right_only").sum())
+        raise ValueError(
+            "promotion metrics do not exactly cover the frozen task set "
+            f"(missing={missing}, unexpected={unexpected})"
+        )
     pairs = tasks.merge(wide, on=keys, how="inner", validate="one_to_one")
     if pairs.empty:
         raise ValueError("no complete candidate/baseline task pairs are available")

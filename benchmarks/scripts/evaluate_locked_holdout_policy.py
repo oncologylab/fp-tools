@@ -64,6 +64,8 @@ from search_functional_model_grid import (  # noqa: E402
 
 FREEZE_SCHEMA = "fp-tools-locked-holdout-evaluation-freeze-v1"
 RESULT_SCHEMA = "fp-tools-locked-holdout-policy-evaluation-v1"
+PROMOTION_CANDIDATE = "frozen_policy"
+PROMOTION_REFERENCE = "DWM_reference"
 ARTIFACT_SCHEMAS = {
     "fp-tools-combined-functional-profiles-v1",
     "fp-tools-strand-functional-profiles-v1",
@@ -1182,6 +1184,97 @@ def promotion_summary(metrics: pd.DataFrame, study: dict[str, Any]) -> dict[str,
     }
 
 
+def promotion_metric_table(metrics: pd.DataFrame) -> pd.DataFrame:
+    """Convert successful paired rows into the fail-closed auditor schema."""
+
+    rows: list[dict[str, Any]] = []
+    for item in metrics[metrics["status"].eq("ok")].itertuples(index=False):
+        common = {
+            "cell": str(item.cell),
+            "tf": str(item.tf),
+            "motif_id": str(item.motif_id),
+            "motif_family": str(item.motif_family),
+            "role": str(item.role),
+            "split": "locked_holdout",
+            "bias_configuration": str(item.bias_configuration),
+            "route_candidate_id": str(item.candidate_id),
+            "reference_candidate_id": str(item.reference_candidate_id),
+        }
+        rows.extend(
+            (
+                {
+                    **common,
+                    "method": PROMOTION_CANDIDATE,
+                    "auroc": float(item.candidate_auroc),
+                    "auprc": float(item.candidate_auprc),
+                    "brier": float(item.candidate_brier),
+                    "ece": float(item.candidate_ece),
+                },
+                {
+                    **common,
+                    "method": PROMOTION_REFERENCE,
+                    "auroc": float(item.reference_auroc),
+                    "auprc": float(item.reference_auprc),
+                    "brier": float(item.reference_brier),
+                    "ece": float(item.reference_ece),
+                },
+            )
+        )
+    return pd.DataFrame(rows)
+
+
+def promotion_descriptor_table(metrics: pd.DataFrame) -> pd.DataFrame:
+    """Emit group-level depletion descriptors for the final gate."""
+
+    rows: list[dict[str, Any]] = []
+    for item in metrics[metrics["status"].eq("ok")].itertuples(index=False):
+        common = {
+            "cell": str(item.cell),
+            "tf": str(item.tf),
+            "motif_family": str(item.motif_family),
+        }
+        for correction, prefix in (
+            (PROMOTION_CANDIDATE, "candidate"),
+            (PROMOTION_REFERENCE, "reference"),
+        ):
+            rows.extend(
+                (
+                    {
+                        **common,
+                        "correction": correction,
+                        "group": "chip_positive",
+                        "depletion": float(getattr(item, f"{prefix}_positive_depletion")),
+                    },
+                    {
+                        **common,
+                        "correction": correction,
+                        "group": "matched_negative",
+                        "depletion": float(getattr(item, f"{prefix}_negative_depletion")),
+                    },
+                )
+            )
+    return pd.DataFrame(rows)
+
+
+def promotion_stability_table(metrics: pd.DataFrame) -> pd.DataFrame:
+    """Expose biological-replicate direction as explicit gate evidence."""
+
+    ok = metrics[metrics["status"].eq("ok")].copy()
+    if ok.empty:
+        return pd.DataFrame()
+    return pd.DataFrame(
+        {
+            "cell": ok["cell"].astype(str),
+            "tf": ok["tf"].astype(str),
+            "candidate_id": PROMOTION_CANDIDATE,
+            "direction_consistent": ok["replicate_direction_stable"]
+            .fillna(False)
+            .astype(bool),
+            "biological_replicates": ok["biological_replicates"].fillna(0).astype(int),
+        }
+    )
+
+
 def run_evaluation(
     args: argparse.Namespace,
     study: dict[str, Any],
@@ -1351,6 +1444,10 @@ def run_evaluation(
                 "candidate_functional_separation": candidate_profiles["functional_separation"],
                 "reference_functional_separation": reference_profiles["functional_separation"],
                 "functional_separation_gain": float(separation_gain),
+                "candidate_positive_depletion": candidate_profiles["positive_depletion"],
+                "candidate_negative_depletion": candidate_profiles["negative_depletion"],
+                "reference_positive_depletion": reference_profiles["positive_depletion"],
+                "reference_negative_depletion": reference_profiles["negative_depletion"],
                 "candidate_depletion_difference": candidate_profiles["depletion_difference"],
                 "reference_depletion_difference": reference_profiles["depletion_difference"],
                 "candidate_converged": candidate.converged,
@@ -1538,12 +1635,21 @@ def run_evaluation(
     profiles_path = args.outdir / "locked_holdout_aggregate_profiles.tsv.gz"
     matching_path = args.outdir / "locked_holdout_matching_diagnostics.tsv"
     replicate_metrics_path = args.outdir / "locked_holdout_replicate_metrics.tsv"
+    promotion_metrics_path = args.outdir / "locked_holdout_promotion_metrics.tsv"
+    promotion_descriptors_path = args.outdir / "locked_holdout_promotion_descriptors.tsv"
+    promotion_stability_path = args.outdir / "locked_holdout_promotion_stability.tsv"
     pdf_path = args.outdir / "locked_holdout_aggregate_panels.pdf"
+    promotion_metrics = promotion_metric_table(metrics)
+    promotion_descriptors = promotion_descriptor_table(metrics)
+    promotion_stability = promotion_stability_table(metrics)
     metrics.to_csv(metrics_path, sep="\t", index=False)
     scores.to_csv(scores_path, sep="\t", index=False)
     profiles.to_csv(profiles_path, sep="\t", index=False)
     matching_frame.to_csv(matching_path, sep="\t", index=False)
     replicate_metrics.to_csv(replicate_metrics_path, sep="\t", index=False)
+    promotion_metrics.to_csv(promotion_metrics_path, sep="\t", index=False)
+    promotion_descriptors.to_csv(promotion_descriptors_path, sep="\t", index=False)
+    promotion_stability.to_csv(promotion_stability_path, sep="\t", index=False)
     render_pdf(metrics, profiles, pdf_path)
     promotion = promotion_summary(metrics, study)
     manifest = {
@@ -1566,6 +1672,9 @@ def run_evaluation(
             "aggregate_profiles": hash_record(profiles_path),
             "matching_diagnostics": hash_record(matching_path),
             "replicate_metrics": hash_record(replicate_metrics_path),
+            "promotion_metrics": hash_record(promotion_metrics_path),
+            "promotion_descriptors": hash_record(promotion_descriptors_path),
+            "promotion_stability": hash_record(promotion_stability_path),
             "aggregate_pdf": hash_record(pdf_path),
         },
     }
