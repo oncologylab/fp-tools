@@ -29,6 +29,10 @@ from evaluate_functional_template_transfer import (  # noqa: E402
     balanced_training_indexes,
     training_indexes,
 )
+from evaluate_functional_depth_matrix import (  # noqa: E402
+    classify_depth_limits,
+    discover_signal_matrix,
+)
 from fp_tools.tools.parametric_bias import (  # noqa: E402
     BiasFeatureSpec,
     ConditionalSequenceBiasModel,
@@ -276,6 +280,56 @@ def test_balanced_template_pool_caps_each_tf_and_class() -> None:
     counts = sites.iloc[selected].groupby(["tf", "chip_label"]).size()
     assert counts.max() <= 7
     assert len(selected) == 28
+
+
+def test_depth_signal_discovery_requires_raw_and_expected_tracks(tmp_path: Path) -> None:
+    outdir = tmp_path / "fp_tools_dwm"
+    outdir.mkdir()
+    prefix = "K562_rep1.25m.s2026"
+    for suffix in ("corrected", "uncorrected", "expected"):
+        (outdir / f"{prefix}_{suffix}.bw").touch()
+    plan = pd.DataFrame(
+        [
+            {
+                "job_id": "correct:one",
+                "stage": "correction",
+                "sample": "K562_rep1",
+                "cell": "K562",
+                "depth": "25000000",
+                "seed": 2026,
+                "correction": "fp_tools_dwm",
+                "expected_output": str(outdir / f"{prefix}_corrected.bw"),
+            }
+        ]
+    )
+    signals = discover_signal_matrix(plan, depths=("25000000",))
+    assert len(signals) == 1
+    assert signals.iloc[0]["raw"].endswith("_uncorrected.bw")
+    (outdir / f"{prefix}_expected.bw").unlink()
+    with pytest.raises(FileNotFoundError, match="incomplete correction"):
+        discover_signal_matrix(plan, depths=("25000000",))
+
+
+def test_depth_classification_separates_power_and_assay_limits() -> None:
+    rows = []
+    for tf, low, high in (("POWER", 0.52, 0.61), ("ASSAY", 0.53, 0.54), ("DETECT", 0.60, 0.70)):
+        for depth, value in (("10000000", low), ("full", high)):
+            rows.append(
+                {
+                    "cell": "K562",
+                    "tf": tf,
+                    "motif_family": tf,
+                    "training_scope": "same_cell_ceiling",
+                    "method": "functional_template",
+                    "depth": depth,
+                    "auroc_mean": value,
+                    "auprc_mean": value - 0.1,
+                }
+            )
+    classified = classify_depth_limits(pd.DataFrame(rows)).set_index("tf")
+    assert classified.loc["POWER", "classification"] == "power_limited"
+    assert classified.loc["ASSAY", "classification"] == "assay_limited_or_motif_ambiguous"
+    assert classified.loc["DETECT", "classification"] == "shape_detectable_at_high_depth"
 
 
 def test_failure_classification_separates_assay_and_shape_limits() -> None:
