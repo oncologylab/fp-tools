@@ -58,3 +58,36 @@ def test_validation_refuses_label_columns():
     frame["chip_label"] = 0
     with pytest.raises(ValueError, match="forbidden label columns"):
         module.validate_label_free(frame, Path("fixture.tsv"))
+
+
+def test_route_filter_keeps_only_selected_bias_tasks(tmp_path):
+    frame = fixture_sites()
+    sites_path = tmp_path / "sites.tsv"
+    frame.to_csv(sites_path, sep="\t", index=False)
+    routes = pd.DataFrame(
+        {
+            "cell": ["Cell", "Cell"],
+            "tf": ["A", "B"],
+            "bias_configuration": ["NEW", "DWM"],
+        }
+    )
+    route_path = tmp_path / "routes.tsv"
+    routes.to_csv(route_path, sep="\t", index=False)
+    output = tmp_path / "selected.tsv.gz"
+    assert module.main(
+        [
+            "--sites", str(sites_path),
+            "--out", str(output),
+            "--counts-out", str(tmp_path / "counts.tsv"),
+            "--manifest-out", str(tmp_path / "manifest.json"),
+            "--routes", str(route_path),
+            "--bias-configuration", "NEW",
+            "--maximum-train-per-tf", "4",
+        ]
+    ) == 0
+    filtered = pd.read_csv(output, sep="\t")
+    assert set(filtered["tf"]) == {"A"}
+    assert filtered["chromosome_split"].value_counts().to_dict() == {
+        "test": 5,
+        "train": 4,
+    }

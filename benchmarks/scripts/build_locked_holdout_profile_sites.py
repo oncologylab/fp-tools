@@ -120,9 +120,48 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--manifest-out", type=Path, required=True)
     parser.add_argument("--maximum-train-per-tf", type=int, default=10000)
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument(
+        "--routes",
+        type=Path,
+        help="Optional frozen route table used to retain only one bias configuration's tasks.",
+    )
+    parser.add_argument(
+        "--bias-configuration",
+        help="Bias configuration selected from --routes (for example MT_SELMA10_4m4).",
+    )
     args = parser.parse_args(argv)
     source = pd.read_csv(args.sites, sep="\t")
     validate_label_free(source, args.sites)
+    full_source_sites = len(source)
+    route_metadata = None
+    if (args.routes is None) != (args.bias_configuration is None):
+        raise SystemExit("--routes and --bias-configuration must be provided together")
+    if args.routes is not None:
+        routes = pd.read_csv(args.routes, sep="\t")
+        required = {"cell", "tf", "bias_configuration"}
+        missing = required.difference(routes.columns)
+        if missing:
+            raise SystemExit("route table lacks columns: " + ", ".join(sorted(missing)))
+        selected_routes = routes[
+            routes["bias_configuration"].astype(str).eq(args.bias_configuration)
+        ]
+        keys = set(zip(selected_routes["cell"].astype(str), selected_routes["tf"].astype(str)))
+        source = source[
+            [
+                (str(cell), str(tf)) in keys
+                for cell, tf in zip(source["cell"], source["tf"])
+            ]
+        ].copy()
+        if source.empty:
+            raise SystemExit(
+                f"no site tasks use bias configuration {args.bias_configuration}"
+            )
+        route_metadata = {
+            "path": str(args.routes),
+            "sha256": file_sha256(args.routes),
+            "bias_configuration": str(args.bias_configuration),
+            "tasks": [f"{cell}/{tf}" for cell, tf in sorted(keys)],
+        }
     selected, counts = select_profile_sites(
         source,
         maximum_train_per_tf=args.maximum_train_per_tf,
@@ -150,7 +189,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             counts["source_test"].eq(counts["selected_test"]).all()
         ),
         "source_sites": int(len(source)),
+        "unfiltered_source_sites": int(full_source_sites),
         "selected_sites": int(len(selected)),
+        "route_filter": route_metadata,
         "output": str(args.out),
         "output_sha256": file_sha256(args.out),
         "counts": str(args.counts_out),

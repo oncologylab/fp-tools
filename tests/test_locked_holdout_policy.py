@@ -129,6 +129,34 @@ def test_freeze_identifier_detects_tampering():
     assert identifier != module.canonical_hash(document)
 
 
+def test_candidate_artifact_may_be_an_exact_dwm_site_subset():
+    frame = _synthetic_sites()
+    hashes = module.site_hashes(frame)
+    arrays = {"valid": np.ones(len(frame), dtype=bool), "site_hash": hashes}
+    reference = module.Artifact(
+        "DWM",
+        "Fixture",
+        Path("dwm.json"),
+        {"schema": "fp-tools-combined-functional-profiles-v1"},
+        frame,
+        arrays,
+    )
+    subset_rows = np.array([0, 2, 5, 8])
+    candidate = module.Artifact(
+        "NEW",
+        "Fixture",
+        Path("new.json"),
+        {"schema": "fp-tools-strand-functional-profiles-v1"},
+        frame.iloc[subset_rows].reset_index(drop=True),
+        {"valid": np.ones(len(subset_rows), dtype=bool), "site_hash": hashes[subset_rows]},
+    )
+    module.validate_exact_site_alignment(
+        {("DWM", "Fixture"): reference, ("NEW", "Fixture"): candidate}
+    )
+    mapping = module.reference_to_candidate_indexes(reference, candidate)
+    assert mapping.tolist() == [0, -1, 1, -1, -1, 2, -1, -1, 3, -1]
+
+
 def test_frozen_combined_count_and_strand_routes_fit_without_labels():
     rng = np.random.default_rng(12)
     rows, width = 180, 201

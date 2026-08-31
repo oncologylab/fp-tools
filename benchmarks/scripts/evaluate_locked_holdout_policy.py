@@ -247,15 +247,54 @@ def validate_site_source(artifact: Artifact, source: Path) -> None:
 
 
 def validate_exact_site_alignment(artifacts: dict[tuple[str, str], Artifact]) -> None:
+    """Require candidate artifacts to be exact ordered subsets of cell DWM sites."""
+
     for cell in sorted({key[1] for key in artifacts}):
-        cell_artifacts = [artifact for (_model, item_cell), artifact in artifacts.items() if item_cell == cell]
-        reference = cell_artifacts[0]
-        reference_hashes = np.asarray(reference.profiles["site_hash"])
-        for artifact in cell_artifacts[1:]:
-            if not np.array_equal(reference_hashes, artifact.profiles["site_hash"]):
+        reference = artifacts[("DWM", cell)]
+        reference_hashes = np.asarray(reference.profiles["site_hash"], dtype=np.uint64)
+        if len(np.unique(reference_hashes)) != len(reference_hashes):
+            raise ValueError(f"DWM artifact for {cell} contains duplicate site hashes")
+        lookup = {int(value): index for index, value in enumerate(reference_hashes)}
+        for (model, item_cell), artifact in artifacts.items():
+            if item_cell != cell or model == "DWM":
+                continue
+            candidate_hashes = np.asarray(artifact.profiles["site_hash"], dtype=np.uint64)
+            if len(np.unique(candidate_hashes)) != len(candidate_hashes):
+                raise ValueError(f"{artifact.path} contains duplicate site hashes")
+            if any(int(value) not in lookup for value in candidate_hashes):
                 raise ValueError(
-                    f"site order differs between {reference.path} and {artifact.path}"
+                    f"{artifact.path} contains sites absent from DWM artifact {reference.path}"
                 )
+            reference_indexes = np.asarray(
+                [lookup[int(value)] for value in candidate_hashes], dtype=int
+            )
+            key_columns = [
+                "cell", "tf", "motif_id", "motif_family", "TFBS_chr",
+                "TFBS_start", "TFBS_end", "TFBS_strand", "chromosome_split",
+            ]
+            left = reference.sites.iloc[reference_indexes][key_columns].reset_index(drop=True)
+            right = artifact.sites[key_columns].reset_index(drop=True)
+            if not left.equals(right):
+                raise ValueError(
+                    f"site rows differ between {reference.path} and {artifact.path}"
+                )
+
+
+def reference_to_candidate_indexes(
+    reference: Artifact, candidate: Artifact
+) -> np.ndarray:
+    """Map each reference row to its candidate-artifact row, or -1 if absent."""
+
+    output = np.full(len(reference.sites), -1, dtype=int)
+    lookup = {
+        int(value): index
+        for index, value in enumerate(np.asarray(reference.profiles["site_hash"], dtype=np.uint64))
+    }
+    for candidate_index, value in enumerate(
+        np.asarray(candidate.profiles["site_hash"], dtype=np.uint64)
+    ):
+        output[lookup[int(value)]] = candidate_index
+    return output
 
 
 def validate_tables(
@@ -1056,7 +1095,13 @@ def run_evaluation(
         candidate_artifact = artifacts[(str(route.bias_configuration), cell)]
         reference_artifact = artifacts[("DWM", cell)]
         observed, _expected = reference_artifact.observed_expected()
-        joint_valid = candidate_artifact.valid & reference_artifact.valid
+        candidate_map = reference_to_candidate_indexes(reference_artifact, candidate_artifact)
+        candidate_available = candidate_map >= 0
+        candidate_valid_on_reference = np.zeros(len(reference_artifact.sites), dtype=bool)
+        candidate_valid_on_reference[candidate_available] = candidate_artifact.valid[
+            candidate_map[candidate_available]
+        ]
+        joint_valid = reference_artifact.valid & candidate_valid_on_reference
         chip_row = chip[
             chip["cell"].astype(str).eq(cell) & chip["tf"].astype(str).eq(tf)
         ].iloc[0]
@@ -1099,6 +1144,9 @@ def run_evaluation(
                 metric_rows.append({**base, **matching, "status": "insufficient_matched_sites"})
                 continue
             indexes = matched["artifact_index"].to_numpy(dtype=int)
+            candidate_indexes = candidate_map[indexes]
+            if np.any(candidate_indexes < 0):
+                raise ValueError("matched reference sites are absent from the candidate artifact")
             labels = matched["label"].to_numpy(dtype=int)
             if str(route.bias_configuration) == "DWM":
                 candidate = fit_combined_route(
@@ -1118,7 +1166,7 @@ def run_evaluation(
                     str(route.candidate_id),
                     tf,
                     family,
-                    indexes,
+                    candidate_indexes,
                     positions,
                     args.maximum_train_per_tf,
                     args.seed,
