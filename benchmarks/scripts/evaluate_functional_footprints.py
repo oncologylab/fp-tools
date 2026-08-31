@@ -16,11 +16,13 @@ import json
 from pathlib import Path
 import sys
 from time import perf_counter
+import warnings
 
 import numpy as np
 import pandas as pd
 from sklearn.impute import SimpleImputer
 from sklearn.cluster import AgglomerativeClustering
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     average_precision_score,
@@ -657,6 +659,7 @@ def fit_supervised_ceiling(
     candidates = []
     for c_value in (0.03, 0.1, 0.3, 1.0, 3.0):
         for l1_ratio in (0.0, 0.5, 1.0):
+            maximum_iterations = 20000
             model = Pipeline(
                 [
                     ("imputer", SimpleImputer(strategy="median")),
@@ -665,28 +668,54 @@ def fit_supervised_ceiling(
                         "classifier",
                         LogisticRegression(
                             solver="saga",
+                            penalty="elasticnet",
                             C=c_value,
                             l1_ratio=l1_ratio,
                             class_weight="balanced",
-                            max_iter=10000,
-                            tol=1e-3,
+                            max_iter=maximum_iterations,
+                            tol=2e-3,
                             random_state=seed,
                         ),
                     ),
                 ]
             )
-            model.fit(train_x, labels)
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always", ConvergenceWarning)
+                model.fit(train_x, labels)
+            classifier = model.named_steps["classifier"]
+            iterations = int(np.max(classifier.n_iter_))
+            convergence_warning = any(
+                issubclass(warning.category, ConvergenceWarning) for warning in caught
+            )
+            converged = not convergence_warning and iterations < maximum_iterations
             probabilities = model.predict_proba(validation_x)[:, 1]
             metrics = binary_metrics(validation_labels, probabilities)
             prevalence = float(metrics["prevalence"])
             adjusted_auprc = (float(metrics["auprc"]) - prevalence) / max(1.0 - prevalence, 1e-6)
             selection = float(metrics["auroc"]) + adjusted_auprc
-            candidates.append((selection, c_value, l1_ratio, model, probabilities, metrics))
-    selected = max(candidates, key=lambda item: (item[0], float(item[5]["auprc"])))
+            candidates.append(
+                (
+                    selection,
+                    c_value,
+                    l1_ratio,
+                    model,
+                    probabilities,
+                    metrics,
+                    converged,
+                    iterations,
+                )
+            )
+    converged_candidates = [candidate for candidate in candidates if candidate[6]]
+    selection_pool = converged_candidates or candidates
+    selected = max(selection_pool, key=lambda item: (item[0], float(item[5]["auprc"])))
     return selected[4], {
         "C": selected[1],
         "l1_ratio": selected[2],
         "selection_score": selected[0],
+        "converged": selected[6],
+        "iterations": selected[7],
+        "converged_candidates": len(converged_candidates),
+        "candidate_count": len(candidates),
         **selected[5],
     }, fpca
 

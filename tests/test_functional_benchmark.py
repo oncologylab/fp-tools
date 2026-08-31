@@ -168,6 +168,10 @@ def test_supervised_ceiling_uses_functional_shape() -> None:
         seed=4,
     )
     assert selected["auroc"] > 0.8
+    assert selected["converged"] is True
+    assert selected["converged_candidates"] > 0
+    assert selected["candidate_count"] == 15
+    assert selected["iterations"] < 20000
     assert probabilities.shape == (180,)
     assert fpca.components_.shape[0] <= 20
 
