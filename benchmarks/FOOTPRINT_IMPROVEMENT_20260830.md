@@ -425,9 +425,8 @@ These are development-label results, and the corresponding family routes did
 not transfer on the already-scored GM12878/IMR-90 holdout. The 2.5% dual-null
 choice was also made after observing the first null-calibration behavior.
 Consequently it is a mechanistic advance and a preregistered hypothesis for a
-new holdout, not a package promotion. Independent naked-DNA replicates and a
-new cell/TF occupancy panel are still required. No Box performance folder is
-created from these label-free results.
+new holdout, not a package promotion. A new cell/TF occupancy panel is still
+required. No Box performance folder is created from these label-free results.
 
 The shifted-ATAC calibration was then made fourfold cross-fitted: every null
 score is produced by a model that did not fit that site's fold. Thresholds
@@ -443,8 +442,22 @@ replicate again left all candidate groups below 5%, with maxima of 3.00% over
 all sites and 3.21% over informative sites. The count-GP MEF2 and TBP routes
 made no false calls in that panel. This is useful depth transfer, but it is
 not independent replication because the 10M calibration and full-depth panel
-come from the same biological library. A second library is being processed
-without pooling so that replicate consistency can be measured directly.
+come from the same biological library.
+
+The frozen policy was then applied to the second GSE164997 naked-DNA library
+without pooling or refitting. The first 10 million input pairs yielded
+7,472,170 coordinate-sorted, deduplicated, properly paired fragments after the
+same alignment and MAPQ filters. All 15 TF/cell candidate groups passed: the
+maximum false-call rate was 2.00% over all motif sites and 3.54% among sites
+with nonzero signal. The MEF2, TBP, ZNF, and MYC count routes made no false
+calls. The uncalibrated 0.5 mixture cutoff still reached 49.5% over all sites
+and 84.3% among informative sites, independently confirming that mixture
+posteriors are ranks rather than binding probabilities. Candidate-only scoring
+was verified to reproduce all 3,000 prior-replicate probabilities exactly, and
+the frozen-threshold applicator reproduced every prior full-depth rate before
+the second replicate was opened. This supplies independent biological-library
+negative-control evidence, but it does not rescue the failed external
+occupancy-transfer gate and therefore does not justify package promotion.
 
 Finite-null empirical p-values and Benjamini-Hochberg q-values were added as
 an audit output. They generated no false discoveries in naked DNA, but also no
