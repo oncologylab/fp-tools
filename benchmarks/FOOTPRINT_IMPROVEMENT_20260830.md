@@ -148,3 +148,13 @@ for testing wide-footprint families but fails the strong-positive
 non-regression requirement and is not the default. The next scorer should use
 motif-width or label-free geometry reliability to select the wide channel,
 then be tested on a new independent cell-line holdout and naked-DNA controls.
+
+As a post hoc routing check, a label-free minimum motif width of 15 bp selected
+hybrid scores only for CTCF (15 bp) and REST (20 bp), while retaining the
+standard score for GATA1, JUND, and MAX. On the locked chromosome test this
+raised mean AUROC by 0.0098 and mean AUPRC by 0.0100 with zero task-level
+regressions. This gate was evaluated after viewing the universal-hybrid result,
+so it is a hypothesis for a new preregistered experiment, not a validated
+promotion result. The full matrix now includes an explicit `fp_tools_hybrid`
+method arm so that hypothesis can be tested without overwriting the standard
+score.

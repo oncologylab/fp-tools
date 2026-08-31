@@ -48,7 +48,7 @@
     "purpose": "Measure motif-centered structure and false footprint calls when no chromatin-bound TF can create a footprint."
   },
   "native_corrections": ["raw", "fp_tools_pwm", "fp_tools_dwm", "fp_tools_reused_bias"],
-  "whole_methods": ["accessibility", "motif", "motif_accessibility", "fp_tools_footprint", "fp_tools_multiscale", "TOBIAS", "HINT_ATAC", "PRINT", "TraceBind", "ChromBPNet"],
+  "whole_methods": ["accessibility", "motif", "motif_accessibility", "fp_tools_footprint", "fp_tools_multiscale", "fp_tools_hybrid", "TOBIAS", "HINT_ATAC", "PRINT", "TraceBind", "ChromBPNet"],
   "tasks": [
     {"cell": "K562", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "development"},
     {"cell": "K562", "tf": "MYC", "motif_id": "MA0147.4", "motif_family": "MYC_MAX", "role": "positive_control", "split": "development"},
