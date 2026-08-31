@@ -668,6 +668,7 @@ def _fit_fractional_logistic(
     initial: np.ndarray,
     penalty: float = 1.0,
     iterations: int = 20,
+    nonnegative_indexes: tuple[int, ...] = (),
 ) -> np.ndarray:
     coefficients = initial.copy()
     regularizer = np.eye(design.shape[1]) * penalty
@@ -678,6 +679,11 @@ def _fit_fractional_logistic(
         adjusted = design @ coefficients + (response - probabilities) / weights
         system = design.T @ (design * weights[:, None]) + regularizer
         update = np.linalg.solve(system, design.T @ (weights * adjusted))
+        if nonnegative_indexes:
+            update[np.asarray(nonnegative_indexes, dtype=int)] = np.maximum(
+                update[np.asarray(nonnegative_indexes, dtype=int)],
+                0.0,
+            )
         if np.max(np.abs(update - coefficients)) < 1e-7:
             coefficients = update
             break
@@ -718,6 +724,7 @@ class BiasAwareFunctionalMixture:
         background_exclusion: float = 50.0,
         background_ridge: float = 10.0,
         background_length_scale: float = 80.0,
+        prior_constraint: str = "none",
     ):
         self.positions = np.asarray(positions, dtype=float)
         self.smoother_name = str(smoother)
@@ -734,6 +741,11 @@ class BiasAwareFunctionalMixture:
         self.background_exclusion = float(background_exclusion)
         self.background_ridge = float(background_ridge)
         self.background_length_scale = float(background_length_scale)
+        self.prior_constraint = str(prior_constraint)
+        if self.prior_constraint not in {"none", "motif", "motif-accessibility"}:
+            raise ValueError(
+                "prior_constraint must be none, motif, or motif-accessibility"
+            )
         if smoother == "spline":
             self.smoother = PenalizedSplineSmoother(
                 self.positions,
@@ -831,8 +843,17 @@ class BiasAwareFunctionalMixture:
             log_prior = design @ prior_coefficients
             posterior = expit(np.clip(bound_ll - unbound_ll + log_prior, -40.0, 40.0))
             posterior = np.clip(posterior, 1e-5, 1.0 - 1e-5)
+            nonnegative_indexes = {
+                "none": (),
+                "motif": (1,),
+                "motif-accessibility": (1, 2),
+            }[self.prior_constraint]
             prior_coefficients = _fit_fractional_logistic(
-                design, posterior, prior_coefficients, penalty=1.0
+                design,
+                posterior,
+                prior_coefficients,
+                penalty=1.0,
+                nonnegative_indexes=nonnegative_indexes,
             )
 
             numerator = np.sum(posterior[:, None] * observed, axis=0)
@@ -944,6 +965,7 @@ class BiasAwareFunctionalMixture:
             "background_exclusion": self.background_exclusion,
             "background_ridge": self.background_ridge,
             "background_length_scale": self.background_length_scale,
+            "prior_constraint": self.prior_constraint,
             "motif_location": self.motif_location_,
             "motif_scale": self.motif_scale_,
             "accessibility_location": self.accessibility_location_,
@@ -982,6 +1004,7 @@ class BiasAwareFunctionalMixture:
                 background_exclusion=float(document.get("background_exclusion", 50.0)),
                 background_ridge=float(document.get("background_ridge", 10.0)),
                 background_length_scale=float(document.get("background_length_scale", 80.0)),
+                prior_constraint=str(document.get("prior_constraint", "none")),
             )
             profile = np.asarray(arrays["footprint_profile"], dtype=np.float64)
             standard_error = np.asarray(arrays["standard_error"], dtype=np.float64)

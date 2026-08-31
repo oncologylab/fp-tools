@@ -189,6 +189,31 @@ def test_bias_aware_functional_mixture_detects_bound_profiles(
     )
 
 
+def test_bias_aware_mixture_can_anchor_binding_prior_direction(tmp_path: Path) -> None:
+    observed, expected, labels, motif_score = _synthetic_counts(seed=19)
+    model = BiasAwareFunctionalMixture(
+        _positions(),
+        smoother="gp",
+        dispersion=0.02,
+        prior_constraint="motif-accessibility",
+        accessibility_background="linear",
+        background_exclusion=30.0,
+        max_iter=60,
+    )
+    result = model.fit(
+        observed,
+        expected,
+        motif_score=motif_score,
+        accessibility=observed.sum(axis=1),
+    )
+    assert np.all(result.prior_coefficients[1:] >= 0)
+    assert roc_auc_score(labels, result.posterior) > 0.75
+    model.save(tmp_path / "anchored")
+    loaded = BiasAwareFunctionalMixture.load(tmp_path / "anchored.npz")
+    assert loaded.prior_constraint == "motif-accessibility"
+    assert loaded.accessibility_background == "linear"
+
+
 def test_fda_and_hybrid_models_detect_shape() -> None:
     observed, expected, labels, _motif_score = _synthetic_counts()
     x = _positions()
