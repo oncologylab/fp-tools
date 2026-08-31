@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import pathlib
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -513,6 +514,53 @@ class FootprintAblationPlanTest(unittest.TestCase):
             result = ablation_runner.execute_plan(plan, status, dry_run=True)
             self.assertEqual(result["job_id"].tolist(), ["first", "second"])
             self.assertTrue(status.exists())
+
+    def test_ablation_runner_filters_matrix_and_closes_dependencies(self):
+        plan = pd.DataFrame(
+            [
+                {"job_id": "down25", "stage": "downsample", "sample": "S1", "depth": "25000000", "correction": "", "depends_on": "", "expected_output": "/tmp/down25", "command": "tool"},
+                {"job_id": "dwm25", "stage": "correction", "sample": "S1", "depth": "25000000", "correction": "fp_tools_dwm", "depends_on": "down25", "expected_output": "/tmp/dwm25", "command": "tool"},
+                {"job_id": "pwm25", "stage": "correction", "sample": "S1", "depth": "25000000", "correction": "fp_tools_pwm", "depends_on": "down25", "expected_output": "/tmp/pwm25", "command": "tool"},
+                {"job_id": "dwm75", "stage": "correction", "sample": "S1", "depth": "75000000", "correction": "fp_tools_dwm", "depends_on": "", "expected_output": "/tmp/dwm75", "command": "tool"},
+            ]
+        )
+        selected = ablation_runner.filter_jobs(
+            plan,
+            job_ids=[],
+            stages=[],
+            samples=[],
+            depths=["25000000"],
+            corrections=["fp_tools_dwm"],
+        )
+        self.assertEqual(selected, {"down25", "dwm25"})
+
+    def test_parallel_ablation_runner_executes_and_logs_independent_jobs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            rows = []
+            for name in ("first", "second"):
+                output = root / name
+                command = shlex.join(
+                    [sys.executable, "-c", f"open({str(output)!r}, 'w').close()"]
+                )
+                rows.append(
+                    {
+                        "job_id": name,
+                        "stage": "correction",
+                        "depends_on": "",
+                        "expected_output": str(output),
+                        "command": command,
+                    }
+                )
+            result = ablation_runner.execute_plan(
+                pd.DataFrame(rows),
+                root / "status.tsv",
+                workers=2,
+                log_dir=root / "logs",
+            )
+            self.assertEqual(set(result["state"]), {"completed"})
+            self.assertTrue((root / "first").is_file())
+            self.assertTrue((root / "logs" / "first.log").is_file())
 
 
 if __name__ == "__main__":

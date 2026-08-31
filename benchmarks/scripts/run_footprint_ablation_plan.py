@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 import shlex
 import subprocess
 
@@ -45,9 +47,13 @@ def execute_plan(
     status_path: Path,
     selected_jobs: set[str] | None = None,
     dry_run: bool = False,
+    workers: int = 1,
+    log_dir: Path | None = None,
 ) -> pd.DataFrame:
     validate_plan(frame)
-    selected_jobs = selected_jobs or set(frame["job_id"])
+    if workers < 1:
+        raise ValueError("workers must be positive")
+    selected_jobs = set(frame["job_id"]) if selected_jobs is None else selected_jobs
     known = frame.set_index("job_id")
     pending = [job for job in frame["job_id"] if job in selected_jobs]
     completed = {
@@ -56,47 +62,129 @@ def execute_plan(
         if Path(str(row.expected_output)).exists()
     }
     records: list[dict[str, object]] = []
-    while pending:
-        progressed = False
-        for job in pending.copy():
-            row = known.loc[job]
-            required = dependencies(row.depends_on)
-            if not all(dependency in completed for dependency in required):
-                continue
-            output = Path(str(row.expected_output))
-            timestamp = datetime.now(timezone.utc).isoformat()
-            if output.exists():
-                state = "skipped_existing"
-            elif dry_run:
-                state = "planned"
-            elif not str(row.command).strip() or str(row.command) == "nan":
-                raise RuntimeError(f"derived job {job} is missing expected output {output}")
-            else:
-                subprocess.run(shlex.split(str(row.command)), check=True)
-                if not output.exists():
-                    raise RuntimeError(f"job {job} completed without expected output {output}")
-                state = "completed"
-            completed.add(job)
+    running = {}
+    executor = ThreadPoolExecutor(max_workers=workers)
+
+    def record(job: str, row: pd.Series, state: str, timestamp: str, job_log: Path | None) -> None:
+        completed.add(job)
+        if job in pending:
             pending.remove(job)
-            progressed = True
-            records.append(
-                {
-                    "job_id": job,
-                    "stage": row.stage,
-                    "state": state,
-                    "expected_output": str(output),
-                    "timestamp_utc": timestamp,
-                }
-            )
-            status_path.parent.mkdir(parents=True, exist_ok=True)
-            pd.DataFrame(records).to_csv(status_path, sep="\t", index=False)
-            print(f"{state}\t{job}")
-        if not progressed:
-            blocked = ", ".join(pending[:5])
+        records.append(
+            {
+                "job_id": job,
+                "stage": row.stage,
+                "state": state,
+                "expected_output": str(row.expected_output),
+                "log": str(job_log) if job_log is not None else "",
+                "timestamp_utc": timestamp,
+            }
+        )
+        status_path.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(records).to_csv(status_path, sep="\t", index=False)
+        print(f"{state}\t{job}", flush=True)
+
+    def run_command(job: str, row: pd.Series) -> tuple[str, Path | None]:
+        if not str(row.command).strip() or str(row.command) == "nan":
             raise RuntimeError(
-                f"no runnable jobs remain; dependencies are absent or were not selected: {blocked}"
+                f"derived job {job} is missing expected output {row.expected_output}"
             )
+        job_log = None
+        if log_dir is not None:
+            log_dir.mkdir(parents=True, exist_ok=True)
+            safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", job)
+            job_log = log_dir / f"{safe_name}.log"
+            with job_log.open("w", encoding="utf-8") as handle:
+                subprocess.run(
+                    shlex.split(str(row.command)),
+                    check=True,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                )
+        else:
+            subprocess.run(shlex.split(str(row.command)), check=True)
+        output = Path(str(row.expected_output))
+        if not output.exists():
+            raise RuntimeError(f"job {job} completed without expected output {output}")
+        return "completed", job_log
+
+    try:
+        while pending or running:
+            progressed = False
+            for job in pending.copy():
+                if len(running) >= workers:
+                    break
+                row = known.loc[job]
+                required = dependencies(row.depends_on)
+                if not all(dependency in completed for dependency in required):
+                    continue
+                output = Path(str(row.expected_output))
+                timestamp = datetime.now(timezone.utc).isoformat()
+                if output.exists():
+                    record(job, row, "skipped_existing", timestamp, None)
+                elif dry_run:
+                    record(job, row, "planned", timestamp, None)
+                else:
+                    future = executor.submit(run_command, job, row)
+                    running[future] = (job, row, timestamp)
+                    pending.remove(job)
+                progressed = True
+
+            if running:
+                finished, _ = wait(tuple(running), return_when=FIRST_COMPLETED)
+                for future in finished:
+                    job, row, timestamp = running.pop(future)
+                    try:
+                        state, job_log = future.result()
+                    except Exception as error:
+                        for active in running:
+                            active.cancel()
+                        raise RuntimeError(f"ablation job failed: {job}") from error
+                    record(job, row, state, timestamp, job_log)
+                    progressed = True
+            if not progressed and pending:
+                blocked = ", ".join(pending[:5])
+                raise RuntimeError(
+                    f"no runnable jobs remain; dependencies are absent or were not selected: {blocked}"
+                )
+    finally:
+        executor.shutdown(wait=True, cancel_futures=True)
     return pd.DataFrame(records)
+
+
+def filter_jobs(
+    frame: pd.DataFrame,
+    *,
+    job_ids: list[str],
+    stages: list[str],
+    samples: list[str],
+    depths: list[str],
+    corrections: list[str],
+) -> set[str] | None:
+    """Select jobs by matrix fields, then close the selection over dependencies."""
+
+    if not any((job_ids, stages, samples, depths, corrections)):
+        return None
+    mask = pd.Series(True, index=frame.index)
+    if stages:
+        mask &= frame["stage"].astype(str).isin(stages)
+    if samples:
+        mask &= frame["sample"].astype(str).isin(samples)
+    if depths:
+        mask &= frame["depth"].astype(str).isin(depths)
+    if corrections:
+        mask &= frame["correction"].astype(str).isin(corrections)
+    selected = set(frame.loc[mask, "job_id"]).union(job_ids)
+    known = frame.set_index("job_id")
+    required = list(selected)
+    while required:
+        job = required.pop()
+        if job not in known.index:
+            raise ValueError(f"unknown selected job: {job}")
+        for dependency in dependencies(known.loc[job].depends_on):
+            if dependency not in selected:
+                selected.add(dependency)
+                required.append(dependency)
+    return selected
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -105,25 +193,32 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--status", type=Path)
     parser.add_argument("--job-id", action="append", default=[])
     parser.add_argument("--stage", action="append", default=[])
+    parser.add_argument("--sample", action="append", default=[])
+    parser.add_argument("--depth", action="append", default=[])
+    parser.add_argument("--correction", action="append", default=[])
+    parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--log-dir", type=Path)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
     frame = pd.read_csv(args.plan, sep="\t", keep_default_na=False)
-    selected: set[str] | None = None
-    if args.job_id or args.stage:
-        selected = set(args.job_id)
-        if args.stage:
-            selected.update(frame.loc[frame["stage"].isin(args.stage), "job_id"])
-        required = list(selected)
-        while required:
-            job = required.pop()
-            row = frame.set_index("job_id").loc[job]
-            for dependency in dependencies(row.depends_on):
-                if dependency not in selected:
-                    selected.add(dependency)
-                    required.append(dependency)
+    selected = filter_jobs(
+        frame,
+        job_ids=args.job_id,
+        stages=args.stage,
+        samples=args.sample,
+        depths=args.depth,
+        corrections=args.correction,
+    )
     status = args.status or args.plan.with_name("ablation_status.tsv")
-    execute_plan(frame, status, selected_jobs=selected, dry_run=args.dry_run)
+    execute_plan(
+        frame,
+        status,
+        selected_jobs=selected,
+        dry_run=args.dry_run,
+        workers=args.workers,
+        log_dir=args.log_dir,
+    )
     return 0
 
 
