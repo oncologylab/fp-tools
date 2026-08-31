@@ -352,3 +352,31 @@ motif sequence are not independent. Together with the correction-transfer and
 random-seed results they identify the specific next correction improvement:
 estimate per-TF reliability from naked-DNA residuals and abstain when PWM/DWM,
 read seeds, or biological replicates disagree.
+
+## Untouched WTC11 MAX transfer
+
+The LOG81/+4,-4 shared-strand anchored-FDA route was preregistered for WTC11
+MAX before the ENCODE ChIP peak content was downloaded. The frozen evaluation
+initially appeared strong (AUROC +0.105 and relative AUPRC +13.5%, with both
+biological replicates positive), but the matched cohort failed its covariate
+gate: the maximum absolute standardized difference was 1.098. That result is
+retained as a failed locked test rather than treated as validation.
+
+An explicitly post-unblinding sensitivity then selected the largest
+common-support subset using only motif score, accessibility, GC, and peak
+position. The selected 306 sites per class had maximum absolute SMD 0.098.
+On this balanced cohort the frozen route improved AUROC by 0.033 and relative
+AUPRC by 6.8%; chromosome-block bootstrap probabilities of positive gain were
+0.860 and 0.829. It therefore failed the prespecified AUPRC and uncertainty
+gates.
+
+A complete post-lock factorial evaluated 284 combinations across conventional
+DWM and mitochondrial-trained LOG81 and SELMA10 models, both +4,-4 and +4,-5
+shifts, and spline/FDA/GP/hybrid detectors. No configuration passed both point
+gates on the balanced cohort. The best AUROC gain was +0.045 (SELMA10/+4,-4,
+anchored antisymmetric FDA) with only +5.3% relative AUPRC; the best LOG81
+shared-strand FDA reached +0.039 AUROC and +7.1% relative AUPRC. A supervised
+functional-PC ceiling also remained below chance after balance. WTC11 MAX is
+therefore classified as low-information/assay-limited in this dataset rather
+than rescued by a different bias model, shift convention, or functional
+detector. No performance PDF is eligible for external sharing from this test.
