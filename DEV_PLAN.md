@@ -166,6 +166,12 @@ a separately planned breaking release explicitly changes the contract.
   multi-correction PDF panels, and unsupervised phenotype clusters learned
   from normalized residual curves rather than motif-family names. Numeric
   discrimination is therefore reviewed alongside visible footprint shape.
+- Replicate-aware differential functional orchestration now consumes frozen
+  strand-profile artifacts and reports the complete condition-difference
+  curve, pointwise and simultaneous uncertainty, global permutation testing,
+  BH-adjusted significance, replicate consistency, and changes in footprint
+  depth, width, shoulders, asymmetry, and periodicity. Nutrient-stress data
+  remain locked until model selection is complete.
 
 ## Current ENCODE Resource
 

@@ -473,6 +473,24 @@ The artifact uses only numeric/string arrays with a checksummed JSON sidecar;
 it does not use arbitrary pickle. ChIP labels are not used to construct any
 profile channel.
 
+`evaluate_differential_functional_profiles.py` tests the entire condition
+difference curve from replicate-aware strand-profile artifacts. A manifest
+contains `sample`, `condition`, `replicate`, `profiles_npz`, and `sites_tsv`.
+The result includes pointwise and simultaneous 95% bands, a global functional
+permutation test, replicate-profile consistency, multiple-testing adjustment,
+and changes in depth, width, shoulders, asymmetry, and periodicity.
+
+```bash
+.venv/bin/python benchmarks/scripts/evaluate_differential_functional_profiles.py \
+  --manifest <nutrient-strand-profile-manifest.tsv> \
+  --contrast stress,control \
+  --channel combined \
+  --outdir benchmarks/results/footprint_functional_v1/nutrient_frozen
+```
+
+At least two biological replicates per condition are required. Nutrient-stress
+profiles are not evaluated until model choices and thresholds are frozen.
+
 The output records input hashes, frozen model choices, per-site probabilities,
 per-TF metrics, and explicit assay-, bias-, correction-, shape-, and
 power-limitation diagnoses. Large profile caches and fitted benchmark outputs
