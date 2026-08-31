@@ -98,6 +98,16 @@ def site_hashes(frame: pd.DataFrame) -> np.ndarray:
 
 
 def validate_sites(frame: pd.DataFrame, path: str | Path) -> pd.DataFrame:
+    frame = frame.copy()
+    if "accessibility" not in frame:
+        if "central_accessibility" in frame:
+            frame["accessibility"] = pd.to_numeric(
+                frame["central_accessibility"], errors="coerce"
+            ).fillna(0.0)
+        else:
+            # The evaluator replaces this compatibility placeholder with the
+            # summed raw profile before fitting any coverage-aware model.
+            frame["accessibility"] = 0.0
     missing = REQUIRED_SITE_COLUMNS.difference(frame.columns)
     if missing:
         raise ValueError(f"{path} is missing site columns: {', '.join(sorted(missing))}")
@@ -317,7 +327,8 @@ def fit_supervised_ceiling(
                             C=c_value,
                             l1_ratio=l1_ratio,
                             class_weight="balanced",
-                            max_iter=3000,
+                            max_iter=10000,
+                            tol=1e-3,
                             random_state=seed,
                         ),
                     ),
@@ -474,12 +485,14 @@ def classify_failures(metrics: pd.DataFrame) -> pd.DataFrame:
         denominator = max(abs(float(baseline.auprc)), 1e-8)
         ceiling_gain = (float(ceiling.auprc) - float(baseline.auprc)) / denominator
         label_free_gain = (float(winner.auprc) - float(baseline.auprc)) / denominator
+        prevalence = max(float(winner.prevalence), 1e-8)
+        label_free_over_chance = (float(winner.auprc) - prevalence) / max(1.0 - prevalence, 1e-8)
         if int(winner.positive_sites) < 100:
             status = "power_limited"
-        elif ceiling_gain < 0.10:
-            status = "assay_limited_or_motif_ambiguous"
-        elif label_free_gain >= 0.10 and float(winner.auroc) >= 0.65:
+        elif float(winner.auroc) >= 0.65 and label_free_over_chance >= 0.10:
             status = "detectable"
+        elif ceiling_gain < 0.10 and float(ceiling.auroc) < 0.65:
+            status = "assay_limited_or_motif_ambiguous"
         elif str(winner.correction) != "DWM":
             status = "bias_limited"
         else:
@@ -504,6 +517,7 @@ def classify_failures(metrics: pd.DataFrame) -> pd.DataFrame:
                 "best_label_free_auroc": float(winner.auroc),
                 "best_label_free_auprc": float(winner.auprc),
                 "label_free_relative_gain": label_free_gain,
+                "label_free_chance_adjusted_auprc": label_free_over_chance,
                 "classification": status,
             }
         )
@@ -578,6 +592,7 @@ def evaluate(
                 "development",
                 flank,
             )
+            cell_development["accessibility"] = development_observed.sum(axis=1)
             test_profiles = (
                 _evaluation_profiles(
                     cell_test,
@@ -591,6 +606,8 @@ def evaluate(
                 if cell_test is not None and len(cell_test)
                 else None
             )
+            if cell_test is not None and test_profiles is not None:
+                cell_test["accessibility"] = test_profiles[0].sum(axis=1)
 
             global_prior: dict[str, np.ndarray] = {}
             global_limit = min(len(unlabeled), maximum_unlabeled_sites_per_tf * 2)

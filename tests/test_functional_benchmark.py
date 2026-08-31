@@ -19,6 +19,7 @@ from evaluate_functional_footprints import (  # noqa: E402
     residual_score,
     site_hashes,
     stable_seed,
+    validate_sites,
 )
 
 
@@ -103,6 +104,25 @@ def test_site_hash_and_seed_are_deterministic() -> None:
     assert stable_seed("K562", "CTCF") != stable_seed("HepG2", "CTCF")
 
 
+def test_legacy_site_table_gets_coverage_placeholder() -> None:
+    frame = pd.DataFrame(
+        {
+            "cell": ["K562", "K562"],
+            "tf": ["CTCF", "CTCF"],
+            "motif_family": ["CTCF", "CTCF"],
+            "TFBS_chr": ["chr1", "chr1"],
+            "TFBS_start": [10, 30],
+            "TFBS_end": [25, 45],
+            "TFBS_strand": ["+", "-"],
+            "motif_score": [1.0, 2.0],
+            "chip_label": [0, 1],
+            "chromosome_split": ["train", "train"],
+        }
+    )
+    validated = validate_sites(frame, "memory")
+    assert validated["accessibility"].tolist() == [0.0, 0.0]
+
+
 def test_residual_factorial_scores_protection() -> None:
     observed = np.full((20, 101), 4.0)
     expected = np.full_like(observed, 4.0)
@@ -166,6 +186,7 @@ def test_failure_classification_separates_assay_and_shape_limits() -> None:
                     "correction": "DWM",
                     "method": method,
                     "positive_sites": 500,
+                    "prevalence": 0.5,
                     "auroc": auprc,
                     "auprc": auprc,
                 }

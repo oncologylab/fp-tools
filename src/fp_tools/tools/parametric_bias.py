@@ -506,7 +506,11 @@ def calibrated_residuals(
 
     safe_mu = np.maximum(mu, np.finfo(float).tiny)
     with np.errstate(divide="ignore", invalid="ignore"):
-        first = np.where(y > 0, y * np.log(y / safe_mu), 0.0)
+        first = np.where(
+            y > 0,
+            y * (np.log(np.maximum(y, np.finfo(float).tiny)) - np.log(safe_mu)),
+            0.0,
+        )
         if dispersion == 0:
             deviance = 2.0 * (first - (y - safe_mu))
         else:
