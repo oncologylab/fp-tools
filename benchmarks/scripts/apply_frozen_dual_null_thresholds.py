@@ -40,6 +40,24 @@ def _boolean(values: pd.Series, column: str) -> np.ndarray:
     return normalized.isin({"true", "1"}).to_numpy(dtype=bool)
 
 
+def wilson_interval(
+    successes: int,
+    total: int,
+    z: float = 1.959963984540054,
+) -> tuple[float, float]:
+    if total <= 0:
+        return float("nan"), float("nan")
+    proportion = successes / total
+    denominator = 1.0 + z * z / total
+    center = (proportion + z * z / (2.0 * total)) / denominator
+    radius = z * np.sqrt(
+        proportion * (1.0 - proportion) / total
+        + z * z / (4.0 * total * total)
+    ) / denominator
+    lower = 0.0 if successes == 0 else max(0.0, center - radius)
+    return float(lower), float(min(1.0, center + radius))
+
+
 def apply_thresholds(
     scores: pd.DataFrame,
     calibration: pd.DataFrame,
@@ -135,6 +153,10 @@ def apply_thresholds(
         n_valid = int(group["valid"].sum())
         n_informative = int(group["informative"].sum())
         n_calls = int(group["dual_null_call"].sum())
+        all_lower, all_upper = wilson_interval(n_calls, n_valid)
+        informative_lower, informative_upper = wilson_interval(
+            n_calls, n_informative
+        )
         rows.append(
             {
                 **dict(zip(group_columns, keys)),
@@ -142,9 +164,13 @@ def apply_thresholds(
                 "informative": n_informative,
                 "calls": n_calls,
                 "all_site_rate": n_calls / n_valid if n_valid else np.nan,
+                "all_site_rate_lower_95": all_lower,
+                "all_site_rate_upper_95": all_upper,
                 "informative_rate": (
                     n_calls / n_informative if n_informative else np.nan
                 ),
+                "informative_rate_lower_95": informative_lower,
+                "informative_rate_upper_95": informative_upper,
                 "mean_signal": float(
                     pd.to_numeric(group["total_signal"], errors="coerce").mean()
                 ),
@@ -175,6 +201,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     maximum_all = float(rates["all_site_rate"].max())
     maximum_informative = float(rates["informative_rate"].max())
+    maximum_all_upper = float(rates["all_site_rate_upper_95"].max())
+    maximum_informative_upper = float(
+        rates["informative_rate_upper_95"].max()
+    )
+    point_estimate_passes = bool(
+        maximum_all <= args.maximum_rate
+        and maximum_informative <= args.maximum_rate
+    )
     gate = {
         "schema": "fp-tools-independent-dual-null-gate-v1",
         "method": args.method,
@@ -182,10 +216,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         "maximum_allowed_rate": float(args.maximum_rate),
         "maximum_all_site_rate": maximum_all,
         "maximum_informative_rate": maximum_informative,
-        "passes": bool(
-            maximum_all <= args.maximum_rate
-            and maximum_informative <= args.maximum_rate
+        "maximum_all_site_upper_95": maximum_all_upper,
+        "maximum_informative_upper_95": maximum_informative_upper,
+        "confidence_bound_passes": bool(
+            maximum_all_upper <= args.maximum_rate
+            and maximum_informative_upper <= args.maximum_rate
         ),
+        "point_estimate_passes": point_estimate_passes,
+        "passes": point_estimate_passes,
         "inputs": {
             "scores": {"path": str(args.scores), "sha256": file_sha256(args.scores)},
             "calibration": {

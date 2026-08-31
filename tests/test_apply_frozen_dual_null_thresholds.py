@@ -56,6 +56,16 @@ def test_applies_frozen_threshold_and_requires_signal():
     assert rates.loc[0, "calls"] == 1
     assert rates.loc[0, "all_site_rate"] == pytest.approx(1 / 3)
     assert rates.loc[0, "informative_rate"] == pytest.approx(1 / 2)
+    assert (
+        rates.loc[0, "all_site_rate_lower_95"]
+        < rates.loc[0, "all_site_rate"]
+        < rates.loc[0, "all_site_rate_upper_95"]
+    )
+    assert (
+        rates.loc[0, "informative_rate_lower_95"]
+        < rates.loc[0, "informative_rate"]
+        < rates.loc[0, "informative_rate_upper_95"]
+    )
 
 
 def test_rejects_missing_or_duplicate_thresholds():
