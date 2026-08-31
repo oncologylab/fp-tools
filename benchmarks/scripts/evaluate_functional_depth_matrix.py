@@ -65,6 +65,7 @@ def discover_signal_matrix(
     plan: pd.DataFrame,
     *,
     depths: tuple[str, ...] = tuple(DEPTH_ORDER),
+    randomization_seeds: tuple[int, ...] | None = None,
     correction: str = "fp_tools_dwm",
     require_complete: bool = True,
     completed_jobs: set[str] | None = None,
@@ -74,6 +75,10 @@ def discover_signal_matrix(
         & (plan["correction"].astype(str) == correction)
         & (plan["depth"].astype(str).isin(depths))
     ].copy()
+    if randomization_seeds is not None:
+        selected = selected[
+            pd.to_numeric(selected["seed"], errors="raise").astype(int).isin(randomization_seeds)
+        ].copy()
     rows = []
     for row in selected.itertuples(index=False):
         corrected = Path(str(row.expected_output))
@@ -595,6 +600,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--winner-table", type=Path, required=True)
     parser.add_argument("--outdir", type=Path, required=True)
     parser.add_argument("--depths", nargs="+", default=list(DEPTH_ORDER))
+    parser.add_argument(
+        "--randomization-seeds",
+        nargs="+",
+        type=int,
+        help="Optional depth/downsampling seeds to evaluate; defaults to every seed in the plan",
+    )
     parser.add_argument("--minimum-sites-per-class", type=int, default=100)
     parser.add_argument("--maximum-train-per-tf-class", type=int, default=2000)
     parser.add_argument("--allow-incomplete", action="store_true")
@@ -630,6 +641,11 @@ def main(argv: list[str] | None = None) -> int:
     signals = discover_signal_matrix(
         signal_plan,
         depths=tuple(args.depths),
+        randomization_seeds=(
+            None
+            if args.randomization_seeds is None
+            else tuple(args.randomization_seeds)
+        ),
         require_complete=not args.allow_incomplete,
         completed_jobs=completed_jobs,
     )
@@ -703,6 +719,7 @@ def main(argv: list[str] | None = None) -> int:
         "winner_table": str(args.winner_table),
         "winner_table_sha256": file_sha256(args.winner_table),
         "depths": args.depths,
+        "requested_randomization_seeds": args.randomization_seeds,
         "seeds": sorted(int(value) for value in signals["seed"].unique()),
         "allow_incomplete": args.allow_incomplete,
         "minimum_sites_per_class": args.minimum_sites_per_class,

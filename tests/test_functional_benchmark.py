@@ -322,6 +322,34 @@ def test_depth_signal_discovery_requires_raw_and_expected_tracks(tmp_path: Path)
         discover_signal_matrix(plan, depths=("25000000",))
 
 
+def test_depth_signal_discovery_can_select_randomization_seeds(tmp_path: Path) -> None:
+    rows = []
+    for seed in (2026, 2027):
+        outdir = tmp_path / f"seed_{seed}" / "fp_tools_dwm"
+        outdir.mkdir(parents=True)
+        prefix = f"K562_rep1.25m.s{seed}"
+        for suffix in ("corrected", "uncorrected", "expected"):
+            (outdir / f"{prefix}_{suffix}.bw").touch()
+        rows.append(
+            {
+                "job_id": f"correct:{seed}",
+                "stage": "correction",
+                "sample": "K562_rep1",
+                "cell": "K562",
+                "depth": "25000000",
+                "seed": seed,
+                "correction": "fp_tools_dwm",
+                "expected_output": str(outdir / f"{prefix}_corrected.bw"),
+            }
+        )
+    signals = discover_signal_matrix(
+        pd.DataFrame(rows),
+        depths=("25000000",),
+        randomization_seeds=(2027,),
+    )
+    assert signals["seed"].tolist() == [2027]
+
+
 def test_depth_signal_discovery_excludes_files_still_being_written(tmp_path: Path) -> None:
     outdir = tmp_path / "fp_tools_dwm"
     outdir.mkdir()
