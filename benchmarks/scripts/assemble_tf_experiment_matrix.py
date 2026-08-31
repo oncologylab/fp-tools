@@ -62,6 +62,8 @@ def likely_drivers(row: pd.Series) -> str:
         drivers.append("replicate_or_depth_instability")
     if float(row.get("seed_max_abs_seed_delta_auroc", 0.0)) >= 0.05:
         drivers.append("read_sampling_instability")
+    if abs(float(row.get("classifier_seed_delta_auroc", 0.0))) >= 0.05:
+        drivers.append("classifier_read_sampling_instability")
     if (
         float(row.get("orientation_delta_validation_auroc", 0.0)) >= 0.03
         and float(row.get("orientation_delta_test_auroc", 0.0)) >= 0.03
@@ -90,6 +92,7 @@ def assemble(
     bias_summary: pd.DataFrame,
     seed_summary: pd.DataFrame,
     orientation_summary: pd.DataFrame,
+    classifier_seeds: pd.DataFrame,
 ) -> pd.DataFrame:
     boot = bootstrap.pivot_table(
         index=KEY,
@@ -112,6 +115,7 @@ def assemble(
         _prefixed(bias_summary, "bias_"),
         _prefixed(seed_summary, "seed_"),
         _prefixed(orientation_summary, "orientation_"),
+        _prefixed(classifier_seeds, "classifier_seed_"),
     ):
         output = output.merge(frame, on=KEY, how="left", validate="one_to_one")
     output["classifier_delta_auroc"] = (
@@ -131,6 +135,7 @@ def main(argv: list[str] | None = None) -> int:
         "matching", "quick", "bootstrap", "correction", "depth", "full-grid",
         "classifiers", "classifier-replicates", "bias-summary", "seed-summary",
         "orientation-summary",
+        "classifier-seeds",
     ):
         parser.add_argument(f"--{name}", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -140,6 +145,7 @@ def main(argv: list[str] | None = None) -> int:
             "matching", "quick", "bootstrap", "correction", "depth", "full_grid",
             "classifiers", "classifier_replicates", "bias_summary", "seed_summary",
             "orientation_summary",
+            "classifier_seeds",
         ))
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
