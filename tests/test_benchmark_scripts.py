@@ -80,6 +80,7 @@ evaluate_tf_signal_panel = load_module("evaluate_tf_signal_panel", ROOT / "bench
 search_tf_profile_classifiers = load_module("search_tf_profile_classifiers", ROOT / "benchmarks" / "scripts" / "search_tf_profile_classifiers.py")
 assemble_tf_experiment_matrix = load_module("assemble_tf_experiment_matrix", ROOT / "benchmarks" / "scripts" / "assemble_tf_experiment_matrix.py")
 evaluate_tf_classifier_signal_panel = load_module("evaluate_tf_classifier_signal_panel", ROOT / "benchmarks" / "scripts" / "evaluate_tf_classifier_signal_panel.py")
+compare_tf_random_seeds = load_module("compare_tf_random_seeds", ROOT / "benchmarks" / "scripts" / "compare_tf_random_seeds.py")
 
 
 class TfFootprintModelSearchTest(unittest.TestCase):
@@ -370,6 +371,19 @@ class TfFootprintModelSearchTest(unittest.TestCase):
         result = evaluate_tf_classifier_signal_panel.replicate_stability(metrics)
         self.assertEqual(int(result.loc[0, "replicates"]), 2)
         self.assertAlmostEqual(float(result.loc[0, "auroc_mean"]), 0.85)
+
+    def test_random_seed_comparison_reports_stable_winner(self):
+        first = pd.DataFrame(
+            [
+                {"cell": "K562", "tf": "CTCF", "correction": "raw", "n_sites": 20, "positive_sites": 10, "auroc": 0.6, "auprc": 0.6},
+                {"cell": "K562", "tf": "CTCF", "correction": "DWM", "n_sites": 20, "positive_sites": 10, "auroc": 0.8, "auprc": 0.8},
+            ]
+        )
+        second = first.copy()
+        second["auroc"] += 0.01
+        rows, summary = compare_tf_random_seeds.compare_seeds(first, second)
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(bool(summary.loc[0, "stable_auroc_winner"]))
 
 
 class BigwigSiteScoreTest(unittest.TestCase):

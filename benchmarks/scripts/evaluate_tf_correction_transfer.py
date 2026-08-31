@@ -49,6 +49,8 @@ def evaluate(
             path.name.split(".")[1]: np.load(path)["profiles"]
             for path in cache_dir.glob(f"{cell}.*.flank{flank}.npz")
         }
+        if not caches:
+            continue
         for winner in winners[winners["cell"] == cell].itertuples(index=False):
             positions = np.flatnonzero(
                 (cell_sites["tf"].to_numpy() == str(winner.tf))
@@ -67,15 +69,17 @@ def evaluate(
             metrics["geometry_selected_with"] = candidate.correction
             metrics["is_selected_correction"] = metrics["correction"] == candidate.correction
             parts.append(metrics)
-            chosen = metrics[metrics["is_selected_correction"]].iloc[0]
+            selected_rows = metrics[metrics["is_selected_correction"]]
+            chosen = selected_rows.iloc[0] if not selected_rows.empty else None
             summaries.append(
                 {
                     "cell": str(cell), "tf": str(winner.tf), "chromosome_split": split,
                     "selected_correction": candidate.correction,
                     "best_test_auroc_correction_posthoc": str(metrics.loc[metrics["auroc"].idxmax(), "correction"]),
                     "best_test_auprc_correction_posthoc": str(metrics.loc[metrics["auprc"].idxmax(), "correction"]),
-                    "selected_auroc": float(chosen.auroc),
-                    "selected_auprc": float(chosen.auprc),
+                    "selected_correction_available": chosen is not None,
+                    "selected_auroc": float(chosen.auroc) if chosen is not None else np.nan,
+                    "selected_auprc": float(chosen.auprc) if chosen is not None else np.nan,
                     "correction_auroc_range": float(metrics["auroc"].max() - metrics["auroc"].min()),
                     "correction_auprc_range": float(metrics["auprc"].max() - metrics["auprc"].min()),
                 }
