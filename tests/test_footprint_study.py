@@ -34,6 +34,10 @@ downsample = load_module(
     "downsample_bam_fragments",
     "benchmarks/scripts/downsample_bam_fragments.py",
 )
+depth_matrix = load_module(
+    "downsample_bam_depth_matrix",
+    "benchmarks/scripts/downsample_bam_depth_matrix.py",
+)
 ablation = load_module(
     "build_footprint_ablation_plan",
     "benchmarks/scripts/build_footprint_ablation_plan.py",
@@ -268,6 +272,49 @@ class FootprintAblationPlanTest(unittest.TestCase):
         self.assertNotEqual(
             downsample.fragment_uniform("fragment-1", 9),
             downsample.fragment_uniform("fragment-1", 10),
+        )
+
+    def test_one_pass_depth_matrix_uses_identical_nested_selection(self):
+        depths = [10, 25, 50]
+        matrix_selected = {
+            depth: {
+                name
+                for name in (f"fragment-{index}" for index in range(1000))
+                if depth
+                in depth_matrix.selected_depths(
+                    name,
+                    seed=9,
+                    target_fragments=depths,
+                    available_fragments=100,
+                )
+            }
+            for depth in depths
+        }
+        ordinary_selected = {
+            depth: {
+                name
+                for name in (f"fragment-{index}" for index in range(1000))
+                if downsample.fragment_uniform(name, 9) < depth / 100
+            }
+            for depth in depths
+        }
+        self.assertEqual(matrix_selected, ordinary_selected)
+        self.assertTrue(matrix_selected[10].issubset(matrix_selected[25]))
+        self.assertTrue(matrix_selected[25].issubset(matrix_selected[50]))
+
+    def test_depth_matrix_target_layout_matches_ablation_plan(self):
+        targets = depth_matrix.build_targets(
+            "/analysis",
+            "K562_rep1",
+            [50_000_000, 10_000_000],
+            [2027, 2026],
+        )
+        self.assertEqual(len(targets), 4)
+        self.assertEqual(targets[0].target_fragments, 10_000_000)
+        self.assertEqual(targets[0].seed, 2026)
+        self.assertEqual(
+            str(targets[0].output_bam),
+            "/analysis/signals/K562_rep1/10m/seed_2026/K562_rep1.10m.s2026.bam",
         )
 
     def test_ablation_plan_reuses_each_depth_subset_across_corrections(self):
