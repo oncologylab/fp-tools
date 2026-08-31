@@ -1,5 +1,6 @@
 import csv
 import importlib.util
+import json
 import pathlib
 import shutil
 import sys
@@ -556,6 +557,33 @@ class ManifestValidationTest(unittest.TestCase):
         self.assertTrue((frame["expected_bytes"].astype(int) > 2_000_000_000).all())
         self.assertFalse(any("chip" in column.lower() for column in frame.columns))
         self.assertFalse(any("label" in column.lower() for column in frame.columns))
+
+    def test_functional_detector_policy_is_frozen_before_holdout(self):
+        compact = ROOT / "benchmarks" / "manifests" / "compact"
+        policy = pd.read_csv(compact / "functional_detector_policy_v1.tsv", sep="\t")
+        routes = pd.read_csv(compact / "functional_holdout_routes_v1.tsv", sep="\t")
+        freeze = json.loads(
+            (ROOT / "benchmarks" / "manifests" / "functional_detector_policy_v1.freeze.json")
+            .read_text(encoding="utf-8")
+        )
+        promoted = policy[policy["passes_development_gates"].astype(bool)]
+        self.assertEqual(
+            set(promoted["motif_family"]),
+            {"ARID3", "FOX", "MEF2", "MYC_MAX", "TBP", "ZNF362_ZNF384"},
+        )
+        self.assertTrue((promoted["maximum_context_auroc_loss"] <= 0.02).all())
+        self.assertEqual(
+            policy.loc[
+                policy["motif_family"].eq("CTCF"), "recommended_bias_configuration"
+            ].item(),
+            "DWM",
+        )
+        self.assertTrue(policy["reference_bias_configuration"].eq("DWM").all())
+        unseen = routes["route_source"].eq("unseen_family_dwm_fallback")
+        self.assertTrue(routes.loc[unseen, "bias_configuration"].eq("DWM").all())
+        self.assertFalse(freeze["locked_holdout_labels_read"])
+        self.assertTrue(freeze["policy_frozen_before_holdout"])
+        self.assertTrue(freeze["development_labels_used_for_policy_selection"])
 
 
 class EngineeringBenchmarkHelperTest(unittest.TestCase):

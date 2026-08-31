@@ -48,3 +48,10 @@ earlier study and its already-viewed holdout.
 ENCODE ATAC-seq BAMs used to prepare the locked GM12878 and IMR-90 transfer
 panel. File size and MD5 are checked before any holdout analysis. Downloading
 these assay inputs does not open or score the preregistered TF ChIP labels.
+
+`functional_detector_policy_v1.freeze.json` records the policy freeze after the
+complete DWM/SELMA/log-linear, shift, FDA, spline, GP, and hybrid development
+factorial. The compact policy and holdout-route tables make the fail-closed
+decision executable: only families passing every development gate use a new
+route, and unseen or failed families retain DWM. The freeze fingerprints its
+source metrics and explicitly precedes all locked GM12878/IMR-90 label scoring.

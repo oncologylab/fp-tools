@@ -1,0 +1,16 @@
+cell	tf	motif_id	motif_family	role	route_source	bias_configuration	candidate_id
+GM12878	CTCF	MA0139.2	CTCF	positive_control	development_family	DWM	gp.bg_none.prior_free.long_50.short_10.ridge_1.shrink_50
+GM12878	REST	MA0138.3	REST	transfer	unseen_family_dwm_fallback	DWM	spline.bg_gp-long.prior_free.pen_10.shrink_50
+GM12878	JUND	MA0491.3	AP1	difficult	unseen_family_dwm_fallback	DWM	spline.bg_gp-long.prior_free.pen_10.shrink_50
+GM12878	MAX	MA0058.4	MYC_MAX	difficult	development_family	MT_SELMA10_4m4	fda.antisymmetric_strand_residual.pool_tf
+GM12878	MEF2B	MA0660.1	MEF2	difficult	development_family	MT_SELMA10_4m4	count_gp.bg_gp-long.window_30
+GM12878	MEF2C	MA0497.2	MEF2	difficult	development_family	MT_SELMA10_4m4	count_gp.bg_gp-long.window_30
+GM12878	TBP	MA0108.3	TBP	difficult	development_family	MT_SELMA10_4m4	count_gp.bg_gp-long.window_30
+GM12878	POU2F2	MA0507.3	POU	transfer	unseen_family_dwm_fallback	DWM	spline.bg_gp-long.prior_free.pen_10.shrink_50
+GM12878	NFYB	MA0502.3	NFY	difficult	unseen_family_dwm_fallback	DWM	spline.bg_gp-long.prior_free.pen_10.shrink_50
+GM12878	SPI1	MA0080.7	ETS	transfer	unseen_family_dwm_fallback	DWM	spline.bg_gp-long.prior_free.pen_10.shrink_50
+IMR-90	CTCF	MA0139.2	CTCF	positive_control	development_family	DWM	gp.bg_none.prior_free.long_50.short_10.ridge_1.shrink_50
+IMR-90	FOS	MA0476.2	AP1	difficult	unseen_family_dwm_fallback	DWM	spline.bg_gp-long.prior_free.pen_10.shrink_50
+IMR-90	CEBPB	MA0466.4	CEBP	transfer	unseen_family_dwm_fallback	DWM	spline.bg_gp-long.prior_free.pen_10.shrink_50
+IMR-90	ELK1	MA0028.3	ETS	difficult	unseen_family_dwm_fallback	DWM	spline.bg_gp-long.prior_free.pen_10.shrink_50
+IMR-90	NFE2L2	MA0150.3	CNC	difficult	unseen_family_dwm_fallback	DWM	spline.bg_gp-long.prior_free.pen_10.shrink_50

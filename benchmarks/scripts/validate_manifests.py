@@ -42,6 +42,31 @@ COMPACT_MANIFEST_SCHEMAS = {
         "sample",
         "biological_replicate",
     ],
+    "functional_detector_policy_v1.tsv": [
+        "motif_family",
+        "development_contexts",
+        "passes_development_gates",
+        "candidate_bias_configuration",
+        "candidate_id",
+        "reference_bias_configuration",
+        "reference_candidate_id",
+        "mean_auroc_gain",
+        "relative_auprc_gain",
+        "maximum_context_auroc_loss",
+        "failure_reasons",
+        "recommended_bias_configuration",
+        "recommended_candidate_id",
+    ],
+    "functional_holdout_routes_v1.tsv": [
+        "cell",
+        "tf",
+        "motif_id",
+        "motif_family",
+        "role",
+        "route_source",
+        "bias_configuration",
+        "candidate_id",
+    ],
 }
 
 SPECIALIZED_MANIFEST_SCHEMAS = {

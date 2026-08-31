@@ -1,0 +1,23 @@
+{
+  "schema": "fp-tools-functional-detector-policy-freeze-v1",
+  "frozen_at_utc": "2026-08-31T16:36:00Z",
+  "locked_holdout_labels_read": false,
+  "policy_frozen_before_holdout": true,
+  "training_labels_used_by_detectors": false,
+  "development_labels_used_for_policy_selection": true,
+  "unseen_family_behavior": "DWM fallback",
+  "gates": {
+    "minimum_contexts": 2,
+    "minimum_mean_auroc_gain": 0.03,
+    "minimum_relative_auprc_gain": 0.10,
+    "maximum_context_auroc_loss": 0.02
+  },
+  "source_fingerprints": {
+    "benchmarks/manifests/footprint_functional_v1.spec.json": "d6fedade53660460e5987c9e37ddc7793ca816d2e8b206f8ff93c2230b1a12a9",
+    "benchmarks/results/footprint_functional_v1/grid_compact_dwm_s2026/functional_hyperparameter_metrics.tsv.gz": "f586ecaef1b5982eeee3e2a5e72b957a469a022ef358e8a2fceb60246c5a7fac",
+    "benchmarks/results/footprint_functional_v1/strand_label_free_factorial_min25_s2026/strand_label_free_metrics.tsv.gz": "59053b018acc647967ff087c98b193be0756e2d5211d83a2b5f2a4d09d3fb0de",
+    "benchmarks/results/footprint_functional_v1/label_free_policy_factorial_s2026/label_free_candidate_matrix.tsv.gz": "cc6801c754e29a2be7d7a6dda44943b8c3bcb44fc0598458ace86a9164b95d2d"
+  },
+  "policy_table": "benchmarks/manifests/compact/functional_detector_policy_v1.tsv",
+  "holdout_routes": "benchmarks/manifests/compact/functional_holdout_routes_v1.tsv"
+}
