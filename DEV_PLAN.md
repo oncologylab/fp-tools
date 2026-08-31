@@ -155,8 +155,10 @@ a separately planned breaking release explicitly changes the contract.
    desktop-app parity on Windows x64 and Apple Silicon. Test Linux raw-read and
    cross-platform MEME runtime artifacts separately, and keep the complete
    multi-architecture Linux container as a reproducible alternative backend.
-10. Continue the locked footprint detectability matrix, starting with the
-    pending K562/HepG2 depth/correction diagnostics. The first label-free
+10. Continue the locked footprint detectability matrix beyond the completed
+    K562/HepG2 10-million-fragment, seed-2026 raw/PWM/DWM correction slice.
+    Add the remaining depths, seeds, replicates, and naked-DNA controls before
+    changing the default correction. The first label-free
     footprint/PWM fusion candidate has been rejected after its one-time
     MCF-7/A549/HCT116/Panc1 evaluation and must not be retuned on that holdout.
     Keep

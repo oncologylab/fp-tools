@@ -64,6 +64,37 @@ combine evidence only when the auxiliary channel is demonstrably informative.
 That candidate requires a new independent holdout, naked-DNA bias controls,
 and perturbation or orthogonal occupancy validation.
 
+## Ten-million-fragment correction slice
+
+One ENCODE replicate each from K562 (`ENCFF077FBI`) and HepG2 (`ENCFF624SON`)
+was deterministically sampled at 10 million fragments with seed 2026. Raw,
+PWM-corrected, and DWM-corrected signals were footprint-scored at the same
+ChIP-labeled motif centers on chromosomes 17, 18, 19, 20, 21, 22, and X. The
+comparison contained nine cell/TF tasks and used only sites finite in all three
+arms.
+
+| Correction versus raw | Mean AUROC delta | Mean AUPRC delta | AUROC winner | AUPRC winner |
+| --- | ---: | ---: | ---: | ---: |
+| PWM | +0.00285 | +0.00903 | 4 of 9 tasks | 3 of 9 tasks |
+| DWM | +0.00269 | +0.01052 | 4 of 9 tasks | 6 of 9 tasks |
+
+Raw had the highest AUROC only for K562 JUND. DWM had a positive AUPRC point
+estimate in all nine tasks. In 1,000 chromosome-block bootstrap replicates,
+both correction models robustly improved CTCF AUROC and AUPRC in both cell
+lines. DWM also had a robust K562 REST AUPRC gain, but significantly reduced
+HepG2 MAX AUROC. The K562 JUND PWM AUROC point estimate was lower than raw and
+had only 2.8% bootstrap probability of a positive delta. Direct DWM-versus-PWM
+intervals favored DWM for HepG2 CTCF AUROC/AUPRC and K562 CTCF AUPRC, but
+favored PWM for HepG2 JUND and MAX AUROC.
+
+This slice does not support global Tn5 overcorrection, but it does show
+TF-family-specific correction tradeoffs. DWM remains the default because this
+single-depth slice is insufficient to justify a production change. The next
+matrix stage should repeat these comparisons across depths, seeds, replicates,
+and naked-DNA controls, and should treat strong correction disagreement as a
+possible abstention or reliability feature rather than selecting a model from
+the same labels.
+
 ## Engineering outcomes
 
 - Added an opt-in, label-free evidence-fusion primitive and a locked evaluator
