@@ -241,8 +241,11 @@ class ConditionalSequenceBiasModel:
         if not np.any(keep):
             raise ValueError("at least one window must contain observed cuts")
         log_probabilities = scores[keep] - logsumexp(scores[keep], axis=1, keepdims=True)
-        contribution = np.where(observed[keep] > 0, observed[keep] * log_probabilities, 0.0)
-        return float(-np.sum(contribution[np.isfinite(contribution)]) / np.sum(totals[keep]))
+        selected_observed = observed[keep]
+        contribution = np.zeros_like(selected_observed)
+        positive = selected_observed > 0
+        contribution[positive] = selected_observed[positive] * log_probabilities[positive]
+        return float(-np.sum(contribution) / np.sum(totals[keep]))
 
     def _gradient(
         self,

@@ -19,6 +19,7 @@ from evaluate_parametric_bias import (  # noqa: E402
     select_bias_configurations,
     split_mitochondrial_dataset,
     stable_u64,
+    summarize_bias_depth_stability,
     thin_counts,
 )
 from fp_tools.tools.parametric_bias import (  # noqa: E402
@@ -192,3 +193,36 @@ def test_selection_rejects_models_that_do_not_beat_uniform_control() -> None:
     selected = select_bias_configurations(frame)
     assert not selected.loc[0, "passed_control_likelihood"]
     assert not selected.loc[0, "retained_for_functional_screen"]
+
+
+def test_depth_recommendation_aggregates_seeds_and_uses_smallest_stable_depth() -> None:
+    rows = []
+    means = {"1000": 4.20, "5000": 4.002, "25000": 4.00, "full": 4.01}
+    for depth, mean in means.items():
+        for seed, offset in enumerate((-0.01, -0.005, 0.0, 0.005, 0.01), start=1):
+            for sample in ("A", "B"):
+                rows.append(
+                    {
+                        "source": "mitochondrial",
+                        "sample": sample,
+                        "split": "validation",
+                        "shift_forward": 4,
+                        "shift_reverse": -4,
+                        "model": "selma10",
+                        "configuration": "pooled",
+                        "l2": 0.001,
+                        "training_depth": depth,
+                        "seed": seed,
+                        "conditional_nll": mean + offset,
+                        "nll_gain": 4.6 - mean - offset,
+                        "calibration_error": 0.1,
+                        "runtime_seconds": 1.0,
+                        "model_size_mb": 1.0,
+                    }
+                )
+    stability, recommendations = summarize_bias_depth_stability(pd.DataFrame(rows))
+    assert len(recommendations) == 1
+    assert str(recommendations.loc[0, "training_depth"]) == "5000"
+    selected = stability[stability["recommended_minimum_depth"]]
+    assert selected["seed_count"].tolist() == [5]
+    assert selected["passed_all_seed_control_likelihood"].all()

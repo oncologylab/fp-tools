@@ -1005,6 +1005,109 @@ def select_bias_configurations(metrics: pd.DataFrame, maximum_model_size_mb: flo
     return ranked
 
 
+def summarize_bias_depth_stability(
+    metrics: pd.DataFrame,
+    maximum_model_size_mb: float = 25.0,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Aggregate downsampling seeds and select depth by one-standard-error.
+
+    The recommendation is made independently for each source, shift, model,
+    configuration, and regularization value. It is the smallest tested depth
+    whose mean held-out NLL is within one standard error of that configuration's
+    best depth and whose held-out gain is positive for every seed.
+    """
+
+    validation = metrics[
+        (metrics["split"] == "validation")
+        & (metrics["model_size_mb"] <= maximum_model_size_mb)
+    ].copy()
+    identity = [
+        "source",
+        "shift_forward",
+        "shift_reverse",
+        "model",
+        "configuration",
+        "l2",
+    ]
+    per_seed = (
+        validation.groupby(identity + ["training_depth", "seed"], as_index=False)
+        .agg(
+            conditional_nll=("conditional_nll", "mean"),
+            nll_gain=("nll_gain", "mean"),
+            calibration_error=("calibration_error", "mean"),
+            runtime_seconds=("runtime_seconds", "mean"),
+            model_size_mb=("model_size_mb", "max"),
+            evaluated_samples=("sample", "nunique"),
+        )
+    )
+    stability = (
+        per_seed.groupby(identity + ["training_depth"], as_index=False, dropna=False)
+        .agg(
+            mean_conditional_nll=("conditional_nll", "mean"),
+            seed_sd_conditional_nll=("conditional_nll", "std"),
+            mean_nll_gain=("nll_gain", "mean"),
+            minimum_seed_nll_gain=("nll_gain", "min"),
+            mean_calibration_error=("calibration_error", "mean"),
+            seed_sd_calibration_error=("calibration_error", "std"),
+            mean_runtime_seconds=("runtime_seconds", "mean"),
+            maximum_model_size_mb=("model_size_mb", "max"),
+            seed_count=("seed", "nunique"),
+            evaluated_samples=("evaluated_samples", "max"),
+        )
+    )
+    stability["seed_sd_conditional_nll"] = stability["seed_sd_conditional_nll"].fillna(0.0)
+    stability["seed_sd_calibration_error"] = stability["seed_sd_calibration_error"].fillna(0.0)
+    stability["standard_error_conditional_nll"] = stability["seed_sd_conditional_nll"] / np.sqrt(
+        stability["seed_count"].clip(lower=1)
+    )
+    stability["passed_all_seed_control_likelihood"] = stability["minimum_seed_nll_gain"] > 0
+    stability["within_one_standard_error_of_best"] = False
+    stability["recommended_minimum_depth"] = False
+
+    recommendation_rows: list[dict[str, object]] = []
+    for key, indexes in stability.groupby(identity, sort=True, dropna=False).groups.items():
+        group = stability.loc[indexes]
+        eligible = group[group["passed_all_seed_control_likelihood"]]
+        if eligible.empty:
+            continue
+        best = eligible.sort_values(
+            ["mean_conditional_nll", "mean_calibration_error"],
+            kind="mergesort",
+        ).iloc[0]
+        threshold = float(best["mean_conditional_nll"]) + float(
+            best["standard_error_conditional_nll"]
+        )
+        within = eligible["mean_conditional_nll"] <= threshold
+        qualifying_indexes = eligible.index[within]
+        stability.loc[qualifying_indexes, "within_one_standard_error_of_best"] = True
+
+        def depth_order(value: object) -> float:
+            return float("inf") if str(value) == "full" else float(value)
+
+        recommended_index = min(
+            qualifying_indexes,
+            key=lambda index: depth_order(stability.at[index, "training_depth"]),
+        )
+        stability.at[recommended_index, "recommended_minimum_depth"] = True
+        recommendation = stability.loc[recommended_index].to_dict()
+        recommendation["best_mean_conditional_nll"] = float(best["mean_conditional_nll"])
+        recommendation["one_standard_error_threshold"] = threshold
+        recommendation_rows.append(recommendation)
+
+    stability = stability.sort_values(
+        identity + ["mean_conditional_nll", "training_depth"],
+        kind="mergesort",
+    ).reset_index(drop=True)
+    recommendations = pd.DataFrame(recommendation_rows)
+    if len(recommendations):
+        recommendations = recommendations.sort_values(
+            ["mean_conditional_nll", "mean_calibration_error"],
+            kind="mergesort",
+        ).reset_index(drop=True)
+        recommendations.insert(0, "rank", np.arange(1, len(recommendations) + 1))
+    return stability, recommendations
+
+
 def _cache_path(cache_dir: Path, sample: str, source: str, split: str, shift: tuple[int, int]) -> Path:
     return cache_dir / f"{sample}.{source}.{split}.shift_{shift[0]}_{shift[1]}.npz"
 
@@ -1236,11 +1339,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         metrics,
         maximum_model_size_mb=float(study["promotion_gates"]["maximum_model_size_mb"]),
     )
+    depth_stability, depth_recommendations = summarize_bias_depth_stability(
+        metrics,
+        maximum_model_size_mb=float(study["promotion_gates"]["maximum_model_size_mb"]),
+    )
     window_manifest.to_csv(args.outdir / "control_windows.tsv", sep="\t", index=False)
     metrics.to_csv(args.outdir / "bias_model_metrics.tsv", sep="\t", index=False)
     artifacts.to_csv(args.outdir / "bias_model_artifacts.tsv", sep="\t", index=False)
     motifs.to_csv(args.outdir / "strand_aligned_cut_motifs.tsv.gz", sep="\t", index=False)
     selection.to_csv(args.outdir / "bias_model_selection.tsv", sep="\t", index=False)
+    depth_stability.to_csv(args.outdir / "bias_depth_stability.tsv", sep="\t", index=False)
+    depth_recommendations.to_csv(
+        args.outdir / "bias_depth_recommendations.tsv",
+        sep="\t",
+        index=False,
+    )
     manifest = {
         "schema": "fp-tools-parametric-bias-benchmark-v1",
         "study": str(args.study),
@@ -1258,6 +1371,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "pooled_only": args.pooled_only,
         "test_chromosomes_scored": False,
         "retained_configurations": selection[selection["retained_for_functional_screen"]].to_dict("records"),
+        "minimum_depth_recommendations": depth_recommendations.to_dict("records"),
         "outputs": {
             name: {"path": str(args.outdir / name), "sha256": file_sha256(args.outdir / name)}
             for name in (
@@ -1266,6 +1380,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "bias_model_artifacts.tsv",
                 "strand_aligned_cut_motifs.tsv.gz",
                 "bias_model_selection.tsv",
+                "bias_depth_stability.tsv",
+                "bias_depth_recommendations.tsv",
             )
         },
     }
