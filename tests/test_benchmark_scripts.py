@@ -67,6 +67,231 @@ plot_method_comparison = load_optional_module("plot_method_comparison", ROOT / "
 validate_manifests = load_module("validate_manifests", ROOT / "benchmarks" / "scripts" / "validate_manifests.py")
 run_engineering_benchmark = load_module("run_engineering_benchmark", ROOT / "benchmarks" / "scripts" / "run_engineering_benchmark.py")
 evaluate_bigwig_site_scores = load_module("evaluate_bigwig_site_scores", ROOT / "benchmarks" / "scripts" / "evaluate_bigwig_site_scores.py")
+search_tf_footprint_models = load_module("search_tf_footprint_models", ROOT / "benchmarks" / "scripts" / "search_tf_footprint_models.py")
+compare_frozen_tf_candidates = load_module("compare_frozen_tf_candidates", ROOT / "benchmarks" / "scripts" / "compare_frozen_tf_candidates.py")
+discover_encode_chip_peaks = load_module("discover_encode_chip_peaks", ROOT / "benchmarks" / "scripts" / "discover_encode_chip_peaks.py")
+build_footprint_site_labels = load_module("build_footprint_site_labels", ROOT / "benchmarks" / "scripts" / "build_footprint_site_labels.py")
+build_encode_tf_site_matrix = load_module("build_encode_tf_site_matrix", ROOT / "benchmarks" / "scripts" / "build_encode_tf_site_matrix.py")
+match_tf_sites_on_accessibility = load_module("match_tf_sites_on_accessibility", ROOT / "benchmarks" / "scripts" / "match_tf_sites_on_accessibility.py")
+plot_frozen_tf_profiles = load_module("plot_frozen_tf_profiles", ROOT / "benchmarks" / "scripts" / "plot_frozen_tf_profiles.py")
+summarize_tf_footprint_search = load_module("summarize_tf_footprint_search", ROOT / "benchmarks" / "scripts" / "summarize_tf_footprint_search.py")
+
+
+class TfFootprintModelSearchTest(unittest.TestCase):
+    def test_geometry_search_recovers_center_depletion(self):
+        rng = np.random.default_rng(12)
+        profiles = rng.normal(2.0, 0.15, size=(120, 81))
+        labels = np.repeat([0, 1], 60)
+        profiles[labels == 1, 35:46] -= 1.0
+        candidate = search_tf_footprint_models.Candidate(
+            "raw", center_width=11, flank_width=12, gap=2
+        )
+        scores = search_tf_footprint_models.score_candidate(profiles, candidate)
+        metrics = search_tf_footprint_models.binary_metrics(labels, scores)
+        self.assertGreater(metrics["auroc"], 0.99)
+        self.assertGreater(metrics["auprc"], 0.99)
+
+    def test_asymmetry_penalty_rejects_one_sided_artifact(self):
+        profiles = np.ones((2, 81), dtype=float)
+        profiles[:, 35:46] = 0.5
+        profiles[1, 21:33] = 4.0
+        base = search_tf_footprint_models.Candidate(
+            "DWM", center_width=11, flank_width=12, gap=2
+        )
+        penalized = search_tf_footprint_models.replace(base, asymmetry_penalty=1.0)
+        base_scores = search_tf_footprint_models.score_candidate(profiles, base)
+        penalized_scores = search_tf_footprint_models.score_candidate(profiles, penalized)
+        self.assertAlmostEqual(base_scores[0], penalized_scores[0])
+        self.assertLess(penalized_scores[1], base_scores[1])
+
+    def test_sampler_caps_each_label_and_split(self):
+        rows = []
+        for split in ("train", "validation"):
+            for label in (0, 1):
+                for index in range(9):
+                    rows.append(
+                        {
+                            "cell": "K562", "tf": "CTCF", "chromosome_split": split,
+                            "chip_label": label, "TFBS_chr": "chr1",
+                            "TFBS_start": index + label * 100, "TFBS_end": index + label * 100 + 1,
+                        }
+                    )
+        sampled = search_tf_footprint_models.deterministic_class_sample(
+            pd.DataFrame(rows), maximum_per_class=3, seed=4
+        )
+        counts = sampled.groupby(["chromosome_split", "chip_label"]).size()
+        self.assertTrue((counts == 3).all())
+
+        pooled = search_tf_footprint_models.deterministic_class_sample(
+            pd.DataFrame(rows), maximum_per_class=2, seed=4, negative_pool_multiplier=3
+        )
+        pooled_counts = pooled.groupby(["chromosome_split", "chip_label"]).size()
+        self.assertEqual(int(pooled_counts.loc[("train", 0)]), 6)
+        self.assertEqual(int(pooled_counts.loc[("train", 1)]), 2)
+
+    def test_evaluation_regions_are_padded_and_merged(self):
+        sites = pd.DataFrame(
+            {
+                "TFBS_chr": ["chr1", "chr1", "chr2"],
+                "TFBS_start": [100, 105, 50],
+                "TFBS_end": [101, 106, 51],
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = pathlib.Path(tmpdir) / "regions.bed"
+            count = search_tf_footprint_models.write_merged_regions(sites, output, padding=10)
+            self.assertEqual(count, 2)
+            self.assertEqual(
+                output.read_text(encoding="utf-8").splitlines()[0].split("\t")[:3],
+                ["chr1", "90", "116"],
+            )
+
+    def test_frozen_comparison_uses_common_finite_sites(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            sites = pd.DataFrame(
+                {
+                    "cell": ["K562"] * 4,
+                    "tf": ["CTCF"] * 4,
+                    "TFBS_chr": ["chr1"] * 4,
+                    "TFBS_start": [40, 50, 60, 70],
+                    "TFBS_end": [41, 51, 61, 71],
+                    "chromosome_split": ["validation"] * 4,
+                    "chip_label": [0, 0, 1, 1],
+                }
+            )
+            signal = root / "baseline.bw"
+            handle = pyBigWig.open(str(signal), "w")
+            handle.addHeader([("chr1", 100)])
+            handle.addEntries("chr1", 40, values=[0.0, 0.0, 1.0], span=10, step=10)
+            handle.close()
+            profiles = np.ones((4, 81), dtype=np.float32)
+            profiles[2:, 35:46] = 0.0
+            np.savez(root / "K562.raw.flank40.npz", profiles=profiles, valid=np.ones(4, bool))
+            winners = pd.DataFrame(
+                [
+                    {
+                        "cell": "K562", "tf": "CTCF", "correction": "raw",
+                        "center_width": 11, "flank_width": 12, "gap": 2,
+                        "shoulder": "mean", "center": "mean", "normalization": "none",
+                        "asymmetry_penalty": 0.0,
+                    }
+                ]
+            )
+            baselines = pd.DataFrame(
+                [{"cell": "K562", "method": "legacy", "signal": str(signal)}]
+            )
+            result = compare_frozen_tf_candidates.compare(
+                sites, winners, baselines, root, flank=40, split="validation"
+            )
+            self.assertEqual(int(result.loc[0, "n_sites"]), 3)
+            self.assertEqual(float(result.loc[0, "candidate_auroc"]), 1.0)
+
+    def test_encode_selector_prefers_unperturbed_optimal_idr(self):
+        frame = pd.DataFrame(
+            [
+                {
+                    "cell": "K562", "tf": "CTCF", "file_accession": "NEW",
+                    "output_type": "IDR thresholded peaks", "perturbed": True,
+                    "preferred_default": True, "biological_replicate_count": 2,
+                    "date_created": "2026", "experiment_accession": "E1",
+                },
+                {
+                    "cell": "K562", "tf": "CTCF", "file_accession": "OPT",
+                    "output_type": "optimal IDR thresholded peaks", "perturbed": False,
+                    "preferred_default": True, "biological_replicate_count": 2,
+                    "date_created": "2020", "experiment_accession": "E2",
+                },
+            ]
+        )
+        selected = discover_encode_chip_peaks.select_candidates(frame)
+        self.assertEqual(selected.loc[0, "file_accession"], "OPT")
+
+    def test_extracts_only_study_motifs(self):
+        study = {
+            "tasks": [
+                {"motif_id": "MA0001.1", "split": "development"},
+                {"motif_id": "MA0002.1", "split": "locked_holdout"},
+            ]
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            database = root / "all.jaspar"
+            database.write_text(
+                ">MA0001.1 ONE\nA [ 1 2 ]\n>MA0002.1 TWO\nA [ 3 4 ]\n",
+                encoding="utf-8",
+            )
+            output = root / "subset.jaspar"
+            count = discover_encode_chip_peaks.extract_task_motifs(
+                study, database, output, "development"
+            )
+            self.assertEqual(count, 1)
+            self.assertIn("MA0001.1", output.read_text(encoding="utf-8"))
+            self.assertNotIn("MA0002.1", output.read_text(encoding="utf-8"))
+
+    def test_finds_one_motif_site_bed(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = pathlib.Path(tmpdir)
+            bed = root / "TF_MA0001.1" / "beds" / "TF_MA0001.1_all.bed"
+            bed.parent.mkdir(parents=True)
+            bed.write_text("chr1\t1\t2\n", encoding="utf-8")
+            self.assertEqual(
+                build_encode_tf_site_matrix.motif_site_file(root, "MA0001.1"), bed
+            )
+            self.assertEqual(build_encode_tf_site_matrix.cell_motif_root(root, "K562"), root)
+            (root / "K562").mkdir()
+            self.assertEqual(
+                build_encode_tf_site_matrix.cell_motif_root(root, "K562"), root / "K562"
+            )
+
+    def test_accessibility_matching_reduces_feature_imbalance(self):
+        rows = []
+        for label, values in ((1, [2.0, 3.0, 8.0]), (0, [1.9, 3.1, 7.9, 20.0])):
+            for index, value in enumerate(values):
+                rows.append(
+                    {
+                        "cell": "K562", "tf": "CTCF", "chromosome_split": "train",
+                        "chip_label": label, "motif_score": value,
+                        "accessibility": value, "TFBS_chr": "chr1",
+                        "TFBS_start": index + label * 100, "TFBS_end": index + label * 100 + 1,
+                    }
+                )
+        sites = pd.DataFrame(rows)
+        matched, diagnostics = match_tf_sites_on_accessibility.match_sites(
+            sites, ["motif_score", "accessibility"], negative_ratio=1, seed=4
+        )
+        self.assertEqual(len(matched), 6)
+        self.assertLess(
+            abs(diagnostics.loc[0, "after_smd_accessibility"]),
+            abs(diagnostics.loc[0, "before_smd_accessibility"]),
+        )
+
+    def test_display_normalization_removes_outer_flank_level(self):
+        profiles = np.tile(np.linspace(2.0, 4.0, 81), (3, 1))
+        normalized = plot_frozen_tf_profiles.normalize_profiles_for_display(
+            profiles, outer_width=10
+        )
+        outer = np.concatenate([normalized[:, :10], normalized[:, -10:]], axis=1)
+        np.testing.assert_allclose(np.mean(outer, axis=1), 0.0, atol=1e-12)
+
+    def test_detectability_summary_prioritizes_abstention_reasons(self):
+        row = pd.Series(
+            {
+                "positive_sites": 800, "after_smd_accessibility": 0.5,
+                "after_smd_motif_score": 0.0, "candidate_auroc": 0.9,
+            }
+        )
+        status = summarize_tf_footprint_search.classify_row(
+            row, 500, 0.25, 0.5, 0.65, 0.70, 0.75
+        )
+        self.assertEqual(status, "accessibility_confounded")
+        row["positive_sites"] = 20
+        self.assertEqual(
+            summarize_tf_footprint_search.classify_row(
+                row, 500, 0.25, 0.5, 0.65, 0.70, 0.75
+            ),
+            "underpowered",
+        )
 
 
 class BigwigSiteScoreTest(unittest.TestCase):
