@@ -587,6 +587,7 @@ def evaluate(
     dwm_base_run: Path | None,
     threshold: float,
     seed: int,
+    candidate_only: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
     promoted = policy[policy["passes_development_gates"].astype(bool)].copy()
     routes = promoted.set_index("motif_family")
@@ -618,7 +619,7 @@ def evaluate(
         reference_id = str(route["reference_candidate_id"])
         if candidate_id not in strand_candidates:
             raise ValueError(f"unknown frozen strand candidate: {candidate_id}")
-        if reference_id not in dwm_candidates:
+        if not candidate_only and reference_id not in dwm_candidates:
             raise ValueError(f"unknown frozen DWM candidate: {reference_id}")
         training_key = (bias_configuration, cell)
         if training_key not in training_cache:
@@ -643,28 +644,32 @@ def evaluate(
             positions=positions,
             seed=stable_seed(cell, tf, candidate_id, seed=seed),
         )
-        if cell not in dwm_training_cache:
-            dwm_training_cache[cell] = load_dwm_training_source(
-                cell,
-                artifact_paths=dwm_training_paths,
-                base_run=dwm_base_run,
-                flank=int(study["profile_flank_bp"]),
+        reference_model = None
+        if not candidate_only:
+            if cell not in dwm_training_cache:
+                dwm_training_cache[cell] = load_dwm_training_source(
+                    cell,
+                    artifact_paths=dwm_training_paths,
+                    base_run=dwm_base_run,
+                    flank=int(study["profile_flank_bp"]),
+                )
+                for record in dwm_training_cache[cell][4]:
+                    input_records.append({"purpose": "dwm_training", **record})
+            dwm_sites, dwm_profiles, dwm_valid, dwm_hashes, _inputs = (
+                dwm_training_cache[cell]
             )
-            for record in dwm_training_cache[cell][4]:
-                input_records.append({"purpose": "dwm_training", **record})
-        dwm_sites, dwm_profiles, dwm_valid, dwm_hashes, _inputs = dwm_training_cache[cell]
-        if not np.array_equal(train_hashes, dwm_hashes[train_valid]):
-            raise ValueError(f"strand and DWM training sites differ for {cell}")
-        reference_model = fit_dwm_detector(
-            dwm_candidates[reference_id],
-            dwm_sites.loc[dwm_valid].reset_index(drop=True),
-            {name: values[dwm_valid] for name, values in dwm_profiles.items()},
-            cell=cell,
-            tf=tf,
-            motif_family=motif_family,
-            positions=positions,
-            seed=stable_seed(cell, tf, reference_id, seed=seed),
-        )
+            if not np.array_equal(train_hashes, dwm_hashes[train_valid]):
+                raise ValueError(f"strand and DWM training sites differ for {cell}")
+            reference_model = fit_dwm_detector(
+                dwm_candidates[reference_id],
+                dwm_sites.loc[dwm_valid].reset_index(drop=True),
+                {name: values[dwm_valid] for name, values in dwm_profiles.items()},
+                cell=cell,
+                tf=tf,
+                motif_family=motif_family,
+                positions=positions,
+                seed=stable_seed(cell, tf, reference_id, seed=seed),
+            )
 
         replicates = sorted(
             replicate
@@ -675,29 +680,58 @@ def evaluate(
             raise ValueError(f"no naked-DNA strand artifact for {bias_configuration}/{cell}")
         for replicate in replicates:
             strand_path = naked_strand_paths[(bias_configuration, cell, replicate)]
-            dwm_path = naked_dwm_paths[(cell, replicate)]
             naked_sites, naked_strand, strand_valid, strand_hashes, _strand_doc = (
                 load_strand_artifact(strand_path, cell)
             )
-            dwm_naked_sites, naked_dwm, dwm_naked_valid, dwm_naked_hashes, _dwm_doc = (
-                load_combined_artifact(dwm_path, cell)
-            )
-            if not np.array_equal(strand_hashes, dwm_naked_hashes):
-                raise ValueError(
-                    f"candidate and DWM naked-DNA sites differ for {cell}/{replicate}"
-                )
-            input_records.extend(
-                [
-                    {"purpose": "naked_strand", "path": str(strand_path), "sha256": file_sha256(strand_path)},
-                    {"purpose": "naked_dwm", "path": str(dwm_path), "sha256": file_sha256(dwm_path)},
-                ]
+            input_records.append(
+                {
+                    "purpose": "naked_strand",
+                    "path": str(strand_path),
+                    "sha256": file_sha256(strand_path),
+                }
             )
             tf_mask = naked_sites["tf"].astype(str).eq(tf).to_numpy()
-            common_valid = tf_mask & strand_valid & dwm_naked_valid
-            for method, fitted, profiles, method_candidate_id in (
-                ("frozen_policy_candidate", candidate_model, naked_strand, candidate_id),
-                ("frozen_dwm_reference", reference_model, naked_dwm, reference_id),
-            ):
+            common_valid = tf_mask & strand_valid
+            methods = [
+                (
+                    "frozen_policy_candidate",
+                    candidate_model,
+                    naked_strand,
+                    candidate_id,
+                )
+            ]
+            if not candidate_only:
+                dwm_path = naked_dwm_paths[(cell, replicate)]
+                (
+                    _dwm_naked_sites,
+                    naked_dwm,
+                    dwm_naked_valid,
+                    dwm_naked_hashes,
+                    _dwm_doc,
+                ) = load_combined_artifact(dwm_path, cell)
+                if not np.array_equal(strand_hashes, dwm_naked_hashes):
+                    raise ValueError(
+                        "candidate and DWM naked-DNA sites differ for "
+                        f"{cell}/{replicate}"
+                    )
+                input_records.append(
+                    {
+                        "purpose": "naked_dwm",
+                        "path": str(dwm_path),
+                        "sha256": file_sha256(dwm_path),
+                    }
+                )
+                common_valid &= dwm_naked_valid
+                methods.append(
+                    (
+                        "frozen_dwm_reference",
+                        reference_model,
+                        naked_dwm,
+                        reference_id,
+                    )
+                )
+            for method, fitted, profiles, method_candidate_id in methods:
+                assert fitted is not None
                 probabilities, total_signal, residual = predict_detector(
                     fitted, profiles, naked_sites
                 )
@@ -749,13 +783,41 @@ def evaluate(
     summaries = pd.DataFrame(summary_rows)
     scores = pd.concat(score_frames, ignore_index=True) if score_frames else pd.DataFrame()
     aggregates = pd.DataFrame(aggregate_rows)
+    gates = study["promotion_gates"]
+    maximum_rate = float(gates["maximum_naked_dna_false_positive_rate"])
+    if candidate_only:
+        paired = pd.DataFrame()
+        gate = {
+            "schema": "fp-tools-naked-dna-candidate-only-gate-v1",
+            "posterior_threshold": float(threshold),
+            "minimum_signal_for_call": "strictly greater than zero",
+            "all_site_gate_required": True,
+            "informative_site_gate_required": True,
+            "maximum_false_positive_rate": maximum_rate,
+            "pairs": 0,
+            "candidate_rows": int(len(summaries)),
+            "maximum_candidate_false_positive_rate": float(
+                summaries["false_positive_rate"].max()
+            ),
+            "maximum_candidate_informative_false_positive_rate": float(
+                summaries["informative_false_positive_rate"].max()
+            ),
+        }
+        gate["passes"] = bool(
+            gate["maximum_candidate_false_positive_rate"] <= maximum_rate
+            and gate["maximum_candidate_informative_false_positive_rate"]
+            <= maximum_rate
+        )
+        gate["inputs"] = list(
+            {record["path"]: record for record in input_records}.values()
+        )
+        return summaries, scores, aggregates, {"gate": gate, "paired": paired}
+
     paired = pair_false_positive_rates(summaries)
     primary_candidate = "false_positive_rate__frozen_policy_candidate"
     primary_reference = "false_positive_rate__frozen_dwm_reference"
     informative_candidate = "informative_false_positive_rate__frozen_policy_candidate"
     informative_reference = "informative_false_positive_rate__frozen_dwm_reference"
-    gates = study["promotion_gates"]
-    maximum_rate = float(gates["maximum_naked_dna_false_positive_rate"])
     maximum_increase = float(gates["maximum_naked_dna_false_positive_rate_increase"])
     gate = {
         "schema": "fp-tools-naked-dna-functional-policy-gate-v1",
@@ -918,8 +980,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--naked-dwm-artifact",
         action="append",
         type=parse_dwm_artifact,
-        required=True,
+        default=[],
         metavar="CELL,REPLICATE,JSON",
+    )
+    parser.add_argument(
+        "--candidate-only",
+        action="store_true",
+        help=(
+            "Score the frozen candidate without loading a DWM reference. This is "
+            "intended for independent negative-control replicates."
+        ),
     )
     parser.add_argument("--posterior-threshold", type=float, default=0.5)
     parser.add_argument("--seed", type=int, default=2026)
@@ -942,7 +1012,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     dwm_training_paths = dict(args.dwm_training_artifact)
     if len(dwm_training_paths) != len(args.dwm_training_artifact):
         raise SystemExit("duplicate --dwm-training-artifact cells")
-    if args.dwm_base_run is None and not dwm_training_paths:
+    if not args.candidate_only and not args.naked_dwm_artifact:
+        raise SystemExit("provide --naked-dwm-artifact unless --candidate-only")
+    if (
+        not args.candidate_only
+        and args.dwm_base_run is None
+        and not dwm_training_paths
+    ):
         raise SystemExit("provide --dwm-base-run or --dwm-training-artifact")
     summaries, scores, aggregates, result = evaluate(
         study=study,
@@ -954,6 +1030,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         dwm_base_run=args.dwm_base_run,
         threshold=args.posterior_threshold,
         seed=args.seed,
+        candidate_only=args.candidate_only,
     )
     args.outdir.mkdir(parents=True, exist_ok=True)
     summary_path = args.outdir / "naked_dna_false_positive_summary.tsv"
@@ -961,13 +1038,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     aggregate_path = args.outdir / "naked_dna_aggregate_profiles.tsv.gz"
     paired_path = args.outdir / "naked_dna_policy_vs_dwm.tsv"
     promotion_path = args.outdir / "naked_dna_promotion_false_positive_rates.tsv"
+    candidate_path = args.outdir / "naked_dna_candidate_false_positive_rates.tsv"
     plot_path = args.outdir / "naked_dna_aggregate_profiles.pdf"
-    promotion_rates = promotion_false_positive_table(summaries)
     summaries.to_csv(summary_path, sep="\t", index=False)
     scores.to_csv(scores_path, sep="\t", index=False)
     aggregates.to_csv(aggregate_path, sep="\t", index=False)
-    result["paired"].to_csv(paired_path, sep="\t", index=False)
-    promotion_rates.to_csv(promotion_path, sep="\t", index=False)
+    if args.candidate_only:
+        summaries.to_csv(candidate_path, sep="\t", index=False)
+        comparison_outputs = (candidate_path,)
+    else:
+        promotion_rates = promotion_false_positive_table(summaries)
+        result["paired"].to_csv(paired_path, sep="\t", index=False)
+        promotion_rates.to_csv(promotion_path, sep="\t", index=False)
+        comparison_outputs = (paired_path, promotion_path)
     render_profiles(aggregates, plot_path)
     gate = result["gate"]
     gate.update(
@@ -976,7 +1059,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             "study_sha256": file_sha256(args.study),
             "policy": str(args.policy),
             "policy_sha256": file_sha256(args.policy),
-            "dwm_base_run": str(args.dwm_base_run),
+            "candidate_only": bool(args.candidate_only),
+            "dwm_base_run": (
+                None if args.candidate_only else str(args.dwm_base_run)
+            ),
             "seed": int(args.seed),
             "outputs": {
                 path.name: {"path": str(path), "sha256": file_sha256(path)}
@@ -984,8 +1070,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     summary_path,
                     scores_path,
                     aggregate_path,
-                    paired_path,
-                    promotion_path,
+                    *comparison_outputs,
                     plot_path,
                 )
             },
@@ -995,7 +1080,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     gate_path.write_text(
         json.dumps(gate, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    print(result["paired"].to_string(index=False))
+    if not args.candidate_only:
+        print(result["paired"].to_string(index=False))
     print(json.dumps({key: value for key, value in gate.items() if key != "inputs"}, indent=2, sort_keys=True))
     return 0 if gate["passes"] else 2
 
