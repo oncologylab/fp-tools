@@ -120,6 +120,15 @@ def test_pooled_prior_adaptation_and_safe_roundtrip(tmp_path: Path) -> None:
         ConditionalSequenceBiasModel.load(npz_path)
 
 
+def test_model_suffix_tokens_are_not_replaced(tmp_path: Path) -> None:
+    model = ConditionalSequenceBiasModel(BiasFeatureSpec.selma10())
+    npz_path, json_path = model.save(tmp_path / "model.seed_2026")
+    assert npz_path.name == "model.seed_2026.npz"
+    assert json_path.name == "model.seed_2026.json"
+    loaded = ConditionalSequenceBiasModel.load(tmp_path / "model.seed_2026")
+    assert np.array_equal(loaded.main, model.main)
+
+
 def test_calibrated_residuals_and_expected_signal() -> None:
     observed = np.asarray([0.0, 2.0, 8.0, 1.0, 0.0])
     expected = np.asarray([0.5, 2.0, 3.0, 2.0, 0.5])

@@ -405,7 +405,7 @@ class ConditionalSequenceBiasModel:
 
         npz_path = Path(path)
         if npz_path.suffix != ".npz":
-            npz_path = npz_path.with_suffix(".npz")
+            npz_path = Path(str(npz_path) + ".npz")
         json_path = npz_path.with_suffix(".json")
         npz_path.parent.mkdir(parents=True, exist_ok=True)
         arrays: dict[str, np.ndarray] = {"main": self.main}
@@ -427,7 +427,7 @@ class ConditionalSequenceBiasModel:
 
         npz_path = Path(path)
         if npz_path.suffix != ".npz":
-            npz_path = npz_path.with_suffix(".npz")
+            npz_path = Path(str(npz_path) + ".npz")
         json_path = npz_path.with_suffix(".json")
         document = json.loads(json_path.read_text(encoding="utf-8"))
         if document.get("schema") != MODEL_SCHEMA:
