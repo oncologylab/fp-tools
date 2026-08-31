@@ -21,6 +21,7 @@ from fp_tools.tools.functional_footprints import (
     orient_profiles,
     profile_descriptors,
     site_accessibility_background,
+    standardized_functional_separation,
 )
 
 
@@ -48,6 +49,22 @@ def test_profile_orientation_and_descriptors() -> None:
     assert 5 <= descriptors.width <= 30
     assert 10 <= descriptors.shoulder_distance <= 30
     assert abs(descriptors.asymmetry) < 0.05
+
+
+def test_standardized_functional_separation_detects_curve_difference() -> None:
+    rng = np.random.default_rng(41)
+    x = _positions()
+    labels = np.repeat([0, 1], 100)
+    profiles = rng.normal(scale=0.3, size=(len(labels), len(x)))
+    profiles[labels == 1] += _footprint_shape(x)
+    separated = standardized_functional_separation(profiles, labels, x)
+    absent = standardized_functional_separation(
+        rng.normal(scale=0.3, size=profiles.shape),
+        labels,
+        x,
+    )
+    assert separated > 0.5
+    assert separated > absent * 3
 
 
 def test_strand_functional_profiles_reverse_and_swap_channels() -> None:

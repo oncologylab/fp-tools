@@ -259,6 +259,46 @@ def profile_descriptors(profile: np.ndarray, positions: np.ndarray | None = None
     return ProfileDescriptors(center, shoulders, depletion, width, shoulder_distance, asymmetry, periodicity)
 
 
+def standardized_functional_separation(
+    profiles: np.ndarray,
+    labels: Iterable[int | bool],
+    positions: np.ndarray | None = None,
+    *,
+    limit: float = 50.0,
+) -> float:
+    """RMS standardized bound/unbound curve difference within a fixed window."""
+
+    values = _validate_profiles(profiles)
+    group = np.asarray(list(labels), dtype=bool)
+    if group.shape != (len(values),):
+        raise ValueError("labels must contain one value per profile")
+    if np.sum(group) < 2 or np.sum(~group) < 2:
+        return float("nan")
+    x = (
+        np.asarray(positions, dtype=float)
+        if positions is not None
+        else np.arange(values.shape[1], dtype=float) - values.shape[1] // 2
+    )
+    if x.shape != (values.shape[1],) or limit <= 0:
+        raise ValueError("positions must match profiles and limit must be positive")
+    selected = np.abs(x) <= float(limit)
+    positive = values[group][:, selected]
+    negative = values[~group][:, selected]
+    difference = np.nanmean(positive, axis=0) - np.nanmean(negative, axis=0)
+    positive_variance = np.nanvar(positive, axis=0, ddof=1)
+    negative_variance = np.nanvar(negative, axis=0, ddof=1)
+    pooled = (
+        (len(positive) - 1) * positive_variance
+        + (len(negative) - 1) * negative_variance
+    ) / max(len(positive) + len(negative) - 2, 1)
+    finite_positive = pooled[np.isfinite(pooled) & (pooled > 0)]
+    variance_floor = (
+        0.01 * float(np.median(finite_positive)) if len(finite_positive) else 1.0
+    )
+    standardized = difference / np.sqrt(np.maximum(pooled, variance_floor))
+    return float(np.sqrt(np.nanmean(np.square(standardized))))
+
+
 class FunctionalPCA:
     """Coverage-weighted functional PCA with deterministic component signs."""
 

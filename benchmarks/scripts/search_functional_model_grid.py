@@ -43,7 +43,9 @@ from fp_tools.tools.functional_footprints import (  # noqa: E402
     FdaMixtureModel,
     HybridFdaGpModel,
     deviance_profiles,
+    normalize_functional_profiles,
     profile_descriptors,
+    standardized_functional_separation,
 )
 from fp_tools.tools.parametric_bias import estimate_nb_dispersion  # noqa: E402
 
@@ -496,6 +498,26 @@ def evaluate_candidate(
         shape_metrics = binary_metrics(labels, shape_probabilities)
         prior_metrics = binary_metrics(labels, prior_probabilities)
         descriptors = asdict(profile_descriptors(profile, positions))
+        if candidate.family in {"spline", "gp"}:
+            aggregate_expected = model._background(
+                development_observed[validation_indexes],
+                development_expected[validation_indexes],
+            )
+        else:
+            aggregate_expected = development_expected[validation_indexes]
+        aggregate_residual = normalize_functional_profiles(
+            deviance_profiles(
+                development_observed[validation_indexes],
+                aggregate_expected,
+                dispersion,
+            ),
+            positions,
+        )
+        positive_mean = np.mean(aggregate_residual[labels == 1], axis=0)
+        negative_mean = np.mean(aggregate_residual[labels == 0], axis=0)
+        aggregate_difference = positive_mean - negative_mean
+        positive_descriptors = profile_descriptors(positive_mean, positions)
+        negative_descriptors = profile_descriptors(negative_mean, positions)
         rows.append(
             {
                 "cell": cell,
@@ -522,6 +544,15 @@ def evaluate_candidate(
                 "prior_brier": float(prior_metrics["brier"]),
                 "profile_incremental_auprc": float(metrics["auprc"])
                 - float(prior_metrics["auprc"]),
+                "functional_separation": standardized_functional_separation(
+                    aggregate_residual,
+                    labels,
+                    positions,
+                ),
+                "positive_depletion": positive_descriptors.depletion,
+                "negative_depletion": negative_descriptors.depletion,
+                "depletion_difference": positive_descriptors.depletion
+                - negative_descriptors.depletion,
                 "selection_score": _selection_score(metrics),
                 "status": "ok",
             }
@@ -537,6 +568,9 @@ def evaluate_candidate(
                     "position": positions.astype(int),
                     "footprint_profile": profile,
                     "standard_error": standard_error,
+                    "positive_mean_residual": positive_mean,
+                    "negative_mean_residual": negative_mean,
+                    "positive_minus_negative": aggregate_difference,
                 }
             )
         )
