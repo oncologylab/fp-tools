@@ -155,6 +155,7 @@ def run_factorial(
     scores: pd.DataFrame,
     artifacts: dict[tuple[str, str], Artifact],
     *,
+    corrections: set[str] | None,
     maximum_train_per_tf: int,
     seed: int,
 ) -> pd.DataFrame:
@@ -162,6 +163,8 @@ def run_factorial(
     combined_cache: dict[tuple[str, str, str], tuple[np.ndarray | None, float]] = {}
     strand_cache: dict[tuple[str, str, str], tuple[np.ndarray, float]] = {}
     for (correction, cell), artifact in sorted(artifacts.items()):
+        if corrections is not None and correction not in corrections:
+            continue
         if correction == "DWM":
             reference = artifact
         else:
@@ -277,6 +280,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         metavar="MODEL,CELL,JSON",
     )
     parser.add_argument("--maximum-train-per-tf", type=int, default=10000)
+    parser.add_argument(
+        "--evaluate-correction",
+        action="append",
+        help="Evaluate only this correction; repeat as needed (DWM may still be loaded as reference)",
+    )
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--outdir", type=Path, required=True)
     args = parser.parse_args(argv)
@@ -303,6 +311,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         metrics = run_factorial(
             scores,
             artifacts,
+            corrections=(
+                None
+                if args.evaluate_correction is None
+                else set(args.evaluate_correction)
+            ),
             maximum_train_per_tf=args.maximum_train_per_tf,
             seed=args.seed,
         )
