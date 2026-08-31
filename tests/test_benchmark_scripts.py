@@ -75,6 +75,7 @@ build_encode_tf_site_matrix = load_module("build_encode_tf_site_matrix", ROOT / 
 match_tf_sites_on_accessibility = load_module("match_tf_sites_on_accessibility", ROOT / "benchmarks" / "scripts" / "match_tf_sites_on_accessibility.py")
 plot_frozen_tf_profiles = load_module("plot_frozen_tf_profiles", ROOT / "benchmarks" / "scripts" / "plot_frozen_tf_profiles.py")
 summarize_tf_footprint_search = load_module("summarize_tf_footprint_search", ROOT / "benchmarks" / "scripts" / "summarize_tf_footprint_search.py")
+evaluate_tf_correction_transfer = load_module("evaluate_tf_correction_transfer", ROOT / "benchmarks" / "scripts" / "evaluate_tf_correction_transfer.py")
 
 
 class TfFootprintModelSearchTest(unittest.TestCase):
@@ -292,6 +293,19 @@ class TfFootprintModelSearchTest(unittest.TestCase):
             ),
             "underpowered",
         )
+
+    def test_correction_transfer_keeps_geometry_fixed(self):
+        labels = np.array([0, 0, 1, 1])
+        raw = np.ones((4, 81), dtype=float)
+        raw[labels == 1, 35:46] = 0.0
+        flat = np.ones_like(raw)
+        candidate = search_tf_footprint_models.Candidate(
+            "raw", center_width=11, flank_width=12, gap=2
+        )
+        metrics = evaluate_tf_correction_transfer.evaluate_corrections(
+            {"raw": raw, "DWM": flat}, labels, candidate
+        )
+        self.assertEqual(metrics.loc[metrics["auroc"].idxmax(), "correction"], "raw")
 
 
 class BigwigSiteScoreTest(unittest.TestCase):
