@@ -408,6 +408,11 @@ class TfFootprintModelSearchTest(unittest.TestCase):
         self.assertEqual(summary.loc[0, "improving_models"], "DWM")
         self.assertEqual(summary.loc[0, "harming_models"], "PWM")
 
+    def test_profile_plot_status_is_explicit(self):
+        label, color = plot_frozen_tf_profiles.status_style("not_detected")
+        self.assertEqual(label, "NOT DETECTED")
+        self.assertTrue(color.startswith("#"))
+
 
 class BigwigSiteScoreTest(unittest.TestCase):
     def test_scores_fixed_site_centers_and_computes_metrics(self):

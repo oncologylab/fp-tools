@@ -30,6 +30,17 @@ def mean_ci(profiles: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return mean, error
 
 
+def status_style(status: str) -> tuple[str, str]:
+    styles = {
+        "geometry_rescued": ("DETECTED / RESCUED", "#E6F4EA"),
+        "accessibility_confounded": ("ACCESSIBILITY-CONFOUNDED", "#FFF3CD"),
+        "underpowered": ("UNDERPOWERED", "#EEEEEE"),
+        "not_detected": ("NOT DETECTED", "#FDE8E7"),
+        "weak_or_context_dependent": ("WEAK / CONTEXT-DEPENDENT", "#FDE8E7"),
+    }
+    return styles.get(status, (status.replace("_", " ").upper(), "#FFFFFF"))
+
+
 def plot_profiles(
     sites: pd.DataFrame,
     winners: pd.DataFrame,
@@ -37,6 +48,7 @@ def plot_profiles(
     comparison: pd.DataFrame,
     outdir: Path,
     flank: int,
+    statuses: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     outdir.mkdir(parents=True, exist_ok=True)
     stats = []
@@ -66,7 +78,16 @@ def plot_profiles(
             metric = comparison[(comparison["cell"] == cell) & (comparison["tf"] == winner.tf)]
             delta = float(metric.iloc[0].delta_auroc) if not metric.empty else np.nan
             auroc = float(metric.iloc[0].candidate_auroc) if not metric.empty else np.nan
-            axis.set_title(f"{winner.tf} · {candidate.correction}\nAUROC {auroc:.3f}; Δ {delta:+.3f}")
+            status = ""
+            if statuses is not None:
+                status_row = statuses[(statuses["cell"] == cell) & (statuses["tf"] == winner.tf)]
+                if not status_row.empty:
+                    status = str(status_row.iloc[0].evidence_status)
+            label, facecolor = status_style(status) if status else ("", "#FFFFFF")
+            title = f"{winner.tf} · {candidate.correction}\nAUROC {auroc:.3f}; Δ {delta:+.3f}"
+            if label:
+                title += f" · {label}"
+            axis.set_title(title, bbox={"facecolor": facecolor, "edgecolor": "none", "pad": 3})
             axis.set_xlabel("Distance from motif center (bp)")
             axis.set_ylabel("Outer-flank standardized cut signal")
             axis.legend(frameon=False, fontsize=8)
@@ -106,6 +127,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--outdir", type=Path, required=True)
     parser.add_argument("--flank", type=int, default=100)
+    parser.add_argument("--status", type=Path)
     args = parser.parse_args(argv)
     stats = plot_profiles(
         pd.read_csv(args.sites, sep="\t"),
@@ -114,6 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         pd.read_csv(args.comparison, sep="\t"),
         args.outdir,
         args.flank,
+        pd.read_csv(args.status, sep="\t") if args.status else None,
     )
     stats.to_csv(args.outdir / "frozen_tf_profile_stats.tsv", sep="\t", index=False)
     return 0
