@@ -2,6 +2,10 @@
 
 Benchmark and validation helpers:
 
+The locked naked-DNA negative-control runs are listed in
+`benchmarks/manifests/naked_dna_gse164997.tsv`; keep the three runs separate so
+false-footprint rates can be checked for replicate consistency before pooling.
+
 - `build_encode_manifest.py`: query ENCODE and write a public-data manifest without downloading files.
 - `download_manifest.py`: resumable downloads plus checksum and path reports.
 - `compute_binary_metrics.py`: AUROC, AUPRC, recall@FDR, Brier score summaries, and optional row or genomic-block bootstrap confidence intervals from scored labels.

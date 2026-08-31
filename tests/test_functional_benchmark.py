@@ -40,6 +40,7 @@ from fp_tools.tools.parametric_bias import (  # noqa: E402
 
 
 SPEC = Path(__file__).resolve().parents[1] / "benchmarks" / "manifests" / "footprint_functional_v1.spec.json"
+NAKED_DNA = Path(__file__).resolve().parents[1] / "benchmarks" / "manifests" / "naked_dna_gse164997.tsv"
 
 
 def test_functional_spec_is_locked_and_complete() -> None:
@@ -54,6 +55,15 @@ def test_functional_spec_is_locked_and_complete() -> None:
     assert study["promotion_gates"]["minimum_gp_relative_auprc_gain_over_spline"] == 0.05
     assert chromosome_split("chr16", study) == "validation"
     assert chromosome_split("chr19", study) == "test"
+
+
+def test_naked_dna_manifest_matches_locked_runs_and_keeps_replicates_separate() -> None:
+    study = json.loads(SPEC.read_text(encoding="utf-8"))
+    expected = study["negative_controls"][0]["runs"]
+    manifest = pd.read_csv(NAKED_DNA, sep="\t")
+    assert manifest["run_accession"].tolist() == expected
+    assert manifest["sample"].nunique() == len(expected)
+    assert set(manifest["condition"]) == {"naked_dna"}
 
 
 def test_functional_hyperparameter_grid_covers_prespecified_ablations() -> None:
