@@ -35,3 +35,11 @@ Run validation with:
 ```bash
 python benchmarks/scripts/validate_manifests.py --manifest-dir benchmarks/manifests
 ```
+
+`footprint_functional_v1.spec.json` is the preregistered follow-up to the
+original footprint-detectability study. It freezes K562/HepG2 development
+chromosomes, the previously unscored GM12878/IMR-90 cell holdout, the +4/-5
+versus +4/-4 shift comparison, parametric bias and functional-model grids, and
+scientific/computational promotion gates. The old
+`footprint_detectability_v1.spec.json` remains unchanged as the record of the
+earlier study and its already-viewed holdout.

@@ -139,6 +139,15 @@ a separately planned breaking release explicitly changes the contract.
   MEF2D, ARID3A, and MYC gains, but also clear TF/context regressions and
   underpowered tasks. It remains research-only and does not change the default
   scorer.
+- A second locked research specification for a fast ChromBPNet-inspired
+  alternative. The implementation now includes conditional parametric
+  sequence-bias models, pooled sample adaptation, calibrated Poisson/NB
+  residuals, weighted functional PCA, spline and 25-knot Matérn
+  Gaussian-process-equivalent footprint mixtures, an exact-GP reference,
+  hybrid FDA-GP scoring, and replicate-level functional differential tests.
+  Model files use checksummed NPZ plus JSON rather than executable pickle.
+  These APIs remain research-only until the GM12878/IMR-90, naked-DNA,
+  uncertainty, runtime, and non-regression gates pass.
 
 ## Current ENCODE Resource
 
@@ -188,6 +197,11 @@ a separately planned breaking release explicitly changes the contract.
     and do not promote a new scorer until held-out performance, calibration,
     naked-DNA false-discovery control, and strong-positive non-regression gates
     pass.
+11. Run the `footprint_functional_v1` stages in order: establish the cut-site
+    convention and control-trained parametric bias models; compare residual
+    formulations; freeze spline/FDA/GP/hybrid models on K562/HepG2; then score
+    GM12878/IMR-90 exactly once. Keep the current DWM correction and footprint
+    score as defaults unless every scientific and CPU performance gate passes.
 
 ## Deferred or Experimental Work
 

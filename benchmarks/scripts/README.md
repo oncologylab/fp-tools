@@ -395,3 +395,27 @@ archive and are never deleted by the runner.
 The dependency-free browser reads compact gzip payloads using the same report
 schema as `diff-footprints`. It contains every motif-level result and supports
 both directions of all 21 unordered comparisons through two selectors.
+
+### Functional footprint research
+
+`evaluate_functional_footprints.py` compares label-free spline, FDA,
+Gaussian-process-equivalent, and hybrid footprint models on identical matched
+motif sites. Its deployable candidates train on motif pools that contain no
+ChIP/label columns; labels are used only for evaluation and the separately
+reported supervised information ceiling. Test scoring requires
+`--unlock-test` after the frozen-model table has been reviewed.
+
+```bash
+.venv/bin/python benchmarks/scripts/evaluate_functional_footprints.py \
+  --study benchmarks/manifests/footprint_functional_v1.spec.json \
+  --development-sites <development-sites.tsv.gz> \
+  --unlabeled-sites K562=<K562-motif-sites.tsv.gz> \
+  --unlabeled-sites HepG2=<HepG2-motif-sites.tsv.gz> \
+  --tracks <raw-expected-track-manifest.tsv> \
+  --outdir benchmarks/results/footprint_functional_v1/development
+```
+
+The output records input hashes, frozen model choices, per-site probabilities,
+per-TF metrics, and explicit assay-, bias-, correction-, shape-, and
+power-limitation diagnoses. Large profile caches and fitted benchmark outputs
+remain ignored under `benchmarks/results/`.

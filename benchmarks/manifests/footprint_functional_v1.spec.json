@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "study_id": "footprint_functional_v1",
+  "status": "development_locked_holdout_unscored",
+  "assembly": "GRCh38",
+  "motif_database": "jaspar2026_vertebrates",
+  "random_seeds": [2026, 2027, 2028, 2029, 2030],
+  "development_cells": ["K562", "HepG2"],
+  "locked_holdout_cells": ["GM12878", "IMR-90"],
+  "historical_validation_cells": ["MCF-7", "A549", "HCT116", "Panc1"],
+  "chromosome_split": {
+    "train": ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15"],
+    "validation": ["chr16", "chr17", "chr18"],
+    "test": ["chr19", "chr20", "chr21", "chr22", "chrX"]
+  },
+  "depth_fragments": [10000000, 25000000, 50000000, "full"],
+  "profile_flank_bp": 100,
+  "maximum_unlabeled_training_sites_per_tf": 10000,
+  "minimum_evaluation_sites_per_class": 200,
+  "cut_shift_arms": {
+    "legacy": [4, -5],
+    "aligned": [4, -4]
+  },
+  "bias_models": {
+    "baselines": ["PWM", "DWM"],
+    "parametric": ["selma10", "loglinear81", "hierarchical_loglinear81"],
+    "pair_distances": [1, 5, 9],
+    "regularization_grid": [0.0001, 0.001, 0.01, 0.1],
+    "training_sources": ["mitochondrial", "gc_matched_low_signal_nonpeak", "naked_dna", "cross_cell_pooled", "pooled_plus_sample_adaptation"]
+  },
+  "residual_models": ["legacy", "difference", "pearson", "deviance", "log_ratio", "nb_center_flank"],
+  "functional_models": ["spline", "fda", "gp", "hybrid"],
+  "gp_grid": {
+    "long_length_scales_bp": [30, 50, 80],
+    "short_length_scales_bp": [3, 6, 10, 15],
+    "inducing_points": 25,
+    "tf_taper_bp": 50
+  },
+  "minimum_information": {
+    "tf_profile_sites": 500,
+    "family_profile_sites": 100,
+    "global_prior_below_sites": 100,
+    "supervised_relative_auprc_gain": 0.10
+  },
+  "promotion_gates": {
+    "minimum_mean_auroc_gain": 0.03,
+    "minimum_relative_auprc_gain": 0.10,
+    "minimum_functional_separation_gain": 0.25,
+    "maximum_positive_control_auroc_loss": 0.02,
+    "minimum_difficult_tf_families_improved": 2,
+    "minimum_holdout_cells_improved": 2,
+    "maximum_naked_dna_false_positive_rate": 0.05,
+    "maximum_naked_dna_false_positive_rate_increase": 0.01,
+    "minimum_bootstrap_probability_positive": 0.95,
+    "minimum_uncertainty_coverage": 0.85,
+    "maximum_uncertainty_coverage": 0.95,
+    "maximum_runtime_ratio_to_dwm": 2.0,
+    "maximum_memory_ratio_to_dwm": 1.5,
+    "maximum_model_size_mb": 25,
+    "minimum_gp_relative_auprc_gain_over_spline": 0.05
+  },
+  "matched_unfiltered_bams": [
+    {
+      "cell": "K562",
+      "display_sample": "K562_rep1",
+      "filtered_accession": "ENCFF077FBI",
+      "unfiltered_accession": "ENCFF834HWH",
+      "purpose": "same-sample mitochondrial bias training"
+    },
+    {
+      "cell": "HepG2",
+      "display_sample": "HepG2_rep1",
+      "filtered_accession": "ENCFF624SON",
+      "unfiltered_accession": "ENCFF095VYO",
+      "purpose": "same-sample mitochondrial bias training"
+    }
+  ],
+  "negative_controls": [
+    {
+      "type": "naked_dna",
+      "accession": "GSE164997",
+      "runs": ["SRR13450940", "SRR13450941", "SRR13450942"]
+    },
+    {
+      "type": "naked_dna",
+      "accession": "SRX030445",
+      "source": "ChromBPNet independent control"
+    }
+  ],
+  "external_references": {
+    "ChromBPNet": {
+      "repository": "https://github.com/kundajelab/chrombpnet",
+      "commit": "09938fdb4397ec0006510e5251e48920a505d4de"
+    },
+    "TraceBind": {
+      "repository": "https://github.com/lyx-lin/TraceBind",
+      "commit": "9592bfcdc65e0dd755d4b7b430281c1d3794fb3e"
+    },
+    "SELMA": {
+      "paper": "https://www.nature.com/articles/s41467-022-33194-z"
+    },
+    "PIQ": {
+      "paper": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3951735/"
+    }
+  },
+  "tasks": [
+    {"cell": "K562", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "development"},
+    {"cell": "K562", "tf": "MYC", "motif_id": "MA0147.4", "motif_family": "MYC_MAX", "role": "positive_control", "split": "development"},
+    {"cell": "K562", "tf": "FOXA1", "motif_id": "MA0148.5", "motif_family": "FOX", "role": "transfer", "split": "development"},
+    {"cell": "K562", "tf": "TCF7L2", "motif_id": "MA0523.2", "motif_family": "TCF7", "role": "transfer", "split": "development"},
+    {"cell": "K562", "tf": "MEF2A", "motif_id": "MA0052.5", "motif_family": "MEF2", "role": "difficult", "split": "development"},
+    {"cell": "K562", "tf": "MEF2D", "motif_id": "MA0773.1", "motif_family": "MEF2", "role": "difficult", "split": "development"},
+    {"cell": "K562", "tf": "TBP", "motif_id": "MA0108.3", "motif_family": "TBP", "role": "difficult", "split": "development"},
+    {"cell": "K562", "tf": "ZNF384", "motif_id": "MA1125.2", "motif_family": "ZNF362_ZNF384", "role": "motif_ambiguity", "split": "development"},
+    {"cell": "K562", "tf": "ARID3A", "motif_id": "MA0151.1", "motif_family": "ARID3", "role": "motif_ambiguity", "split": "development"},
+
+    {"cell": "HepG2", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "development"},
+    {"cell": "HepG2", "tf": "MYC", "motif_id": "MA0147.4", "motif_family": "MYC_MAX", "role": "positive_control", "split": "development"},
+    {"cell": "HepG2", "tf": "FOXA1", "motif_id": "MA0148.5", "motif_family": "FOX", "role": "transfer", "split": "development"},
+    {"cell": "HepG2", "tf": "TCF7L2", "motif_id": "MA0523.2", "motif_family": "TCF7", "role": "transfer", "split": "development"},
+    {"cell": "HepG2", "tf": "HMGA1", "motif_id": "MA2124.1", "motif_family": "HMGA1", "role": "difficult", "split": "development"},
+    {"cell": "HepG2", "tf": "MEF2A", "motif_id": "MA0052.5", "motif_family": "MEF2", "role": "difficult", "split": "development"},
+    {"cell": "HepG2", "tf": "MEF2D", "motif_id": "MA0773.1", "motif_family": "MEF2", "role": "difficult", "split": "development"},
+    {"cell": "HepG2", "tf": "TBP", "motif_id": "MA0108.3", "motif_family": "TBP", "role": "difficult", "split": "development"},
+    {"cell": "HepG2", "tf": "ZNF362", "motif_id": "MA2593.1", "motif_family": "ZNF362_ZNF384", "role": "motif_ambiguity", "split": "development"},
+    {"cell": "HepG2", "tf": "ZNF384", "motif_id": "MA1125.2", "motif_family": "ZNF362_ZNF384", "role": "motif_ambiguity", "split": "development"},
+    {"cell": "HepG2", "tf": "ZNF558", "motif_id": "MA2335.1", "motif_family": "ZNF558", "role": "difficult", "split": "development"},
+    {"cell": "HepG2", "tf": "ARID3A", "motif_id": "MA0151.1", "motif_family": "ARID3", "role": "motif_ambiguity", "split": "development"},
+
+    {"cell": "GM12878", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "locked_holdout", "chip_accession": "ENCFF960ZGP"},
+    {"cell": "GM12878", "tf": "REST", "motif_id": "MA0138.3", "motif_family": "REST", "role": "transfer", "split": "locked_holdout", "chip_accession": "ENCFF274BBE"},
+    {"cell": "GM12878", "tf": "JUND", "motif_id": "MA0491.3", "motif_family": "AP1", "role": "difficult", "split": "locked_holdout", "chip_accession": "ENCFF873DJD"},
+    {"cell": "GM12878", "tf": "MAX", "motif_id": "MA0058.4", "motif_family": "MYC_MAX", "role": "difficult", "split": "locked_holdout", "chip_accession": "ENCFF270NAL"},
+    {"cell": "GM12878", "tf": "MEF2B", "motif_id": "MA0660.1", "motif_family": "MEF2", "role": "difficult", "split": "locked_holdout", "chip_accession": "ENCFF623FAW"},
+    {"cell": "GM12878", "tf": "MEF2C", "motif_id": "MA0497.2", "motif_family": "MEF2", "role": "difficult", "split": "locked_holdout", "chip_accession": "ENCFF830BRO"},
+    {"cell": "GM12878", "tf": "TBP", "motif_id": "MA0108.3", "motif_family": "TBP", "role": "difficult", "split": "locked_holdout", "chip_accession": "ENCFF896UZB"},
+    {"cell": "GM12878", "tf": "POU2F2", "motif_id": "MA0507.3", "motif_family": "POU", "role": "transfer", "split": "locked_holdout", "chip_accession": "ENCFF934JFA"},
+    {"cell": "GM12878", "tf": "NFYB", "motif_id": "MA0502.3", "motif_family": "NFY", "role": "difficult", "split": "locked_holdout", "chip_accession": "ENCFF510NDO"},
+    {"cell": "GM12878", "tf": "SPI1", "motif_id": "MA0080.7", "motif_family": "ETS", "role": "transfer", "split": "locked_holdout", "chip_accession": "ENCFF071ZMW"},
+
+    {"cell": "IMR-90", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control", "split": "locked_holdout", "chip_accession": "ENCFF307XFM"},
+    {"cell": "IMR-90", "tf": "FOS", "motif_id": "MA0476.2", "motif_family": "AP1", "role": "difficult", "split": "locked_holdout", "chip_accession": "ENCFF217ZMF"},
+    {"cell": "IMR-90", "tf": "CEBPB", "motif_id": "MA0466.4", "motif_family": "CEBP", "role": "transfer", "split": "locked_holdout", "chip_accession": "ENCFF757KYL"},
+    {"cell": "IMR-90", "tf": "ELK1", "motif_id": "MA0028.3", "motif_family": "ETS", "role": "difficult", "split": "locked_holdout", "chip_accession": "ENCFF687IUD"},
+    {"cell": "IMR-90", "tf": "NFE2L2", "motif_id": "MA0150.3", "motif_family": "CNC", "role": "difficult", "split": "locked_holdout", "chip_accession": "ENCFF474PPT"}
+  ],
+  "nutrient_application": {
+    "development_cell": "AsPC-1",
+    "transfer_cells": ["HPAF-II", "Panc1"],
+    "external_accessions": ["GSE144833", "GSE137034"],
+    "model_choices_frozen_before_scoring": true
+  }
+}
