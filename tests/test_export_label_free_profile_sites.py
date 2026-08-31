@@ -26,6 +26,7 @@ def test_export_sites_filters_without_leaking_labels(tmp_path: Path) -> None:
         {
             "TFBS_chr": ["chr16", "chr17", "chr1"],
             "TFBS_start": [30, 10, 20],
+            "TFBS_end": [31, 11, 21],
             "chromosome_split": ["validation", "validation", "train"],
             "chip_label": [1, 0, 1],
             "label_reason": ["positive", "negative", "positive"],
@@ -39,10 +40,13 @@ def test_export_sites_filters_without_leaking_labels(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     output = tmp_path / "validation.tsv.gz"
+    bed_output = tmp_path / "validation.bed"
     output_path, manifest_path = export_sites(
         artifact,
         output,
         [("chromosome_split", "validation")],
+        bed_output=bed_output,
+        flank=5,
     )
     exported = pd.read_csv(output_path, sep="\t")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -56,6 +60,17 @@ def test_export_sites_filters_without_leaking_labels(tmp_path: Path) -> None:
         "chip_accession",
     }
     assert manifest["output_sha256"] == _sha256(output)
+    bed = pd.read_csv(
+        bed_output,
+        sep="\t",
+        header=None,
+        names=["chromosome", "start", "end"],
+    )
+    assert bed.to_dict("records") == [
+        {"chromosome": "chr16", "start": 25, "end": 36},
+        {"chromosome": "chr17", "start": 5, "end": 16},
+    ]
+    assert manifest["bed_output"]["sha256"] == _sha256(bed_output)
 
 
 def test_export_sites_rejects_label_filter_and_bad_checksum(tmp_path: Path) -> None:

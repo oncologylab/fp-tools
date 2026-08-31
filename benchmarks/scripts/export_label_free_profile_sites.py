@@ -46,7 +46,12 @@ def export_sites(
     artifact: Path,
     output: Path,
     filters: Sequence[tuple[str, str]],
+    *,
+    bed_output: Path | None = None,
+    flank: int = 100,
 ) -> tuple[Path, Path]:
+    if flank < 0:
+        raise ValueError("flank must be non-negative")
     document = json.loads(artifact.read_text(encoding="utf-8"))
     sites_path = Path(document["sites"])
     if file_sha256(sites_path) != document["sites_sha256"]:
@@ -70,6 +75,34 @@ def export_sites(
 
     output.parent.mkdir(parents=True, exist_ok=True)
     sites.to_csv(output, sep="\t", index=False)
+    bed_record = None
+    if bed_output is not None:
+        required = {"TFBS_chr", "TFBS_start", "TFBS_end"}
+        missing = required.difference(sites.columns)
+        if missing:
+            raise ValueError(
+                "cannot write BED; sites are missing columns: "
+                + ", ".join(sorted(missing))
+            )
+        center = (
+            sites["TFBS_start"].to_numpy(dtype=int)
+            + sites["TFBS_end"].to_numpy(dtype=int)
+        ) // 2
+        bed = pd.DataFrame(
+            {
+                "chromosome": sites["TFBS_chr"].astype(str),
+                "start": (center - flank).clip(min=0),
+                "end": center + flank + 1,
+            }
+        )
+        bed_output.parent.mkdir(parents=True, exist_ok=True)
+        bed.to_csv(bed_output, sep="\t", index=False, header=False)
+        bed_record = {
+            "path": str(bed_output),
+            "sha256": file_sha256(bed_output),
+            "flank": int(flank),
+            "rows": int(len(bed)),
+        }
     manifest_path = Path(str(output) + ".manifest.json")
     manifest = {
         "schema": "fp-tools-label-free-profile-sites-v1",
@@ -86,6 +119,7 @@ def export_sites(
         "columns": list(sites.columns),
         "output": str(output),
         "output_sha256": file_sha256(output),
+        "bed_output": bed_record,
     }
     manifest_path.write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -104,8 +138,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         metavar="COLUMN=VALUE",
     )
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--bed-output", type=Path)
+    parser.add_argument("--flank", type=int, default=100)
     args = parser.parse_args(argv)
-    paths = export_sites(args.artifact, args.output, args.where)
+    paths = export_sites(
+        args.artifact,
+        args.output,
+        args.where,
+        bed_output=args.bed_output,
+        flank=args.flank,
+    )
     print("\n".join(str(path) for path in paths))
     return 0
 
