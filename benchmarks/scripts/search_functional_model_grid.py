@@ -565,6 +565,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-run", type=Path, required=True)
     parser.add_argument("--outdir", type=Path, required=True)
+    parser.add_argument(
+        "--tracks",
+        type=Path,
+        help="Override the base run's track manifest for newly frozen corrections.",
+    )
     parser.add_argument("--corrections", nargs="+")
     parser.add_argument("--families", nargs="+", choices=MODEL_FAMILIES, default=list(MODEL_FAMILIES))
     parser.add_argument("--grid", choices=("compact", "full"), default="compact")
@@ -581,7 +586,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise SystemExit("hyperparameter search refuses a base run that opened test labels")
     study_path = Path(base_manifest["study"])
     development_path = Path(base_manifest["development_sites"])
-    tracks_path = Path(base_manifest["tracks"])
+    tracks_path = args.tracks or Path(base_manifest["tracks"])
     genome = Path(base_manifest["genome"]) if base_manifest.get("genome") else None
     study = json.loads(study_path.read_text(encoding="utf-8"))
     tasks = pd.DataFrame(study["tasks"])
@@ -698,6 +703,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "locked_test_labels_read": False,
         "selection_split": "validation",
         "corrections": list(corrections),
+        "tracks": str(tracks_path),
+        "tracks_sha256": file_sha256(tracks_path),
         "families": list(args.families),
         "grid": args.grid,
         "candidate_count": len(candidates),
