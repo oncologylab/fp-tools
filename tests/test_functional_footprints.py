@@ -212,6 +212,22 @@ def test_bias_aware_mixture_can_anchor_binding_prior_direction(tmp_path: Path) -
     loaded = BiasAwareFunctionalMixture.load(tmp_path / "anchored.npz")
     assert loaded.prior_constraint == "motif-accessibility"
     assert loaded.accessibility_background == "linear"
+    shape_log_odds, prior_log_odds = loaded.predict_log_odds_components(
+        observed[:25],
+        expected[:25],
+        motif_score=motif_score[:25],
+        accessibility=observed[:25].sum(axis=1),
+    )
+    reconstructed = 1.0 / (1.0 + np.exp(-(shape_log_odds + prior_log_odds)))
+    assert np.allclose(
+        reconstructed,
+        loaded.predict(
+            observed[:25],
+            expected[:25],
+            motif_score=motif_score[:25],
+            accessibility=observed[:25].sum(axis=1),
+        ),
+    )
 
 
 def test_fda_and_hybrid_models_detect_shape() -> None:

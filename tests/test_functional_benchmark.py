@@ -24,6 +24,7 @@ from evaluate_functional_footprints import (  # noqa: E402
     summarize_aggregate_profiles,
     validate_sites,
 )
+from search_functional_model_grid import candidate_grid  # noqa: E402
 from fp_tools.tools.parametric_bias import (  # noqa: E402
     BiasFeatureSpec,
     ConditionalSequenceBiasModel,
@@ -45,6 +46,32 @@ def test_functional_spec_is_locked_and_complete() -> None:
     assert study["promotion_gates"]["minimum_gp_relative_auprc_gain_over_spline"] == 0.05
     assert chromosome_split("chr16", study) == "validation"
     assert chromosome_split("chr19", study) == "test"
+
+
+def test_functional_hyperparameter_grid_covers_prespecified_ablations() -> None:
+    compact = candidate_grid("compact")
+    full = candidate_grid("full")
+    assert len(compact) == 18
+    assert len(full) == 65
+    assert len({candidate.candidate_id for candidate in full}) == len(full)
+    assert {candidate.background for candidate in compact} == {
+        "none",
+        "linear",
+        "quadratic",
+        "gp-long",
+    }
+    assert {candidate.prior_constraint for candidate in compact} == {
+        "none",
+        "motif-accessibility",
+    }
+    gp_scales = {
+        (candidate.long_length_scale, candidate.short_length_scale)
+        for candidate in full
+        if candidate.family == "gp"
+    }
+    assert {(long, short) for long in (30.0, 50.0, 80.0) for short in (3.0, 6.0, 10.0, 15.0)}.issubset(
+        gp_scales
+    )
 
 
 def test_unlabeled_training_sites_never_read_labels(tmp_path: Path) -> None:

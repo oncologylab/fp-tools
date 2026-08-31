@@ -907,6 +907,24 @@ class BiasAwareFunctionalMixture:
         motif_score: np.ndarray | None = None,
         accessibility: np.ndarray | None = None,
     ) -> np.ndarray:
+        likelihood_ratio, log_prior = self.predict_log_odds_components(
+            observed_profiles,
+            expected_profiles,
+            motif_score=motif_score,
+            accessibility=accessibility,
+        )
+        return expit(np.clip(likelihood_ratio + log_prior, -40.0, 40.0))
+
+    def predict_log_odds_components(
+        self,
+        observed_profiles: np.ndarray,
+        expected_profiles: np.ndarray,
+        *,
+        motif_score: np.ndarray | None = None,
+        accessibility: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Return profile-likelihood and prior contributions separately."""
+
         if self.result_ is None:
             raise ValueError("functional mixture has not been fitted")
         observed = _validate_profiles(observed_profiles, nonnegative=True)
@@ -930,9 +948,7 @@ class BiasAwareFunctionalMixture:
             scale=self.accessibility_scale_,
         )
         design = np.column_stack([np.ones(len(observed)), motif, access])
-        return expit(
-            np.clip(bound_ll - unbound_ll + design @ self.result_.prior_coefficients, -40.0, 40.0)
-        )
+        return bound_ll - unbound_ll, design @ self.result_.prior_coefficients
 
     def save(self, path: str | Path, metadata: dict[str, Any] | None = None) -> tuple[Path, Path]:
         if self.result_ is None:
