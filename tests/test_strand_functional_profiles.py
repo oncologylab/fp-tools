@@ -128,11 +128,21 @@ def test_label_free_grid_and_label_firewall() -> None:
     candidates = label_free_candidate_grid()
     assert len(candidates) == 30
     assert {candidate.family for candidate in candidates} == {"count", "fda", "hybrid"}
-    validate_unlabeled_training_sites(pd.DataFrame({"tf": ["A"]}), "safe.tsv")
+    validate_unlabeled_training_sites(
+        pd.DataFrame({"tf": ["A"], "chromosome_split": ["train"]}),
+        "safe.tsv",
+    )
     with pytest.raises(ValueError, match="chip_label"):
         validate_unlabeled_training_sites(
-            pd.DataFrame({"tf": ["A"], "chip_label": [1]}),
+            pd.DataFrame(
+                {"tf": ["A"], "chip_label": [1], "chromosome_split": ["train"]}
+            ),
             "leaky.tsv",
+        )
+    with pytest.raises(ValueError, match="only train chromosomes"):
+        validate_unlabeled_training_sites(
+            pd.DataFrame({"tf": ["A"], "chromosome_split": ["validation"]}),
+            "leaky-split.tsv",
         )
 
 

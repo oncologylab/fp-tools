@@ -106,6 +106,14 @@ def validate_unlabeled_training_sites(sites: pd.DataFrame, path: str | Path) -> 
         raise ValueError(
             f"unlabeled training artifact {path} contains forbidden columns: {', '.join(forbidden)}"
         )
+    if "chromosome_split" not in sites:
+        raise ValueError(f"unlabeled training artifact {path} lacks chromosome_split")
+    observed_splits = set(sites["chromosome_split"].dropna().astype(str))
+    if observed_splits != {"train"}:
+        raise ValueError(
+            f"unlabeled training artifact {path} must contain only train chromosomes; "
+            f"observed {sorted(observed_splits)}"
+        )
 
 
 def _count_profiles(profiles: dict[str, np.ndarray]) -> tuple[np.ndarray, np.ndarray]:
