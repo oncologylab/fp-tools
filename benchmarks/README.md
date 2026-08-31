@@ -26,6 +26,7 @@ The per-TF follow-up is implemented by the `discover_encode_chip_peaks.py`,
 `search_tf_footprint_models.py`, `compare_frozen_tf_candidates.py`,
 `evaluate_tf_correction_transfer.py`, `evaluate_tf_signal_panel.py`,
 `search_tf_profile_classifiers.py`, `evaluate_tf_classifier_signal_panel.py`,
+`diagnose_tf_bias_residuals.py`, `compare_tf_random_seeds.py`,
 `assemble_tf_experiment_matrix.py`, and `plot_frozen_tf_profiles.py` helpers.
 Together they keep occupancy-label
 discovery, accessibility matching, model selection, correction transfer,

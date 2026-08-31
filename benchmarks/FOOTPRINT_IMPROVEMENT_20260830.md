@@ -291,3 +291,30 @@ CTCF improvement is a stable shape result rather than a one-sample artifact.
 Powered ZNF384 remained reproducibly weak (individual AUROC 0.616--0.622 in
 HepG2 and 0.617--0.636 in K562), so additional reads alone do not turn its
 aggregate depletion into occupancy discrimination.
+
+## Direct expected-bias diagnosis
+
+The raw, expected-bias, and corrected profiles were next scored with identical
+frozen geometry for every available TF under both PWM and DWM correction. This
+separates a correction effect from a geometry effect. For CTCF, the expected
+bias score opposed occupancy labels (AUROC 0.423 HepG2 and 0.450 K562 under
+DWM), and subtracting it improved AUROC by 0.064 and 0.044. CTCF is therefore
+not a case of harmful global overcorrection; correction and TF-specific
+geometry solve different parts of its error.
+
+The opposite pattern appeared for several TFs. DWM correction changed AUROC by
+-0.165 for HepG2 MYC, -0.175 for HepG2 ZNF558, and -0.100 for K562 MYC. The
+expected-bias track itself predicted the labels for K562 MYC (AUROC 0.791) and
+HepG2 ZNF558 (0.605). Consequently, raw-signal discrimination in those tasks
+partly follows sequence-bias structure. Its removal lowering AUROC is not by
+itself proof of overcorrection; it may be removal of a false predictive cue.
+Naked-DNA Tn5 and orthogonal occupancy data are required to distinguish those
+possibilities.
+
+Large corrected-versus-expected score correlations remained in many MEF2,
+TBP, FOXA1, MYC, and ZNF384 arms. These correlations are diagnostic flags, not
+proof of residual enzyme bias, because expected signal, accessibility, and
+motif sequence are not independent. Together with the correction-transfer and
+random-seed results they identify the specific next correction improvement:
+estimate per-TF reliability from naked-DNA residuals and abstain when PWM/DWM,
+read seeds, or biological replicates disagree.
