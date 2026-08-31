@@ -555,6 +555,92 @@ class ExactAdditiveGPSmoother:
         return SmoothResult(mean, standard_error, len(indexes))
 
 
+def site_accessibility_background(
+    observed_profiles: np.ndarray,
+    expected_profiles: np.ndarray,
+    positions: np.ndarray,
+    *,
+    method: str = "none",
+    exclusion: float = 50.0,
+    ridge: float = 10.0,
+    length_scale: float = 80.0,
+    inducing_points: int = 9,
+    pseudocount: float = 0.5,
+) -> np.ndarray:
+    """Add a broad, site-specific accessibility trend to sequence bias.
+
+    The trend is learned only outside ``+/- exclusion`` and extrapolated
+    through the motif center. This accounts for position within a broad ATAC
+    peak without fitting the central protection/shoulder signal that the
+    detector is intended to discover. Adjusted profiles are normalized back
+    to their observed totals, retaining the conditional-profile formulation.
+    """
+
+    observed = _validate_profiles(observed_profiles, nonnegative=True)
+    expected = _validate_profiles(expected_profiles, nonnegative=True)
+    x = np.asarray(positions, dtype=np.float64)
+    if observed.shape != expected.shape or x.shape != (observed.shape[1],):
+        raise ValueError("observed/expected profiles and positions must agree")
+    name = str(method).lower().replace("_", "-")
+    if name not in {"none", "linear", "quadratic", "gp-long"}:
+        raise ValueError("method must be none, linear, quadratic, or gp-long")
+
+    totals = observed.sum(axis=1)
+    expected_total = expected.sum(axis=1)
+    uniform = np.full_like(expected, 1.0 / expected.shape[1])
+    probabilities = np.divide(
+        expected,
+        expected_total[:, None],
+        out=uniform,
+        where=expected_total[:, None] > 0,
+    )
+    baseline = probabilities * totals[:, None]
+    if name == "none":
+        return baseline
+    if exclusion <= 0 or ridge < 0 or length_scale <= 0 or inducing_points < 3:
+        raise ValueError("background parameters must be positive")
+    if pseudocount <= 0:
+        raise ValueError("pseudocount must be positive")
+    outer = np.abs(x) >= float(exclusion)
+    if outer.sum() < 8:
+        raise ValueError("background exclusion leaves fewer than eight outer positions")
+
+    log_ratio = np.log((observed + pseudocount) / (baseline + pseudocount))
+    scaled_x = x / max(float(np.max(np.abs(x))), 1.0)
+    if name == "linear":
+        design = np.column_stack([np.ones(len(x)), scaled_x])
+        penalty = np.diag([0.0, float(ridge)])
+    elif name == "quadratic":
+        design = np.column_stack([np.ones(len(x)), scaled_x, np.square(scaled_x)])
+        penalty = np.diag([0.0, float(ridge), float(ridge)])
+    else:
+        inducing = np.linspace(x.min(), x.max(), min(int(inducing_points), len(x)))
+        inducing_covariance = matern32_kernel(inducing, inducing, length_scale)
+        cholesky = np.linalg.cholesky(
+            inducing_covariance + 1e-7 * np.eye(len(inducing))
+        )
+        cross = matern32_kernel(x, inducing, length_scale)
+        features = solve_triangular(cholesky, cross.T, lower=True).T
+        design = np.column_stack([np.ones(len(x)), features])
+        penalty = np.diag([0.0] + [float(ridge)] * features.shape[1])
+
+    outer_design = design[outer]
+    system = outer_design.T @ outer_design + penalty + 1e-8 * np.eye(design.shape[1])
+    projection = outer_design @ np.linalg.inv(system)
+    coefficients = log_ratio[:, outer] @ projection
+    trend = coefficients @ design.T
+    # Low-depth profiles receive stronger shrinkage toward sequence bias.
+    trend *= (totals / (totals + 50.0))[:, None]
+    adjusted = baseline * np.exp(np.clip(trend, -2.0, 2.0))
+    adjusted_total = adjusted.sum(axis=1)
+    return np.divide(
+        adjusted * totals[:, None],
+        adjusted_total[:, None],
+        out=baseline.copy(),
+        where=adjusted_total[:, None] > 0,
+    )
+
+
 def _standardize(
     values: np.ndarray | None,
     length: int,
@@ -625,6 +711,13 @@ class BiasAwareFunctionalMixture:
         shrinkage: float = 50.0,
         long_length_scale: float = 50.0,
         short_length_scale: float = 10.0,
+        spline_penalty: float = 10.0,
+        inducing_points: int = 25,
+        gp_ridge: float = 1.0,
+        accessibility_background: str = "none",
+        background_exclusion: float = 50.0,
+        background_ridge: float = 10.0,
+        background_length_scale: float = 80.0,
     ):
         self.positions = np.asarray(positions, dtype=float)
         self.smoother_name = str(smoother)
@@ -632,13 +725,27 @@ class BiasAwareFunctionalMixture:
         self.max_iter = int(max_iter)
         self.tolerance = float(tolerance)
         self.shrinkage = float(shrinkage)
+        self.long_length_scale = float(long_length_scale)
+        self.short_length_scale = float(short_length_scale)
+        self.spline_penalty = float(spline_penalty)
+        self.inducing_points = int(inducing_points)
+        self.gp_ridge = float(gp_ridge)
+        self.accessibility_background = str(accessibility_background)
+        self.background_exclusion = float(background_exclusion)
+        self.background_ridge = float(background_ridge)
+        self.background_length_scale = float(background_length_scale)
         if smoother == "spline":
-            self.smoother = PenalizedSplineSmoother(self.positions)
+            self.smoother = PenalizedSplineSmoother(
+                self.positions,
+                penalty=self.spline_penalty,
+            )
         elif smoother == "gp":
             self.smoother = SparseAdditiveGPSmoother(
                 self.positions,
+                inducing_points=self.inducing_points,
                 long_length_scale=long_length_scale,
                 short_length_scale=short_length_scale,
+                ridge=self.gp_ridge,
             )
         elif smoother == "exact-gp":
             self.smoother = ExactAdditiveGPSmoother(
@@ -655,17 +762,15 @@ class BiasAwareFunctionalMixture:
         self.accessibility_scale_: float = 1.0
 
     def _background(self, observed: np.ndarray, expected: np.ndarray) -> np.ndarray:
-        expected = np.maximum(expected, 0.0)
-        observed_total = observed.sum(axis=1)
-        expected_total = expected.sum(axis=1)
-        uniform = np.full_like(expected, 1.0 / expected.shape[1])
-        probabilities = np.divide(
-            expected,
-            expected_total[:, None],
-            out=uniform,
-            where=expected_total[:, None] > 0,
+        return site_accessibility_background(
+            observed,
+            np.maximum(expected, 0.0),
+            self.positions,
+            method=self.accessibility_background,
+            exclusion=self.background_exclusion,
+            ridge=self.background_ridge,
+            length_scale=self.background_length_scale,
         )
-        return probabilities * observed_total[:, None]
 
     def _bound_mean(self, background: np.ndarray, profile: np.ndarray) -> np.ndarray:
         weighted = background * np.exp(np.clip(profile, -8.0, 8.0))[None, :]
@@ -830,6 +935,15 @@ class BiasAwareFunctionalMixture:
             "max_iter": self.max_iter,
             "tolerance": self.tolerance,
             "shrinkage": self.shrinkage,
+            "long_length_scale": self.long_length_scale,
+            "short_length_scale": self.short_length_scale,
+            "spline_penalty": self.spline_penalty,
+            "inducing_points": self.inducing_points,
+            "gp_ridge": self.gp_ridge,
+            "accessibility_background": self.accessibility_background,
+            "background_exclusion": self.background_exclusion,
+            "background_ridge": self.background_ridge,
+            "background_length_scale": self.background_length_scale,
             "motif_location": self.motif_location_,
             "motif_scale": self.motif_scale_,
             "accessibility_location": self.accessibility_location_,
@@ -859,6 +973,15 @@ class BiasAwareFunctionalMixture:
                 max_iter=int(document["max_iter"]),
                 tolerance=float(document["tolerance"]),
                 shrinkage=float(document["shrinkage"]),
+                long_length_scale=float(document.get("long_length_scale", 50.0)),
+                short_length_scale=float(document.get("short_length_scale", 10.0)),
+                spline_penalty=float(document.get("spline_penalty", 10.0)),
+                inducing_points=int(document.get("inducing_points", 25)),
+                gp_ridge=float(document.get("gp_ridge", 1.0)),
+                accessibility_background=str(document.get("accessibility_background", "none")),
+                background_exclusion=float(document.get("background_exclusion", 50.0)),
+                background_ridge=float(document.get("background_ridge", 10.0)),
+                background_length_scale=float(document.get("background_length_scale", 80.0)),
             )
             profile = np.asarray(arrays["footprint_profile"], dtype=np.float64)
             standard_error = np.asarray(arrays["standard_error"], dtype=np.float64)

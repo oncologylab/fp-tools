@@ -19,6 +19,7 @@ from fp_tools.tools.functional_footprints import (
     functional_differential_test,
     orient_profiles,
     profile_descriptors,
+    site_accessibility_background,
 )
 
 
@@ -105,6 +106,40 @@ def test_sparse_gp_tracks_exact_reference_and_spline() -> None:
     assert np.mean(np.square(sparse.mean - truth)) < np.mean(np.square(noisy - truth))
     assert np.mean(np.square(spline.mean - truth)) < np.mean(np.square(noisy - truth))
     assert np.all(np.isfinite(sparse.standard_error))
+
+
+@pytest.mark.parametrize("method", ["linear", "quadratic", "gp-long"])
+def test_site_accessibility_background_preserves_injected_footprint(method: str) -> None:
+    rng = np.random.default_rng(31)
+    x = np.arange(-100, 101, dtype=float)
+    sites = 120
+    labels = np.repeat([0, 1], sites // 2)
+    slopes = rng.normal(scale=0.65, size=sites)
+    curvature = rng.normal(loc=-0.35, scale=0.12, size=sites)
+    broad = np.exp(
+        slopes[:, None] * x[None, :] / 100.0
+        + curvature[:, None] * np.square(x[None, :] / 100.0)
+    )
+    broad *= 800.0 / broad.sum(axis=1, keepdims=True)
+    footprint = _footprint_shape(x)
+    observed_probability = broad * np.exp(labels[:, None] * footprint[None, :])
+    observed = observed_probability * 800.0 / observed_probability.sum(axis=1, keepdims=True)
+    sequence_only = np.full_like(observed, 800.0 / len(x))
+
+    adjusted = site_accessibility_background(
+        observed,
+        sequence_only,
+        x,
+        method=method,
+        exclusion=50.0,
+        ridge=3.0,
+    )
+    assert np.allclose(adjusted.sum(axis=1), observed.sum(axis=1))
+    assert np.mean(np.square(adjusted - broad)) < np.mean(np.square(sequence_only - broad))
+    center = np.abs(x) <= 6
+    residual = np.log((observed + 0.5) / (adjusted + 0.5))
+    assert np.mean(residual[labels == 1][:, center]) < -0.15
+    assert abs(np.mean(residual[labels == 0][:, center])) < 0.15
 
 
 def _synthetic_counts(seed: int = 12) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
