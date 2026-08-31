@@ -25,6 +25,10 @@ from evaluate_functional_footprints import (  # noqa: E402
     validate_sites,
 )
 from search_functional_model_grid import candidate_grid  # noqa: E402
+from evaluate_functional_template_transfer import (  # noqa: E402
+    balanced_training_indexes,
+    training_indexes,
+)
 from fp_tools.tools.parametric_bias import (  # noqa: E402
     BiasFeatureSpec,
     ConditionalSequenceBiasModel,
@@ -224,6 +228,54 @@ def test_supervised_ceiling_uses_functional_shape() -> None:
     assert shape_selected["fpca_components"] <= 20
     assert shape_selected["auroc"] > 0.8
     assert shape_probabilities.shape == (180,)
+
+
+def test_template_training_scopes_exclude_target_tf_when_required() -> None:
+    sites = pd.DataFrame(
+        {
+            "cell": ["K562", "HepG2", "K562", "HepG2", "K562", "HepG2"] * 2,
+            "tf": ["MEF2A", "MEF2A", "MEF2D", "MEF2D", "CTCF", "CTCF"] * 2,
+            "motif_family": ["MEF2", "MEF2", "MEF2", "MEF2", "CTCF", "CTCF"] * 2,
+            "chromosome_split": ["train"] * 6 + ["validation"] * 6,
+            "chip_label": [0, 1, 0, 1, 0, 1] * 2,
+        }
+    )
+    cross = training_indexes(
+        sites,
+        target_cell="K562",
+        target_tf="MEF2A",
+        target_family="MEF2",
+        scope="cross_cell_tf",
+    )
+    assert set(sites.iloc[cross]["cell"]) == {"HepG2"}
+    assert set(sites.iloc[cross]["tf"]) == {"MEF2A"}
+    family = training_indexes(
+        sites,
+        target_cell="K562",
+        target_tf="MEF2A",
+        target_family="MEF2",
+        scope="family_leave_tf_out",
+    )
+    assert set(sites.iloc[family]["tf"]) == {"MEF2D"}
+    assert set(sites.iloc[family]["chromosome_split"]) == {"train"}
+
+
+def test_balanced_template_pool_caps_each_tf_and_class() -> None:
+    sites = pd.DataFrame(
+        {
+            "tf": np.repeat(["A", "B"], [100, 20]),
+            "chip_label": np.tile([0, 1], 60),
+        }
+    )
+    selected = balanced_training_indexes(
+        sites,
+        np.arange(len(sites)),
+        maximum_per_tf_class=7,
+        seed=4,
+    )
+    counts = sites.iloc[selected].groupby(["tf", "chip_label"]).size()
+    assert counts.max() <= 7
+    assert len(selected) == 28
 
 
 def test_failure_classification_separates_assay_and_shape_limits() -> None:

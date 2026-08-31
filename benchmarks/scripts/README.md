@@ -14,6 +14,7 @@ Benchmark and validation helpers:
 - `build_footprint_site_labels.py`: create summit-supported positive, distant negative, and explicitly indeterminate motif-site labels with optional matched controls.
 - `downsample_bam_fragments.py`: create deterministic pair-preserving BAM depth subsets that remain nested for a fixed seed.
 - `downsample_bam_depth_matrix.py`: create all missing depth/seed BAM subsets in one source-BAM scan while preserving the same deterministic nested-fragment rule.
+- `evaluate_functional_template_transfer.py`: measure shape-only same-cell, cross-cell TF, leave-TF-out family, and global functional-template ceilings without opening locked holdouts.
 - `build_footprint_ablation_plan.py`: write the depth, correction, and method task matrices from the locked study specification.
 - `run_footprint_ablation_plan.py`: execute the signal plan with dependency, resume, and expected-output checks.
 - `summarize_footprint_ablation.py`: collapse depth randomizations and report depth plateaus and correction gains.
