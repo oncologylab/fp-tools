@@ -19,6 +19,10 @@ from evaluate_strand_functional_templates import (  # noqa: E402
     parse_artifact,
     stack_channels,
 )
+from render_functional_aggregate_comparison import (  # noqa: E402
+    combined_strand_shape,
+    mean_band,
+)
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     construct_strand_functional_profiles,
 )
@@ -102,3 +106,23 @@ def test_strand_channel_sets_preserve_site_position_axes() -> None:
         "K562",
         Path("profiles.json"),
     )
+
+
+def test_blinded_aggregate_combines_channels_and_bootstraps() -> None:
+    rng = np.random.default_rng(3)
+    values = {
+        "combined_residual": rng.normal(size=(20, 21)),
+        "shared_strand_residual": rng.normal(size=(20, 21)),
+        "antisymmetric_strand_residual": rng.normal(size=(20, 21)),
+    }
+    winner = pd.Series(
+        {
+            "channel_set": "shared_antisymmetric",
+            "channel_weights": "2,-1",
+        }
+    )
+    combined = combined_strand_shape(values, winner, np.arange(-10, 11))
+    assert combined.shape == (20, 21)
+    mean, lower, upper = mean_band(combined, bootstraps=25, seed=8)
+    assert mean.shape == lower.shape == upper.shape == (21,)
+    assert np.all(lower <= upper)
