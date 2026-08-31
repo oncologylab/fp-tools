@@ -456,7 +456,10 @@ posteriors are ranks rather than binding probabilities. Candidate-only scoring
 was verified to reproduce all 3,000 prior-replicate probabilities exactly, and
 the frozen-threshold applicator reproduced every prior full-depth rate before
 the second replicate was opened. This supplies independent biological-library
-negative-control evidence, but it does not rescue the failed external
+negative-control evidence. Wilson 95% upper bounds exceeded 5% only for FOXA1
+(8.75% in HepG2 and 5.28% in K562); the maximum upper bound for every non-FOX
+route was 4.39%. The FOX family is therefore an explicit abstention pending
+more independent null depth. This result does not rescue the failed external
 occupancy-transfer gate and therefore does not justify package promotion.
 
 Finite-null empirical p-values and Benjamini-Hochberg q-values were added as
