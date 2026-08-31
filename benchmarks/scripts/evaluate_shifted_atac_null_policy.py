@@ -79,10 +79,13 @@ def evaluate(
     dwm_base_run: Path | None,
     shifts: Sequence[int],
     seed: int,
+    crossfit_folds: int = 1,
 ) -> tuple[pd.DataFrame, pd.DataFrame, list[dict[str, str]]]:
     shifts = tuple(int(value) for value in shifts)
     if not shifts or 0 in shifts or len(set(shifts)) != len(shifts):
         raise ValueError("shifts must be unique, nonzero integers")
+    if crossfit_folds < 1:
+        raise ValueError("crossfit_folds must be positive")
     promoted = policy[policy["passes_development_gates"].astype(bool)].copy()
     routes = promoted.set_index("motif_family")
     tasks = pd.DataFrame(study["tasks"])
@@ -96,7 +99,6 @@ def evaluate(
     training_cache: dict[tuple[str, str], tuple] = {}
     dwm_cache: dict[str, tuple] = {}
     score_parts: list[pd.DataFrame] = []
-    summary_rows: list[dict[str, Any]] = []
     inputs: list[dict[str, str]] = []
 
     for task in tasks.sort_values(["cell", "tf"]).itertuples(index=False):
@@ -126,16 +128,6 @@ def evaluate(
                 name: values[strand_valid] for name, values in strand_profiles.items()
             }
             strand_hashes = strand_hashes[strand_valid]
-        candidate = fit_strand_detector(
-            strand_candidates[candidate_id],
-            sites,
-            strand_profiles,
-            tf=tf,
-            motif_family=motif_family,
-            positions=positions,
-            seed=stable_seed(cell, tf, candidate_id, "shift-null", seed=seed),
-        )
-
         if cell not in dwm_cache:
             dwm_cache[cell] = load_dwm_training_source(
                 cell,
@@ -151,92 +143,134 @@ def evaluate(
         dwm_hashes = dwm_hashes[dwm_valid]
         if not np.array_equal(strand_hashes, dwm_hashes):
             raise ValueError(f"strand and DWM training sites differ for {cell}")
-        reference = fit_dwm_detector(
-            dwm_candidates[reference_id],
-            dwm_sites,
-            dwm_profiles,
-            cell=cell,
-            tf=tf,
-            motif_family=motif_family,
-            positions=positions,
-            seed=stable_seed(cell, tf, reference_id, "shift-null", seed=seed),
-        )
-
-        tf_mask = sites["tf"].astype(str).eq(tf).to_numpy()
-        for shift in shifts:
-            for method, fitted, source_profiles, method_id, method_bias in (
-                (
-                    "frozen_policy_candidate",
-                    candidate,
-                    strand_profiles,
-                    candidate_id,
-                    bias,
+        fold_assignments = np.mod(strand_hashes, crossfit_folds).astype(int)
+        for fold in range(crossfit_folds):
+            if crossfit_folds == 1:
+                train_mask = np.ones(len(sites), dtype=bool)
+                evaluation_mask = train_mask
+            else:
+                train_mask = fold_assignments != fold
+                evaluation_mask = fold_assignments == fold
+            train_sites = sites.loc[train_mask].reset_index(drop=True)
+            train_strand = {
+                name: values[train_mask] for name, values in strand_profiles.items()
+            }
+            train_dwm_sites = dwm_sites.loc[train_mask].reset_index(drop=True)
+            train_dwm = {
+                name: values[train_mask] for name, values in dwm_profiles.items()
+            }
+            candidate = fit_strand_detector(
+                strand_candidates[candidate_id],
+                train_sites,
+                train_strand,
+                tf=tf,
+                motif_family=motif_family,
+                positions=positions,
+                seed=stable_seed(
+                    cell, tf, candidate_id, "shift-null", fold, seed=seed
                 ),
-                (
-                    "frozen_dwm_reference",
-                    reference,
-                    dwm_profiles,
-                    reference_id,
-                    "DWM",
+            )
+            reference = fit_dwm_detector(
+                dwm_candidates[reference_id],
+                train_dwm_sites,
+                train_dwm,
+                cell=cell,
+                tf=tf,
+                motif_family=motif_family,
+                positions=positions,
+                seed=stable_seed(
+                    cell, tf, reference_id, "shift-null", fold, seed=seed
                 ),
-            ):
-                shifted = cyclic_shift_profiles(source_profiles, shift)
-                probabilities, total_signal, _residual = predict_detector(
-                    fitted, shifted, sites
-                )
-                valid = tf_mask & np.isfinite(probabilities)
-                informative = valid & (total_signal > 0)
-                selected = np.flatnonzero(tf_mask)
-                metadata = {
-                    "cell": cell,
-                    "tf": tf,
-                    "motif_family": motif_family,
-                    "method": method,
-                    "candidate_id": method_id,
-                    "bias_configuration": method_bias,
-                    "null_source": "motif_misaligned_atac",
-                    "shift_bp": int(shift),
-                }
-                score_parts.append(
-                    pd.DataFrame(
-                        {
-                            **metadata,
-                            "site_hash": strand_hashes[selected],
-                            "TFBS_chr": sites.loc[tf_mask, "TFBS_chr"].to_numpy(),
-                            "TFBS_start": sites.loc[tf_mask, "TFBS_start"].to_numpy(),
-                            "TFBS_end": sites.loc[tf_mask, "TFBS_end"].to_numpy(),
-                            "total_signal": total_signal[selected],
-                            "binding_probability": probabilities[selected],
-                            "valid": valid[selected],
-                            "informative": informative[selected],
-                        }
+            )
+            evaluation_sites = sites.loc[evaluation_mask].reset_index(drop=True)
+            evaluation_hashes = strand_hashes[evaluation_mask]
+            evaluation_strand = {
+                name: values[evaluation_mask]
+                for name, values in strand_profiles.items()
+            }
+            evaluation_dwm = {
+                name: values[evaluation_mask] for name, values in dwm_profiles.items()
+            }
+            tf_mask = evaluation_sites["tf"].astype(str).eq(tf).to_numpy()
+            for shift in shifts:
+                for method, fitted, source_profiles, method_id, method_bias in (
+                    (
+                        "frozen_policy_candidate",
+                        candidate,
+                        evaluation_strand,
+                        candidate_id,
+                        bias,
+                    ),
+                    (
+                        "frozen_dwm_reference",
+                        reference,
+                        evaluation_dwm,
+                        reference_id,
+                        "DWM",
+                    ),
+                ):
+                    shifted = cyclic_shift_profiles(source_profiles, shift)
+                    probabilities, total_signal, _residual = predict_detector(
+                        fitted, shifted, evaluation_sites
                     )
-                )
-                summary_rows.append(
-                    {
-                        **metadata,
-                        "sites": int(tf_mask.sum()),
-                        "valid_sites": int(valid.sum()),
-                        "informative_sites": int(informative.sum()),
-                        "mean_probability": (
-                            float(np.mean(probabilities[informative]))
-                            if informative.any()
-                            else np.nan
-                        ),
-                        "q95_probability": (
-                            float(np.quantile(probabilities[informative], 0.95))
-                            if informative.any()
-                            else np.nan
-                        ),
-                        "q975_probability": (
-                            float(np.quantile(probabilities[informative], 0.975))
-                            if informative.any()
-                            else np.nan
-                        ),
+                    valid = tf_mask & np.isfinite(probabilities)
+                    informative = valid & (total_signal > 0)
+                    selected = np.flatnonzero(tf_mask)
+                    metadata = {
+                        "cell": cell,
+                        "tf": tf,
+                        "motif_family": motif_family,
+                        "method": method,
+                        "candidate_id": method_id,
+                        "bias_configuration": method_bias,
+                        "null_source": "motif_misaligned_atac",
+                        "shift_bp": int(shift),
+                        "crossfit_fold": int(fold),
                     }
-                )
+                    score_parts.append(
+                        pd.DataFrame(
+                            {
+                                **metadata,
+                                "site_hash": evaluation_hashes[selected],
+                                "TFBS_chr": evaluation_sites.loc[
+                                    tf_mask, "TFBS_chr"
+                                ].to_numpy(),
+                                "TFBS_start": evaluation_sites.loc[
+                                    tf_mask, "TFBS_start"
+                                ].to_numpy(),
+                                "TFBS_end": evaluation_sites.loc[
+                                    tf_mask, "TFBS_end"
+                                ].to_numpy(),
+                                "total_signal": total_signal[selected],
+                                "binding_probability": probabilities[selected],
+                                "valid": valid[selected],
+                                "informative": informative[selected],
+                            }
+                        )
+                    )
     scores = pd.concat(score_parts, ignore_index=True)
-    summary = pd.DataFrame(summary_rows)
+    group_columns = [
+        "cell",
+        "tf",
+        "motif_family",
+        "method",
+        "candidate_id",
+        "bias_configuration",
+        "null_source",
+        "shift_bp",
+    ]
+    summary = (
+        scores.groupby(group_columns, sort=True, dropna=False)
+        .agg(
+            sites=("site_hash", "size"),
+            valid_sites=("valid", "sum"),
+            informative_sites=("informative", "sum"),
+            mean_probability=("binding_probability", "mean"),
+            q95_probability=("binding_probability", lambda values: values.quantile(0.95)),
+            q975_probability=("binding_probability", lambda values: values.quantile(0.975)),
+        )
+        .reset_index()
+    )
     unique_inputs = list({record["path"]: record for record in inputs}.values())
     return scores, summary, unique_inputs
 
@@ -270,6 +304,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--shifts", nargs="+", type=int, default=list(DEFAULT_SHIFTS))
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument(
+        "--crossfit-folds",
+        type=int,
+        default=1,
+        help="Hash-based folds; values above one fit each null score out of fold.",
+    )
     parser.add_argument("--outdir", type=Path, required=True)
     args = parser.parse_args(argv)
     study = json.loads(args.study.read_text(encoding="utf-8"))
@@ -284,6 +324,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         dwm_base_run=args.dwm_base_run,
         shifts=args.shifts,
         seed=args.seed,
+        crossfit_folds=args.crossfit_folds,
     )
     args.outdir.mkdir(parents=True, exist_ok=True)
     scores_path = args.outdir / "shifted_atac_null_scores.tsv.gz"
@@ -296,6 +337,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "null": "cyclic motif-profile misalignment",
         "shifts_bp": [int(value) for value in args.shifts],
         "seed": int(args.seed),
+        "crossfit_folds": int(args.crossfit_folds),
         "study": {"path": str(args.study), "sha256": _sha256(args.study)},
         "policy": {"path": str(args.policy), "sha256": _sha256(args.policy)},
         "inputs": inputs,

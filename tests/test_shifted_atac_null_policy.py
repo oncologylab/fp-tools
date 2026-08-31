@@ -28,3 +28,10 @@ def test_cyclic_shift_rejects_zero_and_bad_shapes() -> None:
         module.cyclic_shift_profiles({"observed": np.ones((2, 3))}, 0)
     with pytest.raises(ValueError, match="two-dimensional"):
         module.cyclic_shift_profiles({"observed": np.ones(3)}, 1)
+
+
+def test_hash_folds_are_deterministic_and_complete() -> None:
+    hashes = np.array([1, 2, 3, 4, 5], dtype=np.uint64)
+    folds = np.mod(hashes, 4).astype(int)
+    assert folds.tolist() == [1, 2, 3, 0, 1]
+    assert sum(int(np.sum(folds == fold)) for fold in range(4)) == len(hashes)
