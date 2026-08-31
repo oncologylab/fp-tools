@@ -30,6 +30,7 @@ from evaluate_functional_template_transfer import selection_score  # noqa: E402
 from evaluate_strand_functional_templates import load_artifact  # noqa: E402
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
+    CovariateAnchoredFdaModel,
     FdaMixtureModel,
     HybridFdaGpModel,
     normalize_functional_profiles,
@@ -55,6 +56,7 @@ class Candidate:
     window: float = 50.0
     channel: str = "combined_residual"
     training_pool: str = "tf"
+    anchor_strength: float = 0.0
 
 
 def candidate_grid() -> list[Candidate]:
@@ -80,6 +82,19 @@ def candidate_grid() -> list[Candidate]:
                         family,
                         channel=channel,
                         training_pool=training_pool,
+                    )
+                )
+    for channel in CHANNELS:
+        for training_pool in ("tf", "family"):
+            for anchor_strength in (0.5, 1.0, 2.0):
+                anchor_label = str(anchor_strength).replace(".", "p")
+                candidates.append(
+                    Candidate(
+                        f"anchored-fda.{channel}.pool_{training_pool}.anchor_{anchor_label}",
+                        "anchored-fda",
+                        channel=channel,
+                        training_pool=training_pool,
+                        anchor_strength=anchor_strength,
                     )
                 )
     return candidates
@@ -154,7 +169,8 @@ def _evaluate_candidate(
         "bias_configuration": bias_configuration,
         **asdict(candidate),
         "training_labels_used": False,
-        "motif_or_accessibility_features_used": False,
+        "motif_or_accessibility_features_used": candidate.family == "anchored-fda",
+        "evaluation_motif_or_accessibility_features_used": False,
         "tf_training_sites": int(len(tf_train)),
         "family_training_sites": int(len(family_train)),
         "validation_sites": int(len(validation)),
@@ -237,7 +253,34 @@ def _evaluate_candidate(
                 candidate.candidate_id,
                 seed=seed,
             )
-            if candidate.family == "fda":
+            if candidate.family == "anchored-fda":
+                coverage = (
+                    train_profiles["plus_observed"][indexes]
+                    + train_profiles["minus_observed"][indexes]
+                ).sum(axis=1)
+                model = CovariateAnchoredFdaModel(
+                    max_components=20,
+                    anchor_strength=candidate.anchor_strength,
+                    seed=model_seed,
+                ).fit(
+                    train_shape,
+                    motif_score=train_sites.iloc[indexes]["motif_score"].to_numpy(
+                        dtype=float
+                    ),
+                    accessibility=coverage,
+                    positions=positions,
+                    sample_weight=weights,
+                )
+                shape_log_odds, _anchor = model.predict_log_odds_components(
+                    validation_shape
+                )
+                probabilities = 1.0 / (
+                    1.0 + np.exp(-np.clip(shape_log_odds, -40.0, 40.0))
+                )
+                profile = model.profile_difference()
+                converged = bool(model.converged_)
+                iterations = int(model.iterations_)
+            elif candidate.family == "fda":
                 model = FdaMixtureModel(max_components=20, seed=model_seed).fit(
                     train_shape,
                     positions=positions,
@@ -336,6 +379,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--minimum-evaluation-sites", type=int, default=100)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument(
+        "--candidate-prefix",
+        action="append",
+        help="Evaluate only candidate IDs beginning with this prefix; repeat as needed",
+    )
     args = parser.parse_args(argv)
     study = json.loads(args.study.read_text(encoding="utf-8"))
     tasks = pd.DataFrame(study["tasks"])
@@ -367,6 +415,17 @@ def main(argv: list[str] | None = None) -> int:
                 }
             )
     candidates = candidate_grid()
+    if args.candidate_prefix is not None:
+        candidates = [
+            candidate
+            for candidate in candidates
+            if any(
+                candidate.candidate_id.startswith(prefix)
+                for prefix in args.candidate_prefix
+            )
+        ]
+        if not candidates:
+            raise SystemExit("no candidates match --candidate-prefix")
     positions = np.arange(-int(study["profile_flank_bp"]), int(study["profile_flank_bp"]) + 1, dtype=float)
     futures = {}
     rows = []
@@ -411,7 +470,10 @@ def main(argv: list[str] | None = None) -> int:
         "schema": "fp-tools-strand-label-free-evaluation-v1",
         "locked_test_labels_read": False,
         "training_labels_used": False,
-        "motif_or_accessibility_features_used": False,
+        "motif_or_accessibility_features_used": any(
+            candidate.family == "anchored-fda" for candidate in candidates
+        ),
+        "evaluation_motif_or_accessibility_features_used": False,
         "study": str(args.study),
         "study_sha256": file_sha256(args.study),
         "artifacts": input_rows,

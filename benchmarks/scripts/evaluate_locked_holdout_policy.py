@@ -46,6 +46,7 @@ from evaluate_strand_label_free_models import (  # noqa: E402
 )
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
+    CovariateAnchoredFdaModel,
     FdaMixtureModel,
     HybridFdaGpModel,
     deviance_profiles,
@@ -760,7 +761,28 @@ def fit_combined_route(
         residual = artifact.profiles["combined_residual"]
         weights = np.sqrt(np.maximum(observed[tf_train].sum(axis=1), 1.0))
         model_seed = stable_seed(artifact.cell, tf, candidate_id, seed=seed)
-        if candidate.family == "fda":
+        if candidate.family == "anchored-fda":
+            model = CovariateAnchoredFdaModel(
+                max_components=20,
+                anchor_strength=candidate.anchor_strength,
+                seed=model_seed,
+            ).fit(
+                residual[tf_train],
+                motif_score=artifact.sites.iloc[tf_train]["motif_score"].to_numpy(
+                    dtype=float
+                ),
+                accessibility=observed[tf_train].sum(axis=1),
+                positions=positions,
+                sample_weight=weights,
+            )
+            shape_log_odds, _anchor = model.predict_log_odds_components(
+                residual[evaluation_indexes]
+            )
+            probabilities = _probability(shape_log_odds)
+            footprint = model.profile_difference()
+            converged = bool(model.converged_)
+            iterations = int(model.iterations_)
+        elif candidate.family == "fda":
             model = FdaMixtureModel(
                 variance_threshold=candidate.variance_threshold,
                 max_components=candidate.max_components,
@@ -871,7 +893,28 @@ def fit_strand_route(
         evaluation_profiles = artifact.profiles[candidate.channel][evaluation_indexes]
         weights = np.sqrt(np.maximum(observed[indexes].sum(axis=1), 1.0))
         model_seed = stable_seed(artifact.model, artifact.cell, tf, candidate_id, seed=seed)
-        if candidate.family == "fda":
+        if candidate.family == "anchored-fda":
+            model = CovariateAnchoredFdaModel(
+                max_components=20,
+                anchor_strength=candidate.anchor_strength,
+                seed=model_seed,
+            ).fit(
+                train_profiles,
+                motif_score=artifact.sites.iloc[indexes]["motif_score"].to_numpy(
+                    dtype=float
+                ),
+                accessibility=observed[indexes].sum(axis=1),
+                positions=positions,
+                sample_weight=weights,
+            )
+            shape_log_odds, _anchor = model.predict_log_odds_components(
+                evaluation_profiles
+            )
+            probabilities = _probability(shape_log_odds)
+            footprint = model.profile_difference()
+            converged = bool(model.converged_)
+            iterations = int(model.iterations_)
+        elif candidate.family == "fda":
             model = FdaMixtureModel(max_components=20, seed=model_seed).fit(
                 train_profiles, positions=positions, sample_weight=weights
             )

@@ -43,7 +43,7 @@ from fp_tools.tools.functional_footprints import (  # noqa: E402
 
 
 SCHEMA = "fp-tools-locked-holdout-posthoc-factorial-v1"
-SUPPORTED_COMBINED_FAMILIES = {"spline", "gp", "fda", "hybrid"}
+SUPPORTED_COMBINED_FAMILIES = {"spline", "gp", "fda", "anchored-fda", "hybrid"}
 
 
 def file_sha256(path: str | Path) -> str:
@@ -156,6 +156,7 @@ def run_factorial(
     artifacts: dict[tuple[str, str], Artifact],
     *,
     corrections: set[str] | None,
+    candidate_prefixes: tuple[str, ...] | None,
     maximum_train_per_tf: int,
     seed: int,
 ) -> pd.DataFrame:
@@ -184,7 +185,17 @@ def run_factorial(
             family = str(task["motif_family"].iloc[0])
             reference_probabilities = task["reference_probability"].to_numpy(dtype=float)
             reference_metrics = probability_metrics(labels, reference_probabilities)
-            for candidate_id in supported_candidates(artifact):
+            candidate_ids = supported_candidates(artifact)
+            if candidate_prefixes is not None:
+                candidate_ids = [
+                    candidate_id
+                    for candidate_id in candidate_ids
+                    if any(
+                        candidate_id.startswith(prefix)
+                        for prefix in candidate_prefixes
+                    )
+                ]
+            for candidate_id in candidate_ids:
                 base = {
                     "cell": cell,
                     "tf": str(tf),
@@ -285,6 +296,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="append",
         help="Evaluate only this correction; repeat as needed (DWM may still be loaded as reference)",
     )
+    parser.add_argument(
+        "--candidate-prefix",
+        action="append",
+        help="Evaluate only candidate IDs beginning with this prefix; repeat as needed",
+    )
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--outdir", type=Path, required=True)
     args = parser.parse_args(argv)
@@ -316,6 +332,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 if args.evaluate_correction is None
                 else set(args.evaluate_correction)
             ),
+            candidate_prefixes=(
+                None
+                if args.candidate_prefix is None
+                else tuple(args.candidate_prefix)
+            ),
             maximum_train_per_tf=args.maximum_train_per_tf,
             seed=args.seed,
         )
@@ -338,6 +359,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         },
         "maximum_train_per_tf": int(args.maximum_train_per_tf),
         "seed": int(args.seed),
+        "candidate_prefixes": args.candidate_prefix,
         "metric_rows": int(len(metrics)),
         "winner_rows": int(len(winners)),
         "outputs": {
