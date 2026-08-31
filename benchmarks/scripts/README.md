@@ -425,6 +425,29 @@ benchmark writes strand-aligned cut motifs, likelihood/calibration metrics,
 safe model artifacts, and the two configurations eligible for the downstream
 functional screen. It never reads the locked test chromosomes.
 
+Before a retained model enters the functional screen,
+`evaluate_bias_motif_leakage.py` measures its sequence-only response at every
+eligible development TF motif against a nearby local-sequence control. It
+reports response curves, bootstrap uncertainty, broad center/flank effects,
+and cross-cell/model concordance without reading ChIP labels.
+
+```bash
+.venv/bin/python benchmarks/scripts/evaluate_bias_motif_leakage.py \
+  --study benchmarks/manifests/footprint_functional_v1.spec.json \
+  --motif-sites K562=<K562-unlabeled-motif-sites.tsv.gz> \
+  --motif-sites HepG2=<HepG2-unlabeled-motif-sites.tsv.gz> \
+  --model K562:loglinear81=<K562-model.npz> \
+  --model HepG2:loglinear81=<HepG2-model.npz> \
+  --genome <hg38.fa> \
+  --outdir benchmarks/results/footprint_parametric_v1/motif_response
+```
+
+A flag means the bias model responds reproducibly to motif sequence and needs
+review; it is not automatically called occupancy leakage, because genuine Tn5
+sequence preference can overlap a TF motif. Promotion additionally requires
+control-likelihood gain, cross-cell transfer, naked-DNA behavior, and no loss
+of held-out TF signal.
+
 `evaluate_functional_footprints.py` compares label-free spline, FDA,
 Gaussian-process-equivalent, and hybrid footprint models on identical matched
 motif sites. Its deployable candidates train on motif pools that contain no

@@ -172,6 +172,12 @@ a separately planned breaking release explicitly changes the contract.
   BH-adjusted significance, replicate consistency, and changes in footprint
   depth, width, shoulders, asymmetry, and periodicity. Nutrient-stress data
   remain locked until model selection is complete.
+- Bias-model leakage diagnostics now score every eligible development JASPAR
+  motif against nearby local-sequence controls without reading ChIP labels.
+  They report bootstrap-banded response functions, broad center/flank effects,
+  and cross-cell/model concordance. A sequence response is a review flag—not
+  automatic evidence of occupancy leakage—until naked-DNA and held-out TF
+  behavior distinguish intrinsic Tn5 preference from overlearned chromatin.
 
 ## Current ENCODE Resource
 
