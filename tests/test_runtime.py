@@ -112,6 +112,23 @@ class RuntimeManagerTest(unittest.TestCase):
         self.assertEqual(size, 0)
         self.assertEqual(observed, digest)
 
+    def test_managed_runtime_activates_relocated_ca_bundle(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            prefix = Path(tmpdir) / "runtime"
+            (prefix / "bin").mkdir(parents=True)
+            bundle = prefix / "ssl" / "cacert.pem"
+            bundle.parent.mkdir(parents=True)
+            bundle.write_text("test certificate bundle\n", encoding="utf-8")
+            activation = runtime.RuntimeActivation("managed", "core", prefix=prefix)
+            with mock.patch.object(
+                runtime, "ensure_native_runtime", return_value=activation
+            ), mock.patch.dict(os.environ, {"PATH": "/system/bin"}, clear=True):
+                observed = runtime.activate_runtime("core", "managed")
+                self.assertEqual(os.environ["CURL_CA_BUNDLE"], str(bundle.resolve()))
+                self.assertEqual(os.environ["SSL_CERT_FILE"], str(bundle.resolve()))
+                self.assertTrue(os.environ["PATH"].startswith(str(prefix / "bin")))
+            self.assertEqual(observed, activation)
+
     def test_download_rejects_wrong_checksum(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             source = Path(tmpdir) / "source.tar.gz"

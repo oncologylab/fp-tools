@@ -13,6 +13,7 @@ import json
 import os
 import platform
 import shutil
+import ssl
 import subprocess
 import sys
 import tarfile
@@ -343,6 +344,41 @@ def ensure_native_runtime(component: str = "core") -> RuntimeActivation:
     return RuntimeActivation("managed", component, prefix=prefix)
 
 
+def _activate_ca_bundle(prefix: Path) -> Path | None:
+    """Point relocated runtime clients at an existing certificate bundle.
+
+    Some conda-built curl binaries retain the absolute CA path from their
+    build environment even after ``conda-unpack``.  Prefer the relocated
+    runtime bundle and fall back to the host/Python bundle without overriding
+    a valid user-supplied path.
+    """
+
+    configured = os.environ.get("FP_TOOLS_CA_BUNDLE")
+    candidates = [
+        Path(configured).expanduser() if configured else None,
+        prefix / "ssl" / "cacert.pem",
+        prefix / "Library" / "ssl" / "cacert.pem",
+    ]
+    defaults = ssl.get_default_verify_paths()
+    if defaults.cafile:
+        candidates.append(Path(defaults.cafile))
+    candidates.extend(
+        [
+            Path("/etc/ssl/certs/ca-certificates.crt"),
+            Path("/etc/pki/tls/certs/ca-bundle.crt"),
+            Path("/etc/ssl/cert.pem"),
+        ]
+    )
+    bundle = next((path.resolve() for path in candidates if path and path.is_file()), None)
+    if bundle is None:
+        return None
+    for variable in ("CURL_CA_BUNDLE", "SSL_CERT_FILE"):
+        current = os.environ.get(variable)
+        if not current or not Path(current).expanduser().is_file():
+            os.environ[variable] = str(bundle)
+    return bundle
+
+
 def activate_runtime(component: str = "core", mode: str | None = None) -> RuntimeActivation:
     resolved = _runtime_mode(mode)
     if resolved == "system":
@@ -354,6 +390,7 @@ def activate_runtime(component: str = "core", mode: str | None = None) -> Runtim
         bin_dir = activation.prefix / ("Scripts" if os.name == "nt" else "bin")
         os.environ["PATH"] = str(bin_dir) + os.pathsep + os.environ.get("PATH", "")
         os.environ["FP_TOOLS_RUNTIME_PREFIX"] = str(activation.prefix)
+        _activate_ca_bundle(activation.prefix)
     return activation
 
 
