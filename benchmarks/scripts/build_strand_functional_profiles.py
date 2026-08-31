@@ -253,6 +253,10 @@ def write_profiles(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sites", type=Path, required=True)
+    parser.add_argument(
+        "--cell",
+        help="Optional cell value used to subset a multi-cell labeled site table.",
+    )
     parser.add_argument("--bam", type=Path, required=True)
     parser.add_argument("--genome", type=Path, required=True)
     parser.add_argument("--bias-model", type=Path, required=True)
@@ -264,6 +268,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--out-prefix", type=Path, required=True)
     args = parser.parse_args(argv)
     sites = pd.read_csv(args.sites, sep="\t").reset_index(drop=True)
+    if args.cell is not None:
+        if "cell" not in sites:
+            raise SystemExit("--cell requires a cell column in --sites")
+        sites = sites[sites["cell"].astype(str) == args.cell].reset_index(drop=True)
+        if sites.empty:
+            raise SystemExit(f"--sites contains no rows for cell {args.cell}")
     plus, minus, bam_valid = extract_strand_cut_profiles(
         sites,
         args.bam,
@@ -306,6 +316,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "minimum_mapq": int(args.minimum_mapq),
             "keep_duplicates": bool(args.keep_duplicates),
             "dispersion": float(args.dispersion),
+            "cell": args.cell,
             "labels_used": False,
         },
     )

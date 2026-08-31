@@ -490,6 +490,7 @@ antisymmetric strand residuals.
 ```bash
 .venv/bin/python benchmarks/scripts/build_strand_functional_profiles.py \
   --sites <motif-sites.tsv.gz> \
+  --cell K562 \
   --bam <coordinate-sorted.bam> \
   --genome <hg38.fa> \
   --bias-model <retained-bias-model.npz> \
