@@ -849,11 +849,18 @@ def main(argv: list[str] | None = None) -> int:
 
     study = json.loads(args.study.read_text(encoding="utf-8"))
     development_sites = validate_sites(pd.read_csv(args.development_sites, sep="\t"), args.development_sites)
+    development_sites["chromosome_split"] = development_sites["TFBS_chr"].map(
+        lambda value: chromosome_split(str(value), study)
+    )
     test_sites = (
         validate_sites(pd.read_csv(args.test_sites, sep="\t"), args.test_sites)
         if args.test_sites is not None
         else None
     )
+    if test_sites is not None:
+        test_sites["chromosome_split"] = test_sites["TFBS_chr"].map(
+            lambda value: chromosome_split(str(value), study)
+        )
     tracks = pd.read_csv(args.tracks, sep="\t")
     required_tracks = {"cell", "model", "track", "signal"}
     if not required_tracks.issubset(tracks.columns):

@@ -13,6 +13,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from evaluate_functional_footprints import (  # noqa: E402
     build_unlabeled_training_sites,
+    chromosome_split,
     classify_failures,
     fit_supervised_ceiling,
     residual_score,
@@ -34,6 +35,8 @@ def test_functional_spec_is_locked_and_complete() -> None:
         "IMR-90",
     }
     assert study["promotion_gates"]["minimum_gp_relative_auprc_gain_over_spline"] == 0.05
+    assert chromosome_split("chr16", study) == "validation"
+    assert chromosome_split("chr19", study) == "test"
 
 
 def test_unlabeled_training_sites_never_read_labels(tmp_path: Path) -> None:
@@ -171,4 +174,3 @@ def test_failure_classification_separates_assay_and_shape_limits() -> None:
     assert classified.loc["NO_INFO", "classification"] == "assay_limited_or_motif_ambiguous"
     assert classified.loc["DETECTABLE", "classification"] == "detectable"
     assert classified.loc["MODEL_LIMIT", "classification"] == "shape_model_limited"
-
