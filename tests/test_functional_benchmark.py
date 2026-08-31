@@ -212,6 +212,19 @@ def test_supervised_ceiling_uses_functional_shape() -> None:
     assert probabilities.shape == (180,)
     assert fpca.components_.shape[0] <= 20
 
+    shape_probabilities, shape_selected, _ = fit_supervised_ceiling(
+        train_profiles,
+        validation_profiles,
+        train_sites,
+        validation_sites,
+        seed=4,
+        include_covariates=False,
+    )
+    assert shape_selected["feature_mode"] == "fpca_shape_only"
+    assert shape_selected["fpca_components"] <= 20
+    assert shape_selected["auroc"] > 0.8
+    assert shape_probabilities.shape == (180,)
+
 
 def test_failure_classification_separates_assay_and_shape_limits() -> None:
     rows = []

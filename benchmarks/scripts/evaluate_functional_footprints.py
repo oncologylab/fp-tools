@@ -634,26 +634,37 @@ def fit_supervised_ceiling(
     validation_sites: pd.DataFrame,
     *,
     seed: int,
+    include_covariates: bool = True,
 ) -> tuple[np.ndarray, dict[str, object], FunctionalPCA]:
     train_residual = normalize_functional_profiles(train_residual)
     validation_residual = normalize_functional_profiles(validation_residual)
     fpca = FunctionalPCA(variance_threshold=0.95, max_components=20, seed=seed)
     train_scores = fpca.fit_transform(train_residual)
     validation_scores = fpca.transform(validation_residual)
-    train_covariates = np.column_stack(
-        [
-            pd.to_numeric(train_sites["motif_score"], errors="coerce"),
-            np.log1p(pd.to_numeric(train_sites["accessibility"], errors="coerce").clip(lower=0)),
-        ]
-    )
-    validation_covariates = np.column_stack(
-        [
-            pd.to_numeric(validation_sites["motif_score"], errors="coerce"),
-            np.log1p(pd.to_numeric(validation_sites["accessibility"], errors="coerce").clip(lower=0)),
-        ]
-    )
-    train_x = np.column_stack([train_covariates, train_scores])
-    validation_x = np.column_stack([validation_covariates, validation_scores])
+    if include_covariates:
+        train_covariates = np.column_stack(
+            [
+                pd.to_numeric(train_sites["motif_score"], errors="coerce"),
+                np.log1p(
+                    pd.to_numeric(train_sites["accessibility"], errors="coerce").clip(lower=0)
+                ),
+            ]
+        )
+        validation_covariates = np.column_stack(
+            [
+                pd.to_numeric(validation_sites["motif_score"], errors="coerce"),
+                np.log1p(
+                    pd.to_numeric(validation_sites["accessibility"], errors="coerce").clip(lower=0)
+                ),
+            ]
+        )
+        train_x = np.column_stack([train_covariates, train_scores])
+        validation_x = np.column_stack([validation_covariates, validation_scores])
+        feature_mode = "motif_accessibility_fpca"
+    else:
+        train_x = train_scores
+        validation_x = validation_scores
+        feature_mode = "fpca_shape_only"
     labels = train_sites["chip_label"].to_numpy(dtype=int)
     validation_labels = validation_sites["chip_label"].to_numpy(dtype=int)
     candidates = []
@@ -716,6 +727,8 @@ def fit_supervised_ceiling(
         "iterations": selected[7],
         "converged_candidates": len(converged_candidates),
         "candidate_count": len(candidates),
+        "feature_mode": feature_mode,
+        "fpca_components": int(train_scores.shape[1]),
         **selected[5],
     }, fpca
 
@@ -1207,6 +1220,14 @@ def evaluate(
                     validation_sites,
                     seed=stable_seed(cell, tf, correction, "ceiling", seed=seed),
                 )
+                shape_ceiling, shape_selected, _shape_fpca = fit_supervised_ceiling(
+                    train_residual,
+                    validation_residual,
+                    train_sites,
+                    validation_sites,
+                    seed=stable_seed(cell, tf, correction, "shape_ceiling", seed=seed),
+                    include_covariates=False,
+                )
                 baseline = supervised_baseline(
                     train_sites,
                     validation_sites,
@@ -1215,7 +1236,9 @@ def evaluate(
                 for name, probabilities in (
                     ("supervised_baseline", baseline),
                     ("supervised_fpca", ceiling),
+                    ("supervised_fpca_shape", shape_ceiling),
                 ):
+                    selection = shape_selected if name == "supervised_fpca_shape" else selected
                     metric_rows.append(
                         {
                             "split": "validation",
@@ -1228,6 +1251,21 @@ def evaluate(
                             "training_sites": int(len(train_indexes)),
                             "fit_seconds_all_models": np.nan,
                             "dispersion": dispersion,
+                            "feature_mode": (
+                                "motif_accessibility"
+                                if name == "supervised_baseline"
+                                else selection["feature_mode"]
+                            ),
+                            "converged": (
+                                np.nan
+                                if name == "supervised_baseline"
+                                else bool(selection["converged"])
+                            ),
+                            "iterations": (
+                                np.nan
+                                if name == "supervised_baseline"
+                                else int(selection["iterations"])
+                            ),
                             **binary_metrics(
                                 validation_sites["chip_label"].to_numpy(dtype=int), probabilities
                             ),
