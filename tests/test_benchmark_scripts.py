@@ -540,6 +540,23 @@ class ManifestValidationTest(unittest.TestCase):
             self.assertTrue(errors)
             self.assertIn("missing full-manifest columns", errors[0])
 
+    def test_functional_holdout_atac_manifest_is_pinned_and_label_free(self):
+        path = (
+            ROOT
+            / "benchmarks"
+            / "manifests"
+            / "compact"
+            / "functional_holdout_atac_bams.tsv"
+        )
+        frame = pd.read_csv(path, sep="\t", dtype=str)
+        self.assertEqual(len(frame), 4)
+        self.assertEqual(set(frame["cell"]), {"GM12878", "IMR-90"})
+        self.assertEqual(set(frame.groupby("cell").size()), {2})
+        self.assertTrue(frame["checksum"].str.fullmatch(r"[0-9a-f]{32}").all())
+        self.assertTrue((frame["expected_bytes"].astype(int) > 2_000_000_000).all())
+        self.assertFalse(any("chip" in column.lower() for column in frame.columns))
+        self.assertFalse(any("label" in column.lower() for column in frame.columns))
+
 
 class EngineeringBenchmarkHelperTest(unittest.TestCase):
     def test_records_command_runtime_metadata(self):

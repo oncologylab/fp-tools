@@ -1,0 +1,5 @@
+file_accession	url	local_path	expected_bytes	checksum	cell	sample	biological_replicate
+ENCFF415FEC	https://www.encodeproject.org/files/ENCFF415FEC/@@download/ENCFF415FEC.bam	data/public/raw/functional_holdout_atac/GM12878_rep1.ENCFF415FEC.bam	2515550487	aca6bde5b395777573e7cf94a04c2024	GM12878	GM12878_rep1	1
+ENCFF646NWY	https://www.encodeproject.org/files/ENCFF646NWY/@@download/ENCFF646NWY.bam	data/public/raw/functional_holdout_atac/GM12878_rep2.ENCFF646NWY.bam	2828953464	63f2d76a79216d623872f66653ec0d41	GM12878	GM12878_rep2	2
+ENCFF848XMR	https://www.encodeproject.org/files/ENCFF848XMR/@@download/ENCFF848XMR.bam	data/public/raw/functional_holdout_atac/IMR90_rep1.ENCFF848XMR.bam	3232567686	e9b337f3879f1b8c82c4bc56b30771b9	IMR-90	IMR90_rep1	1
+ENCFF715NAV	https://www.encodeproject.org/files/ENCFF715NAV/@@download/ENCFF715NAV.bam	data/public/raw/functional_holdout_atac/IMR90_rep2.ENCFF715NAV.bam	2447368630	1928d6dd53045563c3446d03c6703180	IMR-90	IMR90_rep2	2

@@ -43,3 +43,8 @@ versus +4/-4 shift comparison, parametric bias and functional-model grids, and
 scientific/computational promotion gates. The old
 `footprint_detectability_v1.spec.json` remains unchanged as the record of the
 earlier study and its already-viewed holdout.
+
+`compact/functional_holdout_atac_bams.tsv` pins the four coordinate-sorted
+ENCODE ATAC-seq BAMs used to prepare the locked GM12878 and IMR-90 transfer
+panel. File size and MD5 are checked before any holdout analysis. Downloading
+these assay inputs does not open or score the preregistered TF ChIP labels.

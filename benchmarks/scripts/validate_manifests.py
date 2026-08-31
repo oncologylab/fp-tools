@@ -32,9 +32,25 @@ FULL_MANIFEST_COLUMNS = [
 COMPACT_MANIFEST_SCHEMAS = {
     "a549_tasks.tsv": ["cell", "tf", "assay", "experiment", "file_accession", "url"],
     "10x_pbmc_pseudobulk.tsv": ["dataset", "asset", "url"],
+    "functional_holdout_atac_bams.tsv": [
+        "file_accession",
+        "url",
+        "local_path",
+        "expected_bytes",
+        "checksum",
+        "cell",
+        "sample",
+        "biological_replicate",
+    ],
 }
 
 SPECIALIZED_MANIFEST_SCHEMAS = {
+    "naked_dna_gse164997.tsv": [
+        "run_accession",
+        "sample",
+        "condition",
+        "replicate",
+    ],
     "encode_atac_8cell_20260813.tsv": [
         "condition",
         "sample",
