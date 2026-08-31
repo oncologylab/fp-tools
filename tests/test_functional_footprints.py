@@ -198,6 +198,9 @@ def test_bias_aware_mixture_can_anchor_binding_prior_direction(tmp_path: Path) -
         prior_constraint="motif-accessibility",
         accessibility_background="linear",
         background_exclusion=30.0,
+        profile_inner_limit=30.0,
+        profile_outer_limit=40.0,
+        likelihood_limit=30.0,
         max_iter=60,
     )
     result = model.fit(
@@ -208,10 +211,13 @@ def test_bias_aware_mixture_can_anchor_binding_prior_direction(tmp_path: Path) -
     )
     assert np.all(result.prior_coefficients[1:] >= 0)
     assert roc_auc_score(labels, result.posterior) > 0.75
+    assert np.allclose(result.footprint_profile[np.abs(_positions()) >= 40], 0.0)
     model.save(tmp_path / "anchored")
     loaded = BiasAwareFunctionalMixture.load(tmp_path / "anchored.npz")
     assert loaded.prior_constraint == "motif-accessibility"
     assert loaded.accessibility_background == "linear"
+    assert loaded.profile_outer_limit == 40.0
+    assert loaded.likelihood_limit == 30.0
     shape_log_odds, prior_log_odds = loaded.predict_log_odds_components(
         observed[:25],
         expected[:25],

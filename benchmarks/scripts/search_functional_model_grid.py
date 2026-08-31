@@ -69,6 +69,8 @@ class FunctionalCandidate:
     long_length_scale: float = 50.0
     short_length_scale: float = 10.0
     gp_ridge: float = 1.0
+    profile_outer_limit: float | None = None
+    likelihood_limit: float | None = None
     variance_threshold: float = 0.95
     max_components: int = 20
 
@@ -87,6 +89,8 @@ def _count_candidate(
     long_length_scale: float = 50.0,
     short_length_scale: float = 10.0,
     gp_ridge: float = 1.0,
+    profile_outer_limit: float | None = None,
+    likelihood_limit: float | None = None,
 ) -> FunctionalCandidate:
     prior = {"none": "free", "motif": "motif", "motif-accessibility": "motif_access"}[
         prior_constraint
@@ -102,6 +106,10 @@ def _count_candidate(
             f"long_{_number(long_length_scale)}.short_{_number(short_length_scale)}."
             f"ridge_{_number(gp_ridge)}.shrink_{_number(shrinkage)}"
         )
+    if profile_outer_limit is not None:
+        identity += f".taper_{_number(profile_outer_limit)}"
+    if likelihood_limit is not None:
+        identity += f".window_{_number(likelihood_limit)}"
     return FunctionalCandidate(
         identity,
         family,
@@ -112,6 +120,8 @@ def _count_candidate(
         long_length_scale=long_length_scale,
         short_length_scale=short_length_scale,
         gp_ridge=gp_ridge,
+        profile_outer_limit=profile_outer_limit,
+        likelihood_limit=likelihood_limit,
     )
 
 
@@ -151,6 +161,16 @@ def candidate_grid(
                     family,
                     background=background,
                     prior_constraint=constraint,
+                )
+                candidates[candidate.candidate_id] = candidate
+        for background in ("linear", "gp-long"):
+            for likelihood_limit in (30.0, 50.0, 80.0):
+                candidate = _count_candidate(
+                    family,
+                    background=background,
+                    prior_constraint="motif-accessibility",
+                    profile_outer_limit=50.0,
+                    likelihood_limit=likelihood_limit,
                 )
                 candidates[candidate.candidate_id] = candidate
 
@@ -229,6 +249,8 @@ def _count_model(
         gp_ridge=candidate.gp_ridge,
         accessibility_background=candidate.background,
         prior_constraint=candidate.prior_constraint,
+        profile_outer_limit=candidate.profile_outer_limit,
+        likelihood_limit=candidate.likelihood_limit,
     )
 
 

@@ -458,6 +458,22 @@ def _cosine_taper(positions: np.ndarray, limit: float) -> np.ndarray:
     return taper
 
 
+def _flat_top_taper(
+    positions: np.ndarray,
+    inner_limit: float,
+    outer_limit: float,
+) -> np.ndarray:
+    distance = np.abs(np.asarray(positions, dtype=float))
+    if inner_limit < 0 or outer_limit <= inner_limit:
+        raise ValueError("taper limits must satisfy 0 <= inner < outer")
+    taper = np.ones_like(distance)
+    taper[distance >= outer_limit] = 0.0
+    transition = (distance > inner_limit) & (distance < outer_limit)
+    phase = (distance[transition] - inner_limit) / (outer_limit - inner_limit)
+    taper[transition] = 0.5 * (1.0 + np.cos(np.pi * phase))
+    return taper
+
+
 class SparseAdditiveGPSmoother:
     """Nyström GP-equivalent smoother with a fixed small inducing grid."""
 
@@ -725,6 +741,9 @@ class BiasAwareFunctionalMixture:
         background_ridge: float = 10.0,
         background_length_scale: float = 80.0,
         prior_constraint: str = "none",
+        profile_inner_limit: float = 40.0,
+        profile_outer_limit: float | None = None,
+        likelihood_limit: float | None = None,
     ):
         self.positions = np.asarray(positions, dtype=float)
         self.smoother_name = str(smoother)
@@ -746,6 +765,28 @@ class BiasAwareFunctionalMixture:
             raise ValueError(
                 "prior_constraint must be none, motif, or motif-accessibility"
             )
+        self.profile_inner_limit = float(profile_inner_limit)
+        self.profile_outer_limit = (
+            None if profile_outer_limit is None else float(profile_outer_limit)
+        )
+        self.likelihood_limit = None if likelihood_limit is None else float(likelihood_limit)
+        if self.profile_outer_limit is not None:
+            self.profile_taper = _flat_top_taper(
+                self.positions,
+                self.profile_inner_limit,
+                self.profile_outer_limit,
+            )
+        else:
+            self.profile_taper = np.ones_like(self.positions)
+        if self.likelihood_limit is not None and self.likelihood_limit <= 0:
+            raise ValueError("likelihood_limit must be positive")
+        self.likelihood_mask = (
+            np.ones(len(self.positions), dtype=bool)
+            if self.likelihood_limit is None
+            else np.abs(self.positions) <= self.likelihood_limit
+        )
+        if self.likelihood_mask.sum() < 5:
+            raise ValueError("likelihood_limit leaves fewer than five positions")
         if smoother == "spline":
             self.smoother = PenalizedSplineSmoother(
                 self.positions,
@@ -831,6 +872,7 @@ class BiasAwareFunctionalMixture:
                 raise ValueError("prior_profile must match positions")
             profile = prior.copy()
             prior_weight = self.shrinkage
+        profile = profile * self.profile_taper
 
         previous = -np.inf
         converged = False
@@ -838,8 +880,16 @@ class BiasAwareFunctionalMixture:
         smooth = SmoothResult(profile, np.full_like(profile, np.nan), 0)
         for iteration in range(1, self.max_iter + 1):
             bound = self._bound_mean(background, profile)
-            unbound_ll = negative_binomial_log_likelihood(observed, background + 1e-8, self.dispersion).sum(axis=1)
-            bound_ll = negative_binomial_log_likelihood(observed, bound + 1e-8, self.dispersion).sum(axis=1)
+            unbound_ll = negative_binomial_log_likelihood(
+                observed[:, self.likelihood_mask],
+                background[:, self.likelihood_mask] + 1e-8,
+                self.dispersion,
+            ).sum(axis=1)
+            bound_ll = negative_binomial_log_likelihood(
+                observed[:, self.likelihood_mask],
+                bound[:, self.likelihood_mask] + 1e-8,
+                self.dispersion,
+            ).sum(axis=1)
             log_prior = design @ prior_coefficients
             posterior = expit(np.clip(bound_ll - unbound_ll + log_prior, -40.0, 40.0))
             posterior = np.clip(posterior, 1e-5, 1.0 - 1e-5)
@@ -864,7 +914,12 @@ class BiasAwareFunctionalMixture:
                 target = (weights * target + prior_weight * prior) / (weights + prior_weight)
                 weights = weights + prior_weight
             smooth = self.smoother.fit(target, weights)
-            profile = smooth.mean
+            profile = smooth.mean * self.profile_taper
+            smooth = SmoothResult(
+                profile,
+                smooth.standard_error * self.profile_taper,
+                smooth.effective_parameters,
+            )
 
             log_likelihood = float(
                 np.sum(
@@ -933,8 +988,16 @@ class BiasAwareFunctionalMixture:
             raise ValueError("observed/expected profiles and positions must agree")
         background = self._background(np.nan_to_num(observed), np.nan_to_num(expected))
         bound = self._bound_mean(background, self.result_.footprint_profile)
-        unbound_ll = negative_binomial_log_likelihood(observed, background + 1e-8, self.dispersion).sum(axis=1)
-        bound_ll = negative_binomial_log_likelihood(observed, bound + 1e-8, self.dispersion).sum(axis=1)
+        unbound_ll = negative_binomial_log_likelihood(
+            observed[:, self.likelihood_mask],
+            background[:, self.likelihood_mask] + 1e-8,
+            self.dispersion,
+        ).sum(axis=1)
+        bound_ll = negative_binomial_log_likelihood(
+            observed[:, self.likelihood_mask],
+            bound[:, self.likelihood_mask] + 1e-8,
+            self.dispersion,
+        ).sum(axis=1)
         motif, _location, _scale = _standardize(
             motif_score,
             len(observed),
@@ -982,6 +1045,9 @@ class BiasAwareFunctionalMixture:
             "background_ridge": self.background_ridge,
             "background_length_scale": self.background_length_scale,
             "prior_constraint": self.prior_constraint,
+            "profile_inner_limit": self.profile_inner_limit,
+            "profile_outer_limit": self.profile_outer_limit,
+            "likelihood_limit": self.likelihood_limit,
             "motif_location": self.motif_location_,
             "motif_scale": self.motif_scale_,
             "accessibility_location": self.accessibility_location_,
@@ -1021,6 +1087,17 @@ class BiasAwareFunctionalMixture:
                 background_ridge=float(document.get("background_ridge", 10.0)),
                 background_length_scale=float(document.get("background_length_scale", 80.0)),
                 prior_constraint=str(document.get("prior_constraint", "none")),
+                profile_inner_limit=float(document.get("profile_inner_limit", 40.0)),
+                profile_outer_limit=(
+                    None
+                    if document.get("profile_outer_limit") is None
+                    else float(document["profile_outer_limit"])
+                ),
+                likelihood_limit=(
+                    None
+                    if document.get("likelihood_limit") is None
+                    else float(document["likelihood_limit"])
+                ),
             )
             profile = np.asarray(arrays["footprint_profile"], dtype=np.float64)
             standard_error = np.asarray(arrays["standard_error"], dtype=np.float64)

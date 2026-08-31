@@ -51,8 +51,8 @@ def test_functional_spec_is_locked_and_complete() -> None:
 def test_functional_hyperparameter_grid_covers_prespecified_ablations() -> None:
     compact = candidate_grid("compact")
     full = candidate_grid("full")
-    assert len(compact) == 18
-    assert len(full) == 65
+    assert len(compact) == 30
+    assert len(full) == 77
     assert len({candidate.candidate_id for candidate in full}) == len(full)
     assert {candidate.background for candidate in compact} == {
         "none",
@@ -63,6 +63,11 @@ def test_functional_hyperparameter_grid_covers_prespecified_ablations() -> None:
     assert {candidate.prior_constraint for candidate in compact} == {
         "none",
         "motif-accessibility",
+    }
+    assert {candidate.likelihood_limit for candidate in compact if candidate.likelihood_limit} == {
+        30.0,
+        50.0,
+        80.0,
     }
     gp_scales = {
         (candidate.long_length_scale, candidate.short_length_scale)
