@@ -131,3 +131,25 @@ def test_promotion_false_positive_table_maps_exact_paired_methods():
     assert output["false_positive_rate"].sum() == pytest.approx(0.05)
     with pytest.raises(ValueError, match="methods differ"):
         module.promotion_false_positive_table(pd.DataFrame(rows[:1]))
+
+
+def test_pair_rates_keeps_all_nan_informative_reference():
+    rows = []
+    for method, rate, informative_rate in (
+        ("frozen_policy_candidate", 0.1, 0.2),
+        ("frozen_dwm_reference", 0.0, np.nan),
+    ):
+        rows.append(
+            {
+                "cell": "K562",
+                "tf": "MEF2A",
+                "motif_family": "MEF2",
+                "replicate": "rep1",
+                "method": method,
+                "false_positive_rate": rate,
+                "informative_false_positive_rate": informative_rate,
+            }
+        )
+    paired = module.pair_false_positive_rates(pd.DataFrame(rows))
+    assert paired.loc[0, "false_positive_rate_increase"] == pytest.approx(0.1)
+    assert math.isnan(paired.loc[0, "informative_false_positive_rate_increase"])

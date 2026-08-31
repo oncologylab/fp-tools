@@ -541,6 +541,41 @@ def _candidate_lookup() -> tuple[dict[str, StrandCandidate], dict[str, Functiona
     return strand, dwm
 
 
+def pair_false_positive_rates(summaries: pd.DataFrame) -> pd.DataFrame:
+    """Pair candidate/reference rates without dropping all-NaN columns."""
+
+    indexes = ["cell", "tf", "motif_family", "replicate"]
+    duplicated = summaries.duplicated(indexes + ["method"], keep=False)
+    if duplicated.any():
+        raise ValueError("duplicate naked-DNA method rows prevent exact pairing")
+    paired = summaries.pivot(
+        index=indexes,
+        columns="method",
+        values=["false_positive_rate", "informative_false_positive_rate"],
+    )
+    paired.columns = ["__".join(column) for column in paired.columns]
+    paired = paired.reset_index()
+    rate_columns = [
+        f"{metric}__{method}"
+        for metric in ("false_positive_rate", "informative_false_positive_rate")
+        for method in ("frozen_policy_candidate", "frozen_dwm_reference")
+    ]
+    for column in rate_columns:
+        if column not in paired:
+            paired[column] = np.nan
+    primary_candidate = "false_positive_rate__frozen_policy_candidate"
+    primary_reference = "false_positive_rate__frozen_dwm_reference"
+    informative_candidate = "informative_false_positive_rate__frozen_policy_candidate"
+    informative_reference = "informative_false_positive_rate__frozen_dwm_reference"
+    paired["false_positive_rate_increase"] = (
+        paired[primary_candidate] - paired[primary_reference]
+    )
+    paired["informative_false_positive_rate_increase"] = (
+        paired[informative_candidate] - paired[informative_reference]
+    )
+    return paired
+
+
 def evaluate(
     *,
     study: dict,
@@ -714,21 +749,11 @@ def evaluate(
     summaries = pd.DataFrame(summary_rows)
     scores = pd.concat(score_frames, ignore_index=True) if score_frames else pd.DataFrame()
     aggregates = pd.DataFrame(aggregate_rows)
-    paired = summaries.pivot_table(
-        index=["cell", "tf", "motif_family", "replicate"],
-        columns="method",
-        values=["false_positive_rate", "informative_false_positive_rate"],
-    )
-    paired.columns = ["__".join(column) for column in paired.columns]
-    paired = paired.reset_index()
+    paired = pair_false_positive_rates(summaries)
     primary_candidate = "false_positive_rate__frozen_policy_candidate"
     primary_reference = "false_positive_rate__frozen_dwm_reference"
     informative_candidate = "informative_false_positive_rate__frozen_policy_candidate"
     informative_reference = "informative_false_positive_rate__frozen_dwm_reference"
-    paired["false_positive_rate_increase"] = paired[primary_candidate] - paired[primary_reference]
-    paired["informative_false_positive_rate_increase"] = (
-        paired[informative_candidate] - paired[informative_reference]
-    )
     gates = study["promotion_gates"]
     maximum_rate = float(gates["maximum_naked_dna_false_positive_rate"])
     maximum_increase = float(gates["maximum_naked_dna_false_positive_rate_increase"])
