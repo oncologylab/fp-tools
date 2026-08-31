@@ -1206,6 +1206,8 @@ def evaluate(
                     )
 
     metrics = pd.DataFrame(metric_rows)
+    if len(metrics):
+        metrics["candidate_id"] = metrics["correction"].astype(str) + ":" + metrics["method"].astype(str)
     scores = pd.concat(score_rows, ignore_index=True) if score_rows else pd.DataFrame()
     frozen = pd.DataFrame(frozen_rows)
     aggregates = pd.concat(aggregate_frames, ignore_index=True) if aggregate_frames else pd.DataFrame()

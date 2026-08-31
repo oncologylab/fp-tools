@@ -527,3 +527,28 @@ functional shape rather than motif-family labels. The multi-page
 `functional_aggregate_panels_blinded.pdf` compares matched groups across every
 correction; its group key is stored separately so visual review can be done
 before labels are revealed.
+
+`evaluate_functional_promotion.py` is the fail-closed final audit. It requires
+paired locked-holdout metrics plus functional-separation, naked-DNA,
+bias-motif-response, replicate/seed/depth stability, runtime/memory/model-size,
+uncertainty-coverage, and GP-versus-spline evidence. Missing evidence is a
+failed gate. A development-only audit can explain what remains, but cannot
+return a promotion pass because locked GM12878/IMR-90 validation is mandatory.
+
+```bash
+.venv/bin/python benchmarks/scripts/evaluate_functional_promotion.py \
+  --study benchmarks/manifests/footprint_functional_v1.spec.json \
+  --metrics <locked-functional-metrics.tsv> \
+  --candidate <correction:detector> \
+  --baseline DWM:spline \
+  --task-split locked_holdout \
+  --unlock-holdout \
+  --descriptors <profile-descriptors.tsv> \
+  --negative-controls <naked-dna-fpr.tsv> \
+  --resources <resource-metrics.tsv> \
+  --uncertainty <uncertainty-coverage.tsv> \
+  --stability <replicate-seed-depth-stability.tsv> \
+  --leakage <bias-motif-review.tsv> \
+  --complexity <gp-versus-spline.tsv> \
+  --outdir benchmarks/results/footprint_functional_v1/promotion
+```

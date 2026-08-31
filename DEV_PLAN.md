@@ -178,6 +178,12 @@ a separately planned breaking release explicitly changes the contract.
   and cross-cell/model concordance. A sequence response is a review flag—not
   automatic evidence of occupancy leakage—until naked-DNA and held-out TF
   behavior distinguish intrinsic Tn5 preference from overlearned chromatin.
+- A fail-closed functional promotion auditor now implements the complete
+  preregistered decision: locked external metrics, functional separation,
+  positive-control non-regression, clustered bootstrap evidence, naked-DNA
+  false positives, motif-response review, stability, CPU/memory/model size,
+  uncertainty coverage, and GP-versus-spline justification. Development-only
+  evidence or any missing table cannot produce a promotion pass.
 
 ## Current ENCODE Resource
 
