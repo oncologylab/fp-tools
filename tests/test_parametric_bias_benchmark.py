@@ -17,6 +17,7 @@ from evaluate_parametric_bias import (  # noqa: E402
     cut_position,
     gc_matched_indices,
     select_bias_configurations,
+    select_bias_ensembles,
     split_mitochondrial_dataset,
     stable_u64,
     summarize_bias_depth_stability,
@@ -226,3 +227,38 @@ def test_depth_recommendation_aggregates_seeds_and_uses_smallest_stable_depth() 
     selected = stability[stability["recommended_minimum_depth"]]
     assert selected["seed_count"].tolist() == [5]
     assert selected["passed_all_seed_control_likelihood"].all()
+
+
+def test_ensemble_selection_uses_rescored_likelihood() -> None:
+    rows = []
+    for model, nll in (("selma10", 4.0), ("loglinear81", 3.8), ("weak", 4.5)):
+        path = f"{model}.npz"
+        for sample in ("A", "B"):
+            rows.append(
+                {
+                    "source": "mitochondrial",
+                    "sample": sample,
+                    "shift_forward": 4,
+                    "shift_reverse": -4,
+                    "model": model,
+                    "configuration": "pooled",
+                    "l2": 0.001,
+                    "training_depth": "50000",
+                    "member_count": 5,
+                    "model_npz": path,
+                    "conditional_nll": nll,
+                    "nll_gain": 4.6 - nll,
+                    "multinomial_deviance_per_cut": 1.0,
+                    "calibration_error": 0.1,
+                }
+            )
+    artifacts = pd.DataFrame(
+        {
+            "model_npz": ["selma10.npz", "loglinear81.npz", "weak.npz"],
+            "model_size_mb": [1.0, 2.0, 1.0],
+            "runtime_seconds": [0.1, 0.1, 0.1],
+        }
+    )
+    selected = select_bias_ensembles(pd.DataFrame(rows), artifacts)
+    retained = selected[selected["retained_for_functional_screen"]]
+    assert retained["model"].tolist() == ["loglinear81", "selma10"]

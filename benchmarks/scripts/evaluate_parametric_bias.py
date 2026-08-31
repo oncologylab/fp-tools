@@ -1214,6 +1214,60 @@ def build_recommended_bias_ensembles(
     return pd.DataFrame(ensemble_artifacts), pd.DataFrame(ensemble_metrics)
 
 
+def select_bias_ensembles(
+    metrics: pd.DataFrame,
+    artifacts: pd.DataFrame,
+    maximum_model_size_mb: float = 25.0,
+) -> pd.DataFrame:
+    """Rank seed ensembles by their directly rescored validation likelihood."""
+
+    if metrics.empty:
+        return pd.DataFrame()
+    group_columns = [
+        "source",
+        "shift_forward",
+        "shift_reverse",
+        "model",
+        "configuration",
+        "l2",
+        "training_depth",
+        "member_count",
+        "model_npz",
+    ]
+    ranked = (
+        metrics.groupby(group_columns, as_index=False)
+        .agg(
+            mean_conditional_nll=("conditional_nll", "mean"),
+            mean_nll_gain=("nll_gain", "mean"),
+            minimum_sample_nll_gain=("nll_gain", "min"),
+            mean_deviance=("multinomial_deviance_per_cut", "mean"),
+            mean_calibration_error=("calibration_error", "mean"),
+            evaluated_samples=("sample", "nunique"),
+        )
+        .merge(
+            artifacts[["model_npz", "model_size_mb", "runtime_seconds"]],
+            on="model_npz",
+            how="left",
+            validate="one_to_one",
+        )
+        .sort_values(
+            ["mean_conditional_nll", "mean_calibration_error", "runtime_seconds"],
+            kind="mergesort",
+        )
+        .reset_index(drop=True)
+    )
+    ranked.insert(0, "rank", np.arange(1, len(ranked) + 1))
+    ranked["passed_control_likelihood"] = (
+        (ranked["minimum_sample_nll_gain"] > 0)
+        & (ranked["model_size_mb"] <= maximum_model_size_mb)
+    )
+    passing_order = ranked["passed_control_likelihood"].cumsum()
+    ranked["retained_for_functional_screen"] = (
+        ranked["passed_control_likelihood"] & (passing_order <= 2)
+    )
+    return ranked
+
+
 def _cache_path(cache_dir: Path, sample: str, source: str, split: str, shift: tuple[int, int]) -> Path:
     return cache_dir / f"{sample}.{source}.{split}.shift_{shift[0]}_{shift[1]}.npz"
 
@@ -1456,6 +1510,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.outdir,
         source=args.source,
     )
+    ensemble_selection = select_bias_ensembles(
+        ensemble_metrics,
+        ensemble_artifacts,
+        maximum_model_size_mb=float(study["promotion_gates"]["maximum_model_size_mb"]),
+    )
     window_manifest.to_csv(args.outdir / "control_windows.tsv", sep="\t", index=False)
     metrics.to_csv(args.outdir / "bias_model_metrics.tsv", sep="\t", index=False)
     artifacts.to_csv(args.outdir / "bias_model_artifacts.tsv", sep="\t", index=False)
@@ -1477,6 +1536,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         sep="\t",
         index=False,
     )
+    ensemble_selection.to_csv(
+        args.outdir / "bias_model_ensemble_selection.tsv",
+        sep="\t",
+        index=False,
+    )
     manifest = {
         "schema": "fp-tools-parametric-bias-benchmark-v1",
         "study": str(args.study),
@@ -1495,6 +1559,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         "test_chromosomes_scored": False,
         "retained_configurations": selection[selection["retained_for_functional_screen"]].to_dict("records"),
         "minimum_depth_recommendations": depth_recommendations.to_dict("records"),
+        "retained_ensembles": (
+            ensemble_selection[ensemble_selection["retained_for_functional_screen"]].to_dict(
+                "records"
+            )
+            if len(ensemble_selection)
+            else []
+        ),
         "outputs": {
             name: {"path": str(args.outdir / name), "sha256": file_sha256(args.outdir / name)}
             for name in (
@@ -1507,6 +1578,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "bias_depth_recommendations.tsv",
                 "bias_model_ensembles.tsv",
                 "bias_model_ensemble_metrics.tsv",
+                "bias_model_ensemble_selection.tsv",
             )
         },
     }
