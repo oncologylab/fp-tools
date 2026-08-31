@@ -164,8 +164,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--calibration-scores", type=Path, required=True)
     parser.add_argument("--validation-scores", type=Path, required=True)
     parser.add_argument("--alpha", type=float, default=0.05)
+    parser.add_argument(
+        "--validation-fpr-limit",
+        type=float,
+        default=0.05,
+        help="Independent-panel false-positive ceiling (default: 0.05).",
+    )
     parser.add_argument("--outdir", type=Path, required=True)
     args = parser.parse_args(argv)
+    if not 0 < args.validation_fpr_limit < 1:
+        raise SystemExit("--validation-fpr-limit must be between zero and one")
     calibration_frame = pd.read_csv(args.calibration_scores, sep="\t")
     validation_frame = pd.read_csv(args.validation_scores, sep="\t")
     _validate_scores(calibration_frame, args.calibration_scores)
@@ -182,16 +190,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         "schema": "fp-tools-naked-dna-null-calibration-v1",
         "labels_used": False,
         "alpha": float(args.alpha),
+        "validation_fpr_limit": float(args.validation_fpr_limit),
         "calibration_scores": str(args.calibration_scores),
         "calibration_scores_sha256": file_sha256(args.calibration_scores),
         "validation_scores": str(args.validation_scores),
         "validation_scores_sha256": file_sha256(args.validation_scores),
         "groups": int(len(summary)),
         "all_validation_groups_pass": bool(
-            (summary["validation_all_site_fpr"] <= args.alpha).fillna(False).all()
+            (
+                summary["validation_all_site_fpr"]
+                <= args.validation_fpr_limit
+            ).fillna(False).all()
         ),
         "all_validation_informative_groups_pass": bool(
-            (summary["validation_informative_fpr"] <= args.alpha).fillna(False).all()
+            (
+                summary["validation_informative_fpr"]
+                <= args.validation_fpr_limit
+            ).fillna(False).all()
         ),
         "outputs": {
             "summary": {"path": str(summary_path), "sha256": file_sha256(summary_path)},
