@@ -462,3 +462,20 @@ show the held-out paired ROC/PR curves, aggregate profiles, chromosome-block
 bootstrap intervals, and three-biological-replicate transfer. Their scope is
 explicitly CTCF-specific; this upload does not change the package default or
 override the external-validation requirements for a general method.
+
+## Depth-matrix artifact integrity audit
+
+An incremental 25M refresh exposed a benchmark-infrastructure failure before
+its metrics were used: four interrupted HepG2 corrected bigWigs had parseable
+headers and large files but zero covered bases. The ablation runner had treated
+existence as completion and marked them `skipped_existing`. Three additional
+zero-coverage 50M files were active writers at the time of the audit and were
+correctly recognized as incomplete once their runner state was considered.
+
+The contaminated seed-2027 evaluation was quarantined. The runner and depth
+evaluator now require every bigWig input to have chromosomes and at least one
+covered base; the evaluator also validates raw and expected tracks and binds
+profile caches to signal size and modification time. Focused runner/depth tests
+pass. A repair run is rebuilding the four stale 25M tracks rather than treating
+them as biological evidence. Until those repairs complete, only the valid 10M
+matrix and the valid seed-2026 25M slice may be interpreted.
