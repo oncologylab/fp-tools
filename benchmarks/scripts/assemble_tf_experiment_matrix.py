@@ -54,6 +54,8 @@ def likely_drivers(row: pd.Series) -> str:
         drivers.append("motif_score_imbalanced")
     if abs(float(row.get("correction_correction_auroc_range", 0.0))) >= 0.05:
         drivers.append("correction_sensitive")
+    if float(row.get("bias_max_abs_corrected_expected_correlation", 0.0)) >= 0.20:
+        drivers.append("residual_expected_bias")
     if float(row.get("depth_delta_auroc", 0.0)) >= 0.03:
         drivers.append("depth_limited")
     if float(row.get("depth_delta_auroc", 0.0)) <= -0.03:
@@ -78,6 +80,7 @@ def assemble(
     full_grid: pd.DataFrame,
     classifiers: pd.DataFrame,
     classifier_replicates: pd.DataFrame,
+    bias_summary: pd.DataFrame,
 ) -> pd.DataFrame:
     boot = bootstrap.pivot_table(
         index=KEY,
@@ -97,6 +100,7 @@ def assemble(
         _prefixed(full_grid, "full_grid_"),
         _prefixed(classifiers, "classifier_"),
         _prefixed(classifier_replicates, "classifier_replicate_"),
+        _prefixed(bias_summary, "bias_"),
     ):
         output = output.merge(frame, on=KEY, how="left", validate="one_to_one")
     output["classifier_delta_auroc"] = (
@@ -114,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in (
         "matching", "quick", "bootstrap", "correction", "depth", "full-grid",
-        "classifiers", "classifier-replicates",
+        "classifiers", "classifier-replicates", "bias-summary",
     ):
         parser.add_argument(f"--{name}", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -122,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
     result = assemble(
         *(pd.read_csv(getattr(args, name.replace("-", "_")), sep="\t") for name in (
             "matching", "quick", "bootstrap", "correction", "depth", "full_grid",
-            "classifiers", "classifier_replicates",
+            "classifiers", "classifier_replicates", "bias_summary",
         ))
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)

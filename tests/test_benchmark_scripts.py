@@ -81,6 +81,7 @@ search_tf_profile_classifiers = load_module("search_tf_profile_classifiers", ROO
 assemble_tf_experiment_matrix = load_module("assemble_tf_experiment_matrix", ROOT / "benchmarks" / "scripts" / "assemble_tf_experiment_matrix.py")
 evaluate_tf_classifier_signal_panel = load_module("evaluate_tf_classifier_signal_panel", ROOT / "benchmarks" / "scripts" / "evaluate_tf_classifier_signal_panel.py")
 compare_tf_random_seeds = load_module("compare_tf_random_seeds", ROOT / "benchmarks" / "scripts" / "compare_tf_random_seeds.py")
+diagnose_tf_bias_residuals = load_module("diagnose_tf_bias_residuals", ROOT / "benchmarks" / "scripts" / "diagnose_tf_bias_residuals.py")
 
 
 class TfFootprintModelSearchTest(unittest.TestCase):
@@ -384,6 +385,28 @@ class TfFootprintModelSearchTest(unittest.TestCase):
         rows, summary = compare_tf_random_seeds.compare_seeds(first, second)
         self.assertEqual(len(rows), 2)
         self.assertTrue(bool(summary.loc[0, "stable_auroc_winner"]))
+
+    def test_bias_diagnosis_distinguishes_harm_and_residual(self):
+        row = {
+            "expected_auroc": 0.7,
+            "correction_delta_auroc": -0.1,
+            "corrected_expected_correlation": 0.3,
+        }
+        result = diagnose_tf_bias_residuals.diagnosis(row)
+        self.assertIn("sequence_bias_label_association", result)
+        self.assertIn("residual_expected_bias", result)
+        self.assertIn("correction_harms_discrimination", result)
+
+    def test_bias_diagnostics_summary_records_both_directions(self):
+        rows = pd.DataFrame(
+            [
+                {"cell": "K562", "tf": "CTCF", "model": "DWM", "expected_auroc": 0.4, "raw_expected_correlation": 0.3, "corrected_expected_correlation": 0.1, "correction_delta_auroc": 0.1},
+                {"cell": "K562", "tf": "CTCF", "model": "PWM", "expected_auroc": 0.6, "raw_expected_correlation": 0.2, "corrected_expected_correlation": -0.3, "correction_delta_auroc": -0.1},
+            ]
+        )
+        summary = diagnose_tf_bias_residuals.summarize_diagnostics(rows)
+        self.assertEqual(summary.loc[0, "improving_models"], "DWM")
+        self.assertEqual(summary.loc[0, "harming_models"], "PWM")
 
 
 class BigwigSiteScoreTest(unittest.TestCase):
