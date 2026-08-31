@@ -77,6 +77,8 @@ plot_frozen_tf_profiles = load_module("plot_frozen_tf_profiles", ROOT / "benchma
 summarize_tf_footprint_search = load_module("summarize_tf_footprint_search", ROOT / "benchmarks" / "scripts" / "summarize_tf_footprint_search.py")
 evaluate_tf_correction_transfer = load_module("evaluate_tf_correction_transfer", ROOT / "benchmarks" / "scripts" / "evaluate_tf_correction_transfer.py")
 evaluate_tf_signal_panel = load_module("evaluate_tf_signal_panel", ROOT / "benchmarks" / "scripts" / "evaluate_tf_signal_panel.py")
+search_tf_profile_classifiers = load_module("search_tf_profile_classifiers", ROOT / "benchmarks" / "scripts" / "search_tf_profile_classifiers.py")
+assemble_tf_experiment_matrix = load_module("assemble_tf_experiment_matrix", ROOT / "benchmarks" / "scripts" / "assemble_tf_experiment_matrix.py")
 
 
 class TfFootprintModelSearchTest(unittest.TestCase):
@@ -317,6 +319,33 @@ class TfFootprintModelSearchTest(unittest.TestCase):
         )
         result = evaluate_tf_signal_panel.depth_comparison(low, high)
         self.assertAlmostEqual(float(result.loc[0, "delta_auroc"]), 0.1)
+
+    def test_profile_classifier_feature_transforms(self):
+        profiles = np.array([[1.0, 2.0, 3.0, 4.0, 5.0]])
+        pooled = search_tf_profile_classifiers.pool_profiles(profiles, 5)
+        folded = search_tf_profile_classifiers.fold_profiles(pooled)
+        np.testing.assert_allclose(folded, [[3.0, 3.0, 3.0]])
+        normalized = search_tf_profile_classifiers.normalize_profiles(profiles, "outer_rms")
+        self.assertTrue(np.isfinite(normalized).all())
+
+    def test_matched_template_learns_positive_shape(self):
+        features = np.array([[0.0, 0.0], [0.1, 0.0], [1.0, 2.0], [1.1, 2.1]])
+        labels = np.array([0, 0, 1, 1])
+        model = search_tf_profile_classifiers.MatchedTemplate(1.0).fit(features, labels)
+        scores = model.decision_function(features)
+        self.assertGreater(float(scores[labels == 1].mean()), float(scores[labels == 0].mean()))
+
+    def test_experiment_matrix_status_keeps_small_tasks_underpowered(self):
+        row = pd.Series(
+            {
+                "match_positive_sites": 30,
+                "quick_delta_auroc": 0.4,
+                "quick_delta_auprc": 0.4,
+                "bootstrap_auroc_ci_low": 0.2,
+                "bootstrap_auprc_ci_low": 0.2,
+            }
+        )
+        self.assertEqual(assemble_tf_experiment_matrix.evidence_status(row), "underpowered")
 
 
 class BigwigSiteScoreTest(unittest.TestCase):
