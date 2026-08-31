@@ -502,6 +502,12 @@ The artifact uses only numeric/string arrays with a checksummed JSON sidecar;
 it does not use arbitrary pickle. ChIP labels are not used to construct any
 profile channel.
 
+`evaluate_strand_functional_templates.py` compares combined, shared-strand,
+antisymmetric-strand, and multichannel shape detectors for every eligible TF.
+It reports same-cell information ceilings separately from cross-cell TF and
+leave-TF-out family/global transfer, and refuses artifacts that do not certify
+label-free profile construction.
+
 `evaluate_differential_functional_profiles.py` tests the entire condition
 difference curve from replicate-aware strand-profile artifacts. A manifest
 contains `sample`, `condition`, `replicate`, `profiles_npz`, and `sites_tsv`.

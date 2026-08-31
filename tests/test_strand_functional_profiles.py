@@ -15,6 +15,10 @@ from build_strand_functional_profiles import (  # noqa: E402
     site_hashes,
     write_profiles,
 )
+from evaluate_strand_functional_templates import (  # noqa: E402
+    parse_artifact,
+    stack_channels,
+)
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     construct_strand_functional_profiles,
 )
@@ -69,3 +73,21 @@ def test_strand_profile_artifact_is_safe_and_hashed(tmp_path: Path) -> None:
     with np.load(npz, allow_pickle=False) as arrays:
         assert np.array_equal(arrays["site_hash"], site_hashes(sites))
         assert "antisymmetric_strand_residual" in arrays
+
+
+def test_strand_channel_sets_preserve_site_position_axes() -> None:
+    values = {
+        "combined_residual": np.zeros((5, 21)),
+        "shared_strand_residual": np.ones((5, 21)),
+        "antisymmetric_strand_residual": np.full((5, 21), 2.0),
+    }
+    combined = stack_channels(values, "combined")
+    all_channels = stack_channels(values, "all")
+    assert combined.shape == (5, 1, 21)
+    assert all_channels.shape == (5, 3, 21)
+    assert np.all(all_channels[:, 2, :] == 2.0)
+    assert parse_artifact("SELMA,K562,profiles.json") == (
+        "SELMA",
+        "K562",
+        Path("profiles.json"),
+    )
