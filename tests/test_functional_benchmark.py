@@ -51,8 +51,8 @@ def test_functional_spec_is_locked_and_complete() -> None:
 def test_functional_hyperparameter_grid_covers_prespecified_ablations() -> None:
     compact = candidate_grid("compact")
     full = candidate_grid("full")
-    assert len(compact) == 30
-    assert len(full) == 77
+    assert len(compact) == 34
+    assert len(full) == 92
     assert len({candidate.candidate_id for candidate in full}) == len(full)
     assert {candidate.background for candidate in compact} == {
         "none",
@@ -77,6 +77,11 @@ def test_functional_hyperparameter_grid_covers_prespecified_ablations() -> None:
     assert {(long, short) for long in (30.0, 50.0, 80.0) for short in (3.0, 6.0, 10.0, 15.0)}.issubset(
         gp_scales
     )
+    assert {
+        candidate.anchor_strength
+        for candidate in compact
+        if candidate.family == "anchored-fda"
+    } == {0.25, 0.5, 1.0, 2.0}
 
 
 def test_unlabeled_training_sites_never_read_labels(tmp_path: Path) -> None:

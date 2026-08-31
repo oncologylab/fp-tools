@@ -8,6 +8,7 @@ from sklearn.metrics import roc_auc_score
 
 from fp_tools.tools.functional_footprints import (
     BiasAwareFunctionalMixture,
+    CovariateAnchoredFdaModel,
     construct_strand_functional_profiles,
     ExactAdditiveGPSmoother,
     FdaMixtureModel,
@@ -244,6 +245,32 @@ def test_fda_and_hybrid_models_detect_shape() -> None:
     hybrid = HybridFdaGpModel(x, max_components=12, seed=6).fit(residuals)
     assert roc_auc_score(labels, fda.predict_proba(residuals)) > 0.70
     assert roc_auc_score(labels, hybrid.predict_proba(residuals)) > 0.70
+
+
+def test_covariate_anchored_fda_separates_shape_from_prior() -> None:
+    observed, expected, labels, motif_score = _synthetic_counts(seed=27)
+    residuals = deviance_profiles(observed, expected, dispersion=0.02)
+    accessibility = observed.sum(axis=1)
+    model = CovariateAnchoredFdaModel(
+        max_components=12,
+        anchor_strength=0.7,
+        seed=11,
+    ).fit(
+        residuals,
+        motif_score=motif_score,
+        accessibility=accessibility,
+        positions=_positions(),
+        sample_weight=np.sqrt(accessibility),
+    )
+    shape, prior = model.predict_log_odds_components(
+        residuals,
+        motif_score=motif_score,
+        accessibility=accessibility,
+    )
+    assert model.converged_
+    assert roc_auc_score(labels, shape) > 0.70
+    assert shape.shape == prior.shape == labels.shape
+    assert model.profile_difference().shape == _positions().shape
 
 
 def test_replicate_level_functional_differential_test() -> None:

@@ -39,6 +39,7 @@ from evaluate_functional_footprints import (  # noqa: E402
 )
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
+    CovariateAnchoredFdaModel,
     FdaMixtureModel,
     HybridFdaGpModel,
     deviance_profiles,
@@ -47,7 +48,7 @@ from fp_tools.tools.functional_footprints import (  # noqa: E402
 from fp_tools.tools.parametric_bias import estimate_nb_dispersion  # noqa: E402
 
 
-MODEL_FAMILIES = ("spline", "gp", "fda", "hybrid")
+MODEL_FAMILIES = ("spline", "gp", "fda", "anchored-fda", "hybrid")
 
 
 def file_sha256(path: str | Path) -> str:
@@ -73,6 +74,7 @@ class FunctionalCandidate:
     likelihood_limit: float | None = None
     variance_threshold: float = 0.95
     max_components: int = 20
+    anchor_strength: float = 1.0
 
 
 def _number(value: float) -> str:
@@ -129,15 +131,19 @@ def _fda_candidate(
     family: str,
     variance_threshold: float,
     max_components: int,
+    anchor_strength: float = 1.0,
 ) -> FunctionalCandidate:
     identity = (
         f"{family}.variance_{_number(variance_threshold)}.components_{max_components}"
     )
+    if family == "anchored-fda":
+        identity += f".anchor_{_number(anchor_strength)}"
     return FunctionalCandidate(
         identity,
         family,
         variance_threshold=variance_threshold,
         max_components=max_components,
+        anchor_strength=anchor_strength,
     )
 
 
@@ -226,6 +232,19 @@ def candidate_grid(
             for components in component_limits:
                 candidate = _fda_candidate(family, threshold, components)
                 candidates[candidate.candidate_id] = candidate
+    if "anchored-fda" in families:
+        for threshold in fda_thresholds:
+            for components in component_limits:
+                candidate = _fda_candidate("anchored-fda", threshold, components)
+                candidates[candidate.candidate_id] = candidate
+        for anchor_strength in (0.25, 0.5, 1.0, 2.0):
+            candidate = _fda_candidate(
+                "anchored-fda",
+                0.95,
+                20,
+                anchor_strength=anchor_strength,
+            )
+            candidates[candidate.candidate_id] = candidate
     return [candidates[key] for key in sorted(candidates)]
 
 
@@ -315,7 +334,7 @@ def evaluate_candidate(
             family_priors[str(family)] = family_result.footprint_profile
 
     residual = None
-    if candidate.family in {"fda", "hybrid"}:
+    if candidate.family in {"fda", "anchored-fda", "hybrid"}:
         residual = deviance_profiles(train_observed, train_expected, dispersion)
 
     for task in tasks[tasks["cell"] == cell].itertuples(index=False):
@@ -393,6 +412,53 @@ def evaluate_candidate(
             prior_coefficients = np.full(3, np.nan)
             shape_probabilities = probabilities
             prior_probabilities = np.full_like(probabilities, 0.5)
+        elif candidate.family == "anchored-fda":
+            assert residual is not None
+            model = CovariateAnchoredFdaModel(
+                variance_threshold=candidate.variance_threshold,
+                max_components=candidate.max_components,
+                anchor_strength=candidate.anchor_strength,
+                seed=stable_seed(cell, correction, tf, candidate.candidate_id, seed=seed),
+            ).fit(
+                residual[train_indexes],
+                motif_score=unlabeled_sites.iloc[train_indexes]["motif_score"].to_numpy(
+                    dtype=float
+                ),
+                accessibility=train_observed[train_indexes].sum(axis=1),
+                positions=positions,
+                sample_weight=np.sqrt(
+                    np.maximum(train_observed[train_indexes].sum(axis=1), 1.0)
+                ),
+            )
+            validation_residual = deviance_profiles(
+                development_observed[validation_indexes],
+                development_expected[validation_indexes],
+                dispersion,
+            )
+            shape_log_odds, prior_log_odds = model.predict_log_odds_components(
+                validation_residual,
+                motif_score=development_sites.iloc[validation_indexes]["motif_score"].to_numpy(
+                    dtype=float
+                ),
+                accessibility=development_observed[validation_indexes].sum(axis=1),
+            )
+            shape_probabilities = 1.0 / (
+                1.0 + np.exp(-np.clip(shape_log_odds, -40.0, 40.0))
+            )
+            prior_probabilities = 1.0 / (
+                1.0 + np.exp(-np.clip(prior_log_odds, -40.0, 40.0))
+            )
+            probabilities = 1.0 / (
+                1.0
+                + np.exp(-np.clip(shape_log_odds + prior_log_odds, -40.0, 40.0))
+            )
+            profile = model.profile_difference()
+            standard_error = np.full_like(profile, np.nan)
+            converged = model.converged_
+            iterations = model.iterations_
+            prior_coefficients = np.asarray(
+                [0.0, candidate.anchor_strength, candidate.anchor_strength]
+            )
         else:
             assert residual is not None
             model = HybridFdaGpModel(

@@ -1201,6 +1201,226 @@ class FdaMixtureModel:
         return self.fpca.inverse_transform(self.mixture.means_)
 
 
+class CovariateAnchoredFdaModel:
+    """Functional-PC mixture whose component identity is weakly anchored.
+
+    Motif strength and accessibility enter only as a label-free prior during
+    EM. The fitted Gaussian shape likelihood can then be evaluated separately
+    from that prior, which prevents an accessibility classifier from being
+    mistaken for improved footprint detection.
+    """
+
+    def __init__(
+        self,
+        *,
+        variance_threshold: float = 0.95,
+        max_components: int = 20,
+        anchor_strength: float = 1.0,
+        covariance_shrinkage: float = 10.0,
+        max_iter: int = 100,
+        tolerance: float = 1e-5,
+        seed: int = 2026,
+    ):
+        if anchor_strength < 0 or covariance_shrinkage < 0:
+            raise ValueError("anchor and covariance shrinkage must be non-negative")
+        self.fpca = FunctionalPCA(variance_threshold, max_components, seed)
+        self.anchor_strength = float(anchor_strength)
+        self.covariance_shrinkage = float(covariance_shrinkage)
+        self.max_iter = int(max_iter)
+        self.tolerance = float(tolerance)
+        self.positions_: np.ndarray | None = None
+        self.bound_mean_: np.ndarray | None = None
+        self.unbound_mean_: np.ndarray | None = None
+        self.bound_variance_: np.ndarray | None = None
+        self.unbound_variance_: np.ndarray | None = None
+        self.motif_location_: float = 0.0
+        self.motif_scale_: float = 1.0
+        self.accessibility_location_: float = 0.0
+        self.accessibility_scale_: float = 1.0
+        self.temperature_: float = 1.0
+        self.converged_: bool = False
+        self.iterations_: int = 0
+
+    @staticmethod
+    def _log_density(
+        scores: np.ndarray,
+        mean: np.ndarray,
+        variance: np.ndarray,
+    ) -> np.ndarray:
+        return -0.5 * np.sum(
+            np.square(scores - mean) / variance + np.log(2.0 * np.pi * variance),
+            axis=1,
+        )
+
+    def _anchor_log_odds(
+        self,
+        motif_score: np.ndarray | None,
+        accessibility: np.ndarray | None,
+        length: int,
+        *,
+        fit: bool,
+    ) -> np.ndarray:
+        motif, motif_location, motif_scale = _standardize(
+            motif_score,
+            length,
+            location=None if fit else self.motif_location_,
+            scale=None if fit else self.motif_scale_,
+        )
+        access, access_location, access_scale = _standardize(
+            accessibility,
+            length,
+            location=None if fit else self.accessibility_location_,
+            scale=None if fit else self.accessibility_scale_,
+        )
+        if fit:
+            self.motif_location_, self.motif_scale_ = motif_location, motif_scale
+            self.accessibility_location_, self.accessibility_scale_ = (
+                access_location,
+                access_scale,
+            )
+        return self.anchor_strength * (motif + access) / np.sqrt(2.0)
+
+    def fit(
+        self,
+        residual_profiles: np.ndarray,
+        *,
+        motif_score: np.ndarray | None = None,
+        accessibility: np.ndarray | None = None,
+        positions: np.ndarray | None = None,
+        sample_weight: np.ndarray | None = None,
+    ) -> "CovariateAnchoredFdaModel":
+        raw = _validate_profiles(residual_profiles)
+        x = (
+            np.asarray(positions, dtype=float)
+            if positions is not None
+            else np.arange(raw.shape[1], dtype=float) - raw.shape[1] // 2
+        )
+        values = normalize_functional_profiles(raw, x)
+        weights = (
+            np.ones(len(values), dtype=float)
+            if sample_weight is None
+            else np.asarray(sample_weight, dtype=float)
+        )
+        if weights.shape != (len(values),) or np.any(weights < 0) or not np.any(weights > 0):
+            raise ValueError("sample_weight must be non-negative with one positive value")
+        scores = self.fpca.fit_transform(values, sample_weight=weights)
+        anchor = self._anchor_log_odds(
+            motif_score,
+            accessibility,
+            len(values),
+            fit=True,
+        )
+        posterior = np.clip(expit(anchor), 0.05, 0.95)
+        global_variance = np.maximum(np.var(scores, axis=0), 1e-4)
+        previous = -np.inf
+        for iteration in range(1, self.max_iter + 1):
+            bound_weight = weights * posterior
+            unbound_weight = weights * (1.0 - posterior)
+            bound_total = max(float(bound_weight.sum()), np.finfo(float).eps)
+            unbound_total = max(float(unbound_weight.sum()), np.finfo(float).eps)
+            bound_mean = np.sum(bound_weight[:, None] * scores, axis=0) / bound_total
+            unbound_mean = np.sum(unbound_weight[:, None] * scores, axis=0) / unbound_total
+            bound_variance = (
+                np.sum(bound_weight[:, None] * np.square(scores - bound_mean), axis=0)
+                + self.covariance_shrinkage * global_variance
+            ) / (bound_total + self.covariance_shrinkage)
+            unbound_variance = (
+                np.sum(unbound_weight[:, None] * np.square(scores - unbound_mean), axis=0)
+                + self.covariance_shrinkage * global_variance
+            ) / (unbound_total + self.covariance_shrinkage)
+            bound_variance = np.maximum(bound_variance, 1e-4)
+            unbound_variance = np.maximum(unbound_variance, 1e-4)
+            bound_ll = self._log_density(scores, bound_mean, bound_variance)
+            unbound_ll = self._log_density(scores, unbound_mean, unbound_variance)
+            posterior = expit(np.clip(bound_ll - unbound_ll + anchor, -40.0, 40.0))
+            posterior = np.clip(posterior, 1e-5, 1.0 - 1e-5)
+            likelihood = float(
+                np.sum(
+                    weights
+                    * logsumexp(
+                        np.column_stack(
+                            [
+                                unbound_ll - np.logaddexp(0.0, anchor),
+                                bound_ll - np.logaddexp(0.0, -anchor),
+                            ]
+                        ),
+                        axis=1,
+                    )
+                )
+            )
+            if np.isfinite(previous) and abs(likelihood - previous) <= self.tolerance * (
+                1.0 + abs(previous)
+            ):
+                self.converged_ = True
+                break
+            previous = likelihood
+
+        self.positions_ = x
+        self.bound_mean_ = bound_mean
+        self.unbound_mean_ = unbound_mean
+        self.bound_variance_ = bound_variance
+        self.unbound_variance_ = unbound_variance
+        self.iterations_ = iteration
+        shape_log_odds = bound_ll - unbound_ll
+        finite = np.abs(shape_log_odds[np.isfinite(shape_log_odds)])
+        robust_range = float(np.quantile(finite, 0.95)) if len(finite) else 1.0
+        self.temperature_ = max(1.0, robust_range / 8.0)
+        return self
+
+    def predict_log_odds_components(
+        self,
+        residual_profiles: np.ndarray,
+        *,
+        motif_score: np.ndarray | None = None,
+        accessibility: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        if any(
+            value is None
+            for value in (
+                self.positions_,
+                self.bound_mean_,
+                self.unbound_mean_,
+                self.bound_variance_,
+                self.unbound_variance_,
+            )
+        ):
+            raise ValueError("anchored FDA model has not been fitted")
+        values = normalize_functional_profiles(residual_profiles, self.positions_)
+        scores = self.fpca.transform(values)
+        bound_ll = self._log_density(scores, self.bound_mean_, self.bound_variance_)
+        unbound_ll = self._log_density(scores, self.unbound_mean_, self.unbound_variance_)
+        shape = (bound_ll - unbound_ll) / self.temperature_
+        anchor = self._anchor_log_odds(
+            motif_score,
+            accessibility,
+            len(values),
+            fit=False,
+        )
+        return shape, anchor
+
+    def predict_proba(
+        self,
+        residual_profiles: np.ndarray,
+        *,
+        motif_score: np.ndarray | None = None,
+        accessibility: np.ndarray | None = None,
+    ) -> np.ndarray:
+        shape, anchor = self.predict_log_odds_components(
+            residual_profiles,
+            motif_score=motif_score,
+            accessibility=accessibility,
+        )
+        return expit(np.clip(shape + anchor, -40.0, 40.0))
+
+    def profile_difference(self) -> np.ndarray:
+        if self.bound_mean_ is None or self.unbound_mean_ is None:
+            raise ValueError("anchored FDA model has not been fitted")
+        profiles = self.fpca.inverse_transform(
+            np.vstack([self.unbound_mean_, self.bound_mean_])
+        )
+        return profiles[1] - profiles[0]
+
+
 class HybridFdaGpModel:
     """FDA initialization followed by a GP-smoothed profile likelihood."""
 
