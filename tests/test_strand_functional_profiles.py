@@ -26,7 +26,9 @@ from evaluate_strand_label_free_models import (  # noqa: E402
 )
 from render_functional_aggregate_comparison import (  # noqa: E402
     combined_strand_shape,
+    difference_band,
     mean_band,
+    smooth_profiles,
 )
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     construct_strand_functional_profiles,
@@ -169,4 +171,17 @@ def test_blinded_aggregate_combines_channels_and_bootstraps() -> None:
     assert combined.shape == (20, 21)
     mean, lower, upper = mean_band(combined, bootstraps=25, seed=8)
     assert mean.shape == lower.shape == upper.shape == (21,)
+    assert np.all(lower <= upper)
+    smoothed = smooth_profiles(combined, 2.0)
+    assert smoothed.shape == combined.shape
+    labels = np.asarray([0, 1] * 10)
+    difference, lower, upper = difference_band(
+        smoothed,
+        labels,
+        1,
+        0,
+        bootstraps=25,
+        seed=9,
+    )
+    assert difference.shape == lower.shape == upper.shape == (21,)
     assert np.all(lower <= upper)

@@ -11,6 +11,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+from scipy.ndimage import gaussian_filter1d
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPOSITORY = SCRIPT_DIR.parent.parent
@@ -61,6 +62,47 @@ def mean_band(profiles: np.ndarray, *, bootstraps: int, seed: int) -> tuple[np.n
     return mean, lower, upper
 
 
+def smooth_profiles(profiles: np.ndarray, sigma_bp: float) -> np.ndarray:
+    """Smooth only the displayed base-resolution curves, never model inputs."""
+
+    values = np.asarray(profiles, dtype=float)
+    if sigma_bp < 0:
+        raise ValueError("plot smoothing must be non-negative")
+    if sigma_bp == 0:
+        return values.copy()
+    return gaussian_filter1d(values, sigma=float(sigma_bp), axis=1, mode="nearest")
+
+
+def difference_band(
+    profiles: np.ndarray,
+    labels: np.ndarray,
+    first_label: int,
+    second_label: int,
+    *,
+    bootstraps: int,
+    seed: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Bootstrap a blinded first-group minus second-group functional curve."""
+
+    values = np.asarray(profiles, dtype=float)
+    classes = np.asarray(labels, dtype=int)
+    first = values[classes == first_label]
+    second = values[classes == second_label]
+    if len(first) == 0 or len(second) == 0:
+        raise ValueError("both blinded groups must contain at least one profile")
+    difference = np.mean(first, axis=0) - np.mean(second, axis=0)
+    if min(len(first), len(second)) < 2 or bootstraps < 2:
+        return difference, difference.copy(), difference.copy()
+    rng = np.random.default_rng(seed)
+    sampled = np.empty((bootstraps, values.shape[1]), dtype=np.float32)
+    for index in range(bootstraps):
+        first_sample = first[rng.integers(0, len(first), len(first))]
+        second_sample = second[rng.integers(0, len(second), len(second))]
+        sampled[index] = np.mean(first_sample, axis=0) - np.mean(second_sample, axis=0)
+    lower, upper = np.quantile(sampled, [0.025, 0.975], axis=0)
+    return difference, lower, upper
+
+
 def combined_strand_shape(
     profiles: dict[str, np.ndarray],
     winner: pd.Series,
@@ -88,10 +130,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--key-out", type=Path)
     parser.add_argument("--summary-out", type=Path)
     parser.add_argument("--bootstraps", type=int, default=200)
+    parser.add_argument("--plot-sigma-bp", type=float, default=2.0)
     parser.add_argument("--seed", type=int, default=2026)
     args = parser.parse_args(argv)
     if args.bootstraps < 2:
         raise SystemExit("--bootstraps must be at least two")
+    if args.plot_sigma_bp < 0:
+        raise SystemExit("--plot-sigma-bp must be non-negative")
     base_manifest = json.loads((args.base_run / "functional_benchmark_manifest.json").read_text(encoding="utf-8"))
     if base_manifest.get("test_unlocked"):
         raise SystemExit("aggregate renderer refuses a base run that opened test labels")
@@ -162,20 +207,33 @@ def main(argv: list[str] | None = None) -> int:
     tasks = sorted(set(zip(dwm_winners["cell"].astype(str), dwm_winners["tf"].astype(str))))
     with PdfPages(args.out) as pdf:
         for cell, tf in tasks:
-            figure, axes = plt.subplots(1, len(methods), figsize=(5.0 * len(methods), 4.2), squeeze=False, sharey=True)
+            figure, axes = plt.subplots(
+                2,
+                len(methods),
+                figsize=(5.0 * len(methods), 6.4),
+                squeeze=False,
+                sharex="col",
+                sharey="row",
+                gridspec_kw={"height_ratios": [2.2, 1.0]},
+            )
             swap = bool(stable_seed(cell, tf, "blind", seed=args.seed) % 2)
             group_names = {0: "Group B" if swap else "Group A", 1: "Group A" if swap else "Group B"}
+            group_a_label = next(label for label, name in group_names.items() if name == "Group A")
+            group_b_label = 1 - group_a_label
             key_rows.extend(
                 [
                     {"cell": cell, "tf": tf, "blinded_group": group_names[label], "actual_group": "chip_positive" if label else "matched_negative"}
                     for label in (0, 1)
                 ]
             )
-            for axis, method in zip(axes[0], methods):
+            for column, method in enumerate(methods):
+                axis = axes[0, column]
+                difference_axis = axes[1, column]
                 if method == "DWM":
                     candidate = dwm_winners[(dwm_winners["cell"] == cell) & (dwm_winners["tf"] == tf)]
                     if candidate.empty:
                         axis.set_visible(False)
+                        difference_axis.set_visible(False)
                         continue
                     winner = candidate.iloc[0]
                     cell_sites, observed, expected, dispersion = dwm_profiles[cell]
@@ -200,6 +258,7 @@ def main(argv: list[str] | None = None) -> int:
                     ]
                     if candidate.empty:
                         axis.set_visible(False)
+                        difference_axis.set_visible(False)
                         continue
                     winner = candidate.iloc[0]
                     artifact_sites, artifact_profiles, _document = artifacts[(method, cell)]
@@ -212,16 +271,34 @@ def main(argv: list[str] | None = None) -> int:
                     labels = artifact_sites.loc[mask, "chip_label"].to_numpy(dtype=int)
                     auc, ap = float(winner.auroc), float(winner.auprc)
                     detail = str(winner.channel_set)
+                displayed_profiles = smooth_profiles(profiles, args.plot_sigma_bp)
                 colors = {0: "#2A6FBB", 1: "#C23B33"}
                 for label in (0, 1):
                     mean, lower, upper = mean_band(
-                        profiles[labels == label],
+                        displayed_profiles[labels == label],
                         bootstraps=args.bootstraps,
                         seed=stable_seed(cell, tf, method, label, seed=args.seed),
                     )
                     axis.plot(positions, mean, color=colors[label], linewidth=1.7, label=group_names[label])
                     axis.fill_between(positions, lower, upper, color=colors[label], alpha=0.18, linewidth=0)
                 difference = np.mean(profiles[labels == 1], axis=0) - np.mean(profiles[labels == 0], axis=0)
+                plotted_difference, difference_lower, difference_upper = difference_band(
+                    displayed_profiles,
+                    labels,
+                    group_a_label,
+                    group_b_label,
+                    bootstraps=args.bootstraps,
+                    seed=stable_seed(cell, tf, method, "difference", seed=args.seed),
+                )
+                difference_axis.fill_between(
+                    positions,
+                    difference_lower,
+                    difference_upper,
+                    color="#6A3D9A",
+                    alpha=0.18,
+                    linewidth=0,
+                )
+                difference_axis.plot(positions, plotted_difference, color="#6A3D9A", linewidth=1.7)
                 separation = float(np.sqrt(np.mean(np.square(difference[np.abs(positions) <= 50]))))
                 summary_rows.append(
                     {
@@ -236,15 +313,26 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 axis.axvline(0, color="#666666", linewidth=0.7, linestyle="--")
                 axis.axhline(0, color="#999999", linewidth=0.6)
+                difference_axis.axvspan(-15, 15, color="#777777", alpha=0.06, linewidth=0)
+                difference_axis.axvline(0, color="#666666", linewidth=0.7, linestyle="--")
+                difference_axis.axhline(0, color="#999999", linewidth=0.6)
                 axis.set_title(f"{method}\nAUROC {auc:.3f}; AUPRC {ap:.3f}\n{detail}", fontsize=9)
-                axis.set_xlabel("Position from motif center (bp)")
+                difference_axis.set_xlabel("Position from motif center (bp)")
             axes[0, 0].set_ylabel("Normalized functional residual")
+            axes[1, 0].set_ylabel("Group A − Group B")
             handles, labels_text = axes[0, 0].get_legend_handles_labels()
             if handles:
-                figure.legend(handles, labels_text, loc="upper center", ncol=2, frameon=False)
-            figure.suptitle(f"{cell} — {tf}: blinded matched aggregate profiles", y=1.03)
-            figure.tight_layout()
-            pdf.savefig(figure, bbox_inches="tight")
+                figure.legend(
+                    handles,
+                    labels_text,
+                    loc="upper center",
+                    bbox_to_anchor=(0.5, 0.942),
+                    ncol=2,
+                    frameon=False,
+                )
+            figure.suptitle(f"{cell} — {tf}: blinded matched aggregate profiles", y=0.992)
+            figure.subplots_adjust(top=0.84, bottom=0.09, left=0.06, right=0.99, hspace=0.08, wspace=0.04)
+            pdf.savefig(figure)
             plt.close(figure)
     pd.DataFrame(key_rows).drop_duplicates().to_csv(key_out, sep="\t", index=False)
     pd.DataFrame(summary_rows).to_csv(summary_out, sep="\t", index=False)
@@ -259,6 +347,7 @@ def main(argv: list[str] | None = None) -> int:
         "strand_manifest_sha256": file_sha256(strand_manifest_path),
         "models": args.models,
         "bootstraps": args.bootstraps,
+        "display_only_gaussian_sigma_bp": args.plot_sigma_bp,
         "seed": args.seed,
         "outputs": {
             "pdf": {"path": str(args.out), "sha256": file_sha256(args.out)},
