@@ -4,6 +4,8 @@ from pathlib import Path
 import sys
 
 import numpy as np
+import pandas as pd
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,9 +44,33 @@ def test_frozen_candidate_ids_resolve_to_implemented_models():
     policy_path = (
         ROOT / "benchmarks" / "manifests" / "compact" / "functional_detector_policy_v1.tsv"
     )
-    import pandas as pd
-
     policy = pd.read_csv(policy_path, sep="\t")
     promoted = policy[policy["passes_development_gates"].astype(bool)]
     assert set(promoted["candidate_id"]).issubset(strand)
     assert set(promoted["reference_candidate_id"]).issubset(dwm)
+
+
+def test_promotion_false_positive_table_maps_exact_paired_methods():
+    rows = []
+    for method, rate in (
+        ("frozen_policy_candidate", 0.03),
+        ("frozen_dwm_reference", 0.02),
+    ):
+        rows.append(
+            {
+                "cell": "K562",
+                "tf": "MEF2A",
+                "motif_family": "MEF2",
+                "replicate": "rep1",
+                "method": method,
+                "false_positive_rate": rate,
+                "informative_false_positive_rate": rate + 0.01,
+                "sites_valid": 200,
+                "sites_informative": 150,
+            }
+        )
+    output = module.promotion_false_positive_table(pd.DataFrame(rows))
+    assert set(output["candidate_id"]) == {"frozen_policy", "DWM_reference"}
+    assert output["false_positive_rate"].sum() == pytest.approx(0.05)
+    with pytest.raises(ValueError, match="methods differ"):
+        module.promotion_false_positive_table(pd.DataFrame(rows[:1]))

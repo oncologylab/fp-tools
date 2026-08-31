@@ -52,6 +52,10 @@ from fp_tools.tools.parametric_bias import estimate_nb_dispersion  # noqa: E402
 
 
 STRAND_SCHEMA = "fp-tools-strand-functional-profiles-v1"
+PROMOTION_METHODS = {
+    "frozen_policy_candidate": "frozen_policy",
+    "frozen_dwm_reference": "DWM_reference",
+}
 STRAND_ARRAYS = (
     "plus_observed",
     "minus_observed",
@@ -713,6 +717,54 @@ def render_profiles(aggregates: pd.DataFrame, output: Path) -> None:
             plt.close(figure)
 
 
+def promotion_false_positive_table(summaries: pd.DataFrame) -> pd.DataFrame:
+    """Map detailed naked-DNA rows onto the final promotion-auditor schema."""
+
+    required = {
+        "cell",
+        "tf",
+        "motif_family",
+        "replicate",
+        "method",
+        "false_positive_rate",
+        "informative_false_positive_rate",
+    }
+    missing = required.difference(summaries.columns)
+    if missing:
+        raise ValueError(
+            "naked-DNA summary lacks promotion columns: "
+            + ", ".join(sorted(missing))
+        )
+    observed = set(summaries["method"].astype(str))
+    if observed != set(PROMOTION_METHODS):
+        raise ValueError(
+            "naked-DNA summary methods differ from the frozen paired policy: "
+            f"{sorted(observed)}"
+        )
+    output = summaries[
+        [
+            "cell",
+            "tf",
+            "motif_family",
+            "replicate",
+            "method",
+            "false_positive_rate",
+            "informative_false_positive_rate",
+            "sites_valid",
+            "sites_informative",
+        ]
+    ].copy()
+    output.insert(
+        4,
+        "candidate_id",
+        output["method"].astype(str).map(PROMOTION_METHODS),
+    )
+    output = output.rename(columns={"method": "naked_dna_method"})
+    return output.sort_values(
+        ["cell", "tf", "replicate", "candidate_id"], kind="mergesort"
+    ).reset_index(drop=True)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -780,11 +832,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     scores_path = args.outdir / "naked_dna_site_scores.tsv.gz"
     aggregate_path = args.outdir / "naked_dna_aggregate_profiles.tsv.gz"
     paired_path = args.outdir / "naked_dna_policy_vs_dwm.tsv"
+    promotion_path = args.outdir / "naked_dna_promotion_false_positive_rates.tsv"
     plot_path = args.outdir / "naked_dna_aggregate_profiles.pdf"
+    promotion_rates = promotion_false_positive_table(summaries)
     summaries.to_csv(summary_path, sep="\t", index=False)
     scores.to_csv(scores_path, sep="\t", index=False)
     aggregates.to_csv(aggregate_path, sep="\t", index=False)
     result["paired"].to_csv(paired_path, sep="\t", index=False)
+    promotion_rates.to_csv(promotion_path, sep="\t", index=False)
     render_profiles(aggregates, plot_path)
     gate = result["gate"]
     gate.update(
@@ -797,7 +852,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             "seed": int(args.seed),
             "outputs": {
                 path.name: {"path": str(path), "sha256": file_sha256(path)}
-                for path in (summary_path, scores_path, aggregate_path, paired_path, plot_path)
+                for path in (
+                    summary_path,
+                    scores_path,
+                    aggregate_path,
+                    paired_path,
+                    promotion_path,
+                    plot_path,
+                )
             },
         }
     )
