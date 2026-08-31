@@ -743,6 +743,7 @@ def evaluate_models(
     batch_windows: int,
     adaptation_strength: float,
     source: str,
+    pooled_only: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Fit the full sample/pooled/adapted development factorial."""
 
@@ -832,6 +833,35 @@ def evaluate_models(
                                 "model_size_mb": pooled_size,
                             }
                         )
+
+                        if pooled_only:
+                            for sample in samples:
+                                for split in ("train", "validation"):
+                                    contexts, counts = (
+                                        (train_arrays[sample][0], thinned[sample])
+                                        if split == "train"
+                                        else validation_arrays[sample]
+                                    )
+                                    metric_rows.append(
+                                        {
+                                            "source": source,
+                                            "sample": sample,
+                                            "split": split,
+                                            "shift_forward": shift[0],
+                                            "shift_reverse": shift[1],
+                                            "model": model_name,
+                                            "configuration": "cross_cell_pooled",
+                                            "l2": l2,
+                                            "training_depth": depth_name,
+                                            "seed": seed,
+                                            "runtime_seconds": pooled_runtime,
+                                            "peak_memory_increment_mb": pooled_memory,
+                                            "model_size_mb": pooled_size,
+                                            "model_npz": str(pooled_npz),
+                                            **conditional_metrics(pooled, contexts, counts),
+                                        }
+                                    )
+                            continue
 
                         for sample in samples:
                             sample_contexts, _sample_counts = train_arrays[sample]
@@ -1161,6 +1191,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch-windows", type=int, default=64)
     parser.add_argument("--adaptation-strength", type=float, default=0.1)
+    parser.add_argument(
+        "--pooled-only",
+        action="store_true",
+        help="Fit only the cross-cell pooled model for efficient hyperparameter/depth screening.",
+    )
     return parser
 
 
@@ -1195,6 +1230,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         batch_windows=args.batch_windows,
         adaptation_strength=args.adaptation_strength,
         source=args.source,
+        pooled_only=args.pooled_only,
     )
     selection = select_bias_configurations(
         metrics,
@@ -1219,6 +1255,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "l2_values": args.l2_values,
         "training_depths": ["full" if value is None else value for value in args.depths],
         "seeds": args.seeds,
+        "pooled_only": args.pooled_only,
         "test_chromosomes_scored": False,
         "retained_configurations": selection[selection["retained_for_functional_screen"]].to_dict("records"),
         "outputs": {

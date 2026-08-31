@@ -424,6 +424,9 @@ partitions. Training-depth arms use binomial thinning with recorded seeds. The
 benchmark writes strand-aligned cut motifs, likelihood/calibration metrics,
 safe model artifacts, and the two configurations eligible for the downstream
 functional screen. It never reads the locked test chromosomes.
+After the initial pooling comparison, use `--pooled-only` for the larger
+regularization, depth, and seed grid so rejected sample-specific fits are not
+recomputed unnecessarily.
 
 Before a retained model enters the functional screen,
 `evaluate_bias_motif_leakage.py` measures its sequence-only response at every
