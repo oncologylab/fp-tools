@@ -40,6 +40,25 @@ OUTPUT_COLUMNS = [
 ]
 
 
+def locked_holdout_tasks(study: dict) -> pd.DataFrame:
+    """Return tasks from either the main matrix or a single-task freeze."""
+
+    if "tasks" in study:
+        tasks = pd.DataFrame(study["tasks"])
+    elif "task" in study and "cell" in study:
+        task = dict(study["task"])
+        task.setdefault("cell", study["cell"])
+        task.setdefault("split", "locked_holdout")
+        tasks = pd.DataFrame([task])
+    else:
+        raise ValueError("study must contain tasks or a cell plus one task")
+    required = {"cell", "tf", "motif_id", "motif_family", "split"}
+    missing = required.difference(tasks.columns)
+    if missing:
+        raise ValueError("study tasks lack: " + ", ".join(sorted(missing)))
+    return tasks
+
+
 def file_sha256(path: str | Path) -> str:
     digest = sha256()
     with Path(path).open("rb") as handle:
@@ -215,7 +234,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not 0 < args.motif_pvalue < 1:
         raise SystemExit("--motif-pvalue must be between zero and one")
     study = json.loads(args.study.read_text(encoding="utf-8"))
-    tasks = pd.DataFrame(study["tasks"])
+    tasks = locked_holdout_tasks(study)
     tasks = tasks[
         tasks["split"].eq("locked_holdout") & tasks["cell"].astype(str).eq(args.cell)
     ].copy()

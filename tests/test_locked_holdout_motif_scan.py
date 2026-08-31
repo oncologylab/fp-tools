@@ -37,6 +37,28 @@ def test_scan_output_schema_contains_no_occupancy_labels():
     }.issubset(module.OUTPUT_COLUMNS)
 
 
+def test_single_task_external_freeze_is_accepted():
+    tasks = module.locked_holdout_tasks(
+        {
+            "cell": "WTC11",
+            "task": {
+                "tf": "MAX",
+                "motif_id": "MA0058.4",
+                "motif_family": "MYC_MAX",
+            },
+        }
+    )
+    assert tasks.to_dict("records") == [
+        {
+            "tf": "MAX",
+            "motif_id": "MA0058.4",
+            "motif_family": "MYC_MAX",
+            "cell": "WTC11",
+            "split": "locked_holdout",
+        }
+    ]
+
+
 def test_locked_holdout_motifs_exist_in_pinned_database():
     import json
     from fp_tools.utils.motifs import MotifList
