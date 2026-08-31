@@ -208,6 +208,15 @@ underpowered on test chromosomes even when their exploratory deltas are large.
 This separation prevents attractive small-sample gains from being presented as
 validated TF improvements.
 
+Paired chromosome-block bootstrap supported both CTCF gains in both metrics:
+HepG2 AUROC 95% interval 0.094--0.180 and AUPRC 0.123--0.214; K562 AUROC
+0.088--0.198 and AUPRC 0.119--0.225. The exploratory K562 MEF2A gain also had
+positive intervals in both metrics, and HepG2 MYC did likewise, but each had
+far fewer than 500 positive test sites. K562 MEF2D supported AUPRC improvement
+but its AUROC interval crossed zero. These uncertainty results reinforce the
+prespecified distinction between an interesting small-sample signal and a
+promotion-eligible result.
+
 These results justify continued depth, randomization, replicate, and new-cell
 validation, but not a main-branch scorer change. A future implementation must
 route only validated TF/family geometries and abstain when positive-site count,
