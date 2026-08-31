@@ -258,10 +258,11 @@ instead of manufacturing a confident score for unsupported TF/context pairs.
 ## Learned-profile stress test
 
 To test whether the hand-built score was hiding a more complex footprint, each
-cell/TF task was also evaluated with 152 learned-profile hypotheses. The matrix
+cell/TF task was also evaluated with 228 learned-profile hypotheses. The matrix
 crossed raw, PWM, DWM, and three-signal features; full and symmetry-folded
 profiles; unscaled and outer-flank RMS-normalized inputs; and matched-template,
-regularized logistic, shrinkage-LDA, and ExtraTrees models. Model and feature
+regularized logistic, shrinkage-LDA, and ExtraTrees models. Full profiles were
+tested in both genomic and motif-strand orientation. Model and feature
 choice used chromosomes 17--18 only, followed by refitting on development
 chromosomes and one evaluation on chromosomes 19--22/X.
 
@@ -280,6 +281,39 @@ several TFs lack a stable discriminative profile in the available ATAC data.
 The generated complete experiment matrix assigns every cell/TF task a power,
 confounding, response, and likely-driver state so unsupported tasks cannot be
 silently averaged into an attractive global result.
+
+Strand orientation did not produce a promotion-eligible rescue. HepG2 TBP and
+K562 TCF7L2 had large oriented-profile test gains, but orientation had reduced
+their validation AUROC; K562/HepG2 ARID3A had small consistent-looking gains
+with too few test positives. No task improved by at least 0.03 AUROC on both
+validation and test. K562 MEF2D reached 0.654 AUROC with a full-depth,
+replicate-mean oriented DWM model, but only 154 positive test sites were
+available. Directional footprint shape remains an explicit hypothesis for
+larger datasets, not a validated general rescue.
+
+The validation-selected DWM classifiers were also transferred to an
+independent 10-million-fragment read sample. CTCF changed by only +0.002 AUROC
+in HepG2 and -0.006 in K562. In contrast, absolute seed shifts exceeded 0.05
+for HepG2 MEF2D and ZNF558 and for K562 ARID3A, FOXA1, and MEF2A; all five are
+underpowered or confounded. This independently confirms that CTCF has a stable
+learnable shape while several attractive small-task models are sampling
+artifacts or unresolved leads.
+
+The complete raw/PWM/DWM correction comparison across both read seeds reached
+the same conclusion. DWM was the CTCF winner for both metrics in both cells
+and both seeds; the maximum correction-arm seed shift was 0.0085 AUROC in
+HepG2 and 0.0132 in K562. Raw remained the K562 MYC winner. K562 MEF2A kept
+DWM as its winner but remained underpowered, while K562 MEF2D switched from
+DWM to PWM and had a maximum 0.0836 AUROC seed shift. HepG2 ZNF558 retained
+raw as the AUROC winner, but its DWM arm varied by 0.125. These results support
+stable TF-specific routing only for CTCF; MEF2D and ZNF558 require abstention
+until larger independent data resolve correction instability.
+
+The final aggregate figures expose the same decisions visually. Panel headers
+are color-coded and explicitly labeled `DETECTED / RESCUED`, `UNDERPOWERED`,
+`ACCESSIBILITY-CONFOUNDED`, or `WEAK / CONTEXT-DEPENDENT`. This prevents a
+generic motif-centered depletion, such as the nearly overlapping ZNF384
+positive and negative profiles, from being mistaken for occupancy detection.
 
 Finally, DWM-only learned profiles were frozen from the development
 chromosomes and transferred independently to all three full-depth biological
