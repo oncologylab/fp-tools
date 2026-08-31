@@ -212,6 +212,42 @@ def test_replicate_groups_require_two_complete_site_aligned_replicates():
         )
 
 
+def test_label_free_power_preflight_flags_impossible_balanced_task():
+    frame = _synthetic_sites()
+    hashes = module.site_hashes(frame)
+    arrays = {"valid": np.ones(len(frame), dtype=bool), "site_hash": hashes}
+    pooled = module.Artifact(
+        "DWM",
+        "Fixture",
+        Path("pooled.json"),
+        {"schema": "fp-tools-combined-functional-profiles-v1"},
+        frame,
+        arrays,
+    )
+    routes = pd.DataFrame(
+        {
+            "cell": ["Fixture"],
+            "tf": ["TFX"],
+            "motif_id": ["MA0000.1"],
+            "motif_family": ["FIX"],
+            "bias_configuration": ["DWM"],
+        }
+    )
+    rows = module.label_free_power_preflight(
+        {("DWM", "Fixture"): pooled},
+        {
+            ("rep1", "DWM", "Fixture"): pooled,
+            ("rep2", "DWM", "Fixture"): pooled,
+        },
+        routes,
+        minimum_sites_per_class=6,
+    )
+    assert rows[0]["joint_valid_test_sites"] == 10
+    assert rows[0]["theoretical_maximum_sites_per_class"] == 5
+    assert not rows[0]["primary_evaluation_mathematically_possible"]
+    assert not rows[0]["labels_read"]
+
+
 def test_frozen_combined_count_and_strand_routes_fit_without_labels():
     rng = np.random.default_rng(12)
     rows, width = 180, 201

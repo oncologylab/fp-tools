@@ -387,6 +387,62 @@ def valid_on_reference(reference: Artifact, target: Artifact) -> np.ndarray:
     return output
 
 
+def label_free_power_preflight(
+    artifacts: dict[tuple[str, str], Artifact],
+    replicate_artifacts: dict[tuple[str, str, str], Artifact],
+    routes: pd.DataFrame,
+    minimum_sites_per_class: int,
+) -> list[dict[str, Any]]:
+    """Compute a label-free upper bound on balanced holdout sample size."""
+
+    rows: list[dict[str, Any]] = []
+    for route in routes.sort_values(["cell", "tf"], kind="mergesort").itertuples(
+        index=False
+    ):
+        cell = str(route.cell)
+        tf = str(route.tf)
+        model = str(route.bias_configuration)
+        reference = artifacts[("DWM", cell)]
+        candidate = artifacts[(model, cell)]
+        joint_valid = reference.valid & valid_on_reference(reference, candidate)
+        replicates = sorted(
+            {
+                replicate
+                for replicate, _model, item_cell in replicate_artifacts
+                if item_cell == cell
+            }
+        )
+        for replicate in replicates:
+            joint_valid &= valid_on_reference(
+                reference, replicate_artifacts[(replicate, "DWM", cell)]
+            )
+            joint_valid &= valid_on_reference(
+                reference, replicate_artifacts[(replicate, model, cell)]
+            )
+        test_task = (
+            reference.sites["tf"].astype(str).eq(tf).to_numpy()
+            & reference.sites["chromosome_split"].astype(str).eq(TEST_SPLIT).to_numpy()
+        )
+        available = int(np.sum(joint_valid & test_task))
+        maximum_balanced = available // 2
+        rows.append(
+            {
+                "cell": cell,
+                "tf": tf,
+                "motif_id": str(route.motif_id),
+                "motif_family": str(route.motif_family),
+                "joint_valid_test_sites": available,
+                "theoretical_maximum_sites_per_class": maximum_balanced,
+                "minimum_sites_per_class": int(minimum_sites_per_class),
+                "primary_evaluation_mathematically_possible": bool(
+                    maximum_balanced >= minimum_sites_per_class
+                ),
+                "labels_read": False,
+            }
+        )
+    return rows
+
+
 def validate_tables(
     study: dict[str, Any],
     routes: pd.DataFrame,
@@ -494,6 +550,12 @@ def build_freeze_document(
         },
         "options": freeze_options(args),
         "frozen_routes": routes.sort_values(["cell", "tf"], kind="mergesort").to_dict("records"),
+        "label_free_power_preflight": label_free_power_preflight(
+            artifacts,
+            replicate_artifacts,
+            routes,
+            args.minimum_sites_per_class,
+        ),
     }
     document["freeze_id"] = canonical_hash(document)
     return document
@@ -1338,8 +1400,28 @@ def run_evaluation(
             "evaluation_split": TEST_SPLIT,
             "chip_accession": str(chip_row.file_accession),
         }
+        task_mask = reference_artifact.sites["tf"].astype(str).eq(tf).to_numpy()
+        test_mask = reference_artifact.sites["chromosome_split"].astype(str).eq(
+            TEST_SPLIT
+        ).to_numpy()
+        joint_test_sites = int(np.sum(joint_valid & task_mask & test_mask))
+        theoretical_maximum = joint_test_sites // 2
+        base.update(
+            {
+                "joint_valid_test_sites": joint_test_sites,
+                "theoretical_maximum_sites_per_class": theoretical_maximum,
+            }
+        )
+        if theoretical_maximum < args.minimum_sites_per_class:
+            metric_rows.append(
+                {
+                    **base,
+                    "status": "power_limited_before_labels",
+                    "required_sites_per_class": int(args.minimum_sites_per_class),
+                }
+            )
+            continue
         try:
-            task_mask = reference_artifact.sites["tf"].astype(str).eq(tf).to_numpy()
             matched, matching = build_matched_test_sites(
                 reference_artifact.sites,
                 joint_valid & task_mask,
