@@ -42,6 +42,7 @@ from fp_tools.tools.parametric_bias import (  # noqa: E402
     BiasFeatureSpec,
     ConditionalSequenceBiasModel,
     cut_position_from_alignment,
+    ensemble_sequence_bias_models,
     encode_sequence,
     reverse_complement_contexts,
 )
@@ -1108,6 +1109,111 @@ def summarize_bias_depth_stability(
     return stability, recommendations
 
 
+def build_recommended_bias_ensembles(
+    recommendations: pd.DataFrame,
+    artifacts: pd.DataFrame,
+    datasets: dict[tuple[tuple[int, int], str, str], ControlWindowDataset],
+    outdir: Path,
+    *,
+    source: str,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Average recommended seed fits and rescore held-out control windows."""
+
+    ensemble_artifacts: list[dict[str, object]] = []
+    ensemble_metrics: list[dict[str, object]] = []
+    model_dir = outdir / "ensembles"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    for recommendation in recommendations.itertuples(index=False):
+        selected = artifacts[
+            (artifacts["shift_forward"] == int(recommendation.shift_forward))
+            & (artifacts["shift_reverse"] == int(recommendation.shift_reverse))
+            & (artifacts["model"].astype(str) == str(recommendation.model))
+            & (artifacts["configuration"].astype(str) == str(recommendation.configuration))
+            & np.isclose(artifacts["l2"].astype(float), float(recommendation.l2))
+            & (
+                artifacts["training_depth"].astype(str)
+                == str(recommendation.training_depth)
+            )
+        ].copy()
+        if selected.empty:
+            continue
+        for artifact_sample, group in selected.groupby("sample", sort=True):
+            group = group.sort_values("seed", kind="mergesort").drop_duplicates("seed")
+            member_paths = [Path(value) for value in group["model_npz"]]
+            members = [ConditionalSequenceBiasModel.load(path) for path in member_paths]
+            start = perf_counter()
+            ensemble = ensemble_sequence_bias_models(members)
+            shift = (int(recommendation.shift_forward), int(recommendation.shift_reverse))
+            stem = model_dir / (
+                f"{artifact_sample}.{source}.{recommendation.configuration}."
+                f"{recommendation.model}.shift_{shift[0]}_{shift[1]}."
+                f"l2_{_safe_token(float(recommendation.l2))}."
+                f"depth_{recommendation.training_depth}.seed_ensemble"
+            )
+            ensemble_path, _ = ensemble.save(
+                stem,
+                metadata={
+                    "training_source": source,
+                    "configuration": str(recommendation.configuration),
+                    "read_shift": list(shift),
+                    "training_depth": str(recommendation.training_depth),
+                    "sample": str(artifact_sample),
+                    "member_seeds": [int(value) for value in group["seed"]],
+                    "member_models": [
+                        {"path": str(path), "sha256": file_sha256(path)}
+                        for path in member_paths
+                    ],
+                    "depth_selection_rule": "smallest depth within one SE of best held-out NLL",
+                },
+            )
+            runtime = perf_counter() - start
+            size_mb = ensemble_path.stat().st_size / (1024 * 1024)
+            ensemble_artifacts.append(
+                {
+                    "recommendation_rank": int(recommendation.rank),
+                    "source": source,
+                    "configuration": str(recommendation.configuration),
+                    "sample": str(artifact_sample),
+                    "shift_forward": shift[0],
+                    "shift_reverse": shift[1],
+                    "model": str(recommendation.model),
+                    "l2": float(recommendation.l2),
+                    "training_depth": str(recommendation.training_depth),
+                    "member_count": len(members),
+                    "member_seeds": ",".join(str(int(value)) for value in group["seed"]),
+                    "model_npz": str(ensemble_path),
+                    "model_json": str(ensemble_path.with_suffix(".json")),
+                    "runtime_seconds": runtime,
+                    "model_size_mb": size_mb,
+                }
+            )
+            evaluation_samples = (
+                sorted({key[1] for key in datasets})
+                if str(artifact_sample) == "pooled"
+                else [str(artifact_sample)]
+            )
+            for sample in evaluation_samples:
+                dataset = datasets[(shift, sample, "validation")]
+                contexts, counts = dataset.model_arrays(ensemble.feature_spec)
+                ensemble_metrics.append(
+                    {
+                        "recommendation_rank": int(recommendation.rank),
+                        "source": source,
+                        "sample": sample,
+                        "shift_forward": shift[0],
+                        "shift_reverse": shift[1],
+                        "model": str(recommendation.model),
+                        "configuration": str(recommendation.configuration),
+                        "l2": float(recommendation.l2),
+                        "training_depth": str(recommendation.training_depth),
+                        "member_count": len(members),
+                        "model_npz": str(ensemble_path),
+                        **conditional_metrics(ensemble, contexts, counts),
+                    }
+                )
+    return pd.DataFrame(ensemble_artifacts), pd.DataFrame(ensemble_metrics)
+
+
 def _cache_path(cache_dir: Path, sample: str, source: str, split: str, shift: tuple[int, int]) -> Path:
     return cache_dir / f"{sample}.{source}.{split}.shift_{shift[0]}_{shift[1]}.npz"
 
@@ -1343,6 +1449,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         metrics,
         maximum_model_size_mb=float(study["promotion_gates"]["maximum_model_size_mb"]),
     )
+    ensemble_artifacts, ensemble_metrics = build_recommended_bias_ensembles(
+        depth_recommendations,
+        artifacts,
+        datasets,
+        args.outdir,
+        source=args.source,
+    )
     window_manifest.to_csv(args.outdir / "control_windows.tsv", sep="\t", index=False)
     metrics.to_csv(args.outdir / "bias_model_metrics.tsv", sep="\t", index=False)
     artifacts.to_csv(args.outdir / "bias_model_artifacts.tsv", sep="\t", index=False)
@@ -1351,6 +1464,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     depth_stability.to_csv(args.outdir / "bias_depth_stability.tsv", sep="\t", index=False)
     depth_recommendations.to_csv(
         args.outdir / "bias_depth_recommendations.tsv",
+        sep="\t",
+        index=False,
+    )
+    ensemble_artifacts.to_csv(
+        args.outdir / "bias_model_ensembles.tsv",
+        sep="\t",
+        index=False,
+    )
+    ensemble_metrics.to_csv(
+        args.outdir / "bias_model_ensemble_metrics.tsv",
         sep="\t",
         index=False,
     )
@@ -1382,6 +1505,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "bias_model_selection.tsv",
                 "bias_depth_stability.tsv",
                 "bias_depth_recommendations.tsv",
+                "bias_model_ensembles.tsv",
+                "bias_model_ensemble_metrics.tsv",
             )
         },
     }

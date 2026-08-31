@@ -16,6 +16,7 @@ from fp_tools.tools.parametric_bias import (
     encode_sequence,
     estimate_nb_dispersion,
     expected_from_log_bias,
+    ensemble_sequence_bias_models,
     reverse_complement_contexts,
 )
 
@@ -127,6 +128,26 @@ def test_model_suffix_tokens_are_not_replaced(tmp_path: Path) -> None:
     assert json_path.name == "model.seed_2026.json"
     loaded = ConditionalSequenceBiasModel.load(tmp_path / "model.seed_2026")
     assert np.array_equal(loaded.main, model.main)
+
+
+def test_sequence_bias_ensemble_averages_log_propensities() -> None:
+    contexts, _counts = _synthetic_conditional_data()
+    first = ConditionalSequenceBiasModel(BiasFeatureSpec("test", 5, (1,)))
+    second = ConditionalSequenceBiasModel(first.feature_spec)
+    first.main[2, 0] = 2.0
+    first.main[2] -= first.main[2].mean()
+    second.main[2, 3] = 1.0
+    second.main[2] -= second.main[2].mean()
+    first.pairs[1][1, 0, 1] = 0.8
+    second.pairs[1][1, 2, 3] = -0.4
+    ensemble = ensemble_sequence_bias_models([first, second], weights=[1.0, 3.0])
+    expected_scores = 0.25 * first.log_scores(contexts) + 0.75 * second.log_scores(contexts)
+    assert np.allclose(ensemble.log_scores(contexts), expected_scores)
+    assert ensemble.metadata["ensemble_size"] == 2
+    with pytest.raises(ValueError, match="same feature"):
+        ensemble_sequence_bias_models(
+            [first, ConditionalSequenceBiasModel(BiasFeatureSpec.selma10())]
+        )
 
 
 def test_calibrated_residuals_and_expected_signal() -> None:

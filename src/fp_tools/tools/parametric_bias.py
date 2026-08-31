@@ -458,6 +458,54 @@ class ConditionalSequenceBiasModel:
         return model
 
 
+def ensemble_sequence_bias_models(
+    models: Iterable[ConditionalSequenceBiasModel],
+    weights: Iterable[float] | None = None,
+) -> ConditionalSequenceBiasModel:
+    """Average compatible log-linear models into a geometric ensemble.
+
+    Averaging coefficients averages unnormalized log propensities. The
+    resulting conditional probabilities are therefore a compact geometric
+    ensemble with the same scoring cost and artifact size as one fitted model.
+    """
+
+    members = list(models)
+    if not members:
+        raise ValueError("at least one model is required")
+    if any(model.feature_spec != members[0].feature_spec for model in members[1:]):
+        raise ValueError("all ensemble members must use the same feature specification")
+    raw_weights = (
+        np.ones(len(members), dtype=np.float64)
+        if weights is None
+        else np.asarray(list(weights), dtype=np.float64)
+    )
+    if raw_weights.shape != (len(members),) or np.any(raw_weights < 0) or not np.any(
+        raw_weights > 0
+    ):
+        raise ValueError("weights must be non-negative with one positive value per model")
+    normalized = raw_weights / raw_weights.sum()
+    ensemble = ConditionalSequenceBiasModel(members[0].feature_spec)
+    ensemble.main = np.average(
+        np.stack([model.main for model in members]),
+        axis=0,
+        weights=normalized,
+    )
+    ensemble.pairs = {
+        distance: np.average(
+            np.stack([model.pairs[distance] for model in members]),
+            axis=0,
+            weights=normalized,
+        )
+        for distance in ensemble.feature_spec.pair_distances
+    }
+    ensemble.metadata = {
+        "ensemble_method": "coefficient_weighted_mean",
+        "ensemble_size": len(members),
+        "ensemble_weights": normalized.tolist(),
+    }
+    return ensemble
+
+
 def expected_from_log_bias(
     observed: np.ndarray,
     log_bias: np.ndarray,
