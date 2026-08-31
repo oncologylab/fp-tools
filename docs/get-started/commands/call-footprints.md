@@ -40,5 +40,21 @@ In direct mode, `--output result.bw` writes exactly `result.bw`; multiple
 signals written through `--outdir {outdir}` use
 `{outdir}/{signal_stem}_footprints.bw`.
 
+An experimental dual-geometry arm is available for method evaluation:
+
+```bash
+call-footprints \
+  --signal sample_corrected.bw \
+  --regions merged_peaks.bed \
+  --score hybrid \
+  --output sample_hybrid_footprints.bw
+```
+
+`hybrid` retains the standard footprint score and adds a low-weight,
+locally standardized 33 bp central-depletion channel with symmetric 32 bp
+shoulders. It improved wide CTCF/REST footprints in the locked K562/HepG2
+experiment, but reduced some JUND/MAX metrics. It is therefore opt-in and is
+not the production default.
+
 Continue with [`match-motifs`](match-motifs.md), or see the
 [complete `call-footprints` reference](../../api.md#call-footprints).

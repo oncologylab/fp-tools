@@ -31,6 +31,32 @@ When both signal types are available, use footprint score bigWigs for motif
 statistics and bias-corrected cut-site signal bigWigs for observed aggregate
 profiles; label the chosen signal explicitly in figure captions.
 
+For a shape-detectability audit, normalize each motif site by its own outer
+flanks and show uncertainty across sites:
+
+```bash
+plot-aggregate \
+  --TFBS motif_sites/CTCF.bed motif_sites/REST.bed \
+  --TFBS-labels CTCF REST \
+  --signals sample_corrected.bw \
+  --signal-labels sample \
+  --site-normalization flank-rms \
+  --smooth 5 \
+  --show-site-ci \
+  --shape-diagnostics \
+  --output aggregate_detectability.pdf \
+  --output_aggregated_stats aggregate_detectability.csv
+```
+
+`flank-rms` removes each site's outer-flank mean, scales by its outer-flank
+root-mean-square signal, and limits amplification of nearly signal-free sites.
+The plot and statistics table classify central depletion as `strong`,
+`detectable`, `weak`, `not detected`, or `underpowered`. Treat these as shape
+diagnostics, not proof of TF occupancy; use orthogonal binding data when
+validating a method. By default, each panel now uses its own y-axis range.
+Choose `--share-y signals`, `--share-y sites`, or `--share-y both` only when a
+shared scale is needed for the intended comparison.
+
 ```bash
 plot-aggregate \
   --input-html project/reports/review_multi_comparisons/index.html \

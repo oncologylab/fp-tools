@@ -19,7 +19,7 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 | [`plot-aggregate`](#plot-aggregate) | Plot average signal around motif sites or other genomic regions as a static figure or interactive HTML report. |
 | [`review-multi-comparisons`](#review-multi-comparisons) | Combine differential-footprint reports as a scalable browser bundle or one self-contained HTML report. |
 | [`run-yaml-workflow`](#run-yaml-workflow) | Run one or more fp-tools jobs from a reusable YAML configuration. |
-| [`fp-tools-gui`](#fp-tools-gui) | Launch the browser interface for configuring and running fp-tools commands. |
+| [`fp-tools-gui`](#fp-tools-gui) | Launch the browser interface for configuring and running fp-tools commands. The Windows and Apple Silicon desktop downloads present the same interface in a native fp-tools application window. |
 | [`fp-tools-runtime`](#fp-tools-runtime) | Inspect, install, or repair the private external-tool runtime. Linux provides raw-read and de novo motif components; macOS and Windows provide the optional de novo motif component. |
 | [`discover-motifs`](#discover-motifs) | Prepare or run de novo motif discovery from candidate footprint intervals or an existing FASTA file. |
 | [`summarize-motifs`](#summarize-motifs) | Summarize MEME, STREME, DREME, and Tomtom results in a compact report. |
@@ -303,6 +303,7 @@ same `{prefix}_*.bw`, `{prefix}_atacorrect.pdf`, and
 **Complete options**
 
 ```text
+Matplotlib is building the font cache; this may take a moment.
 usage: atac-correct [-h] [--bams [<bam> ...]] [--fragments [<fragments.tsv.gz> ...]]
                     [-g <fasta>] [-p [<bed> ...]] [--regions-in <bed>]
                     [--regions-out <bed>] [--blacklist <bed>] [--extend <int>]
@@ -463,6 +464,22 @@ In direct mode, `--output result.bw` writes exactly `result.bw`; multiple
 signals written through `--outdir {outdir}` use
 `{outdir}/{signal_stem}_footprints.bw`.
 
+An experimental dual-geometry arm is available for method evaluation:
+
+```bash
+call-footprints \
+  --signal sample_corrected.bw \
+  --regions merged_peaks.bed \
+  --score hybrid \
+  --output sample_hybrid_footprints.bw
+```
+
+`hybrid` retains the standard footprint score and adds a low-weight,
+locally standardized 33 bp central-depletion channel with symmetric 32 bp
+shoulders. It improved wide CTCF/REST footprints in the locked K562/HepG2
+experiment, but reduced some JUND/MAX metrics. It is therefore opt-in and is
+not the production default.
+
 **Complete options**
 
 ```text
@@ -476,7 +493,9 @@ usage: call-footprints [-h] [-s <bigwig>] [--signals [<bigwig> ...]] [-o <bigwig
                        [--call-candidates] [--top-n <int>] [--min-score <float>]
                        [--call-width <bp>] [--min-distance <bp>] [--fp-min <int>]
                        [--fp-max <int>] [--flank-min <int>] [--flank-max <int>]
-                       [--footprint-kernel {fast,reference}] [--window <int>]
+                       [--footprint-kernel {fast,reference}] [--hybrid-center-width <int>]
+                       [--hybrid-flank-width <int>] [--hybrid-weight <float>]
+                       [--hybrid-noise-floor <float>] [--window <int>]
                        [--sample-names [<name> ...]] [--sample-table <tsv>]
                        [--layout {custom,project}] [--sample-output-root <directory>]
                        [--outdir <directory>] [--cores <int>] [--sample-workers <int>]
@@ -509,8 +528,8 @@ Required arguments:
 
 Optional arguments:
   --score <score>                       Type of scoring to perform on cutsites
-                                        (footprint/sum/mean/none/multiscale) (default:
-                                        footprint)
+                                        (footprint/hybrid/sum/mean/none/multiscale)
+                                        (default: footprint)
   --absolute                            Convert bigwig signal to absolute values before
                                         calculating score
   --extend <int>                        Extend input regions with bp (default: 100)
@@ -556,6 +575,16 @@ Parameters for score == footprint:
   --flank-max <int>                     Maximum range of flanking regions (default: 30)
   --footprint-kernel {fast,reference}   Footprint scoring kernel (default: fast; use
                                         reference for the original scalar implementation)
+
+Parameters for score == hybrid:
+  --hybrid-center-width <int>           Central width of the symmetric hybrid channel
+                                        (default: 33)
+  --hybrid-flank-width <int>            Width of each adjacent hybrid shoulder (default:
+                                        32)
+  --hybrid-weight <float>               Weight of the standardized symmetric channel added
+                                        to the footprint score (default: 0.2)
+  --hybrid-noise-floor <float>          Positive stabilization floor for hybrid local-
+                                        noise scaling (default: 0.001)
 
 Parameters for score == sum:
   --window <int>                        The window for calculation of sum (default: 100)
@@ -1183,6 +1212,32 @@ When both signal types are available, use footprint score bigWigs for motif
 statistics and bias-corrected cut-site signal bigWigs for observed aggregate
 profiles; label the chosen signal explicitly in figure captions.
 
+For a shape-detectability audit, normalize each motif site by its own outer
+flanks and show uncertainty across sites:
+
+```bash
+plot-aggregate \
+  --TFBS motif_sites/CTCF.bed motif_sites/REST.bed \
+  --TFBS-labels CTCF REST \
+  --signals sample_corrected.bw \
+  --signal-labels sample \
+  --site-normalization flank-rms \
+  --smooth 5 \
+  --show-site-ci \
+  --shape-diagnostics \
+  --output aggregate_detectability.pdf \
+  --output_aggregated_stats aggregate_detectability.csv
+```
+
+`flank-rms` removes each site's outer-flank mean, scales by its outer-flank
+root-mean-square signal, and limits amplification of nearly signal-free sites.
+The plot and statistics table classify central depletion as `strong`,
+`detectable`, `weak`, `not detected`, or `underpowered`. Treat these as shape
+diagnostics, not proof of TF occupancy; use orthogonal binding data when
+validating a method. By default, each panel now uses its own y-axis range.
+Choose `--share-y signals`, `--share-y sites`, or `--share-y both` only when a
+shared scale is needed for the intended comparison.
+
 ```bash
 plot-aggregate \
   --input-html project/reports/review_multi_comparisons/index.html \
@@ -1207,15 +1262,17 @@ usage: plot-aggregate [-h] [--TFBS [<bed> ...]] [--signals [<bigwig> ...]]
                       [--hide-summary] [--TFBS-labels [...]] [--signal-labels [...]]
                       [--cond-names [<name> ...]] [--region-labels [...]]
                       [--control-label <label>] [--grid <rows>x<cols>] [--share-y]
-                      [--normalize]
+                      [--normalize] [--site-normalization {none,flank-center,flank-rms}]
+                      [--site-normalization-clip <float>]
                       [--normalization {none,condition-quantile,sample-quantile}]
                       [--normalization-comparison-output] [--output_aggregated_stats]
-                      [--show-replicate-sd] [--negate] [--smooth <int>] [--log-transform]
-                      [--plot-boundaries] [--signal-on-x] [--remove-outliers <float>]
-                      [--motif-grid] [--rows-per-page ROWS_PER_PAGE]
-                      [--order-htmls [ORDER_HTMLS ...]] [--fill-missing-profiles]
-                      [--recompute-missing-profiles] [--repeat-column-labels {none,row}]
-                      [--cores <int>] [--verbosity <int>]
+                      [--show-replicate-sd] [--show-site-ci] [--shape-diagnostics]
+                      [--negate] [--smooth <int>] [--log-transform] [--plot-boundaries]
+                      [--signal-on-x] [--remove-outliers <float>] [--motif-grid]
+                      [--rows-per-page ROWS_PER_PAGE] [--order-htmls [ORDER_HTMLS ...]]
+                      [--fill-missing-profiles] [--recompute-missing-profiles]
+                      [--repeat-column-labels {none,row}] [--cores <int>]
+                      [--verbosity <int>]
 
 __________________________________________________________________________________________
 
@@ -1296,6 +1353,14 @@ Plot arguments:
                                         none)
   --normalize                           Normalize the aggregate signal(s) to be between
                                         0-1 (default: the true range of values is shown)
+  --site-normalization {none,flank-center,flank-rms}
+                                        Normalize each motif-centered profile before
+                                        aggregation. flank-rms removes its outer-flank
+                                        mean and scales by outer-flank RMS noise (default:
+                                        none)
+  --site-normalization-clip <float>     Absolute clipping limit after flank-rms site
+                                        normalization; use 0 to disable clipping (default:
+                                        5)
   --normalization {none,condition-quantile,sample-quantile}
                                         diff-footprints-compatible quantile normalization
                                         before aggregate plotting (default: none)
@@ -1304,6 +1369,11 @@ Plot arguments:
                                         summaries (default: None)
   --show-replicate-sd                   Draw replicate SD ribbons when --cond-names
                                         contains repeated condition names
+  --show-site-ci                        Draw 95% confidence bands estimated across motif
+                                        sites
+  --shape-diagnostics                   Annotate each panel as strong, detectable, weak,
+                                        not detected, or underpowered from motif-centered
+                                        depletion
   --negate                              Negate overlap with regions
   --smooth <int>                        Smooth output signal by taking the mean of
                                         <smooth> bp windows (default: 1 (no smooth)

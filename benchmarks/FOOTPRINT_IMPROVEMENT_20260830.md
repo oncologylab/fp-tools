@@ -111,3 +111,40 @@ the same labels.
 
 The production footprint scorer remains unchanged because the scientific
 promotion gates did not pass.
+
+## Shape detectability and dual-geometry follow-up
+
+The next development stage addressed two different failure modes separately.
+`plot-aggregate` now has an opt-in per-site outer-flank RMS normalization,
+site-level 95% confidence bands, quantitative central-depletion diagnostics,
+and explicit `strong`, `detectable`, `weak`, `not detected`, and
+`underpowered` labels. Its default `--share-y none` behavior now gives panels
+independent scales instead of silently forcing one global range. On the locked
+chromosome test, the DWM-corrected ChIP-positive aggregates were strong for
+K562/HepG2 CTCF and JUND, strong for K562 REST, detectable for both MAX tasks
+and HepG2 REST, and underpowered for K562 GATA1 (26 positive sites). This mode
+makes failure visible but does not treat aggregate shape as proof of occupancy.
+
+A second opt-in `call-footprints --score hybrid` candidate retained the
+existing score and added weight 0.2 from a locally standardized 33 bp central
+depletion with symmetric 32 bp shoulders. Parameters were selected using
+chromosome 17 and frozen before chromosome 18 validation and the locked
+chromosome 19/20/21/22/X test. The executable bigWigs exactly reproduced the
+prototype metrics.
+
+| Locked test task | AUROC delta | AUPRC delta |
+| --- | ---: | ---: |
+| K562 CTCF | +0.0214 | +0.0323 |
+| K562 REST | +0.0169 | +0.0146 |
+| HepG2 CTCF | +0.0313 | +0.0400 |
+| HepG2 REST | +0.0188 | +0.0032 |
+| Mean across all nine tasks | +0.0064 | +0.0080 |
+
+Chromosome-block bootstrap intervals supported both CTCF gains and the K562
+REST gains; HepG2 REST had 98.3% and 99.7% probabilities of positive AUROC and
+AUPRC deltas. The same test showed significant regressions for HepG2 JUND/MAX
+and K562 MAX, while K562 GATA1 remained underpowered. The hybrid arm is useful
+for testing wide-footprint families but fails the strong-positive
+non-regression requirement and is not the default. The next scorer should use
+motif-width or label-free geometry reliability to select the wide channel,
+then be tested on a new independent cell-line holdout and naked-DNA controls.

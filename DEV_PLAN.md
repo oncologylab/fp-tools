@@ -117,6 +117,17 @@ a separately planned breaking release explicitly changes the contract.
   development slice but failed the one-time cell-line holdout because it did
   not meet mean-gain or strong-positive non-regression gates. It remains
   experimental; the production footprint score is unchanged.
+- An opt-in aggregate-shape detectability mode with per-site outer-flank RMS
+  normalization, site-level 95% confidence bands, quantitative depletion
+  diagnostics, explicit underpowered/not-detected states, and functional
+  per-panel or grouped y-axis scaling. This mode improves visualization and
+  failure identification without changing the production footprint score or
+  presenting aggregate shape as proof of occupancy.
+- An opt-in dual-geometry `call-footprints --score hybrid` arm that adds a
+  low-weight, locally standardized wide symmetric depletion channel. It
+  reproducibly improved CTCF and REST on locked K562/HepG2 chromosomes but
+  regressed some JUND/MAX tasks, so it remains experimental and cannot replace
+  the production `footprint` default.
 
 ## Current ENCODE Resource
 
