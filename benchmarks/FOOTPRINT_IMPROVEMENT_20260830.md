@@ -221,3 +221,13 @@ These results justify continued depth, randomization, replicate, and new-cell
 validation, but not a main-branch scorer change. A future implementation must
 route only validated TF/family geometries and abstain when positive-site count,
 matching balance, replicate stability, or aggregate-shape reliability fails.
+
+Holding each frozen geometry fixed and changing only raw/PWM/DWM input showed
+large TF-specific correction ranges: AUROC ranges were 0.165 for HepG2 MYC,
+0.175 for HepG2 ZNF558, 0.164 for K562 FOXA1, and 0.116 for K562 MYC. Raw was
+best for both MYC tasks and several zinc-finger tasks; DWM was best for both
+CTCF tasks, K562 MEF2A, and K562 MEF2D. HepG2 ZNF558's validation-selected DWM
+arm reversed on test and raw was best post hoc. Thus correction can be the
+principal problem for particular TF/context pairs, but it is not globally
+under- or over-correcting. Correction disagreement and cross-split instability
+should become abstention evidence rather than a label-tuned automatic choice.

@@ -27,6 +27,7 @@ Benchmark and validation helpers:
 - `compare_frozen_tf_candidates.py`: compare frozen TF candidates with legacy scores on identical finite sites.
 - `plot_frozen_tf_profiles.py`: plot matched ChIP-positive and ChIP-negative aggregate profiles for frozen candidates.
 - `summarize_tf_footprint_search.py`: apply prespecified site-count, matching-balance, detectability, and point-gain statuses to frozen tests.
+- `evaluate_tf_correction_transfer.py`: hold frozen TF geometry fixed while transferring it across raw, PWM, and DWM signals to isolate correction sensitivity.
 - `evaluate_nutrient_footprint_replication.py`: apply local cross-cell-line, RNA, external recovery, and occupancy replication tiers.
 - `manuscript/scripts/plot_benchmark_panels.py`: PDF/SVG/PNG multi-panel benchmark figures for the BioMedInformatics manuscript.
 - `manuscript/scripts/plot_calibration_panels.py`: PDF/SVG/PNG reliability curves and ECE panels.
