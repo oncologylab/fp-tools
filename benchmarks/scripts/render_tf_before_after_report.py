@@ -22,6 +22,9 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
 )
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 from compare_frozen_tf_candidates import score_centers
 from plot_frozen_tf_profiles import mean_ci, normalize_profiles_for_display
@@ -32,6 +35,42 @@ BLUE = "#4C78A8"
 RED = "#E45756"
 GREEN = "#2E8B57"
 GRAY = "#6B7280"
+
+
+def crossfit_covariate_residuals(
+    values: np.ndarray,
+    covariates: np.ndarray,
+    groups: np.ndarray,
+    *,
+    ridge_alpha: float = 1.0,
+) -> np.ndarray:
+    """Remove motif/accessibility effects without using ChIP labels."""
+
+    values = np.asarray(values, dtype=float)
+    covariates = np.asarray(covariates, dtype=float)
+    groups = np.asarray(groups)
+    if covariates.ndim != 2 or covariates.shape[0] != len(values):
+        raise ValueError("covariates must have one row per score")
+    if groups.shape != (len(values),):
+        raise ValueError("groups must have one value per score")
+    unique_groups = np.unique(groups)
+    if len(unique_groups) < 2:
+        raise ValueError("cross-fitted residuals require at least two groups")
+    if not np.isfinite(values).all() or not np.isfinite(covariates).all():
+        raise ValueError("scores and covariates must be finite")
+
+    residuals = np.empty_like(values)
+    for group in unique_groups:
+        held_out = groups == group
+        training = ~held_out
+        model = make_pipeline(
+            StandardScaler(),
+            Ridge(alpha=ridge_alpha),
+        ).fit(covariates[training], values[training])
+        residuals[held_out] = values[held_out] - model.predict(
+            covariates[held_out]
+        )
+    return residuals
 
 
 def _aggregate(axis, x: np.ndarray, profiles: np.ndarray, labels: np.ndarray, title: str) -> None:
@@ -114,9 +153,35 @@ def render_cell(
     baseline_signal = Path(baseline_rows.iloc[0].signal)
     baseline_all_scores = score_centers(cell_sites, baseline_signal)
     baseline_scores = baseline_all_scores[positions]
-    finite = np.isfinite(candidate_scores) & np.isfinite(baseline_scores)
+    covariates = np.column_stack(
+        [
+            cell_sites.iloc[positions]["motif_score"].to_numpy(dtype=float),
+            np.log1p(
+                np.maximum(
+                    cell_sites.iloc[positions]["accessibility"].to_numpy(
+                        dtype=float
+                    ),
+                    0.0,
+                )
+            ),
+            np.log1p(
+                np.maximum(
+                    cell_sites.iloc[positions]["central_accessibility"].to_numpy(
+                        dtype=float
+                    ),
+                    0.0,
+                )
+            ),
+        ]
+    )
+    finite = (
+        np.isfinite(candidate_scores)
+        & np.isfinite(baseline_scores)
+        & np.isfinite(covariates).all(axis=1)
+    )
     labels = cell_sites.iloc[positions].loc[finite, "chip_label"].to_numpy(dtype=int)
     report_sites = cell_sites.iloc[positions].loc[finite].reset_index(drop=True)
+    covariates = covariates[finite]
     candidate_profiles = candidate_profiles[finite]
     candidate_scores = candidate_scores[finite]
     baseline_scores = baseline_scores[finite]
@@ -131,6 +196,25 @@ def render_cell(
     candidate_auroc = float(roc_auc_score(labels, candidate_scores))
     baseline_auprc = float(average_precision_score(labels, baseline_scores))
     candidate_auprc = float(average_precision_score(labels, candidate_scores))
+    chromosome_groups = report_sites["TFBS_chr"].astype(str).to_numpy()
+    residual_baseline_scores = crossfit_covariate_residuals(
+        baseline_scores, covariates, chromosome_groups
+    )
+    residual_candidate_scores = crossfit_covariate_residuals(
+        candidate_scores, covariates, chromosome_groups
+    )
+    residual_baseline_auroc = float(
+        roc_auc_score(labels, residual_baseline_scores)
+    )
+    residual_candidate_auroc = float(
+        roc_auc_score(labels, residual_candidate_scores)
+    )
+    residual_baseline_auprc = float(
+        average_precision_score(labels, residual_baseline_scores)
+    )
+    residual_candidate_auprc = float(
+        average_precision_score(labels, residual_candidate_scores)
+    )
 
     figure = plt.figure(figsize=(13.2, 8.2))
     grid = figure.add_gridspec(
@@ -225,6 +309,10 @@ def render_cell(
         f"Paired sites: {len(labels):,} ({int(labels.sum()):,} ChIP-positive)\n\n"
         f"Delta AUROC 95% CI: {auroc_ci}\n"
         f"Delta AUPRC 95% CI: {auprc_ci}\n\n"
+        "Post-hoc covariate sensitivity\n"
+        "Leave-one-chromosome-out removal of motif score and accessibility:\n"
+        f"Delta AUROC {residual_candidate_auroc - residual_baseline_auroc:+.3f}; "
+        f"AUPRC {residual_candidate_auprc - residual_baseline_auprc:+.3f}\n\n"
         "Full-depth transfer\n"
         f"{_replicate_text(replicate_panel, cell, tf)}\n\n"
         "Interpretation\n"
@@ -281,6 +369,12 @@ def render_cell(
         "baseline_auprc": baseline_auprc,
         "candidate_auprc": candidate_auprc,
         "delta_auprc": candidate_auprc - baseline_auprc,
+        "residual_baseline_auroc": residual_baseline_auroc,
+        "residual_candidate_auroc": residual_candidate_auroc,
+        "residual_delta_auroc": residual_candidate_auroc - residual_baseline_auroc,
+        "residual_baseline_auprc": residual_baseline_auprc,
+        "residual_candidate_auprc": residual_candidate_auprc,
+        "residual_delta_auprc": residual_candidate_auprc - residual_baseline_auprc,
         "delta_auroc_ci": auroc_ci,
         "delta_auprc_ci": auprc_ci,
         "replicate_evidence": _replicate_text(replicate_panel, cell, tf),
@@ -340,6 +434,7 @@ def main(argv: list[str] | None = None) -> int:
         "Concise held-out before/after reports for a TF-specific fp-tools research candidate.\n"
         "The conventional comparator is the current TOBIAS-style DWM footprint score.\n"
         "The candidate was frozen before chr19-22/X were evaluated.\n"
+        "The covariate-residual sensitivity analysis is post hoc and does not use ChIP labels for fitting.\n"
         "Scope: TF-specific research evidence only; no main-branch or package-default change.\n",
         encoding="utf-8",
     )
