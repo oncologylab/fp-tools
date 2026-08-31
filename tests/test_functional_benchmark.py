@@ -15,11 +15,13 @@ from evaluate_functional_footprints import (  # noqa: E402
     build_unlabeled_training_sites,
     chromosome_split,
     classify_failures,
+    cluster_functional_phenotypes,
     derive_parametric_expected_profiles,
     fit_supervised_ceiling,
     residual_score,
     site_hashes,
     stable_seed,
+    summarize_aggregate_profiles,
     validate_sites,
 )
 from fp_tools.tools.parametric_bias import (  # noqa: E402
@@ -242,3 +244,41 @@ def test_parametric_expected_profiles_preserve_site_totals(tmp_path: Path) -> No
         flank=50,
     )
     assert np.array_equal(cached, expected)
+
+
+def test_aggregate_profile_summary_and_unsupervised_clustering() -> None:
+    rng = np.random.default_rng(22)
+    positions = np.arange(-50, 51)
+    expected = np.full((120, len(positions)), 4.0)
+    observed = rng.poisson(expected).astype(float)
+    labels = np.repeat([0, 1], 60)
+    observed[labels == 1, 45:56] *= 0.2
+    aggregate_frames = []
+    descriptor_frames = []
+    for index, tf in enumerate(("A", "B", "C", "D")):
+        aggregate, descriptors = summarize_aggregate_profiles(
+            observed,
+            expected,
+            labels,
+            split="validation",
+            cell="K562",
+            tf=tf,
+            motif_family=f"family_{index}",
+            correction="DWM",
+            dispersion=0.05,
+            positions=positions,
+            bootstraps=20,
+            seed=5,
+        )
+        aggregate_frames.append(aggregate)
+        descriptor_frames.append(descriptors)
+    aggregates = pd.concat(aggregate_frames, ignore_index=True)
+    descriptors = pd.concat(descriptor_frames, ignore_index=True)
+    positive = descriptors[descriptors["group"] == "chip_positive"]
+    negative = descriptors[descriptors["group"] == "matched_negative"]
+    assert positive["depletion"].mean() > negative["depletion"].mean()
+    assert {"mean", "lower_95", "upper_95"}.issubset(aggregates.columns)
+    clusters = cluster_functional_phenotypes(aggregates, descriptors, maximum_clusters=3)
+    assert len(clusters) == 4
+    assert clusters["functional_cluster"].notna().all()
+    assert clusters["phenotype"].notna().all()

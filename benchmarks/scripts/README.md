@@ -477,3 +477,12 @@ The output records input hashes, frozen model choices, per-site probabilities,
 per-TF metrics, and explicit assay-, bias-, correction-, shape-, and
 power-limitation diagnoses. Large profile caches and fitted benchmark outputs
 remain ignored under `benchmarks/results/`.
+
+It also writes `functional_aggregate_profiles.tsv.gz` with deterministic 95%
+bootstrap bands, `functional_profile_descriptors.tsv` with center depletion,
+width, shoulder distance, asymmetry, and periodicity, and
+`functional_phenotype_clusters.tsv`. The clustering is based on the observed
+functional shape rather than motif-family labels. The multi-page
+`functional_aggregate_panels_blinded.pdf` compares matched groups across every
+correction; its group key is stored separately so visual review can be done
+before labels are revealed.

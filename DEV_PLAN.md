@@ -161,6 +161,11 @@ a separately planned breaking release explicitly changes the contract.
   motifs are orientation-aligned, and exposes combined, shared-strand, and
   antisymmetric signed-deviance channels. This enables genuine TF-specific
   asymmetry experiments rather than inferring asymmetry from a combined track.
+- Functional evaluation now produces bootstrap-banded aggregate profiles,
+  explicit depth/width/shoulder/asymmetry/periodicity descriptors, blinded
+  multi-correction PDF panels, and unsupervised phenotype clusters learned
+  from normalized residual curves rather than motif-family names. Numeric
+  discrimination is therefore reviewed alongside visible footprint shape.
 
 ## Current ENCODE Resource
 

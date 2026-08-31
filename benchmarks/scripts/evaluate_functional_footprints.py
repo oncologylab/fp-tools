@@ -10,6 +10,7 @@ separate supervised information ceiling.  Test data cannot be scored unless
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 from hashlib import blake2b, sha256
 import json
 from pathlib import Path
@@ -19,8 +20,14 @@ from time import perf_counter
 import numpy as np
 import pandas as pd
 from sklearn.impute import SimpleImputer
+from sklearn.cluster import AgglomerativeClustering
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score,
+    brier_score_loss,
+    roc_auc_score,
+    silhouette_score,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -38,6 +45,7 @@ from fp_tools.tools.functional_footprints import (  # noqa: E402
     deviance_profiles,
     normalize_functional_profiles,
     orient_profiles,
+    profile_descriptors,
 )
 from fp_tools.tools.parametric_bias import (  # noqa: E402
     ConditionalSequenceBiasModel,
@@ -374,6 +382,249 @@ def _score_to_probability(values: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-np.clip((scores - location) / scale, -30.0, 30.0)))
 
 
+def _mean_confidence_band(
+    profiles: np.ndarray,
+    *,
+    bootstraps: int,
+    seed: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    values = np.asarray(profiles, dtype=float)
+    if values.ndim != 2 or len(values) == 0:
+        raise ValueError("profiles must contain at least one two-dimensional row")
+    mean = np.mean(values, axis=0)
+    if len(values) == 1 or bootstraps < 2:
+        return mean, mean.copy(), mean.copy()
+    rng = np.random.default_rng(seed)
+    sampled_means = np.empty((bootstraps, values.shape[1]), dtype=np.float32)
+    for index in range(bootstraps):
+        sampled = rng.integers(0, len(values), size=len(values))
+        sampled_means[index] = np.mean(values[sampled], axis=0)
+    lower, upper = np.quantile(sampled_means, [0.025, 0.975], axis=0)
+    return mean, lower, upper
+
+
+def summarize_aggregate_profiles(
+    observed: np.ndarray,
+    expected: np.ndarray,
+    labels: np.ndarray,
+    *,
+    split: str,
+    cell: str,
+    tf: str,
+    motif_family: str,
+    correction: str,
+    dispersion: float,
+    positions: np.ndarray,
+    bootstraps: int,
+    seed: int,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Summarize matched positive/negative functional profiles with bands."""
+
+    observed = np.asarray(observed, dtype=float)
+    expected = np.asarray(expected, dtype=float)
+    labels = np.asarray(labels, dtype=int)
+    if observed.shape != expected.shape or observed.ndim != 2 or len(labels) != len(observed):
+        raise ValueError("observed, expected, and labels have incompatible dimensions")
+    residual = deviance_profiles(observed, expected, dispersion)
+    normalized = normalize_functional_profiles(residual, positions)
+    signals = {
+        "observed": observed,
+        "expected": expected,
+        "deviance": residual,
+        "normalized_deviance": normalized,
+    }
+    profile_rows: list[dict[str, object]] = []
+    descriptor_rows: list[dict[str, object]] = []
+    for label, group_name in ((0, "matched_negative"), (1, "chip_positive")):
+        selected = labels == label
+        if not np.any(selected):
+            continue
+        for signal_name, profiles in signals.items():
+            mean, lower, upper = _mean_confidence_band(
+                profiles[selected],
+                bootstraps=bootstraps,
+                seed=stable_seed(cell, tf, correction, split, group_name, signal_name, seed=seed),
+            )
+            for position, mean_value, low_value, high_value in zip(
+                positions, mean, lower, upper
+            ):
+                profile_rows.append(
+                    {
+                        "split": split,
+                        "cell": cell,
+                        "tf": tf,
+                        "motif_family": motif_family,
+                        "correction": correction,
+                        "group": group_name,
+                        "signal": signal_name,
+                        "sites": int(np.sum(selected)),
+                        "position": int(position),
+                        "mean": float(mean_value),
+                        "lower_95": float(low_value),
+                        "upper_95": float(high_value),
+                    }
+                )
+            if signal_name == "normalized_deviance":
+                descriptors = profile_descriptors(mean, positions)
+                descriptor_rows.append(
+                    {
+                        "split": split,
+                        "cell": cell,
+                        "tf": tf,
+                        "motif_family": motif_family,
+                        "correction": correction,
+                        "group": group_name,
+                        "sites": int(np.sum(selected)),
+                        **asdict(descriptors),
+                    }
+                )
+    return pd.DataFrame(profile_rows), pd.DataFrame(descriptor_rows)
+
+
+def cluster_functional_phenotypes(
+    aggregate_profiles: pd.DataFrame,
+    descriptors: pd.DataFrame,
+    *,
+    maximum_clusters: int = 8,
+) -> pd.DataFrame:
+    """Cluster ChIP-positive aggregate shapes without motif-family labels."""
+
+    if aggregate_profiles.empty or descriptors.empty:
+        return pd.DataFrame()
+    selected = aggregate_profiles[
+        (aggregate_profiles["group"] == "chip_positive")
+        & (aggregate_profiles["signal"] == "normalized_deviance")
+        & (aggregate_profiles["split"] == "validation")
+    ].copy()
+    keys = ["cell", "tf", "motif_family", "correction"]
+    matrix = selected.pivot_table(index=keys, columns="position", values="mean")
+    if matrix.empty:
+        return pd.DataFrame()
+    values = matrix.to_numpy(dtype=float)
+    values = np.nan_to_num(values, nan=0.0)
+    values -= values.mean(axis=1, keepdims=True)
+    scale = np.sqrt(np.mean(np.square(values), axis=1, keepdims=True))
+    values /= np.maximum(scale, 1e-8)
+    n_rows = len(values)
+    if n_rows < 4:
+        labels = np.zeros(n_rows, dtype=int)
+        selected_k = 1
+        selected_silhouette = np.nan
+    else:
+        candidates = []
+        for n_clusters in range(2, min(maximum_clusters, n_rows - 1) + 1):
+            fitted = AgglomerativeClustering(n_clusters=n_clusters, linkage="ward").fit_predict(values)
+            score = silhouette_score(values, fitted, metric="euclidean")
+            candidates.append((float(score), n_clusters, fitted))
+        selected_silhouette, selected_k, labels = max(candidates, key=lambda item: item[0])
+    output = matrix.index.to_frame(index=False)
+    output["functional_cluster"] = labels.astype(int) + 1
+    output["selected_clusters"] = int(selected_k)
+    output["silhouette"] = selected_silhouette
+    descriptor_subset = descriptors[
+        (descriptors["group"] == "chip_positive")
+        & (descriptors["split"] == "validation")
+    ]
+    output = output.merge(descriptor_subset, on=keys, how="left", suffixes=("", "_descriptor"))
+    output["phenotype"] = "canonical"
+    if "depletion" in output:
+        weak_threshold = float(output["depletion"].quantile(0.25))
+        output.loc[output["depletion"] <= weak_threshold, "phenotype"] = "weak_or_flat"
+    if "width" in output:
+        output.loc[(output["phenotype"] == "canonical") & (output["width"] <= 12), "phenotype"] = "narrow"
+        output.loc[(output["phenotype"] == "canonical") & (output["width"] >= 30), "phenotype"] = "broad"
+    if "asymmetry" in output:
+        output.loc[np.abs(output["asymmetry"]) >= 0.35, "phenotype"] = "asymmetric"
+    if "shoulders" in output and "depletion" in output:
+        output.loc[
+            (output["phenotype"] == "canonical")
+            & (np.abs(output["shoulders"]) > np.abs(output["depletion"])),
+            "phenotype",
+        ] = "shoulder_dominant"
+    return output
+
+
+def render_blinded_aggregate_panels(
+    aggregate_profiles: pd.DataFrame,
+    metrics: pd.DataFrame,
+    output: str | Path,
+    key_output: str | Path,
+    *,
+    seed: int,
+) -> None:
+    """Render one page per cell/TF with blinded positive/negative group names."""
+
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    selected = aggregate_profiles[
+        (aggregate_profiles["signal"] == "normalized_deviance")
+        & (aggregate_profiles["split"] == "validation")
+    ]
+    key_rows: list[dict[str, str]] = []
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with PdfPages(output) as pdf:
+        for (cell, tf), task in selected.groupby(["cell", "tf"], sort=True):
+            corrections = sorted(task["correction"].unique())
+            figure, axes = plt.subplots(
+                1,
+                len(corrections),
+                figsize=(max(5.2, 4.6 * len(corrections)), 4.1),
+                squeeze=False,
+                sharey=True,
+            )
+            swap = bool(stable_seed(cell, tf, "blind", seed=seed) % 2)
+            group_names = (
+                {"chip_positive": "Group B", "matched_negative": "Group A"}
+                if swap
+                else {"chip_positive": "Group A", "matched_negative": "Group B"}
+            )
+            for actual, blinded in group_names.items():
+                key_rows.append({"cell": str(cell), "tf": str(tf), "blinded_group": blinded, "actual_group": actual})
+            for axis, correction in zip(axes[0], corrections):
+                panel = task[task["correction"] == correction]
+                for actual, color in (("chip_positive", "#C23B33"), ("matched_negative", "#2A6FBB")):
+                    curve = panel[panel["group"] == actual].sort_values("position")
+                    if curve.empty:
+                        continue
+                    x = curve["position"].to_numpy(dtype=float)
+                    mean = curve["mean"].to_numpy(dtype=float)
+                    lower = curve["lower_95"].to_numpy(dtype=float)
+                    upper = curve["upper_95"].to_numpy(dtype=float)
+                    axis.plot(x, mean, color=color, linewidth=1.8, label=group_names[actual])
+                    axis.fill_between(x, lower, upper, color=color, alpha=0.18, linewidth=0)
+                axis.axvline(0, color="#666666", linewidth=0.7, linestyle="--")
+                axis.axhline(0, color="#999999", linewidth=0.6)
+                axis.set_title(str(correction))
+                axis.set_xlabel("Position from motif center (bp)")
+                candidate = metrics[
+                    (metrics["split"] == "validation")
+                    & (metrics["cell"] == cell)
+                    & (metrics["tf"] == tf)
+                    & (metrics["correction"] == correction)
+                    & (metrics["method"].isin(LABEL_FREE_MODELS))
+                ].sort_values(["auprc", "auroc"], ascending=False)
+                if len(candidate):
+                    winner = candidate.iloc[0]
+                    axis.text(
+                        0.02,
+                        0.02,
+                        f"{winner.method}: AUROC {winner.auroc:.3f}, AUPRC {winner.auprc:.3f}",
+                        transform=axis.transAxes,
+                        fontsize=8,
+                    )
+            axes[0, 0].set_ylabel("Normalized signed-deviance shape")
+            handles, labels = axes[0, 0].get_legend_handles_labels()
+            if handles:
+                figure.legend(handles, labels, loc="upper center", ncol=2, frameon=False)
+            figure.suptitle(f"{cell} — {tf} (blinded matched groups)", y=1.01)
+            figure.tight_layout()
+            pdf.savefig(figure, bbox_inches="tight")
+            plt.close(figure)
+    pd.DataFrame(key_rows).drop_duplicates().to_csv(key_output, sep="\t", index=False)
+
+
 def fit_supervised_ceiling(
     train_residual: np.ndarray,
     validation_residual: np.ndarray,
@@ -643,7 +894,8 @@ def evaluate(
     minimum_evaluation_sites: int,
     seed: int,
     genome: Path | None = None,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    profile_bootstraps: int = 200,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     tasks = pd.DataFrame(study["tasks"])
     tasks = tasks[tasks["split"] == "development"].copy()
     positions = np.arange(-flank, flank + 1, dtype=float)
@@ -653,6 +905,8 @@ def evaluate(
     metric_rows: list[dict[str, object]] = []
     score_rows: list[pd.DataFrame] = []
     frozen_rows: list[dict[str, object]] = []
+    aggregate_frames: list[pd.DataFrame] = []
+    descriptor_frames: list[pd.DataFrame] = []
 
     evaluation_sets: list[tuple[str, pd.DataFrame]] = [("validation", development_sites)]
     if test_sites is not None:
@@ -823,6 +1077,22 @@ def evaluate(
                         observed, expected = test_profiles[0][indexes], test_profiles[1][indexes]
                     selected_sites = cell_sites.iloc[indexes].reset_index(drop=True)
                     labels = selected_sites["chip_label"].to_numpy(dtype=int)
+                    aggregate, profile_descriptors_frame = summarize_aggregate_profiles(
+                        observed,
+                        expected,
+                        labels,
+                        split=split,
+                        cell=cell,
+                        tf=tf,
+                        motif_family=family,
+                        correction=correction,
+                        dispersion=dispersion,
+                        positions=positions,
+                        bootstraps=profile_bootstraps,
+                        seed=seed,
+                    )
+                    aggregate_frames.append(aggregate)
+                    descriptor_frames.append(profile_descriptors_frame)
 
                     for name, model in fitted.items():
                         probabilities = _predict_label_free(
@@ -938,7 +1208,9 @@ def evaluate(
     metrics = pd.DataFrame(metric_rows)
     scores = pd.concat(score_rows, ignore_index=True) if score_rows else pd.DataFrame()
     frozen = pd.DataFrame(frozen_rows)
-    return metrics, scores, frozen
+    aggregates = pd.concat(aggregate_frames, ignore_index=True) if aggregate_frames else pd.DataFrame()
+    descriptors = pd.concat(descriptor_frames, ignore_index=True) if descriptor_frames else pd.DataFrame()
+    return metrics, scores, frozen, aggregates, descriptors
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -967,11 +1239,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--minimum-evaluation-sites", type=int, default=100)
     parser.add_argument("--flank", type=int, default=100)
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--profile-bootstraps", type=int, default=200)
     args = parser.parse_args(argv)
     if args.test_sites is not None and not args.unlock_test:
         raise SystemExit("test evaluation requires --unlock-test after the model manifest is frozen")
     if args.maximum_unlabeled_sites_per_tf < 100:
         raise SystemExit("--maximum-unlabeled-sites-per-tf must be at least 100")
+    if args.profile_bootstraps < 2:
+        raise SystemExit("--profile-bootstraps must be at least 2")
 
     study = json.loads(args.study.read_text(encoding="utf-8"))
     development_sites = validate_sites(pd.read_csv(args.development_sites, sep="\t"), args.development_sites)
@@ -992,7 +1267,7 @@ def main(argv: list[str] | None = None) -> int:
     if not required_tracks.issubset(tracks.columns):
         raise SystemExit("tracks TSV must contain cell, model, track, and signal")
     args.outdir.mkdir(parents=True, exist_ok=True)
-    metrics, scores, frozen = evaluate(
+    metrics, scores, frozen, aggregates, descriptors = evaluate(
         study,
         development_sites,
         test_sites,
@@ -1006,10 +1281,23 @@ def main(argv: list[str] | None = None) -> int:
         minimum_evaluation_sites=args.minimum_evaluation_sites,
         seed=args.seed,
         genome=args.genome,
+        profile_bootstraps=args.profile_bootstraps,
     )
     metrics.to_csv(args.outdir / "functional_metrics.tsv", sep="\t", index=False)
     scores.to_csv(args.outdir / "functional_site_scores.tsv.gz", sep="\t", index=False)
     frozen.to_csv(args.outdir / "frozen_functional_models.tsv", sep="\t", index=False)
+    aggregates.to_csv(args.outdir / "functional_aggregate_profiles.tsv.gz", sep="\t", index=False)
+    descriptors.to_csv(args.outdir / "functional_profile_descriptors.tsv", sep="\t", index=False)
+    clusters = cluster_functional_phenotypes(aggregates, descriptors)
+    clusters.to_csv(args.outdir / "functional_phenotype_clusters.tsv", sep="\t", index=False)
+    if len(aggregates):
+        render_blinded_aggregate_panels(
+            aggregates,
+            metrics,
+            args.outdir / "functional_aggregate_panels_blinded.pdf",
+            args.outdir / "functional_aggregate_panels_blinding_key.tsv",
+            seed=args.seed,
+        )
     classification = classify_failures(metrics)
     classification.to_csv(args.outdir / "functional_failure_classification.tsv", sep="\t", index=False)
     manifest = {
@@ -1035,8 +1323,12 @@ def main(argv: list[str] | None = None) -> int:
         "minimum_evaluation_sites": args.minimum_evaluation_sites,
         "flank": args.flank,
         "seed": args.seed,
+        "profile_bootstraps": args.profile_bootstraps,
         "metrics_rows": int(len(metrics)),
         "score_rows": int(len(scores)),
+        "aggregate_profile_rows": int(len(aggregates)),
+        "descriptor_rows": int(len(descriptors)),
+        "cluster_rows": int(len(clusters)),
     }
     (args.outdir / "functional_benchmark_manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
