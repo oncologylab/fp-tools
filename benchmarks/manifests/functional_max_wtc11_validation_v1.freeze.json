@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "study_id": "functional_max_wtc11_validation_v1",
+  "status": "frozen_before_label_content_download",
+  "frozen_at": "2026-08-31T15:54:28-04:00",
+  "selection_signature": "2210bc64346c7ab6f053ac68b4177c41e925e00ebf964d2cdacf73e94807c340",
+  "selection_signature_fields": "WTC11|MAX|MA0058.4|ENCSR541KFY|ENCFF240QKT|ENCFF127KFG|ENCFF121CAA|ENCSR349FYX|ENCFF760NBK|MT_LOG81_4m4|anchored-fda.shared_strand_residual.pool_family.anchor_2p0|DWM|fda.variance_0p95.components_20|chr1-15|chr16-18|chr19-22,X|seed2026",
+  "rationale": "Untouched external cell context with released ENCODE ATAC-seq and independent MAX ChIP-seq. WTC11 data and labels were not used to select the candidate route.",
+  "assembly": "GRCh38",
+  "cell": "WTC11",
+  "task": {
+    "tf": "MAX",
+    "motif_id": "MA0058.4",
+    "motif_family": "MYC_MAX",
+    "role": "external_locked"
+  },
+  "chromosome_split": {
+    "train": ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15"],
+    "validation": ["chr16", "chr17", "chr18"],
+    "test": ["chr19", "chr20", "chr21", "chr22", "chrX"]
+  },
+  "site_selection": {
+    "motif_database": "jaspar2026_vertebrates",
+    "motif_pvalue": 0.0001,
+    "maximum_unlabeled_training_sites": 10000,
+    "validation_chromosomes_used": false,
+    "all_test_sites_retained": true,
+    "random_seed": 2026
+  },
+  "candidate": {
+    "bias_configuration": "MT_LOG81_4m4",
+    "bias_model": "benchmarks/results/footprint_parametric_v1/mitochondrial_depth_screen_s2026/ensembles/pooled.mitochondrial.cross_cell_pooled.loglinear81.shift_4_-4.l2_0p001.depth_full.seed_ensemble.npz",
+    "bias_model_sha256": "446b44977f62d6221a9e316e605093f96debae56a24174286941674510e89e55",
+    "bias_model_bytes": 31326,
+    "read_shift": [4, -4],
+    "candidate_id": "anchored-fda.shared_strand_residual.pool_family.anchor_2p0",
+    "training_labels_used": false,
+    "selection_history": "Selected from K562 and HepG2 development data, then observed post hoc in GM12878; frozen unchanged for WTC11."
+  },
+  "reference": {
+    "bias_configuration": "DWM",
+    "read_shift": [4, -5],
+    "candidate_id": "fda.variance_0p95.components_20",
+    "description": "Conventional TOBIAS-style DWM correction with the development-selected functional detector. A calibrated center score is reported as a secondary comparator."
+  },
+  "assay_inputs": {
+    "atac_experiment": "ENCSR541KFY",
+    "atac_bams": [
+      {
+        "replicate": 1,
+        "accession": "ENCFF240QKT",
+        "bytes": 3172006980,
+        "md5": "8633bae7b81d2551d94d39ace52e72f4"
+      },
+      {
+        "replicate": 2,
+        "accession": "ENCFF127KFG",
+        "bytes": 3312262005,
+        "md5": "d7d632962031598ab62e676b97aade24"
+      }
+    ],
+    "atac_peaks": {
+      "accession": "ENCFF121CAA",
+      "output_type": "conservative IDR thresholded peaks",
+      "bytes": 3780562,
+      "md5": "aba51e06761ee260509f005bb9eea6fd"
+    }
+  },
+  "evaluation_label": {
+    "chip_experiment": "ENCSR349FYX",
+    "chip_peaks": "ENCFF760NBK",
+    "output_type": "IDR thresholded peaks",
+    "bytes": 537219,
+    "md5": "7d628edad5bd477fdf6cf8965200a05d",
+    "positive_summit_distance_bp": 100,
+    "negative_peak_distance_bp": 500,
+    "minimum_sites_per_class": 200,
+    "matching_covariates": ["motif_score", "log_accessibility", "gc_fraction", "peak_position_abs"]
+  },
+  "primary_endpoints": {
+    "minimum_auroc_gain": 0.03,
+    "minimum_relative_auprc_gain": 0.10,
+    "minimum_bootstrap_probability_positive": 0.95,
+    "resampling_unit": "chromosome",
+    "bootstrap_replicates": 2000,
+    "replicate_direction_must_agree": true,
+    "pooled_result_is_primary": true
+  },
+  "reporting": {
+    "no_route_tuning_after_label_open": true,
+    "failed_or_null_result_must_be_retained": true,
+    "box_pdf_allowed_only_if_primary_endpoints_pass": true,
+    "pdf_comparator_label": "Conventional DWM (TOBIAS-style)"
+  },
+  "code_commit_at_freeze": "8b8987135bb2c45b998a5533211d1132c72b95c7"
+}

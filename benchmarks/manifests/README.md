@@ -58,3 +58,10 @@ factorial. The compact policy and holdout-route tables make the fail-closed
 decision executable: only families passing every development gate use a new
 route, and unseen or failed families retain DWM. The freeze fingerprints its
 source metrics and explicitly precedes all locked GM12878/IMR-90 label scoring.
+
+`functional_max_wtc11_validation_v1.freeze.json` preregisters a subsequent,
+untouched WTC11/MAX transfer test after the GM12878 diagnostic exposed a
+promising anchored LOG81 route. Its companion TSV pins two ENCODE ATAC-seq
+BAMs, the label-free ATAC peak universe, and the independent MAX ChIP-seq peak
+label. The candidate, DWM comparator, chromosome split, matching covariates,
+and pass thresholds are fixed before the ChIP peak content is downloaded.
