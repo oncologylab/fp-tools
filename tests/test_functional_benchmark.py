@@ -30,7 +30,9 @@ from evaluate_functional_template_transfer import (  # noqa: E402
     training_indexes,
 )
 from evaluate_functional_depth_matrix import (  # noqa: E402
+    calibrated_scalar_probability,
     classify_depth_limits,
+    completed_correction_jobs,
     discover_signal_matrix,
 )
 from fp_tools.tools.parametric_bias import (  # noqa: E402
@@ -320,6 +322,54 @@ def test_depth_signal_discovery_requires_raw_and_expected_tracks(tmp_path: Path)
         discover_signal_matrix(plan, depths=("25000000",))
 
 
+def test_depth_signal_discovery_excludes_files_still_being_written(tmp_path: Path) -> None:
+    outdir = tmp_path / "fp_tools_dwm"
+    outdir.mkdir()
+    prefix = "K562_rep1.25m.s2026"
+    for suffix in ("corrected", "uncorrected", "expected"):
+        (outdir / f"{prefix}_{suffix}.bw").write_bytes(b"partial-or-complete")
+    job_id = "correct:K562_rep1.25m.s2026:fp_tools_dwm"
+    plan = pd.DataFrame(
+        [
+            {
+                "job_id": job_id,
+                "stage": "correction",
+                "sample": "K562_rep1",
+                "cell": "K562",
+                "depth": "25000000",
+                "seed": 2026,
+                "correction": "fp_tools_dwm",
+                "expected_output": str(outdir / f"{prefix}_corrected.bw"),
+            }
+        ]
+    )
+    running = pd.DataFrame(
+        [{"job_id": job_id, "stage": "correction", "state": "running"}]
+    )
+    assert discover_signal_matrix(
+        plan,
+        depths=("25000000",),
+        require_complete=False,
+        completed_jobs=completed_correction_jobs(running),
+    ).empty
+    completed = pd.concat(
+        [
+            running,
+            pd.DataFrame(
+                [{"job_id": job_id, "stage": "correction", "state": "completed"}]
+            ),
+        ],
+        ignore_index=True,
+    )
+    assert len(
+        discover_signal_matrix(
+            plan,
+            depths=("25000000",),
+            completed_jobs=completed_correction_jobs(completed),
+        )
+    ) == 1
+
+
 def test_depth_classification_separates_power_and_assay_limits() -> None:
     rows = []
     for tf, low, high in (("POWER", 0.52, 0.61), ("ASSAY", 0.53, 0.54), ("DETECT", 0.60, 0.70)):
@@ -340,6 +390,18 @@ def test_depth_classification_separates_power_and_assay_limits() -> None:
     assert classified.loc["POWER", "classification"] == "power_limited"
     assert classified.loc["ASSAY", "classification"] == "assay_limited_or_motif_ambiguous"
     assert classified.loc["DETECT", "classification"] == "shape_detectable_at_high_depth"
+
+
+def test_scalar_calibration_learns_tf_specific_direction() -> None:
+    training_scores = np.asarray([3.0, 2.0, -2.0, -3.0])
+    labels = np.asarray([0, 0, 1, 1])
+    probabilities, direction = calibrated_scalar_probability(
+        training_scores,
+        labels,
+        np.asarray([4.0, -4.0]),
+    )
+    assert direction == -1.0
+    assert probabilities[1] > probabilities[0]
 
 
 def test_failure_classification_separates_assay_and_shape_limits() -> None:
