@@ -479,6 +479,14 @@ bootstrap intervals, and three-biological-replicate transfer. Their scope is
 explicitly CTCF-specific; this upload does not change the package default or
 override the external-validation requirements for a general method.
 
+A post-hoc, label-free sensitivity analysis fit score-to-covariate regressions
+on four chromosomes and residualized the fifth, rotating across chr19--22/X.
+After removing motif-score, accessibility, and central-accessibility effects,
+the TF-specific geometry still improved AUROC/AUPRC by +0.071/+0.069 in HepG2
+and +0.091/+0.112 in K562. The concise Box PDFs and metrics table now include
+this result, explicitly labeled post hoc; it strengthens the shape
+interpretation without converting the CTCF result into a universal claim.
+
 ## Depth-matrix artifact integrity audit
 
 An incremental 25M refresh exposed a benchmark-infrastructure failure before
