@@ -23,6 +23,7 @@ false-footprint rates can be checked for replicate consistency before pooling.
 - `ensemble_parametric_bias_models.py`: combine compatible seed fits into one checksummed geometric coefficient ensemble for prespecified crossed controls.
 - `render_functional_aggregate_comparison.py`: render blinded DWM-versus-strand per-TF aggregate curves with bootstrap confidence bands and an explicit blinding key.
 - `evaluate_strand_label_free_models.py`: fit count spline/GP, FDA, and hybrid mixtures on separate label-free strand artifacts and score only development validation labels.
+- `analyze_strand_bias_factorial.py`: compare all four SELMA/log-linear and +4/−4/+4/−5 combinations at common detector settings, with per-TF model, shift, and interaction effects.
 - `build_footprint_ablation_plan.py`: write the depth, correction, and method task matrices from the locked study specification.
 - `run_footprint_ablation_plan.py`: execute the signal plan with dependency, resume, and expected-output checks.
 - `summarize_footprint_ablation.py`: collapse depth randomizations and report depth plateaus and correction gains.
