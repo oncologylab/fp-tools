@@ -769,6 +769,107 @@ class FunctionalTemplateDetector:
         return expit(self.decision_function(profiles))
 
 
+class MultichannelFunctionalTemplateDetector:
+    """Combine independently smoothed strand/channel templates shape-only.
+
+    Each functional channel is detrended and scored by a
+    :class:`FunctionalTemplateDetector`. A small shrinkage-LDA layer then
+    combines the channel scores. This preserves channel-specific smoothness and
+    avoids smoothing across artificial boundaries in a concatenated vector.
+    """
+
+    def __init__(
+        self,
+        positions: np.ndarray,
+        *,
+        smoother: str = "spline",
+        window_limit: float = 50.0,
+        covariance_shrinkage: float = 0.5,
+        **detector_options: Any,
+    ):
+        if not 0 <= covariance_shrinkage <= 1:
+            raise ValueError("covariance_shrinkage must be between zero and one")
+        self.positions = np.asarray(positions, dtype=np.float64)
+        self.smoother = smoother
+        self.window_limit = float(window_limit)
+        self.covariance_shrinkage = float(covariance_shrinkage)
+        self.detector_options = dict(detector_options)
+
+    @staticmethod
+    def _validate_channels(profiles: np.ndarray, positions: np.ndarray) -> np.ndarray:
+        values = np.asarray(profiles, dtype=np.float64)
+        if values.ndim != 3 or values.shape[2] != len(positions) or values.shape[1] < 1:
+            raise ValueError("profiles must have shape (sites, channels, positions)")
+        return values
+
+    def fit(
+        self,
+        profiles: np.ndarray,
+        labels: Iterable[int | bool],
+        *,
+        sample_weight: np.ndarray | None = None,
+    ) -> "MultichannelFunctionalTemplateDetector":
+        values = self._validate_channels(profiles, self.positions)
+        group = np.asarray(list(labels), dtype=bool)
+        if group.shape != (len(values),) or np.sum(group) < 2 or np.sum(~group) < 2:
+            raise ValueError("labels must define at least two sites in each class")
+        self.channel_models_ = []
+        channel_scores = []
+        for channel in range(values.shape[1]):
+            model = FunctionalTemplateDetector(
+                self.positions,
+                smoother=self.smoother,
+                window_limit=self.window_limit,
+                **self.detector_options,
+            ).fit(values[:, channel, :], group, sample_weight=sample_weight)
+            self.channel_models_.append(model)
+            channel_scores.append(model.decision_function(values[:, channel, :]))
+        score_matrix = np.column_stack(channel_scores)
+        positive_mean = np.mean(score_matrix[group], axis=0)
+        negative_mean = np.mean(score_matrix[~group], axis=0)
+        positive_covariance = np.atleast_2d(np.cov(score_matrix[group], rowvar=False))
+        negative_covariance = np.atleast_2d(np.cov(score_matrix[~group], rowvar=False))
+        pooled = 0.5 * (positive_covariance + negative_covariance)
+        diagonal = np.diag(np.diag(pooled))
+        covariance = (
+            (1.0 - self.covariance_shrinkage) * pooled
+            + self.covariance_shrinkage * diagonal
+            + 1e-4 * np.eye(values.shape[1])
+        )
+        discriminant = np.linalg.solve(covariance, positive_mean - negative_mean)
+        norm = float(np.sqrt(max(np.dot(discriminant, covariance @ discriminant), 0.0)))
+        if not np.isfinite(norm) or norm <= 1e-10:
+            raise ValueError("channels do not define a non-zero discriminant")
+        discriminant /= norm
+        midpoint = 0.5 * float(np.dot(positive_mean + negative_mean, discriminant))
+        combined = score_matrix @ discriminant - midpoint
+        scale = float(np.std(combined))
+        self.channel_discriminant_ = discriminant
+        self.channel_midpoint_ = midpoint
+        self.score_scale_ = scale if np.isfinite(scale) and scale > 1e-8 else 1.0
+        self.channel_positive_mean_ = positive_mean
+        self.channel_negative_mean_ = negative_mean
+        self.channel_covariance_ = covariance
+        return self
+
+    def decision_function(self, profiles: np.ndarray) -> np.ndarray:
+        if not hasattr(self, "channel_models_"):
+            raise RuntimeError("fit must be called before prediction")
+        values = self._validate_channels(profiles, self.positions)
+        if values.shape[1] != len(self.channel_models_):
+            raise ValueError("prediction channel count differs from fitted model")
+        scores = np.column_stack(
+            [
+                model.decision_function(values[:, channel, :])
+                for channel, model in enumerate(self.channel_models_)
+            ]
+        )
+        return (scores @ self.channel_discriminant_ - self.channel_midpoint_) / self.score_scale_
+
+    def predict_proba(self, profiles: np.ndarray) -> np.ndarray:
+        return expit(self.decision_function(profiles))
+
+
 def site_accessibility_background(
     observed_profiles: np.ndarray,
     expected_profiles: np.ndarray,

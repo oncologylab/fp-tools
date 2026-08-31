@@ -13,6 +13,7 @@ from fp_tools.tools.functional_footprints import (
     ExactAdditiveGPSmoother,
     FdaMixtureModel,
     FunctionalTemplateDetector,
+    MultichannelFunctionalTemplateDetector,
     FunctionalPCA,
     HybridFdaGpModel,
     PenalizedSplineSmoother,
@@ -109,6 +110,30 @@ def test_template_detector_supports_hierarchical_prior() -> None:
         prior_strength=500,
     )
     assert np.corrcoef(model.raw_template_, prior)[0, 1] > 0.95
+
+
+def test_multichannel_template_recovers_strand_specific_shape() -> None:
+    rng = np.random.default_rng(123)
+    x = _positions()
+    shape = _footprint_shape(x)
+
+    def sample(n: int) -> tuple[np.ndarray, np.ndarray]:
+        labels = rng.integers(0, 2, size=n)
+        values = rng.normal(scale=0.55, size=(n, 3, len(x)))
+        values[:, 0, :] += labels[:, None] * 0.35 * shape
+        values[:, 2, :] += labels[:, None] * 1.2 * shape
+        return values, labels
+
+    train, train_labels = sample(500)
+    validation, validation_labels = sample(250)
+    model = MultichannelFunctionalTemplateDetector(
+        x,
+        smoother="gp",
+        window_limit=45,
+    ).fit(train, train_labels)
+    assert roc_auc_score(validation_labels, model.decision_function(validation)) > 0.9
+    assert len(model.channel_models_) == 3
+    assert np.argmax(np.abs(model.channel_discriminant_)) == 2
 
 
 def test_strand_functional_profiles_reverse_and_swap_channels() -> None:
