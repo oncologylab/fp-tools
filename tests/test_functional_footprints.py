@@ -8,6 +8,7 @@ from sklearn.metrics import roc_auc_score
 
 from fp_tools.tools.functional_footprints import (
     BiasAwareFunctionalMixture,
+    construct_strand_functional_profiles,
     ExactAdditiveGPSmoother,
     FdaMixtureModel,
     FunctionalPCA,
@@ -45,6 +46,28 @@ def test_profile_orientation_and_descriptors() -> None:
     assert 5 <= descriptors.width <= 30
     assert 10 <= descriptors.shoulder_distance <= 30
     assert abs(descriptors.asymmetry) < 0.05
+
+
+def test_strand_functional_profiles_reverse_and_swap_channels() -> None:
+    plus = np.tile(np.arange(21, dtype=float), (2, 1))
+    minus = np.tile(np.arange(100, 121, dtype=float), (2, 1))
+    plus_expected = plus + 1.0
+    minus_expected = minus + 1.0
+    profiles = construct_strand_functional_profiles(
+        plus,
+        minus,
+        plus_expected,
+        minus_expected,
+        ["+", "-"],
+        dispersion=0.05,
+    )
+    assert np.array_equal(profiles.plus_observed[0], plus[0])
+    assert np.array_equal(profiles.minus_observed[0], minus[0])
+    assert np.array_equal(profiles.plus_observed[1], minus[1, ::-1])
+    assert np.array_equal(profiles.minus_observed[1], plus[1, ::-1])
+    assert profiles.combined_residual.shape == plus.shape
+    assert profiles.shared_strand_residual.shape == plus.shape
+    assert profiles.antisymmetric_strand_residual.shape == plus.shape
 
 
 def test_weighted_functional_pca_roundtrip(tmp_path: Path) -> None:
@@ -172,4 +195,3 @@ def test_replicate_level_functional_differential_test() -> None:
     assert result.descriptor_change.depletion > 0.2
     assert result.difference.shape == x.shape
     assert np.all(result.simultaneous_lower <= result.simultaneous_upper)
-

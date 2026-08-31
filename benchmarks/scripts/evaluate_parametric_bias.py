@@ -41,6 +41,7 @@ sys.path.insert(0, str(REPOSITORY / "src"))
 from fp_tools.tools.parametric_bias import (  # noqa: E402
     BiasFeatureSpec,
     ConditionalSequenceBiasModel,
+    cut_position_from_alignment,
     encode_sequence,
     reverse_complement_contexts,
 )
@@ -125,13 +126,7 @@ def cut_position(read, shift: tuple[int, int]) -> int:
     gives these expressions.
     """
 
-    query_length = read.query_length
-    if not query_length:
-        query_length = read.infer_query_length()
-    query_length = int(query_length or 0)
-    left = int(read.reference_start) - int(read.query_alignment_start or 0)
-    right = int(read.reference_end) + query_length - int(read.query_alignment_end or query_length)
-    return right + int(shift[1]) if read.is_reverse else left + int(shift[0])
+    return cut_position_from_alignment(read, shift)
 
 
 def usable_read(read, *, keep_duplicates: bool = False, minimum_mapq: int = 1) -> bool:

@@ -37,6 +37,24 @@ for _index, _base in enumerate(BASES):
 COMPLEMENT = np.asarray([3, 2, 1, 0, 4], dtype=np.uint8)
 
 
+def cut_position_from_alignment(read: Any, read_shift: tuple[int, int] = (4, -5)) -> int:
+    """Return fp-tools' zero-based cut coordinate for an aligned read.
+
+    The calculation mirrors :meth:`OneRead.get_cutsite`, including soft-clipped
+    bases, but returns the zero-based coordinate used by NumPy, BED, and
+    bigWig.  Keeping it here gives cut-convention experiments and production
+    correction code one testable definition.
+    """
+
+    query_length = read.query_length
+    if not query_length:
+        query_length = read.infer_query_length()
+    query_length = int(query_length or 0)
+    left = int(read.reference_start) - int(read.query_alignment_start or 0)
+    right = int(read.reference_end) + query_length - int(read.query_alignment_end or query_length)
+    return right + int(read_shift[1]) if read.is_reverse else left + int(read_shift[0])
+
+
 @dataclass(frozen=True)
 class BiasFeatureSpec:
     """Sequence context and interaction geometry for a bias model."""
@@ -481,6 +499,19 @@ def combined_strand_log_bias(
     boundary or ambiguous-base positions are returned as ``-inf``.
     """
 
+    forward_scores, reverse_scores, valid = strand_log_bias(model, sequence, positions)
+    scores = logsumexp(np.stack([forward_scores, reverse_scores]), axis=0) - np.log(2.0)
+    scores[~valid] = -np.inf
+    return scores
+
+
+def strand_log_bias(
+    model: ConditionalSequenceBiasModel,
+    sequence: str | np.ndarray,
+    positions: Iterable[int],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Score forward and reverse-complement cut contexts separately."""
+
     position_array = np.asarray(list(positions), dtype=np.int64)
     forward, forward_valid = contexts_from_sequence(
         sequence,
@@ -495,9 +526,10 @@ def combined_strand_log_bias(
     )
     forward_scores = model.log_scores(forward[None, :, :])[0]
     reverse_scores = model.log_scores(reverse[None, :, :])[0]
-    scores = logsumexp(np.stack([forward_scores, reverse_scores]), axis=0) - np.log(2.0)
-    scores[~(forward_valid & reverse_valid)] = -np.inf
-    return scores
+    valid = forward_valid & reverse_valid
+    forward_scores[~valid] = -np.inf
+    reverse_scores[~valid] = -np.inf
+    return forward_scores, reverse_scores, valid
 
 
 def estimate_nb_dispersion(observed: np.ndarray, expected: np.ndarray) -> float:

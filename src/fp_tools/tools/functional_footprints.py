@@ -21,7 +21,6 @@ import numpy as np
 from scipy.interpolate import BSpline
 from scipy.linalg import solve_triangular
 from scipy.special import expit, logsumexp
-from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 from sklearn.utils.extmath import randomized_svd
 
@@ -65,6 +64,86 @@ def orient_profiles(profiles: np.ndarray, strands: Iterable[str | int | bool]) -
     output = values.copy()
     output[reverse] = output[reverse, ::-1]
     return output
+
+
+@dataclass(frozen=True)
+class StrandFunctionalProfiles:
+    """Orientation-aligned strand channels for one motif-site collection."""
+
+    plus_observed: np.ndarray
+    minus_observed: np.ndarray
+    plus_expected: np.ndarray
+    minus_expected: np.ndarray
+    combined_residual: np.ndarray
+    shared_strand_residual: np.ndarray
+    antisymmetric_strand_residual: np.ndarray
+
+
+def construct_strand_functional_profiles(
+    plus_observed: np.ndarray,
+    minus_observed: np.ndarray,
+    plus_expected: np.ndarray,
+    minus_expected: np.ndarray,
+    strands: Iterable[str | int | bool],
+    *,
+    dispersion: float = 0.0,
+) -> StrandFunctionalProfiles:
+    """Orient cut channels and construct shared/antisymmetric residuals.
+
+    On reverse-strand motifs genomic coordinates are reversed and the genomic
+    plus/minus tracks are swapped. This preserves biological strand in a
+    common motif orientation rather than merely reversing a combined track.
+    """
+
+    arrays = [
+        _validate_profiles(values, nonnegative=True)
+        for values in (plus_observed, minus_observed, plus_expected, minus_expected)
+    ]
+    if any(values.shape != arrays[0].shape for values in arrays[1:]):
+        raise ValueError("all strand profiles must have equal shape")
+    raw_strands = list(strands)
+    if len(raw_strands) != len(arrays[0]):
+        raise ValueError("strands must contain one value per profile")
+    reverse = np.asarray(
+        [value in ("-", -1, "reverse", True) for value in raw_strands],
+        dtype=bool,
+    )
+    plus_observed_out, minus_observed_out, plus_expected_out, minus_expected_out = (
+        values.copy() for values in arrays
+    )
+    plus_observed_out[reverse] = arrays[1][reverse, ::-1]
+    minus_observed_out[reverse] = arrays[0][reverse, ::-1]
+    plus_expected_out[reverse] = arrays[3][reverse, ::-1]
+    minus_expected_out[reverse] = arrays[2][reverse, ::-1]
+
+    plus_residual = calibrated_residuals(
+        plus_observed_out,
+        plus_expected_out,
+        "deviance",
+        dispersion=dispersion,
+    )
+    minus_residual = calibrated_residuals(
+        minus_observed_out,
+        minus_expected_out,
+        "deviance",
+        dispersion=dispersion,
+    )
+    combined_residual = calibrated_residuals(
+        plus_observed_out + minus_observed_out,
+        plus_expected_out + minus_expected_out,
+        "deviance",
+        dispersion=dispersion,
+    )
+    normalization = np.sqrt(2.0)
+    return StrandFunctionalProfiles(
+        plus_observed=plus_observed_out,
+        minus_observed=minus_observed_out,
+        plus_expected=plus_expected_out,
+        minus_expected=minus_expected_out,
+        combined_residual=combined_residual,
+        shared_strand_residual=(plus_residual + minus_residual) / normalization,
+        antisymmetric_strand_residual=(plus_residual - minus_residual) / normalization,
+    )
 
 
 def normalize_functional_profiles(

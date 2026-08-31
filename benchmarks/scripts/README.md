@@ -452,6 +452,27 @@ K562   loglinear81_v1   raw                <K562-uncorrected.bw>
 K562   loglinear81_v1   parametric_model   <K562-loglinear81.npz>
 ```
 
+`build_strand_functional_profiles.py` is the strand-aware research path. It
+extracts forward and reverse cuts directly from the BAM, predicts each strand
+with the frozen bias model, and correctly reverses coordinates *and swaps cut
+strands* for reverse-oriented motifs. Its NPZ contains plus/minus observed and
+expected profiles, combined signed-deviance residuals, and shared and
+antisymmetric strand residuals.
+
+```bash
+.venv/bin/python benchmarks/scripts/build_strand_functional_profiles.py \
+  --sites <motif-sites.tsv.gz> \
+  --bam <coordinate-sorted.bam> \
+  --genome <hg38.fa> \
+  --bias-model <retained-bias-model.npz> \
+  --read-shift 4,-4 \
+  --out-prefix benchmarks/results/footprint_functional_v1/K562.strand_profiles
+```
+
+The artifact uses only numeric/string arrays with a checksummed JSON sidecar;
+it does not use arbitrary pickle. ChIP labels are not used to construct any
+profile channel.
+
 The output records input hashes, frozen model choices, per-site probabilities,
 per-TF metrics, and explicit assay-, bias-, correction-, shape-, and
 power-limitation diagnoses. Large profile caches and fitted benchmark outputs

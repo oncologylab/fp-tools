@@ -11,6 +11,7 @@ from fp_tools.tools.parametric_bias import (
     calibrated_residuals,
     center_flank_likelihood_score,
     combined_strand_log_bias,
+    cut_position_from_alignment,
     contexts_from_sequence,
     encode_sequence,
     estimate_nb_dispersion,
@@ -32,6 +33,26 @@ def test_sequence_encoding_and_orientation() -> None:
     )
     assert valid.tolist() == [True, True, False]
     assert extracted[1].tolist() == reverse_complement_contexts(extracted[[0]])[0].tolist()
+
+
+def test_cut_position_includes_soft_clips() -> None:
+    class Read:
+        query_length = 50
+        query_alignment_start = 3
+        query_alignment_end = 50
+        reference_start = 100
+        reference_end = 147
+        is_reverse = False
+
+        @staticmethod
+        def infer_query_length() -> int:
+            return 50
+
+    read = Read()
+    assert cut_position_from_alignment(read, (4, -5)) == 101
+    read.is_reverse = True
+    assert cut_position_from_alignment(read, (4, -5)) == 142
+    assert cut_position_from_alignment(read, (4, -4)) == 143
 
 
 def _synthetic_conditional_data(seed: int = 7) -> tuple[np.ndarray, np.ndarray]:

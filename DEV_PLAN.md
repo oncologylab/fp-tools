@@ -156,6 +156,11 @@ a separately planned breaking release explicitly changes the contract.
   functional benchmark can consume a frozen NPZ model directly and derive
   total-preserving expected motif-site profiles without producing genome-wide
   intermediate tracks.
+- The functional research path now has a strand-aware profile artifact. It
+  preserves plus/minus observed and expected cuts, swaps strands when reverse
+  motifs are orientation-aligned, and exposes combined, shared-strand, and
+  antisymmetric signed-deviance channels. This enables genuine TF-specific
+  asymmetry experiments rather than inferring asymmetry from a combined track.
 
 ## Current ENCODE Resource
 
