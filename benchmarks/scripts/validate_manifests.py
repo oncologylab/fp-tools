@@ -42,6 +42,18 @@ COMPACT_MANIFEST_SCHEMAS = {
         "sample",
         "biological_replicate",
     ],
+    "functional_holdout_atac_peaks.tsv": [
+        "file_accession",
+        "url",
+        "local_path",
+        "expected_bytes",
+        "checksum",
+        "cell",
+        "experiment_accession",
+        "output_type",
+        "biological_replicates",
+        "pipeline_version",
+    ],
     "functional_detector_policy_v1.tsv": [
         "motif_family",
         "development_contexts",

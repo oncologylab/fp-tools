@@ -1,0 +1,3 @@
+file_accession	url	local_path	expected_bytes	checksum	cell	experiment_accession	output_type	biological_replicates	pipeline_version
+ENCFF346CZA	https://www.encodeproject.org/files/ENCFF346CZA/@@download/ENCFF346CZA.bed.gz	data/public/raw/functional_holdout_atac/GM12878.conservative_idr.ENCFF346CZA.bed.gz	3214602	2cf377c1abc07dc99d7b9767fa965792	GM12878	ENCSR095QNB	conservative IDR thresholded peaks	1,2	ENCODE4 v1.9.1 GRCh38
+ENCFF982UNH	https://www.encodeproject.org/files/ENCFF982UNH/@@download/ENCFF982UNH.bed.gz	data/public/raw/functional_holdout_atac/IMR90.conservative_idr.ENCFF982UNH.bed.gz	3738798	cdbc3f3b2f1716a022b58605cdfab8bc	IMR-90	ENCSR200OML	conservative IDR thresholded peaks	1,2	ENCODE4 v1.9.1 GRCh38

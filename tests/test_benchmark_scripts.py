@@ -558,6 +558,17 @@ class ManifestValidationTest(unittest.TestCase):
         self.assertFalse(any("chip" in column.lower() for column in frame.columns))
         self.assertFalse(any("label" in column.lower() for column in frame.columns))
 
+        peaks = pd.read_csv(
+            path.with_name("functional_holdout_atac_peaks.tsv"), sep="\t", dtype=str
+        )
+        self.assertEqual(set(peaks["cell"]), {"GM12878", "IMR-90"})
+        self.assertTrue(peaks["checksum"].str.fullmatch(r"[0-9a-f]{32}").all())
+        self.assertTrue(
+            peaks["output_type"].eq("conservative IDR thresholded peaks").all()
+        )
+        self.assertTrue(peaks["biological_replicates"].eq("1,2").all())
+        self.assertFalse(any("chip" in column.lower() for column in peaks.columns))
+
     def test_functional_detector_policy_is_frozen_before_holdout(self):
         compact = ROOT / "benchmarks" / "manifests" / "compact"
         policy = pd.read_csv(compact / "functional_detector_policy_v1.tsv", sep="\t")

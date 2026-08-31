@@ -48,6 +48,9 @@ earlier study and its already-viewed holdout.
 ENCODE ATAC-seq BAMs used to prepare the locked GM12878 and IMR-90 transfer
 panel. File size and MD5 are checked before any holdout analysis. Downloading
 these assay inputs does not open or score the preregistered TF ChIP labels.
+The companion `compact/functional_holdout_atac_peaks.tsv` pins the pooled,
+conservative IDR-thresholded ENCODE4 v1.9.1 peaks from the same two ATAC-seq
+experiments. They define accessible motif candidates without using TF labels.
 
 `functional_detector_policy_v1.freeze.json` records the policy freeze after the
 complete DWM/SELMA/log-linear, shift, FDA, spline, GP, and hybrid development
