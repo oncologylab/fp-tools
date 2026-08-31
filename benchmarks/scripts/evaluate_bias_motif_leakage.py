@@ -78,12 +78,18 @@ def select_unlabeled_motif_sites(
 ) -> pd.DataFrame:
     if any("chip" in column.lower() or "label" in column.lower() for column in source.columns):
         raise ValueError("motif-leakage inputs must not contain ChIP or label columns")
-    required = {"motif", "TFBS_chr", "TFBS_start", "TFBS_end", "TFBS_strand"}
+    required = {"TFBS_chr", "TFBS_start", "TFBS_end", "TFBS_strand"}
     missing = required.difference(source.columns)
     if missing:
         raise ValueError("motif sites are missing columns: " + ", ".join(sorted(missing)))
+    if "motif" in source.columns:
+        motif_values = source["motif"].astype(str)
+    elif "motif_id" in source.columns:
+        motif_values = source["motif_id"].astype(str)
+    else:
+        raise ValueError("motif sites must contain motif or motif_id")
     selected = source[
-        source["motif"].astype(str).str.contains(str(motif_id), regex=False)
+        motif_values.str.contains(str(motif_id), regex=False)
         & source["TFBS_chr"].astype(str).isin(train_chromosomes)
     ].copy()
     if len(selected) > maximum:
@@ -377,6 +383,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "study": str(args.study),
         "study_sha256": file_sha256(args.study),
         "genome": str(args.genome),
+        "motif_sites": [
+            {"cell": cell, "path": str(path), "sha256": file_sha256(path)}
+            for cell, path in args.motif_sites
+        ],
         "models": [
             {"cell": cell, "label": label, "path": str(path), "sha256": file_sha256(path)}
             for (cell, label), path in args.model
