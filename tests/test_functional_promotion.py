@@ -13,6 +13,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from evaluate_functional_promotion import (  # noqa: E402
     complexity_evidence,
     evaluate_promotion,
+    negative_control_evidence,
     prepare_pairs,
 )
 
@@ -187,3 +188,24 @@ def test_mixed_frozen_policy_cannot_bypass_gp_complexity_gate() -> None:
     )
     assert evidence["required"]
     assert not passed
+
+
+def test_naked_dna_gate_uses_worst_paired_tf_not_mean() -> None:
+    study = json.loads(SPEC.read_text(encoding="utf-8"))
+    frame = pd.DataFrame(
+        [
+            {"cell": "A", "tf": "TF1", "replicate": "r1", "candidate_id": "new", "false_positive_rate": 0.01},
+            {"cell": "A", "tf": "TF1", "replicate": "r1", "candidate_id": "old", "false_positive_rate": 0.01},
+            {"cell": "A", "tf": "TF2", "replicate": "r1", "candidate_id": "new", "false_positive_rate": 0.08},
+            {"cell": "A", "tf": "TF2", "replicate": "r1", "candidate_id": "old", "false_positive_rate": 0.02},
+        ]
+    )
+    passed, evidence = negative_control_evidence(
+        frame,
+        "new",
+        "old",
+        study["promotion_gates"],
+    )
+    assert not passed
+    assert evidence["candidate_fpr"] == pytest.approx(0.08)
+    assert evidence["fpr_increase"] == pytest.approx(0.06)

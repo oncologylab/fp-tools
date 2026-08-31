@@ -183,9 +183,38 @@ def negative_control_evidence(
     baseline_rows = frame[frame[method_column].astype(str) == baseline]
     if candidate_rows.empty or baseline_rows.empty:
         return False, evidence
-    candidate_fpr = float(candidate_rows["false_positive_rate"].mean())
-    baseline_fpr = float(baseline_rows["false_positive_rate"].mean())
-    increase = candidate_fpr - baseline_fpr
+    pair_keys = [
+        key
+        for key in ("cell", "tf", "motif_family", "replicate")
+        if key in frame.columns
+    ]
+    if pair_keys:
+        if candidate_rows.duplicated(pair_keys).any() or baseline_rows.duplicated(
+            pair_keys
+        ).any():
+            raise ValueError("negative controls contain duplicate paired rows")
+        paired = candidate_rows[pair_keys + ["false_positive_rate"]].merge(
+            baseline_rows[pair_keys + ["false_positive_rate"]],
+            on=pair_keys,
+            how="outer",
+            suffixes=("_candidate", "_baseline"),
+            indicator=True,
+            validate="one_to_one",
+        )
+        if not paired["_merge"].eq("both").all():
+            return False, evidence
+        candidate_fpr = float(paired["false_positive_rate_candidate"].max())
+        baseline_fpr = float(paired["false_positive_rate_baseline"].max())
+        increase = float(
+            (
+                paired["false_positive_rate_candidate"]
+                - paired["false_positive_rate_baseline"]
+            ).max()
+        )
+    else:
+        candidate_fpr = float(candidate_rows["false_positive_rate"].max())
+        baseline_fpr = float(baseline_rows["false_positive_rate"].max())
+        increase = candidate_fpr - baseline_fpr
     evidence = {"candidate_fpr": candidate_fpr, "baseline_fpr": baseline_fpr, "fpr_increase": increase}
     return bool(
         candidate_fpr <= float(gates["maximum_naked_dna_false_positive_rate"])
