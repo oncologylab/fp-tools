@@ -42,6 +42,7 @@ def evidence_status(row: pd.Series, minimum_positives: int = 500, balance_smd: f
             float(row.get("quick_candidate_auroc", np.nan)),
             float(row.get("depth_auroc_full_replicate_mean", np.nan)),
             classifier_auroc,
+            float(row.get("classifier_replicate_auroc", np.nan)),
         ]
     )
     return "not_detected" if best < 0.60 else "weak_or_context_dependent"
@@ -59,6 +60,8 @@ def likely_drivers(row: pd.Series) -> str:
         drivers.append("replicate_or_depth_instability")
     if float(row.get("classifier_delta_auroc", 0.0)) >= 0.03:
         drivers.append("learnable_shape_missed_by_kernel")
+    if float(row.get("classifier_replicate_auroc", 0.0)) >= 0.65:
+        drivers.append("learned_shape_replicates")
     if float(row.get("quick_delta_auroc", 0.0)) >= 0.03:
         drivers.append("fixed_geometry_mismatch")
     if not drivers:
@@ -74,6 +77,7 @@ def assemble(
     depth: pd.DataFrame,
     full_grid: pd.DataFrame,
     classifiers: pd.DataFrame,
+    classifier_replicates: pd.DataFrame,
 ) -> pd.DataFrame:
     boot = bootstrap.pivot_table(
         index=KEY,
@@ -92,6 +96,7 @@ def assemble(
         _prefixed(depth, "depth_"),
         _prefixed(full_grid, "full_grid_"),
         _prefixed(classifiers, "classifier_"),
+        _prefixed(classifier_replicates, "classifier_replicate_"),
     ):
         output = output.merge(frame, on=KEY, how="left", validate="one_to_one")
     output["classifier_delta_auroc"] = (
@@ -107,13 +112,17 @@ def assemble(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("matching", "quick", "bootstrap", "correction", "depth", "full-grid", "classifiers"):
+    for name in (
+        "matching", "quick", "bootstrap", "correction", "depth", "full-grid",
+        "classifiers", "classifier-replicates",
+    ):
         parser.add_argument(f"--{name}", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     result = assemble(
         *(pd.read_csv(getattr(args, name.replace("-", "_")), sep="\t") for name in (
-            "matching", "quick", "bootstrap", "correction", "depth", "full_grid", "classifiers"
+            "matching", "quick", "bootstrap", "correction", "depth", "full_grid",
+            "classifiers", "classifier_replicates",
         ))
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)

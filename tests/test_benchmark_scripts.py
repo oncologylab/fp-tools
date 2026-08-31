@@ -79,6 +79,7 @@ evaluate_tf_correction_transfer = load_module("evaluate_tf_correction_transfer",
 evaluate_tf_signal_panel = load_module("evaluate_tf_signal_panel", ROOT / "benchmarks" / "scripts" / "evaluate_tf_signal_panel.py")
 search_tf_profile_classifiers = load_module("search_tf_profile_classifiers", ROOT / "benchmarks" / "scripts" / "search_tf_profile_classifiers.py")
 assemble_tf_experiment_matrix = load_module("assemble_tf_experiment_matrix", ROOT / "benchmarks" / "scripts" / "assemble_tf_experiment_matrix.py")
+evaluate_tf_classifier_signal_panel = load_module("evaluate_tf_classifier_signal_panel", ROOT / "benchmarks" / "scripts" / "evaluate_tf_classifier_signal_panel.py")
 
 
 class TfFootprintModelSearchTest(unittest.TestCase):
@@ -346,6 +347,29 @@ class TfFootprintModelSearchTest(unittest.TestCase):
             }
         )
         self.assertEqual(assemble_tf_experiment_matrix.evidence_status(row), "underpowered")
+
+    def test_classifier_panel_selects_only_dwm_validation_winners(self):
+        validation = pd.DataFrame(
+            [
+                {"cell": "K562", "tf": "CTCF", "signals": "raw", "selection_score": 2.0, "auprc": 0.9, "auroc": 0.9},
+                {"cell": "K562", "tf": "CTCF", "signals": "DWM", "selection_score": 1.0, "auprc": 0.8, "auroc": 0.8},
+                {"cell": "K562", "tf": "CTCF", "signals": "DWM", "selection_score": 0.8, "auprc": 0.7, "auroc": 0.7},
+            ]
+        )
+        selected = evaluate_tf_classifier_signal_panel.select_dwm_winners(validation)
+        self.assertEqual(len(selected), 1)
+        self.assertEqual(selected.iloc[0]["signals"], "DWM")
+
+    def test_classifier_panel_reports_replicate_stability(self):
+        metrics = pd.DataFrame(
+            [
+                {"cell": "K562", "tf": "CTCF", "sample": "r1", "depth": "full", "auroc": 0.8, "auprc": 0.7},
+                {"cell": "K562", "tf": "CTCF", "sample": "r2", "depth": "full", "auroc": 0.9, "auprc": 0.8},
+            ]
+        )
+        result = evaluate_tf_classifier_signal_panel.replicate_stability(metrics)
+        self.assertEqual(int(result.loc[0, "replicates"]), 2)
+        self.assertAlmostEqual(float(result.loc[0, "auroc_mean"]), 0.85)
 
 
 class BigwigSiteScoreTest(unittest.TestCase):
