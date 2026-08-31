@@ -37,6 +37,7 @@ from fp_tools.tools.functional_footprints import (  # noqa: E402
     FunctionalPCA,
     HybridFdaGpModel,
     deviance_profiles,
+    normalize_functional_profiles,
     orient_profiles,
 )
 from fp_tools.tools.parametric_bias import (  # noqa: E402
@@ -294,6 +295,8 @@ def fit_supervised_ceiling(
     *,
     seed: int,
 ) -> tuple[np.ndarray, dict[str, object], FunctionalPCA]:
+    train_residual = normalize_functional_profiles(train_residual)
+    validation_residual = normalize_functional_profiles(validation_residual)
     fpca = FunctionalPCA(variance_threshold=0.95, max_components=20, seed=seed)
     train_scores = fpca.fit_transform(train_residual)
     validation_scores = fpca.transform(validation_residual)

@@ -67,6 +67,50 @@ def orient_profiles(profiles: np.ndarray, strands: Iterable[str | int | bool]) -
     return output
 
 
+def normalize_functional_profiles(
+    profiles: np.ndarray,
+    positions: np.ndarray | None = None,
+    *,
+    outer_flank_start: float = 60.0,
+    clip: float = 12.0,
+) -> np.ndarray:
+    """Remove broad per-site trends and scale by outer-flank RMS.
+
+    Functional mixtures should distinguish localized protection shapes rather
+    than rediscover total accessibility.  A line is fitted only to the outer
+    flanks, extrapolated across the window, and the detrended curve is divided
+    by its outer-flank RMS.  This transformation is label-free and symmetric.
+    """
+
+    values = _validate_profiles(profiles)
+    x = (
+        np.asarray(positions, dtype=np.float64)
+        if positions is not None
+        else np.arange(values.shape[1], dtype=float) - values.shape[1] // 2
+    )
+    if x.shape != (values.shape[1],):
+        raise ValueError("positions must match profile width")
+    effective_outer_start = min(float(outer_flank_start), 0.6 * float(np.max(np.abs(x))))
+    outer = np.abs(x) >= effective_outer_start
+    if outer.sum() < 4:
+        raise ValueError("outer_flank_start leaves fewer than four baseline positions")
+    finite = np.isfinite(values)
+    column_fill = np.nanmedian(np.where(finite, values, np.nan), axis=0)
+    column_fill = np.nan_to_num(column_fill, nan=0.0)
+    filled = np.where(finite, values, column_fill)
+    design_outer = np.column_stack([np.ones(outer.sum()), x[outer]])
+    projection = np.linalg.pinv(design_outer)
+    coefficients = filled[:, outer] @ projection.T
+    baseline = coefficients[:, [0]] + coefficients[:, [1]] * x[None, :]
+    detrended = filled - baseline
+    scale = np.sqrt(np.mean(np.square(detrended[:, outer]), axis=1))
+    positive = scale[scale > 1e-8]
+    fallback = float(np.median(positive)) if len(positive) else 1.0
+    scale = np.where(scale > 1e-8, scale, fallback)
+    normalized = detrended / scale[:, None]
+    return np.clip(normalized, -abs(float(clip)), abs(float(clip)))
+
+
 @dataclass(frozen=True)
 class ProfileDescriptors:
     center: float
@@ -767,6 +811,19 @@ class FdaMixtureModel:
         self.mixture: GaussianMixture | None = None
         self.binding_component_: int | None = None
         self.positions_: np.ndarray | None = None
+        self.temperature_: float = 1.0
+
+    def _component_log_probabilities(self, scores: np.ndarray) -> np.ndarray:
+        if self.mixture is None:
+            raise ValueError("FDA mixture has not been fitted")
+        covariance = np.maximum(self.mixture.covariances_, 1e-8)
+        difference = scores[:, None, :] - self.mixture.means_[None, :, :]
+        log_density = -0.5 * np.sum(
+            np.square(difference) / covariance[None, :, :]
+            + np.log(2.0 * np.pi * covariance)[None, :, :],
+            axis=2,
+        )
+        return log_density + np.log(np.maximum(self.mixture.weights_, 1e-12))[None, :]
 
     def fit(
         self,
@@ -776,26 +833,49 @@ class FdaMixtureModel:
         sample_weight: np.ndarray | None = None,
     ) -> "FdaMixtureModel":
         values = _validate_profiles(residual_profiles)
+        x = np.asarray(positions, dtype=float) if positions is not None else np.arange(values.shape[1]) - values.shape[1] // 2
+        values = normalize_functional_profiles(values, x)
         scores = self.fpca.fit_transform(values, sample_weight=sample_weight)
+        midpoint = values.shape[1] // 2
+        center = values[:, midpoint - 5:midpoint + 6].mean(axis=1)
+        flanks = np.concatenate(
+            [values[:, midpoint - 40:midpoint - 15], values[:, midpoint + 16:midpoint + 41]],
+            axis=1,
+        ).mean(axis=1)
+        shape_score = flanks - center
+        lower = scores[shape_score <= np.quantile(shape_score, 0.35)]
+        upper = scores[shape_score >= np.quantile(shape_score, 0.65)]
+        means_init = None
+        if len(lower) and len(upper):
+            means_init = np.vstack([np.mean(lower, axis=0), np.mean(upper, axis=0)])
         self.mixture = GaussianMixture(
             n_components=2,
             covariance_type="diag",
             reg_covar=1e-5,
             n_init=5,
             random_state=self.seed,
+            means_init=means_init,
         ).fit(scores)
         component_profiles = self.fpca.inverse_transform(self.mixture.means_)
-        x = np.asarray(positions, dtype=float) if positions is not None else np.arange(values.shape[1]) - values.shape[1] // 2
         descriptors = [profile_descriptors(profile, x) for profile in component_profiles]
         self.binding_component_ = int(np.argmax([item.depletion for item in descriptors]))
         self.positions_ = x
+        other = 1 - self.binding_component_
+        log_probabilities = self._component_log_probabilities(scores)
+        log_ratio = log_probabilities[:, self.binding_component_] - log_probabilities[:, other]
+        robust_range = float(np.quantile(np.abs(log_ratio[np.isfinite(log_ratio)]), 0.95))
+        self.temperature_ = max(1.0, robust_range / 8.0)
         return self
 
     def predict_proba(self, residual_profiles: np.ndarray) -> np.ndarray:
         if self.mixture is None or self.binding_component_ is None:
             raise ValueError("FDA mixture has not been fitted")
-        scores = self.fpca.transform(residual_profiles)
-        return self.mixture.predict_proba(scores)[:, self.binding_component_]
+        values = normalize_functional_profiles(residual_profiles, self.positions_)
+        scores = self.fpca.transform(values)
+        other = 1 - self.binding_component_
+        log_probabilities = self._component_log_probabilities(scores)
+        log_ratio = log_probabilities[:, self.binding_component_] - log_probabilities[:, other]
+        return expit(np.clip(log_ratio / self.temperature_, -30.0, 30.0))
 
     def component_profiles(self) -> np.ndarray:
         if self.mixture is None:
@@ -825,13 +905,20 @@ class HybridFdaGpModel:
         self.bound_mean_: np.ndarray | None = None
         self.variance_: np.ndarray | None = None
         self.prior_: float | None = None
+        self.temperature_: float = 1.0
 
     def fit(self, residual_profiles: np.ndarray, sample_weight: np.ndarray | None = None) -> "HybridFdaGpModel":
-        values = _validate_profiles(residual_profiles)
-        self.fda.fit(values, positions=self.positions, sample_weight=sample_weight)
-        responsibility = self.fda.predict_proba(values)
-        bound_weight = responsibility + 1e-4
-        unbound_weight = 1.0 - responsibility + 1e-4
+        raw_values = _validate_profiles(residual_profiles)
+        self.fda.fit(raw_values, positions=self.positions, sample_weight=sample_weight)
+        responsibility = self.fda.predict_proba(raw_values)
+        values = normalize_functional_profiles(raw_values, self.positions)
+        site_weight = (
+            np.ones(len(values), dtype=float)
+            if sample_weight is None
+            else np.asarray(sample_weight, dtype=float)
+        )
+        bound_weight = site_weight * (responsibility + 1e-4)
+        unbound_weight = site_weight * (1.0 - responsibility + 1e-4)
         bound = np.average(values, axis=0, weights=bound_weight)
         unbound = np.average(values, axis=0, weights=unbound_weight)
         difference = bound - unbound
@@ -847,20 +934,30 @@ class HybridFdaGpModel:
         )
         self.variance_ = np.maximum(np.mean(residual, axis=0), 1e-4)
         self.prior_ = float(np.clip(np.mean(responsibility), 1e-4, 1.0 - 1e-4))
+        training_log_ratio = self._log_likelihood_ratio(values)
+        robust_range = float(
+            np.quantile(np.abs(training_log_ratio[np.isfinite(training_log_ratio)]), 0.95)
+        )
+        self.temperature_ = max(1.0, robust_range / 8.0)
         return self
 
-    def predict_proba(self, residual_profiles: np.ndarray) -> np.ndarray:
+    def _log_likelihood_ratio(self, values: np.ndarray) -> np.ndarray:
         if self.unbound_mean_ is None or self.bound_mean_ is None or self.variance_ is None or self.prior_ is None:
             raise ValueError("hybrid FDA-GP model has not been fitted")
-        values = _validate_profiles(residual_profiles)
         bound_ll = -0.5 * np.sum(
             np.square(values - self.bound_mean_) / self.variance_ + np.log(self.variance_), axis=1
         )
         unbound_ll = -0.5 * np.sum(
             np.square(values - self.unbound_mean_) / self.variance_ + np.log(self.variance_), axis=1
         )
-        log_prior = np.log(self.prior_ / (1.0 - self.prior_))
-        return expit(np.clip(bound_ll - unbound_ll + log_prior, -40.0, 40.0))
+        return bound_ll - unbound_ll + np.log(self.prior_ / (1.0 - self.prior_))
+
+    def predict_proba(self, residual_profiles: np.ndarray) -> np.ndarray:
+        if self.unbound_mean_ is None or self.bound_mean_ is None or self.variance_ is None or self.prior_ is None:
+            raise ValueError("hybrid FDA-GP model has not been fitted")
+        values = normalize_functional_profiles(residual_profiles, self.positions)
+        log_ratio = self._log_likelihood_ratio(values)
+        return expit(np.clip(log_ratio / self.temperature_, -30.0, 30.0))
 
 
 @dataclass(frozen=True)
