@@ -132,6 +132,7 @@ def add_scorebigwig_arguments(parser):
 	footprintargs.add_argument('--flank-min', metavar="<int>", type=int, help="Minimum range of flanking regions (default: 10)", default=10)
 	footprintargs.add_argument('--flank-max', metavar="<int>", type=int, help="Maximum range of flanking regions (default: 30)", default=30)
 	footprintargs.add_argument('--footprint-kernel', choices=["fast", "reference"], type=_footprint_kernel_argument, default="fast", help="Footprint scoring kernel (default: fast; use reference for the original scalar implementation)")
+
 	
 	sumargs = parser.add_argument_group('Parameters for score == sum')
 	sumargs.add_argument('--window', metavar="<int>", type=int, help="The window for calculation of sum (default: 100)", default=100)
@@ -390,10 +391,14 @@ def add_aggregate_arguments(parser):
 	
 	#Signals / regions
 	PLOT.add_argument('--normalize', action='store_true', help="Normalize the aggregate signal(s) to be between 0-1 (default: the true range of values is shown)")
+	PLOT.add_argument('--site-normalization', choices=["none", "flank-center", "flank-rms"], default="none", help="Normalize each motif-centered profile before aggregation. flank-rms removes its outer-flank mean and scales by outer-flank RMS noise (default: none)")
+	PLOT.add_argument('--site-normalization-clip', metavar="<float>", type=float, default=5.0, help="Absolute clipping limit after flank-rms site normalization; use 0 to disable clipping (default: 5)")
 	PLOT.add_argument('--normalization', choices=["none", "condition-quantile", "sample-quantile"], default="none", help="diff-footprints-compatible quantile normalization before aggregate plotting (default: none)")
 	PLOT.add_argument('--normalization-comparison-output', metavar="", help="Optional paired raw-vs-normalized aggregate figure")
 	PLOT.add_argument('--output_aggregated_stats', metavar="", default=None, help="Path to CSV file for aggregate mean/SD/stat summaries (default: None)")
 	PLOT.add_argument('--show-replicate-sd', action="store_true", help="Draw replicate SD ribbons when --cond-names contains repeated condition names")
+	PLOT.add_argument('--show-site-ci', action="store_true", help="Draw 95%% confidence bands estimated across motif sites")
+	PLOT.add_argument('--shape-diagnostics', action="store_true", help="Annotate each panel as strong, detectable, weak, not detected, or underpowered from motif-centered depletion")
 	PLOT.add_argument('--negate', action='store_true', help="Negate overlap with regions")
 	PLOT.add_argument('--smooth', metavar="<int>", type=int, help="Smooth output signal by taking the mean of <smooth> bp windows (default: 1 (no smooth)", default=1)
 	PLOT.add_argument('--log-transform', help="Log transform the signals before aggregation", action="store_true")

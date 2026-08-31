@@ -42,7 +42,7 @@ from fp_tools.utils.regions import OneRegion, RegionList
 from fp_tools.utils.signals import fast_rolling_math
 from fp_tools.utils.utilities import check_files, check_required, make_directory
 
-PANEL_SIZE_IN = 2.55
+PANEL_SIZE_IN = 3.05
 DEFAULT_GRID_COLS = 5
 
 
@@ -160,13 +160,110 @@ def apply_quantile_normalization_to_signal_dict(signal_dict, region_names, regio
     raise ValueError(f"Unsupported normalization mode: {mode}")
 
 
+def normalize_site_profiles(signalmat, mode="none", clip=5.0):
+    """Normalize motif-centered profiles independently using their outer flanks.
+
+    ``flank-rms`` gives each site comparable influence in an aggregate while
+    retaining the sign of corrected cut-site signal. A lower-quartile scale
+    floor prevents nearly signal-free sites from being amplified arbitrarily.
+    """
+
+    matrix = np.asarray(signalmat, dtype=float)
+    if matrix.ndim != 2:
+        raise ValueError("site profiles must be a two-dimensional matrix")
+    if mode == "none" or matrix.shape[0] == 0:
+        return matrix.copy()
+    if mode not in {"flank-center", "flank-rms"}:
+        raise ValueError(f"Unsupported site normalization mode: {mode}")
+
+    outer_width = max(3, matrix.shape[1] // 6)
+    outer = np.concatenate((matrix[:, :outer_width], matrix[:, -outer_width:]), axis=1)
+    flank_mean = np.nanmean(outer, axis=1)
+    centered = matrix - flank_mean[:, None]
+    if mode == "flank-center":
+        return centered
+
+    scale = np.sqrt(np.nanmean(np.square(outer), axis=1))
+    finite_positive = scale[np.isfinite(scale) & (scale > 0)]
+    scale_floor = float(np.quantile(finite_positive, 0.25)) if len(finite_positive) else 1.0
+    normalized = centered / np.maximum(np.nan_to_num(scale, nan=0.0), scale_floor)[:, None]
+    if clip and clip > 0:
+        normalized = np.clip(normalized, -float(clip), float(clip))
+    return normalized
+
+
+def profile_shape_diagnostics(signalmat, motif_width, flank):
+    """Summarize motif-centered depletion and its site-level uncertainty."""
+
+    matrix = np.asarray(signalmat, dtype=float)
+    n_sites = int(matrix.shape[0])
+    if n_sites == 0:
+        return {
+            "n_sites": 0, "mean_depletion": np.nan, "depletion_se": np.nan,
+            "depletion_z": np.nan, "depletion_effect_size": np.nan,
+            "shoulder_asymmetry": np.nan, "detectability": "underpowered",
+        }
+
+    half_width = max(1, int(np.ceil(float(motif_width) / 2.0)))
+    center_start = max(0, int(flank) - half_width)
+    center_end = min(matrix.shape[1], int(flank) + half_width + 1)
+    shoulder_inner = max(half_width + 4, 16)
+    shoulder_outer = min(int(flank), max(shoulder_inner + 8, 40))
+    left = matrix[:, max(0, int(flank) - shoulder_outer):max(0, int(flank) - shoulder_inner)]
+    right = matrix[:, min(matrix.shape[1], int(flank) + shoulder_inner + 1):min(matrix.shape[1], int(flank) + shoulder_outer + 1)]
+    center = matrix[:, center_start:center_end]
+    if center.shape[1] == 0 or left.shape[1] == 0 or right.shape[1] == 0:
+        return {
+            "n_sites": n_sites, "mean_depletion": np.nan, "depletion_se": np.nan,
+            "depletion_z": np.nan, "depletion_effect_size": np.nan,
+            "shoulder_asymmetry": np.nan, "detectability": "underpowered",
+        }
+
+    center_mean = np.nanmean(center, axis=1)
+    left_mean = np.nanmean(left, axis=1)
+    right_mean = np.nanmean(right, axis=1)
+    depletion = (left_mean + right_mean) / 2.0 - center_mean
+    finite = depletion[np.isfinite(depletion)]
+    n_finite = int(len(finite))
+    mean_depletion = float(np.mean(finite)) if n_finite else np.nan
+    sd = float(np.std(finite, ddof=1)) if n_finite > 1 else np.nan
+    se = sd / np.sqrt(n_finite) if n_finite > 1 and sd > 0 else np.nan
+    zscore = mean_depletion / se if np.isfinite(se) and se > 0 else np.nan
+    effect_size = mean_depletion / sd if np.isfinite(sd) and sd > 0 else np.nan
+    asymmetry = float(np.nanmean(np.abs(left_mean - right_mean)))
+    asymmetry /= max(abs(mean_depletion), np.finfo(float).eps)
+
+    if n_finite < 30:
+        status = "underpowered"
+    elif mean_depletion <= 0 or not np.isfinite(zscore) or zscore < 1.96:
+        status = "not detected"
+    elif effect_size >= 0.5 and zscore >= 5:
+        status = "strong"
+    elif effect_size >= 0.2 and zscore >= 3:
+        status = "detectable"
+    else:
+        status = "weak"
+    return {
+        "n_sites": n_finite,
+        "mean_depletion": mean_depletion,
+        "depletion_se": float(se),
+        "depletion_z": float(zscore),
+        "depletion_effect_size": float(effect_size),
+        "shoulder_asymmetry": asymmetry,
+        "detectability": status,
+    }
+
+
 def calculate_group_aggregates(signal_dict, regions_dict, region_names, condition_names, condition_groups, motif_widths, args):
     """Calculate aggregate mean profiles and optional replicate SD profiles."""
 
     sample_aggregates = {sample: {} for samples in condition_groups.values() for sample in samples}
+    sample_site_se = {sample: {} for sample in sample_aggregates}
+    sample_site_matrices = {sample: {} for sample in sample_aggregates}
     for sample_name in sample_aggregates:
         for region_name in region_names:
-            signalmat = np.array([signal_dict[sample_name][reg.tup()] for reg in regions_dict[region_name]])
+            profiles = [signal_dict[sample_name][reg.tup()] for reg in regions_dict[region_name]]
+            signalmat = np.vstack(profiles) if profiles else np.zeros((0, args.width), dtype=float)
             if signalmat.shape[0] == 0:
                 aggregate = np.zeros(args.width)
             else:
@@ -176,22 +273,36 @@ def calculate_group_aggregates(signal_dict, regions_dict, region_names, conditio
                 if signalmat.shape[0] == 0:
                     aggregate = np.zeros(args.width)
                 else:
+                    signalmat = normalize_site_profiles(
+                        signalmat,
+                        mode=getattr(args, "site_normalization", "none"),
+                        clip=getattr(args, "site_normalization_clip", 5.0),
+                    )
                     if args.log_transform:
                         signal_mat_abs = np.abs(signalmat)
                         signal_mat_log = np.log2(signal_mat_abs + 1)
                         signal_mat_log[signalmat < 0] *= -1
                         signalmat = signal_mat_log
+                    if args.smooth > 1:
+                        smoothed_rows = []
+                        for site_profile in signalmat:
+                            extended = np.pad(site_profile, args.smooth, "edge")
+                            smoothed = fast_rolling_math(extended.astype("float64"), args.smooth, "mean")
+                            smoothed_rows.append(smoothed[args.smooth:-args.smooth])
+                        signalmat = np.vstack(smoothed_rows)
                     aggregate = np.nanmean(signalmat, axis=0)
                     if args.normalize:
                         aggregate = preprocessing.minmax_scale(aggregate)
-                    if args.smooth > 1:
-                        agg_ext = np.pad(aggregate, args.smooth, "edge")
-                        agg_smooth = fast_rolling_math(agg_ext.astype("float64"), args.smooth, "mean")
-                        aggregate = agg_smooth[args.smooth:-args.smooth]
             sample_aggregates[sample_name][region_name] = aggregate
+            sample_site_matrices[sample_name][region_name] = signalmat
+            if signalmat.shape[0] > 1:
+                sample_site_se[sample_name][region_name] = np.nanstd(signalmat, axis=0, ddof=1) / np.sqrt(signalmat.shape[0])
+            else:
+                sample_site_se[sample_name][region_name] = np.full(aggregate.shape, np.nan)
 
     aggregate_dict = {cond: {} for cond in condition_names}
     aggregate_sd_dict = {cond: {} for cond in condition_names}
+    aggregate_ci_dict = {cond: {} for cond in condition_names}
     aggregated_fp_scores = {}
     stats_rows = []
     for cond in condition_names:
@@ -202,6 +313,9 @@ def calculate_group_aggregates(signal_dict, regions_dict, region_names, conditio
             sd_profile = np.nanstd(stack, axis=0, ddof=1) if len(samples) > 1 else np.full(mean_profile.shape, np.nan)
             aggregate_dict[cond][region_name] = mean_profile
             aggregate_sd_dict[cond][region_name] = sd_profile
+            site_se_stack = np.vstack([sample_site_se[sample][region_name] for sample in samples])
+            combined_site_se = np.sqrt(np.nansum(np.square(site_se_stack), axis=0)) / len(samples)
+            aggregate_ci_dict[cond][region_name] = 1.96 * combined_site_se
             flank_len = args.flank
             motif_w = motif_widths[region_name]
             mid_start = max(0, int(flank_len - np.floor(motif_w / 2.0)))
@@ -211,6 +325,8 @@ def calculate_group_aggregates(signal_dict, regions_dict, region_names, conditio
             mean_flank = np.mean(mean_profile[flank_indices]) if flank_indices else 0.0
             depletion = max(0.0, mean_flank - mean_mid)
             aggregated_fp_scores[(cond, region_name)] = mean_flank + depletion
+            pooled_matrix = np.vstack([sample_site_matrices[sample][region_name] for sample in samples])
+            diagnostics = profile_shape_diagnostics(pooled_matrix, motif_w, flank_len)
             stats_rows.append({
                 "condition": cond,
                 "regions": region_name,
@@ -220,8 +336,10 @@ def calculate_group_aggregates(signal_dict, regions_dict, region_names, conditio
                 "mean_flank": float(mean_flank),
                 "mean_center": float(mean_mid),
                 "aggregate_fp_score": float(aggregated_fp_scores[(cond, region_name)]),
+                "site_normalization": getattr(args, "site_normalization", "none"),
+                **diagnostics,
             })
-    return aggregate_dict, aggregate_sd_dict, aggregated_fp_scores, stats_rows
+    return aggregate_dict, aggregate_sd_dict, aggregate_ci_dict, aggregated_fp_scores, stats_rows
 
 
 def plot_normalization_comparison(raw_aggregates, norm_aggregates, condition_names, region_names, output, title="Raw vs quantile-normalized aggregates"):
@@ -644,15 +762,18 @@ def run_aggregate(args):
         sys.exit(1)
 
     logger.info("Calculating aggregate signals")
-    raw_aggregate_dict, raw_aggregate_sd_dict, _, _ = calculate_group_aggregates(
+    raw_aggregate_dict, raw_aggregate_sd_dict, _, _, _ = calculate_group_aggregates(
         signal_dict, regions_dict, region_names, signal_names, condition_groups, motif_widths, args
     )
     normalized_signal_dict = apply_quantile_normalization_to_signal_dict(
         signal_dict, region_names, regions_dict, sample_names, signal_names, condition_groups, args.normalization, logger
     )
-    aggregate_dict, aggregate_sd_dict, aggregated_fp_scores, aggregate_stats = calculate_group_aggregates(
+    aggregate_dict, aggregate_sd_dict, aggregate_ci_dict, aggregated_fp_scores, aggregate_stats = calculate_group_aggregates(
         normalized_signal_dict, regions_dict, region_names, signal_names, condition_groups, motif_widths, args
     )
+    aggregate_stats_lookup = {
+        (row["condition"], row["regions"]): row for row in aggregate_stats
+    }
 
     if args.normalization_comparison_output is not None and args.normalization != "none":
         plot_normalization_comparison(
@@ -666,18 +787,6 @@ def run_aggregate(args):
 
     signal_dict = None
     normalized_signal_dict = None
-
-    all_values = np.concatenate([
-        aggregate_dict[sig][reg]
-        for sig in signal_names
-        for reg in region_names
-    ])
-    y_min_global = np.nanmin(all_values)
-    y_max_global = np.nanmax(all_values)
-    y_range = y_max_global - y_min_global
-    pad = 0.05 * y_range if np.isfinite(y_range) and y_range > 0 else 0.1
-    y_min_global -= pad
-    y_max_global += pad
 
     if args.output_txt is not None:
         with open(args.output_txt, "w") as handle:
@@ -719,7 +828,12 @@ def run_aggregate(args):
 
     if args.output_aggregated_stats is not None:
         with open(args.output_aggregated_stats, "w") as handle:
-            header = ["condition", "regions", "n_replicates", "mean_profile", "mean_profile_sd", "mean_flank", "mean_center", "aggregate_fp_score"]
+            header = [
+                "condition", "regions", "n_replicates", "n_sites", "mean_profile",
+                "mean_profile_sd", "mean_flank", "mean_center", "aggregate_fp_score",
+                "site_normalization", "mean_depletion", "depletion_se", "depletion_z",
+                "depletion_effect_size", "shoulder_asymmetry", "detectability",
+            ]
             handle.write(",".join(header) + "\n")
             for row in aggregate_stats:
                 handle.write(",".join(str(row[col]) for col in header) + "\n")
@@ -740,6 +854,48 @@ def run_aggregate(args):
         suptitle_text = args.title
 
     total_panels = len(all_plots)
+
+    def panel_scale_group(panel_index, combo):
+        if args.share_y == "both":
+            return "all"
+        if control_label is not None:
+            region_name, other_signal = combo
+            if args.share_y == "signals":
+                return ("region", region_name)
+            if args.share_y == "sites":
+                return ("signal", other_signal)
+        else:
+            signal_name, region_name = combo
+            if args.share_y == "signals":
+                return ("region", region_name)
+            if args.share_y == "sites":
+                return ("signal", signal_name)
+        return ("panel", panel_index)
+
+    scale_values = {}
+    panel_scale_groups = []
+    for panel_index, combo in enumerate(all_plots):
+        group = panel_scale_group(panel_index, combo)
+        panel_scale_groups.append(group)
+        if control_label is not None:
+            region_name, other_signal = combo
+            values = [aggregate_dict[control_label][region_name], aggregate_dict[other_signal][region_name]]
+        else:
+            signal_name, region_name = combo
+            values = [aggregate_dict[signal_name][region_name]]
+        scale_values.setdefault(group, []).extend(values)
+    scale_limits = {}
+    for group, values in scale_values.items():
+        finite = np.concatenate(values)
+        finite = finite[np.isfinite(finite)]
+        if len(finite):
+            lower, upper = float(np.min(finite)), float(np.max(finite))
+            value_range = upper - lower
+            pad = 0.05 * value_range if value_range > 0 else 0.1
+            scale_limits[group] = (lower - pad, upper + pad)
+        else:
+            scale_limits[group] = (-0.1, 0.1)
+
     grid_spec = None
     if args.grid is not None:
         try:
@@ -766,7 +922,7 @@ def run_aggregate(args):
         n_cols,
         figsize=(n_cols * PANEL_SIZE_IN, n_rows * PANEL_SIZE_IN),
         sharex=True,
-        sharey=True,
+        sharey=False,
         constrained_layout=True,
     )
 
@@ -794,11 +950,19 @@ def run_aggregate(args):
             num_sites = len(regions_dict[region_name])
 
             ax.plot(xvals, aggregate_dict[control_label][region_name], color="black", linewidth=1, label=control_label, zorder=1)
+            if args.show_site_ci and np.isfinite(aggregate_ci_dict[control_label][region_name]).any():
+                ci = aggregate_ci_dict[control_label][region_name]
+                mean = aggregate_dict[control_label][region_name]
+                ax.fill_between(xvals, mean - ci, mean + ci, color="black", alpha=0.10, linewidth=0, zorder=0)
             if args.show_replicate_sd and np.isfinite(aggregate_sd_dict[control_label][region_name]).any():
                 sd = aggregate_sd_dict[control_label][region_name]
                 mean = aggregate_dict[control_label][region_name]
                 ax.fill_between(xvals, mean - sd, mean + sd, color="black", alpha=0.15, linewidth=0, zorder=0)
             ax.plot(xvals, aggregate_dict[other_signal][region_name], color="tab:red", linewidth=1, label=other_signal, zorder=2)
+            if args.show_site_ci and np.isfinite(aggregate_ci_dict[other_signal][region_name]).any():
+                ci = aggregate_ci_dict[other_signal][region_name]
+                mean = aggregate_dict[other_signal][region_name]
+                ax.fill_between(xvals, mean - ci, mean + ci, color="tab:red", alpha=0.10, linewidth=0, zorder=1)
             if args.show_replicate_sd and np.isfinite(aggregate_sd_dict[other_signal][region_name]).any():
                 sd = aggregate_sd_dict[other_signal][region_name]
                 mean = aggregate_dict[other_signal][region_name]
@@ -812,6 +976,10 @@ def run_aggregate(args):
             num_sites = len(regions_dict[region_name])
 
             ax.plot(xvals, aggregate_dict[signal_name][region_name], color="tab:blue", linewidth=1)
+            if args.show_site_ci and np.isfinite(aggregate_ci_dict[signal_name][region_name]).any():
+                ci = aggregate_ci_dict[signal_name][region_name]
+                mean = aggregate_dict[signal_name][region_name]
+                ax.fill_between(xvals, mean - ci, mean + ci, color="tab:blue", alpha=0.16, linewidth=0)
             if args.show_replicate_sd and np.isfinite(aggregate_sd_dict[signal_name][region_name]).any():
                 sd = aggregate_sd_dict[signal_name][region_name]
                 mean = aggregate_dict[signal_name][region_name]
@@ -829,9 +997,18 @@ def run_aggregate(args):
             ax.set_ylabel(region_name, fontsize=PDF_FONT_SIZE, fontweight="bold")
             ax.set_xlabel("bp from center", fontsize=PDF_FONT_SIZE, fontweight="bold")
 
+            if args.shape_diagnostics:
+                diagnostics = aggregate_stats_lookup[(signal_name, region_name)]
+                label = diagnostics["detectability"].replace("_", " ")
+                zscore = diagnostics["depletion_z"]
+                ztext = f"z={zscore:.1f}" if np.isfinite(zscore) else "z=NA"
+                ax.text(
+                    0.02, 0.98, f"{label}; {ztext}", transform=ax.transAxes,
+                    fontsize=max(6, PDF_FONT_SIZE - 1), fontweight="bold", va="top", ha="left",
+                )
+
         ax.set_xlim(-flank, flank)
-        if idx == 0:
-            ax.set_ylim(y_min_global, y_max_global)
+        ax.set_ylim(*scale_limits[panel_scale_groups[idx]])
         ax.xaxis.set_major_formatter(ascii_tick_formatter())
         ax.yaxis.set_major_formatter(ascii_tick_formatter(decimals=2))
         ax.tick_params(axis="x", labelbottom=True)

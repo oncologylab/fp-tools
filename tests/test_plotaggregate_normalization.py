@@ -12,6 +12,8 @@ from fp_tools.tools.plot_aggregate import (
     apply_quantile_normalization_to_signal_dict,
     build_condition_groups,
     calculate_group_aggregates,
+    normalize_site_profiles,
+    profile_shape_diagnostics,
     plot_normalization_comparison,
 )
 
@@ -38,6 +40,36 @@ class PlotAggregateNormalizationTest(unittest.TestCase):
         self.assertEqual(args.normalization, "sample-quantile")
         self.assertTrue(args.show_replicate_sd)
 
+    def test_parser_accepts_site_shape_options(self):
+        parser = add_aggregate_arguments(argparse.ArgumentParser())
+        args = parser.parse_args([
+            "--site-normalization", "flank-rms",
+            "--site-normalization-clip", "4",
+            "--show-site-ci",
+            "--shape-diagnostics",
+        ])
+        self.assertEqual(args.site_normalization, "flank-rms")
+        self.assertEqual(args.site_normalization_clip, 4.0)
+        self.assertTrue(args.show_site_ci)
+        self.assertTrue(args.shape_diagnostics)
+
+    def test_flank_rms_normalization_reveals_shared_shape(self):
+        profile = np.r_[np.ones(20) * 2, np.zeros(20), np.ones(20) * 2]
+        matrix = np.vstack([profile, profile, profile, profile * 10])
+        normalized = normalize_site_profiles(matrix, mode="flank-rms", clip=5)
+        np.testing.assert_allclose(normalized[0], normalized[-1])
+        self.assertLess(float(np.mean(normalized[:, 20:40])), float(np.mean(normalized[:, :20])))
+
+    def test_shape_diagnostics_separate_strong_and_underpowered(self):
+        rng = np.random.default_rng(7)
+        strong = rng.normal(0, 0.1, size=(100, 120))
+        strong[:, 52:68] -= 1.0
+        diagnostics = profile_shape_diagnostics(strong, motif_width=16, flank=60)
+        self.assertEqual(diagnostics["detectability"], "strong")
+        self.assertGreater(diagnostics["depletion_z"], 5)
+        underpowered = profile_shape_diagnostics(strong[:10], motif_width=16, flank=60)
+        self.assertEqual(underpowered["detectability"], "underpowered")
+
     def test_repeated_condition_names_group_replicates(self):
         conditions, groups = build_condition_groups(
             ["B_rep1", "B_rep2", "T_rep1"],
@@ -60,11 +92,11 @@ class PlotAggregateNormalizationTest(unittest.TestCase):
             ["B", "B", "T", "T"],
         )
         args = SimpleNamespace(width=3, remove_outliers=1, log_transform=False, normalize=False, smooth=1, flank=1)
-        raw, _, _, _ = calculate_group_aggregates(signal_dict, regions, region_names, condition_names, groups, {"sites": 1}, args)
+        raw, _, _, _, _ = calculate_group_aggregates(signal_dict, regions, region_names, condition_names, groups, {"sites": 1}, args)
         normalized_signal = apply_quantile_normalization_to_signal_dict(
             signal_dict, region_names, regions, list(signal_dict), condition_names, groups, "sample-quantile", logger=None
         )
-        norm, sd, _, stats = calculate_group_aggregates(normalized_signal, regions, region_names, condition_names, groups, {"sites": 1}, args)
+        norm, sd, _, _, stats = calculate_group_aggregates(normalized_signal, regions, region_names, condition_names, groups, {"sites": 1}, args)
         before = abs(float(np.mean(raw["B"]["sites"])) - float(np.mean(raw["T"]["sites"])))
         after = abs(float(np.mean(norm["B"]["sites"])) - float(np.mean(norm["T"]["sites"])))
         self.assertLess(after, before)
