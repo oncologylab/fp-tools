@@ -380,3 +380,51 @@ functional-PC ceiling also remained below chance after balance. WTC11 MAX is
 therefore classified as low-information/assay-limited in this dataset rather
 than rescued by a different bias model, shift convention, or functional
 detector. No performance PDF is eligible for external sharing from this test.
+
+## Covariate-residualized FDA and null-calibrated calls
+
+Residualizing functional-PC scores against motif score and log accessibility
+before the unsupervised mixture improved mean AUROC by only 0.008 across the
+complete K562/HepG2 bias-and-shift factorial and reduced mean relative AUPRC
+by 23%. Some apparently large TBP, MEF2, and ZNF AUROC gains were accompanied
+by substantial precision loss, while ARID3A and CTCF often regressed. This
+variant is rejected as a detector improvement.
+
+The first naked-DNA experiment exposed a more fundamental problem with every
+two-state detector: a mixture always partitions its input, even when no TF is
+bound, so a universal posterior threshold of 0.5 manufactured a bound state.
+Candidate false-positive rates reached 42--48% of all sites for several count
+models, and the conventional DWM references also reached 12--40%. Posterior
+probabilities are therefore useful ranks but are not calibrated binding
+probabilities.
+
+A label-free empirical threshold from naked-DNA chromosomes 1--15, using the
+upper 2.5% tail, transferred to naked-DNA chromosomes 16--18 with every one of
+30 candidate/reference groups below the 5% safety ceiling. The maximum
+all-site rates were 2.76% for candidates and 2.55% for DWM; maximum rates among
+informative sites were 4.74% and 4.21%. This fixes the artificial-null call
+rate but does not change AUROC or AUPRC.
+
+Naked DNA alone did not reproduce broad accessibility structure in cellular
+ATAC. A second label-free null was therefore constructed by cyclically moving
+each motif-oriented ATAC profile by 35 or 45 bp in either direction. This
+preserves per-site coverage and cut distributions while breaking alignment to
+the motif center. The dual-null rule takes the stricter per-TF threshold from
+naked DNA and shifted cellular ATAC. On the untouched naked-DNA chromosome
+panel, all 30 groups again remained below 5%; the shifted-ATAC null became the
+limiting threshold for every promoted count detector.
+
+On development validation chromosomes, the dual-null rule reduced candidate
+ChIP-negative call rates for MEF2, TBP, and ZNF models from roughly 13--25% to
+0.2--1.8%, while retaining modest sensitivity. Continuous-score improvements
+over DWM remained large for several tasks, including HepG2 MEF2D (+0.236
+AUROC), HepG2 MEF2A (+0.152), K562 ZNF384 (+0.140), and K562 MEF2D (+0.108).
+HepG2 FOXA1 remained unsafe at 14.6% and is an explicit abstention case.
+
+These are development-label results, and the corresponding family routes did
+not transfer on the already-scored GM12878/IMR-90 holdout. The 2.5% dual-null
+choice was also made after observing the first null-calibration behavior.
+Consequently it is a mechanistic advance and a preregistered hypothesis for a
+new holdout, not a package promotion. Independent naked-DNA replicates and a
+new cell/TF occupancy panel are still required. No Box performance folder is
+created from these results.

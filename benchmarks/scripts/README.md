@@ -20,6 +20,8 @@ false-footprint rates can be checked for replicate consistency before pooling.
 - `downsample_bam_depth_matrix.py`: create all missing depth/seed BAM subsets in one source-BAM scan while preserving the same deterministic nested-fragment rule.
 - `evaluate_functional_template_transfer.py`: measure shape-only same-cell, cross-cell TF, leave-TF-out family, and global functional-template ceilings without opening locked holdouts.
 - `evaluate_functional_depth_matrix.py`: apply 10M-frozen TF shape settings across deterministic 10M/25M/50M/full matrices, classify depth limits, and render per-TF depth/aggregate panels.
+- `evaluate_shifted_atac_null_policy.py`: score frozen detectors after deliberately misaligning motif-centered cellular ATAC profiles, providing a label-free accessibility/nucleosome null that complements naked DNA.
+- `calibrate_dual_null_posteriors.py`: require posterior calls to exceed conservative per-TF thresholds from both naked DNA and motif-misaligned cellular ATAC.
 - `ensemble_parametric_bias_models.py`: combine compatible seed fits into one checksummed geometric coefficient ensemble for prespecified crossed controls.
 - `render_functional_aggregate_comparison.py`: render blinded DWM-versus-strand per-TF aggregate curves with bootstrap confidence bands and an explicit blinding key.
 - `evaluate_strand_label_free_models.py`: fit count spline/GP, FDA, and hybrid mixtures on separate label-free strand artifacts and score only development validation labels.
