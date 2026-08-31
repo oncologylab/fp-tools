@@ -615,6 +615,47 @@ class ManifestValidationTest(unittest.TestCase):
         self.assertTrue(freeze["policy_frozen_before_holdout"])
         self.assertTrue(freeze["development_labels_used_for_policy_selection"])
 
+    def test_wtc11_max_external_validation_is_pinned_before_scoring(self):
+        manifest_root = ROOT / "benchmarks" / "manifests"
+        freeze = json.loads(
+            (manifest_root / "functional_max_wtc11_validation_v1.freeze.json")
+            .read_text(encoding="utf-8")
+        )
+        files = pd.read_csv(
+            manifest_root / "functional_max_wtc11_validation_v1.tsv",
+            sep="\t",
+            dtype=str,
+        )
+        self.assertEqual(freeze["status"], "frozen_before_label_content_download")
+        self.assertEqual(freeze["cell"], "WTC11")
+        self.assertEqual(freeze["task"]["tf"], "MAX")
+        self.assertEqual(freeze["task"]["motif_id"], "MA0058.4")
+        self.assertEqual(
+            freeze["candidate"]["candidate_id"],
+            "anchored-fda.shared_strand_residual.pool_family.anchor_2p0",
+        )
+        self.assertEqual(freeze["candidate"]["read_shift"], [4, -4])
+        self.assertEqual(freeze["reference"]["bias_configuration"], "DWM")
+        self.assertEqual(
+            freeze["reference"]["candidate_id"],
+            "fda.variance_0p95.components_20",
+        )
+        self.assertEqual(
+            set(files["file_accession"]),
+            {"ENCFF240QKT", "ENCFF127KFG", "ENCFF121CAA", "ENCFF760NBK"},
+        )
+        self.assertTrue(files["checksum"].str.fullmatch(r"[0-9a-f]{32}").all())
+        chip = files[files["assay"].eq("TF ChIP-seq")]
+        self.assertEqual(chip["file_accession"].item(), "ENCFF760NBK")
+        self.assertEqual(
+            freeze["evaluation_label"]["chip_peaks"],
+            chip["file_accession"].item(),
+        )
+        self.assertTrue(freeze["reporting"]["no_route_tuning_after_label_open"])
+        self.assertTrue(
+            freeze["reporting"]["box_pdf_allowed_only_if_primary_endpoints_pass"]
+        )
+
 
 class EngineeringBenchmarkHelperTest(unittest.TestCase):
     def test_records_command_runtime_metadata(self):
