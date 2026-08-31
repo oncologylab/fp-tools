@@ -569,6 +569,25 @@ class ManifestValidationTest(unittest.TestCase):
         self.assertTrue(peaks["biological_replicates"].eq("1,2").all())
         self.assertFalse(any("chip" in column.lower() for column in peaks.columns))
 
+    def test_functional_holdout_chip_manifest_matches_locked_tasks(self):
+        compact = ROOT / "benchmarks" / "manifests" / "compact"
+        path = compact / "functional_holdout_chip_peaks.tsv"
+        frame = pd.read_csv(path, sep="\t", dtype=str)
+        study = json.loads(
+            (ROOT / "benchmarks" / "manifests" / "footprint_functional_v1.spec.json")
+            .read_text(encoding="utf-8")
+        )
+        tasks = pd.DataFrame(study["tasks"])
+        tasks = tasks[tasks["split"].eq("locked_holdout")]
+        self.assertEqual(len(frame), 15)
+        self.assertEqual(
+            set(zip(frame["cell"], frame["tf"], frame["file_accession"])),
+            set(zip(tasks["cell"], tasks["tf"], tasks["chip_accession"])),
+        )
+        self.assertTrue(frame["checksum"].str.fullmatch(r"[0-9a-f]{32}").all())
+        self.assertTrue((frame["expected_bytes"].astype(int) > 10_000).all())
+        self.assertTrue(frame["url"].str.startswith("https://www.encodeproject.org/").all())
+
     def test_functional_detector_policy_is_frozen_before_holdout(self):
         compact = ROOT / "benchmarks" / "manifests" / "compact"
         policy = pd.read_csv(compact / "functional_detector_policy_v1.tsv", sep="\t")
