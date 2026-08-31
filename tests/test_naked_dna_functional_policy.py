@@ -23,6 +23,17 @@ def test_wilson_interval_contains_observed_rate():
     assert math.isnan(empty_low) and math.isnan(empty_high)
 
 
+def test_dwm_training_artifact_parser_and_missing_source(tmp_path):
+    assert module.parse_dwm_training_artifact("WTC11,profiles.json") == (
+        "WTC11",
+        Path("profiles.json"),
+    )
+    with pytest.raises(ValueError, match="no DWM training source"):
+        module.load_dwm_training_source(
+            "WTC11", artifact_paths={}, base_run=None, flank=100
+        )
+
+
 def test_false_positive_summary_requires_signal_for_a_call():
     probabilities = np.array([0.99, 0.8, 0.2, np.nan])
     signal = np.array([0.0, 3.0, 4.0, 2.0])

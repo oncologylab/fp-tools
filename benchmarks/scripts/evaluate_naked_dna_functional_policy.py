@@ -101,6 +101,15 @@ def parse_dwm_artifact(value: str) -> tuple[str, str, Path]:
     return fields[0], fields[1], Path(fields[2])
 
 
+def parse_dwm_training_artifact(value: str) -> tuple[str, Path]:
+    fields = value.split(",", 1)
+    if len(fields) != 2 or not all(fields):
+        raise argparse.ArgumentTypeError(
+            "DWM training artifact must use CELL,JSON"
+        )
+    return fields[0], Path(fields[1])
+
+
 def _validate_label_free_sites(sites: pd.DataFrame, path: Path) -> None:
     forbidden = [
         column
@@ -191,6 +200,33 @@ def load_dwm_training(base_run: Path, cell: str, flank: int):
         profiles["observed"], profiles["expected"], 0.0
     )
     return sites, profiles, valid, hashes, inputs
+
+
+def load_dwm_training_source(
+    cell: str,
+    *,
+    artifact_paths: dict[str, Path],
+    base_run: Path | None,
+    flank: int,
+):
+    """Load an explicit combined artifact, with legacy cache fallback."""
+
+    if cell in artifact_paths:
+        path = artifact_paths[cell]
+        sites, profiles, valid, hashes, document = load_combined_artifact(
+            path, cell
+        )
+        return sites, profiles, valid, hashes, [
+            {
+                "path": str(path),
+                "sha256": file_sha256(path),
+                "profiles_sha256": str(document["profiles_sha256"]),
+                "sites_sha256": str(document["sites_sha256"]),
+            }
+        ]
+    if base_run is not None:
+        return load_dwm_training(base_run, cell, flank)
+    raise ValueError(f"no DWM training source was provided for {cell}")
 
 
 @dataclass
@@ -489,7 +525,8 @@ def evaluate(
     strand_training_paths: dict[tuple[str, str], Path],
     naked_strand_paths: dict[tuple[str, str, str], Path],
     naked_dwm_paths: dict[tuple[str, str], Path],
-    dwm_base_run: Path,
+    dwm_training_paths: dict[str, Path],
+    dwm_base_run: Path | None,
     threshold: float,
     seed: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
@@ -549,8 +586,11 @@ def evaluate(
             seed=stable_seed(cell, tf, candidate_id, seed=seed),
         )
         if cell not in dwm_training_cache:
-            dwm_training_cache[cell] = load_dwm_training(
-                dwm_base_run, cell, int(study["profile_flank_bp"])
+            dwm_training_cache[cell] = load_dwm_training_source(
+                cell,
+                artifact_paths=dwm_training_paths,
+                base_run=dwm_base_run,
+                flank=int(study["profile_flank_bp"]),
             )
             for record in dwm_training_cache[cell][4]:
                 input_records.append({"purpose": "dwm_training", **record})
@@ -797,7 +837,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         type=Path,
         default=Path("benchmarks/manifests/compact/functional_detector_policy_v1.tsv"),
     )
-    parser.add_argument("--dwm-base-run", type=Path, required=True)
+    parser.add_argument(
+        "--dwm-base-run",
+        type=Path,
+        help="Legacy development run containing DWM profile caches.",
+    )
+    parser.add_argument(
+        "--dwm-training-artifact",
+        action="append",
+        type=parse_dwm_training_artifact,
+        default=[],
+        metavar="CELL,JSON",
+        help="Explicit label-free combined DWM training artifact; repeat by cell.",
+    )
     parser.add_argument(
         "--strand-training-artifact",
         action="append",
@@ -837,12 +889,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     naked_dwm_paths = {
         (cell, replicate): path for cell, replicate, path in args.naked_dwm_artifact
     }
+    dwm_training_paths = dict(args.dwm_training_artifact)
+    if len(dwm_training_paths) != len(args.dwm_training_artifact):
+        raise SystemExit("duplicate --dwm-training-artifact cells")
+    if args.dwm_base_run is None and not dwm_training_paths:
+        raise SystemExit("provide --dwm-base-run or --dwm-training-artifact")
     summaries, scores, aggregates, result = evaluate(
         study=study,
         policy=policy,
         strand_training_paths=training_paths,
         naked_strand_paths=naked_strand_paths,
         naked_dwm_paths=naked_dwm_paths,
+        dwm_training_paths=dwm_training_paths,
         dwm_base_run=args.dwm_base_run,
         threshold=args.posterior_threshold,
         seed=args.seed,
