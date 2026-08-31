@@ -242,7 +242,12 @@ def complexity_evidence(
     gates: dict,
 ) -> tuple[bool, dict[str, object]]:
     method = candidate.split(":", 1)[-1].lower()
-    requires_gp_gate = method in {"gp", "hybrid", "functional-gp", "functional_gp"}
+    requires_gp_gate = candidate == "frozen_policy" or method in {
+        "gp",
+        "hybrid",
+        "functional-gp",
+        "functional_gp",
+    }
     evidence: dict[str, object] = {
         "required": requires_gp_gate,
         "mean_relative_auprc_gain_over_spline": np.nan,

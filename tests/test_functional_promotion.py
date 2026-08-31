@@ -11,6 +11,7 @@ SCRIPT_DIR = Path(__file__).resolve().parents[1] / "benchmarks" / "scripts"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from evaluate_functional_promotion import (  # noqa: E402
+    complexity_evidence,
     evaluate_promotion,
     prepare_pairs,
 )
@@ -175,3 +176,14 @@ def test_prepare_pairs_rejects_incomplete_frozen_task_coverage() -> None:
             "DWM:spline",
             "development",
         )
+
+
+def test_mixed_frozen_policy_cannot_bypass_gp_complexity_gate() -> None:
+    study = json.loads(SPEC.read_text(encoding="utf-8"))
+    passed, evidence = complexity_evidence(
+        None,
+        "frozen_policy",
+        study["promotion_gates"],
+    )
+    assert evidence["required"]
+    assert not passed
