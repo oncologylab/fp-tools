@@ -331,6 +331,26 @@ class TfFootprintModelSearchTest(unittest.TestCase):
         normalized = search_tf_profile_classifiers.normalize_profiles(profiles, "outer_rms")
         self.assertTrue(np.isfinite(normalized).all())
 
+    def test_profile_classifier_orients_reverse_strand(self):
+        profiles = {"DWM": np.array([[1.0, 2.0, 3.0], [3.0, 2.0, 1.0]])}
+        spec = search_tf_profile_classifiers.FeatureSpec(
+            ("DWM",), "none", folded=False, oriented=True, bins=3
+        )
+        features = search_tf_profile_classifiers.make_features(
+            profiles, spec, np.array(["+", "-"])
+        )
+        np.testing.assert_allclose(features[0], features[1])
+
+    def test_profile_classifier_compares_orientation_without_pooling_test(self):
+        rows = pd.DataFrame(
+            [
+                {"cell": "K562", "tf": "CTCF", "oriented": False, "validation_auroc": 0.7, "validation_auprc": 0.7, "test_auroc": 0.8, "test_auprc": 0.8},
+                {"cell": "K562", "tf": "CTCF", "oriented": True, "validation_auroc": 0.75, "validation_auprc": 0.75, "test_auroc": 0.82, "test_auprc": 0.81},
+            ]
+        )
+        result = search_tf_profile_classifiers.orientation_comparison(rows)
+        self.assertAlmostEqual(float(result.loc[0, "delta_test_auroc"]), 0.02)
+
     def test_matched_template_learns_positive_shape(self):
         features = np.array([[0.0, 0.0], [0.1, 0.0], [1.0, 2.0], [1.1, 2.1]])
         labels = np.array([0, 0, 1, 1])

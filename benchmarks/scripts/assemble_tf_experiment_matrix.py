@@ -60,6 +60,13 @@ def likely_drivers(row: pd.Series) -> str:
         drivers.append("depth_limited")
     if float(row.get("depth_delta_auroc", 0.0)) <= -0.03:
         drivers.append("replicate_or_depth_instability")
+    if float(row.get("seed_max_abs_seed_delta_auroc", 0.0)) >= 0.05:
+        drivers.append("read_sampling_instability")
+    if (
+        float(row.get("orientation_delta_validation_auroc", 0.0)) >= 0.03
+        and float(row.get("orientation_delta_test_auroc", 0.0)) >= 0.03
+    ):
+        drivers.append("strand_asymmetry_candidate")
     if float(row.get("classifier_delta_auroc", 0.0)) >= 0.03:
         drivers.append("learnable_shape_missed_by_kernel")
     if float(row.get("classifier_replicate_auroc", 0.0)) >= 0.65:
@@ -81,6 +88,8 @@ def assemble(
     classifiers: pd.DataFrame,
     classifier_replicates: pd.DataFrame,
     bias_summary: pd.DataFrame,
+    seed_summary: pd.DataFrame,
+    orientation_summary: pd.DataFrame,
 ) -> pd.DataFrame:
     boot = bootstrap.pivot_table(
         index=KEY,
@@ -101,6 +110,8 @@ def assemble(
         _prefixed(classifiers, "classifier_"),
         _prefixed(classifier_replicates, "classifier_replicate_"),
         _prefixed(bias_summary, "bias_"),
+        _prefixed(seed_summary, "seed_"),
+        _prefixed(orientation_summary, "orientation_"),
     ):
         output = output.merge(frame, on=KEY, how="left", validate="one_to_one")
     output["classifier_delta_auroc"] = (
@@ -118,7 +129,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in (
         "matching", "quick", "bootstrap", "correction", "depth", "full-grid",
-        "classifiers", "classifier-replicates", "bias-summary",
+        "classifiers", "classifier-replicates", "bias-summary", "seed-summary",
+        "orientation-summary",
     ):
         parser.add_argument(f"--{name}", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -126,7 +138,8 @@ def main(argv: list[str] | None = None) -> int:
     result = assemble(
         *(pd.read_csv(getattr(args, name.replace("-", "_")), sep="\t") for name in (
             "matching", "quick", "bootstrap", "correction", "depth", "full_grid",
-            "classifiers", "classifier_replicates", "bias_summary",
+            "classifiers", "classifier_replicates", "bias_summary", "seed_summary",
+            "orientation_summary",
         ))
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)

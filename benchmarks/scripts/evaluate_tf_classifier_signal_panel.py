@@ -39,6 +39,7 @@ def feature_from_row(row) -> FeatureSpec:
         signals=("DWM",),
         normalization=str(row.normalization),
         folded=bool(row.folded),
+        oriented=bool(row.oriented),
         bins=int(match.group(1)),
     )
 
@@ -70,7 +71,9 @@ def evaluate(
             positions = np.flatnonzero(cell_dev["tf"].to_numpy() == tf)
             labels = cell_dev.iloc[positions]["chip_label"].to_numpy(dtype=int)
             feature = feature_from_row(winner)
-            features = make_features({"DWM": development_profiles}, feature)
+            features = make_features(
+                {"DWM": development_profiles}, feature, cell_dev["TFBS_strand"].to_numpy()
+            )
             model_spec = ModelSpec(str(winner.model_family), float(winner.model_parameter))
             model = build_model(model_spec, seed).fit(features[positions], labels)
             models[tf] = model
@@ -83,7 +86,9 @@ def evaluate(
             if len(profiles) != len(cell_test):
                 raise ValueError(f"site/profile row mismatch: {cache}")
             feature_cache = {
-                spec.identifier: make_features({"DWM": profiles}, spec)
+                spec.identifier: make_features(
+                    {"DWM": profiles}, spec, cell_test["TFBS_strand"].to_numpy()
+                )
                 for spec in set(specs.values())
             }
             for tf, model in models.items():

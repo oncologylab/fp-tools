@@ -31,13 +31,15 @@ class FeatureSpec:
     signals: tuple[str, ...]
     normalization: str
     folded: bool
+    oriented: bool = False
     bins: int = 41
 
     @property
     def identifier(self) -> str:
         signals = "+".join(self.signals)
         shape = "folded" if self.folded else "full"
-        return f"{signals}.{self.normalization}.{shape}.b{self.bins}"
+        orientation = "oriented" if self.oriented else "genomic"
+        return f"{signals}.{self.normalization}.{shape}.{orientation}.b{self.bins}"
 
 
 @dataclass(frozen=True)
@@ -105,10 +107,21 @@ def fold_profiles(features: np.ndarray) -> np.ndarray:
     return (features[:, :middle][:, ::-1] + features[:, middle:]) / 2.0
 
 
-def make_features(profiles: dict[str, np.ndarray], spec: FeatureSpec) -> np.ndarray:
+def make_features(
+    profiles: dict[str, np.ndarray],
+    spec: FeatureSpec,
+    strands: np.ndarray | None = None,
+) -> np.ndarray:
     parts = []
     for signal in spec.signals:
-        values = normalize_profiles(np.asarray(profiles[signal], dtype=float), spec.normalization)
+        values = np.asarray(profiles[signal], dtype=float)
+        if spec.oriented:
+            if strands is None or len(strands) != len(values):
+                raise ValueError("oriented features require one motif strand per profile")
+            values = values.copy()
+            reverse = np.asarray(strands).astype(str) == "-"
+            values[reverse] = values[reverse, ::-1]
+        values = normalize_profiles(values, spec.normalization)
         values = pool_profiles(values, spec.bins)
         if spec.folded:
             values = fold_profiles(values)
@@ -119,10 +132,10 @@ def make_features(profiles: dict[str, np.ndarray], spec: FeatureSpec) -> np.ndar
 def feature_grid() -> list[FeatureSpec]:
     signal_sets = [(signal,) for signal in CORRECTIONS] + [CORRECTIONS]
     return [
-        FeatureSpec(signals, normalization, folded)
+        FeatureSpec(signals, normalization, folded, oriented)
         for signals in signal_sets
         for normalization in ("none", "outer_rms")
-        for folded in (False, True)
+        for folded, oriented in ((False, False), (False, True), (True, False))
     ]
 
 
@@ -179,6 +192,19 @@ def selection_score(metrics: dict[str, float | int]) -> float:
     return float(metrics["auroc"]) + adjusted_auprc
 
 
+def orientation_comparison(rows: pd.DataFrame) -> pd.DataFrame:
+    metrics = ["validation_auroc", "validation_auprc", "test_auroc", "test_auprc"]
+    pivot = rows.pivot(index=["cell", "tf"], columns="oriented", values=metrics)
+    pivot.columns = [
+        f"{metric}_{'oriented' if oriented else 'genomic'}"
+        for metric, oriented in pivot.columns
+    ]
+    pivot = pivot.reset_index()
+    for metric in metrics:
+        pivot[f"delta_{metric}"] = pivot[f"{metric}_oriented"] - pivot[f"{metric}_genomic"]
+    return pivot
+
+
 def load_cell_profiles(cache_dir: Path, cell: str, flank: int) -> dict[str, np.ndarray]:
     output = {}
     for correction in CORRECTIONS:
@@ -199,12 +225,15 @@ def evaluate(
     test_cache: Path,
     flank: int,
     seed: int,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[
+    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame
+]:
     validation_rows = []
     family_test_rows = []
     winner_rows = []
     overall_test_rows = []
     prediction_rows = []
+    orientation_test_rows = []
     for cell in sorted(set(development_sites["cell"]).intersection(test_sites["cell"])):
         dev_cell = development_sites[development_sites["cell"] == cell].reset_index(drop=True)
         test_cell = test_sites[test_sites["cell"] == cell].reset_index(drop=True)
@@ -212,8 +241,14 @@ def evaluate(
         heldout_profiles = load_cell_profiles(test_cache, cell, flank)
         if len(dev_cell) != len(next(iter(dev_profiles.values()))) or len(test_cell) != len(next(iter(heldout_profiles.values()))):
             raise ValueError(f"site/profile row mismatch for {cell}")
-        dev_features = {spec.identifier: make_features(dev_profiles, spec) for spec in feature_grid()}
-        test_features = {spec.identifier: make_features(heldout_profiles, spec) for spec in feature_grid()}
+        dev_features = {
+            spec.identifier: make_features(dev_profiles, spec, dev_cell["TFBS_strand"].to_numpy())
+            for spec in feature_grid()
+        }
+        test_features = {
+            spec.identifier: make_features(heldout_profiles, spec, test_cell["TFBS_strand"].to_numpy())
+            for spec in feature_grid()
+        }
         common_tfs = sorted(set(dev_cell["tf"]).intersection(test_cell["tf"]))
         for tf in common_tfs:
             dev_positions = np.flatnonzero(dev_cell["tf"].to_numpy() == tf)
@@ -240,6 +275,7 @@ def evaluate(
                         "signals": "+".join(feature.signals),
                         "normalization": feature.normalization,
                         "folded": feature.folded,
+                        "oriented": feature.oriented,
                         "model_family": model_spec.family,
                         "model_parameter": model_spec.parameter,
                         **metrics,
@@ -259,8 +295,33 @@ def evaluate(
                 family_test_rows.append(
                     {
                         **{key: row[key] for key in (
-                            "cell", "tf", "feature", "signals", "normalization", "folded",
+                            "cell", "tf", "feature", "signals", "normalization", "folded", "oriented",
                             "model_family", "model_parameter", "selection_score",
+                        )},
+                        "validation_auroc": row["auroc"],
+                        "validation_auprc": row["auprc"],
+                        **{f"test_{key}": value for key, value in metrics.items()},
+                    }
+                )
+            for oriented in (False, True):
+                eligible = [item for item in tf_validation if item[1].oriented == oriented]
+                selected_orientation = max(
+                    eligible, key=lambda item: (item[0]["selection_score"], item[0]["auprc"])
+                )
+                row, feature, model_spec = selected_orientation
+                fit_positions = np.concatenate([train_positions, validation_positions])
+                fit_labels = dev_cell.iloc[fit_positions]["chip_label"].to_numpy(dtype=int)
+                model = build_model(model_spec, seed)
+                model.fit(dev_features[feature.identifier][fit_positions], fit_labels)
+                metrics = binary_metrics(
+                    test_labels,
+                    model_scores(model, test_features[feature.identifier][test_positions]),
+                )
+                orientation_test_rows.append(
+                    {
+                        **{key: row[key] for key in (
+                            "cell", "tf", "feature", "signals", "normalization", "folded",
+                            "oriented", "model_family", "model_parameter", "selection_score",
                         )},
                         "validation_auroc": row["auroc"],
                         "validation_auprc": row["auprc"],
@@ -279,7 +340,7 @@ def evaluate(
             overall_test_rows.append(
                 {
                     **{key: row[key] for key in (
-                        "cell", "tf", "feature", "signals", "normalization", "folded",
+                        "cell", "tf", "feature", "signals", "normalization", "folded", "oriented",
                         "model_family", "model_parameter", "selection_score",
                     )},
                     "validation_auroc": row["auroc"],
@@ -311,6 +372,7 @@ def evaluate(
         pd.DataFrame(winner_rows),
         pd.DataFrame(overall_test_rows),
         pd.DataFrame(prediction_rows),
+        pd.DataFrame(orientation_test_rows),
     )
 
 
@@ -324,7 +386,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--flank", type=int, default=100)
     parser.add_argument("--seed", type=int, default=2026)
     args = parser.parse_args(argv)
-    validation, family_test, winners, overall_test, predictions = evaluate(
+    validation, family_test, winners, overall_test, predictions, orientation_test = evaluate(
         pd.read_csv(args.development_sites, sep="\t"),
         pd.read_csv(args.test_sites, sep="\t"),
         args.development_cache,
@@ -340,6 +402,12 @@ def main(argv: list[str] | None = None) -> int:
     predictions.to_csv(
         args.outdir / "classifier_overall_test_predictions.tsv.gz",
         sep="\t", index=False, compression="gzip",
+    )
+    orientation_test.to_csv(
+        args.outdir / "classifier_orientation_test_metrics.tsv", sep="\t", index=False
+    )
+    orientation_comparison(orientation_test).to_csv(
+        args.outdir / "classifier_orientation_comparison.tsv", sep="\t", index=False
     )
     print(overall_test.to_string(index=False))
     return 0
