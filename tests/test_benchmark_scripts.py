@@ -76,6 +76,7 @@ match_tf_sites_on_accessibility = load_module("match_tf_sites_on_accessibility",
 plot_frozen_tf_profiles = load_module("plot_frozen_tf_profiles", ROOT / "benchmarks" / "scripts" / "plot_frozen_tf_profiles.py")
 summarize_tf_footprint_search = load_module("summarize_tf_footprint_search", ROOT / "benchmarks" / "scripts" / "summarize_tf_footprint_search.py")
 evaluate_tf_correction_transfer = load_module("evaluate_tf_correction_transfer", ROOT / "benchmarks" / "scripts" / "evaluate_tf_correction_transfer.py")
+evaluate_tf_signal_panel = load_module("evaluate_tf_signal_panel", ROOT / "benchmarks" / "scripts" / "evaluate_tf_signal_panel.py")
 
 
 class TfFootprintModelSearchTest(unittest.TestCase):
@@ -306,6 +307,16 @@ class TfFootprintModelSearchTest(unittest.TestCase):
             {"raw": raw, "DWM": flat}, labels, candidate
         )
         self.assertEqual(metrics.loc[metrics["auroc"].idxmax(), "correction"], "raw")
+
+    def test_signal_panel_depth_comparison_uses_replicate_mean(self):
+        low = pd.DataFrame(
+            [{"cell": "K562", "tf": "CTCF", "depth": "10m", "auroc": 0.7, "auprc": 0.6}]
+        )
+        high = pd.DataFrame(
+            [{"cell": "K562", "tf": "CTCF", "depth": "full", "auroc": 0.8, "auprc": 0.75, "replicates": 3}]
+        )
+        result = evaluate_tf_signal_panel.depth_comparison(low, high)
+        self.assertAlmostEqual(float(result.loc[0, "delta_auroc"]), 0.1)
 
 
 class BigwigSiteScoreTest(unittest.TestCase):
