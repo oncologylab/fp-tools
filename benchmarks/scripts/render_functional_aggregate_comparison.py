@@ -326,12 +326,12 @@ def main(argv: list[str] | None = None) -> int:
                     handles,
                     labels_text,
                     loc="upper center",
-                    bbox_to_anchor=(0.5, 0.942),
+                    bbox_to_anchor=(0.5, 0.925),
                     ncol=2,
                     frameon=False,
                 )
             figure.suptitle(f"{cell} — {tf}: blinded matched aggregate profiles", y=0.992)
-            figure.subplots_adjust(top=0.84, bottom=0.09, left=0.06, right=0.99, hspace=0.08, wspace=0.04)
+            figure.subplots_adjust(top=0.80, bottom=0.09, left=0.06, right=0.99, hspace=0.08, wspace=0.04)
             pdf.savefig(figure)
             plt.close(figure)
     pd.DataFrame(key_rows).drop_duplicates().to_csv(key_out, sep="\t", index=False)
