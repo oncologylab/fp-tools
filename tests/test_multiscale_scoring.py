@@ -9,7 +9,8 @@ from fp_tools.parsers import add_aggregate_arguments, add_scorebigwig_arguments
 from fp_tools.tools.plot_aggregate import default_multiscale_output, plot_multiscale_aggregate_npz
 from fp_tools.utils.multiscale import (
     aggregate_multiscale_tensor, load_multiscale_npz, multiscale_depletion,
-    parse_scales, summarize_multiscale, trim_multiscale_features, write_multiscale_npz,
+    hybrid_footprint_score, parse_scales, summarize_multiscale, symmetric_depletion,
+    trim_multiscale_features, write_multiscale_npz,
 )
 
 
@@ -58,6 +59,27 @@ class MultiscaleScoringTest(unittest.TestCase):
         self.assertEqual(args.score, "multiscale")
         self.assertEqual(args.scales, [8, 16])
         self.assertEqual(args.multiscale_summary, "mean")
+
+    def test_symmetric_depletion_and_hybrid_recover_wide_shape(self):
+        signal = np.ones(201, dtype=float) * 4.0
+        signal[84:117] = -2.0
+        symmetric = symmetric_depletion(signal, center_width=33, flank_width=32)
+        self.assertEqual(int(np.argmax(symmetric)), 100)
+        self.assertGreater(symmetric[100], 2.0)
+        legacy = np.zeros_like(signal)
+        hybrid = hybrid_footprint_score(signal, legacy, weight=0.2)
+        self.assertAlmostEqual(float(hybrid[100]), float(0.2 * symmetric[100]))
+
+    def test_hybrid_parser_options_are_available(self):
+        parser = add_scorebigwig_arguments(argparse.ArgumentParser())
+        args = parser.parse_args([
+            "--score", "hybrid", "--hybrid-center-width", "35",
+            "--hybrid-flank-width", "30", "--hybrid-weight", "0.1",
+        ])
+        self.assertEqual(args.score, "hybrid")
+        self.assertEqual(args.hybrid_center_width, 35)
+        self.assertEqual(args.hybrid_flank_width, 30)
+        self.assertEqual(args.hybrid_weight, 0.1)
 
     def test_plotaggregate_multiscale_parser_options_are_available(self):
         parser = add_aggregate_arguments(argparse.ArgumentParser())

@@ -31,7 +31,7 @@ from fp_tools.utils.sequences import *          # kept for parity (even if not u
 from fp_tools.utils.signals import *            # fast_rolling_math, footprint_score_array, FOS_score
 from fp_tools.utils.signals import local_maxima_indices
 from fp_tools.utils.multiscale import (
-    multiscale_depletion, parse_scales, summarize_multiscale,
+    hybrid_footprint_score, multiscale_depletion, parse_scales, summarize_multiscale,
     trim_multiscale_features, write_multiscale_npz,
 )
 from fp_tools.utils.logger import FpToolsLogger
@@ -243,6 +243,17 @@ def calculate_scores(regions, args):
             else:
                 scores = footprint_score_array_fast(signal, args.flank_min, args.flank_max, args.fp_min, args.fp_max)
 
+        elif args.score == "hybrid":
+            legacy_scores = footprint_score_array_fast(signal, args.flank_min, args.flank_max, args.fp_min, args.fp_max)
+            scores = hybrid_footprint_score(
+                signal,
+                legacy_scores,
+                center_width=args.hybrid_center_width,
+                flank_width=args.hybrid_flank_width,
+                weight=args.hybrid_weight,
+                noise_floor=args.hybrid_noise_floor,
+            )
+
         elif args.score == "multiscale":
             features = multiscale_depletion(signal, args.scales)
             scores = summarize_multiscale(features, args.multiscale_summary)
@@ -288,7 +299,7 @@ def _local_maxima(values):
 def _write_candidate_bed(score_bigwig, regions, output_bed, args, chrom_info, logger):
     """Call ranked local footprint candidates from the scored bigWig."""
 
-    if args.score not in {"footprint", "FOS", "multiscale"}:
+    if args.score not in {"footprint", "hybrid", "FOS", "multiscale"}:
         logger.warning("--output-bed is intended for footprint-like scores; writing calls from the selected score anyway.")
 
     min_score = args.min_score
@@ -426,6 +437,15 @@ def _run_scorebigwig_single(args):
         args.region_flank = int(args.window / 2.0)
     elif args.score in ("footprint", "FOS"):
         args.region_flank = int(args.flank_max)
+    elif args.score == "hybrid":
+        if args.hybrid_center_width < 3 or args.hybrid_flank_width < 1:
+            sys.exit("--hybrid-center-width must be >= 3 and --hybrid-flank-width must be >= 1")
+        if args.hybrid_weight < 0 or args.hybrid_noise_floor <= 0:
+            sys.exit("--hybrid-weight must be >= 0 and --hybrid-noise-floor must be > 0")
+        args.region_flank = max(
+            int(args.flank_max),
+            int(args.hybrid_center_width // 2 + args.hybrid_flank_width + 1),
+        )
     elif args.score == "multiscale":
         args.scales = list(parse_scales(args.scales))
         args.region_flank = int(max(args.scales) * 2)

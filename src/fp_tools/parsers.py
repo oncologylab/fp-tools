@@ -103,7 +103,7 @@ def add_scorebigwig_arguments(parser):
 	required.add_argument('-r', '--regions', metavar="<bed>", help="Genomic regions to run footprinting within")
 
 	optargs = parser.add_argument_group('Optional arguments')
-	optargs.add_argument('--score', metavar="<score>", choices=["footprint", "sum", "mean", "none", "multiscale"], help="Type of scoring to perform on cutsites (footprint/sum/mean/none/multiscale) (default: footprint)", default="footprint")
+	optargs.add_argument('--score', metavar="<score>", choices=["footprint", "hybrid", "sum", "mean", "none", "multiscale"], help="Type of scoring to perform on cutsites (footprint/hybrid/sum/mean/none/multiscale) (default: footprint)", default="footprint")
 	optargs.add_argument('--absolute', action='store_true', help="Convert bigwig signal to absolute values before calculating score")
 	optargs.add_argument('--extend', metavar="<int>", type=int, help="Extend input regions with bp (default: 100)", default=100)
 	optargs.add_argument('--smooth', metavar="<int>", type=int, help="Smooth output signal by mean in <bp> windows (default: no smoothing)", default=1)
@@ -132,6 +132,12 @@ def add_scorebigwig_arguments(parser):
 	footprintargs.add_argument('--flank-min', metavar="<int>", type=int, help="Minimum range of flanking regions (default: 10)", default=10)
 	footprintargs.add_argument('--flank-max', metavar="<int>", type=int, help="Maximum range of flanking regions (default: 30)", default=30)
 	footprintargs.add_argument('--footprint-kernel', choices=["fast", "reference"], type=_footprint_kernel_argument, default="fast", help="Footprint scoring kernel (default: fast; use reference for the original scalar implementation)")
+
+	hybridargs = parser.add_argument_group('Parameters for score == hybrid')
+	hybridargs.add_argument('--hybrid-center-width', metavar="<int>", type=int, default=33, help="Central width of the symmetric hybrid channel (default: 33)")
+	hybridargs.add_argument('--hybrid-flank-width', metavar="<int>", type=int, default=32, help="Width of each adjacent hybrid shoulder (default: 32)")
+	hybridargs.add_argument('--hybrid-weight', metavar="<float>", type=float, default=0.2, help="Weight of the standardized symmetric channel added to the footprint score (default: 0.2)")
+	hybridargs.add_argument('--hybrid-noise-floor', metavar="<float>", type=float, default=0.001, help="Positive stabilization floor for hybrid local-noise scaling (default: 0.001)")
 
 	
 	sumargs = parser.add_argument_group('Parameters for score == sum')

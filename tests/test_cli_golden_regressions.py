@@ -180,6 +180,27 @@ class CliGoldenRegressionTest(unittest.TestCase):
             self.assertAlmostEqual(total, 106.694972, delta=1e-4)
             self.assertAlmostEqual(mean, 0.573629, places=6)
 
+    def test_hybrid_footprint_score_writes_readable_bigwig(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = pathlib.Path(tmpdir) / "footprints_hybrid.bw"
+            run_command(
+                [
+                    console_script("call-footprints"),
+                    "--signal", "test_data/Bcell_corrected.bw",
+                    "--regions", "test_data/merged_peaks.bed",
+                    "--output", output,
+                    "--score", "hybrid",
+                    "--cores", "1",
+                    "--verbosity", "1",
+                ]
+            )
+            self.assertTrue(output.exists())
+            chroms, count, total, mean = bigwig_window_summary(output)
+            self.assertEqual(chroms, {"chr4": 190214555})
+            self.assertGreater(count, 0)
+            self.assertTrue(np.isfinite(total))
+            self.assertTrue(np.isfinite(mean))
+
     def test_footprint_scores_sum_is_stable_across_core_counts(self):
         summaries = []
         with tempfile.TemporaryDirectory() as tmpdir:

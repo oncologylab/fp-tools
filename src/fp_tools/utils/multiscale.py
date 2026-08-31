@@ -71,6 +71,79 @@ def summarize_multiscale(features: dict[int, np.ndarray], method: str = "max") -
         return np.nanmean(matrix, axis=0)
     raise ValueError(f"Unsupported multiscale summary method: {method}")
 
+
+def symmetric_depletion(
+    signal: np.ndarray,
+    center_width: int = 33,
+    flank_width: int = 32,
+    noise_floor: float = 1e-3,
+) -> np.ndarray:
+    """Return a locally standardized, bilaterally symmetric depletion track.
+
+    Each valid position compares one central window with immediately adjacent
+    left and right shoulders. The contrast is divided by the square root of
+    local mean absolute signal so high-noise regions do not dominate solely
+    because of signal magnitude. Invalid edge positions are zero.
+    """
+
+    array = np.nan_to_num(np.asarray(signal, dtype=float), nan=0.0)
+    center_width = int(center_width)
+    flank_width = int(flank_width)
+    noise_floor = float(noise_floor)
+    if center_width < 3:
+        raise ValueError("center_width must be >= 3")
+    if flank_width < 1:
+        raise ValueError("flank_width must be >= 1")
+    if noise_floor <= 0:
+        raise ValueError("noise_floor must be > 0")
+
+    left_half = center_width // 2
+    right_half = center_width - left_half
+    first = left_half + flank_width
+    last = len(array) - right_half - flank_width
+    scores = np.zeros(len(array), dtype=float)
+    if last < first:
+        return scores
+
+    centers = np.arange(first, last + 1, dtype=int)
+    prefix = np.concatenate(([0.0], np.cumsum(array, dtype=float)))
+    absolute_prefix = np.concatenate(([0.0], np.cumsum(np.abs(array), dtype=float)))
+
+    center_start = centers - left_half
+    center_end = centers + right_half
+    left_start = center_start - flank_width
+    right_end = center_end + flank_width
+    center_mean = (prefix[center_end] - prefix[center_start]) / center_width
+    left_mean = (prefix[center_start] - prefix[left_start]) / flank_width
+    right_mean = (prefix[right_end] - prefix[center_end]) / flank_width
+    local_width = center_width + 2 * flank_width
+    local_absolute_mean = (absolute_prefix[right_end] - absolute_prefix[left_start]) / local_width
+    scores[centers] = ((left_mean + right_mean) / 2.0 - center_mean) / np.sqrt(local_absolute_mean + noise_floor)
+    return scores
+
+
+def hybrid_footprint_score(
+    signal: np.ndarray,
+    legacy_score: np.ndarray,
+    center_width: int = 33,
+    flank_width: int = 32,
+    weight: float = 0.2,
+    noise_floor: float = 1e-3,
+) -> np.ndarray:
+    """Add a low-weight wide symmetric channel to the existing footprint score."""
+
+    legacy = np.asarray(legacy_score, dtype=float)
+    if legacy.shape != np.asarray(signal).shape:
+        raise ValueError("signal and legacy_score must have identical shapes")
+    if weight < 0:
+        raise ValueError("weight must be >= 0")
+    return legacy + float(weight) * symmetric_depletion(
+        signal,
+        center_width=center_width,
+        flank_width=flank_width,
+        noise_floor=noise_floor,
+    )
+
 def trim_multiscale_features(features: dict[int, np.ndarray], flank: int) -> dict[int, np.ndarray]:
     """Trim flank bases from every scale-specific feature array."""
 
