@@ -17,10 +17,12 @@ import evaluate_frozen_functional_naked_dna  # noqa: E402
 import evaluate_frozen_functional_depth_matrix  # noqa: E402
 import evaluate_frozen_functional_policy  # noqa: E402
 import evaluate_parametric_factorization  # noqa: E402
+import sample_label_free_motif_sites  # noqa: E402
 import run_frozen_parametric_experiment  # noqa: E402
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
+import pytest  # noqa: E402
 
 
 def _record(
@@ -232,6 +234,64 @@ def test_naked_dna_rate_keeps_zero_cut_sites_in_finite_denominator() -> None:
     assert record["false_positive_rate"] == 0.25
     assert record["informative_false_positive_rate"] == 0.5
     assert calls.tolist() == [True, False, False, False]
+
+
+def test_label_free_motif_pool_is_deterministic_and_checksum_locked(
+    tmp_path: Path,
+) -> None:
+    study = tmp_path / "study.json"
+    study.write_text(
+        json.dumps(
+            {
+                "tasks": [
+                    {
+                        "cell": "CellA",
+                        "tf": "TF1",
+                        "motif_id": "MA0001.1",
+                        "motif_family": "FAMILY1",
+                        "split": "development",
+                    }
+                ],
+                "chromosome_split": {
+                    "train": ["chr1"],
+                    "validation": ["chr2"],
+                    "test": ["chr3"],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    source = tmp_path / "motifs.tsv"
+    pd.DataFrame(
+        {
+            "motif": ["TF1_MA0001.1"] * 120,
+            "TFBS_chr": ["chr1"] * 120,
+            "TFBS_start": np.arange(120) * 10,
+            "TFBS_end": np.arange(120) * 10 + 6,
+            "TFBS_strand": ["+"] * 120,
+            "TFBS_score": np.linspace(1.0, 2.0, 120),
+        }
+    ).to_csv(source, sep="\t", index=False)
+    outdir = tmp_path / "pools"
+    arguments = [
+        "--study",
+        str(study),
+        "--source",
+        f"CellA={source}",
+        "--maximum-per-tf",
+        "100",
+        "--outdir",
+        str(outdir),
+    ]
+    assert sample_label_free_motif_sites.main(arguments) == 0
+    output = outdir / "CellA.unlabeled_training_sites.tsv.gz"
+    first_hash = sample_label_free_motif_sites.file_sha256(output)
+    assert len(pd.read_csv(output, sep="\t")) == 100
+    assert sample_label_free_motif_sites.main(arguments) == 0
+    assert sample_label_free_motif_sites.file_sha256(output) == first_hash
+    output.write_bytes(output.read_bytes() + b"tampered")
+    with pytest.raises(ValueError, match="checksum mismatch"):
+        sample_label_free_motif_sites.main(arguments)
 
 
 def test_factorization_dwm_loader_accepts_verified_cache_and_rejects_parametric_label(
