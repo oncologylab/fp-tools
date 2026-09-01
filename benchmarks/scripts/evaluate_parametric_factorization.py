@@ -49,6 +49,7 @@ RESIDUAL_TIE_ORDER = (
     "log-ratio",
     "nb-center-flank",
 )
+DIFFICULT_ROLES = frozenset({"difficult", "weak_shape"})
 
 
 def sha256_file(path: str | Path) -> str:
@@ -304,18 +305,36 @@ def block_bootstrap_delta(
     labels = sites["chip_label"].to_numpy(dtype=int)
     rng = np.random.default_rng(seed)
     auroc, relative_ap = [], []
+    cache: dict[tuple[str, ...], tuple[float, float] | None] = {}
     for _ in range(iterations):
         sampled = rng.choice(chromosomes, size=len(chromosomes), replace=True)
-        indexes = np.concatenate([np.flatnonzero(chrom == value) for value in sampled])
-        if np.unique(labels[indexes]).size != 2:
+        key = tuple(sorted(sampled.astype(str).tolist()))
+        if key not in cache:
+            indexes = np.concatenate(
+                [np.flatnonzero(chrom == value) for value in key]
+            )
+            if np.unique(labels[indexes]).size != 2:
+                cache[key] = None
+                continue
+            base_auc = roc_auc_score(labels[indexes], baseline[indexes])
+            candidate_auc = roc_auc_score(labels[indexes], candidate[indexes])
+            base_ap = average_precision_score(labels[indexes], baseline[indexes])
+            candidate_ap = average_precision_score(
+                labels[indexes], candidate[indexes]
+            )
+            cache[key] = (
+                candidate_auc - base_auc,
+                (candidate_ap - base_ap) / max(base_ap, 1e-8),
+            )
+        values = cache[key]
+        if values is None:
             continue
-        base_auc = roc_auc_score(labels[indexes], baseline[indexes])
-        candidate_auc = roc_auc_score(labels[indexes], candidate[indexes])
-        base_ap = average_precision_score(labels[indexes], baseline[indexes])
-        candidate_ap = average_precision_score(labels[indexes], candidate[indexes])
-        auroc.append(candidate_auc - base_auc)
-        relative_ap.append((candidate_ap - base_ap) / max(base_ap, 1e-8))
-    output: dict[str, float | int] = {"bootstrap_successful": len(auroc)}
+        auroc.append(values[0])
+        relative_ap.append(values[1])
+    output: dict[str, float | int] = {
+        "bootstrap_successful": len(auroc),
+        "bootstrap_unique_resamples": len(cache),
+    }
     for name, values in (("auroc_gain", auroc), ("relative_auprc_gain", relative_ap)):
         array = np.asarray(values, dtype=float)
         output[f"{name}_lower_95"] = (
@@ -518,7 +537,9 @@ def select_residual(metrics: pd.DataFrame) -> tuple[str, pd.DataFrame]:
     candidates["residual"] = candidates["method"].str.removeprefix(
         "factorized_residual_"
     )
-    ranking = candidates[candidates["role"].astype(str) == "difficult"].copy()
+    ranking = candidates[
+        candidates["role"].astype(str).isin(DIFFICULT_ROLES)
+    ].copy()
     if ranking.empty:
         raise RuntimeError(
             "residual selection requires at least one difficult development task"
@@ -723,13 +744,28 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError(
                 "tune mode requires one control and bias model per candidate cell"
             )
-        calibration = calibration_from_controls(
-            sorted(candidates), controls, bias_models
-        )
-        calibration_path, _ = calibration.save(
-            args.outdir / "frozen_bias_calibration",
-            {"chromosome_split": "train", "region_class": "low-signal nonpeak"},
-        )
+        calibration_prefix = args.outdir / "frozen_bias_calibration"
+        calibration_path = calibration_prefix.with_suffix(".npz")
+        calibration_json = calibration_prefix.with_suffix(".json")
+        if calibration_path.exists() != calibration_json.exists():
+            raise ValueError("incomplete resumable bias-calibration artifact")
+        if calibration_path.exists():
+            calibration = FrozenBiasStrengthCalibrator.load(calibration_path)
+            if set(calibration.estimates) != set(candidates):
+                raise ValueError(
+                    "resumable bias calibration does not match candidate cells"
+                )
+        else:
+            calibration = calibration_from_controls(
+                sorted(candidates), controls, bias_models
+            )
+            calibration_path, _ = calibration.save(
+                calibration_prefix,
+                {
+                    "chromosome_split": "train",
+                    "region_class": "low-signal nonpeak",
+                },
+            )
         train_mask = (
             valid & sites["chromosome_split"].astype(str).eq("train").to_numpy()
         )
@@ -743,22 +779,42 @@ def main(argv: list[str] | None = None) -> int:
             train_sites, args.maximum_training_sites_per_tf
         )
         selected = train_sites.loc[selected_local, "index"].to_numpy(dtype=int)
-        model = FrozenParametricFactorization(positions, seed=args.seed).fit(
-            arrays["counts"][selected],
-            arrays["log_bias"][selected],
-            sites.iloc[selected]["cell"].astype(str),
-            sites.iloc[selected]["tf"].astype(str),
-            sites.iloc[selected]["motif_family"].astype(str),
-            calibration,
-            max_iter=args.max_iter,
-        )
-        model_path, _ = model.save(
-            args.outdir / "frozen_parametric_factorization",
-            {
-                "training_chromosomes": study["chromosome_split"]["train"],
-                "labels_used": False,
-            },
-        )
+        model_prefix = args.outdir / "frozen_parametric_factorization"
+        model_path = model_prefix.with_suffix(".npz")
+        model_json = model_prefix.with_suffix(".json")
+        if model_path.exists() != model_json.exists():
+            raise ValueError("incomplete resumable factorization artifact")
+        if model_path.exists():
+            model = FrozenParametricFactorization.load(model_path)
+            expected_tfs = set(sites.iloc[selected]["tf"].astype(str))
+            if (
+                not np.array_equal(model.positions, positions)
+                or set(model.bias_strengths_) != set(candidates)
+                or set(model.tf_family_) != expected_tfs
+                or model.metadata.get("labels_used") is not False
+                or model.metadata.get("training_chromosomes")
+                != study["chromosome_split"]["train"]
+            ):
+                raise ValueError(
+                    "resumable factorization metadata does not match tune inputs"
+                )
+        else:
+            model = FrozenParametricFactorization(positions, seed=args.seed).fit(
+                arrays["counts"][selected],
+                arrays["log_bias"][selected],
+                sites.iloc[selected]["cell"].astype(str),
+                sites.iloc[selected]["tf"].astype(str),
+                sites.iloc[selected]["motif_family"].astype(str),
+                calibration,
+                max_iter=args.max_iter,
+            )
+            model_path, _ = model.save(
+                model_prefix,
+                {
+                    "training_chromosomes": study["chromosome_split"]["train"],
+                    "labels_used": False,
+                },
+            )
         tune_mask = (
             valid & sites["chromosome_split"].astype(str).eq("validation").to_numpy()
         )

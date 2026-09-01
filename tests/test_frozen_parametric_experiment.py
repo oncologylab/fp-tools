@@ -209,7 +209,7 @@ def test_residual_selector_uses_difficult_tasks_and_ctcf_gate() -> None:
                 {
                     "cell": "K562",
                     "tf": "MEF2A",
-                    "role": "difficult",
+                    "role": "weak_shape",
                     "method": f"factorized_residual_{residual}",
                     "auroc": 0.7,
                     "auprc": difficult_ap,
@@ -229,7 +229,7 @@ def test_residual_selector_uses_difficult_tasks_and_ctcf_gate() -> None:
             {
                 "cell": "K562",
                 "tf": "MEF2A",
-                "role": "difficult",
+                "role": "weak_shape",
                 "method": "DWM",
                 "auroc": 0.6,
                 "auprc": 0.5,
@@ -253,6 +253,27 @@ def test_residual_selector_uses_difficult_tasks_and_ctcf_gate() -> None:
         summary.loc[summary["residual"] == "pearson", "passes_ctcf_gate"].item()
         is False
     )
+
+
+def test_block_bootstrap_caches_equivalent_chromosome_multisets() -> None:
+    sites = pd.DataFrame(
+        {
+            "TFBS_chr": np.repeat(["chr16", "chr17", "chr18"], 20),
+            "chip_label": np.tile([0, 1], 30),
+        }
+    )
+    baseline = np.linspace(0.0, 1.0, len(sites))
+    candidate = baseline + np.tile([-0.05, 0.05], 30)
+    result = evaluate_parametric_factorization.block_bootstrap_delta(
+        sites,
+        candidate,
+        baseline,
+        iterations=1000,
+        seed=2026,
+    )
+    assert result["bootstrap_successful"] == 1000
+    # Three chromosomes sampled three times have only C(5, 3)=10 multisets.
+    assert result["bootstrap_unique_resamples"] <= 10
 
 
 def test_bigwig_integrity_rejects_empty_and_accepts_covered(tmp_path: Path) -> None:
