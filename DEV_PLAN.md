@@ -244,6 +244,20 @@ a separately planned breaking release explicitly changes the contract.
   does not supersede the simpler CTCF shrinkage result. The other seven
   internally eligible tasks fail the raw guardrail, and 12 tasks remain
   underpowered. No general detector or correction promotion follows.
+- A five-family secondary screen now compares validation-frozen count, FDA,
+  anchored FDA, residualized FDA, and hybrid FDA-GP policies against raw and
+  DWM scores on exact common test support. It joins independent naked-DNA
+  safety and requires central protection, a negative ChIP-positive-versus-
+  matched-negative center contrast, and pointwise aggregate evidence before a
+  discrimination gain is called a footprint gain. Only HepG2 CTCF passes the
+  strong shape guard: count improves AUROC by 0.0725 and relative AUPRC by
+  15.90% over raw (bootstrap lower bounds 0.0406 and 8.96%), while anchored
+  FDA improves AUROC by 0.0545 and relative AUPRC by 3.76% (lower bounds
+  0.0408 and 0.80%). K562 CTCF remains support-sensitive, and no difficult TF
+  family produces a safety-passing significant shape-guarded gain over raw.
+  This confirms that the current FDA/GP variants do not yet solve hard-TF
+  footprint detection and prevents accessibility-driven occupancy gains from
+  being reported as footprints.
 
 ## Current ENCODE Resource
 
