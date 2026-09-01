@@ -47,6 +47,7 @@ false-footprint rates can be checked for replicate consistency before pooling.
 - `render_tf_before_after_report.py`: render concise one-page, paired legacy-versus-frozen TF reports with held-out ROC/PR curves, aggregate profiles, bootstrap intervals, replicate and optional naked-DNA evidence, and explicit research-only scope.
 - `evaluate_tf_geometry_naked_dna.py`: freeze per-method score thresholds on development ChIP-negative sites and test an exact TF-specific geometry plus the conventional footprint score on common naked-DNA motif sites.
 - `evaluate_tf_geometry_external_transfer.py`: apply one frozen development-cell TF geometry without retuning to external labeled cells, compare it with the conventional footprint score on identical sites, and report chromosome-block, covariate-residual, and replicate evidence.
+- `render_tf_external_transfer_report.py`: render a concise paired aggregate and metric PDF for a frozen TF geometry transferred without retuning to two external cells.
 - `summarize_tf_footprint_search.py`: apply prespecified site-count, matching-balance, detectability, and point-gain statuses to frozen tests.
 - `evaluate_tf_correction_transfer.py`: hold frozen TF geometry fixed while transferring it across raw, PWM, and DWM signals to isolate correction sensitivity.
 - `evaluate_nutrient_footprint_replication.py`: apply local cross-cell-line, RNA, external recovery, and occupancy replication tiers.
