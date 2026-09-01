@@ -74,6 +74,33 @@ def test_regulatory_stage_keeps_models_external(tmp_path) -> None:
     )
 
 
+def test_core_only_stages_skip_optional_interpretation() -> None:
+    parser = module.build_parser()
+    common = [
+        "--genome",
+        "test_data/genome.fa.gz",
+        "--chrom-sizes",
+        "test_data/chrom_sizes.txt",
+        "--peaks",
+        "test_data/merged_peaks.bed",
+        "--fold",
+        "benchmarks/manifests/frozen_parametric_factorization_v1.spec.json",
+        "--bam",
+        "test_data/Bcell.bam",
+        "--nonpeaks",
+        "test_data/blacklist.bed",
+        "--output-dir",
+        "benchmarks/results/footprint_external_references/fixture",
+        "--core-only",
+    ]
+    bias = parser.parse_args(["bias", *common])
+    regulatory = parser.parse_args(
+        ["regulatory", *common, "--bias-model", "test_data/fake_bias.h5"]
+    )
+    assert module.stage_arguments(bias)[:3] == ["chrombpnet", "bias", "train"]
+    assert module.stage_arguments(regulatory)[:2] == ["chrombpnet", "train"]
+
+
 def test_prep_output_discovery_ignores_auxiliary_directories(
     tmp_path, monkeypatch
 ) -> None:

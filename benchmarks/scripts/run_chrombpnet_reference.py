@@ -224,11 +224,13 @@ def stage_arguments(args: argparse.Namespace) -> list[str]:
         str(args.batch_size),
     ]
     if args.stage == "bias":
-        return ["chrombpnet", "bias", "pipeline", *training, "-b", "0.5"]
+        command = "train" if args.core_only else "pipeline"
+        return ["chrombpnet", "bias", command, *training, "-b", "0.5"]
     if args.stage == "regulatory":
+        command = "train" if args.core_only else "pipeline"
         return [
             "chrombpnet",
-            "pipeline",
+            command,
             *training,
             "-b",
             container_path(args.bias_model),
@@ -339,6 +341,11 @@ def build_parser() -> argparse.ArgumentParser:
         stage.add_argument("--seed", type=int, default=2026)
         stage.add_argument("--epochs", type=int, default=50)
         stage.add_argument("--batch-size", type=int, default=64)
+        stage.add_argument(
+            "--core-only",
+            action="store_true",
+            help="Run official training without optional interpretation reports.",
+        )
         if name == "regulatory":
             stage.add_argument("--bias-model", type=Path, required=True)
     predict = subparsers.add_parser("predict")
@@ -378,6 +385,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             for path in inputs
         ],
         "dry_run": bool(args.dry_run),
+        "core_only": bool(getattr(args, "core_only", False)),
         "completed": False,
     }
     if args.dry_run:
