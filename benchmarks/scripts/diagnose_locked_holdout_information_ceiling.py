@@ -65,6 +65,7 @@ def cross_chromosome_predictions(
     chromosomes: np.ndarray,
     *,
     seed: int,
+    maximum_iterations: int = 5000,
 ) -> tuple[np.ndarray, int]:
     """Return fixed elastic-net predictions from leave-chromosome-out folds."""
 
@@ -73,6 +74,8 @@ def cross_chromosome_predictions(
     chromosomes = np.asarray(chromosomes).astype(str)
     if values.ndim != 2 or len(values) != len(labels) or len(labels) != len(chromosomes):
         raise ValueError("features, labels, and chromosomes must have equal rows")
+    if maximum_iterations < 1:
+        raise ValueError("maximum_iterations must be positive")
     finite = np.isfinite(values).all(axis=1)
     predictions = np.full(len(labels), np.nan, dtype=float)
     folds = 0
@@ -89,7 +92,7 @@ def cross_chromosome_predictions(
             l1_ratio=0.5,
             C=1.0,
             class_weight="balanced",
-            max_iter=5000,
+            max_iter=maximum_iterations,
             tol=1e-5,
             random_state=stable_seed("ceiling", chromosome, seed=seed),
         )

@@ -15,6 +15,7 @@ import freeze_label_free_functional_models  # noqa: E402
 import freeze_functional_call_thresholds  # noqa: E402
 import evaluate_frozen_functional_naked_dna  # noqa: E402
 import evaluate_frozen_functional_depth_matrix  # noqa: E402
+import evaluate_frozen_functional_information_ceiling  # noqa: E402
 import evaluate_frozen_functional_policy  # noqa: E402
 import evaluate_parametric_factorization  # noqa: E402
 import evaluate_strand_label_free_models  # noqa: E402
@@ -271,6 +272,43 @@ def test_frozen_site_score_frame_preserves_artifact_indexes() -> None:
     assert result["candidate_probability"].tolist() == [0.8, 0.2]
     assert result["log_accessibility"].tolist() == pytest.approx(
         [np.log1p(3.0), 0.0]
+    )
+
+
+@pytest.mark.parametrize(
+    ("supervised", "auroc", "auprc", "expected"),
+    [
+        (0.05, 0.10, 0.20, "assay_limited"),
+        (0.20, 0.01, 0.05, "shape_model_limited"),
+        (0.20, 0.03, 0.10, "detectable"),
+        (np.nan, 0.10, 0.20, "insufficient_supervised_folds"),
+    ],
+)
+def test_frozen_information_ceiling_failure_classification(
+    supervised: float,
+    auroc: float,
+    auprc: float,
+    expected: str,
+) -> None:
+    assert (
+        evaluate_frozen_functional_information_ceiling.failure_classification(
+            supervised_relative_auprc_gain=supervised,
+            label_free_auroc_gain=auroc,
+            label_free_relative_auprc_gain=auprc,
+        )
+        == expected
+    )
+
+
+def test_frozen_information_ceiling_marks_unstable_classifier() -> None:
+    assert (
+        evaluate_frozen_functional_information_ceiling.failure_classification(
+            supervised_relative_auprc_gain=0.25,
+            label_free_auroc_gain=0.05,
+            label_free_relative_auprc_gain=0.20,
+            supervised_converged=False,
+        )
+        == "supervised_fit_unstable"
     )
 
 
