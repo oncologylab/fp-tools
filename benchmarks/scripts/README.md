@@ -37,7 +37,7 @@ false-footprint rates can be checked for replicate consistency before pooling.
 - `fit_combined_control_bias.py`: fit the locked naked-DNA-plus-mitochondrial grid, validate and reuse complete seed/model pairs after interruption, and fail closed on incomplete or checksum-invalid artifacts.
 - `render_functional_aggregate_comparison.py`: render blinded DWM-versus-strand per-TF aggregate curves with bootstrap confidence bands and an explicit blinding key.
 - `sample_label_free_motif_sites.py`: deterministically sample larger per-TF motif pools from raw motif scans on training chromosomes, record checksums, and refuse label-bearing inputs.
-- `evaluate_strand_label_free_models.py`: fit count spline/GP, FDA, and hybrid mixtures on separate label-free strand artifacts and score only development validation labels.
+- `evaluate_strand_label_free_models.py`: fit positionwise-count, conditional-multinomial spline/GP, FDA, and hybrid mixtures on separate label-free strand artifacts and score only development validation labels.
 - `derive_label_free_family_selection.py`: derive an integrity-checked count/FDA/hybrid family-specific winner policy from a completed validation grid without reading test labels.
 - `analyze_strand_bias_factorial.py`: compare all four SELMA/log-linear and +4/−4/+4/−5 combinations at common detector settings, with per-TF model, shift, and interaction effects.
 - `assemble_label_free_candidate_matrix.py`: place prior-free DWM shape metrics and strand-aware label-free metrics on one audited task/candidate table.

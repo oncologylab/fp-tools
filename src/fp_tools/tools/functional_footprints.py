@@ -1419,6 +1419,322 @@ class BiasAwareFunctionalMixture:
         return model
 
 
+class ConditionalMultinomialMixture(BiasAwareFunctionalMixture):
+    """Label-free footprint mixture using a conditional profile likelihood.
+
+    The expected Tn5 signal defines the unbound positional probabilities.  A
+    smooth multiplicative footprint modifies those probabilities for the
+    bound state.  Conditioning on the cut total prevents the profile head from
+    learning library-size or local-accessibility differences; those can be
+    evaluated independently as a separate count component.
+    """
+
+    def __init__(self, positions: np.ndarray, **kwargs: Any):
+        super().__init__(positions, **kwargs)
+        self.evidence_temperature_: float = 1.0
+
+    def _conditional_probabilities(
+        self,
+        background: np.ndarray,
+        profile: np.ndarray | None = None,
+    ) -> np.ndarray:
+        values = np.asarray(background, dtype=float)[:, self.likelihood_mask]
+        log_probability = np.log(np.maximum(values, 1e-8))
+        if profile is not None:
+            footprint = np.asarray(profile, dtype=float)
+            if footprint.shape != self.positions.shape:
+                raise ValueError("footprint profile must match positions")
+            log_probability = log_probability + footprint[self.likelihood_mask][
+                None, :
+            ]
+        log_probability -= logsumexp(log_probability, axis=1, keepdims=True)
+        return np.exp(log_probability)
+
+    @staticmethod
+    def _profile_log_likelihood(
+        observed: np.ndarray,
+        probability: np.ndarray,
+    ) -> np.ndarray:
+        counts = np.asarray(observed, dtype=float)
+        probabilities = np.asarray(probability, dtype=float)
+        if counts.shape != probabilities.shape:
+            raise ValueError("observed counts and profile probabilities must agree")
+        return np.sum(counts * np.log(np.maximum(probabilities, 1e-300)), axis=1)
+
+    def fit(
+        self,
+        observed_profiles: np.ndarray,
+        expected_profiles: np.ndarray,
+        *,
+        motif_score: np.ndarray | None = None,
+        accessibility: np.ndarray | None = None,
+        prior_profile: np.ndarray | None = None,
+    ) -> FunctionalMixtureResult:
+        observed = _validate_profiles(observed_profiles, nonnegative=True)
+        expected = _validate_profiles(expected_profiles, nonnegative=True)
+        if observed.shape != expected.shape or observed.shape[1] != len(self.positions):
+            raise ValueError("observed/expected profiles and positions must agree")
+        observed = np.nan_to_num(observed, nan=0.0, posinf=0.0, neginf=0.0)
+        expected = np.nan_to_num(expected, nan=0.0, posinf=0.0, neginf=0.0)
+        background = self._background(observed, expected)
+        observed_window = observed[:, self.likelihood_mask]
+        totals = observed_window.sum(axis=1)
+        unbound_probability = self._conditional_probabilities(background)
+        motif, self.motif_location_, self.motif_scale_ = _standardize(
+            motif_score, len(observed)
+        )
+        access, self.accessibility_location_, self.accessibility_scale_ = _standardize(
+            accessibility, len(observed)
+        )
+        design = np.column_stack([np.ones(len(observed)), motif, access])
+        prior_coefficients = np.zeros(3, dtype=float)
+
+        if prior_profile is None:
+            center = np.exp(-0.5 * np.square(self.positions / 7.0))
+            left = np.exp(-0.5 * np.square((self.positions + 20.0) / 7.0))
+            right = np.exp(-0.5 * np.square((self.positions - 20.0) / 7.0))
+            profile = -0.35 * center + 0.08 * (left + right)
+            prior = np.zeros_like(profile)
+            prior_weight = 0.0
+        else:
+            prior = np.asarray(prior_profile, dtype=float)
+            if prior.shape != self.positions.shape:
+                raise ValueError("prior_profile must match positions")
+            profile = prior.copy()
+            prior_weight = self.shrinkage
+        profile = profile * self.profile_taper
+
+        previous = -np.inf
+        converged = False
+        posterior = np.full(len(observed), 0.5, dtype=float)
+        smooth = SmoothResult(profile, np.full_like(profile, np.nan), 0)
+        for iteration in range(1, self.max_iter + 1):
+            bound_probability = self._conditional_probabilities(background, profile)
+            unbound_ll = self._profile_log_likelihood(
+                observed_window, unbound_probability
+            )
+            bound_ll = self._profile_log_likelihood(
+                observed_window, bound_probability
+            )
+            log_prior = design @ prior_coefficients
+            posterior = expit(np.clip(bound_ll - unbound_ll + log_prior, -40.0, 40.0))
+            posterior = np.clip(posterior, 1e-5, 1.0 - 1e-5)
+            nonnegative_indexes = {
+                "none": (),
+                "motif": (1,),
+                "motif-accessibility": (1, 2),
+            }[self.prior_constraint]
+            prior_coefficients = _fit_fractional_logistic(
+                design,
+                posterior,
+                prior_coefficients,
+                penalty=1.0,
+                nonnegative_indexes=nonnegative_indexes,
+            )
+
+            weighted_observed = np.sum(
+                posterior[:, None] * observed_window,
+                axis=0,
+            )
+            weighted_unbound = np.sum(
+                posterior[:, None] * totals[:, None] * unbound_probability,
+                axis=0,
+            )
+            target_window = np.log(
+                (weighted_observed + 0.5) / (weighted_unbound + 0.5)
+            )
+            target = np.zeros_like(self.positions)
+            weights = np.full_like(self.positions, 1e-6)
+            target[self.likelihood_mask] = target_window
+            weights[self.likelihood_mask] = weighted_unbound + 1.0
+            if prior_weight > 0:
+                target = (weights * target + prior_weight * prior) / (
+                    weights + prior_weight
+                )
+                weights = weights + prior_weight
+            smooth = self.smoother.fit(target, weights)
+            profile = smooth.mean * self.profile_taper
+            smooth = SmoothResult(
+                profile,
+                smooth.standard_error * self.profile_taper,
+                smooth.effective_parameters,
+            )
+
+            log_likelihood = float(
+                np.sum(
+                    logsumexp(
+                        np.column_stack(
+                            [
+                                unbound_ll - np.logaddexp(0.0, log_prior),
+                                bound_ll - np.logaddexp(0.0, -log_prior),
+                            ]
+                        ),
+                        axis=1,
+                    )
+                )
+            )
+            if np.isfinite(previous) and abs(log_likelihood - previous) <= self.tolerance * (
+                1.0 + abs(previous)
+            ):
+                converged = True
+                break
+            previous = log_likelihood
+
+        raw_log_ratio = bound_ll - unbound_ll
+        finite = np.abs(raw_log_ratio[np.isfinite(raw_log_ratio)])
+        robust_range = float(np.quantile(finite, 0.95)) if len(finite) else 1.0
+        self.evidence_temperature_ = max(1.0, robust_range / 8.0)
+        result = FunctionalMixtureResult(
+            posterior=expit(
+                np.clip(
+                    raw_log_ratio / self.evidence_temperature_
+                    + design @ prior_coefficients,
+                    -40.0,
+                    40.0,
+                )
+            ),
+            footprint_profile=profile,
+            standard_error=smooth.standard_error,
+            prior_coefficients=prior_coefficients,
+            converged=converged,
+            iterations=iteration,
+            log_likelihood=log_likelihood,
+            descriptors=profile_descriptors(profile, self.positions),
+        )
+        self.result_ = result
+        return result
+
+    def predict_log_odds_components(
+        self,
+        observed_profiles: np.ndarray,
+        expected_profiles: np.ndarray,
+        *,
+        motif_score: np.ndarray | None = None,
+        accessibility: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        if self.result_ is None:
+            raise ValueError("conditional mixture has not been fitted")
+        observed = _validate_profiles(observed_profiles, nonnegative=True)
+        expected = _validate_profiles(expected_profiles, nonnegative=True)
+        if observed.shape != expected.shape or observed.shape[1] != len(self.positions):
+            raise ValueError("observed/expected profiles and positions must agree")
+        background = self._background(np.nan_to_num(observed), np.nan_to_num(expected))
+        unbound = self._conditional_probabilities(background)
+        bound = self._conditional_probabilities(
+            background, self.result_.footprint_profile
+        )
+        observed_window = np.nan_to_num(observed)[:, self.likelihood_mask]
+        shape = (
+            self._profile_log_likelihood(observed_window, bound)
+            - self._profile_log_likelihood(observed_window, unbound)
+        ) / self.evidence_temperature_
+        motif, _location, _scale = _standardize(
+            motif_score,
+            len(observed),
+            location=self.motif_location_,
+            scale=self.motif_scale_,
+        )
+        access, _location, _scale = _standardize(
+            accessibility,
+            len(observed),
+            location=self.accessibility_location_,
+            scale=self.accessibility_scale_,
+        )
+        design = np.column_stack([np.ones(len(observed)), motif, access])
+        return shape, design @ self.result_.prior_coefficients
+
+    def save(
+        self,
+        path: str | Path,
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[Path, Path]:
+        npz_path, json_path = super().save(path, metadata=metadata)
+        document = json.loads(json_path.read_text(encoding="utf-8"))
+        document["model_type"] = "conditional_multinomial_mixture"
+        document["evidence_temperature"] = self.evidence_temperature_
+        json_path.write_text(
+            json.dumps(document, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return npz_path, json_path
+
+    @classmethod
+    def load(cls, path: str | Path) -> "ConditionalMultinomialMixture":
+        npz_path = Path(path).with_suffix(".npz")
+        document = json.loads(
+            npz_path.with_suffix(".json").read_text(encoding="utf-8")
+        )
+        if (
+            document.get("schema") != FUNCTIONAL_SCHEMA
+            or document.get("model_type") != "conditional_multinomial_mixture"
+        ):
+            raise ValueError("unsupported conditional multinomial mixture")
+        if document.get("npz_sha256") != _sha256_file(npz_path):
+            raise ValueError("conditional mixture checksum does not match its metadata")
+        with np.load(npz_path, allow_pickle=False) as arrays:
+            positions = np.asarray(arrays["positions"], dtype=np.float64)
+            profile = np.asarray(arrays["footprint_profile"], dtype=np.float64)
+            standard_error = np.asarray(arrays["standard_error"], dtype=np.float64)
+            prior_coefficients = np.asarray(
+                arrays["prior_coefficients"], dtype=np.float64
+            )
+        model = cls(
+            positions,
+            smoother=str(document["smoother"]),
+            dispersion=float(document["dispersion"]),
+            max_iter=int(document["max_iter"]),
+            tolerance=float(document["tolerance"]),
+            shrinkage=float(document["shrinkage"]),
+            long_length_scale=float(document.get("long_length_scale", 50.0)),
+            short_length_scale=float(document.get("short_length_scale", 10.0)),
+            spline_penalty=float(document.get("spline_penalty", 10.0)),
+            inducing_points=int(document.get("inducing_points", 25)),
+            gp_ridge=float(document.get("gp_ridge", 1.0)),
+            accessibility_background=str(
+                document.get("accessibility_background", "none")
+            ),
+            background_exclusion=float(document.get("background_exclusion", 50.0)),
+            background_ridge=float(document.get("background_ridge", 10.0)),
+            background_length_scale=float(
+                document.get("background_length_scale", 80.0)
+            ),
+            prior_constraint=str(document.get("prior_constraint", "none")),
+            profile_inner_limit=float(document.get("profile_inner_limit", 40.0)),
+            profile_outer_limit=(
+                None
+                if document.get("profile_outer_limit") is None
+                else float(document["profile_outer_limit"])
+            ),
+            likelihood_limit=(
+                None
+                if document.get("likelihood_limit") is None
+                else float(document["likelihood_limit"])
+            ),
+        )
+        model.result_ = FunctionalMixtureResult(
+            posterior=np.array([], dtype=float),
+            footprint_profile=profile,
+            standard_error=standard_error,
+            prior_coefficients=prior_coefficients,
+            converged=bool(document.get("converged", False)),
+            iterations=int(document.get("iterations", 0)),
+            log_likelihood=float("nan"),
+            descriptors=profile_descriptors(profile, positions),
+        )
+        model.motif_location_ = float(document.get("motif_location", 0.0))
+        model.motif_scale_ = float(document.get("motif_scale", 1.0))
+        model.accessibility_location_ = float(
+            document.get("accessibility_location", 0.0)
+        )
+        model.accessibility_scale_ = float(
+            document.get("accessibility_scale", 1.0)
+        )
+        model.evidence_temperature_ = float(
+            document.get("evidence_temperature", 1.0)
+        )
+        return model
+
+
 def _restore_diagonal_gaussian_mixture(
     *,
     weights: np.ndarray,

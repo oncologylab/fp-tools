@@ -36,6 +36,7 @@ from evaluate_strand_label_free_models import (  # noqa: E402
 )
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
+    ConditionalMultinomialMixture,
     CovariateAnchoredFdaModel,
     CovariateResidualizedFdaModel,
     FdaMixtureModel,
@@ -139,13 +140,18 @@ def fit_model(
     )
     if len(tf_indexes) < 100 or len(family_indexes) < 100:
         raise ValueError(f"insufficient label-free training sites for {cell} {tf}")
-    if candidate.family == "count":
+    if candidate.family in {"count", "conditional"}:
         observed = profiles["plus_observed"] + profiles["minus_observed"]
         expected = profiles["plus_expected"] + profiles["minus_expected"]
         dispersion = estimate_nb_dispersion(
             observed[family_indexes], expected[family_indexes]
         )
-        family_model = BiasAwareFunctionalMixture(
+        model_class = (
+            BiasAwareFunctionalMixture
+            if candidate.family == "count"
+            else ConditionalMultinomialMixture
+        )
+        family_model = model_class(
             positions,
             smoother=candidate.smoother,
             dispersion=dispersion,
@@ -160,7 +166,7 @@ def fit_model(
             observed[family_indexes],
             expected[family_indexes],
         )
-        model = BiasAwareFunctionalMixture(
+        model = model_class(
             positions,
             smoother=candidate.smoother,
             dispersion=dispersion,
@@ -244,6 +250,8 @@ def fit_model(
 def load_frozen_model(family: str, path: Path):
     if family == "count":
         return BiasAwareFunctionalMixture.load(path)
+    if family == "conditional":
+        return ConditionalMultinomialMixture.load(path)
     if family == "fda":
         return FdaMixtureModel.load(path)
     if family == "hybrid":

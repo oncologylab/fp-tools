@@ -8,6 +8,7 @@ from sklearn.metrics import roc_auc_score
 
 from fp_tools.tools.functional_footprints import (
     BiasAwareFunctionalMixture,
+    ConditionalMultinomialMixture,
     CovariateAnchoredFdaModel,
     CovariateResidualizedFdaModel,
     construct_strand_functional_profiles,
@@ -322,6 +323,59 @@ def test_bias_aware_mixture_can_anchor_binding_prior_direction(tmp_path: Path) -
             accessibility=observed[:25].sum(axis=1),
         ),
     )
+
+
+@pytest.mark.parametrize("smoother", ["spline", "gp"])
+def test_conditional_multinomial_mixture_detects_profile_not_total(
+    smoother: str,
+    tmp_path: Path,
+) -> None:
+    observed, expected, labels, _motif_score = _synthetic_counts(seed=44)
+    model = ConditionalMultinomialMixture(
+        _positions(),
+        smoother=smoother,
+        max_iter=60,
+        tolerance=1e-6,
+        profile_outer_limit=50.0,
+        likelihood_limit=50.0,
+    )
+    result = model.fit(observed, expected)
+    probability = model.predict(observed, expected)
+    assert result.converged
+    assert roc_auc_score(labels, probability) > 0.90
+    assert result.descriptors.depletion > 0.25
+    assert np.allclose(
+        model._conditional_probabilities(expected),
+        model._conditional_probabilities(7.0 * expected),
+    )
+    model.save(tmp_path / f"conditional_{smoother}")
+    loaded = ConditionalMultinomialMixture.load(
+        tmp_path / f"conditional_{smoother}.npz"
+    )
+    assert np.allclose(
+        loaded.predict(observed[:30], expected[:30]),
+        probability[:30],
+    )
+
+
+def test_conditional_multinomial_bias_only_profiles_remain_shallow() -> None:
+    rng = np.random.default_rng(31)
+    positions = _positions()
+    probability = np.exp(
+        0.25 * np.sin(positions / 5.0) + 0.15 * np.cos(positions / 11.0)
+    )
+    probability /= probability.sum()
+    totals = rng.integers(130, 260, size=400)
+    expected = totals[:, None] * probability[None, :]
+    observed = np.vstack([rng.multinomial(int(total), probability) for total in totals])
+    result = ConditionalMultinomialMixture(
+        positions,
+        smoother="spline",
+        max_iter=60,
+        tolerance=1e-6,
+    ).fit(observed, expected)
+    assert result.converged
+    assert result.descriptors.depletion < 0.15
 
 
 def test_fda_and_hybrid_models_detect_shape(tmp_path: Path) -> None:

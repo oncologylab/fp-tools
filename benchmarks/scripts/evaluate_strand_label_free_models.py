@@ -30,6 +30,7 @@ from evaluate_functional_template_transfer import selection_score  # noqa: E402
 from evaluate_strand_functional_templates import load_artifact  # noqa: E402
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
+    ConditionalMultinomialMixture,
     CovariateAnchoredFdaModel,
     CovariateResidualizedFdaModel,
     FdaMixtureModel,
@@ -63,18 +64,19 @@ class Candidate:
 
 def candidate_grid() -> list[Candidate]:
     candidates = []
-    for smoother in ("spline", "gp"):
-        for background in ("none", "linear", "gp-long"):
-            for window in (30.0, 50.0, 80.0):
-                candidates.append(
-                    Candidate(
-                        f"count_{smoother}.bg_{background}.window_{int(window)}",
-                        "count",
-                        smoother=smoother,
-                        background=background,
-                        window=window,
+    for family in ("count", "conditional"):
+        for smoother in ("spline", "gp"):
+            for background in ("none", "linear", "gp-long"):
+                for window in (30.0, 50.0, 80.0):
+                    candidates.append(
+                        Candidate(
+                            f"{family}_{smoother}.bg_{background}.window_{int(window)}",
+                            family,
+                            smoother=smoother,
+                            background=background,
+                            window=window,
+                        )
                     )
-                )
     for family in ("fda", "hybrid"):
         for channel in CHANNELS:
             for training_pool in ("tf", "family"):
@@ -198,13 +200,18 @@ def _evaluate_candidate(
     ):
         return {**base, "status": "insufficient_sites"}, None
     try:
-        if candidate.family == "count":
+        if candidate.family in {"count", "conditional"}:
             train_observed, train_expected = _count_profiles(train_profiles)
             evaluation_observed, evaluation_expected = _count_profiles(evaluation_profiles)
             dispersion = estimate_nb_dispersion(
                 train_observed[family_train], train_expected[family_train]
             )
-            family_model = BiasAwareFunctionalMixture(
+            model_class = (
+                BiasAwareFunctionalMixture
+                if candidate.family == "count"
+                else ConditionalMultinomialMixture
+            )
+            family_model = model_class(
                 positions,
                 smoother=candidate.smoother,
                 dispersion=dispersion,
@@ -219,7 +226,7 @@ def _evaluate_candidate(
                 train_observed[family_train],
                 train_expected[family_train],
             )
-            model = BiasAwareFunctionalMixture(
+            model = model_class(
                 positions,
                 smoother=candidate.smoother,
                 dispersion=dispersion,

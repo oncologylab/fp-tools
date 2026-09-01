@@ -42,6 +42,7 @@ from evaluate_strand_label_free_models import (  # noqa: E402
 )
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
+    ConditionalMultinomialMixture,
     CovariateAnchoredFdaModel,
     CovariateResidualizedFdaModel,
     FdaMixtureModel,
@@ -235,9 +236,16 @@ def candidate_score_and_profile(
     positions: np.ndarray,
     motif_score: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if candidate.family == "count":
-        if not isinstance(model, BiasAwareFunctionalMixture):
-            raise TypeError("count policy has the wrong serialized model type")
+    if candidate.family in {"count", "conditional"}:
+        expected_type = (
+            BiasAwareFunctionalMixture
+            if candidate.family == "count"
+            else ConditionalMultinomialMixture
+        )
+        if not isinstance(model, expected_type):
+            raise TypeError(
+                f"{candidate.family} policy has the wrong serialized model type"
+            )
         observed = arrays["plus_observed"][indexes] + arrays["minus_observed"][indexes]
         expected = arrays["plus_expected"][indexes] + arrays["minus_expected"][indexes]
         log_odds, _prior = model.predict_log_odds_components(observed, expected)
