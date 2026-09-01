@@ -381,7 +381,7 @@ def render_cell(
     figure.text(
         0.5,
         0.025,
-        "Research result only - geometry selected without test chromosomes; naked-DNA specificity passed, while external-cell transfer remains pending.",
+        "Research result only - geometry selected without test chromosomes; naked-DNA specificity passed; no-retuning external transfer is reported separately.",
         ha="center",
         va="bottom",
         fontsize=8.5,
@@ -477,6 +477,7 @@ def main(argv: list[str] | None = None) -> int:
         "The candidate was frozen before chr19-22/X were evaluated.\n"
         "The covariate-residual sensitivity analysis is post hoc and does not use ChIP labels for fitting.\n"
         "The exact TF geometry passed a naked-DNA negative-control check with 95% upper bounds below 5%.\n"
+        "External-cell evidence, when present, is reported separately as a post-hoc no-retuning analysis.\n"
         "Scope: TF-specific research evidence only; no main-branch or package-default change.\n",
         encoding="utf-8",
     )
