@@ -11,6 +11,8 @@ SCRIPT_DIR = ROOT / "benchmarks" / "scripts"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 import freeze_parametric_holdouts  # noqa: E402
+import freeze_label_free_functional_models  # noqa: E402
+import evaluate_frozen_functional_policy  # noqa: E402
 import evaluate_parametric_factorization  # noqa: E402
 import run_frozen_parametric_experiment  # noqa: E402
 
@@ -135,6 +137,44 @@ def test_factorization_metrics_mark_small_tasks_underpowered() -> None:
     assert row is not None
     assert row["status"] == "underpowered"
     assert row["n_positive"] == row["n_negative"] == 2
+
+
+def test_frozen_functional_aggregate_bootstrap_is_deterministic() -> None:
+    profiles = np.asarray(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 2.0, 0.0],
+            [0.0, 3.0, 0.0],
+        ]
+    )
+    labels = np.asarray([0, 0, 1, 1])
+    chromosomes = np.asarray(["chr19", "chr20", "chr19", "chr20"])
+    first = evaluate_frozen_functional_policy.aggregate_curve(
+        profiles,
+        labels,
+        chromosomes,
+        iterations=100,
+        seed=17,
+    )
+    second = evaluate_frozen_functional_policy.aggregate_curve(
+        profiles,
+        labels,
+        chromosomes,
+        iterations=100,
+        seed=17,
+    )
+    assert np.allclose(first["difference"], [0.0, 2.0, 0.0])
+    assert np.array_equal(first["lower_95"], second["lower_95"])
+    assert np.array_equal(first["upper_95"], second["upper_95"])
+
+
+def test_frozen_functional_model_names_cannot_create_suffix_collisions() -> None:
+    first = freeze_label_free_functional_models.safe_token("fda.shared.pool_tf")
+    second = freeze_label_free_functional_models.safe_token("fda.antisymmetric.pool_tf")
+    assert first == "fda_shared_pool_tf"
+    assert second == "fda_antisymmetric_pool_tf"
+    assert first != second
 
 
 def test_factorization_dwm_loader_accepts_verified_cache_and_rejects_parametric_label(
