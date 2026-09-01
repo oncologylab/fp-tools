@@ -69,6 +69,7 @@ def test_control_qualification_pairs_windows_and_is_deterministic(tmp_path) -> N
     assert set(windows["candidate_id"]) == {"reference", "candidate"}
     assert len(libraries) == 4
     assert len(paired) == 1
+    assert paired.loc[0, "paired_support_fraction"] == 1.0
     assert len(selection) == 2
     repeated = module.qualify(
         [("reference", reference), ("candidate", candidate)],
@@ -92,6 +93,17 @@ def test_model_arrays_keep_stable_strand_window_keys(tmp_path) -> None:
     assert len(keys) == len(set(keys))
     assert any("|forward|" in value for value in keys)
     assert any("|reverse|" in value for value in keys)
+
+
+def test_model_arrays_exclude_unresolved_windows_on_common_support(tmp_path) -> None:
+    dataset_path = make_dataset(tmp_path / "data.npz", "data", 4)
+    dataset = module.ControlWindowDataset.load(dataset_path)
+    dataset.sequences[3] = "N" + str(dataset.sequences[3])[1:]
+    model = ConditionalSequenceBiasModel(BiasFeatureSpec.selma10())
+    _contexts, _counts, keys, _blocks = module.model_arrays_with_keys(
+        dataset, model, "library"
+    )
+    assert not any(value.endswith("|3") for value in keys)
 
 
 def test_qualifier_loads_safe_dwm_reference(tmp_path) -> None:

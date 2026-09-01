@@ -72,6 +72,14 @@ def model_arrays_with_keys(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Reproduce ``model_arrays`` while retaining stable window identities."""
 
+    full_sequence_valid = np.asarray(
+        [set(str(value).upper()).issubset({"A", "C", "G", "T"}) for value in dataset.sequences],
+        dtype=bool,
+    )
+    if not np.any(full_sequence_valid):
+        raise ValueError(f"control library {library!r} has no fully resolved windows")
+    original_indexes = np.flatnonzero(full_sequence_valid)
+    dataset = dataset.subset(original_indexes, split=dataset.split)
     context_length = int(model.feature_spec.context_length)
     left = context_length // 2
     first = int(dataset.margin) - left
@@ -89,7 +97,7 @@ def model_arrays_with_keys(
     ).astype(float)
     chromosomes = np.tile(np.asarray(dataset.chromosomes, dtype=str), 2)
     strands = np.repeat(["forward", "reverse"], len(dataset.starts))
-    indexes = np.tile(np.arange(len(dataset.starts)), 2)
+    indexes = np.tile(original_indexes, 2)
     keys = np.asarray(
         [f"{library}|{strand}|{index}" for strand, index in zip(strands, indexes)]
     )
@@ -227,9 +235,11 @@ def paired_candidate_gain(
         how="inner",
         validate="one_to_one",
     )
-    if paired.empty or not np.allclose(
-        paired["cuts_candidate"], paired["cuts_reference"]
-    ):
+    paired_support = np.isclose(
+        paired["cuts_candidate"], paired["cuts_reference"], rtol=0.0, atol=1e-8
+    )
+    paired = paired.loc[paired_support].copy()
+    if paired.empty:
         raise ValueError(
             f"candidate {candidate_id} and reference {reference_id} lack paired windows"
         )
@@ -258,6 +268,13 @@ def paired_candidate_gain(
     return {
         "candidate_id": candidate_id,
         "reference_id": reference_id,
+        "candidate_finite_windows": int(len(candidate)),
+        "reference_finite_windows": int(len(reference)),
+        "paired_finite_windows": int(len(paired)),
+        "paired_support_fraction": float(
+            len(paired) / max(len(candidate), len(reference), 1)
+        ),
+        "paired_cuts": float(paired["cuts_candidate"].sum()),
         "paired_libraries": len(library_rows),
         "minimum_library_gain": min(value for _name, value in library_rows),
         **result,
