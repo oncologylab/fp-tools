@@ -210,6 +210,37 @@ def test_depth_dwm_scaling_matches_local_totals() -> None:
     assert np.allclose(scaled[0] / scaled[0].sum(), expected[0] / expected[0].sum())
 
 
+def test_depth_metrics_keep_both_dwm_and_raw_guardrails() -> None:
+    rows = [
+        {
+            "method": "DWM_conventional_geometry",
+            "auroc": 0.60,
+            "auprc": 0.25,
+            "functional_separation": 2.0,
+        },
+        {
+            "method": "raw_geometry",
+            "auroc": 0.65,
+            "auprc": 0.30,
+            "functional_separation": 2.5,
+        },
+        {
+            "method": "frozen_candidate",
+            "auroc": 0.70,
+            "auprc": 0.36,
+            "functional_separation": 3.0,
+        },
+    ]
+    result = evaluate_frozen_functional_depth_matrix.add_depth_baseline_deltas(rows)
+    candidate = result[-1]
+    assert candidate["auroc_gain_over_dwm"] == pytest.approx(0.10)
+    assert candidate["relative_auprc_gain_over_dwm"] == pytest.approx(0.44)
+    assert candidate["auroc_gain_over_raw"] == pytest.approx(0.05)
+    assert candidate["relative_auprc_gain_over_raw"] == pytest.approx(0.20)
+    assert candidate["functional_separation_relative_change_over_dwm"] == pytest.approx(0.5)
+    assert candidate["functional_separation_relative_change_over_raw"] == pytest.approx(0.2)
+
+
 def test_depth_classification_prefers_full_endpoint() -> None:
     summary = pd.DataFrame(
         {

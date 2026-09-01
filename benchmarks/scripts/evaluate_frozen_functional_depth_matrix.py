@@ -401,10 +401,24 @@ def summarize_metrics(metrics: pd.DataFrame) -> pd.DataFrame:
                 "relative_auprc_gain_over_dwm",
                 "std",
             ),
+            auroc_gain_over_raw_mean=("auroc_gain_over_raw", "mean"),
+            auroc_gain_over_raw_sd=("auroc_gain_over_raw", "std"),
+            relative_auprc_gain_over_raw_mean=(
+                "relative_auprc_gain_over_raw",
+                "mean",
+            ),
+            relative_auprc_gain_over_raw_sd=(
+                "relative_auprc_gain_over_raw",
+                "std",
+            ),
             functional_separation_mean=("functional_separation", "mean"),
             functional_separation_sd=("functional_separation", "std"),
             functional_separation_relative_change_over_dwm_mean=(
                 "functional_separation_relative_change_over_dwm",
+                "mean",
+            ),
+            functional_separation_relative_change_over_raw_mean=(
+                "functional_separation_relative_change_over_raw",
                 "mean",
             ),
             brier_mean=("brier", "mean"),
@@ -420,6 +434,37 @@ def summarize_metrics(metrics: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
     return summary.merge(direction, on=keys, validate="one_to_one")
+
+
+def add_depth_baseline_deltas(task_rows: list[dict]) -> list[dict]:
+    """Attach DWM and raw guardrail deltas to one TF/depth/seed result set."""
+
+    by_method = {str(row["method"]): row for row in task_rows}
+    try:
+        dwm = by_method["DWM_conventional_geometry"]
+        raw = by_method["raw_geometry"]
+    except KeyError as exc:
+        raise ValueError("depth metrics require DWM and raw baselines") from exc
+    for metric in task_rows:
+        metric["auroc_gain_over_dwm"] = metric["auroc"] - dwm["auroc"]
+        metric["relative_auprc_gain_over_dwm"] = (
+            metric["auprc"] - dwm["auprc"]
+        ) / max(dwm["auprc"], 1e-8)
+        metric["functional_separation_relative_change_over_dwm"] = (
+            metric["functional_separation"]
+            / max(dwm["functional_separation"], 1e-8)
+            - 1.0
+        )
+        metric["auroc_gain_over_raw"] = metric["auroc"] - raw["auroc"]
+        metric["relative_auprc_gain_over_raw"] = (
+            metric["auprc"] - raw["auprc"]
+        ) / max(raw["auprc"], 1e-8)
+        metric["functional_separation_relative_change_over_raw"] = (
+            metric["functional_separation"]
+            / max(raw["functional_separation"], 1e-8)
+            - 1.0
+        )
+    return task_rows
 
 
 def classify_depth(summary: pd.DataFrame) -> pd.DataFrame:
@@ -625,6 +670,7 @@ def main(argv: list[str] | None = None) -> int:
                     dispersion,
                 )
                 dwm_seconds = perf_counter() - started
+                raw_score = geometry_score(observed, positions)
                 direct_expected = arrays["plus_expected"][indexes] + arrays["minus_expected"][indexes]
                 started = perf_counter()
                 direct_score, direct_profiles = residual_score(
@@ -641,6 +687,13 @@ def main(argv: list[str] | None = None) -> int:
                         dwm_score,
                         normalize_functional_profiles(dwm_profiles, positions),
                         dwm_seconds,
+                        None,
+                    ),
+                    (
+                        "raw_geometry",
+                        raw_score,
+                        observed,
+                        0.0,
                         None,
                     ),
                     (
@@ -713,20 +766,7 @@ def main(argv: list[str] | None = None) -> int:
                                 **descriptors,
                             }
                         )
-                baseline = next(
-                    row for row in task_rows if row["method"] == "DWM_conventional_geometry"
-                )
-                for metric in task_rows:
-                    metric["auroc_gain_over_dwm"] = metric["auroc"] - baseline["auroc"]
-                    metric["relative_auprc_gain_over_dwm"] = (
-                        metric["auprc"] - baseline["auprc"]
-                    ) / max(baseline["auprc"], 1e-8)
-                    metric["functional_separation_relative_change_over_dwm"] = (
-                        metric["functional_separation"]
-                        / max(baseline["functional_separation"], 1e-8)
-                        - 1.0
-                    )
-                    metrics_rows.append(metric)
+                metrics_rows.extend(add_depth_baseline_deltas(task_rows))
 
     metrics = pd.DataFrame(metrics_rows)
     profiles = pd.DataFrame(curve_rows)
@@ -747,6 +787,7 @@ def main(argv: list[str] | None = None) -> int:
         "policy_id": policy["policy_id"],
         "depth_input_id": freeze["depth_input_id"],
         "models_refitted_by_depth": False,
+        "raw_signal_guardrail": True,
         "validation_labels_used_for_original_selection": True,
         "depths": depths,
         "seeds": seeds,
