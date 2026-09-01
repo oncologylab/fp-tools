@@ -360,6 +360,32 @@ def test_frozen_call_threshold_respects_ties_and_target_rate() -> None:
     assert np.sum(scores >= threshold) / len(scores) <= 0.34
 
 
+def test_validation_site_score_frame_preserves_common_site_hashes() -> None:
+    sites = pd.DataFrame(
+        {
+            "TFBS_chr": ["chr16", "chr17", "chr18"],
+            "chip_label": [0, 1, 0],
+        }
+    )
+    result = freeze_functional_call_thresholds.validation_site_score_frame(
+        record={
+            "cell": "CellA",
+            "tf": "TF1",
+            "motif_family": "F1",
+            "bias_configuration": "LOG21",
+        },
+        candidate_id="candidate",
+        sites=sites,
+        indexes=np.asarray([2, 0]),
+        site_hash=np.asarray([91, 17], dtype=np.uint64),
+        candidate_score=np.asarray([0.9, 0.1]),
+        dwm_score=np.asarray([1.2, -0.4]),
+    )
+    assert result["site_hash"].tolist() == [91, 17]
+    assert result["label"].tolist() == [0, 0]
+    assert result["candidate_score"].tolist() == [0.9, 0.1]
+
+
 def test_naked_dna_rate_keeps_zero_cut_sites_in_finite_denominator() -> None:
     score = np.asarray([0.9, 0.1, 0.0, 0.0])
     valid = np.ones(4, dtype=bool)

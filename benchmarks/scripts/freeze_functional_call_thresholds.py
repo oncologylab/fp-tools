@@ -61,6 +61,41 @@ def upper_tail_threshold(scores: np.ndarray, target_rate: float) -> tuple[float,
     return float(np.nextafter(np.max(values), np.inf)), 0
 
 
+def validation_site_score_frame(
+    *,
+    record: dict,
+    candidate_id: str,
+    sites: pd.DataFrame,
+    indexes: np.ndarray,
+    site_hash: np.ndarray,
+    candidate_score: np.ndarray,
+    dwm_score: np.ndarray,
+) -> pd.DataFrame:
+    selected = sites.iloc[indexes].reset_index(drop=True)
+    if not (
+        len(selected)
+        == len(site_hash)
+        == len(candidate_score)
+        == len(dwm_score)
+    ):
+        raise ValueError("validation sites and score arrays have different lengths")
+    return pd.DataFrame(
+        {
+            "cell": str(record["cell"]),
+            "tf": str(record["tf"]),
+            "motif_family": str(record["motif_family"]),
+            "bias_configuration": str(record["bias_configuration"]),
+            "candidate_id": candidate_id,
+            "artifact_index": np.asarray(indexes, dtype=int),
+            "site_hash": np.asarray(site_hash, dtype=np.uint64),
+            "TFBS_chr": selected["TFBS_chr"].astype(str),
+            "label": selected["chip_label"].to_numpy(dtype=int),
+            "candidate_score": np.asarray(candidate_score, dtype=float),
+            "dwm_score": np.asarray(dwm_score, dtype=float),
+        }
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--policy", type=Path, required=True)
@@ -146,6 +181,7 @@ def main(argv: list[str] | None = None) -> int:
                 }
 
     rows = []
+    site_score_frames = []
     with threadpool_limits(limits=1):
         for record, candidate, model in models:
             key = (str(record["bias_configuration"]), str(record["cell"]))
@@ -188,6 +224,17 @@ def main(argv: list[str] | None = None) -> int:
                 "deviance",
                 dispersion,
             )
+            site_score_frames.append(
+                validation_site_score_frame(
+                    record=record,
+                    candidate_id=candidate.candidate_id,
+                    sites=sites,
+                    indexes=indexes,
+                    site_hash=arrays["site_hash"][indexes],
+                    candidate_score=candidate_score,
+                    dwm_score=dwm_score,
+                )
+            )
             for method, score in (
                 ("candidate", candidate_score),
                 ("DWM", dwm_score),
@@ -213,7 +260,13 @@ def main(argv: list[str] | None = None) -> int:
 
     thresholds = pd.DataFrame(rows)
     thresholds_path = args.outdir / "functional_call_thresholds.tsv"
+    site_scores_path = args.outdir / "functional_validation_site_scores.tsv.gz"
     thresholds.to_csv(thresholds_path, sep="\t", index=False)
+    pd.concat(site_score_frames, ignore_index=True).to_csv(
+        site_scores_path,
+        sep="\t",
+        index=False,
+    )
     document = {
         "schema": SCHEMA,
         "policy_id": policy["policy_id"],
@@ -234,6 +287,10 @@ def main(argv: list[str] | None = None) -> int:
         "thresholds": {
             "path": str(thresholds_path),
             "sha256": file_sha256(thresholds_path),
+        },
+        "validation_site_scores": {
+            "path": str(site_scores_path),
+            "sha256": file_sha256(site_scores_path),
         },
         "training_labels_used": False,
         "validation_labels_used_for_thresholds": True,

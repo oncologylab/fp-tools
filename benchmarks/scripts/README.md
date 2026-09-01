@@ -26,7 +26,7 @@ false-footprint rates can be checked for replicate consistency before pooling.
 - `render_frozen_functional_before_after.py`: emit one-page DWM-versus-candidate PDFs only for eligible TFs with positive AUROC/AUPRC bootstrap intervals and a passing independent naked-DNA screen.
 - `evaluate_shifted_atac_null_policy.py`: score frozen detectors after deliberately misaligning motif-centered cellular ATAC profiles, providing a label-free accessibility/nucleosome null that complements naked DNA.
 - `evaluate_naked_dna_functional_policy.py`: score the frozen functional policy on naked-DNA profiles; use `--candidate-only` for an independent control replicate when no same-replicate DWM artifact exists.
-- `freeze_functional_call_thresholds.py`: freeze per-TF candidate and DWM call thresholds from development matched negatives before any naked-DNA profile is read.
+- `freeze_functional_call_thresholds.py`: freeze per-TF candidate and DWM call thresholds from development matched negatives before any naked-DNA profile is read, retaining auditable site-level validation scores for calibrated ensembles.
 - `evaluate_frozen_functional_naked_dna.py`: apply serialized label-free models and their immutable thresholds to an independent naked-DNA library, retaining zero-cut sites as valid negative observations and reporting independent plus paired support.
 - `evaluate_factorization_residual_safety.py`: freeze per-cell/TF residual cutoffs on chr16--18 matched negatives, then screen every residual on label-free naked-DNA replicate 2 before the parametric configuration is frozen.
 - `freeze_safe_parametric_configuration.py`: combine development ranking, CTCF non-regression, and naked-DNA safety into the only v2 configuration accepted for test-chromosome scoring.
