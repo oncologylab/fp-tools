@@ -276,6 +276,63 @@ def test_block_bootstrap_caches_equivalent_chromosome_multisets() -> None:
     assert result["bootstrap_unique_resamples"] <= 10
 
 
+def test_test_input_freeze_is_immutable_and_records_candidate_signature(
+    tmp_path: Path,
+) -> None:
+    candidate = tmp_path / "K562.json"
+    candidate.write_text(
+        json.dumps(
+            {
+                "schema": "fp-tools-strand-functional-profiles-v1",
+                "metadata": {
+                    "bias_model_sha256": "bias",
+                    "genome_sha256": "genome",
+                    "read_shift": [4, -5],
+                    "flank": 100,
+                },
+            }
+        )
+    )
+    signature = evaluate_parametric_factorization.profile_model_signature(
+        tmp_path / "K562"
+    )
+    assert signature["read_shift"] == [4, -5]
+    test_input = tmp_path / "test-input.npz"
+    np.savez_compressed(test_input, values=np.ones(2))
+    configuration = tmp_path / "safe.json"
+    configuration.write_text("{}")
+    output = tmp_path / "test.freeze.json"
+    document = evaluate_parametric_factorization.write_test_input_freeze(
+        output,
+        configuration_path=configuration,
+        configuration={"configuration_id": "locked"},
+        inputs=[test_input],
+        candidate_signatures={"K562": signature},
+    )
+    assert document["refitted"] is False
+    assert document["thresholds_changed"] is False
+    evaluate_parametric_factorization.write_test_input_freeze(
+        output,
+        configuration_path=configuration,
+        configuration={"configuration_id": "locked"},
+        inputs=[test_input],
+        candidate_signatures={"K562": signature},
+    )
+    np.savez_compressed(test_input, values=np.zeros(2))
+    try:
+        evaluate_parametric_factorization.write_test_input_freeze(
+            output,
+            configuration_path=configuration,
+            configuration={"configuration_id": "locked"},
+            inputs=[test_input],
+            candidate_signatures={"K562": signature},
+        )
+    except ValueError as error:
+        assert "immutable test-input freeze differs" in str(error)
+    else:  # pragma: no cover
+        raise AssertionError("changed test input unexpectedly reused its freeze")
+
+
 def test_bigwig_integrity_rejects_empty_and_accepts_covered(tmp_path: Path) -> None:
     pybigwig = __import__("pyBigWig")
     empty = tmp_path / "empty.bw"

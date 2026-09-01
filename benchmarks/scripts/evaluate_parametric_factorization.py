@@ -689,6 +689,139 @@ def _configuration_document(
     return document
 
 
+def load_safe_configuration(path: Path) -> dict:
+    """Validate the safety-qualified freeze before any test sites are read."""
+
+    configuration = json.loads(path.read_text(encoding="utf-8"))
+    if (
+        configuration.get("schema")
+        != "fp-tools-parametric-factorization-configuration-freeze-v2"
+        or configuration.get("safety_qualified") is not True
+    ):
+        raise ValueError(
+            "test mode requires a safety-qualified v2 configuration freeze"
+        )
+    for record in (
+        configuration["factorization_model"],
+        configuration["factorization_model_metadata"],
+        configuration["bias_calibration"],
+        configuration["bias_calibration_metadata"],
+        configuration["study"],
+        configuration["provisional_configuration"],
+        configuration["residual_selection"],
+        configuration["residual_safety"],
+        configuration["safe_selection_audit"],
+        *configuration["inputs"],
+    ):
+        if sha256_file(record["path"]) != record["sha256"]:
+            raise ValueError(f"frozen configuration input changed: {record['path']}")
+    safety = json.loads(
+        Path(configuration["residual_safety"]["path"]).read_text(encoding="utf-8")
+    )
+    if (
+        safety.get("schema")
+        != "fp-tools-parametric-factorization-residual-safety-v1"
+        or safety.get("naked_dna_labels_used") is not False
+        or configuration["selected_residual"]
+        not in safety.get("passing_residuals", [])
+        or safety.get("factorization_model")
+        != configuration["factorization_model"]
+    ):
+        raise ValueError("configuration residual-safety evidence is invalid")
+    return configuration
+
+
+def profile_model_signature(prefix: Path) -> dict[str, object]:
+    _npz, json_path, _sites = artifact_paths(prefix)
+    document = json.loads(json_path.read_text(encoding="utf-8"))
+    if document.get("schema") != "fp-tools-strand-functional-profiles-v1":
+        raise ValueError(f"unsupported candidate profile schema: {json_path}")
+    metadata = document.get("metadata", {})
+    required = ("bias_model_sha256", "genome_sha256", "read_shift", "flank")
+    missing = [key for key in required if key not in metadata]
+    if missing:
+        raise ValueError(
+            f"candidate profile metadata is missing {', '.join(missing)}: {json_path}"
+        )
+    return {key: metadata[key] for key in required}
+
+
+def validate_test_profile_signatures(
+    candidates: dict[str, Path], configuration: dict
+) -> dict[str, dict[str, object]]:
+    development_signatures: list[dict[str, object]] = []
+    for record in configuration["inputs"]:
+        path = Path(record["path"])
+        if path.suffix != ".json":
+            continue
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if document.get("schema") != "fp-tools-strand-functional-profiles-v1":
+            continue
+        metadata = document.get("metadata", {})
+        development_signatures.append(
+            {
+                key: metadata.get(key)
+                for key in ("bias_model_sha256", "genome_sha256", "read_shift", "flank")
+            }
+        )
+    if not development_signatures:
+        raise ValueError("configuration has no development candidate signature")
+    unique = {
+        json.dumps(value, sort_keys=True, separators=(",", ":"))
+        for value in development_signatures
+    }
+    if len(unique) != 1:
+        raise ValueError("development candidate profiles have inconsistent signatures")
+    expected = json.loads(next(iter(unique)))
+    observed = {
+        cell: profile_model_signature(prefix)
+        for cell, prefix in sorted(candidates.items())
+    }
+    for cell, signature in observed.items():
+        if signature != expected:
+            raise ValueError(
+                f"test candidate for {cell} does not match the frozen bias signature"
+            )
+    return observed
+
+
+def write_test_input_freeze(
+    output: Path,
+    *,
+    configuration_path: Path,
+    configuration: dict,
+    inputs: list[Path],
+    candidate_signatures: dict[str, dict[str, object]],
+) -> dict:
+    records = [
+        {"path": str(path), "sha256": sha256_file(path)}
+        for path in sorted(set(inputs))
+    ]
+    document = {
+        "schema": "fp-tools-parametric-factorization-test-input-freeze-v1",
+        "configuration_id": configuration["configuration_id"],
+        "configuration": {
+            "path": str(configuration_path),
+            "sha256": sha256_file(configuration_path),
+        },
+        "candidate_signatures": candidate_signatures,
+        "inputs": records,
+        "test_labels_opened": True,
+        "refitted": False,
+        "thresholds_changed": False,
+    }
+    canonical = json.dumps(document, sort_keys=True, separators=(",", ":"))
+    document["test_input_id"] = sha256(canonical.encode()).hexdigest()
+    rendered = json.dumps(document, indent=2, sort_keys=True) + "\n"
+    if output.exists() and output.read_text(encoding="utf-8") != rendered:
+        raise ValueError(f"immutable test-input freeze differs: {output}")
+    output.write_text(rendered, encoding="utf-8")
+    return document
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--study", type=Path, required=True)
@@ -717,6 +850,15 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("candidate and baseline cells must match")
     if pwm_baselines and set(pwm_baselines) != set(candidates):
         raise ValueError("PWM baseline and candidate cells must match")
+    configuration = None
+    candidate_signatures = None
+    if args.mode == "test":
+        if args.configuration_freeze is None:
+            raise ValueError("test mode requires --configuration-freeze")
+        configuration = load_safe_configuration(args.configuration_freeze)
+        candidate_signatures = validate_test_profile_signatures(
+            candidates, configuration
+        )
     arrays, sites, baseline_inputs = collect_datasets(
         candidates, baselines, pwm_baselines or None
     )
@@ -848,55 +990,24 @@ def main(argv: list[str] | None = None) -> int:
             inputs=input_paths + list(controls.values()) + list(bias_models.values()),
         )
     else:
-        if args.configuration_freeze is None:
-            raise ValueError("test mode requires --configuration-freeze")
-        configuration = json.loads(
-            args.configuration_freeze.read_text(encoding="utf-8")
+        assert configuration is not None
+        assert args.configuration_freeze is not None
+        assert candidate_signatures is not None
+        test_input_freeze_path = args.outdir / "factorization_test_inputs.freeze.json"
+        test_input_freeze = write_test_input_freeze(
+            test_input_freeze_path,
+            configuration_path=args.configuration_freeze,
+            configuration=configuration,
+            inputs=input_paths,
+            candidate_signatures=candidate_signatures,
         )
-        if (
-            configuration.get("schema")
-            != "fp-tools-parametric-factorization-configuration-freeze-v2"
-            or configuration.get("safety_qualified") is not True
-        ):
-            raise ValueError(
-                "test mode requires a safety-qualified v2 configuration freeze"
-            )
-        for record in (
-            configuration["factorization_model"],
-            configuration["factorization_model_metadata"],
-            configuration["bias_calibration"],
-            configuration["bias_calibration_metadata"],
-            configuration["study"],
-            configuration["provisional_configuration"],
-            configuration["residual_selection"],
-            configuration["residual_safety"],
-            configuration["safe_selection_audit"],
-            *configuration["inputs"],
-        ):
-            if sha256_file(record["path"]) != record["sha256"]:
-                raise ValueError(
-                    f"frozen configuration input changed: {record['path']}"
-                )
-        safety = json.loads(
-            Path(configuration["residual_safety"]["path"]).read_text(
-                encoding="utf-8"
-            )
-        )
-        if (
-            safety.get("schema")
-            != "fp-tools-parametric-factorization-residual-safety-v1"
-            or safety.get("naked_dna_labels_used") is not False
-            or configuration["selected_residual"]
-            not in safety.get("passing_residuals", [])
-            or safety.get("factorization_model")
-            != configuration["factorization_model"]
-        ):
-            raise ValueError("configuration residual-safety evidence is invalid")
         model = FrozenParametricFactorization.load(
             configuration["factorization_model"]["path"]
         )
         test_mask = valid & sites["chromosome_split"].astype(str).eq("test").to_numpy()
         test_indexes = np.flatnonzero(test_mask)
+        if len(test_indexes) == 0:
+            raise ValueError("test profile artifacts contain no valid test sites")
         residual = str(configuration["selected_residual"])
         metrics, bootstrap, _methods = evaluate_split(
             arrays,
@@ -919,6 +1030,9 @@ def main(argv: list[str] | None = None) -> int:
             "configuration_id": configuration["configuration_id"],
             "configuration_freeze": str(args.configuration_freeze),
             "configuration_freeze_sha256": sha256_file(args.configuration_freeze),
+            "test_input_id": test_input_freeze["test_input_id"],
+            "test_input_freeze": str(test_input_freeze_path),
+            "test_input_freeze_sha256": sha256_file(test_input_freeze_path),
             "metrics_sha256": sha256_file(
                 args.outdir / "factorization_test_metrics.tsv"
             ),
