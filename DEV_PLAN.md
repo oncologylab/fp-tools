@@ -213,6 +213,22 @@ a separately planned breaking release explicitly changes the contract.
   These results remain internal research evidence: full-depth confirmation,
   control-source qualification, the official ChromBPNet comparison, and
   locked external validation are still required before any promotion.
+- Independent control-source qualification now favors mitochondrial-only
+  training over combined mitochondrial plus naked-DNA training for both cut
+  conventions. The retained internal +4/-5 reference remains the five-seed
+  mitochondrial LOG21 ensemble; adding the naked-DNA library did not improve
+  its paired held-out control likelihood. A validation-frozen partial-bias
+  experiment identifies one reproducible TF-specific exception to the broader
+  failure: CTCF shrinkage improves both AUROC and AUPRC over raw signal in
+  HepG2 and K562 at 10M, 25M, and 50M fragments for every seed, and across all
+  three biological replicates in each cell. Mean full-replicate AUROC gains
+  over raw are 0.0410 in HepG2 and 0.0378 in K562. The same policy makes zero
+  calls in the independent naked-DNA replicate-2 CTCF panels, with a 1.88%
+  Wilson upper bound. For other eligible TFs, large gains over DWM generally
+  return to raw-signal performance rather than add information; depth reports
+  therefore distinguish genuine gains over raw from recovery after DWM
+  overcorrection. This is a CTCF-specific internal research route, not evidence
+  for a general correction replacement, and the package default is unchanged.
 
 ## Current ENCODE Resource
 
