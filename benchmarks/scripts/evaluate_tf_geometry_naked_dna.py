@@ -167,22 +167,35 @@ def evaluate(
         )
         candidate_scores = score_candidate(profiles, candidate)
         legacy_scores = score_centers(sites, naked_legacy)
+        candidate_valid = profile_valid & np.isfinite(candidate_scores)
+        legacy_valid = np.isfinite(legacy_scores)
         common_valid = (
-            profile_valid
-            & np.isfinite(candidate_scores)
-            & np.isfinite(legacy_scores)
+            candidate_valid
+            & legacy_valid
         )
         candidate_rate, candidate_calls = _rate_row(
             scores=candidate_scores,
-            valid=common_valid,
+            valid=candidate_valid,
             threshold=candidate_threshold,
             prefix="candidate",
         )
         baseline_rate, baseline_calls = _rate_row(
             scores=legacy_scores,
-            valid=common_valid,
+            valid=legacy_valid,
             threshold=baseline_threshold,
             prefix="legacy",
+        )
+        paired_candidate_rate, _ = _rate_row(
+            scores=candidate_scores,
+            valid=common_valid,
+            threshold=candidate_threshold,
+            prefix="paired_candidate",
+        )
+        paired_baseline_rate, _ = _rate_row(
+            scores=legacy_scores,
+            valid=common_valid,
+            threshold=baseline_threshold,
+            prefix="paired_legacy",
         )
         summary_rows.append(
             {
@@ -195,9 +208,15 @@ def evaluate(
                 "target_false_positive_rate": float(alpha),
                 **candidate_rate,
                 **baseline_rate,
+                **paired_candidate_rate,
+                **paired_baseline_rate,
                 "false_positive_rate_increase": (
-                    candidate_rate["candidate_false_positive_rate"]
-                    - baseline_rate["legacy_false_positive_rate"]
+                    paired_candidate_rate[
+                        "paired_candidate_false_positive_rate"
+                    ]
+                    - paired_baseline_rate[
+                        "paired_legacy_false_positive_rate"
+                    ]
                 ),
             }
         )
@@ -211,7 +230,9 @@ def evaluate(
                     "TFBS_end": sites["TFBS_end"],
                     "candidate_score": candidate_scores,
                     "legacy_score": legacy_scores,
-                    "valid": common_valid,
+                    "candidate_valid": candidate_valid,
+                    "legacy_valid": legacy_valid,
+                    "paired_valid": common_valid,
                     "candidate_call": candidate_calls,
                     "legacy_call": baseline_calls,
                 }
@@ -243,6 +264,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--naked-legacy", type=Path, required=True)
     parser.add_argument("--tf", default="CTCF")
     parser.add_argument(
+        "--candidate-id",
+        help="Optional exact candidate identifier to select from --winners.",
+    )
+    parser.add_argument("--winner-stage", help="Optional winner-table stage filter.")
+    parser.add_argument(
         "--cell",
         action="append",
         help="Optional target cell to evaluate; repeat for multiple cells.",
@@ -261,6 +287,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.cell:
         winners = winners[
             winners["cell"].astype(str).isin([str(cell) for cell in args.cell])
+        ].reset_index(drop=True)
+    if args.candidate_id:
+        winners = winners[
+            winners["candidate"].astype(str).eq(args.candidate_id)
+        ].reset_index(drop=True)
+    if args.winner_stage:
+        winners = winners[
+            winners["stage"].astype(str).eq(args.winner_stage)
         ].reset_index(drop=True)
     summary, scores = evaluate(
         development_sites=pd.read_csv(args.development_sites, sep="\t"),

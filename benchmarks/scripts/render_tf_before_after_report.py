@@ -37,6 +37,18 @@ GREEN = "#2E8B57"
 GRAY = "#6B7280"
 
 
+def smooth_profiles_for_display(
+    profiles: np.ndarray, width: int
+) -> np.ndarray:
+    values = np.asarray(profiles, dtype=float)
+    if width <= 1:
+        return values
+    if width % 2 == 0:
+        raise ValueError("display smoothing width must be odd")
+    kernel = np.ones(width, dtype=float) / width
+    return np.stack([np.convolve(row, kernel, mode="same") for row in values])
+
+
 def crossfit_covariate_residuals(
     values: np.ndarray,
     covariates: np.ndarray,
@@ -156,6 +168,7 @@ def render_cell(
     replicate_panel: pd.DataFrame,
     naked_dna_summary: pd.DataFrame | None,
     flank: int,
+    display_smooth: int,
 ) -> tuple[plt.Figure, dict[str, object]]:
     cell_sites = sites[sites["cell"] == cell].reset_index(drop=True)
     winner_rows = winners[(winners["cell"] == cell) & (winners["tf"] == tf)]
@@ -218,6 +231,12 @@ def render_cell(
     joint = valid_legacy & np.isfinite(candidate_profiles).all(axis=1)
     legacy_display = normalize_profiles_for_display(legacy_profiles[joint])
     candidate_display = normalize_profiles_for_display(candidate_profiles[joint])
+    legacy_display = smooth_profiles_for_display(
+        legacy_display, display_smooth
+    )
+    candidate_display = smooth_profiles_for_display(
+        candidate_display, display_smooth
+    )
     aggregate_labels = labels[joint]
 
     baseline_auroc = float(roc_auc_score(labels, baseline_scores))
@@ -349,7 +368,7 @@ def render_cell(
         "Full-depth transfer\n"
         f"{_replicate_text(replicate_panel, cell, tf)}\n\n"
         "Interpretation\n"
-        "Strong CTCF-specific improvement in two ENCODE cell lines.\n"
+        f"Strong {tf}-specific improvement in {cell}.\n"
         "This does not establish a universal TF detector."
     )
     evidence_axis.text(
@@ -381,7 +400,7 @@ def render_cell(
     figure.text(
         0.5,
         0.025,
-        "Research result only - geometry selected without test chromosomes; naked-DNA specificity passed; no-retuning external transfer is reported separately.",
+        "Research result only - geometry selected without test chromosomes; naked-DNA specificity passed; broader external transfer remains required.",
         ha="center",
         va="bottom",
         fontsize=8.5,
@@ -412,7 +431,7 @@ def render_cell(
         "delta_auprc_ci": auprc_ci,
         "replicate_evidence": _replicate_text(replicate_panel, cell, tf),
         **naked_dna_metrics,
-        "scope": "CTCF-specific research result; not a package-wide promotion",
+        "scope": f"{tf}-specific research result; not a package-wide promotion",
     }
     return figure, row
 
@@ -428,12 +447,31 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--naked-dna-summary", type=Path)
     parser.add_argument("--outdir", type=Path, required=True)
     parser.add_argument("--tf", default="CTCF")
+    parser.add_argument(
+        "--candidate-id",
+        help="Optional exact candidate identifier to render from --winners.",
+    )
+    parser.add_argument("--winner-stage", help="Optional winner-table stage filter.")
+    parser.add_argument(
+        "--cell",
+        action="append",
+        help="Optional cell to render; repeat for multiple cells.",
+    )
     parser.add_argument("--split", default="test")
     parser.add_argument("--flank", type=int, default=100)
+    parser.add_argument("--display-smooth", type=int, default=1)
     args = parser.parse_args(argv)
 
     sites = pd.read_csv(args.sites, sep="\t")
     winners = pd.read_csv(args.winners, sep="\t")
+    if args.candidate_id:
+        winners = winners[
+            winners["candidate"].astype(str).eq(args.candidate_id)
+        ].reset_index(drop=True)
+    if args.winner_stage:
+        winners = winners[
+            winners["stage"].astype(str).eq(args.winner_stage)
+        ].reset_index(drop=True)
     baselines = pd.read_csv(args.baselines, sep="\t")
     bootstrap = pd.read_csv(args.bootstrap, sep="\t")
     replicate_panel = pd.read_csv(args.replicate_panel, sep="\t")
@@ -443,6 +481,9 @@ def main(argv: list[str] | None = None) -> int:
         else None
     )
     cells = sorted(set(sites["cell"]).intersection(winners.loc[winners["tf"] == args.tf, "cell"]))
+    if args.cell:
+        requested = {str(cell) for cell in args.cell}
+        cells = [cell for cell in cells if str(cell) in requested]
     if not cells:
         parser.error(f"no cells contain a frozen {args.tf} candidate")
 
@@ -463,6 +504,7 @@ def main(argv: list[str] | None = None) -> int:
                 replicate_panel=replicate_panel,
                 naked_dna_summary=naked_dna_summary,
                 flank=args.flank,
+                display_smooth=args.display_smooth,
             )
             figure.savefig(args.outdir / f"{args.tf}_{cell}_before_after.pdf", bbox_inches="tight")
             combined.savefig(figure, bbox_inches="tight")

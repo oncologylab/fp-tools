@@ -57,3 +57,13 @@ def test_naked_dna_evidence_reports_calls_and_upper_bound():
     assert text == "1/123 calls (0.8%); upper 95% bound 4.5%"
     assert metrics["naked_dna_candidate_valid"] == 123
     assert metrics["naked_dna_candidate_calls"] == 1
+
+
+def test_display_smoothing_preserves_shape_and_rejects_even_width():
+    profiles = np.zeros((2, 11), dtype=float)
+    profiles[:, 5] = 1.0
+    smoothed = module.smooth_profiles_for_display(profiles, 3)
+    assert smoothed.shape == profiles.shape
+    assert np.allclose(smoothed[:, 4:7], 1 / 3)
+    with pytest.raises(ValueError, match="must be odd"):
+        module.smooth_profiles_for_display(profiles, 4)
