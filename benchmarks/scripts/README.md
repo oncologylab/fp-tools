@@ -21,6 +21,7 @@ false-footprint rates can be checked for replicate consistency before pooling.
 - `evaluate_functional_template_transfer.py`: measure shape-only same-cell, cross-cell TF, leave-TF-out family, and global functional-template ceilings without opening locked holdouts.
 - `evaluate_functional_depth_matrix.py`: apply 10M-frozen TF shape settings across deterministic 10M/25M/50M/full matrices, classify depth limits, and render per-TF depth/aggregate panels.
 - `combine_frozen_functional_depth_matrices.py`: integrity-check and combine separately completed frozen depth runs, allowing the full endpoint to be added without rebuilding completed 10M/25M/50M profiles.
+- `evaluate_frozen_functional_policy.py`: apply immutable label-free TF models on test chromosomes without refitting and emit per-method metrics, bootstrap-banded profiles, block-bootstrap deltas, and auditable per-site scores.
 - `render_frozen_functional_before_after.py`: emit one-page DWM-versus-candidate PDFs only for eligible TFs with positive AUROC/AUPRC bootstrap intervals and a passing independent naked-DNA screen.
 - `evaluate_shifted_atac_null_policy.py`: score frozen detectors after deliberately misaligning motif-centered cellular ATAC profiles, providing a label-free accessibility/nucleosome null that complements naked DNA.
 - `evaluate_naked_dna_functional_policy.py`: score the frozen functional policy on naked-DNA profiles; use `--candidate-only` for an independent control replicate when no same-replicate DWM artifact exists.

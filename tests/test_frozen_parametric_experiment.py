@@ -17,6 +17,7 @@ import evaluate_frozen_functional_naked_dna  # noqa: E402
 import evaluate_frozen_functional_depth_matrix  # noqa: E402
 import evaluate_frozen_functional_policy  # noqa: E402
 import evaluate_parametric_factorization  # noqa: E402
+import evaluate_strand_label_free_models  # noqa: E402
 import sample_label_free_motif_sites  # noqa: E402
 import run_frozen_parametric_experiment  # noqa: E402
 
@@ -226,6 +227,51 @@ def test_depth_classification_prefers_full_endpoint() -> None:
     assert result.loc[0, "high_depth"] == "full"
     assert result.loc[0, "high_auroc"] == 0.70
     assert result.loc[0, "classification"] == "detectable_at_high_depth"
+
+
+def test_frozen_site_score_frame_preserves_artifact_indexes() -> None:
+    sites = pd.DataFrame(
+        {
+            "TFBS_chr": ["chr19", "chr20", "chr21"],
+            "TFBS_start": [10, 20, 30],
+            "TFBS_end": [15, 25, 35],
+            "TFBS_strand": ["+", "-", "+"],
+            "motif_score": [7.0, 8.0, 9.0],
+            "accessibility": [0.0, 9.0, 3.0],
+            "chip_label": [0, 1, 0],
+            "motif": ["M1", "M1", "M1"],
+        }
+    )
+    candidate = evaluate_strand_label_free_models.Candidate(
+        candidate_id="count_spline.bg_none.window_30",
+        family="count",
+        smoother="spline",
+        background="none",
+        window=30.0,
+        channel="combined_residual",
+        training_pool="tf",
+    )
+    result = evaluate_frozen_functional_policy.site_score_frame(
+        record={
+            "cell": "CellA",
+            "tf": "TF1",
+            "motif_family": "F1",
+            "bias_configuration": "LOG21",
+        },
+        candidate=candidate,
+        sites=sites,
+        indexes=np.asarray([2, 0]),
+        candidate_score=np.asarray([0.8, 0.2]),
+        dwm_score=np.asarray([1.5, -0.5]),
+        direct_score=np.asarray([1.2, -0.2]),
+    )
+    assert result["artifact_index"].tolist() == [2, 0]
+    assert result["TFBS_start"].tolist() == [30, 10]
+    assert result["label"].tolist() == [0, 0]
+    assert result["candidate_probability"].tolist() == [0.8, 0.2]
+    assert result["log_accessibility"].tolist() == pytest.approx(
+        [np.log1p(3.0), 0.0]
+    )
 
 
 def test_frozen_call_threshold_respects_ties_and_target_rate() -> None:

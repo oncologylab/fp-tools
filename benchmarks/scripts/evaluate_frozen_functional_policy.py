@@ -426,6 +426,56 @@ def expected_calibration_error(
     return value
 
 
+def site_score_frame(
+    *,
+    record: dict,
+    candidate: Candidate,
+    sites: pd.DataFrame,
+    indexes: np.ndarray,
+    candidate_score: np.ndarray,
+    dwm_score: np.ndarray,
+    direct_score: np.ndarray,
+) -> pd.DataFrame:
+    """Return one auditable score row per evaluated motif occurrence."""
+
+    selected = sites.iloc[indexes].reset_index(drop=True).copy()
+    if not (
+        len(selected)
+        == len(candidate_score)
+        == len(dwm_score)
+        == len(direct_score)
+    ):
+        raise ValueError("site metadata and frozen score arrays have different lengths")
+    output = pd.DataFrame(
+        {
+            "cell": str(record["cell"]),
+            "tf": str(record["tf"]),
+            "motif_family": str(record["motif_family"]),
+            "bias_configuration": str(record["bias_configuration"]),
+            "candidate_id": candidate.candidate_id,
+            "artifact_index": np.asarray(indexes, dtype=int),
+            "TFBS_chr": selected["TFBS_chr"].astype(str),
+            "TFBS_start": selected["TFBS_start"].to_numpy(dtype=int),
+            "TFBS_end": selected["TFBS_end"].to_numpy(dtype=int),
+            "TFBS_strand": selected["TFBS_strand"].astype(str),
+            "motif_score": selected["motif_score"].to_numpy(dtype=float),
+            "accessibility": selected["accessibility"].to_numpy(dtype=float),
+            "label": selected["chip_label"].to_numpy(dtype=int),
+            "candidate_probability": np.asarray(candidate_score, dtype=float),
+            "dwm_score": np.asarray(dwm_score, dtype=float),
+            "direct_score": np.asarray(direct_score, dtype=float),
+        }
+    )
+    output["log_accessibility"] = np.log1p(
+        np.maximum(output["accessibility"].to_numpy(dtype=float), 0.0)
+    )
+    if "motif" in selected:
+        output["motif_id"] = selected["motif"].astype(str)
+    elif "motif_id" in selected:
+        output["motif_id"] = selected["motif_id"].astype(str)
+    return output
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--policy", type=Path, required=True)
@@ -518,6 +568,7 @@ def main(argv: list[str] | None = None) -> int:
     metrics_rows = []
     bootstrap_rows = []
     curve_rows = []
+    site_score_frames = []
     with threadpool_limits(limits=1):
         for record, candidate, model in models:
             key = (str(record["bias_configuration"]), str(record["cell"]))
@@ -560,6 +611,17 @@ def main(argv: list[str] | None = None) -> int:
                 positions,
                 "deviance",
                 dispersion,
+            )
+            site_score_frames.append(
+                site_score_frame(
+                    record=record,
+                    candidate=candidate,
+                    sites=sites,
+                    indexes=indexes,
+                    candidate_score=candidate_score,
+                    dwm_score=dwm_score,
+                    direct_score=direct_score,
+                )
             )
             dwm_aggregate = normalize_functional_profiles(dwm_profiles, positions)
             direct_aggregate = normalize_functional_profiles(
@@ -678,9 +740,15 @@ def main(argv: list[str] | None = None) -> int:
     metrics_path = args.outdir / "frozen_functional_test_metrics.tsv"
     bootstrap_path = args.outdir / "frozen_functional_test_bootstrap.tsv"
     curves_path = args.outdir / "frozen_functional_test_profiles.tsv.gz"
+    site_scores_path = args.outdir / "frozen_functional_test_site_scores.tsv.gz"
     metrics.to_csv(metrics_path, sep="\t", index=False)
     pd.DataFrame(bootstrap_rows).to_csv(bootstrap_path, sep="\t", index=False)
     pd.DataFrame(curve_rows).to_csv(curves_path, sep="\t", index=False)
+    pd.concat(site_score_frames, ignore_index=True).to_csv(
+        site_scores_path,
+        sep="\t",
+        index=False,
+    )
     manifest = {
         "schema": TEST_RESULT_SCHEMA,
         "policy_id": policy["policy_id"],
@@ -701,6 +769,10 @@ def main(argv: list[str] | None = None) -> int:
                 "sha256": file_sha256(bootstrap_path),
             },
             "profiles": {"path": str(curves_path), "sha256": file_sha256(curves_path)},
+            "site_scores": {
+                "path": str(site_scores_path),
+                "sha256": file_sha256(site_scores_path),
+            },
         },
     }
     manifest_path = args.outdir / "frozen_functional_test_manifest.json"
