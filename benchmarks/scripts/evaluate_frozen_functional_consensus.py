@@ -39,6 +39,7 @@ TEST_SCHEMA = "fp-tools-frozen-functional-consensus-test-v1"
 NAKED_SCHEMA = "fp-tools-frozen-functional-consensus-naked-dna-v1"
 FUNCTIONAL_TEST_SCHEMA = "fp-tools-frozen-functional-test-results-v1"
 FUNCTIONAL_NAKED_SCHEMA = "fp-tools-frozen-functional-naked-dna-v1"
+BIAS_SHRINKAGE_TEST_SCHEMA = "fp-tools-frozen-bias-shrinkage-test-v1"
 
 TASK_COLUMNS = ["cell", "tf"]
 OPERATORS = (
@@ -262,7 +263,7 @@ def task_metric_record(
     negative = int(candidate["negative_sites"])
     candidate_selection = selection_score(candidate)
     baseline_selection = selection_score(baseline)
-    return {
+    record = {
         "cell": str(frame["cell"].iloc[0]),
         "tf": str(frame["tf"].iloc[0]),
         "motif_family": str(frame["motif_family"].iloc[0]),
@@ -292,6 +293,20 @@ def task_metric_record(
             labels, score
         ),
     }
+    if "raw_score" in frame:
+        raw = binary_metrics(labels, frame["raw_score"].to_numpy(dtype=float))
+        record.update(
+            {
+                "raw_auroc": float(raw["auroc"]),
+                "raw_auprc": float(raw["auprc"]),
+                "auroc_gain_over_raw": float(candidate["auroc"] - raw["auroc"]),
+                "relative_auprc_gain_over_raw": float(
+                    (candidate["auprc"] - raw["auprc"])
+                    / max(float(raw["auprc"]), 1e-8)
+                ),
+            }
+        )
+    return record
 
 
 def summarize_operators(metrics: pd.DataFrame) -> pd.DataFrame:
@@ -619,6 +634,69 @@ def align_test_scores(count: pd.DataFrame, fda: pd.DataFrame) -> pd.DataFrame:
     return output.sort_values(keys, kind="mergesort").reset_index(drop=True)
 
 
+def align_raw_test_scores(
+    scored: pd.DataFrame,
+    raw: pd.DataFrame,
+    *,
+    minimum_common_fraction: float = 0.95,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Restrict all test arms to identical finite support with the raw guardrail."""
+
+    keys = [
+        "cell",
+        "tf",
+        "TFBS_chr",
+        "TFBS_start",
+        "TFBS_end",
+        "TFBS_strand",
+    ]
+    required = set(keys + ["chip_label", "raw_score"])
+    missing = required.difference(raw.columns)
+    if missing:
+        raise ValueError("raw test scores lack columns: " + ", ".join(sorted(missing)))
+    for name, frame in (("consensus", scored), ("raw", raw)):
+        if frame.duplicated(keys).any():
+            raise ValueError(f"{name} test scores contain duplicate sites")
+    selected_raw = raw[keys + ["chip_label", "raw_score"]].copy()
+    merged = scored.merge(
+        selected_raw,
+        on=keys,
+        how="inner",
+        validate="one_to_one",
+    )
+    if not np.array_equal(
+        merged["label"].to_numpy(dtype=int),
+        merged["chip_label"].to_numpy(dtype=int),
+    ):
+        raise ValueError("raw and consensus test labels differ")
+    coverage_rows = []
+    consensus_counts = scored.groupby(TASK_COLUMNS, sort=True).size()
+    raw_counts = raw.groupby(TASK_COLUMNS, sort=True).size()
+    common_counts = merged.groupby(TASK_COLUMNS, sort=True).size()
+    for key, total in consensus_counts.items():
+        common = int(common_counts.get(key, 0))
+        fraction = common / int(total)
+        coverage_rows.append(
+            {
+                "cell": str(key[0]),
+                "tf": str(key[1]),
+                "consensus_sites": int(total),
+                "raw_sites": int(raw_counts.get(key, 0)),
+                "common_sites": common,
+                "common_fraction": fraction,
+            }
+        )
+        if fraction < minimum_common_fraction:
+            raise ValueError(
+                "raw guardrail common support is below "
+                f"{minimum_common_fraction:.3f} for {key[0]}/{key[1]}: {fraction:.3f}"
+            )
+    merged = merged.drop(columns="chip_label")
+    return merged.sort_values(keys, kind="mergesort").reset_index(drop=True), pd.DataFrame(
+        coverage_rows
+    )
+
+
 def task_lookup(document: dict) -> dict[tuple[str, str], dict]:
     tasks = {(str(row["cell"]), str(row["tf"])): row for row in document["tasks"]}
     if len(tasks) != len(document["tasks"]):
@@ -676,6 +754,15 @@ def evaluate_test(args: argparse.Namespace) -> int:
     if fda_document["policy_id"] != consensus["fda_threshold_freeze"]["policy_id"]:
         raise ValueError("FDA test policy does not match consensus")
     scored = apply_consensus_scores(align_test_scores(count, fda), consensus, arrays)
+    raw_document = None
+    raw_coverage = pd.DataFrame()
+    if args.raw_manifest is not None:
+        raw_document, raw = load_result_scores(
+            args.raw_manifest,
+            schema=BIAS_SHRINKAGE_TEST_SCHEMA,
+            output_name="site_scores",
+        )
+        scored, raw_coverage = align_raw_test_scores(scored, raw)
     metrics_rows = []
     bootstrap_rows = []
     for (_cell, _tf), task in scored.groupby(TASK_COLUMNS, sort=True):
@@ -701,6 +788,7 @@ def evaluate_test(args: argparse.Namespace) -> int:
                         "tf": str(_tf),
                         "motif_family": str(task["motif_family"].iloc[0]),
                         "operator": name,
+                        "baseline": "DWM_conventional_deviance",
                         **block_bootstrap_delta(
                             sites,
                             task[name].to_numpy(dtype=float),
@@ -710,6 +798,23 @@ def evaluate_test(args: argparse.Namespace) -> int:
                         ),
                     }
                 )
+                if "raw_score" in task:
+                    bootstrap_rows.append(
+                        {
+                            "cell": str(_cell),
+                            "tf": str(_tf),
+                            "motif_family": str(task["motif_family"].iloc[0]),
+                            "operator": name,
+                            "baseline": "raw",
+                            **block_bootstrap_delta(
+                                sites,
+                                task[name].to_numpy(dtype=float),
+                                task["raw_score"].to_numpy(dtype=float),
+                                iterations=args.bootstrap_iterations,
+                                seed=args.seed,
+                            ),
+                        }
+                    )
     metrics = pd.DataFrame(metrics_rows)
     summary = summarize_operators(metrics)
     summary["selected_for_primary"] = summary["operator"].astype(str).eq(
@@ -720,10 +825,13 @@ def evaluate_test(args: argparse.Namespace) -> int:
     bootstrap_path = args.outdir / "functional_consensus_test_bootstrap.tsv"
     summary_path = args.outdir / "functional_consensus_test_summary.tsv"
     scores_path = args.outdir / "functional_consensus_test_site_scores.tsv.gz"
+    coverage_path = args.outdir / "functional_consensus_test_raw_coverage.tsv"
     write_frame(metrics_path, metrics)
     write_frame(bootstrap_path, pd.DataFrame(bootstrap_rows))
     write_frame(summary_path, summary)
     write_frame(scores_path, scored)
+    if args.raw_manifest is not None:
+        write_frame(coverage_path, raw_coverage)
     manifest = {
         "schema": TEST_SCHEMA,
         "consensus_id": consensus["consensus_id"],
@@ -740,6 +848,17 @@ def evaluate_test(args: argparse.Namespace) -> int:
             "path": str(args.fda_manifest),
             "sha256": file_sha256(args.fda_manifest),
         },
+        "raw_test_manifest": (
+            None
+            if args.raw_manifest is None
+            else {
+                "path": str(args.raw_manifest),
+                "sha256": file_sha256(args.raw_manifest),
+                "schema": raw_document["schema"],
+            }
+        ),
+        "raw_signal_guardrail": args.raw_manifest is not None,
+        "common_finite_support": args.raw_manifest is not None,
         "test_labels_used_for_operator_selection": False,
         "models_refitted_on_test": False,
         "minimum_sites_per_class": args.minimum_sites_per_class,
@@ -752,6 +871,16 @@ def evaluate_test(args: argparse.Namespace) -> int:
             },
             "summary": {"path": str(summary_path), "sha256": file_sha256(summary_path)},
             "scores": {"path": str(scores_path), "sha256": file_sha256(scores_path)},
+            **(
+                {
+                    "raw_coverage": {
+                        "path": str(coverage_path),
+                        "sha256": file_sha256(coverage_path),
+                    }
+                }
+                if args.raw_manifest is not None
+                else {}
+            ),
         },
     }
     immutable_write_json(args.outdir / "functional_consensus_test_manifest.json", manifest)
@@ -1005,6 +1134,11 @@ def build_parser() -> argparse.ArgumentParser:
     test.add_argument("--consensus-freeze", type=Path, required=True)
     test.add_argument("--count-manifest", type=Path, required=True)
     test.add_argument("--fda-manifest", type=Path, required=True)
+    test.add_argument(
+        "--raw-manifest",
+        type=Path,
+        help="Checksummed frozen bias-shrinkage test manifest providing raw scores.",
+    )
     test.add_argument("--outdir", type=Path, required=True)
     test.add_argument("--minimum-sites-per-class", type=int, default=200)
     test.add_argument("--bootstrap-iterations", type=int, default=1000)

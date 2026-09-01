@@ -107,3 +107,49 @@ def test_naked_dna_safety_retains_zero_cut_sites_in_denominator() -> None:
     assert rate["calls"] == 1
     assert rate["false_positive_rate"] == 0.25
     assert calls.tolist() == [False, True, False, False]
+
+
+def test_raw_guardrail_alignment_uses_common_support() -> None:
+    scored = pd.DataFrame(
+        {
+            "cell": ["CellA", "CellA"],
+            "tf": ["TF1", "TF1"],
+            "TFBS_chr": ["chr19", "chr20"],
+            "TFBS_start": [10, 20],
+            "TFBS_end": [15, 25],
+            "TFBS_strand": ["+", "-"],
+            "label": [0, 1],
+            "dwm_score": [0.1, 0.5],
+        }
+    )
+    raw = scored.rename(columns={"label": "chip_label"}).copy()
+    raw["raw_score"] = [0.2, 0.7]
+    aligned, coverage = consensus.align_raw_test_scores(scored, raw)
+    assert aligned["raw_score"].tolist() == [0.2, 0.7]
+    assert coverage.loc[0, "common_fraction"] == 1.0
+
+    incomplete = raw.iloc[:1]
+    with pytest.raises(ValueError, match="common support"):
+        consensus.align_raw_test_scores(scored, incomplete)
+
+
+def test_task_metric_record_reports_raw_guardrail_deltas() -> None:
+    frame = pd.DataFrame(
+        {
+            "cell": ["CellA"] * 4,
+            "tf": ["TF1"] * 4,
+            "motif_family": ["F1"] * 4,
+            "label": [0, 0, 1, 1],
+            "dwm_score": [0.4, 0.3, 0.2, 0.1],
+            "raw_score": [0.2, 0.1, 0.3, 0.4],
+        }
+    )
+    record = consensus.task_metric_record(
+        frame,
+        np.asarray([0.1, 0.2, 0.8, 0.9]),
+        operator="candidate",
+        minimum_sites_per_class=2,
+    )
+    assert record["raw_auroc"] == 1.0
+    assert record["auroc_gain_over_raw"] == 0.0
+    assert record["relative_auprc_gain_over_raw"] == 0.0
