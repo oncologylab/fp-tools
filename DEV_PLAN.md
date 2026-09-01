@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-30
+Last updated: 2026-09-01
 
 ## Current Baseline
 
@@ -198,6 +198,21 @@ a separately planned breaking release explicitly changes the contract.
   ChIP-negative sites before they are applied to label-free naked-DNA
   replicate 2; both finite-site and nonzero-cut false-positive rates must pass
   before a residual can enter the immutable configuration freeze.
+- The first frozen conditional-multinomial checkpoint conditions explicitly on
+  each motif site's cut total and learns only profile shape. Across the nine
+  internally eligible K562/HepG2 tasks it improved mean AUROC by 0.0139,
+  relative AUPRC by 4.38%, and functional separation by 28.7% over DWM, while
+  all 14 evaluated task thresholds passed naked-DNA replicate-2 safety. The
+  gain is not general: the same candidate was 0.0184 AUROC and 0.73% relative
+  AUPRC below the exact raw-signal guardrail on average. CTCF is the clear
+  internal exception, improving AUROC/AUPRC over raw by 0.0647/15.95% in HepG2
+  and 0.0421/9.43% in K562 with visibly stronger canonical aggregate
+  protection. FOXA1's smaller numerical gain does not yet have a convincing
+  canonical aggregate shape. A count/FDA rank-consensus screen also failed the
+  10% AUPRC gate, and FDA-heavy mixtures produced naked-DNA false positives.
+  These results remain internal research evidence: full-depth confirmation,
+  control-source qualification, the official ChromBPNet comparison, and
+  locked external validation are still required before any promotion.
 
 ## Current ENCODE Resource
 
