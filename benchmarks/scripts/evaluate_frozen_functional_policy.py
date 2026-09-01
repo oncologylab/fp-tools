@@ -42,6 +42,8 @@ from evaluate_strand_label_free_models import (  # noqa: E402
 )
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
+    CovariateAnchoredFdaModel,
+    CovariateResidualizedFdaModel,
     FdaMixtureModel,
     HybridFdaGpModel,
     normalize_functional_profiles,
@@ -230,6 +232,7 @@ def candidate_score_and_profile(
     arrays: dict[str, np.ndarray],
     indexes: np.ndarray,
     positions: np.ndarray,
+    motif_score: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if candidate.family == "count":
         if not isinstance(model, BiasAwareFunctionalMixture):
@@ -258,6 +261,31 @@ def candidate_score_and_profile(
             - components[1 - model.binding_component_]
         )
         return score, aggregate, fitted_profile
+    if candidate.family == "anchored-fda":
+        if not isinstance(model, CovariateAnchoredFdaModel):
+            raise TypeError("anchored FDA policy has the wrong serialized model type")
+        shape_log_odds, _anchor = model.predict_log_odds_components(
+            arrays[candidate.channel][indexes]
+        )
+        score = 1.0 / (1.0 + np.exp(-np.clip(shape_log_odds, -40.0, 40.0)))
+        return score, aggregate, model.profile_difference()
+    if candidate.family == "residualized-fda":
+        if not isinstance(model, CovariateResidualizedFdaModel):
+            raise TypeError(
+                "residualized FDA policy has the wrong serialized model type"
+            )
+        coverage = (
+            arrays["plus_observed"][indexes]
+            + arrays["minus_observed"][indexes]
+        ).sum(axis=1)
+        if motif_score is None:
+            raise ValueError("residualized FDA requires motif-score covariates")
+        score = model.predict_proba(
+            arrays[candidate.channel][indexes],
+            motif_score=motif_score,
+            accessibility=coverage,
+        )
+        return score, aggregate, model.profile_difference()
     if candidate.family == "hybrid":
         if not isinstance(model, HybridFdaGpModel):
             raise TypeError("hybrid policy has the wrong serialized model type")
@@ -513,6 +541,7 @@ def main(argv: list[str] | None = None) -> int:
                 arrays,
                 indexes,
                 positions,
+                motif_score=sites.iloc[indexes]["motif_score"].to_numpy(dtype=float),
             )
             candidate_seconds = perf_counter() - started
             dwm_score, dwm_profiles = residual_score(

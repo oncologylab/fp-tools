@@ -36,6 +36,8 @@ from evaluate_strand_label_free_models import (  # noqa: E402
 )
 from fp_tools.tools.functional_footprints import (  # noqa: E402
     BiasAwareFunctionalMixture,
+    CovariateAnchoredFdaModel,
+    CovariateResidualizedFdaModel,
     FdaMixtureModel,
     HybridFdaGpModel,
 )
@@ -194,7 +196,35 @@ def fit_model(
         candidate.candidate_id,
         seed=seed,
     )
-    if candidate.family == "fda":
+    coverage = (
+        profiles["plus_observed"][indexes]
+        + profiles["minus_observed"][indexes]
+    ).sum(axis=1)
+    if candidate.family == "anchored-fda":
+        model = CovariateAnchoredFdaModel(
+            max_components=20,
+            anchor_strength=candidate.anchor_strength,
+            seed=model_seed,
+        ).fit(
+            training,
+            motif_score=sites.iloc[indexes]["motif_score"].to_numpy(dtype=float),
+            accessibility=coverage,
+            positions=positions,
+            sample_weight=weights,
+        )
+    elif candidate.family == "residualized-fda":
+        model = CovariateResidualizedFdaModel(
+            max_components=20,
+            covariate_ridge=candidate.covariate_ridge,
+            seed=model_seed,
+        ).fit(
+            training,
+            motif_score=sites.iloc[indexes]["motif_score"].to_numpy(dtype=float),
+            accessibility=coverage,
+            positions=positions,
+            sample_weight=weights,
+        )
+    elif candidate.family == "fda":
         model = FdaMixtureModel(max_components=20, seed=model_seed).fit(
             training,
             positions=positions,
@@ -207,9 +237,7 @@ def fit_model(
             seed=model_seed,
         ).fit(training, sample_weight=weights)
     else:
-        raise ValueError(
-            "policy freezer currently supports count, FDA and hybrid candidates"
-        )
+        raise ValueError(f"unsupported policy candidate: {candidate.family}")
     return model, len(tf_indexes), len(family_indexes)
 
 
@@ -220,6 +248,10 @@ def load_frozen_model(family: str, path: Path):
         return FdaMixtureModel.load(path)
     if family == "hybrid":
         return HybridFdaGpModel.load(path)
+    if family == "anchored-fda":
+        return CovariateAnchoredFdaModel.load(path)
+    if family == "residualized-fda":
+        return CovariateResidualizedFdaModel.load(path)
     raise ValueError(f"unsupported frozen model family: {family}")
 
 

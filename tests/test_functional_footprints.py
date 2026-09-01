@@ -357,7 +357,7 @@ def test_fda_model_rejects_checksum_mismatch(tmp_path: Path) -> None:
         FdaMixtureModel.load(model_path)
 
 
-def test_covariate_anchored_fda_separates_shape_from_prior() -> None:
+def test_covariate_anchored_fda_separates_shape_from_prior(tmp_path: Path) -> None:
     observed, expected, labels, motif_score = _synthetic_counts(seed=27)
     residuals = deviance_profiles(observed, expected, dispersion=0.02)
     accessibility = observed.sum(axis=1)
@@ -381,9 +381,20 @@ def test_covariate_anchored_fda_separates_shape_from_prior() -> None:
     assert roc_auc_score(labels, shape) > 0.70
     assert shape.shape == prior.shape == labels.shape
     assert model.profile_difference().shape == _positions().shape
+    model.save(tmp_path / "anchored")
+    loaded = CovariateAnchoredFdaModel.load(tmp_path / "anchored.npz")
+    loaded_shape, loaded_prior = loaded.predict_log_odds_components(
+        residuals,
+        motif_score=motif_score,
+        accessibility=accessibility,
+    )
+    assert np.allclose(loaded_shape, shape)
+    assert np.allclose(loaded_prior, prior)
 
 
-def test_covariate_residualized_fda_removes_accessibility_pc_trend() -> None:
+def test_covariate_residualized_fda_removes_accessibility_pc_trend(
+    tmp_path: Path,
+) -> None:
     observed, expected, labels, motif_score = _synthetic_counts(seed=31)
     residuals = deviance_profiles(observed, expected, dispersion=0.02)
     accessibility = observed.sum(axis=1)
@@ -418,6 +429,16 @@ def test_covariate_residualized_fda_removes_accessibility_pc_trend() -> None:
     assert max(correlations) < 0.1
     assert roc_auc_score(labels, probabilities) > 0.65
     assert model.profile_difference().shape == _positions().shape
+    model.save(tmp_path / "residualized")
+    loaded = CovariateResidualizedFdaModel.load(tmp_path / "residualized.npz")
+    assert np.allclose(
+        loaded.predict_proba(
+            residuals,
+            motif_score=motif_score,
+            accessibility=accessibility,
+        ),
+        probabilities,
+    )
 
 
 def test_replicate_level_functional_differential_test() -> None:

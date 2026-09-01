@@ -1856,6 +1856,121 @@ class CovariateAnchoredFdaModel:
         )
         return profiles[1] - profiles[0]
 
+    def save(
+        self,
+        path: str | Path,
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[Path, Path]:
+        if any(
+            value is None
+            for value in (
+                self.positions_,
+                self.bound_mean_,
+                self.unbound_mean_,
+                self.bound_variance_,
+                self.unbound_variance_,
+            )
+        ):
+            raise ValueError("anchored FDA model has not been fitted")
+        self.fpca._check_fitted()
+        npz_path = Path(path).with_suffix(".npz")
+        json_path = npz_path.with_suffix(".json")
+        npz_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            npz_path,
+            positions=self.positions_,
+            bound_mean=self.bound_mean_,
+            unbound_mean=self.unbound_mean_,
+            bound_variance=self.bound_variance_,
+            unbound_variance=self.unbound_variance_,
+            fpca_mean=self.fpca.mean_,
+            fpca_components=self.fpca.components_,
+            fpca_explained_variance_ratio=self.fpca.explained_variance_ratio_,
+            fpca_impute=self.fpca.impute_,
+        )
+        document = {
+            "schema": FUNCTIONAL_SCHEMA,
+            "model_type": "covariate_anchored_fda",
+            "npz_sha256": _sha256_file(npz_path),
+            "variance_threshold": self.fpca.variance_threshold,
+            "max_components": self.fpca.max_components,
+            "seed": self.fpca.seed,
+            "anchor_strength": self.anchor_strength,
+            "covariance_shrinkage": self.covariance_shrinkage,
+            "max_iter": self.max_iter,
+            "tolerance": self.tolerance,
+            "motif_location": self.motif_location_,
+            "motif_scale": self.motif_scale_,
+            "accessibility_location": self.accessibility_location_,
+            "accessibility_scale": self.accessibility_scale_,
+            "temperature": self.temperature_,
+            "converged": self.converged_,
+            "iterations": self.iterations_,
+            "metadata": dict(metadata or {}),
+        }
+        json_path.write_text(
+            json.dumps(document, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return npz_path, json_path
+
+    @classmethod
+    def load(cls, path: str | Path) -> "CovariateAnchoredFdaModel":
+        npz_path = Path(path).with_suffix(".npz")
+        document = json.loads(
+            npz_path.with_suffix(".json").read_text(encoding="utf-8")
+        )
+        if (
+            document.get("schema") != FUNCTIONAL_SCHEMA
+            or document.get("model_type") != "covariate_anchored_fda"
+        ):
+            raise ValueError("unsupported covariate-anchored FDA model")
+        if document.get("npz_sha256") != _sha256_file(npz_path):
+            raise ValueError("anchored FDA checksum does not match its metadata")
+        model = cls(
+            variance_threshold=float(document["variance_threshold"]),
+            max_components=int(document["max_components"]),
+            anchor_strength=float(document["anchor_strength"]),
+            covariance_shrinkage=float(document["covariance_shrinkage"]),
+            max_iter=int(document["max_iter"]),
+            tolerance=float(document["tolerance"]),
+            seed=int(document["seed"]),
+        )
+        with np.load(npz_path, allow_pickle=False) as arrays:
+            model.positions_ = np.asarray(arrays["positions"], dtype=np.float64)
+            model.bound_mean_ = np.asarray(arrays["bound_mean"], dtype=np.float64)
+            model.unbound_mean_ = np.asarray(
+                arrays["unbound_mean"], dtype=np.float64
+            )
+            model.bound_variance_ = np.asarray(
+                arrays["bound_variance"], dtype=np.float64
+            )
+            model.unbound_variance_ = np.asarray(
+                arrays["unbound_variance"], dtype=np.float64
+            )
+            model.fpca.mean_ = np.asarray(arrays["fpca_mean"], dtype=np.float64)
+            model.fpca.components_ = np.asarray(
+                arrays["fpca_components"], dtype=np.float64
+            )
+            model.fpca.explained_variance_ratio_ = np.asarray(
+                arrays["fpca_explained_variance_ratio"], dtype=np.float64
+            )
+            model.fpca.impute_ = np.asarray(
+                arrays["fpca_impute"], dtype=np.float64
+            )
+        model.motif_location_ = float(document.get("motif_location", 0.0))
+        model.motif_scale_ = float(document.get("motif_scale", 1.0))
+        model.accessibility_location_ = float(
+            document.get("accessibility_location", 0.0)
+        )
+        model.accessibility_scale_ = float(
+            document.get("accessibility_scale", 1.0)
+        )
+        model.temperature_ = float(document.get("temperature", 1.0))
+        model.converged_ = bool(document.get("converged", False))
+        model.iterations_ = int(document.get("iterations", 0))
+        return model
+
 
 class CovariateResidualizedFdaModel:
     """Functional-PC mixture after removing label-free covariate trends.
@@ -2051,6 +2166,116 @@ class CovariateResidualizedFdaModel:
             raise ValueError("covariate-residualized FDA model has not been fitted")
         profiles = self.fpca.inverse_transform(self.mixture.means_)
         return profiles[self.binding_component_] - profiles[1 - self.binding_component_]
+
+    def save(
+        self,
+        path: str | Path,
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[Path, Path]:
+        if (
+            self.mixture is None
+            or self.binding_component_ is None
+            or self.positions_ is None
+            or self.covariate_coefficients_ is None
+        ):
+            raise ValueError("covariate-residualized FDA model has not been fitted")
+        self.fpca._check_fitted()
+        npz_path = Path(path).with_suffix(".npz")
+        json_path = npz_path.with_suffix(".json")
+        npz_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            npz_path,
+            positions=self.positions_,
+            covariate_coefficients=self.covariate_coefficients_,
+            fpca_mean=self.fpca.mean_,
+            fpca_components=self.fpca.components_,
+            fpca_explained_variance_ratio=self.fpca.explained_variance_ratio_,
+            fpca_impute=self.fpca.impute_,
+            mixture_weights=self.mixture.weights_,
+            mixture_means=self.mixture.means_,
+            mixture_covariances=self.mixture.covariances_,
+        )
+        document = {
+            "schema": FUNCTIONAL_SCHEMA,
+            "model_type": "covariate_residualized_fda",
+            "npz_sha256": _sha256_file(npz_path),
+            "variance_threshold": self.fpca.variance_threshold,
+            "max_components": self.fpca.max_components,
+            "covariate_ridge": self.covariate_ridge,
+            "seed": self.seed,
+            "binding_component": self.binding_component_,
+            "motif_location": self.motif_location_,
+            "motif_scale": self.motif_scale_,
+            "accessibility_location": self.accessibility_location_,
+            "accessibility_scale": self.accessibility_scale_,
+            "temperature": self.temperature_,
+            "converged": bool(self.mixture.converged_),
+            "iterations": int(self.mixture.n_iter_),
+            "lower_bound": float(self.mixture.lower_bound_),
+            "metadata": dict(metadata or {}),
+        }
+        json_path.write_text(
+            json.dumps(document, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return npz_path, json_path
+
+    @classmethod
+    def load(cls, path: str | Path) -> "CovariateResidualizedFdaModel":
+        npz_path = Path(path).with_suffix(".npz")
+        document = json.loads(
+            npz_path.with_suffix(".json").read_text(encoding="utf-8")
+        )
+        if (
+            document.get("schema") != FUNCTIONAL_SCHEMA
+            or document.get("model_type") != "covariate_residualized_fda"
+        ):
+            raise ValueError("unsupported covariate-residualized FDA model")
+        if document.get("npz_sha256") != _sha256_file(npz_path):
+            raise ValueError("residualized FDA checksum does not match its metadata")
+        model = cls(
+            variance_threshold=float(document["variance_threshold"]),
+            max_components=int(document["max_components"]),
+            covariate_ridge=float(document["covariate_ridge"]),
+            seed=int(document["seed"]),
+        )
+        with np.load(npz_path, allow_pickle=False) as arrays:
+            model.positions_ = np.asarray(arrays["positions"], dtype=np.float64)
+            model.covariate_coefficients_ = np.asarray(
+                arrays["covariate_coefficients"], dtype=np.float64
+            )
+            model.fpca.mean_ = np.asarray(arrays["fpca_mean"], dtype=np.float64)
+            model.fpca.components_ = np.asarray(
+                arrays["fpca_components"], dtype=np.float64
+            )
+            model.fpca.explained_variance_ratio_ = np.asarray(
+                arrays["fpca_explained_variance_ratio"], dtype=np.float64
+            )
+            model.fpca.impute_ = np.asarray(
+                arrays["fpca_impute"], dtype=np.float64
+            )
+            model.mixture = _restore_diagonal_gaussian_mixture(
+                weights=np.asarray(arrays["mixture_weights"], dtype=np.float64),
+                means=np.asarray(arrays["mixture_means"], dtype=np.float64),
+                covariances=np.asarray(
+                    arrays["mixture_covariances"], dtype=np.float64
+                ),
+                seed=model.seed,
+                converged=bool(document.get("converged", False)),
+                iterations=int(document.get("iterations", 0)),
+                lower_bound=float(document.get("lower_bound", float("nan"))),
+            )
+        model.binding_component_ = int(document["binding_component"])
+        model.motif_location_ = float(document.get("motif_location", 0.0))
+        model.motif_scale_ = float(document.get("motif_scale", 1.0))
+        model.accessibility_location_ = float(
+            document.get("accessibility_location", 0.0)
+        )
+        model.accessibility_scale_ = float(
+            document.get("accessibility_scale", 1.0)
+        )
+        model.temperature_ = float(document.get("temperature", 1.0))
+        return model
 
 
 class HybridFdaGpModel:
