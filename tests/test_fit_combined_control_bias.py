@@ -62,6 +62,7 @@ def test_combined_grid_fits_all_sources_and_builds_safe_ensemble(tmp_path) -> No
         seeds=[2026, 2027],
         epochs=2,
         batch_windows=8,
+        jobs=2,
     )
     assert len(artifacts) == 2
     assert len(ensembles) == 1
@@ -71,3 +72,31 @@ def test_combined_grid_fits_all_sources_and_builds_safe_ensemble(tmp_path) -> No
     assert model.feature_spec == BiasFeatureSpec.selma10()
     with np.load(ensembles.loc[0, "model_npz"], allow_pickle=False) as arrays:
         assert all(arrays[key].dtype != object for key in arrays.files)
+
+
+def test_combined_grid_rejects_nonpositive_jobs(tmp_path) -> None:
+    shift = (4, -4)
+    training = {
+        (shift, "naked"): dataset("naked", "train", shift, 1),
+        (shift, "mito"): dataset("mito", "train", shift, 2),
+    }
+    validation = {
+        (shift, "naked"): dataset("naked", "validation", shift, 3),
+        (shift, "mito"): dataset("mito", "validation", shift, 4),
+    }
+    try:
+        module.fit_combined_grid(
+            training,
+            validation,
+            tmp_path,
+            models=["selma10"],
+            l2_values=[1e-3],
+            seeds=[2026],
+            epochs=1,
+            batch_windows=8,
+            jobs=0,
+        )
+    except ValueError as exc:
+        assert str(exc) == "jobs must be positive"
+    else:  # pragma: no cover - defensive assertion
+        raise AssertionError("expected a ValueError")

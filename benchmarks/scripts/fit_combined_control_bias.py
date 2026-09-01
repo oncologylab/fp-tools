@@ -11,6 +11,7 @@ remains one compact NPZ plus JSON pair.
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -94,8 +95,12 @@ def fit_combined_grid(
     seeds: Sequence[int],
     epochs: int,
     batch_windows: int,
+    jobs: int = 1,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Fit seed models and compact coefficient-mean ensembles."""
+
+    if jobs < 1:
+        raise ValueError("jobs must be positive")
 
     shifts = sorted({key[0] for key in training})
     if set(shifts) != {key[0] for key in validation}:
@@ -135,8 +140,9 @@ def fit_combined_grid(
                 member_paths: list[Path] = []
                 total_runtime = 0.0
                 maximum_memory = 0.0
-                for seed in seeds:
-                    model, runtime, memory = _fit_one(
+
+                def fit_seed(seed: int):
+                    return _fit_one(
                         spec,
                         contexts,
                         counts,
@@ -145,6 +151,17 @@ def fit_combined_grid(
                         batch_windows=batch_windows,
                         seed=int(seed),
                     )
+
+                if jobs == 1 or len(seeds) == 1:
+                    fitted_seeds = [fit_seed(int(seed)) for seed in seeds]
+                else:
+                    with ThreadPoolExecutor(
+                        max_workers=min(int(jobs), len(seeds)),
+                        thread_name_prefix="frozen-bias-seed",
+                    ) as executor:
+                        fitted_seeds = list(executor.map(fit_seed, seeds))
+
+                for seed, (model, runtime, memory) in zip(seeds, fitted_seeds):
                     stem = model_dir / (
                         f"combined.{model_name}.shift_{shift[0]}_{shift[1]}."
                         f"l2_{safe_token(l2)}.seed_{seed}"
@@ -259,6 +276,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--fit-seed", type=int, action="append", dest="seeds")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--batch-windows", type=int, default=64)
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=1,
+        help="fit deterministic seed members concurrently (research training only)",
+    )
     args = parser.parse_args(argv)
 
     study = json.loads(args.study.read_text(encoding="utf-8"))
@@ -281,6 +304,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         seeds=seeds,
         epochs=args.epochs,
         batch_windows=args.batch_windows,
+        jobs=args.jobs,
     )
     artifacts_path = args.outdir / "combined_bias_model_artifacts.tsv"
     ensembles_path = args.outdir / "combined_bias_model_ensembles.tsv"
@@ -304,6 +328,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "models": models,
         "l2_values": l2_values,
         "seeds": seeds,
+        "jobs": args.jobs,
         "chipped_labels_used": False,
         "outputs": {
             path.name: {"path": str(path), "sha256": file_sha256(path)}
