@@ -12,6 +12,8 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 import freeze_parametric_holdouts  # noqa: E402
 import freeze_label_free_functional_models  # noqa: E402
+import freeze_functional_call_thresholds  # noqa: E402
+import evaluate_frozen_functional_naked_dna  # noqa: E402
 import evaluate_frozen_functional_depth_matrix  # noqa: E402
 import evaluate_frozen_functional_policy  # noqa: E402
 import evaluate_parametric_factorization  # noqa: E402
@@ -201,6 +203,35 @@ def test_depth_dwm_scaling_matches_local_totals() -> None:
     )
     assert np.allclose(scaled.sum(axis=1), observed.sum(axis=1))
     assert np.allclose(scaled[0] / scaled[0].sum(), expected[0] / expected[0].sum())
+
+
+def test_frozen_call_threshold_respects_ties_and_target_rate() -> None:
+    scores = np.asarray([0.1, 0.2, 0.3, 0.8, 0.8, 0.9])
+    threshold, calls = freeze_functional_call_thresholds.upper_tail_threshold(
+        scores,
+        0.34,
+    )
+    assert threshold == 0.9
+    assert calls == 1
+    assert np.sum(scores >= threshold) / len(scores) <= 0.34
+
+
+def test_naked_dna_rate_keeps_zero_cut_sites_in_finite_denominator() -> None:
+    score = np.asarray([0.9, 0.1, 0.0, 0.0])
+    valid = np.ones(4, dtype=bool)
+    informative = np.asarray([True, True, False, False])
+    record, calls = evaluate_frozen_functional_naked_dna.rate_record(
+        score,
+        valid,
+        informative,
+        threshold=0.8,
+    )
+    assert record["valid_sites"] == 4
+    assert record["informative_sites"] == 2
+    assert record["calls"] == 1
+    assert record["false_positive_rate"] == 0.25
+    assert record["informative_false_positive_rate"] == 0.5
+    assert calls.tolist() == [True, False, False, False]
 
 
 def test_factorization_dwm_loader_accepts_verified_cache_and_rejects_parametric_label(

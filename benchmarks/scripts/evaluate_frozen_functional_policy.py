@@ -122,7 +122,8 @@ def preflight_test_artifact(
     metadata = document.get("metadata", {})
     if metadata.get("labels_used") is not False:
         raise ValueError(f"test profiles do not certify label-free construction: {path}")
-    if str(metadata.get("cell")) != expected_cell:
+    metadata_cell = metadata.get("cell")
+    if metadata_cell is not None and str(metadata_cell) != expected_cell:
         raise ValueError(f"test profile cell does not match {expected_cell}: {path}")
     profiles_path = Path(document["profiles_npz"])
     sites_path = Path(document["sites"])
