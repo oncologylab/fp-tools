@@ -2,8 +2,9 @@
 """Fit and evaluate the frozen parametric bias factorization by chromosome.
 
 Tune mode fits without ChIP labels on training chromosomes and scores only
-chr16--18.  It then freezes the winning residual.  Test mode requires that
-freeze and opens only chr19--22/X without refitting.
+chr16--18.  It writes a provisional configuration.  Test mode accepts only a
+safety-qualified freeze produced after independent naked-DNA screening and
+opens chr19--22/X without refitting.
 """
 
 from __future__ import annotations
@@ -798,21 +799,43 @@ def main(argv: list[str] | None = None) -> int:
         )
         if (
             configuration.get("schema")
-            != "fp-tools-parametric-factorization-configuration-freeze-v1"
+            != "fp-tools-parametric-factorization-configuration-freeze-v2"
+            or configuration.get("safety_qualified") is not True
         ):
-            raise ValueError("unsupported factorization configuration freeze")
+            raise ValueError(
+                "test mode requires a safety-qualified v2 configuration freeze"
+            )
         for record in (
             configuration["factorization_model"],
             configuration["factorization_model_metadata"],
             configuration["bias_calibration"],
             configuration["bias_calibration_metadata"],
             configuration["study"],
+            configuration["provisional_configuration"],
+            configuration["residual_selection"],
+            configuration["residual_safety"],
+            configuration["safe_selection_audit"],
             *configuration["inputs"],
         ):
             if sha256_file(record["path"]) != record["sha256"]:
                 raise ValueError(
                     f"frozen configuration input changed: {record['path']}"
                 )
+        safety = json.loads(
+            Path(configuration["residual_safety"]["path"]).read_text(
+                encoding="utf-8"
+            )
+        )
+        if (
+            safety.get("schema")
+            != "fp-tools-parametric-factorization-residual-safety-v1"
+            or safety.get("naked_dna_labels_used") is not False
+            or configuration["selected_residual"]
+            not in safety.get("passing_residuals", [])
+            or safety.get("factorization_model")
+            != configuration["factorization_model"]
+        ):
+            raise ValueError("configuration residual-safety evidence is invalid")
         model = FrozenParametricFactorization.load(
             configuration["factorization_model"]["path"]
         )
