@@ -109,6 +109,34 @@ def test_factorization_geometry_score_detects_center_protection() -> None:
     assert scores[1] < 0
 
 
+def test_factorization_metrics_mark_small_tasks_underpowered() -> None:
+    positions = np.arange(-100, 101, dtype=float)
+    sites = pd.DataFrame(
+        {
+            "cell": ["K562"] * 4,
+            "tf": ["TF"] * 4,
+            "motif": ["M1"] * 4,
+            "motif_family": ["family"] * 4,
+            "role": ["weak_shape"] * 4,
+            "chip_label": [0, 0, 1, 1],
+        }
+    )
+    row = evaluate_parametric_factorization.metric_row(
+        sites,
+        np.asarray([0.1, 0.2, 0.8, 0.9]),
+        np.zeros((4, len(positions))),
+        cell="K562",
+        tf="TF",
+        method="candidate",
+        split="test",
+        positions=positions,
+        minimum_sites_per_class=200,
+    )
+    assert row is not None
+    assert row["status"] == "underpowered"
+    assert row["n_positive"] == row["n_negative"] == 2
+
+
 def test_factorization_dwm_loader_accepts_verified_cache_and_rejects_parametric_label(
     tmp_path: Path,
 ) -> None:

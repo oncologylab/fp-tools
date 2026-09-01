@@ -259,6 +259,7 @@ def metric_row(
     split: str,
     positions: np.ndarray,
     probability: bool = False,
+    minimum_sites_per_class: int = 200,
 ) -> dict[str, object] | None:
     selected = (sites["cell"].astype(str) == cell) & (sites["tf"].astype(str) == tf)
     labels = sites.loc[selected, "chip_label"].to_numpy(dtype=int)
@@ -267,6 +268,8 @@ def metric_row(
     values = np.asarray(score[selected], dtype=np.float64)
     tf_profiles = np.asarray(profiles[selected], dtype=np.float64)
     row = sites.loc[selected].iloc[0]
+    positive = int(np.sum(labels == 1))
+    negative = int(np.sum(labels == 0))
     return {
         "cell": cell,
         "tf": tf,
@@ -276,8 +279,11 @@ def metric_row(
         "split": split,
         "method": method,
         "n_sites": int(len(labels)),
-        "n_positive": int(np.sum(labels == 1)),
-        "n_negative": int(np.sum(labels == 0)),
+        "n_positive": positive,
+        "n_negative": negative,
+        "status": "eligible"
+        if min(positive, negative) >= minimum_sites_per_class
+        else "underpowered",
         "auroc": float(roc_auc_score(labels, values)),
         "auprc": float(average_precision_score(labels, values)),
         "brier": float(brier_score_loss(labels, np.clip(values, 0, 1)))
@@ -523,8 +529,13 @@ def select_residual(metrics: pd.DataFrame) -> tuple[str, pd.DataFrame]:
     baseline = metrics[metrics["method"] == "DWM"][
         ["cell", "tf", "auroc", "auprc"]
     ].rename(columns={"auroc": "baseline_auroc", "auprc": "baseline_auprc"})
-    candidates = metrics[
-        metrics["method"].str.startswith("factorized_residual_")
+    eligible_metrics = (
+        metrics[metrics["status"].astype(str).eq("eligible")]
+        if "status" in metrics
+        else metrics
+    )
+    candidates = eligible_metrics[
+        eligible_metrics["method"].str.startswith("factorized_residual_")
     ].merge(
         baseline,
         on=["cell", "tf"],
@@ -587,6 +598,7 @@ def evaluate_split(
     residuals: Iterable[str],
     bootstrap_iterations: int,
     seed: int,
+    minimum_sites_per_class: int = 200,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, tuple[np.ndarray, np.ndarray, bool]]]:
     selected_sites = sites.iloc[indexes].reset_index(drop=True)
     counts = arrays["counts"][indexes]
@@ -620,6 +632,7 @@ def evaluate_split(
                 split=split_name,
                 positions=model.positions,
                 probability=probability,
+                minimum_sites_per_class=minimum_sites_per_class,
             )
             if row is not None:
                 metrics.append(row)
@@ -628,6 +641,11 @@ def evaluate_split(
     baseline_score = methods["DWM"][0]
     for (cell, tf), group in selected_sites.groupby(["cell", "tf"], sort=True):
         task_indexes = group.index.to_numpy(dtype=int)
+        task_labels = selected_sites.iloc[task_indexes]["chip_label"].to_numpy(
+            dtype=int
+        )
+        if min(np.sum(task_labels == 0), np.sum(task_labels == 1)) < minimum_sites_per_class:
+            continue
         for method, (score, _profiles, _probability) in methods.items():
             if method == "DWM":
                 continue
@@ -840,6 +858,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--maximum-training-sites-per-tf", type=int, default=10000)
     parser.add_argument("--max-iter", type=int, default=25)
     parser.add_argument("--bootstrap-iterations", type=int, default=1000)
+    parser.add_argument("--minimum-sites-per-class", type=int, default=200)
     parser.add_argument("--seed", type=int, default=2026)
     args = parser.parse_args(argv)
     study = json.loads(args.study.read_text(encoding="utf-8"))
@@ -970,6 +989,7 @@ def main(argv: list[str] | None = None) -> int:
             residuals=RESIDUALS,
             bootstrap_iterations=args.bootstrap_iterations,
             seed=args.seed,
+            minimum_sites_per_class=args.minimum_sites_per_class,
         )
         selected_residual, residual_summary = select_residual(metrics)
         metrics.to_csv(
@@ -1018,6 +1038,7 @@ def main(argv: list[str] | None = None) -> int:
             residuals=[residual],
             bootstrap_iterations=args.bootstrap_iterations,
             seed=args.seed,
+            minimum_sites_per_class=args.minimum_sites_per_class,
         )
         metrics.to_csv(
             args.outdir / "factorization_test_metrics.tsv", sep="\t", index=False
