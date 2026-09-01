@@ -22,6 +22,7 @@ false-footprint rates can be checked for replicate consistency before pooling.
 - `evaluate_functional_depth_matrix.py`: apply 10M-frozen TF shape settings across deterministic 10M/25M/50M/full matrices, classify depth limits, and render per-TF depth/aggregate panels.
 - `evaluate_shifted_atac_null_policy.py`: score frozen detectors after deliberately misaligning motif-centered cellular ATAC profiles, providing a label-free accessibility/nucleosome null that complements naked DNA.
 - `evaluate_naked_dna_functional_policy.py`: score the frozen functional policy on naked-DNA profiles; use `--candidate-only` for an independent control replicate when no same-replicate DWM artifact exists.
+- `evaluate_factorization_residual_safety.py`: freeze per-cell/TF residual cutoffs on chr16--18 matched negatives, then screen every residual on label-free naked-DNA replicate 2 before the parametric configuration is frozen.
 - `calibrate_dual_null_posteriors.py`: require posterior calls to exceed conservative per-TF thresholds from both naked DNA and motif-misaligned cellular ATAC.
 - `apply_frozen_dual_null_thresholds.py`: apply already frozen per-TF dual-null thresholds to an independent score table without refitting or borrowing a comparator replicate.
 - `ensemble_parametric_bias_models.py`: combine compatible seed fits into one checksummed geometric coefficient ensemble for prespecified crossed controls.

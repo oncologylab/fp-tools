@@ -193,7 +193,11 @@ a separately planned breaking release explicitly changes the contract.
   TOBIAS-style all-pairs DWM reference. Candidate-screening and final
   naked-DNA libraries are extracted without fitting, and motif-centered
   observed-minus-predicted residuals have an explicit leakage gate. All new
-  artifacts use checksummed NPZ plus JSON and remain research-only.
+  artifacts use checksummed NPZ plus JSON and remain research-only. Continuous
+  residual safety is evaluated with cutoffs frozen from chr16--18 matched
+  ChIP-negative sites before they are applied to label-free naked-DNA
+  replicate 2; both finite-site and nonzero-cut false-positive rates must pass
+  before a residual can enter the immutable configuration freeze.
 
 ## Current ENCODE Resource
 
