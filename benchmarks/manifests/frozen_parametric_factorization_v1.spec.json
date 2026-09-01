@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "study_id": "frozen_parametric_factorization_v1",
+  "status": "development_locked_holdout_unscored",
+  "base_study": "benchmarks/manifests/footprint_functional_v1.spec.json",
+  "assembly": "GRCh38",
+  "motif_database": "jaspar2026_vertebrates",
+  "development_cells": ["K562", "HepG2"],
+  "development_task_count": 21,
+  "diagnostic_transfer_cells": ["GM12878", "IMR-90"],
+  "new_locked_holdout_cells": ["SK-N-SH", "GM23338"],
+  "chromosome_split": {
+    "train": ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15"],
+    "validation": ["chr16", "chr17", "chr18"],
+    "test": ["chr19", "chr20", "chr21", "chr22", "chrX"]
+  },
+  "random_seeds": [2026, 2027, 2028, 2029, 2030],
+  "depth_fragments": [10000000, 25000000, 50000000, "full"],
+  "minimum_evaluation_sites_per_class": 200,
+  "cut_shift_arms": {
+    "legacy": [4, -5],
+    "aligned": [4, -4]
+  },
+  "bias_grid": {
+    "models": ["selma10", "loglinear21", "loglinear41", "loglinear81"],
+    "context_lengths": [10, 21, 41, 81],
+    "pair_distances": [1, 5, 9],
+    "l2": [0.0001, 0.001, 0.01],
+    "training_sources": ["naked_dna_rep1", "cross_cell_pooled_mitochondrial", "combined_naked_dna_mitochondrial"],
+    "primary_configuration": "frozen_cross_control_pooled",
+    "sample_specific_coefficient_adaptation": false,
+    "ensemble": "equal coefficient mean across five seeds",
+    "retention": "smallest model within one standard error; one larger model only for a significant paired likelihood gain"
+  },
+  "factorization": {
+    "bias_strength_bounds": [0.0, 2.0],
+    "bias_strength_fit_split": "train",
+    "bias_strength_fit_regions": "low-signal nuclear nonpeak",
+    "background_spline_df": 5,
+    "background_fit_outer_flank_bp": [50, 100],
+    "footprint_taper_bp": 50,
+    "observation_model": "conditional_multinomial_plus_negative_binomial_total",
+    "hierarchy": ["global", "motif_family", "tf"],
+    "latent_state": "bound_unbound"
+  },
+  "residual_grid": ["difference", "pearson", "deviance", "log_ratio", "nb_center_flank"],
+  "residual_tie_order": ["deviance", "pearson", "difference", "log_ratio", "nb_center_flank"],
+  "comparison_arms": [
+    "raw",
+    "PWM",
+    "DWM",
+    "frozen_parametric_direct_scaling",
+    "frozen_parametric_bias_strength",
+    "frozen_parametric_factorization",
+    "ChromBPNet_bias",
+    "ChromBPNet_nobias_ceiling"
+  ],
+  "detector_arms": [
+    "frozen_conventional_geometry",
+    "frozen_tf_specific_geometry",
+    "label_free_hierarchical_spline",
+    "FDA_secondary",
+    "GP_secondary",
+    "supervised_functional_pc_ceiling"
+  ],
+  "negative_controls": {
+    "training": {"accession": "GSE164997", "run": "SRR13450940", "replicate": 1},
+    "candidate_screen": {"accession": "GSE164997", "run": "SRR13450941", "replicate": 2},
+    "final_untouched": {"accession": "GSE164997", "run": "SRR13450942", "replicate": 3}
+  },
+  "matched_unfiltered_mitochondrial_bams": [
+    {"cell": "K562", "accession": "ENCFF834HWH"},
+    {"cell": "HepG2", "accession": "ENCFF095VYO"}
+  ],
+  "new_holdout_atac": [
+    {"cell": "SK-N-SH", "experiment_accession": "ENCSR587TRP"},
+    {"cell": "GM23338", "experiment_accession": "ENCSR485TLP"}
+  ],
+  "new_holdout_tasks": [
+    {"cell": "SK-N-SH", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control"},
+    {"cell": "SK-N-SH", "tf": "MEF2A", "motif_id": "MA0052.5", "motif_family": "MEF2", "role": "difficult"},
+    {"cell": "SK-N-SH", "tf": "MAX", "motif_id": "MA0058.4", "motif_family": "MYC_MAX", "role": "difficult"},
+    {"cell": "SK-N-SH", "tf": "REST", "motif_id": "MA0138.3", "motif_family": "REST", "role": "transfer"},
+    {"cell": "SK-N-SH", "tf": "JUND", "motif_id": "MA0491.3", "motif_family": "AP1", "role": "difficult"},
+    {"cell": "GM23338", "tf": "CTCF", "motif_id": "MA0139.2", "motif_family": "CTCF", "role": "positive_control"},
+    {"cell": "GM23338", "tf": "REST", "motif_id": "MA0138.3", "motif_family": "REST", "role": "transfer"},
+    {"cell": "GM23338", "tf": "CREB1", "motif_id": "MA0018.5", "motif_family": "CREB", "role": "transfer"},
+    {"cell": "GM23338", "tf": "ETS1", "motif_id": "MA0098.4", "motif_family": "ETS", "role": "difficult"},
+    {"cell": "GM23338", "tf": "NANOG", "motif_id": null, "motif_family": "NANOG", "role": "ineligible_without_jaspar_motif"},
+    {"cell": "GM23338", "tf": "POU5F1", "motif_id": "MA1115.2", "motif_family": "POU", "role": "transfer"}
+  ],
+  "holdout_selection": {
+    "experiment_status": "released",
+    "treatment": "untreated",
+    "assembly": "GRCh38",
+    "output": "replicate-aware IDR thresholded peaks",
+    "minimum_biological_replicates": 2,
+    "requires_jaspar_motif": true,
+    "tie_break": ["preferred_default", "newest_pipeline_version", "file_accession"]
+  },
+  "external_references": {
+    "ChromBPNet": {
+      "repository": "https://github.com/kundajelab/chrombpnet",
+      "commit": "09938fdb4397ec0006510e5251e48920a505d4de",
+      "runtime": "TensorFlow 2.8 GPU container",
+      "device": "A100",
+      "package_dependency": false
+    }
+  },
+  "stage_order": [
+    "synthetic",
+    "enzyme_control",
+    "development_tune",
+    "development_test",
+    "depth_replicate",
+    "negative_final",
+    "diagnostic_transfer",
+    "new_holdout",
+    "nutrient_application",
+    "report"
+  ],
+  "promotion_gates": {
+    "minimum_mean_auroc_gain": 0.03,
+    "minimum_relative_auprc_gain": 0.10,
+    "minimum_functional_separation_gain": 0.25,
+    "minimum_difficult_tf_families_improved": 2,
+    "minimum_holdout_cells_improved": 2,
+    "maximum_positive_control_auroc_loss": 0.02,
+    "bootstrap_interval_must_exclude_zero": true,
+    "maximum_naked_dna_false_positive_rate": 0.05,
+    "maximum_naked_dna_wilson_upper_95": 0.05,
+    "maximum_naked_dna_false_positive_rate_increase": 0.01,
+    "maximum_runtime_ratio_to_dwm": 2.0,
+    "maximum_memory_ratio_to_dwm": 1.5,
+    "maximum_model_size_mb": 25.0,
+    "motif_residual_absolute_center_flank_limit": 0.25
+  },
+  "rules": {
+    "no_public_cli_yaml_gui_changes": true,
+    "dwm_remains_default": true,
+    "no_main_merge": true,
+    "holdout_single_evaluation": true,
+    "nutrient_not_used_for_selection": true,
+    "large_outputs_ignored": true
+  }
+}

@@ -1,0 +1,294 @@
+{
+  "atac_decisions": [
+    {
+      "cell": "SK-N-SH",
+      "experiment_accession": "ENCSR587TRP",
+      "labels_read": false,
+      "selected_bams": [
+        "ENCFF049RWL",
+        "ENCFF270AGJ",
+        "ENCFF502IYP"
+      ],
+      "selected_peak": "ENCFF685CFY"
+    },
+    {
+      "cell": "GM23338",
+      "experiment_accession": "ENCSR485TLP",
+      "labels_read": false,
+      "selected_bams": [
+        "ENCFF468VHT",
+        "ENCFF348MQI",
+        "ENCFF667GFM"
+      ],
+      "selected_peak": "ENCFF870AYG"
+    }
+  ],
+  "chip_decisions": [
+    {
+      "biological_replicates": [
+        1,
+        2
+      ],
+      "candidate_count": 4,
+      "cell": "SK-N-SH",
+      "experiment_accession": "ENCSR000EIC",
+      "file_accession": "ENCFF540DWT",
+      "labels_read": false,
+      "motif_family": "CTCF",
+      "motif_id": "MA0139.2",
+      "output_type": "optimal IDR thresholded peaks",
+      "pipeline_label": "tf-idr-step-v-1-0",
+      "pipeline_version": [
+        1,
+        0
+      ],
+      "preferred_default": true,
+      "role": "positive_control",
+      "status": "selected_pending_power_check",
+      "tf": "CTCF"
+    },
+    {
+      "biological_replicates": [
+        1,
+        2
+      ],
+      "candidate_count": 1,
+      "cell": "SK-N-SH",
+      "experiment_accession": "ENCSR000BVC",
+      "file_accession": "ENCFF582FLX",
+      "labels_read": false,
+      "motif_family": "MEF2",
+      "motif_id": "MA0052.5",
+      "output_type": "conservative IDR thresholded peaks",
+      "pipeline_label": "tf-chip-seq-replicated-idr-step-v-1-0",
+      "pipeline_version": [
+        1,
+        0,
+        1,
+        3,
+        5,
+        1
+      ],
+      "preferred_default": false,
+      "role": "difficult",
+      "status": "selected_pending_power_check",
+      "tf": "MEF2A"
+    },
+    {
+      "biological_replicates": [
+        1,
+        2
+      ],
+      "candidate_count": 1,
+      "cell": "SK-N-SH",
+      "experiment_accession": "ENCSR000BVD",
+      "file_accession": "ENCFF433XVO",
+      "labels_read": false,
+      "motif_family": "MYC_MAX",
+      "motif_id": "MA0058.4",
+      "output_type": "conservative IDR thresholded peaks",
+      "pipeline_label": "tf-chip-seq-replicated-idr-step-v-1-0",
+      "pipeline_version": [
+        1,
+        0,
+        1,
+        3,
+        5,
+        1
+      ],
+      "preferred_default": false,
+      "role": "difficult",
+      "status": "selected_pending_power_check",
+      "tf": "MAX"
+    },
+    {
+      "biological_replicates": [
+        1,
+        2
+      ],
+      "candidate_count": 6,
+      "cell": "SK-N-SH",
+      "experiment_accession": "ENCSR000BJJ",
+      "file_accession": "ENCFF796YFZ",
+      "labels_read": false,
+      "motif_family": "REST",
+      "motif_id": "MA0138.3",
+      "output_type": "optimal IDR thresholded peaks",
+      "pipeline_label": "tf-idr-step-v-1-0",
+      "pipeline_version": [
+        1,
+        0
+      ],
+      "preferred_default": true,
+      "role": "transfer",
+      "status": "selected_pending_power_check",
+      "tf": "REST"
+    },
+    {
+      "biological_replicates": [
+        1,
+        2
+      ],
+      "candidate_count": 4,
+      "cell": "SK-N-SH",
+      "experiment_accession": "ENCSR000EIB",
+      "file_accession": "ENCFF187QQB",
+      "labels_read": false,
+      "motif_family": "AP1",
+      "motif_id": "MA0491.3",
+      "output_type": "optimal IDR thresholded peaks",
+      "pipeline_label": "tf-idr-step-v-1-0",
+      "pipeline_version": [
+        1,
+        0
+      ],
+      "preferred_default": true,
+      "role": "difficult",
+      "status": "selected_pending_power_check",
+      "tf": "JUND"
+    },
+    {
+      "biological_replicates": [
+        1,
+        2
+      ],
+      "candidate_count": 4,
+      "cell": "GM23338",
+      "experiment_accession": "ENCSR932ZMX",
+      "file_accession": "ENCFF651DQL",
+      "labels_read": false,
+      "motif_family": "CTCF",
+      "motif_id": "MA0139.2",
+      "output_type": "conservative IDR thresholded peaks",
+      "pipeline_label": "tf-chip-seq-replicated-idr-step-v-1-0",
+      "pipeline_version": [
+        1,
+        0,
+        1,
+        3,
+        5,
+        1
+      ],
+      "preferred_default": true,
+      "role": "positive_control",
+      "status": "selected_pending_power_check",
+      "tf": "CTCF"
+    },
+    {
+      "cell": "GM23338",
+      "labels_read": false,
+      "motif_id": "MA0138.3",
+      "status": "ineligible_no_untreated_replicate_aware_idr",
+      "tf": "REST"
+    },
+    {
+      "biological_replicates": [
+        1,
+        2
+      ],
+      "candidate_count": 1,
+      "cell": "GM23338",
+      "experiment_accession": "ENCSR214ZAV",
+      "file_accession": "ENCFF420NEX",
+      "labels_read": false,
+      "motif_family": "CREB",
+      "motif_id": "MA0018.5",
+      "output_type": "conservative IDR thresholded peaks",
+      "pipeline_label": "tf-chip-seq-replicated-idr-step-v-1-0",
+      "pipeline_version": [
+        1,
+        0,
+        1,
+        3,
+        5,
+        1
+      ],
+      "preferred_default": false,
+      "role": "transfer",
+      "status": "selected_pending_power_check",
+      "tf": "CREB1"
+    },
+    {
+      "biological_replicates": [
+        1,
+        2
+      ],
+      "candidate_count": 2,
+      "cell": "GM23338",
+      "experiment_accession": "ENCSR534VHI",
+      "file_accession": "ENCFF511AZU",
+      "labels_read": false,
+      "motif_family": "ETS",
+      "motif_id": "MA0098.4",
+      "output_type": "optimal IDR thresholded peaks",
+      "pipeline_label": "tf-idr-step-v-1-0",
+      "pipeline_version": [
+        1,
+        0
+      ],
+      "preferred_default": true,
+      "role": "difficult",
+      "status": "selected_pending_power_check",
+      "tf": "ETS1"
+    },
+    {
+      "cell": "GM23338",
+      "labels_read": false,
+      "status": "ineligible_no_jaspar_motif",
+      "tf": "NANOG"
+    },
+    {
+      "biological_replicates": [
+        1,
+        2
+      ],
+      "candidate_count": 2,
+      "cell": "GM23338",
+      "experiment_accession": "ENCSR264RJX",
+      "file_accession": "ENCFF425KXW",
+      "labels_read": false,
+      "motif_family": "POU",
+      "motif_id": "MA1115.2",
+      "output_type": "optimal IDR thresholded peaks",
+      "pipeline_label": "tf-idr-step-v-1-0",
+      "pipeline_version": [
+        1,
+        0
+      ],
+      "preferred_default": true,
+      "role": "transfer",
+      "status": "selected_pending_power_check",
+      "tf": "POU5F1"
+    }
+  ],
+  "chipped_peak_contents_read": false,
+  "freeze_id": "0420f8ae783ac187e15074440577eede55a4c701304b86fa69891bcf786319c8",
+  "holdout_labels_scored": false,
+  "manifest": {
+    "path": "benchmarks/manifests/frozen_parametric_factorization_v1.tsv",
+    "rows": 17,
+    "sha256": "af6c917681167713b79eb56ba3faa2957ef85e46761799247bcfc057c1badd9d"
+  },
+  "schema": "fp-tools-parametric-holdout-freeze-v1",
+  "selection_rule": {
+    "assembly": "GRCh38",
+    "experiment_status": "released",
+    "minimum_biological_replicates": 2,
+    "output": "replicate-aware IDR thresholded peaks",
+    "requires_jaspar_motif": true,
+    "tie_break": [
+      "preferred_default",
+      "newest_pipeline_version",
+      "file_accession"
+    ],
+    "treatment": "untreated"
+  },
+  "selector": {
+    "path": "/home/exouser/projects/fp-tools/benchmarks/scripts/freeze_parametric_holdouts.py",
+    "sha256": "b814cf2d3eb4dea63e23f8b8cf70fa899b69e8a418f186d9241785d76a4ba407"
+  },
+  "study": {
+    "path": "benchmarks/manifests/frozen_parametric_factorization_v1.spec.json",
+    "sha256": "3ae844643307778ecf74f3799048a2be7fa2b7201bc5b2ee3839652d9f7e0c1f"
+  }
+}

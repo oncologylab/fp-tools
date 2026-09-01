@@ -51,7 +51,7 @@ from fp_tools.utils.intervals import IntervalIndex  # noqa: E402
 
 
 DATASET_SCHEMA = "fp-tools-control-windows-v1"
-MODEL_NAMES = ("selma10", "loglinear81")
+MODEL_NAMES = ("selma10", "loglinear21", "loglinear41", "loglinear81")
 CONFIGURATIONS = ("sample_specific", "cross_cell_pooled", "pooled_plus_sample_adaptation")
 
 
@@ -687,6 +687,10 @@ def aggregate_cut_motif(
 def feature_spec(name: str) -> BiasFeatureSpec:
     if name == "selma10":
         return BiasFeatureSpec.selma10()
+    if name == "loglinear21":
+        return BiasFeatureSpec.loglinear21()
+    if name == "loglinear41":
+        return BiasFeatureSpec.loglinear41()
     if name == "loglinear81":
         return BiasFeatureSpec.loglinear81()
     raise ValueError(f"unknown parametric bias model: {name}")
