@@ -38,6 +38,7 @@ from evaluate_functional_footprints import (  # noqa: E402
     load_or_extract_profiles,
 )
 from evaluate_parametric_factorization import (  # noqa: E402
+    geometry_score,
     load_safe_configuration,
     residual_score,
 )
