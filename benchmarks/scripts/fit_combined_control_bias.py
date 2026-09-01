@@ -168,7 +168,7 @@ def fit_combined_grid(
     batch_windows: int,
     jobs: int = 1,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Fit seed models and compact coefficient-mean ensembles."""
+    """Fit seed models and compact coefficient-mean ensembles resumably."""
 
     if jobs < 1:
         raise ValueError("jobs must be positive")
@@ -212,32 +212,70 @@ def fit_combined_grid(
                 total_runtime = 0.0
                 maximum_memory = 0.0
 
-                fitted_seeds = fit_seed_members(
-                    spec,
-                    contexts,
-                    counts,
-                    l2=float(l2),
-                    epochs=epochs,
-                    batch_windows=batch_windows,
-                    seeds=seeds,
-                    jobs=jobs,
-                )
-
-                for seed, (model, runtime, memory) in zip(seeds, fitted_seeds):
-                    stem = model_dir / (
+                stems = {
+                    int(seed): model_dir
+                    / (
                         f"combined.{model_name}.shift_{shift[0]}_{shift[1]}."
                         f"l2_{safe_token(l2)}.seed_{seed}"
                     )
-                    npz_path, json_path = model.save(
-                        stem,
-                        metadata={
-                            "training_source": "combined_naked_dna_mitochondrial",
-                            "configuration": "frozen_cross_control_pooled",
-                            "read_shift": list(shift),
-                            "training_datasets": training_names,
-                            "seed": int(seed),
-                        },
+                    for seed in seeds
+                }
+                fitted: dict[
+                    int, tuple[ConditionalSequenceBiasModel, float, float]
+                ] = {}
+                missing_seeds: list[int] = []
+                for seed, stem in stems.items():
+                    npz_path = Path(str(stem) + ".npz")
+                    json_path = Path(str(stem) + ".json")
+                    if npz_path.exists() != json_path.exists():
+                        raise ValueError(f"incomplete resumable model artifact: {stem}")
+                    if not npz_path.exists():
+                        missing_seeds.append(seed)
+                        continue
+                    model = ConditionalSequenceBiasModel.load(npz_path)
+                    metadata = model.metadata
+                    if (
+                        model.feature_spec != spec
+                        or int(metadata.get("seed", -1)) != seed
+                        or float(metadata.get("l2", np.nan)) != float(l2)
+                        or tuple(metadata.get("read_shift", ())) != tuple(shift)
+                        or metadata.get("training_datasets") != training_names
+                    ):
+                        raise ValueError(
+                            f"resumable model metadata does not match the grid: {stem}"
+                        )
+                    fitted[seed] = (model, 0.0, 0.0)
+                if missing_seeds:
+                    missing_fits = fit_seed_members(
+                        spec,
+                        contexts,
+                        counts,
+                        l2=float(l2),
+                        epochs=epochs,
+                        batch_windows=batch_windows,
+                        seeds=missing_seeds,
+                        jobs=jobs,
                     )
+                    fitted.update(dict(zip(missing_seeds, missing_fits)))
+
+                for seed in seeds:
+                    seed = int(seed)
+                    stem = stems[seed]
+                    model, runtime, memory = fitted[seed]
+                    npz_path = Path(str(stem) + ".npz")
+                    json_path = Path(str(stem) + ".json")
+                    resumed = npz_path.exists()
+                    if not resumed:
+                        npz_path, json_path = model.save(
+                            stem,
+                            metadata={
+                                "training_source": "combined_naked_dna_mitochondrial",
+                                "configuration": "frozen_cross_control_pooled",
+                                "read_shift": list(shift),
+                                "training_datasets": training_names,
+                                "seed": seed,
+                            },
+                        )
                     members.append(model)
                     member_paths.append(npz_path)
                     total_runtime += runtime
@@ -256,29 +294,55 @@ def fit_combined_grid(
                             "runtime_seconds": runtime,
                             "peak_memory_increment_mb": memory,
                             "model_size_mb": npz_path.stat().st_size / (1024 * 1024),
+                            "resumed": resumed,
                         }
                     )
-                started = perf_counter()
-                ensemble = ensemble_sequence_bias_models(members)
                 ensemble_stem = ensemble_dir / (
                     f"combined.{model_name}.shift_{shift[0]}_{shift[1]}."
                     f"l2_{safe_token(l2)}.seed_ensemble"
                 )
-                ensemble_npz, ensemble_json = ensemble.save(
-                    ensemble_stem,
-                    metadata={
-                        "training_source": "combined_naked_dna_mitochondrial",
-                        "configuration": "frozen_cross_control_pooled",
-                        "read_shift": list(shift),
-                        "l2": float(l2),
-                        "member_seeds": [int(seed) for seed in seeds],
-                        "member_models": [
-                            {"path": str(path), "sha256": file_sha256(path)}
-                            for path in member_paths
-                        ],
-                    },
-                )
-                ensemble_runtime = perf_counter() - started
+                ensemble_npz = Path(str(ensemble_stem) + ".npz")
+                ensemble_json = Path(str(ensemble_stem) + ".json")
+                if ensemble_npz.exists() != ensemble_json.exists():
+                    raise ValueError(
+                        f"incomplete resumable ensemble artifact: {ensemble_stem}"
+                    )
+                ensemble_resumed = ensemble_npz.exists()
+                expected_members = [
+                    {"path": str(path), "sha256": file_sha256(path)}
+                    for path in member_paths
+                ]
+                if ensemble_resumed:
+                    ensemble = ConditionalSequenceBiasModel.load(ensemble_npz)
+                    metadata = ensemble.metadata
+                    if (
+                        ensemble.feature_spec != spec
+                        or float(metadata.get("l2", np.nan)) != float(l2)
+                        or tuple(metadata.get("read_shift", ())) != tuple(shift)
+                        or metadata.get("member_seeds")
+                        != [int(seed) for seed in seeds]
+                        or metadata.get("member_models") != expected_members
+                    ):
+                        raise ValueError(
+                            "resumable ensemble metadata does not match the grid: "
+                            f"{ensemble_stem}"
+                        )
+                    ensemble_runtime = 0.0
+                else:
+                    started = perf_counter()
+                    ensemble = ensemble_sequence_bias_models(members)
+                    ensemble_npz, ensemble_json = ensemble.save(
+                        ensemble_stem,
+                        metadata={
+                            "training_source": "combined_naked_dna_mitochondrial",
+                            "configuration": "frozen_cross_control_pooled",
+                            "read_shift": list(shift),
+                            "l2": float(l2),
+                            "member_seeds": [int(seed) for seed in seeds],
+                            "member_models": expected_members,
+                        },
+                    )
+                    ensemble_runtime = perf_counter() - started
                 ensemble_rows.append(
                     {
                         "source": "combined_naked_dna_mitochondrial",
@@ -295,6 +359,7 @@ def fit_combined_grid(
                         "ensemble_runtime_seconds": ensemble_runtime,
                         "peak_memory_increment_mb": maximum_memory,
                         "model_size_mb": ensemble_npz.stat().st_size / (1024 * 1024),
+                        "resumed": ensemble_resumed,
                     }
                 )
                 for name, (

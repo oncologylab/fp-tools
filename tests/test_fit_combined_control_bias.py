@@ -73,6 +73,27 @@ def test_combined_grid_fits_all_sources_and_builds_safe_ensemble(tmp_path) -> No
     with np.load(ensembles.loc[0, "model_npz"], allow_pickle=False) as arrays:
         assert all(arrays[key].dtype != object for key in arrays.files)
 
+    member_mtimes = {
+        Path(path): Path(path).stat().st_mtime_ns for path in artifacts["model_npz"]
+    }
+    ensemble_mtime = Path(ensembles.loc[0, "model_npz"]).stat().st_mtime_ns
+    resumed_artifacts, resumed_ensembles, resumed_metrics = module.fit_combined_grid(
+        training,
+        validation,
+        tmp_path,
+        models=["selma10"],
+        l2_values=[1e-3],
+        seeds=[2026, 2027],
+        epochs=2,
+        batch_windows=8,
+        jobs=2,
+    )
+    assert resumed_artifacts["resumed"].all()
+    assert resumed_ensembles["resumed"].all()
+    assert len(resumed_metrics) == len(metrics)
+    assert all(path.stat().st_mtime_ns == mtime for path, mtime in member_mtimes.items())
+    assert Path(ensembles.loc[0, "model_npz"]).stat().st_mtime_ns == ensemble_mtime
+
 
 def test_combined_grid_rejects_nonpositive_jobs(tmp_path) -> None:
     shift = (4, -4)
