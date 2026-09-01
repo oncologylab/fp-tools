@@ -590,12 +590,19 @@ def classify_depth(summary: pd.DataFrame) -> pd.DataFrame:
             continue
         high = values.loc[high_name]
         depth_gain = float(high.auroc_mean - low.auroc_mean)
-        if float(high.auroc_mean) >= 0.65:
-            status = "detectable_at_high_depth"
-        elif depth_gain >= 0.03:
-            status = "power_limited"
-        elif float(high.auroc_gain_over_dwm_mean) >= 0.03:
-            status = "model_improved_but_assay_weak"
+        raw_auroc_gain = float(high.auroc_gain_over_raw_mean)
+        raw_auprc_gain = float(high.relative_auprc_gain_over_raw_mean)
+        improves_raw = raw_auroc_gain > 0.0 and raw_auprc_gain > 0.0
+        if float(high.auroc_mean) >= 0.65 and improves_raw:
+            status = "detectable_above_raw_at_high_depth"
+        elif float(high.auroc_mean) >= 0.65:
+            status = "raw_signal_detectable_correction_not_improved"
+        elif depth_gain >= 0.03 and improves_raw:
+            status = "power_limited_candidate_gain"
+        elif float(high.auroc_gain_over_dwm_mean) >= 0.03 and not improves_raw:
+            status = "dwm_overcorrection_recovered_toward_raw"
+        elif improves_raw:
+            status = "candidate_gain_but_assay_weak"
         else:
             status = "shape_or_assay_limited"
         rows.append(
@@ -614,8 +621,16 @@ def classify_depth(summary: pd.DataFrame) -> pd.DataFrame:
                 "high_relative_auprc_gain_over_dwm": float(
                     high.relative_auprc_gain_over_dwm_mean
                 ),
+                "high_auroc_gain_over_raw": raw_auroc_gain,
+                "high_relative_auprc_gain_over_raw": raw_auprc_gain,
                 "high_seed_positive_fraction": float(
                     high.auroc_gain_positive_fraction
+                ),
+                "high_raw_guard_positive_fraction": float(
+                    min(
+                        high.auroc_gain_over_raw_positive_fraction,
+                        high.auprc_gain_over_raw_positive_fraction,
+                    )
                 ),
                 "classification": status,
             }

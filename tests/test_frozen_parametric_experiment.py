@@ -343,13 +343,17 @@ def test_depth_classification_prefers_full_endpoint() -> None:
             "auroc_mean": [0.55, 0.60, 0.70],
             "auroc_gain_over_dwm_mean": [0.01, 0.02, 0.04],
             "relative_auprc_gain_over_dwm_mean": [0.01, 0.02, 0.12],
+            "auroc_gain_over_raw_mean": [0.01, 0.02, 0.04],
+            "relative_auprc_gain_over_raw_mean": [0.01, 0.02, 0.12],
             "auroc_gain_positive_fraction": [0.6, 0.8, 1.0],
+            "auroc_gain_over_raw_positive_fraction": [0.6, 0.8, 1.0],
+            "auprc_gain_over_raw_positive_fraction": [0.6, 0.8, 1.0],
         }
     )
     result = evaluate_frozen_functional_depth_matrix.classify_depth(summary)
     assert result.loc[0, "high_depth"] == "full"
     assert result.loc[0, "high_auroc"] == 0.70
-    assert result.loc[0, "classification"] == "detectable_at_high_depth"
+    assert result.loc[0, "classification"] == "detectable_above_raw_at_high_depth"
 
 
 def test_depth_classification_keeps_frozen_methods_separate() -> None:
@@ -370,7 +374,11 @@ def test_depth_classification_keeps_frozen_methods_separate() -> None:
                     "auroc_mean": auroc,
                     "auroc_gain_over_dwm_mean": 0.04,
                     "relative_auprc_gain_over_dwm_mean": 0.12,
+                    "auroc_gain_over_raw_mean": 0.03,
+                    "relative_auprc_gain_over_raw_mean": 0.08,
                     "auroc_gain_positive_fraction": 1.0,
+                    "auroc_gain_over_raw_positive_fraction": 1.0,
+                    "auprc_gain_over_raw_positive_fraction": 1.0,
                 }
             )
 
@@ -383,6 +391,34 @@ def test_depth_classification_keeps_frozen_methods_separate() -> None:
         "frozen_tf_specific_shrinkage",
     }
     assert result.loc["frozen_tf_specific_shrinkage", "high_auroc"] == 0.71
+
+
+def test_depth_classification_identifies_dwm_overcorrection() -> None:
+    summary = pd.DataFrame(
+        {
+            "cell": ["CellA", "CellA"],
+            "tf": ["TF1", "TF1"],
+            "motif_family": ["FAMILY1", "FAMILY1"],
+            "candidate_id": ["candidate", "candidate"],
+            "method": ["frozen_candidate", "frozen_candidate"],
+            "depth": ["10m", "50m"],
+            "auroc_mean": [0.52, 0.60],
+            "auroc_gain_over_dwm_mean": [0.05, 0.10],
+            "relative_auprc_gain_over_dwm_mean": [0.10, 0.20],
+            "auroc_gain_over_raw_mean": [-0.01, -0.01],
+            "relative_auprc_gain_over_raw_mean": [0.01, 0.01],
+            "auroc_gain_positive_fraction": [1.0, 1.0],
+            "auroc_gain_over_raw_positive_fraction": [0.0, 0.0],
+            "auprc_gain_over_raw_positive_fraction": [1.0, 1.0],
+        }
+    )
+
+    result = evaluate_frozen_functional_depth_matrix.classify_depth(summary)
+
+    assert result.loc[0, "classification"] == (
+        "dwm_overcorrection_recovered_toward_raw"
+    )
+    assert result.loc[0, "high_raw_guard_positive_fraction"] == 0.0
 
 
 def test_frozen_site_score_frame_preserves_artifact_indexes() -> None:
