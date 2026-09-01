@@ -14,6 +14,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 import json
+import multiprocessing as mp
 from pathlib import Path
 import sys
 from time import perf_counter
@@ -41,6 +42,76 @@ from fp_tools.tools.parametric_bias import (  # noqa: E402
 
 SCHEMA = "fp-tools-combined-control-bias-v1"
 MODEL_NAMES = ("selma10", "loglinear21", "loglinear41", "loglinear81")
+_FORK_FIT_STATE: dict[str, object] = {}
+
+
+def _fit_forked_seed(seed: int):
+    """Fit one seed using read-only arrays inherited by ``fork`` workers."""
+
+    if not _FORK_FIT_STATE:
+        raise RuntimeError("forked seed worker has no initialized fit state")
+    return _fit_one(
+        _FORK_FIT_STATE["spec"],
+        _FORK_FIT_STATE["contexts"],
+        _FORK_FIT_STATE["counts"],
+        l2=float(_FORK_FIT_STATE["l2"]),
+        epochs=int(_FORK_FIT_STATE["epochs"]),
+        batch_windows=int(_FORK_FIT_STATE["batch_windows"]),
+        seed=int(seed),
+    )
+
+
+def fit_seed_members(
+    spec,
+    contexts: np.ndarray,
+    counts: np.ndarray,
+    *,
+    l2: float,
+    epochs: int,
+    batch_windows: int,
+    seeds: Sequence[int],
+    jobs: int,
+):
+    """Fit deterministic seed members without copying large arrays on Linux."""
+
+    def fit_seed(seed: int):
+        return _fit_one(
+            spec,
+            contexts,
+            counts,
+            l2=float(l2),
+            epochs=epochs,
+            batch_windows=batch_windows,
+            seed=int(seed),
+        )
+
+    if jobs == 1 or len(seeds) == 1:
+        return [fit_seed(int(seed)) for seed in seeds]
+    workers = min(int(jobs), len(seeds))
+    importable_worker = getattr(
+        sys.modules.get(__name__), "_fit_forked_seed", None
+    ) is _fit_forked_seed
+    if "fork" in mp.get_all_start_methods() and importable_worker:
+        _FORK_FIT_STATE.update(
+            {
+                "spec": spec,
+                "contexts": contexts,
+                "counts": counts,
+                "l2": float(l2),
+                "epochs": int(epochs),
+                "batch_windows": int(batch_windows),
+            }
+        )
+        try:
+            with mp.get_context("fork").Pool(processes=workers) as pool:
+                return pool.map(_fit_forked_seed, [int(seed) for seed in seeds])
+        finally:
+            _FORK_FIT_STATE.clear()
+    with ThreadPoolExecutor(
+        max_workers=workers,
+        thread_name_prefix="frozen-bias-seed",
+    ) as executor:
+        return list(executor.map(fit_seed, seeds))
 
 
 def file_sha256(path: str | Path) -> str:
@@ -141,25 +212,16 @@ def fit_combined_grid(
                 total_runtime = 0.0
                 maximum_memory = 0.0
 
-                def fit_seed(seed: int):
-                    return _fit_one(
-                        spec,
-                        contexts,
-                        counts,
-                        l2=float(l2),
-                        epochs=epochs,
-                        batch_windows=batch_windows,
-                        seed=int(seed),
-                    )
-
-                if jobs == 1 or len(seeds) == 1:
-                    fitted_seeds = [fit_seed(int(seed)) for seed in seeds]
-                else:
-                    with ThreadPoolExecutor(
-                        max_workers=min(int(jobs), len(seeds)),
-                        thread_name_prefix="frozen-bias-seed",
-                    ) as executor:
-                        fitted_seeds = list(executor.map(fit_seed, seeds))
+                fitted_seeds = fit_seed_members(
+                    spec,
+                    contexts,
+                    counts,
+                    l2=float(l2),
+                    epochs=epochs,
+                    batch_windows=batch_windows,
+                    seeds=seeds,
+                    jobs=jobs,
+                )
 
                 for seed, (model, runtime, memory) in zip(seeds, fitted_seeds):
                     stem = model_dir / (
