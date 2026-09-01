@@ -25,7 +25,10 @@ sys.path.insert(0, str(REPOSITORY / "src"))
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from evaluate_parametric_bias import ControlWindowDataset  # noqa: E402
-from fp_tools.tools.functional_footprints import standardized_functional_separation  # noqa: E402
+from fp_tools.tools.functional_footprints import (  # noqa: E402
+    orient_profiles,
+    standardized_functional_separation,
+)
 from fp_tools.tools.parametric_bias import (  # noqa: E402
     ConditionalSequenceBiasModel,
     calibrated_residuals,
@@ -133,6 +136,7 @@ def load_dwm_baseline(prefix: Path) -> tuple[dict[str, np.ndarray], list[Path]]:
                 "expected": np.asarray(arrays["profiles"], dtype=float),
                 "valid": np.asarray(arrays["valid"], dtype=bool),
                 "site_hash": np.asarray(arrays["site_hash"], dtype=np.uint64),
+                "orientation_aligned": np.asarray(False),
             }
         return output, [prefix]
 
@@ -155,6 +159,7 @@ def load_dwm_baseline(prefix: Path) -> tuple[dict[str, np.ndarray], list[Path]]:
             "expected": arrays["plus_expected"] + arrays["minus_expected"],
             "valid": arrays["valid"].astype(bool),
             "site_hash": arrays["site_hash"],
+            "orientation_aligned": np.asarray(True),
         },
         list(artifact_paths(prefix)),
     )
@@ -181,6 +186,7 @@ def load_pwm_baseline(prefix: Path) -> tuple[dict[str, np.ndarray], list[Path]]:
             "expected": np.asarray(arrays["profiles"], dtype=float),
             "valid": np.asarray(arrays["valid"], dtype=bool),
             "site_hash": np.asarray(arrays["site_hash"], dtype=np.uint64),
+            "orientation_aligned": np.asarray(False),
         }
     return output, [prefix]
 
@@ -199,6 +205,18 @@ def align_baseline(
             f"baseline is missing candidate site hash {exc.args[0]}"
         ) from exc
     return baseline["expected"][order], baseline["valid"][order]
+
+
+def orient_aligned_baseline(
+    expected: np.ndarray,
+    baseline: dict[str, np.ndarray],
+    sites: pd.DataFrame,
+) -> np.ndarray:
+    """Orient direct genomic caches after aligning them to candidate rows."""
+
+    if bool(np.asarray(baseline["orientation_aligned"]).item()):
+        return np.asarray(expected, dtype=float)
+    return orient_profiles(expected, sites["TFBS_strand"].astype(str))
 
 
 def geometry_score(profiles: np.ndarray, positions: np.ndarray) -> np.ndarray:
@@ -361,12 +379,16 @@ def collect_datasets(
         baseline, baseline_paths = load_dwm_baseline(baselines[cell])
         baseline_inputs.extend(baseline_paths)
         baseline_expected, baseline_valid = align_baseline(candidate, baseline)
+        baseline_expected = orient_aligned_baseline(
+            baseline_expected, baseline, sites
+        )
         pwm_expected = None
         pwm_valid = np.ones(len(sites), dtype=bool)
         if pwm_baselines is not None:
             pwm, pwm_paths = load_pwm_baseline(pwm_baselines[cell])
             baseline_inputs.extend(pwm_paths)
             pwm_expected, pwm_valid = align_baseline(candidate, pwm)
+            pwm_expected = orient_aligned_baseline(pwm_expected, pwm, sites)
         sites = sites.copy()
         sites["cell"] = cell
         sites["site_hash"] = candidate["site_hash"]

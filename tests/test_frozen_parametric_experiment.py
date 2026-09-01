@@ -122,6 +122,7 @@ def test_factorization_dwm_loader_accepts_verified_cache_and_rejects_parametric_
     )
     baseline, inputs = evaluate_parametric_factorization.load_dwm_baseline(cache)
     assert baseline["expected"].shape == (2, 5)
+    assert not bool(baseline["orientation_aligned"])
     assert inputs == [cache]
 
     invalid = tmp_path / "LOG81.expected.npz"
@@ -151,7 +152,47 @@ def test_factorization_pwm_loader_requires_pwm_identity(tmp_path: Path) -> None:
     )
     baseline, inputs = evaluate_parametric_factorization.load_pwm_baseline(cache)
     assert baseline["expected"].shape == (2, 5)
+    assert not bool(baseline["orientation_aligned"])
     assert inputs == [cache]
+
+
+def test_direct_baseline_is_oriented_after_hash_alignment(tmp_path: Path) -> None:
+    sites = pd.DataFrame(
+        {
+            "cell": ["K562", "K562"],
+            "tf": ["TF", "TF"],
+            "motif_family": ["family", "family"],
+            "motif": ["M1", "M1"],
+            "role": ["difficult", "difficult"],
+            "TFBS_chr": ["chr1", "chr1"],
+            "TFBS_start": [100, 200],
+            "TFBS_end": [101, 201],
+            "TFBS_strand": ["+", "-"],
+            "motif_score": [1.0, 1.0],
+            "chip_label": [0, 1],
+            "chromosome_split": ["train", "train"],
+        }
+    )
+    hashes = np.asarray([1, 2], dtype=np.uint64)
+    cache = tmp_path / "K562.DWM.npz"
+    np.savez_compressed(
+        cache,
+        profiles=np.asarray([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]], dtype=float),
+        valid=np.ones(2, dtype=bool),
+        site_hash=hashes,
+        signal_identity=np.asarray("/run/fp_tools_dwm/sample_expected.bw:1:2"),
+    )
+    baseline, _inputs = evaluate_parametric_factorization.load_dwm_baseline(cache)
+    expected, _valid = evaluate_parametric_factorization.align_baseline(
+        {"site_hash": hashes}, baseline
+    )
+    oriented = evaluate_parametric_factorization.orient_aligned_baseline(
+        expected, baseline, sites
+    )
+    assert oriented.tolist() == [
+        [1.0, 2.0, 3.0, 4.0, 5.0],
+        [10.0, 9.0, 8.0, 7.0, 6.0],
+    ]
 
 
 def test_residual_selector_uses_difficult_tasks_and_ctcf_gate() -> None:
