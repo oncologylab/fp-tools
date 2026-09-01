@@ -184,6 +184,16 @@ a separately planned breaking release explicitly changes the contract.
   false positives, motif-response review, stability, CPU/memory/model size,
   uncertainty coverage, and GP-versus-spline justification. Development-only
   evidence or any missing table cannot produce a promotion pass.
+- The frozen parametric factorization experiment now has checksum-locked
+  SK-N-SH and GM23338 holdout manifests, LOG21/LOG41/LOG81 and SELMA10
+  coefficient grids, bounded sample bias-strength calibration, flank-only
+  accessibility splines, hierarchical latent footprint profiles, five
+  residual ablations, and immutable resumable stage manifests. Independent
+  enzyme controls are compared with paired block bootstraps against a safe
+  TOBIAS-style all-pairs DWM reference. Candidate-screening and final
+  naked-DNA libraries are extracted without fitting, and motif-centered
+  observed-minus-predicted residuals have an explicit leakage gate. All new
+  artifacts use checksummed NPZ plus JSON and remain research-only.
 
 ## Current ENCODE Resource
 
@@ -238,6 +248,14 @@ a separately planned breaking release explicitly changes the contract.
     formulations; freeze spline/FDA/GP/hybrid models on K562/HepG2; then score
     GM12878/IMR-90 exactly once. Keep the current DWM correction and footprint
     score as defaults unless every scientific and CPU performance gate passes.
+12. Complete `frozen_parametric_factorization_v1` without opening its new
+    holdout labels out of order: finish the control-source grid, retain at most
+    two frozen ensembles, select one residual on chr16--18, open chr19--22/X
+    only after the configuration hash is written, then run depth/replicate,
+    independent naked-DNA, diagnostic transfer, ChromBPNet reference, and the
+    new SK-N-SH/GM23338 holdout stages. Nutrient-stress analysis and Box
+    before/after reports follow only after a candidate passes its safety and
+    significance gates. Do not merge this research branch into `main`.
 
 ## Deferred or Experimental Work
 
