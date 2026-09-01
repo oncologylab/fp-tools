@@ -212,6 +212,27 @@ def test_depth_dwm_scaling_matches_local_totals() -> None:
     assert np.allclose(scaled[0] / scaled[0].sum(), expected[0] / expected[0].sum())
 
 
+def test_depth_matrix_applies_frozen_global_and_tf_shrinkage() -> None:
+    positions = np.arange(-100, 101, dtype=float)
+    observed = np.ones((1, len(positions)), dtype=float)
+    observed[0, 95:106] = 5.0
+    direct = np.ones_like(observed) * observed.sum() / observed.shape[1]
+    methods = evaluate_frozen_functional_depth_matrix.frozen_shrinkage_methods(
+        observed,
+        direct,
+        np.zeros_like(observed),
+        positions,
+        bias_strength=0.75,
+        global_choice={"source": "parametric_direct", "alpha": 0.25},
+        tf_choice={"source": "raw", "alpha": 0.0},
+    )
+    values = {method: profiles for method, _score, profiles, _seconds, _model in methods}
+    assert np.allclose(
+        values["frozen_global_shrinkage"], observed - 0.25 * direct
+    )
+    assert np.array_equal(values["frozen_tf_specific_shrinkage"], observed)
+
+
 def test_depth_metrics_keep_both_dwm_and_raw_guardrails() -> None:
     rows = [
         {

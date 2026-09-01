@@ -33,6 +33,10 @@ from evaluate_frozen_functional_policy import (  # noqa: E402
     metric_record,
     validate_policy,
 )
+from evaluate_frozen_bias_shrinkage import (  # noqa: E402
+    load_calibrator,
+    validate_policy as validate_shrinkage_policy,
+)
 from evaluate_functional_footprints import (  # noqa: E402
     chromosome_split,
     load_or_extract_profiles,
@@ -52,6 +56,7 @@ from fp_tools.tools.functional_footprints import (  # noqa: E402
 )
 from fp_tools.tools.parametric_factorization import (  # noqa: E402
     FrozenParametricFactorization,
+    expected_profile_counts,
 )
 
 
@@ -106,6 +111,49 @@ def scale_expected_to_observed(
         out=np.zeros_like(expected),
         where=expected_total[:, None] > 0,
     )
+
+
+def frozen_shrinkage_methods(
+    observed: np.ndarray,
+    direct_expected: np.ndarray,
+    combined_log_bias: np.ndarray,
+    positions: np.ndarray,
+    *,
+    bias_strength: float,
+    global_choice: dict,
+    tf_choice: dict,
+) -> list[tuple[str, np.ndarray, np.ndarray, float, None]]:
+    """Apply validation-frozen partial-bias choices without refitting."""
+
+    started = perf_counter()
+    expected = {
+        "parametric_direct": np.asarray(direct_expected, dtype=float),
+        "parametric_lambda": expected_profile_counts(
+            observed,
+            float(bias_strength) * np.asarray(combined_log_bias, dtype=float),
+        ),
+    }
+    methods = []
+    for method, choice in (
+        ("frozen_global_shrinkage", global_choice),
+        ("frozen_tf_specific_shrinkage", tf_choice),
+    ):
+        if choice["source"] == "raw":
+            profiles = np.asarray(observed, dtype=float)
+        else:
+            profiles = observed - float(choice["alpha"]) * expected[
+                str(choice["source"])
+            ]
+        methods.append(
+            (
+                method,
+                geometry_score(profiles, positions),
+                profiles,
+                perf_counter() - started,
+                None,
+            )
+        )
+    return methods
 
 
 def parse_sample(value: str) -> tuple[str, str]:
@@ -366,10 +414,19 @@ def load_built_artifact(
 ) -> tuple[pd.DataFrame, dict[str, np.ndarray], np.ndarray, np.ndarray]:
     document = json.loads(Path(record["artifact"]).read_text(encoding="utf-8"))
     with np.load(document["profiles_npz"], allow_pickle=False) as source:
-        arrays = {
-            name: np.asarray(source[name])
-            for name in PROFILE_ARRAYS + ("valid", "site_hash")
-        }
+        required = PROFILE_ARRAYS + (
+            "valid",
+            "site_hash",
+            "plus_log_bias",
+            "minus_log_bias",
+            "combined_log_bias",
+        )
+        missing = sorted(set(required).difference(source.files))
+        if missing:
+            raise ValueError(
+                "built depth artifact lacks arrays: " + ", ".join(missing)
+            )
+        arrays = {name: np.asarray(source[name]) for name in required}
     sites = pd.read_csv(document["sites"], sep="\t").reset_index(drop=True)
     if not np.array_equal(site_hashes(sites), arrays["site_hash"]):
         raise ValueError(f"built profile site order mismatch: {record['artifact']}")
@@ -564,6 +621,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--policy", type=Path, required=True)
     parser.add_argument("--reference", action="append", type=parse_reference, required=True)
     parser.add_argument("--reference-configuration", type=Path, required=True)
+    parser.add_argument("--bias-shrinkage-policy", type=Path)
     parser.add_argument("--signals-root", type=Path, required=True)
     parser.add_argument("--sample", action="append", type=parse_sample, required=True)
     parser.add_argument("--depth", action="append", default=[])
@@ -582,6 +640,27 @@ def main(argv: list[str] | None = None) -> int:
         configuration["factorization_model"]["path"]
     )
     dispersion = float(factorization.total_dispersion_)
+    shrinkage_policy = None
+    calibrator = None
+    if args.bias_shrinkage_policy is not None:
+        shrinkage_policy = validate_shrinkage_policy(args.bias_shrinkage_policy)
+        configuration_record = next(
+            (
+                record
+                for record in shrinkage_policy["inputs"]
+                if record.get("purpose") == "safe-reference-configuration"
+            ),
+            None,
+        )
+        if (
+            configuration_record is None
+            or configuration_record["sha256"]
+            != file_sha256(args.reference_configuration)
+        ):
+            raise ValueError(
+                "bias-shrinkage policy uses a different reference configuration"
+            )
+        calibrator = load_calibrator(configuration)
     samples = list(args.sample)
     if len(set(samples)) != len(samples):
         raise ValueError("duplicate --sample CELL,SAMPLE value")
@@ -639,6 +718,15 @@ def main(argv: list[str] | None = None) -> int:
         ],
         "validation_labels_used_for_original_selection": True,
         "models_refitted_by_depth": False,
+        "bias_shrinkage_policy": (
+            None
+            if args.bias_shrinkage_policy is None
+            else {
+                "path": str(args.bias_shrinkage_policy),
+                "sha256": file_sha256(args.bias_shrinkage_policy),
+                "policy_id": shrinkage_policy["policy_id"],
+            }
+        ),
     }
     canonical = json.dumps(freeze, sort_keys=True, separators=(",", ":"))
     freeze["depth_input_id"] = sha256(canonical.encode()).hexdigest()
@@ -688,6 +776,15 @@ def main(argv: list[str] | None = None) -> int:
                 & dwm_valid
                 & np.isfinite(dwm_expected).all(axis=1)
             )
+            if shrinkage_policy is not None:
+                valid &= np.isfinite(arrays["combined_log_bias"]).all(axis=1)
+                expected_strength = shrinkage_policy["bias_strengths"].get(cell)
+                if expected_strength is None or not np.isclose(
+                    float(expected_strength), calibrator.strength(cell), rtol=0, atol=1e-12
+                ):
+                    raise ValueError(
+                        f"{cell} depth bias strength differs from shrinkage policy"
+                    )
             for record, candidate, model in models:
                 if str(record["cell"]) != cell:
                     continue
@@ -730,7 +827,7 @@ def main(argv: list[str] | None = None) -> int:
                     dispersion,
                 )
                 direct_seconds = perf_counter() - started
-                methods = (
+                methods = [
                     (
                         "DWM_conventional_geometry",
                         dwm_score,
@@ -759,7 +856,22 @@ def main(argv: list[str] | None = None) -> int:
                         candidate_seconds,
                         fitted_profile,
                     ),
-                )
+                ]
+                if shrinkage_policy is not None:
+                    methods.extend(
+                        frozen_shrinkage_methods(
+                            observed,
+                            direct_expected,
+                            arrays["combined_log_bias"][indexes],
+                            positions,
+                            bias_strength=calibrator.strength(cell),
+                            global_choice=shrinkage_policy["global_choice"],
+                            tf_choice=shrinkage_policy["per_tf_choices"].get(
+                                str(record["tf"]),
+                                {"source": "raw", "alpha": 0.0},
+                            ),
+                        )
+                    )
                 task_rows = []
                 for method, score, profiles, seconds, model_profile in methods:
                     metric = metric_record(
@@ -781,6 +893,13 @@ def main(argv: list[str] | None = None) -> int:
                             "seed": built_record["seed"],
                         }
                     )
+                    if method in {
+                        "frozen_global_shrinkage",
+                        "frozen_tf_specific_shrinkage",
+                    }:
+                        metric["candidate_id"] = (
+                            "bias_shrinkage_" + shrinkage_policy["policy_id"][:12]
+                        )
                     task_rows.append(metric)
                     curve = aggregate_curve(
                         profiles,
@@ -798,7 +917,16 @@ def main(argv: list[str] | None = None) -> int:
                                 "cell": cell,
                                 "tf": record["tf"],
                                 "motif_family": record["motif_family"],
-                                "candidate_id": candidate.candidate_id,
+                                "candidate_id": (
+                                    "bias_shrinkage_"
+                                    + shrinkage_policy["policy_id"][:12]
+                                    if method
+                                    in {
+                                        "frozen_global_shrinkage",
+                                        "frozen_tf_specific_shrinkage",
+                                    }
+                                    else candidate.candidate_id
+                                ),
                                 "method": method,
                                 "sample": built_record["sample"],
                                 "depth": built_record["depth"],
@@ -842,6 +970,9 @@ def main(argv: list[str] | None = None) -> int:
         "depth_input_id": freeze["depth_input_id"],
         "models_refitted_by_depth": False,
         "raw_signal_guardrail": True,
+        "bias_shrinkage_policy_id": (
+            None if shrinkage_policy is None else shrinkage_policy["policy_id"]
+        ),
         "validation_labels_used_for_original_selection": True,
         "depths": depths,
         "seeds": seeds,
