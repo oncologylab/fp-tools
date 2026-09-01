@@ -55,7 +55,7 @@ from fp_tools.tools.parametric_factorization import (  # noqa: E402
 )
 
 
-SCHEMA = "fp-tools-frozen-functional-depth-matrix-v1"
+SCHEMA = "fp-tools-frozen-functional-depth-matrix-v2"
 
 
 def expected_from_cached_log_bias(
@@ -124,14 +124,21 @@ def parse_reference(value: str) -> tuple[str, str, Path]:
 
 def discover_signals(
     root: Path,
-    samples: dict[str, str],
+    samples: list[tuple[str, str]],
     depths: list[str],
     seeds: list[int],
     *,
     allow_incomplete: bool,
 ) -> pd.DataFrame:
     rows = []
-    for cell, sample in sorted(samples.items()):
+    if len(set(samples)) != len(samples):
+        raise ValueError("duplicate CELL,SAMPLE depth input")
+    sample_cells: dict[str, str] = {}
+    for cell, sample in samples:
+        previous = sample_cells.setdefault(sample, cell)
+        if previous != cell:
+            raise ValueError(f"sample {sample} is assigned to multiple cells")
+    for cell, sample in sorted(samples):
         for depth in depths:
             for seed in seeds:
                 directory = root / sample / depth / f"seed_{seed}"
@@ -228,6 +235,7 @@ def artifact_prefix(outdir: Path, row) -> Path:
         outdir
         / "parametric_profiles"
         / str(row.cell)
+        / str(row.sample)
         / str(row.depth)
         / f"seed_{int(row.seed)}"
         / "profiles"
@@ -251,6 +259,7 @@ def build_depth_artifact(
         outdir
         / "dwm_profile_cache"
         / str(row.cell)
+        / str(row.sample)
         / str(row.depth)
         / f"seed_{int(row.seed)}.npz"
     )
@@ -375,18 +384,12 @@ def load_built_artifact(
     return sites, arrays, dwm, dwm_valid
 
 
-def summarize_metrics(metrics: pd.DataFrame) -> pd.DataFrame:
-    keys = [
-        "cell",
-        "tf",
-        "motif_family",
-        "candidate_id",
-        "method",
-        "depth",
-    ]
+def _summarize_metrics(metrics: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
     summary = (
         metrics.groupby(keys, sort=True)
         .agg(
+            observations=("seed", "size"),
+            samples=("sample", "nunique"),
             seeds=("seed", "nunique"),
             auroc_mean=("auroc", "mean"),
             auroc_sd=("auroc", "std"),
@@ -428,13 +431,54 @@ def summarize_metrics(metrics: pd.DataFrame) -> pd.DataFrame:
         )
         .reset_index()
     )
-    direction = (
-        metrics.groupby(keys, sort=True)["auroc_gain_over_dwm"]
-        .apply(lambda values: float(np.mean(values > 0)))
-        .rename("auroc_gain_positive_fraction")
-        .reset_index()
+    direction_columns = {
+        "auroc_gain_over_dwm": "auroc_gain_positive_fraction",
+        "relative_auprc_gain_over_dwm": "auprc_gain_positive_fraction",
+        "auroc_gain_over_raw": "auroc_gain_over_raw_positive_fraction",
+        "relative_auprc_gain_over_raw": "auprc_gain_over_raw_positive_fraction",
+    }
+    for column, output_name in direction_columns.items():
+        direction = (
+            metrics.groupby(keys, sort=True)[column]
+            .apply(lambda values: float(np.mean(values > 0)))
+            .rename(output_name)
+            .reset_index()
+        )
+        summary = summary.merge(direction, on=keys, validate="one_to_one")
+    return summary
+
+
+def summarize_metrics(metrics: pd.DataFrame) -> pd.DataFrame:
+    """Summarize seed stability separately for every biological sample."""
+
+    return _summarize_metrics(
+        metrics,
+        [
+            "cell",
+            "sample",
+            "tf",
+            "motif_family",
+            "candidate_id",
+            "method",
+            "depth",
+        ],
     )
-    return summary.merge(direction, on=keys, validate="one_to_one")
+
+
+def summarize_replicates(metrics: pd.DataFrame) -> pd.DataFrame:
+    """Summarize direction and dispersion across samples and seeds."""
+
+    return _summarize_metrics(
+        metrics,
+        [
+            "cell",
+            "tf",
+            "motif_family",
+            "candidate_id",
+            "method",
+            "depth",
+        ],
+    )
 
 
 def add_depth_baseline_deltas(task_rows: list[dict]) -> list[dict]:
@@ -538,13 +582,17 @@ def main(argv: list[str] | None = None) -> int:
         configuration["factorization_model"]["path"]
     )
     dispersion = float(factorization.total_dispersion_)
-    samples = dict(args.sample)
+    samples = list(args.sample)
+    if len(set(samples)) != len(samples):
+        raise ValueError("duplicate --sample CELL,SAMPLE value")
     references = {(model, cell): path for model, cell, path in args.reference}
     policy_keys = {
         (str(record["bias_configuration"]), str(record["cell"]))
         for record, _candidate, _model in models
     }
-    if set(references) != policy_keys or set(samples) != {cell for _model, cell in policy_keys}:
+    sample_cells = {cell for cell, _sample in samples}
+    policy_cells = {cell for _model, cell in policy_keys}
+    if set(references) != policy_keys or sample_cells != policy_cells:
         raise ValueError("samples/references do not exactly match policy cells")
     depths = args.depth or ["10m", "25m", "50m"]
     seeds = args.seed or list(range(2026, 2031))
@@ -772,15 +820,20 @@ def main(argv: list[str] | None = None) -> int:
     metrics = pd.DataFrame(metrics_rows)
     profiles = pd.DataFrame(curve_rows)
     summary = summarize_metrics(metrics)
-    classification = classify_depth(summary)
+    replicate_summary = summarize_replicates(metrics)
+    classification = classify_depth(replicate_summary)
     metrics_path = args.outdir / "frozen_functional_depth_metrics.tsv.gz"
     profiles_path = args.outdir / "frozen_functional_depth_profiles.tsv.gz"
     summary_path = args.outdir / "frozen_functional_depth_summary.tsv"
+    replicate_summary_path = (
+        args.outdir / "frozen_functional_depth_replicate_summary.tsv"
+    )
     classification_path = args.outdir / "frozen_functional_depth_classification.tsv"
     artifacts_path = args.outdir / "frozen_functional_depth_artifacts.tsv"
     metrics.to_csv(metrics_path, sep="\t", index=False)
     profiles.to_csv(profiles_path, sep="\t", index=False)
     summary.to_csv(summary_path, sep="\t", index=False)
+    replicate_summary.to_csv(replicate_summary_path, sep="\t", index=False)
     classification.to_csv(classification_path, sep="\t", index=False)
     pd.DataFrame(built).to_csv(artifacts_path, sep="\t", index=False)
     manifest = {
@@ -797,6 +850,10 @@ def main(argv: list[str] | None = None) -> int:
             "metrics": {"path": str(metrics_path), "sha256": file_sha256(metrics_path)},
             "profiles": {"path": str(profiles_path), "sha256": file_sha256(profiles_path)},
             "summary": {"path": str(summary_path), "sha256": file_sha256(summary_path)},
+            "replicate_summary": {
+                "path": str(replicate_summary_path),
+                "sha256": file_sha256(replicate_summary_path),
+            },
             "classification": {
                 "path": str(classification_path),
                 "sha256": file_sha256(classification_path),

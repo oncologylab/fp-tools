@@ -3,6 +3,7 @@ from __future__ import annotations
 from hashlib import sha256
 import json
 from pathlib import Path
+from types import SimpleNamespace
 import sys
 
 
@@ -239,6 +240,73 @@ def test_depth_metrics_keep_both_dwm_and_raw_guardrails() -> None:
     assert candidate["relative_auprc_gain_over_raw"] == pytest.approx(0.20)
     assert candidate["functional_separation_relative_change_over_dwm"] == pytest.approx(0.5)
     assert candidate["functional_separation_relative_change_over_raw"] == pytest.approx(0.2)
+
+
+def test_depth_discovery_and_artifacts_preserve_biological_samples(
+    tmp_path: Path,
+) -> None:
+    samples = [("CellA", "CellA_rep1"), ("CellA", "CellA_rep2")]
+    for _cell, sample in samples:
+        directory = tmp_path / sample / "full" / "seed_2026"
+        (directory / "fp_tools_dwm").mkdir(parents=True)
+        (directory / f"{sample}.full.s2026.bam").write_bytes(b"bam")
+        (directory / f"{sample}.full.s2026.bam.bai").write_bytes(b"bai")
+        (directory / "fp_tools_dwm" / f"{sample}.full.s2026_expected.bw").write_bytes(
+            b"bigwig"
+        )
+    discovered = evaluate_frozen_functional_depth_matrix.discover_signals(
+        tmp_path,
+        samples,
+        ["full"],
+        [2026],
+        allow_incomplete=False,
+    )
+    assert discovered[["cell", "sample"]].to_records(index=False).tolist() == samples
+    prefixes = {
+        evaluate_frozen_functional_depth_matrix.artifact_prefix(
+            tmp_path,
+            SimpleNamespace(cell=cell, sample=sample, depth="full", seed=2026),
+        )
+        for cell, sample in samples
+    }
+    assert len(prefixes) == 2
+
+
+def test_depth_replicate_summary_reports_direction_stability() -> None:
+    rows = []
+    for sample, gain in (("CellA_rep1", 0.1), ("CellA_rep2", -0.05)):
+        rows.append(
+            {
+                "cell": "CellA",
+                "sample": sample,
+                "tf": "TF1",
+                "motif_family": "FAMILY1",
+                "candidate_id": "candidate",
+                "method": "frozen_candidate",
+                "depth": "full",
+                "seed": 2026,
+                "auroc": 0.6 + gain,
+                "auprc": 0.4 + gain,
+                "auroc_gain_over_dwm": gain,
+                "relative_auprc_gain_over_dwm": gain,
+                "auroc_gain_over_raw": gain - 0.02,
+                "relative_auprc_gain_over_raw": gain - 0.02,
+                "functional_separation": 1.0 + gain,
+                "functional_separation_relative_change_over_dwm": gain,
+                "functional_separation_relative_change_over_raw": gain - 0.02,
+                "brier": 0.2,
+                "calibration_error": 0.1,
+                "prediction_seconds": 0.01,
+            }
+        )
+    metrics = pd.DataFrame(rows)
+    per_sample = evaluate_frozen_functional_depth_matrix.summarize_metrics(metrics)
+    across = evaluate_frozen_functional_depth_matrix.summarize_replicates(metrics)
+    assert len(per_sample) == 2
+    assert across.loc[0, "samples"] == 2
+    assert across.loc[0, "observations"] == 2
+    assert across.loc[0, "auroc_gain_positive_fraction"] == 0.5
+    assert across.loc[0, "auroc_gain_over_raw_positive_fraction"] == 0.5
 
 
 def test_depth_classification_prefers_full_endpoint() -> None:

@@ -19,18 +19,21 @@ from evaluate_frozen_functional_depth_matrix import (  # noqa: E402
     SCHEMA as DEPTH_SCHEMA,
     classify_depth,
     summarize_metrics,
+    summarize_replicates,
 )
 from evaluate_strand_label_free_models import file_sha256  # noqa: E402
 from freeze_label_free_functional_models import immutable_write_json  # noqa: E402
 
 
-SCHEMA = "fp-tools-combined-frozen-functional-depth-matrix-v1"
+SCHEMA = "fp-tools-combined-frozen-functional-depth-matrix-v2"
 
 
 def load_manifest(path: Path) -> tuple[dict, dict[str, pd.DataFrame]]:
     document = json.loads(path.read_text(encoding="utf-8"))
     if document.get("schema") != DEPTH_SCHEMA:
         raise ValueError(f"unsupported frozen depth manifest: {path}")
+    if document.get("raw_signal_guardrail") is not True:
+        raise ValueError(f"frozen depth manifest lacks the raw-signal guardrail: {path}")
     frames = {}
     for name in ("metrics", "profiles", "artifacts"):
         record = document["outputs"][name]
@@ -83,17 +86,27 @@ def main(argv: list[str] | None = None) -> int:
     artifacts = pd.concat(grouped["artifacts"], ignore_index=True)
     reject_duplicates(
         metrics,
-        ["cell", "tf", "candidate_id", "method", "depth", "seed"],
+        ["cell", "sample", "tf", "candidate_id", "method", "depth", "seed"],
         "metric",
     )
     reject_duplicates(
         profiles,
-        ["cell", "tf", "candidate_id", "method", "depth", "seed", "position"],
+        [
+            "cell",
+            "sample",
+            "tf",
+            "candidate_id",
+            "method",
+            "depth",
+            "seed",
+            "position",
+        ],
         "profile",
     )
-    reject_duplicates(artifacts, ["cell", "depth", "seed"], "artifact")
+    reject_duplicates(artifacts, ["cell", "sample", "depth", "seed"], "artifact")
     summary = summarize_metrics(metrics)
-    classification = classify_depth(summary)
+    replicate_summary = summarize_replicates(metrics)
+    classification = classify_depth(replicate_summary)
 
     args.outdir.mkdir(parents=True, exist_ok=True)
     paths = {
@@ -101,12 +114,16 @@ def main(argv: list[str] | None = None) -> int:
         "profiles": args.outdir / "frozen_functional_depth_profiles.tsv.gz",
         "artifacts": args.outdir / "frozen_functional_depth_artifacts.tsv",
         "summary": args.outdir / "frozen_functional_depth_summary.tsv",
+        "replicate_summary": (
+            args.outdir / "frozen_functional_depth_replicate_summary.tsv"
+        ),
         "classification": args.outdir / "frozen_functional_depth_classification.tsv",
     }
     metrics.to_csv(paths["metrics"], sep="\t", index=False)
     profiles.to_csv(paths["profiles"], sep="\t", index=False)
     artifacts.to_csv(paths["artifacts"], sep="\t", index=False)
     summary.to_csv(paths["summary"], sep="\t", index=False)
+    replicate_summary.to_csv(paths["replicate_summary"], sep="\t", index=False)
     classification.to_csv(paths["classification"], sep="\t", index=False)
     document = {
         "schema": SCHEMA,
@@ -119,6 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         "depths": sorted(metrics["depth"].astype(str).unique()),
         "seeds": sorted(int(value) for value in metrics["seed"].unique()),
         "models_refitted_by_depth": False,
+        "raw_signal_guardrail": True,
         "outputs": {
             name: {"path": str(path), "sha256": file_sha256(path)}
             for name, path in paths.items()
