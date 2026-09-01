@@ -525,6 +525,29 @@ establish a general TF detector. A one-page external-transfer PDF and its
 metric table are included in the same Box folder, and the combined PDF now has
 three pages.
 
+MEF2A was then revisited as a deliberately difficult target rather than
+accepting the original validation winner. Twenty DWM geometry finalists were
+screened using development validation chromosomes and two naked-DNA libraries,
+before the held-out test performance of the selected null-safer model was
+examined. The frozen RMS geometry
+`DWM.c7.f48.g4.mean.minimum.rms.a0.5` improved K562 test AUROC/AUPRC from
+0.520/0.519 to 0.676/0.658 (deltas +0.155/+0.139). Chromosome-block bootstrap
+95% intervals were +0.068--+0.238 and +0.084--+0.196, and all three biological
+replicates improved. Leave-one-chromosome-out covariate residualization retained
+gains of +0.198 AUROC and +0.132 AUPRC. The candidate made 2/200 false calls
+(1.0%; upper 95% bound 3.6%) in the first naked-DNA library and 8/200 (4.0%;
+upper bound 7.7%) in the second. Thus both point estimates pass the 5% target,
+but the second uncertainty interval does not; external MEF2-family transfer and
+more null depth remain required. A concise research-only report and metrics are
+stored in `Yaoxiang/fp-tools/2026-08-31_MEF2A_footprint_improvement_research`.
+This is a strong single-cell MEF2A result, not a package-default promotion.
+
+During that audit, the exact-geometry evaluator was corrected to calculate
+candidate and conventional false-positive rates on each method's own finite
+support. It now also reports paired rates on their common support for direct
+comparisons. The prior common-support restriction was conservative for the
+candidate but incorrectly described its denominator as candidate availability.
+
 ## Depth-matrix artifact integrity audit
 
 An incremental 25M refresh exposed a benchmark-infrastructure failure before
