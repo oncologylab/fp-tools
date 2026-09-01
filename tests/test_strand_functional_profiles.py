@@ -86,6 +86,21 @@ def test_strand_log_bias_orientation_swaps_reverse_motifs() -> None:
     assert np.allclose(combined, np.logaddexp(oriented_plus, oriented_minus) - np.log(2.0))
 
 
+def test_strand_log_bias_orientation_silences_nonfinite_sentinels() -> None:
+    plus = np.asarray([[0.0, np.nan, -np.inf]])
+    minus = np.asarray([[1.0, 0.0, -np.inf]])
+
+    with np.errstate(invalid="raise"):
+        oriented_plus, oriented_minus, combined = orient_strand_log_bias(
+            plus, minus, ["+"]
+        )
+
+    assert np.isnan(combined[0, 1])
+    assert np.isneginf(combined[0, 2])
+    assert np.array_equal(oriented_plus, plus, equal_nan=True)
+    assert np.array_equal(oriented_minus, minus, equal_nan=True)
+
+
 def test_strand_profile_artifact_is_safe_and_hashed(tmp_path: Path) -> None:
     sites = _sites()
     plus = np.ones((2, 21), dtype=float)
@@ -153,9 +168,10 @@ def test_loaded_strand_artifact_includes_raw_counts(tmp_path: Path) -> None:
 
 def test_label_free_grid_and_label_firewall() -> None:
     candidates = label_free_candidate_grid()
-    assert len(candidates) == 66
+    assert len(candidates) == 84
     assert {candidate.family for candidate in candidates} == {
         "count",
+        "conditional",
         "fda",
         "hybrid",
         "anchored-fda",

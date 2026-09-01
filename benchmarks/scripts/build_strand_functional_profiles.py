@@ -237,7 +237,11 @@ def orient_strand_log_bias(
     oriented_minus = minus.copy()
     oriented_plus[reverse] = minus[reverse, ::-1]
     oriented_minus[reverse] = plus[reverse, ::-1]
-    combined = np.logaddexp(oriented_plus, oriented_minus) - np.log(2.0)
+    # Reference-edge and non-ACGT positions are deliberately represented as
+    # non-finite log-bias values and removed by the caller's valid-site mask.
+    # Preserve those sentinels without emitting one warning per profile batch.
+    with np.errstate(invalid="ignore"):
+        combined = np.logaddexp(oriented_plus, oriented_minus) - np.log(2.0)
     return oriented_plus, oriented_minus, combined
 
 
