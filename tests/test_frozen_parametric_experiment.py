@@ -207,6 +207,27 @@ def test_depth_dwm_scaling_matches_local_totals() -> None:
     assert np.allclose(scaled[0] / scaled[0].sum(), expected[0] / expected[0].sum())
 
 
+def test_depth_classification_prefers_full_endpoint() -> None:
+    summary = pd.DataFrame(
+        {
+            "cell": ["CellA"] * 3,
+            "tf": ["TF1"] * 3,
+            "motif_family": ["FAMILY1"] * 3,
+            "candidate_id": ["candidate"] * 3,
+            "method": ["frozen_candidate"] * 3,
+            "depth": ["10m", "50m", "full"],
+            "auroc_mean": [0.55, 0.60, 0.70],
+            "auroc_gain_over_dwm_mean": [0.01, 0.02, 0.04],
+            "relative_auprc_gain_over_dwm_mean": [0.01, 0.02, 0.12],
+            "auroc_gain_positive_fraction": [0.6, 0.8, 1.0],
+        }
+    )
+    result = evaluate_frozen_functional_depth_matrix.classify_depth(summary)
+    assert result.loc[0, "high_depth"] == "full"
+    assert result.loc[0, "high_auroc"] == 0.70
+    assert result.loc[0, "classification"] == "detectable_at_high_depth"
+
+
 def test_frozen_call_threshold_respects_ties_and_target_rate() -> None:
     scores = np.asarray([0.1, 0.2, 0.3, 0.8, 0.8, 0.9])
     threshold, calls = freeze_functional_call_thresholds.upper_tail_threshold(

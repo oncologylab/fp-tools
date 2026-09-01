@@ -430,8 +430,9 @@ def classify_depth(summary: pd.DataFrame) -> pd.DataFrame:
     ):
         values = group.set_index("depth")
         low = values.loc["10m"] if "10m" in values.index else None
-        high_name = "50m" if "50m" in values.index else (
-            "25m" if "25m" in values.index else None
+        high_name = next(
+            (name for name in ("full", "50m", "25m") if name in values.index),
+            None,
         )
         if low is None or high_name is None:
             continue
