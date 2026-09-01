@@ -27,6 +27,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from evaluate_frozen_functional_policy import aggregate_curve  # noqa: E402
 from evaluate_functional_footprints import binary_metrics  # noqa: E402
+from evaluate_naked_dna_functional_policy import wilson_interval  # noqa: E402
 from evaluate_parametric_factorization import (  # noqa: E402
     DIFFICULT_ROLES,
     align_baseline,
@@ -46,11 +47,14 @@ from fp_tools.tools.parametric_factorization import (  # noqa: E402
     FrozenBiasStrengthCalibrator,
     expected_profile_counts,
 )
+from freeze_functional_call_thresholds import upper_tail_threshold  # noqa: E402
 
 
 POLICY_SCHEMA = "fp-tools-frozen-bias-shrinkage-policy-v1"
 TEST_SCHEMA = "fp-tools-frozen-bias-shrinkage-test-v1"
 INPUT_SCHEMA = "fp-tools-frozen-bias-shrinkage-test-inputs-v1"
+NAKED_SCHEMA = "fp-tools-frozen-bias-shrinkage-naked-dna-v1"
+NAKED_INPUT_SCHEMA = "fp-tools-frozen-bias-shrinkage-naked-dna-inputs-v1"
 PARAMETRIC_SOURCES = ("parametric_direct", "parametric_lambda")
 DEFAULT_ALPHAS = (
     0.025,
@@ -137,6 +141,7 @@ def validate_policy(path: Path) -> dict:
     if policy.get("bias_coefficients_refitted") is not False:
         raise ValueError("shrinkage policy does not certify frozen bias coefficients")
     verify_records(policy.get("inputs", []))
+    verify_records(policy.get("outputs", {}).values())
     return policy
 
 
@@ -239,6 +244,117 @@ def load_panels(
         )
         panels[cell] = panel
         records.extend(inputs)
+    return panels, records
+
+
+def load_naked_dwm_baseline(path: Path) -> tuple[dict[str, np.ndarray], list[Path]]:
+    """Load the orientation-aligned combined DWM artifact used for enzyme safety."""
+
+    json_path = path if path.suffix == ".json" else path.with_suffix(".json")
+    if json_path.is_file():
+        document = json.loads(json_path.read_text(encoding="utf-8"))
+        if document.get("schema") == "fp-tools-combined-functional-profiles-v1":
+            npz_path = Path(document["profiles_npz"])
+            sites_path = Path(document["sites"])
+            if sha256_file(npz_path) != document["profiles_sha256"]:
+                raise ValueError(f"naked-DNA DWM profile checksum mismatch: {json_path}")
+            if sha256_file(sites_path) != document["sites_sha256"]:
+                raise ValueError(f"naked-DNA DWM site checksum mismatch: {json_path}")
+            with np.load(npz_path, allow_pickle=False) as source:
+                required = {"expected", "valid", "site_hash"}
+                missing = required.difference(source.files)
+                if missing:
+                    raise ValueError(
+                        "naked-DNA DWM artifact lacks arrays: "
+                        + ", ".join(sorted(missing))
+                    )
+                baseline = {
+                    "expected": np.asarray(source["expected"], dtype=float),
+                    "valid": np.asarray(source["valid"], dtype=bool),
+                    "site_hash": np.asarray(source["site_hash"], dtype=np.uint64),
+                    "orientation_aligned": np.asarray(True),
+                }
+            return baseline, [json_path, npz_path, sites_path]
+    return load_dwm_baseline(path)
+
+
+def load_naked_panels(
+    artifacts: dict[str, Path],
+    baselines: dict[str, Path],
+    *,
+    calibrator: FrozenBiasStrengthCalibrator,
+) -> tuple[dict[str, dict], list[dict[str, str]]]:
+    """Load label-free naked-DNA profiles without dropping zero-cut sites."""
+
+    if set(artifacts) != set(baselines):
+        raise ValueError("naked artifact and DWM-baseline cells must match exactly")
+    panels = {}
+    records = []
+    for cell in sorted(artifacts):
+        artifact = artifacts[cell]
+        arrays, sites, document = load_profiles(artifact, require_log_bias=True)
+        if document.get("metadata", {}).get("labels_used") is not False:
+            raise ValueError(
+                f"naked-DNA artifact does not certify label-free construction: {artifact}"
+            )
+        forbidden = [
+            column
+            for column in sites
+            if "label" in column.lower() or "chip" in column.lower()
+        ]
+        if forbidden:
+            raise ValueError(
+                "naked-DNA sites contain forbidden columns: "
+                + ", ".join(sorted(forbidden))
+            )
+        if set(sites["cell"].astype(str)) != {cell}:
+            raise ValueError(f"naked-DNA sites are not exclusive to {cell}")
+        baseline, baseline_paths = load_naked_dwm_baseline(baselines[cell])
+        dwm_expected, dwm_valid = align_baseline(arrays, baseline)
+        dwm_expected = orient_aligned_baseline(dwm_expected, baseline, sites)
+        observed = arrays["plus_observed"] + arrays["minus_observed"]
+        direct_expected = arrays["plus_expected"] + arrays["minus_expected"]
+        valid = (
+            arrays["valid"].astype(bool)
+            & dwm_valid
+            & np.isfinite(observed).all(axis=1)
+            & np.isfinite(direct_expected).all(axis=1)
+            & np.isfinite(dwm_expected).all(axis=1)
+            & np.isfinite(arrays["combined_log_bias"]).all(axis=1)
+        )
+        indexes = np.flatnonzero(valid)
+        if not len(indexes):
+            raise ValueError(f"{cell} has no common finite naked-DNA profiles")
+        observed = observed[indexes].astype(np.float64)
+        log_bias = arrays["combined_log_bias"][indexes].astype(np.float64)
+        panels[cell] = {
+            "cell": cell,
+            "sites": sites.iloc[indexes].reset_index(drop=True),
+            "observed": observed,
+            "expected": {
+                "parametric_direct": direct_expected[indexes].astype(np.float64),
+                "parametric_lambda": expected_profile_counts(
+                    observed,
+                    calibrator.strength(cell) * log_bias,
+                ),
+            },
+            "dwm_expected": dwm_expected[indexes].astype(np.float64),
+            "positions": np.arange(observed.shape[1], dtype=float)
+            - observed.shape[1] // 2,
+            "bias_strength": calibrator.strength(cell),
+        }
+        npz_path, json_path, sites_path = artifact_paths(artifact)
+        records.extend(
+            [
+                input_record(npz_path, f"{cell}-naked-profiles"),
+                input_record(json_path, f"{cell}-naked-profile-manifest"),
+                input_record(sites_path, f"{cell}-naked-sites"),
+                *[
+                    input_record(path, f"{cell}-naked-DWM")
+                    for path in baseline_paths
+                ],
+            ]
+        )
     return panels, records
 
 
@@ -499,6 +615,167 @@ def choice_profile(panel: dict, indexes: np.ndarray, choice: dict) -> tuple[np.n
     return geometry_score(profiles, panel["positions"]), profiles
 
 
+def task_method_values(
+    panel: dict,
+    indexes: np.ndarray,
+    *,
+    global_choice: dict,
+    tf_choice: dict,
+    dispersion: float,
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
+    observed = panel["observed"][indexes]
+    raw_scores = geometry_score(observed, panel["positions"])
+    dwm_scores, dwm_profiles = residual_score(
+        observed,
+        panel["dwm_expected"][indexes],
+        panel["positions"],
+        "deviance",
+        dispersion,
+    )
+    global_scores, global_profiles = choice_profile(panel, indexes, global_choice)
+    tf_scores, tf_profiles = choice_profile(panel, indexes, tf_choice)
+    return {
+        "raw": (raw_scores, observed),
+        "DWM_conventional_deviance": (dwm_scores, dwm_profiles),
+        "frozen_global_shrinkage": (global_scores, global_profiles),
+        "frozen_tf_specific_shrinkage": (tf_scores, tf_profiles),
+    }
+
+
+def freeze_call_thresholds(
+    panels: dict[str, dict],
+    *,
+    global_choice: dict,
+    per_tf_choices: dict[str, dict],
+    dispersion: float,
+    target_rate: float,
+) -> pd.DataFrame:
+    if not 0 < target_rate < 0.05:
+        raise ValueError("target negative call rate must be in (0, 0.05)")
+    rows = []
+    for cell, panel in sorted(panels.items()):
+        for tf, group in panel["sites"].groupby("tf", sort=True):
+            indexes = group.index.to_numpy(dtype=int)
+            labels = group["chip_label"].to_numpy(dtype=int)
+            negative = labels == 0
+            if not np.any(negative):
+                raise ValueError(f"no validation negatives for {cell}/{tf}")
+            methods = task_method_values(
+                panel,
+                indexes,
+                global_choice=global_choice,
+                tf_choice=per_tf_choices.get(
+                    str(tf), {"source": "raw", "alpha": 0.0}
+                ),
+                dispersion=dispersion,
+            )
+            for method, (scores, _profiles) in methods.items():
+                threshold, calls = upper_tail_threshold(scores[negative], target_rate)
+                rows.append(
+                    {
+                        "cell": cell,
+                        "tf": str(tf),
+                        "method": method,
+                        "threshold": threshold,
+                        "validation_negative_sites": int(np.sum(negative)),
+                        "validation_negative_calls": calls,
+                        "validation_negative_call_rate": calls / int(np.sum(negative)),
+                        "target_negative_call_rate": target_rate,
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
+def evaluate_naked_dna(
+    panels: dict[str, dict],
+    policy: dict,
+    thresholds: pd.DataFrame,
+    *,
+    replicate: str,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    threshold_lookup = {
+        (str(row.cell), str(row.tf), str(row.method)): float(row.threshold)
+        for row in thresholds.itertuples(index=False)
+    }
+    rate_rows = []
+    score_rows = []
+    for cell, panel in sorted(panels.items()):
+        sites = panel["sites"]
+        for tf, group in sites.groupby("tf", sort=True):
+            indexes = group.index.to_numpy(dtype=int)
+            methods = task_method_values(
+                panel,
+                indexes,
+                global_choice=policy["global_choice"],
+                tf_choice=policy["per_tf_choices"].get(
+                    str(tf), {"source": "raw", "alpha": 0.0}
+                ),
+                dispersion=float(policy["dispersion"]),
+            )
+            informative = panel["observed"][indexes].sum(axis=1) > 0
+            task_scores = group[
+                ["TFBS_chr", "TFBS_start", "TFBS_end", "TFBS_strand"]
+            ].reset_index(drop=True)
+            task_scores.insert(0, "tf", str(tf))
+            task_scores.insert(0, "cell", cell)
+            task_scores.insert(0, "replicate", replicate)
+            task_scores["informative"] = informative
+            method_rates = {}
+            for method, (scores, _profiles) in methods.items():
+                key = (cell, str(tf), method)
+                if key not in threshold_lookup:
+                    raise ValueError(f"no frozen threshold for {cell}/{tf}/{method}")
+                threshold = threshold_lookup[key]
+                finite = np.isfinite(scores)
+                calls = finite & informative & (scores >= threshold)
+                call_count = int(np.sum(calls))
+                finite_count = int(np.sum(finite))
+                informative_count = int(np.sum(finite & informative))
+                _finite_low, finite_upper = wilson_interval(call_count, finite_count)
+                _info_low, info_upper = wilson_interval(
+                    call_count, informative_count
+                )
+                method_rates[method] = call_count / max(finite_count, 1)
+                rate_rows.append(
+                    {
+                        "replicate": replicate,
+                        "cell": cell,
+                        "tf": str(tf),
+                        "method": method,
+                        "threshold": threshold,
+                        "finite_sites": finite_count,
+                        "informative_sites": informative_count,
+                        "calls": call_count,
+                        "false_positive_rate": call_count / max(finite_count, 1),
+                        "false_positive_rate_upper_95": finite_upper,
+                        "informative_false_positive_rate": call_count
+                        / max(informative_count, 1),
+                        "informative_false_positive_rate_upper_95": info_upper,
+                    }
+                )
+                task_scores[f"{method}_score"] = scores
+                task_scores[f"{method}_call"] = calls
+            dwm_rate = method_rates["DWM_conventional_deviance"]
+            for row in rate_rows[-len(methods) :]:
+                row["false_positive_rate_increase_over_dwm"] = (
+                    row["false_positive_rate"] - dwm_rate
+                )
+                row["passes_point_rate"] = row["false_positive_rate"] <= 0.05
+                row["passes_wilson_upper"] = (
+                    row["false_positive_rate_upper_95"] <= 0.05
+                )
+                row["passes_dwm_increase"] = (
+                    row["false_positive_rate_increase_over_dwm"] <= 0.01
+                )
+                row["passes_safety"] = bool(
+                    row["passes_point_rate"]
+                    and row["passes_wilson_upper"]
+                    and row["passes_dwm_increase"]
+                )
+            score_rows.extend(task_scores.to_dict("records"))
+    return pd.DataFrame(rate_rows), pd.DataFrame(score_rows)
+
+
 def evaluate_test(
     panels: dict[str, dict],
     policy: dict,
@@ -637,7 +914,7 @@ def evaluate_test(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("tune", "test"), required=True)
+    parser.add_argument("--mode", choices=("tune", "test", "naked"), required=True)
     parser.add_argument("--study", type=Path, required=True)
     parser.add_argument("--reference-configuration", type=Path, required=True)
     parser.add_argument("--artifact", action="append", type=parse_name_path, required=True)
@@ -653,6 +930,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--minimum-sites-per-class", type=int, default=200)
     parser.add_argument("--bootstrap-iterations", type=int, default=1000)
     parser.add_argument("--aggregate-bootstrap-iterations", type=int, default=500)
+    parser.add_argument("--target-negative-call-rate", type=float, default=0.025)
+    parser.add_argument("--replicate", default="NakedDNA_rep2")
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--outdir", type=Path, required=True)
     args = parser.parse_args(argv)
@@ -684,12 +963,21 @@ def main(argv: list[str] | None = None) -> int:
             minimum_sites_per_class=args.minimum_sites_per_class,
         )
         global_summary, tf_summary, global_choice, per_tf_choices = select_policy_rows(grid)
+        thresholds = freeze_call_thresholds(
+            panels,
+            global_choice=global_choice,
+            per_tf_choices=per_tf_choices,
+            dispersion=args.dispersion,
+            target_rate=args.target_negative_call_rate,
+        )
         grid_path = args.outdir / "bias_shrinkage_validation_grid.tsv.gz"
         global_path = args.outdir / "bias_shrinkage_global_summary.tsv"
         tf_path = args.outdir / "bias_shrinkage_tf_summary.tsv"
+        thresholds_path = args.outdir / "bias_shrinkage_call_thresholds.tsv"
         grid.to_csv(grid_path, sep="\t", index=False, compression="gzip")
         global_summary.to_csv(global_path, sep="\t", index=False)
         tf_summary.to_csv(tf_path, sep="\t", index=False)
+        thresholds.to_csv(thresholds_path, sep="\t", index=False)
         inputs = [
             input_record(args.study, "study"),
             input_record(args.reference_configuration, "safe-reference-configuration"),
@@ -703,6 +991,7 @@ def main(argv: list[str] | None = None) -> int:
             "raw_guardrail": True,
             "minimum_sites_per_class": args.minimum_sites_per_class,
             "dispersion": args.dispersion,
+            "target_negative_call_rate": args.target_negative_call_rate,
             "alphas": list(args.alphas),
             "bias_strengths": {
                 cell: float(panel["bias_strength"]) for cell, panel in sorted(panels.items())
@@ -714,6 +1003,7 @@ def main(argv: list[str] | None = None) -> int:
                 "validation_grid": input_record(grid_path, "validation-grid"),
                 "global_summary": input_record(global_path, "global-summary"),
                 "tf_summary": input_record(tf_path, "tf-summary"),
+                "thresholds": input_record(thresholds_path, "call-thresholds"),
             },
         }
         policy["policy_id"] = canonical_id(policy)
@@ -723,7 +1013,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.policy is None:
-        raise ValueError("test mode requires --policy")
+        raise ValueError("test and naked modes require --policy")
     policy = validate_policy(args.policy)
     configuration_record = next(
         (
@@ -739,6 +1029,85 @@ def main(argv: list[str] | None = None) -> int:
         or configuration_record["sha256"] != sha256_file(args.reference_configuration)
     ):
         raise ValueError("test reference configuration differs from the frozen policy")
+    if args.mode == "naked":
+        panels, profile_inputs = load_naked_panels(
+            artifacts,
+            baselines,
+            calibrator=calibrator,
+        )
+        for cell, panel in panels.items():
+            expected_strength = policy["bias_strengths"].get(cell)
+            if expected_strength is None or not np.isclose(
+                float(expected_strength), panel["bias_strength"], rtol=0, atol=1e-12
+            ):
+                raise ValueError(f"{cell} naked-DNA bias strength differs from policy")
+        threshold_record = policy["outputs"]["thresholds"]
+        thresholds = pd.read_csv(threshold_record["path"], sep="\t")
+        input_freeze = {
+            "schema": NAKED_INPUT_SCHEMA,
+            "policy": input_record(args.policy, "frozen-shrinkage-policy"),
+            "reference_configuration": input_record(
+                args.reference_configuration, "safe-reference-configuration"
+            ),
+            "thresholds": threshold_record,
+            "inputs": [input_record(args.study, "study"), *profile_inputs],
+            "replicate": args.replicate,
+            "naked_dna_labels_used": False,
+            "models_refitted_on_naked_dna": False,
+            "thresholds_changed_on_naked_dna": False,
+        }
+        input_freeze["naked_input_id"] = canonical_id(input_freeze)
+        input_path = args.outdir / "bias_shrinkage_naked_inputs.freeze.json"
+        write_immutable_json(input_path, input_freeze)
+        rates, scores = evaluate_naked_dna(
+            panels,
+            policy,
+            thresholds,
+            replicate=args.replicate,
+        )
+        rates_path = args.outdir / "bias_shrinkage_naked_false_positive_rates.tsv"
+        scores_path = args.outdir / "bias_shrinkage_naked_site_scores.tsv.gz"
+        rates.to_csv(rates_path, sep="\t", index=False)
+        scores.to_csv(scores_path, sep="\t", index=False, compression="gzip")
+        candidate = rates[
+            rates["method"].isin(
+                ["frozen_global_shrinkage", "frozen_tf_specific_shrinkage"]
+            )
+        ]
+        summary = (
+            candidate.groupby("method", as_index=False)
+            .agg(
+                task_count=("tf", "size"),
+                maximum_false_positive_rate=("false_positive_rate", "max"),
+                maximum_wilson_upper_95=("false_positive_rate_upper_95", "max"),
+                maximum_increase_over_dwm=(
+                    "false_positive_rate_increase_over_dwm",
+                    "max",
+                ),
+                all_tasks_pass=("passes_safety", "all"),
+            )
+            .sort_values("method")
+        )
+        summary_path = args.outdir / "bias_shrinkage_naked_summary.tsv"
+        summary.to_csv(summary_path, sep="\t", index=False)
+        manifest = {
+            "schema": NAKED_SCHEMA,
+            "policy_id": policy["policy_id"],
+            "replicate": args.replicate,
+            "models_refitted_on_naked_dna": False,
+            "thresholds_changed_on_naked_dna": False,
+            "naked_input_freeze": input_record(input_path, "naked-input-freeze"),
+            "outputs": {
+                "rates": input_record(rates_path, "naked-false-positive-rates"),
+                "summary": input_record(summary_path, "naked-summary"),
+                "site_scores": input_record(scores_path, "naked-site-scores"),
+            },
+        }
+        manifest["naked_result_id"] = canonical_id(manifest)
+        manifest_path = args.outdir / "bias_shrinkage_naked_manifest.json"
+        write_immutable_json(manifest_path, manifest)
+        print(summary.to_string(index=False))
+        return 0
     panels, profile_inputs = load_panels(
         artifacts,
         baselines,

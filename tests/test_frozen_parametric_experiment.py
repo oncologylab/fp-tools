@@ -552,6 +552,62 @@ def test_bias_shrinkage_policy_selects_global_and_tf_abstention() -> None:
     }
 
 
+def test_bias_shrinkage_naked_dna_uses_frozen_thresholds_and_zero_cut_support() -> None:
+    positions = np.arange(-40, 41, dtype=float)
+    observed = np.zeros((100, len(positions)), dtype=float)
+    expected = np.zeros_like(observed)
+    sites = pd.DataFrame(
+        {
+            "tf": ["TF1"] * 100,
+            "TFBS_chr": ["chr1"] * 100,
+            "TFBS_start": np.arange(100),
+            "TFBS_end": np.arange(100) + 1,
+            "TFBS_strand": ["+"] * 100,
+        }
+    )
+    panel = {
+        "sites": sites,
+        "observed": observed,
+        "expected": {
+            "parametric_direct": expected,
+            "parametric_lambda": expected,
+        },
+        "dwm_expected": expected,
+        "positions": positions,
+    }
+    methods = (
+        "raw",
+        "DWM_conventional_deviance",
+        "frozen_global_shrinkage",
+        "frozen_tf_specific_shrinkage",
+    )
+    thresholds = pd.DataFrame(
+        {
+            "cell": ["CellA"] * len(methods),
+            "tf": ["TF1"] * len(methods),
+            "method": methods,
+            "threshold": [1.0] * len(methods),
+        }
+    )
+    policy = {
+        "global_choice": {"source": "raw", "alpha": 0.0},
+        "per_tf_choices": {"TF1": {"source": "raw", "alpha": 0.0}},
+        "dispersion": 1.0,
+    }
+    rates, scores = evaluate_frozen_bias_shrinkage.evaluate_naked_dna(
+        {"CellA": panel},
+        policy,
+        thresholds,
+        replicate="NakedDNA_rep2",
+    )
+    assert len(scores) == 100
+    assert not any("label" in column.lower() for column in scores)
+    assert set(rates["finite_sites"]) == {100}
+    assert set(rates["informative_sites"]) == {0}
+    assert set(rates["calls"]) == {0}
+    assert rates["passes_safety"].all()
+
+
 def test_derived_family_selection_filters_candidates_and_profiles() -> None:
     metrics = pd.DataFrame(
         {
