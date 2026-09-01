@@ -487,6 +487,19 @@ and +0.091/+0.112 in K562. The concise Box PDFs and metrics table now include
 this result, explicitly labeled post hoc; it strengthens the shape
 interpretation without converting the CTCF result into a universal claim.
 
+An exact CTCF naked-DNA check then froze separate candidate and conventional
+score thresholds on 1,000 ChIP-negative validation sites per cell line before
+applying them to GSE164997 naked-DNA motif sites. The frozen TF geometry called
+1/116 finite HepG2 sites (0.86%; Wilson upper 95% bound 4.72%) and 1/123 finite
+K562 sites (0.81%; upper bound 4.46%). Both point estimates and uncertainty
+bounds therefore pass the prespecified 5% negative-control target. The raw
+conventional-score thresholds transferred poorly across samples (101/116 and
+111/123 calls), which is evidence of score-scale non-portability rather than a
+biological occupancy estimate. The Box reports now show the candidate safety
+result. This closes the exact naked-DNA check for the CTCF geometry but does not
+replace the pending external-cell transfer gate or justify package-wide
+promotion.
+
 ## Depth-matrix artifact integrity audit
 
 An incremental 25M refresh exposed a benchmark-infrastructure failure before
