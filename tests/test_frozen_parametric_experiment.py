@@ -265,12 +265,14 @@ def test_frozen_site_score_frame_preserves_artifact_indexes() -> None:
         indexes=np.asarray([2, 0]),
         candidate_score=np.asarray([0.8, 0.2]),
         dwm_score=np.asarray([1.5, -0.5]),
+        raw_score=np.asarray([2.0, 0.1]),
         direct_score=np.asarray([1.2, -0.2]),
     )
     assert result["artifact_index"].tolist() == [2, 0]
     assert result["TFBS_start"].tolist() == [30, 10]
     assert result["label"].tolist() == [0, 0]
     assert result["candidate_probability"].tolist() == [0.8, 0.2]
+    assert result["raw_score"].tolist() == [2.0, 0.1]
     assert result["log_accessibility"].tolist() == pytest.approx(
         [np.log1p(3.0), 0.0]
     )

@@ -28,6 +28,7 @@ from evaluate_functional_footprints import (  # noqa: E402
 from evaluate_parametric_factorization import (  # noqa: E402
     align_baseline,
     block_bootstrap_delta,
+    geometry_score,
     load_dwm_baseline,
     load_safe_configuration,
     orient_aligned_baseline,
@@ -442,6 +443,7 @@ def site_score_frame(
     indexes: np.ndarray,
     candidate_score: np.ndarray,
     dwm_score: np.ndarray,
+    raw_score: np.ndarray,
     direct_score: np.ndarray,
 ) -> pd.DataFrame:
     """Return one auditable score row per evaluated motif occurrence."""
@@ -451,6 +453,7 @@ def site_score_frame(
         len(selected)
         == len(candidate_score)
         == len(dwm_score)
+        == len(raw_score)
         == len(direct_score)
     ):
         raise ValueError("site metadata and frozen score arrays have different lengths")
@@ -471,6 +474,7 @@ def site_score_frame(
             "label": selected["chip_label"].to_numpy(dtype=int),
             "candidate_probability": np.asarray(candidate_score, dtype=float),
             "dwm_score": np.asarray(dwm_score, dtype=float),
+            "raw_score": np.asarray(raw_score, dtype=float),
             "direct_score": np.asarray(direct_score, dtype=float),
         }
     )
@@ -612,6 +616,7 @@ def main(argv: list[str] | None = None) -> int:
                 "deviance",
                 dispersion,
             )
+            raw_score = geometry_score(observed, positions)
             direct_expected = arrays["plus_expected"][indexes] + arrays["minus_expected"][indexes]
             direct_score, direct_profiles = residual_score(
                 observed,
@@ -628,6 +633,7 @@ def main(argv: list[str] | None = None) -> int:
                     indexes=indexes,
                     candidate_score=candidate_score,
                     dwm_score=dwm_score,
+                    raw_score=raw_score,
                     direct_score=direct_score,
                 )
             )
@@ -640,6 +646,13 @@ def main(argv: list[str] | None = None) -> int:
                     "DWM_conventional_geometry",
                     dwm_score,
                     dwm_aggregate,
+                    0.0,
+                    None,
+                ),
+                (
+                    "raw_geometry",
+                    raw_score,
+                    observed,
                     0.0,
                     None,
                 ),
@@ -705,6 +718,7 @@ def main(argv: list[str] | None = None) -> int:
             if min(positive, negative) >= args.minimum_sites_per_class:
                 task_sites = sites.iloc[indexes].reset_index(drop=True)
                 for method, score in (
+                    ("raw_geometry", raw_score),
                     ("LOG21_direct_geometry", direct_score),
                     (f"frozen_{candidate.candidate_id}", candidate_score),
                 ):
@@ -736,6 +750,16 @@ def main(argv: list[str] | None = None) -> int:
         }
     )
     metrics = metrics.merge(baseline, on=["cell", "tf"], validate="many_to_one")
+    raw = metrics[metrics["method"] == "raw_geometry"][
+        ["cell", "tf", "auroc", "auprc", "functional_separation"]
+    ].rename(
+        columns={
+            "auroc": "raw_auroc",
+            "auprc": "raw_auprc",
+            "functional_separation": "raw_functional_separation",
+        }
+    )
+    metrics = metrics.merge(raw, on=["cell", "tf"], validate="many_to_one")
     metrics["auroc_gain_over_dwm"] = metrics["auroc"] - metrics["dwm_auroc"]
     metrics["relative_auprc_gain_over_dwm"] = (
         metrics["auprc"] - metrics["dwm_auprc"]
@@ -745,6 +769,10 @@ def main(argv: list[str] | None = None) -> int:
         / metrics["dwm_functional_separation"].clip(lower=1e-8)
         - 1.0
     )
+    metrics["auroc_gain_over_raw"] = metrics["auroc"] - metrics["raw_auroc"]
+    metrics["relative_auprc_gain_over_raw"] = (
+        metrics["auprc"] - metrics["raw_auprc"]
+    ) / metrics["raw_auprc"].clip(lower=1e-8)
     metrics_path = args.outdir / "frozen_functional_test_metrics.tsv"
     bootstrap_path = args.outdir / "frozen_functional_test_bootstrap.tsv"
     curves_path = args.outdir / "frozen_functional_test_profiles.tsv.gz"
