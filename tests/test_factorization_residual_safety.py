@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -94,3 +95,31 @@ def test_wilson_interval_handles_empty_and_bounds_rate() -> None:
     assert 0.0 <= low < 3 / 200 < high <= 1.0
     empty = safety.wilson_interval(0, 0)
     assert all(np.isnan(value) for value in empty)
+
+
+def test_profile_scoring_excludes_nonfinite_bias_before_prediction() -> None:
+    class FiniteOnlyModel:
+        positions = np.arange(-100, 101, dtype=float)
+        total_dispersion_ = 0.0
+
+        def predict(self, counts, log_bias, samples, tfs):
+            assert np.isfinite(log_bias).all()
+            assert len(counts) == 1
+            return SimpleNamespace(expected_unbound=np.ones_like(counts))
+
+    arrays = {
+        "plus_observed": np.ones((2, 201)),
+        "minus_observed": np.ones((2, 201)),
+        "combined_log_bias": np.asarray(
+            [[0.0] * 201, [0.0, np.nan] + [0.0] * 199]
+        ),
+        "valid": np.ones(2, dtype=bool),
+    }
+    sites = pd.DataFrame({"cell": ["K562"] * 2, "tf": ["CTCF"] * 2})
+    scores, valid, totals = safety._profile_scores(
+        FiniteOnlyModel(), arrays, sites, ["deviance"]
+    )
+    assert valid.tolist() == [True, False]
+    assert np.isfinite(scores["deviance"][0])
+    assert np.isnan(scores["deviance"][1])
+    assert totals.tolist() == [402.0, 402.0]

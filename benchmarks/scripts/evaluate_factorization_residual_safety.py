@@ -110,27 +110,33 @@ def _profile_scores(
         raise ValueError("profile width does not match the frozen factorization")
     if "cell" not in sites or "tf" not in sites:
         raise ValueError("profile sites must contain cell and tf columns")
-    result = model.predict(
-        counts,
-        log_bias,
-        sites["cell"].astype(str),
-        sites["tf"].astype(str),
+    valid = np.asarray(arrays["valid"], dtype=bool) & np.isfinite(log_bias).all(
+        axis=1
     )
     scores = {
-        residual: residual_score(
-            counts,
-            result.expected_unbound,
-            model.positions,
-            residual,
-            model.total_dispersion_,
-        )[0]
+        residual: np.full(len(counts), np.nan, dtype=np.float64)
         for residual in residuals
     }
-    valid = (
-        np.asarray(arrays["valid"], dtype=bool)
-        & np.isfinite(log_bias).all(axis=1)
-        & np.isfinite(result.expected_unbound).all(axis=1)
-    )
+    if np.any(valid):
+        result = model.predict(
+            counts[valid],
+            log_bias[valid],
+            sites.loc[valid, "cell"].astype(str),
+            sites.loc[valid, "tf"].astype(str),
+        )
+        finite_expected = np.isfinite(result.expected_unbound).all(axis=1)
+        selected = np.flatnonzero(valid)
+        valid[selected[~finite_expected]] = False
+        selected = selected[finite_expected]
+        for residual in residuals:
+            values = residual_score(
+                counts[selected],
+                result.expected_unbound[finite_expected],
+                model.positions,
+                residual,
+                model.total_dispersion_,
+            )[0]
+            scores[residual][selected] = values
     return scores, valid, counts.sum(axis=1)
 
 
