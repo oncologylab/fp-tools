@@ -324,14 +324,37 @@ def test_bias_aware_mixture_can_anchor_binding_prior_direction(tmp_path: Path) -
     )
 
 
-def test_fda_and_hybrid_models_detect_shape() -> None:
+def test_fda_and_hybrid_models_detect_shape(tmp_path: Path) -> None:
     observed, expected, labels, _motif_score = _synthetic_counts()
     x = _positions()
     residuals = deviance_profiles(observed, expected, dispersion=0.02)
     fda = FdaMixtureModel(max_components=12, seed=6).fit(residuals, positions=x)
     hybrid = HybridFdaGpModel(x, max_components=12, seed=6).fit(residuals)
-    assert roc_auc_score(labels, fda.predict_proba(residuals)) > 0.70
-    assert roc_auc_score(labels, hybrid.predict_proba(residuals)) > 0.70
+    fda_probability = fda.predict_proba(residuals)
+    hybrid_probability = hybrid.predict_proba(residuals)
+    assert roc_auc_score(labels, fda_probability) > 0.70
+    assert roc_auc_score(labels, hybrid_probability) > 0.70
+
+    fda.save(tmp_path / "fda", metadata={"labels_used": False})
+    hybrid.save(tmp_path / "hybrid", metadata={"labels_used": False})
+    loaded_fda = FdaMixtureModel.load(tmp_path / "fda.npz")
+    loaded_hybrid = HybridFdaGpModel.load(tmp_path / "hybrid.npz")
+    assert np.allclose(loaded_fda.predict_proba(residuals), fda_probability)
+    assert np.allclose(loaded_fda.component_profiles(), fda.component_profiles())
+    assert np.allclose(loaded_hybrid.predict_proba(residuals), hybrid_probability)
+
+
+def test_fda_model_rejects_checksum_mismatch(tmp_path: Path) -> None:
+    observed, expected, _labels, _motif_score = _synthetic_counts(seed=42)
+    residuals = deviance_profiles(observed, expected, dispersion=0.02)
+    model_path, _metadata_path = FdaMixtureModel(seed=3).fit(
+        residuals,
+        positions=_positions(),
+    ).save(tmp_path / "fda")
+    with model_path.open("ab") as handle:
+        handle.write(b"modified")
+    with pytest.raises(ValueError, match="checksum"):
+        FdaMixtureModel.load(model_path)
 
 
 def test_covariate_anchored_fda_separates_shape_from_prior() -> None:

@@ -1419,6 +1419,48 @@ class BiasAwareFunctionalMixture:
         return model
 
 
+def _restore_diagonal_gaussian_mixture(
+    *,
+    weights: np.ndarray,
+    means: np.ndarray,
+    covariances: np.ndarray,
+    seed: int,
+    converged: bool,
+    iterations: int,
+    lower_bound: float,
+) -> GaussianMixture:
+    """Restore the numeric state needed by a diagonal Gaussian mixture."""
+
+    weights = np.asarray(weights, dtype=np.float64)
+    means = np.asarray(means, dtype=np.float64)
+    covariances = np.asarray(covariances, dtype=np.float64)
+    if (
+        weights.ndim != 1
+        or means.ndim != 2
+        or covariances.shape != means.shape
+        or means.shape[0] != len(weights)
+        or len(weights) < 2
+        or np.any(weights <= 0)
+        or np.any(covariances <= 0)
+    ):
+        raise ValueError("invalid diagonal Gaussian-mixture state")
+    mixture = GaussianMixture(
+        n_components=len(weights),
+        covariance_type="diag",
+        random_state=int(seed),
+    )
+    mixture.weights_ = weights / weights.sum()
+    mixture.means_ = means
+    mixture.covariances_ = covariances
+    mixture.precisions_ = 1.0 / covariances
+    mixture.precisions_cholesky_ = np.sqrt(mixture.precisions_)
+    mixture.converged_ = bool(converged)
+    mixture.n_iter_ = int(iterations)
+    mixture.lower_bound_ = float(lower_bound)
+    mixture.n_features_in_ = means.shape[1]
+    return mixture
+
+
 class FdaMixtureModel:
     """Two-state Gaussian mixture in coverage-weighted functional-PC space."""
 
@@ -1498,6 +1540,101 @@ class FdaMixtureModel:
         if self.mixture is None:
             raise ValueError("FDA mixture has not been fitted")
         return self.fpca.inverse_transform(self.mixture.means_)
+
+    def save(
+        self,
+        path: str | Path,
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[Path, Path]:
+        """Serialize a fitted FDA mixture without executable Python objects."""
+
+        if (
+            self.mixture is None
+            or self.binding_component_ is None
+            or self.positions_ is None
+        ):
+            raise ValueError("FDA mixture has not been fitted")
+        self.fpca._check_fitted()
+        npz_path = Path(path).with_suffix(".npz")
+        json_path = npz_path.with_suffix(".json")
+        npz_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            npz_path,
+            positions=self.positions_,
+            fpca_mean=self.fpca.mean_,
+            fpca_components=self.fpca.components_,
+            fpca_explained_variance_ratio=self.fpca.explained_variance_ratio_,
+            fpca_impute=self.fpca.impute_,
+            mixture_weights=self.mixture.weights_,
+            mixture_means=self.mixture.means_,
+            mixture_covariances=self.mixture.covariances_,
+        )
+        document = {
+            "schema": FUNCTIONAL_SCHEMA,
+            "model_type": "fda_mixture",
+            "npz_sha256": _sha256_file(npz_path),
+            "variance_threshold": self.fpca.variance_threshold,
+            "max_components": self.fpca.max_components,
+            "seed": self.seed,
+            "binding_component": self.binding_component_,
+            "temperature": self.temperature_,
+            "converged": bool(self.mixture.converged_),
+            "iterations": int(self.mixture.n_iter_),
+            "lower_bound": float(self.mixture.lower_bound_),
+            "metadata": dict(metadata or {}),
+        }
+        json_path.write_text(
+            json.dumps(document, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return npz_path, json_path
+
+    @classmethod
+    def load(cls, path: str | Path) -> "FdaMixtureModel":
+        npz_path = Path(path).with_suffix(".npz")
+        document = json.loads(
+            npz_path.with_suffix(".json").read_text(encoding="utf-8")
+        )
+        if (
+            document.get("schema") != FUNCTIONAL_SCHEMA
+            or document.get("model_type") != "fda_mixture"
+        ):
+            raise ValueError("unsupported FDA mixture model")
+        if document.get("npz_sha256") != _sha256_file(npz_path):
+            raise ValueError("FDA mixture checksum does not match its metadata")
+        model = cls(
+            variance_threshold=float(document["variance_threshold"]),
+            max_components=int(document["max_components"]),
+            seed=int(document["seed"]),
+        )
+        with np.load(npz_path, allow_pickle=False) as arrays:
+            model.positions_ = np.asarray(arrays["positions"], dtype=np.float64)
+            model.fpca.mean_ = np.asarray(arrays["fpca_mean"], dtype=np.float64)
+            model.fpca.components_ = np.asarray(
+                arrays["fpca_components"], dtype=np.float64
+            )
+            model.fpca.explained_variance_ratio_ = np.asarray(
+                arrays["fpca_explained_variance_ratio"], dtype=np.float64
+            )
+            model.fpca.impute_ = np.asarray(
+                arrays["fpca_impute"], dtype=np.float64
+            )
+            model.mixture = _restore_diagonal_gaussian_mixture(
+                weights=np.asarray(arrays["mixture_weights"], dtype=np.float64),
+                means=np.asarray(arrays["mixture_means"], dtype=np.float64),
+                covariances=np.asarray(
+                    arrays["mixture_covariances"], dtype=np.float64
+                ),
+                seed=model.seed,
+                converged=bool(document.get("converged", False)),
+                iterations=int(document.get("iterations", 0)),
+                lower_bound=float(document.get("lower_bound", float("nan"))),
+            )
+        model.binding_component_ = int(document["binding_component"])
+        if model.binding_component_ not in range(len(model.mixture.weights_)):
+            raise ValueError("invalid FDA binding component")
+        model.temperature_ = float(document.get("temperature", 1.0))
+        return model
 
 
 class CovariateAnchoredFdaModel:
@@ -1991,6 +2128,124 @@ class HybridFdaGpModel:
         values = normalize_functional_profiles(residual_profiles, self.positions)
         log_ratio = self._log_likelihood_ratio(values)
         return expit(np.clip(log_ratio / self.temperature_, -30.0, 30.0))
+
+    def save(
+        self,
+        path: str | Path,
+        metadata: dict[str, Any] | None = None,
+    ) -> tuple[Path, Path]:
+        """Serialize the deployable hybrid likelihood and its FDA initializer."""
+
+        if (
+            self.unbound_mean_ is None
+            or self.bound_mean_ is None
+            or self.variance_ is None
+            or self.prior_ is None
+            or self.fda.mixture is None
+            or self.fda.binding_component_ is None
+        ):
+            raise ValueError("hybrid FDA-GP model has not been fitted")
+        self.fda.fpca._check_fitted()
+        npz_path = Path(path).with_suffix(".npz")
+        json_path = npz_path.with_suffix(".json")
+        npz_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            npz_path,
+            positions=self.positions,
+            unbound_mean=self.unbound_mean_,
+            bound_mean=self.bound_mean_,
+            variance=self.variance_,
+            fpca_mean=self.fda.fpca.mean_,
+            fpca_components=self.fda.fpca.components_,
+            fpca_explained_variance_ratio=(
+                self.fda.fpca.explained_variance_ratio_
+            ),
+            fpca_impute=self.fda.fpca.impute_,
+            mixture_weights=self.fda.mixture.weights_,
+            mixture_means=self.fda.mixture.means_,
+            mixture_covariances=self.fda.mixture.covariances_,
+        )
+        document = {
+            "schema": FUNCTIONAL_SCHEMA,
+            "model_type": "hybrid_fda_gp",
+            "npz_sha256": _sha256_file(npz_path),
+            "variance_threshold": self.fda.fpca.variance_threshold,
+            "max_components": self.fda.fpca.max_components,
+            "seed": self.fda.seed,
+            "binding_component": self.fda.binding_component_,
+            "fda_temperature": self.fda.temperature_,
+            "fda_converged": bool(self.fda.mixture.converged_),
+            "fda_iterations": int(self.fda.mixture.n_iter_),
+            "fda_lower_bound": float(self.fda.mixture.lower_bound_),
+            "prior": self.prior_,
+            "temperature": self.temperature_,
+            "metadata": dict(metadata or {}),
+        }
+        json_path.write_text(
+            json.dumps(document, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return npz_path, json_path
+
+    @classmethod
+    def load(cls, path: str | Path) -> "HybridFdaGpModel":
+        npz_path = Path(path).with_suffix(".npz")
+        document = json.loads(
+            npz_path.with_suffix(".json").read_text(encoding="utf-8")
+        )
+        if (
+            document.get("schema") != FUNCTIONAL_SCHEMA
+            or document.get("model_type") != "hybrid_fda_gp"
+        ):
+            raise ValueError("unsupported hybrid FDA-GP model")
+        if document.get("npz_sha256") != _sha256_file(npz_path):
+            raise ValueError("hybrid FDA-GP checksum does not match its metadata")
+        with np.load(npz_path, allow_pickle=False) as arrays:
+            positions = np.asarray(arrays["positions"], dtype=np.float64)
+            model = cls(
+                positions,
+                variance_threshold=float(document["variance_threshold"]),
+                max_components=int(document["max_components"]),
+                seed=int(document["seed"]),
+            )
+            model.unbound_mean_ = np.asarray(
+                arrays["unbound_mean"], dtype=np.float64
+            )
+            model.bound_mean_ = np.asarray(arrays["bound_mean"], dtype=np.float64)
+            model.variance_ = np.asarray(arrays["variance"], dtype=np.float64)
+            model.fda.positions_ = positions.copy()
+            model.fda.fpca.mean_ = np.asarray(
+                arrays["fpca_mean"], dtype=np.float64
+            )
+            model.fda.fpca.components_ = np.asarray(
+                arrays["fpca_components"], dtype=np.float64
+            )
+            model.fda.fpca.explained_variance_ratio_ = np.asarray(
+                arrays["fpca_explained_variance_ratio"], dtype=np.float64
+            )
+            model.fda.fpca.impute_ = np.asarray(
+                arrays["fpca_impute"], dtype=np.float64
+            )
+            model.fda.mixture = _restore_diagonal_gaussian_mixture(
+                weights=np.asarray(arrays["mixture_weights"], dtype=np.float64),
+                means=np.asarray(arrays["mixture_means"], dtype=np.float64),
+                covariances=np.asarray(
+                    arrays["mixture_covariances"], dtype=np.float64
+                ),
+                seed=model.fda.seed,
+                converged=bool(document.get("fda_converged", False)),
+                iterations=int(document.get("fda_iterations", 0)),
+                lower_bound=float(
+                    document.get("fda_lower_bound", float("nan"))
+                ),
+            )
+        model.fda.binding_component_ = int(document["binding_component"])
+        model.fda.temperature_ = float(document.get("fda_temperature", 1.0))
+        model.prior_ = float(document["prior"])
+        if not 0.0 < model.prior_ < 1.0:
+            raise ValueError("invalid hybrid FDA-GP prior")
+        model.temperature_ = float(document.get("temperature", 1.0))
+        return model
 
 
 @dataclass(frozen=True)
