@@ -116,6 +116,33 @@ def _replicate_text(panel: pd.DataFrame, cell: str, tf: str) -> str:
     )
 
 
+def _naked_dna_evidence(
+    summary: pd.DataFrame | None, cell: str, tf: str
+) -> tuple[str, dict[str, object]]:
+    if summary is None:
+        return "not evaluated", {}
+    rows = summary[
+        summary["cell"].astype(str).eq(cell)
+        & summary["tf"].astype(str).eq(tf)
+    ]
+    if len(rows) != 1:
+        return "not available", {}
+    row = rows.iloc[0]
+    calls = int(row.candidate_calls)
+    valid = int(row.candidate_valid)
+    rate = float(row.candidate_false_positive_rate)
+    upper = float(row.candidate_false_positive_rate_upper_95)
+    return (
+        f"{calls}/{valid} calls ({rate:.1%}); upper 95% bound {upper:.1%}",
+        {
+            "naked_dna_candidate_valid": valid,
+            "naked_dna_candidate_calls": calls,
+            "naked_dna_candidate_false_positive_rate": rate,
+            "naked_dna_candidate_false_positive_rate_upper_95": upper,
+        },
+    )
+
+
 def render_cell(
     *,
     cell: str,
@@ -127,6 +154,7 @@ def render_cell(
     cache_dir: Path,
     bootstrap: pd.DataFrame,
     replicate_panel: pd.DataFrame,
+    naked_dna_summary: pd.DataFrame | None,
     flank: int,
 ) -> tuple[plt.Figure, dict[str, object]]:
     cell_sites = sites[sites["cell"] == cell].reset_index(drop=True)
@@ -303,6 +331,9 @@ def render_cell(
     evidence_axis.axis("off")
     auroc_ci = _bootstrap_text(bootstrap, cell, tf, "auroc")
     auprc_ci = _bootstrap_text(bootstrap, cell, tf, "auprc")
+    naked_dna_text, naked_dna_metrics = _naked_dna_evidence(
+        naked_dna_summary, cell, tf
+    )
     evidence = (
         "Evidence\n"
         f"Test: chr19-22 and chrX\n"
@@ -313,6 +344,8 @@ def render_cell(
         "Leave-one-chromosome-out removal of motif score and accessibility:\n"
         f"Delta AUROC {residual_candidate_auroc - residual_baseline_auroc:+.3f}; "
         f"AUPRC {residual_candidate_auprc - residual_baseline_auprc:+.3f}\n\n"
+        "Naked-DNA negative control\n"
+        f"{naked_dna_text}\n\n"
         "Full-depth transfer\n"
         f"{_replicate_text(replicate_panel, cell, tf)}\n\n"
         "Interpretation\n"
@@ -348,7 +381,7 @@ def render_cell(
     figure.text(
         0.5,
         0.025,
-        "Research result only - geometry selected without test chromosomes; exact candidate naked-DNA specificity and external-cell transfer remain pending.",
+        "Research result only - geometry selected without test chromosomes; naked-DNA specificity passed, while external-cell transfer remains pending.",
         ha="center",
         va="bottom",
         fontsize=8.5,
@@ -378,6 +411,7 @@ def render_cell(
         "delta_auroc_ci": auroc_ci,
         "delta_auprc_ci": auprc_ci,
         "replicate_evidence": _replicate_text(replicate_panel, cell, tf),
+        **naked_dna_metrics,
         "scope": "CTCF-specific research result; not a package-wide promotion",
     }
     return figure, row
@@ -391,6 +425,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cache-dir", type=Path, required=True)
     parser.add_argument("--bootstrap", type=Path, required=True)
     parser.add_argument("--replicate-panel", type=Path, required=True)
+    parser.add_argument("--naked-dna-summary", type=Path)
     parser.add_argument("--outdir", type=Path, required=True)
     parser.add_argument("--tf", default="CTCF")
     parser.add_argument("--split", default="test")
@@ -402,6 +437,11 @@ def main(argv: list[str] | None = None) -> int:
     baselines = pd.read_csv(args.baselines, sep="\t")
     bootstrap = pd.read_csv(args.bootstrap, sep="\t")
     replicate_panel = pd.read_csv(args.replicate_panel, sep="\t")
+    naked_dna_summary = (
+        pd.read_csv(args.naked_dna_summary, sep="\t")
+        if args.naked_dna_summary
+        else None
+    )
     cells = sorted(set(sites["cell"]).intersection(winners.loc[winners["tf"] == args.tf, "cell"]))
     if not cells:
         parser.error(f"no cells contain a frozen {args.tf} candidate")
@@ -421,6 +461,7 @@ def main(argv: list[str] | None = None) -> int:
                 cache_dir=args.cache_dir,
                 bootstrap=bootstrap,
                 replicate_panel=replicate_panel,
+                naked_dna_summary=naked_dna_summary,
                 flank=args.flank,
             )
             figure.savefig(args.outdir / f"{args.tf}_{cell}_before_after.pdf", bbox_inches="tight")
@@ -435,6 +476,7 @@ def main(argv: list[str] | None = None) -> int:
         "The conventional comparator is the current TOBIAS-style DWM footprint score.\n"
         "The candidate was frozen before chr19-22/X were evaluated.\n"
         "The covariate-residual sensitivity analysis is post hoc and does not use ChIP labels for fitting.\n"
+        "The exact TF geometry passed a naked-DNA negative-control check with 95% upper bounds below 5%.\n"
         "Scope: TF-specific research evidence only; no main-branch or package-default change.\n",
         encoding="utf-8",
     )

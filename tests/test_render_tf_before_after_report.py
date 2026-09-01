@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 
 import numpy as np
+import pandas as pd
 import pytest
 
 
@@ -39,3 +40,20 @@ def test_crossfit_covariate_residuals_require_multiple_groups():
         module.crossfit_covariate_residuals(
             np.arange(4.0), np.ones((4, 2)), np.repeat("chr19", 4)
         )
+
+
+def test_naked_dna_evidence_reports_calls_and_upper_bound():
+    summary = pd.DataFrame(
+        {
+            "cell": ["K562"],
+            "tf": ["CTCF"],
+            "candidate_valid": [123],
+            "candidate_calls": [1],
+            "candidate_false_positive_rate": [1 / 123],
+            "candidate_false_positive_rate_upper_95": [0.044617],
+        }
+    )
+    text, metrics = module._naked_dna_evidence(summary, "K562", "CTCF")
+    assert text == "1/123 calls (0.8%); upper 95% bound 4.5%"
+    assert metrics["naked_dna_candidate_valid"] == 123
+    assert metrics["naked_dna_candidate_calls"] == 1

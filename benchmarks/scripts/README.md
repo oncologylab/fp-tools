@@ -44,7 +44,7 @@ false-footprint rates can be checked for replicate consistency before pooling.
 - `match_tf_sites_on_accessibility.py`: optimally match positive and negative motif sites on motif score and local raw ATAC coverage.
 - `compare_frozen_tf_candidates.py`: compare frozen TF candidates with legacy scores on identical finite sites.
 - `plot_frozen_tf_profiles.py`: plot matched ChIP-positive and ChIP-negative aggregate profiles for frozen candidates.
-- `render_tf_before_after_report.py`: render concise one-page, paired legacy-versus-frozen TF reports with held-out ROC/PR curves, aggregate profiles, bootstrap intervals, replicate evidence, and explicit research-only scope.
+- `render_tf_before_after_report.py`: render concise one-page, paired legacy-versus-frozen TF reports with held-out ROC/PR curves, aggregate profiles, bootstrap intervals, replicate and optional naked-DNA evidence, and explicit research-only scope.
 - `evaluate_tf_geometry_naked_dna.py`: freeze per-method score thresholds on development ChIP-negative sites and test an exact TF-specific geometry plus the conventional footprint score on common naked-DNA motif sites.
 - `summarize_tf_footprint_search.py`: apply prespecified site-count, matching-balance, detectability, and point-gain statuses to frozen tests.
 - `evaluate_tf_correction_transfer.py`: hold frozen TF geometry fixed while transferring it across raw, PWM, and DWM signals to isolate correction sensitivity.
