@@ -16,6 +16,7 @@ from typing import Iterable, Protocol
 import numpy as np
 import pandas as pd
 from scipy.special import rel_entr
+from scipy.optimize import minimize_scalar
 from scipy.stats import norm
 
 from fp_tools.tools.parametric_bias import BiasFeatureSpec
@@ -59,6 +60,7 @@ class TobiasDwmReferenceModel:
         self.background_pwm = np.full((4, length), 0.25, dtype=np.float64)
         self.bias_dwm = np.full((4, 4, length, length), 1.0 / 16.0)
         self.background_dwm = np.full((4, 4, length, length), 1.0 / 16.0)
+        self.score_scale = 1.0
         self.metadata: dict[str, object] = {}
 
     @staticmethod
@@ -137,6 +139,38 @@ class TobiasDwmReferenceModel:
                 "maximum_cut_multiplicity": float(maximum_cut_multiplicity),
             }
         )
+        raw_scores = self._raw_log2_scores(values)
+        valid_scores = np.isfinite(raw_scores)
+        if np.any((observed > 0) & ~valid_scores):
+            raise ValueError("positive DWM counts have invalid sequence contexts")
+        keep = (observed.sum(axis=1) > 0) & valid_scores.any(axis=1)
+        fitted_counts = observed[keep]
+        fitted_scores = raw_scores[keep]
+        total_cuts = max(float(fitted_counts.sum()), 1.0)
+
+        def objective(scale: float) -> float:
+            logits = float(scale) * fitted_scores
+            log_probabilities = logits - np.logaddexp.reduce(
+                logits, axis=1, keepdims=True
+            )
+            contributions = np.where(
+                fitted_counts > 0,
+                fitted_counts * log_probabilities,
+                0.0,
+            )
+            return float(-np.sum(contributions) / total_cuts)
+
+        calibrated = minimize_scalar(
+            objective,
+            method="bounded",
+            bounds=(0.0, 2.0),
+            options={"xatol": 1e-8, "maxiter": 256},
+        )
+        if not calibrated.success or not np.isfinite(calibrated.fun):
+            raise RuntimeError("DWM score-scale calibration failed")
+        self.score_scale = float(calibrated.x)
+        self.metadata["score_scale"] = self.score_scale
+        self.metadata["training_conditional_nll"] = float(calibrated.fun)
         return self
 
     @staticmethod
@@ -172,7 +206,9 @@ class TobiasDwmReferenceModel:
             output += candidate_logs[row, actual] - normalizer
         return output
 
-    def log_scores(self, contexts: np.ndarray, batch_size: int = 65536) -> np.ndarray:
+    def _raw_log2_scores(
+        self, contexts: np.ndarray, batch_size: int = 65536
+    ) -> np.ndarray:
         values = np.asarray(contexts, dtype=np.uint8)
         if values.ndim != 3 or values.shape[2] != self.feature_spec.context_length:
             raise ValueError("contexts have an incompatible DWM shape")
@@ -189,6 +225,11 @@ class TobiasDwmReferenceModel:
             )
             output[selected] = bias - background
         return output.reshape(values.shape[:2])
+
+    def log_scores(self, contexts: np.ndarray, batch_size: int = 65536) -> np.ndarray:
+        """Return calibrated natural-log DWM propensities."""
+
+        return self.score_scale * self._raw_log2_scores(contexts, batch_size=batch_size)
 
     def probabilities(self, contexts: np.ndarray) -> np.ndarray:
         logits = self.log_scores(contexts)
@@ -214,6 +255,7 @@ class TobiasDwmReferenceModel:
             background_pwm=self.background_pwm,
             bias_dwm=self.bias_dwm,
             background_dwm=self.background_dwm,
+            score_scale=np.asarray([self.score_scale], dtype=np.float64),
         )
         document = {
             "schema": TOBIAS_DWM_SCHEMA,
@@ -247,6 +289,11 @@ class TobiasDwmReferenceModel:
                 if name not in arrays:
                     raise ValueError(f"TOBIAS DWM reference is missing {name}")
                 setattr(model, name, np.asarray(arrays[name], dtype=np.float64))
+            if "score_scale" in arrays:
+                scale = np.asarray(arrays["score_scale"], dtype=np.float64)
+                if scale.shape != (1,) or not 0 <= float(scale[0]) <= 2:
+                    raise ValueError("TOBIAS DWM score scale is malformed")
+                model.score_scale = float(scale[0])
         length = model.feature_spec.context_length
         if model.bias_pwm.shape != (4, length) or model.background_pwm.shape != (
             4,
@@ -260,6 +307,10 @@ class TobiasDwmReferenceModel:
         ):
             raise ValueError("TOBIAS DWM pair arrays have invalid shapes")
         model.metadata = dict(document.get("metadata", {}))
+        if "score_scale" in model.metadata:
+            metadata_scale = float(model.metadata["score_scale"])
+            if not np.isclose(metadata_scale, model.score_scale):
+                raise ValueError("TOBIAS DWM score scale metadata is inconsistent")
         return model
 
 
