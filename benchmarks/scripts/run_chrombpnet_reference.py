@@ -119,6 +119,8 @@ def driver_library(name: str) -> Path:
 def docker_prefix(image: str = PINNED_IMAGE) -> list[str]:
     cuda = driver_library("libcuda.so.1")
     nvml = driver_library("libnvidia-ml.so.1")
+    ptxjit = driver_library("libnvidia-ptxjitcompiler.so.1")
+    nvvm = driver_library("libnvidia-nvvm.so.4")
     source_in_container = container_path(PINNED_SOURCE)
     return [
         "docker",
@@ -137,6 +139,10 @@ def docker_prefix(image: str = PINNED_IMAGE) -> list[str]:
         "-v",
         f"{nvml}:/usr/local/nvidia/lib64/host_libnvidia-ml.so:ro",
         "-v",
+        f"{ptxjit}:/usr/local/nvidia/lib64/host_libnvidia-ptxjitcompiler.so:ro",
+        "-v",
+        f"{nvvm}:/usr/local/nvidia/lib64/host_libnvidia-nvvm.so:ro",
+        "-v",
         f"{REPOSITORY.resolve()}:/work",
         "-w",
         "/work",
@@ -153,7 +159,11 @@ def wrapped_container_command(arguments: Sequence[str]) -> list[str]:
         "ln -sf /usr/local/nvidia/lib64/host_libcuda.so "
         "/usr/local/nvidia/lib64/libcuda.so.1 && "
         "ln -sf /usr/local/nvidia/lib64/host_libnvidia-ml.so "
-        "/usr/local/nvidia/lib64/libnvidia-ml.so.1 && exec "
+        "/usr/local/nvidia/lib64/libnvidia-ml.so.1 && "
+        "ln -sf /usr/local/nvidia/lib64/host_libnvidia-ptxjitcompiler.so "
+        "/usr/local/nvidia/lib64/libnvidia-ptxjitcompiler.so.1 && "
+        "ln -sf /usr/local/nvidia/lib64/host_libnvidia-nvvm.so "
+        "/usr/local/nvidia/lib64/libnvidia-nvvm.so.4 && exec "
     )
     return docker_prefix() + ["bash", "-lc", preamble + shlex.join(arguments)]
 
@@ -163,8 +173,9 @@ def smoke_arguments() -> list[str]:
         "import json,tensorflow as tf,chrombpnet.CHROMBPNET as c;"
         "g=tf.config.list_physical_devices('GPU');"
         "assert tf.__version__=='2.8.0' and g;"
+        "v=float(tf.reduce_sum(tf.random.uniform([32,32],seed=2026)).numpy());"
         "print(json.dumps({'tensorflow':tf.__version__,'gpu':str(g[0]),"
-        "'entrypoint':c.__file__},sort_keys=True))"
+        "'entrypoint':c.__file__,'gpu_kernel_sum':v},sort_keys=True))"
     )
     return ["python", "-c", code]
 

@@ -31,11 +31,14 @@ def test_smoke_command_uses_pinned_source_and_manual_gpu_mounts(monkeypatch) -> 
     assert module.PINNED_IMAGE in command
     assert "--device" in command
     assert "/dev/nvidia0" in command
+    assert "host_libnvidia-ptxjitcompiler.so" in joined
+    assert "host_libnvidia-nvvm.so" in joined
     assert (
         "PYTHONPATH=/work/benchmarks/results/footprint_external_references/chrombpnet"
         in command
     )
     assert "tensorflow" in joined
+    assert "tf.random.uniform" in joined
 
 
 def test_regulatory_stage_keeps_models_external(tmp_path) -> None:
