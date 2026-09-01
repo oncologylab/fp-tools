@@ -140,6 +140,20 @@ def test_factorization_dwm_loader_accepts_verified_cache_and_rejects_parametric_
         raise AssertionError("parametric baseline was mislabeled as DWM")
 
 
+def test_factorization_pwm_loader_requires_pwm_identity(tmp_path: Path) -> None:
+    cache = tmp_path / "PWM.expected.npz"
+    np.savez_compressed(
+        cache,
+        profiles=np.ones((2, 5)),
+        valid=np.ones(2, dtype=bool),
+        site_hash=np.asarray([1, 2], dtype=np.uint64),
+        signal_identity=np.asarray("/run/fp_tools_pwm/sample_expected.bw:1:2"),
+    )
+    baseline, inputs = evaluate_parametric_factorization.load_pwm_baseline(cache)
+    assert baseline["expected"].shape == (2, 5)
+    assert inputs == [cache]
+
+
 def test_residual_selector_uses_difficult_tasks_and_ctcf_gate() -> None:
     rows = []
     for residual, difficult_ap, ctcf_auc in (

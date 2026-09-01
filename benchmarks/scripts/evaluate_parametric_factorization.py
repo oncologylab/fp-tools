@@ -160,6 +160,31 @@ def load_dwm_baseline(prefix: Path) -> tuple[dict[str, np.ndarray], list[Path]]:
     )
 
 
+def load_pwm_baseline(prefix: Path) -> tuple[dict[str, np.ndarray], list[Path]]:
+    """Load a cached expected profile explicitly sourced from the PWM arm."""
+
+    if prefix.suffix != ".npz" or not prefix.is_file():
+        raise ValueError("PWM baseline must be a direct expected-profile NPZ cache")
+    with np.load(prefix, allow_pickle=False) as arrays:
+        required = {"profiles", "valid", "site_hash", "signal_identity"}
+        missing = required.difference(arrays.files)
+        if missing:
+            raise ValueError(
+                "PWM baseline cache is missing arrays: " + ", ".join(sorted(missing))
+            )
+        identity = str(np.asarray(arrays["signal_identity"]).item())
+        if "fp_tools_pwm" not in identity.lower():
+            raise ValueError(
+                "baseline cache does not identify a conventional PWM track"
+            )
+        output = {
+            "expected": np.asarray(arrays["profiles"], dtype=float),
+            "valid": np.asarray(arrays["valid"], dtype=bool),
+            "site_hash": np.asarray(arrays["site_hash"], dtype=np.uint64),
+        }
+    return output, [prefix]
+
+
 def align_baseline(
     candidate: dict[str, np.ndarray],
     baseline: dict[str, np.ndarray],
@@ -324,6 +349,7 @@ def calibration_from_controls(
 def collect_datasets(
     candidates: dict[str, Path],
     baselines: dict[str, Path],
+    pwm_baselines: dict[str, Path] | None = None,
 ) -> tuple[dict[str, np.ndarray], pd.DataFrame, list[Path]]:
     arrays: dict[str, list[np.ndarray]] = {}
     site_frames = []
@@ -335,6 +361,12 @@ def collect_datasets(
         baseline, baseline_paths = load_dwm_baseline(baselines[cell])
         baseline_inputs.extend(baseline_paths)
         baseline_expected, baseline_valid = align_baseline(candidate, baseline)
+        pwm_expected = None
+        pwm_valid = np.ones(len(sites), dtype=bool)
+        if pwm_baselines is not None:
+            pwm, pwm_paths = load_pwm_baseline(pwm_baselines[cell])
+            baseline_inputs.extend(pwm_paths)
+            pwm_expected, pwm_valid = align_baseline(candidate, pwm)
         sites = sites.copy()
         sites["cell"] = cell
         sites["site_hash"] = candidate["site_hash"]
@@ -345,10 +377,13 @@ def collect_datasets(
             candidate["plus_expected"] + candidate["minus_expected"]
         )
         arrays.setdefault("baseline_expected", []).append(baseline_expected)
+        if pwm_expected is not None:
+            arrays.setdefault("pwm_expected", []).append(pwm_expected)
         arrays.setdefault("log_bias", []).append(candidate["combined_log_bias"])
         arrays.setdefault("valid", []).append(
             candidate["valid"].astype(bool)
             & baseline_valid
+            & pwm_valid
             & np.isfinite(candidate["combined_log_bias"]).all(axis=1)
         )
         site_frames.append(sites)
@@ -382,6 +417,7 @@ def score_methods(
     counts: np.ndarray,
     parametric_expected: np.ndarray,
     baseline_expected: np.ndarray,
+    pwm_expected: np.ndarray | None,
     log_bias: np.ndarray,
     strengths: np.ndarray,
     factor_result,
@@ -396,6 +432,11 @@ def score_methods(
         counts, baseline_expected, positions, "deviance", dispersion
     )
     methods["DWM"] = (baseline_score, baseline_profiles, False)
+    if pwm_expected is not None:
+        pwm_score, pwm_profiles = residual_score(
+            counts, pwm_expected, positions, "deviance", dispersion
+        )
+        methods["PWM"] = (pwm_score, pwm_profiles, False)
     lambda_expected = expected_profile_counts(counts, strengths[:, None] * log_bias)
     for residual in residuals:
         direct_score, direct_profiles = residual_score(
@@ -514,6 +555,7 @@ def evaluate_split(
         counts,
         arrays["parametric_expected"][indexes],
         arrays["baseline_expected"][indexes],
+        arrays["pwm_expected"][indexes] if "pwm_expected" in arrays else None,
         log_bias,
         strengths,
         result,
@@ -612,6 +654,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--baseline", type=parse_name_path, action="append", required=True
     )
+    parser.add_argument("--pwm-baseline", type=parse_name_path, action="append")
     parser.add_argument("--control", type=parse_name_path, action="append")
     parser.add_argument("--bias-model", type=parse_name_path, action="append")
     parser.add_argument("--mode", choices=("tune", "test"), required=True)
@@ -625,9 +668,14 @@ def main(argv: list[str] | None = None) -> int:
     study = json.loads(args.study.read_text(encoding="utf-8"))
     candidates = dict(args.candidate)
     baselines = dict(args.baseline)
+    pwm_baselines = dict(args.pwm_baseline or [])
     if set(candidates) != set(baselines):
         raise ValueError("candidate and baseline cells must match")
-    arrays, sites, baseline_inputs = collect_datasets(candidates, baselines)
+    if pwm_baselines and set(pwm_baselines) != set(candidates):
+        raise ValueError("PWM baseline and candidate cells must match")
+    arrays, sites, baseline_inputs = collect_datasets(
+        candidates, baselines, pwm_baselines or None
+    )
     valid = arrays["valid"] & (arrays["counts"].sum(axis=1) > 0)
     sites = sites.copy()
     positions = (
