@@ -242,6 +242,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--naked-legacy", type=Path, required=True)
     parser.add_argument("--tf", default="CTCF")
+    parser.add_argument(
+        "--cell",
+        action="append",
+        help="Optional target cell to evaluate; repeat for multiple cells.",
+    )
     parser.add_argument("--split", default="validation")
     parser.add_argument("--alpha", type=float, default=0.05)
     parser.add_argument("--flank", type=int, default=100)
@@ -252,9 +257,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     naked_site_paths = dict(args.naked_sites)
     naked_corrected_paths = dict(args.naked_corrected)
 
+    winners = pd.read_csv(args.winners, sep="\t")
+    if args.cell:
+        winners = winners[
+            winners["cell"].astype(str).isin([str(cell) for cell in args.cell])
+        ].reset_index(drop=True)
     summary, scores = evaluate(
         development_sites=pd.read_csv(args.development_sites, sep="\t"),
-        winners=pd.read_csv(args.winners, sep="\t"),
+        winners=winners,
         development_baselines=pd.read_csv(
             args.development_baselines, sep="\t"
         ),
@@ -285,6 +295,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     manifest = {
         "schema": "fp-tools-tf-geometry-naked-dna-v1",
         "tf": args.tf,
+        "cells": sorted(summary["cell"].astype(str).tolist()),
         "threshold_source": f"ChIP-negative {args.split} sites",
         "target_false_positive_rate": float(args.alpha),
         "maximum_rate_increase": float(args.maximum_rate_increase),
