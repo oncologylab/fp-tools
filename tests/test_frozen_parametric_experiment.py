@@ -19,6 +19,7 @@ import evaluate_frozen_functional_information_ceiling  # noqa: E402
 import evaluate_frozen_functional_policy  # noqa: E402
 import evaluate_parametric_factorization  # noqa: E402
 import evaluate_strand_label_free_models  # noqa: E402
+import derive_label_free_family_selection  # noqa: E402
 import sample_label_free_motif_sites  # noqa: E402
 import run_frozen_parametric_experiment  # noqa: E402
 
@@ -310,6 +311,42 @@ def test_frozen_information_ceiling_marks_unstable_classifier() -> None:
         )
         == "supervised_fit_unstable"
     )
+
+
+def test_derived_family_selection_filters_candidates_and_profiles() -> None:
+    metrics = pd.DataFrame(
+        {
+            "cell": ["CellA"] * 3,
+            "tf": ["TF1"] * 3,
+            "bias_configuration": ["LOG21"] * 3,
+            "candidate_id": ["count_a", "count_b", "fda_a"],
+            "family": ["count", "count", "fda"],
+            "status": ["ok", "ok", "ok"],
+            "converged": [True, True, True],
+            "selection_score": [0.8, 0.9, 1.0],
+            "auprc": [0.6, 0.7, 0.8],
+            "auroc": [0.6, 0.7, 0.8],
+            "validation_positive_sites": [200, 200, 200],
+            "validation_negative_sites": [200, 200, 200],
+        }
+    )
+    profiles = pd.DataFrame(
+        {
+            "candidate_id": ["count_a", "count_b", "fda_a"],
+            "position": [0, 0, 0],
+        }
+    )
+    selected, selected_profiles, winners = (
+        derive_label_free_family_selection.select_families(
+            metrics,
+            profiles,
+            {"count"},
+            minimum_sites_per_class=200,
+        )
+    )
+    assert set(selected["candidate_id"]) == {"count_a", "count_b"}
+    assert set(selected_profiles["candidate_id"]) == {"count_a", "count_b"}
+    assert winners["candidate_id"].tolist() == ["count_b"]
 
 
 def test_frozen_call_threshold_respects_ties_and_target_rate() -> None:
