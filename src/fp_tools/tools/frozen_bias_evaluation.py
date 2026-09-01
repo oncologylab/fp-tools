@@ -523,7 +523,7 @@ def retain_control_candidates(
     smallest_index = (
         eligible.loc[within]
         .sort_values(
-            ["context_length", "model_size_mb", "mean_conditional_nll", "candidate_id"],
+            ["context_length", "mean_conditional_nll", "model_size_mb", "candidate_id"],
             kind="mergesort",
         )
         .index[0]

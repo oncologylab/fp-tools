@@ -70,6 +70,27 @@ def test_retention_uses_one_se_and_requires_significant_larger_gain() -> None:
     assert set(retained["candidate_id"]) == {"SELMA10", "LOG81"}
 
 
+def test_retention_prefers_likelihood_within_equal_complexity() -> None:
+    frame = pd.DataFrame(
+        [
+            ("LOG21_strong", 21, 1.00, 0.02, 0.2, 0.020),
+            ("LOG21_weak", 21, 1.01, 0.02, 0.2, 0.019),
+        ],
+        columns=[
+            "candidate_id",
+            "context_length",
+            "mean_conditional_nll",
+            "standard_error_conditional_nll",
+            "minimum_library_nll_gain",
+            "model_size_mb",
+        ],
+    )
+    selected = retain_control_candidates(frame)
+    assert selected.loc[selected["retained"], "candidate_id"].tolist() == [
+        "LOG21_strong"
+    ]
+
+
 def test_motif_residual_flag_requires_large_confident_structure() -> None:
     positions = np.arange(-100, 101)
     expected = np.full((300, len(positions)), 5.0)

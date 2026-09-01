@@ -345,7 +345,7 @@ def qualify(
     smallest = (
         eligible[eligible["mean_conditional_nll"] <= threshold]
         .sort_values(
-            ["context_length", "model_size_mb", "mean_conditional_nll", "candidate_id"],
+            ["context_length", "mean_conditional_nll", "model_size_mb", "candidate_id"],
             kind="mergesort",
         )
         .iloc[0]
