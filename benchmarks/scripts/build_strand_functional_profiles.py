@@ -181,7 +181,8 @@ def predict_strand_expected_profiles(
     genome: str | Path,
     *,
     flank: int,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    return_log_bias: bool = False,
+) -> tuple[np.ndarray, ...]:
     """Predict forward/reverse expectations while preserving strand totals."""
 
     width = flank * 2 + 1
@@ -189,6 +190,8 @@ def predict_strand_expected_profiles(
         raise ValueError("observed strand profiles do not match sites and flank")
     plus_expected = np.zeros_like(plus_observed, dtype=np.float64)
     minus_expected = np.zeros_like(minus_observed, dtype=np.float64)
+    plus_log_bias = np.full_like(plus_observed, np.nan, dtype=np.float64)
+    minus_log_bias = np.full_like(minus_observed, np.nan, dtype=np.float64)
     valid_rows = np.zeros(len(sites), dtype=bool)
     margin = max(41, model.feature_spec.context_length // 2 + 1)
     positions = margin + np.arange(width)
@@ -205,10 +208,37 @@ def predict_strand_expected_profiles(
             plus_scores, minus_scores, valid = strand_log_bias(model, sequence, positions)
             if not valid.any():
                 continue
+            plus_log_bias[index, valid] = plus_scores[valid]
+            minus_log_bias[index, valid] = minus_scores[valid]
             plus_expected[index] = _expected_from_scores(plus_observed[index], plus_scores, valid)
             minus_expected[index] = _expected_from_scores(minus_observed[index], minus_scores, valid)
             valid_rows[index] = True
+    if return_log_bias:
+        return plus_expected, minus_expected, valid_rows, plus_log_bias, minus_log_bias
     return plus_expected, minus_expected, valid_rows
+
+
+def orient_strand_log_bias(
+    plus_log_bias: np.ndarray,
+    minus_log_bias: np.ndarray,
+    strands: Sequence[str],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Orient and strand-swap frozen log-bias profiles at motif sites."""
+
+    plus = np.asarray(plus_log_bias, dtype=np.float64)
+    minus = np.asarray(minus_log_bias, dtype=np.float64)
+    if plus.ndim != 2 or plus.shape != minus.shape:
+        raise ValueError("plus/minus log-bias profiles must be equal two-dimensional arrays")
+    raw_strands = list(strands)
+    if len(raw_strands) != len(plus):
+        raise ValueError("strands must contain one value per log-bias profile")
+    reverse = np.asarray([value in ("-", "reverse", -1, True) for value in raw_strands], dtype=bool)
+    oriented_plus = plus.copy()
+    oriented_minus = minus.copy()
+    oriented_plus[reverse] = minus[reverse, ::-1]
+    oriented_minus[reverse] = plus[reverse, ::-1]
+    combined = np.logaddexp(oriented_plus, oriented_minus) - np.log(2.0)
+    return oriented_plus, oriented_minus, combined
 
 
 def write_profiles(
@@ -217,6 +247,8 @@ def write_profiles(
     profiles,
     valid: np.ndarray,
     metadata: dict,
+    *,
+    log_bias: tuple[np.ndarray, np.ndarray, np.ndarray] | None = None,
 ) -> tuple[Path, Path, Path]:
     prefix = Path(prefix)
     # ``prefix`` is an opaque filename prefix, not a path with an extension.
@@ -236,6 +268,14 @@ def write_profiles(
         "valid": np.asarray(valid, dtype=bool),
         "site_hash": site_hashes(sites),
     }
+    if log_bias is not None:
+        arrays.update(
+            {
+                "plus_log_bias": log_bias[0],
+                "minus_log_bias": log_bias[1],
+                "combined_log_bias": log_bias[2],
+            }
+        )
     np.savez_compressed(npz_path, **arrays)
     sites.to_csv(sites_path, sep="\t", index=False)
     document = {
@@ -285,13 +325,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         keep_duplicates=args.keep_duplicates,
     )
     model = ConditionalSequenceBiasModel.load(args.bias_model)
-    plus_expected, minus_expected, sequence_valid = predict_strand_expected_profiles(
+    (
+        plus_expected,
+        minus_expected,
+        sequence_valid,
+        plus_log_bias,
+        minus_log_bias,
+    ) = predict_strand_expected_profiles(
         sites,
         plus,
         minus,
         model,
         args.genome,
         flank=args.flank,
+        return_log_bias=True,
     )
     profiles = construct_strand_functional_profiles(
         plus,
@@ -300,6 +347,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         minus_expected,
         sites["TFBS_strand"].astype(str),
         dispersion=args.dispersion,
+    )
+    oriented_log_bias = orient_strand_log_bias(
+        plus_log_bias,
+        minus_log_bias,
+        sites["TFBS_strand"].astype(str).tolist(),
     )
     write_profiles(
         args.out_prefix,
@@ -321,6 +373,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "cell": args.cell,
             "labels_used": False,
         },
+        log_bias=oriented_log_bias,
     )
     return 0
 

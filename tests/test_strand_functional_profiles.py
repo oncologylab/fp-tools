@@ -11,6 +11,7 @@ SCRIPT_DIR = Path(__file__).resolve().parents[1] / "benchmarks" / "scripts"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from build_strand_functional_profiles import (  # noqa: E402
+    orient_strand_log_bias,
     predict_strand_expected_profiles,
     site_hashes,
     write_profiles,
@@ -70,6 +71,21 @@ def test_strand_expected_profiles_preserve_each_strand_total(tmp_path: Path) -> 
     assert np.std(plus_expected[0]) > 0
 
 
+def test_strand_log_bias_orientation_swaps_reverse_motifs() -> None:
+    plus = np.asarray([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+    minus = np.asarray([[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]])
+    oriented_plus, oriented_minus, combined = orient_strand_log_bias(
+        plus,
+        minus,
+        ["+", "-"],
+    )
+    assert oriented_plus[0].tolist() == [1.0, 2.0, 3.0]
+    assert oriented_minus[0].tolist() == [7.0, 8.0, 9.0]
+    assert oriented_plus[1].tolist() == [12.0, 11.0, 10.0]
+    assert oriented_minus[1].tolist() == [6.0, 5.0, 4.0]
+    assert np.allclose(combined, np.logaddexp(oriented_plus, oriented_minus) - np.log(2.0))
+
+
 def test_strand_profile_artifact_is_safe_and_hashed(tmp_path: Path) -> None:
     sites = _sites()
     plus = np.ones((2, 21), dtype=float)
@@ -77,13 +93,24 @@ def test_strand_profile_artifact_is_safe_and_hashed(tmp_path: Path) -> None:
     profiles = construct_strand_functional_profiles(
         plus, minus, plus, minus, sites["TFBS_strand"]
     )
+    log_bias = (
+        np.zeros_like(plus),
+        np.ones_like(plus),
+        np.full_like(plus, np.logaddexp(0.0, 1.0) - np.log(2.0)),
+    )
     npz, metadata, site_table = write_profiles(
-        tmp_path / "profiles", sites, profiles, np.asarray([True, True]), {"test": True}
+        tmp_path / "profiles",
+        sites,
+        profiles,
+        np.asarray([True, True]),
+        {"test": True},
+        log_bias=log_bias,
     )
     assert npz.is_file() and metadata.is_file() and site_table.is_file()
     with np.load(npz, allow_pickle=False) as arrays:
         assert np.array_equal(arrays["site_hash"], site_hashes(sites))
         assert "antisymmetric_strand_residual" in arrays
+        assert "combined_log_bias" in arrays
 
     dotted_npz, dotted_metadata, dotted_sites = write_profiles(
         tmp_path / "K562.selma10.shift_4_-4",

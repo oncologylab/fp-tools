@@ -1,0 +1,151 @@
+{
+  "schema": "fp-tools-frozen-parametric-input-registry-v1",
+  "description": "Local public-data paths for the checksum-locked parametric experiment. Large files are ignored by git.",
+  "stages": {
+    "synthetic": {
+      "builtin": "synthetic",
+      "seed": 2026,
+      "inputs": [],
+      "outputs": [
+        "{stage_dir}/synthetic_metrics.tsv",
+        "{stage_dir}/synthetic_profiles.npz",
+        "{stage_dir}/synthetic_calibration.npz",
+        "{stage_dir}/synthetic_calibration.json",
+        "{stage_dir}/synthetic_factorization.npz",
+        "{stage_dir}/synthetic_factorization.json",
+        "{stage_dir}/synthetic_validation.pdf"
+      ]
+    },
+    "enzyme_control": {
+      "depends_on": ["synthetic"],
+      "inputs": [
+        {
+          "path": "data/public/raw/genome/hg38.fa",
+          "bytes": 3273481150,
+          "checksum": "5be01555d98347fdb3714dc84c6f77c9d8bc774adcf32c6f7a8fa06f5baf5e51",
+          "checksum_algorithm": "sha256"
+        },
+        {
+          "path": "data/public/raw/encode_bias_controls/ENCFF834HWH.bam",
+          "bytes": 15911986632,
+          "checksum": "8a88bd84e6533498cf3a9c52fb9bf90f",
+          "checksum_algorithm": "md5"
+        },
+        {
+          "path": "data/public/raw/encode_bias_controls/ENCFF834HWH.bam.bai",
+          "bytes": 4516192
+        },
+        {
+          "path": "data/public/raw/encode_bias_controls/ENCFF095VYO.bam",
+          "bytes": 15969961941,
+          "checksum": "2b7fa52a3bce0a06ca352eea57ac4c98",
+          "checksum_algorithm": "md5"
+        },
+        {
+          "path": "data/public/raw/encode_bias_controls/ENCFF095VYO.bam.bai",
+          "bytes": 4802312
+        },
+        {
+          "path": "benchmarks/results/footprint_functional_v1/naked_dna_10m_s2026/NakedDNA_rep1.first10m.bam",
+          "bytes": 1114368892
+        },
+        {
+          "path": "benchmarks/results/footprint_functional_v1/naked_dna_10m_s2026/NakedDNA_rep1.first10m.bam.bai",
+          "bytes": 2121136
+        },
+        {
+          "path": "benchmarks/results/footprint_functional_v1/naked_dna_10m_rep2_s2026/NakedDNA_rep2.first10m.bam",
+          "bytes": 975998516
+        },
+        {
+          "path": "benchmarks/results/footprint_functional_v1/naked_dna_10m_rep2_s2026/NakedDNA_rep2.first10m.bam.bai",
+          "bytes": 2093496
+        },
+        {
+          "path": "benchmarks/results/footprint_functional_v1/naked_dna_10m_rep3_s2026/NakedDNA_rep3.first10m.bam",
+          "bytes": 978091668
+        },
+        {
+          "path": "benchmarks/results/footprint_functional_v1/naked_dna_10m_rep3_s2026/NakedDNA_rep3.first10m.bam.bai",
+          "bytes": 2103832
+        }
+      ],
+      "commands": [
+        [
+          "{python}",
+          "benchmarks/scripts/evaluate_parametric_bias.py",
+          "--study", "{study}",
+          "--sample", "K562=data/public/raw/encode_bias_controls/ENCFF834HWH.bam",
+          "--sample", "HepG2=data/public/raw/encode_bias_controls/ENCFF095VYO.bam",
+          "--genome", "data/public/raw/genome/hg38.fa",
+          "--source", "mitochondrial",
+          "--outdir", "{stage_dir}/mitochondrial",
+          "--cache-dir", "benchmarks/results/footprint_parametric_v1/mitochondrial_depth_screen_s2026/control_window_cache",
+          "--read-shift", "4,-5",
+          "--read-shift", "4,-4",
+          "--model", "selma10",
+          "--model", "loglinear21",
+          "--model", "loglinear41",
+          "--model", "loglinear81",
+          "--l2", "0.0001",
+          "--l2", "0.001",
+          "--l2", "0.01",
+          "--training-depth", "full",
+          "--fit-seed", "2026",
+          "--fit-seed", "2027",
+          "--fit-seed", "2028",
+          "--fit-seed", "2029",
+          "--fit-seed", "2030",
+          "--train-windows", "3000",
+          "--validation-windows", "1000",
+          "--epochs", "100",
+          "--pooled-only"
+        ],
+        [
+          "{python}",
+          "benchmarks/scripts/evaluate_parametric_bias.py",
+          "--study", "{study}",
+          "--sample", "NakedDNA_rep1=benchmarks/results/footprint_functional_v1/naked_dna_10m_s2026/NakedDNA_rep1.first10m.bam",
+          "--genome", "data/public/raw/genome/hg38.fa",
+          "--source", "naked_dna",
+          "--outdir", "{stage_dir}/naked_rep1",
+          "--read-shift", "4,-5",
+          "--read-shift", "4,-4",
+          "--model", "selma10",
+          "--model", "loglinear21",
+          "--model", "loglinear41",
+          "--model", "loglinear81",
+          "--l2", "0.0001",
+          "--l2", "0.001",
+          "--l2", "0.01",
+          "--training-depth", "full",
+          "--fit-seed", "2026",
+          "--fit-seed", "2027",
+          "--fit-seed", "2028",
+          "--fit-seed", "2029",
+          "--fit-seed", "2030",
+          "--train-windows", "3000",
+          "--validation-windows", "1000",
+          "--epochs", "100",
+          "--pooled-only"
+        ]
+      ],
+      "outputs": [
+        "{stage_dir}/mitochondrial/bias_model_metrics.tsv",
+        "{stage_dir}/mitochondrial/bias_model_selection.tsv",
+        "{stage_dir}/mitochondrial/bias_model_ensemble_selection.tsv",
+        "{stage_dir}/mitochondrial/models/*.npz",
+        "{stage_dir}/mitochondrial/models/*.json",
+        "{stage_dir}/mitochondrial/ensembles/*.npz",
+        "{stage_dir}/mitochondrial/ensembles/*.json",
+        "{stage_dir}/naked_rep1/bias_model_metrics.tsv",
+        "{stage_dir}/naked_rep1/bias_model_selection.tsv",
+        "{stage_dir}/naked_rep1/bias_model_ensemble_selection.tsv",
+        "{stage_dir}/naked_rep1/models/*.npz",
+        "{stage_dir}/naked_rep1/models/*.json",
+        "{stage_dir}/naked_rep1/ensembles/*.npz",
+        "{stage_dir}/naked_rep1/ensembles/*.json"
+      ]
+    }
+  }
+}
