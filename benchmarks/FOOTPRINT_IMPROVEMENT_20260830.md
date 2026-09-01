@@ -500,6 +500,31 @@ result. This closes the exact naked-DNA check for the CTCF geometry but does not
 replace the pending external-cell transfer gate or justify package-wide
 promotion.
 
+The same frozen thresholds were next applied to an independently prepared
+second GSE164997 naked-DNA library. The candidate again called only 1/114
+finite HepG2 sites (0.88%; Wilson upper bound 4.80%) and 1/107 finite K562
+sites (0.93%; upper bound 5.10%). Thus the point estimate is stable near 1% in
+both libraries; the K562 second-library upper bound narrowly exceeds 5% because
+only 107 sites have complete signal. The concise report retains the first
+library's fully passing interval and the research record retains both results.
+
+A separate post-hoc, no-retuning transfer applied the K562-frozen DWM CTCF
+geometry to two external ENCODE cell types. On identical labeled sites, the
+candidate improved GM12878 AUROC/AUPRC from 0.655/0.570 to 0.832/0.867
+(deltas +0.177/+0.297; chromosome-block 95% intervals +0.120--+0.210 and
++0.256--+0.320). In IMR-90 it improved 0.700/0.605 to 0.751/0.786 (deltas
++0.051/+0.182); the AUPRC interval is positive (+0.124--+0.216), while the
+AUROC interval narrowly crosses zero (-0.010--+0.090). Both biological
+replicates improve in both cells. Leave-one-chromosome-out covariate
+residualization preserves AUROC/AUPRC gains of +0.097/+0.164 in GM12878 and
++0.070/+0.114 in IMR-90. The in-memory conventional implementation was checked
+against an independently written `call-footprints` bigWig on 1,929 sites and
+agreed to a maximum absolute error of 2.3e-7. These results support a reusable
+CTCF-family geometry across four cell contexts, but remain post-hoc and do not
+establish a general TF detector. A one-page external-transfer PDF and its
+metric table are included in the same Box folder, and the combined PDF now has
+three pages.
+
 ## Depth-matrix artifact integrity audit
 
 An incremental 25M refresh exposed a benchmark-infrastructure failure before
@@ -516,3 +541,12 @@ profile caches to signal size and modification time. Focused runner/depth tests
 pass. A repair run is rebuilding the four stale 25M tracks rather than treating
 them as biological evidence. Until those repairs complete, only the valid 10M
 matrix and the valid seed-2026 25M slice may be interpreted.
+
+The integrity-checked seed-2026 matrix now extends to 50M fragments. CTCF is
+the only route with strong, concordant 10M-to-50M improvement in both cells:
+HepG2 gains +0.052 AUROC and 7.7% relative AUPRC, while K562 gains +0.058 and
+7.2%. K562 MEF2D shows a smaller +0.031 AUROC and 5.8% relative AUPRC gain and
+is classified as power-limited. Most other difficult TFs are flat or worsen
+with depth, which argues that their failures are not explained by sequencing
+depth alone. Additional randomization seeds remain necessary before treating
+the smaller MEF2D response as stable.
