@@ -50,7 +50,9 @@ def test_fit_reference_scores_each_validation_library(tmp_path) -> None:
         (shift, "naked"): make_dataset("naked", "validation", 3),
         (shift, "mito"): make_dataset("mito", "validation", 4),
     }
-    artifacts, metrics = module.fit_references(training, validation, tmp_path)
+    artifacts, metrics = module.fit_references(
+        training, validation, tmp_path, context_length=11
+    )
     assert len(artifacts) == 1
     assert set(metrics["library"]) == {"naked", "mito"}
     model = module.TobiasDwmReferenceModel.load(artifacts.loc[0, "model_npz"])

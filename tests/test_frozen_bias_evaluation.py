@@ -125,7 +125,7 @@ def test_tobias_dwm_reference_learns_bias_and_roundtrips_safely(tmp_path) -> Non
     counts = rng.poisson(1.0, size=(120, 20)).astype(float)
     favored = contexts[:, :, 5] == 0
     counts[favored] += rng.poisson(5.0, size=np.sum(favored))
-    model = TobiasDwmReferenceModel().fit(contexts, counts)
+    model = TobiasDwmReferenceModel(context_length=11).fit(contexts, counts)
     training_scores = conditional_control_scores(model, contexts, counts)
     assert training_scores.nll_gain > 0
     assert 0 < model.score_scale < 2
@@ -143,3 +143,7 @@ def test_tobias_dwm_reference_learns_bias_and_roundtrips_safely(tmp_path) -> Non
     assert np.allclose(restored.probabilities(contexts[:4]), probabilities)
     with np.load(npz_path, allow_pickle=False) as arrays:
         assert all(arrays[name].dtype != object for name in arrays.files)
+
+
+def test_tobias_dwm_default_matches_production_flank() -> None:
+    assert TobiasDwmReferenceModel().feature_spec.context_length == 25

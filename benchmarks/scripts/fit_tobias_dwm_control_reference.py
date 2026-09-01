@@ -46,6 +46,8 @@ def fit_references(
     training: dict[tuple[tuple[int, int], str], ControlWindowDataset],
     validation: dict[tuple[tuple[int, int], str], ControlWindowDataset],
     outdir: Path,
+    *,
+    context_length: int = 25,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     outdir.mkdir(parents=True, exist_ok=True)
     artifact_rows: list[dict[str, object]] = []
@@ -54,7 +56,7 @@ def fit_references(
     if set(shifts) != {key[0] for key in validation}:
         raise ValueError("training and validation must contain the same shifts")
     for shift in shifts:
-        model = TobiasDwmReferenceModel(context_length=11)
+        model = TobiasDwmReferenceModel(context_length=context_length)
         train_names = sorted(
             name for candidate_shift, name in training if candidate_shift == shift
         )
@@ -74,6 +76,7 @@ def fit_references(
                 "read_shift": list(shift),
                 "training_datasets": train_names,
                 "background": "uniform valid candidate contexts",
+                "k_flank": (context_length - 1) // 2,
             },
         )
         artifact_rows.append(
@@ -125,13 +128,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--validation-dataset", type=parse_named_path, action="append", required=True
     )
     parser.add_argument("--outdir", type=Path, required=True)
+    parser.add_argument(
+        "--context-length",
+        type=int,
+        default=25,
+        help="odd DWM context length; 25 matches the production ±12-bp default",
+    )
     args = parser.parse_args(argv)
     study = json.loads(args.study.read_text(encoding="utf-8"))
     if study.get("status") != "development_locked_holdout_unscored":
         raise ValueError("DWM qualification requires the locked, unscored study")
     training = load_datasets(args.training_dataset, required_split="train")
     validation = load_datasets(args.validation_dataset, required_split="validation")
-    artifacts, metrics = fit_references(training, validation, args.outdir)
+    artifacts, metrics = fit_references(
+        training,
+        validation,
+        args.outdir,
+        context_length=args.context_length,
+    )
     artifacts_path = args.outdir / "dwm_reference_models.tsv"
     metrics_path = args.outdir / "dwm_reference_metrics.tsv"
     artifacts.to_csv(artifacts_path, sep="\t", index=False)
@@ -153,6 +167,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             for path in (artifacts_path, metrics_path)
         },
         "chipped_labels_used": False,
+        "context_length": args.context_length,
     }
     (args.outdir / "dwm_reference_manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"

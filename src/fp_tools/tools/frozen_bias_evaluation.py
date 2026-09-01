@@ -49,7 +49,7 @@ class TobiasDwmReferenceModel:
     not replace or modify the production Cython implementation.
     """
 
-    def __init__(self, context_length: int = 11) -> None:
+    def __init__(self, context_length: int = 25) -> None:
         if context_length < 3 or context_length % 2 != 1:
             raise ValueError("DWM context length must be an odd integer >=3")
         self.feature_spec = BiasFeatureSpec(
