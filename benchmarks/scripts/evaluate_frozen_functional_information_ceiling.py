@@ -41,7 +41,7 @@ from fp_tools.tools.functional_footprints import (  # noqa: E402
 )
 
 
-SCHEMA = "fp-tools-frozen-functional-information-ceiling-v1"
+SCHEMA = "fp-tools-frozen-functional-information-ceiling-v2"
 CHANNELS = (
     "combined_residual",
     "shared_strand_residual",
@@ -90,6 +90,8 @@ def load_site_scores(test_manifest: Path, policy_id: str) -> tuple[pd.DataFrame,
         "label",
         "candidate_probability",
         "dwm_score",
+        "raw_score",
+        "direct_score",
     }
     missing = required.difference(scores.columns)
     if missing:
@@ -117,6 +119,47 @@ def failure_classification(
     return "shape_model_limited"
 
 
+def raw_guarded_failure_classification(
+    *,
+    supervised_relative_auprc_gain_over_raw: float,
+    signal_panel_relative_auprc_gain_over_raw: float,
+    functional_relative_auprc_gain_over_signal_panel: float,
+    label_free_auroc_gain_over_raw: float,
+    label_free_relative_auprc_gain_over_raw: float,
+    supervised_converged: bool = True,
+) -> str:
+    """Classify a TF only after preserving raw geometry as a guardrail.
+
+    The classifier is an evaluation-only information ceiling.  Consequently,
+    an improvement here diagnoses recoverable information; it never promotes
+    the supervised model itself.
+    """
+
+    values = (
+        supervised_relative_auprc_gain_over_raw,
+        signal_panel_relative_auprc_gain_over_raw,
+        functional_relative_auprc_gain_over_signal_panel,
+        label_free_auroc_gain_over_raw,
+        label_free_relative_auprc_gain_over_raw,
+    )
+    if not supervised_converged:
+        return "supervised_fit_unstable"
+    if not all(np.isfinite(value) for value in values):
+        return "insufficient_supervised_folds"
+    if (
+        label_free_auroc_gain_over_raw >= 0.03
+        and label_free_relative_auprc_gain_over_raw >= 0.10
+    ):
+        return "detectable_above_raw"
+    if supervised_relative_auprc_gain_over_raw < 0.10:
+        return "assay_limited_relative_to_raw"
+    if functional_relative_auprc_gain_over_signal_panel >= 0.10:
+        return "shape_model_limited"
+    if signal_panel_relative_auprc_gain_over_raw >= 0.10:
+        return "signal_combination_limited"
+    return "covariate_or_shape_model_limited"
+
+
 def supervised_predictions(
     features: np.ndarray,
     labels: np.ndarray,
@@ -138,6 +181,14 @@ def supervised_predictions(
         issubclass(record.category, ConvergenceWarning) for record in caught
     )
     return predictions, folds, convergence_warnings
+
+
+def relative_auprc_gain(candidate: dict, baseline: dict) -> float:
+    candidate_value = float(candidate["auprc"])
+    baseline_value = float(baseline["auprc"])
+    if not np.isfinite(candidate_value) or not np.isfinite(baseline_value):
+        return np.nan
+    return (candidate_value - baseline_value) / max(baseline_value, 1e-8)
 
 
 def task_rows(
@@ -179,16 +230,56 @@ def task_rows(
         maximum_iterations=classifier_max_iter,
     )
     baseline_metrics = scored_metrics(labels, baseline_predictions)
-    candidate_metrics = binary_metrics(
-        labels,
-        task["candidate_probability"].to_numpy(dtype=float),
-    )
-    dwm_metrics = binary_metrics(labels, task["dwm_score"].to_numpy(dtype=float))
+    candidate_score = task["candidate_probability"].to_numpy(dtype=float)
+    dwm_score = task["dwm_score"].to_numpy(dtype=float)
+    raw_score = task["raw_score"].to_numpy(dtype=float)
+    direct_score = task["direct_score"].to_numpy(dtype=float)
+    candidate_metrics = binary_metrics(labels, candidate_score)
+    dwm_metrics = binary_metrics(labels, dwm_score)
+    raw_metrics = binary_metrics(labels, raw_score)
+    direct_metrics = binary_metrics(labels, direct_score)
     label_free_auroc_gain = float(candidate_metrics["auroc"] - dwm_metrics["auroc"])
-    label_free_relative_auprc_gain = float(
-        (candidate_metrics["auprc"] - dwm_metrics["auprc"])
-        / max(float(dwm_metrics["auprc"]), 1e-8)
+    label_free_relative_auprc_gain = relative_auprc_gain(
+        candidate_metrics,
+        dwm_metrics,
     )
+    label_free_auroc_gain_over_raw = float(
+        candidate_metrics["auroc"] - raw_metrics["auroc"]
+    )
+    label_free_relative_auprc_gain_over_raw = relative_auprc_gain(
+        candidate_metrics,
+        raw_metrics,
+    )
+    raw_covariate_features = np.column_stack((baseline_features, raw_score))
+    raw_covariate_predictions, raw_covariate_folds, raw_covariate_warnings = (
+        supervised_predictions(
+            raw_covariate_features,
+            labels,
+            chromosomes,
+            seed=stable_seed(cell, tf, "raw-covariates", seed=seed),
+            maximum_iterations=classifier_max_iter,
+        )
+    )
+    raw_covariate_metrics = scored_metrics(labels, raw_covariate_predictions)
+    signal_panel_features = np.column_stack(
+        (
+            baseline_features,
+            raw_score,
+            dwm_score,
+            direct_score,
+            candidate_score,
+        )
+    )
+    signal_panel_predictions, signal_panel_folds, signal_panel_warnings = (
+        supervised_predictions(
+            signal_panel_features,
+            labels,
+            chromosomes,
+            seed=stable_seed(cell, tf, "signal-panel", seed=seed),
+            maximum_iterations=classifier_max_iter,
+        )
+    )
+    signal_panel_metrics = scored_metrics(labels, signal_panel_predictions)
 
     train_mask = training_sites["tf"].astype(str).eq(tf).to_numpy()
     train_indexes = np.flatnonzero(train_mask)
@@ -245,14 +336,29 @@ def task_rows(
             seed=stable_seed(cell, tf, channel, "combined", seed=seed),
             maximum_iterations=classifier_max_iter,
         )
+        full_predictions, full_folds, full_warnings = supervised_predictions(
+            np.column_stack((signal_panel_features, functional_scores)),
+            labels,
+            chromosomes,
+            seed=stable_seed(cell, tf, channel, "full", seed=seed),
+            maximum_iterations=classifier_max_iter,
+        )
         profile_metrics = scored_metrics(labels, profile_predictions)
         combined_metrics = scored_metrics(labels, combined_predictions)
-        relative_gain = (
-            (combined_metrics["auprc"] - baseline_metrics["auprc"])
-            / max(float(baseline_metrics["auprc"]), 1e-8)
-            if np.isfinite(combined_metrics["auprc"])
-            and np.isfinite(baseline_metrics["auprc"])
-            else np.nan
+        full_metrics = scored_metrics(labels, full_predictions)
+        relative_gain = relative_auprc_gain(combined_metrics, baseline_metrics)
+        full_gain_over_raw = relative_auprc_gain(full_metrics, raw_metrics)
+        full_gain_over_raw_covariates = relative_auprc_gain(
+            full_metrics,
+            raw_covariate_metrics,
+        )
+        full_gain_over_signal_panel = relative_auprc_gain(
+            full_metrics,
+            signal_panel_metrics,
+        )
+        signal_panel_gain_over_raw = relative_auprc_gain(
+            signal_panel_metrics,
+            raw_metrics,
         )
         rows.append(
             {
@@ -270,21 +376,57 @@ def task_rows(
                 "baseline_folds": int(baseline_folds),
                 "profile_folds": int(profile_folds),
                 "combined_folds": int(combined_folds),
+                "raw_covariate_folds": int(raw_covariate_folds),
+                "signal_panel_folds": int(signal_panel_folds),
+                "full_folds": int(full_folds),
                 "baseline_convergence_warnings": int(baseline_warnings),
                 "profile_convergence_warnings": int(profile_warnings),
                 "combined_convergence_warnings": int(combined_warnings),
+                "raw_covariate_convergence_warnings": int(raw_covariate_warnings),
+                "signal_panel_convergence_warnings": int(signal_panel_warnings),
+                "full_convergence_warnings": int(full_warnings),
                 **{f"baseline_{key}": value for key, value in baseline_metrics.items()},
                 **{f"profile_{key}": value for key, value in profile_metrics.items()},
                 **{f"combined_{key}": value for key, value in combined_metrics.items()},
+                **{
+                    f"raw_covariate_{key}": value
+                    for key, value in raw_covariate_metrics.items()
+                },
+                **{
+                    f"signal_panel_{key}": value
+                    for key, value in signal_panel_metrics.items()
+                },
+                **{f"full_{key}": value for key, value in full_metrics.items()},
                 "combined_relative_auprc_gain_over_baseline": relative_gain,
                 "shape_information_above_baseline": bool(relative_gain >= 0.10),
+                "full_relative_auprc_gain_over_raw": full_gain_over_raw,
+                "full_relative_auprc_gain_over_raw_covariates": (
+                    full_gain_over_raw_covariates
+                ),
+                "full_relative_auprc_gain_over_signal_panel": (
+                    full_gain_over_signal_panel
+                ),
+                "signal_panel_relative_auprc_gain_over_raw": (
+                    signal_panel_gain_over_raw
+                ),
+                "functional_information_above_signal_panel": bool(
+                    full_gain_over_signal_panel >= 0.10
+                ),
                 "label_free_auroc": float(candidate_metrics["auroc"]),
                 "label_free_auprc": float(candidate_metrics["auprc"]),
                 "dwm_auroc": float(dwm_metrics["auroc"]),
                 "dwm_auprc": float(dwm_metrics["auprc"]),
+                "raw_auroc": float(raw_metrics["auroc"]),
+                "raw_auprc": float(raw_metrics["auprc"]),
+                "direct_auroc": float(direct_metrics["auroc"]),
+                "direct_auprc": float(direct_metrics["auprc"]),
                 "label_free_auroc_gain_over_dwm": label_free_auroc_gain,
                 "label_free_relative_auprc_gain_over_dwm": (
                     label_free_relative_auprc_gain
+                ),
+                "label_free_auroc_gain_over_raw": label_free_auroc_gain_over_raw,
+                "label_free_relative_auprc_gain_over_raw": (
+                    label_free_relative_auprc_gain_over_raw
                 ),
                 "diagnostic_only": True,
             }
@@ -388,7 +530,7 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("no TF information-ceiling task was evaluable")
     best = (
         results.sort_values(
-            ["cell", "tf", "combined_auprc", "channel"],
+            ["cell", "tf", "full_auprc", "channel"],
             ascending=[True, True, False, True],
         )
         .groupby(["cell", "tf"], sort=True, as_index=False)
@@ -411,6 +553,41 @@ def main(argv: list[str] | None = None) -> int:
             strict=True,
         )
     ]
+    best["raw_guarded_failure_classification"] = [
+        raw_guarded_failure_classification(
+            supervised_relative_auprc_gain_over_raw=float(supervised),
+            signal_panel_relative_auprc_gain_over_raw=float(signal_panel),
+            functional_relative_auprc_gain_over_signal_panel=float(functional),
+            label_free_auroc_gain_over_raw=float(auroc),
+            label_free_relative_auprc_gain_over_raw=float(auprc),
+            supervised_converged=(
+                int(raw_covariate_warnings)
+                + int(signal_panel_warnings)
+                + int(full_warnings)
+            )
+            == 0,
+        )
+        for (
+            supervised,
+            signal_panel,
+            functional,
+            auroc,
+            auprc,
+            raw_covariate_warnings,
+            signal_panel_warnings,
+            full_warnings,
+        ) in zip(
+            best["full_relative_auprc_gain_over_raw"],
+            best["signal_panel_relative_auprc_gain_over_raw"],
+            best["full_relative_auprc_gain_over_signal_panel"],
+            best["label_free_auroc_gain_over_raw"],
+            best["label_free_relative_auprc_gain_over_raw"],
+            best["raw_covariate_convergence_warnings"],
+            best["signal_panel_convergence_warnings"],
+            best["full_convergence_warnings"],
+            strict=True,
+        )
+    ]
 
     args.outdir.mkdir(parents=True, exist_ok=True)
     results_path = args.outdir / "functional_information_ceiling.tsv"
@@ -424,6 +601,24 @@ def main(argv: list[str] | None = None) -> int:
         "used_for_model_selection": False,
         "functional_basis_training_labels_used": False,
         "classifier_test_labels_used": True,
+        "raw_guardrail_required": True,
+        "supervised_feature_sets": {
+            "baseline": ["motif_score", "log_accessibility"],
+            "raw_covariates": [
+                "motif_score",
+                "log_accessibility",
+                "raw_score",
+            ],
+            "signal_panel": [
+                "motif_score",
+                "log_accessibility",
+                "raw_score",
+                "dwm_score",
+                "direct_score",
+                "candidate_probability",
+            ],
+            "full": ["signal_panel", "label_free_functional_pc_scores"],
+        },
         "variance_threshold": args.variance_threshold,
         "max_components": args.max_components,
         "maximum_train_per_tf": args.maximum_train_per_tf,
@@ -462,9 +657,10 @@ def main(argv: list[str] | None = None) -> int:
                 "cell",
                 "tf",
                 "channel",
-                "combined_relative_auprc_gain_over_baseline",
-                "label_free_relative_auprc_gain_over_dwm",
-                "failure_classification",
+                "full_relative_auprc_gain_over_raw",
+                "full_relative_auprc_gain_over_signal_panel",
+                "label_free_relative_auprc_gain_over_raw",
+                "raw_guarded_failure_classification",
             ]
         ].to_string(index=False)
     )

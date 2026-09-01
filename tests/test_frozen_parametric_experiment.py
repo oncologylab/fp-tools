@@ -414,6 +414,58 @@ def test_frozen_information_ceiling_marks_unstable_classifier() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    (
+        "supervised",
+        "signal_panel",
+        "functional",
+        "label_free_auroc",
+        "label_free_auprc",
+        "expected",
+    ),
+    [
+        (0.05, 0.02, 0.01, 0.01, 0.02, "assay_limited_relative_to_raw"),
+        (0.20, 0.02, 0.15, 0.01, 0.02, "shape_model_limited"),
+        (0.20, 0.15, 0.02, 0.01, 0.02, "signal_combination_limited"),
+        (0.20, 0.05, 0.05, 0.01, 0.02, "covariate_or_shape_model_limited"),
+        (0.20, 0.05, 0.05, 0.03, 0.10, "detectable_above_raw"),
+        (np.nan, 0.05, 0.05, 0.03, 0.10, "insufficient_supervised_folds"),
+    ],
+)
+def test_raw_guarded_information_ceiling_classification(
+    supervised: float,
+    signal_panel: float,
+    functional: float,
+    label_free_auroc: float,
+    label_free_auprc: float,
+    expected: str,
+) -> None:
+    assert (
+        evaluate_frozen_functional_information_ceiling.raw_guarded_failure_classification(
+            supervised_relative_auprc_gain_over_raw=supervised,
+            signal_panel_relative_auprc_gain_over_raw=signal_panel,
+            functional_relative_auprc_gain_over_signal_panel=functional,
+            label_free_auroc_gain_over_raw=label_free_auroc,
+            label_free_relative_auprc_gain_over_raw=label_free_auprc,
+        )
+        == expected
+    )
+
+
+def test_raw_guarded_information_ceiling_marks_unstable_classifier() -> None:
+    assert (
+        evaluate_frozen_functional_information_ceiling.raw_guarded_failure_classification(
+            supervised_relative_auprc_gain_over_raw=0.20,
+            signal_panel_relative_auprc_gain_over_raw=0.15,
+            functional_relative_auprc_gain_over_signal_panel=0.05,
+            label_free_auroc_gain_over_raw=0.05,
+            label_free_relative_auprc_gain_over_raw=0.20,
+            supervised_converged=False,
+        )
+        == "supervised_fit_unstable"
+    )
+
+
 def test_derived_family_selection_filters_candidates_and_profiles() -> None:
     metrics = pd.DataFrame(
         {
