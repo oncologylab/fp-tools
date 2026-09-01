@@ -229,6 +229,20 @@ a separately planned breaking release explicitly changes the contract.
   therefore distinguish genuine gains over raw from recovery after DWM
   overcorrection. This is a CTCF-specific internal research route, not evidence
   for a general correction replacement, and the package default is unchanged.
+- A separate integrity-checked detector ledger now prevents TF-specific shape
+  gains from being conflated with bias-correction gains. The globally frozen
+  `count_only` operator passes independent naked-DNA replicate-2 safety for all
+  14 evaluable task panels. FOXA1 is its one depth-dependent research success:
+  on the exact common chromosome-test support it improves AUROC by 0.0624 and
+  relative AUPRC by 5.92% over raw signal, with chromosome-block bootstrap
+  lower bounds of 0.0351 and 2.63%. Both raw-guarded metrics improve in all
+  three HepG2 biological replicates and in every 25M/50M downsampling seed;
+  10M AUPRC is not yet stable. The detector also improves CTCF over DWM, but
+  its AUROC comparison with raw signal changes with support/depth and therefore
+  does not supersede the simpler CTCF shrinkage result. The other seven
+  internally eligible tasks fail the raw guardrail, and 12 tasks remain
+  underpowered. This is evidence for a FOX-family-specific count/shape route,
+  not a general detector or correction promotion.
 
 ## Current ENCODE Resource
 
