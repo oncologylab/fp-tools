@@ -85,6 +85,18 @@ class BiasFeatureSpec:
         return cls("selma10", 10, (1,))
 
     @classmethod
+    def loglinear21(cls) -> "BiasFeatureSpec":
+        """Compact 21-bp log-linear receptive field."""
+
+        return cls("loglinear21", 21, (1, 5, 9))
+
+    @classmethod
+    def loglinear41(cls) -> "BiasFeatureSpec":
+        """Intermediate 41-bp log-linear receptive field."""
+
+        return cls("loglinear41", 41, (1, 5, 9))
+
+    @classmethod
     def loglinear81(cls) -> "BiasFeatureSpec":
         """ChromBPNet-inspired 81-bp parametric receptive field."""
 
