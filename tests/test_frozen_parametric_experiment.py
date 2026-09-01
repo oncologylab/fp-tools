@@ -17,6 +17,7 @@ import freeze_functional_call_thresholds  # noqa: E402
 import evaluate_frozen_functional_naked_dna  # noqa: E402
 import evaluate_frozen_functional_depth_matrix  # noqa: E402
 import evaluate_frozen_functional_information_ceiling  # noqa: E402
+import evaluate_frozen_bias_shrinkage  # noqa: E402
 import evaluate_frozen_functional_policy  # noqa: E402
 import evaluate_parametric_factorization  # noqa: E402
 import evaluate_strand_label_free_models  # noqa: E402
@@ -464,6 +465,91 @@ def test_raw_guarded_information_ceiling_marks_unstable_classifier() -> None:
         )
         == "supervised_fit_unstable"
     )
+
+
+def test_bias_shrinkage_preserves_raw_at_zero_and_partially_subtracts() -> None:
+    positions = np.arange(-40, 41, dtype=float)
+    observed = np.full((1, len(positions)), 2.0)
+    observed[:, np.abs(positions) <= 7] = 0.5
+    expected = np.full((1, len(positions)), 0.5)
+    expected[:, np.abs(positions) <= 7] = 1.0
+    panel = {
+        "observed": observed,
+        "expected": {"parametric_lambda": expected},
+        "positions": positions,
+    }
+    raw_score, raw_profile = evaluate_frozen_bias_shrinkage.choice_profile(
+        panel,
+        np.asarray([0]),
+        {"source": "raw", "alpha": 0.0},
+    )
+    partial_score, partial_profile = evaluate_frozen_bias_shrinkage.choice_profile(
+        panel,
+        np.asarray([0]),
+        {"source": "parametric_lambda", "alpha": 0.5},
+    )
+    assert np.array_equal(raw_profile, observed)
+    assert np.allclose(partial_profile, observed - 0.5 * expected)
+    assert raw_score.shape == partial_score.shape == (1,)
+
+
+def test_bias_shrinkage_policy_selects_global_and_tf_abstention() -> None:
+    rows = []
+    task_values = (
+        ("CellA", "CTCF", "CTCF", "positive_control"),
+        ("CellB", "CTCF", "CTCF", "positive_control"),
+        ("CellA", "MEF2A", "MEF2", "difficult"),
+        ("CellB", "MEF2A", "MEF2", "difficult"),
+        ("CellA", "MYC", "MYC_MAX", "difficult"),
+        ("CellB", "MYC", "MYC_MAX", "difficult"),
+    )
+    for cell, tf, family, role in task_values:
+        common = {
+            "cell": cell,
+            "tf": tf,
+            "motif_family": family,
+            "role": role,
+            "status": "eligible",
+        }
+        rows.append(
+            {
+                **common,
+                "method": "raw",
+                "source": "raw",
+                "alpha": 0.0,
+                "auroc_gain_over_raw": 0.0,
+                "relative_auprc_gain_over_raw": 0.0,
+            }
+        )
+        for source, alpha, mef2_gain, myc_gain in (
+            ("parametric_direct", 0.5, 0.04, -0.03),
+            ("parametric_lambda", 0.8, 0.08, -0.01),
+        ):
+            gain = 0.01 if tf == "CTCF" else (mef2_gain if tf == "MEF2A" else myc_gain)
+            rows.append(
+                {
+                    **common,
+                    "method": "partial_bias_subtraction",
+                    "source": source,
+                    "alpha": alpha,
+                    "auroc_gain_over_raw": gain,
+                    "relative_auprc_gain_over_raw": gain,
+                }
+            )
+    _global_rows, _tf_rows, global_choice, tf_choices = (
+        evaluate_frozen_bias_shrinkage.select_policy_rows(pd.DataFrame(rows))
+    )
+    assert global_choice["source"] == "parametric_lambda"
+    assert global_choice["alpha"] == 0.8
+    assert tf_choices["MEF2A"]["source"] == "parametric_lambda"
+    assert tf_choices["MYC"] == {
+        "source": "raw",
+        "alpha": 0.0,
+        "selection_scope": "tf_across_cells",
+        "validation_cells": 2,
+        "mean_auroc_gain_over_raw": 0.0,
+        "mean_relative_auprc_gain_over_raw": 0.0,
+    }
 
 
 def test_derived_family_selection_filters_candidates_and_profiles() -> None:
