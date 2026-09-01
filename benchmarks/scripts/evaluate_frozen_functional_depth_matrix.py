@@ -572,9 +572,14 @@ def add_depth_baseline_deltas(task_rows: list[dict]) -> list[dict]:
 def classify_depth(summary: pd.DataFrame) -> pd.DataFrame:
     candidates = summary[summary["method"].str.startswith("frozen_")]
     rows = []
-    for (cell, tf, family), group in candidates.groupby(
-        ["cell", "tf", "motif_family"], sort=True
+    for (cell, tf, family, candidate_id, method), group in candidates.groupby(
+        ["cell", "tf", "motif_family", "candidate_id", "method"], sort=True
     ):
+        if group["depth"].duplicated().any():
+            raise ValueError(
+                "depth classification has duplicate candidate/method endpoints for "
+                f"{cell}/{tf}/{candidate_id}/{method}"
+            )
         values = group.set_index("depth")
         low = values.loc["10m"] if "10m" in values.index else None
         high_name = next(
@@ -598,6 +603,8 @@ def classify_depth(summary: pd.DataFrame) -> pd.DataFrame:
                 "cell": cell,
                 "tf": tf,
                 "motif_family": family,
+                "candidate_id": candidate_id,
+                "method": method,
                 "low_depth": "10m",
                 "high_depth": high_name,
                 "low_auroc": float(low.auroc_mean),

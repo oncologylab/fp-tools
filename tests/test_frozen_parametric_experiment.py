@@ -352,6 +352,39 @@ def test_depth_classification_prefers_full_endpoint() -> None:
     assert result.loc[0, "classification"] == "detectable_at_high_depth"
 
 
+def test_depth_classification_keeps_frozen_methods_separate() -> None:
+    rows = []
+    for method, high_auroc in (
+        ("frozen_global_shrinkage", 0.62),
+        ("frozen_tf_specific_shrinkage", 0.71),
+    ):
+        for depth, auroc in (("10m", 0.55), ("50m", high_auroc)):
+            rows.append(
+                {
+                    "cell": "CellA",
+                    "tf": "TF1",
+                    "motif_family": "FAMILY1",
+                    "candidate_id": "shrinkage",
+                    "method": method,
+                    "depth": depth,
+                    "auroc_mean": auroc,
+                    "auroc_gain_over_dwm_mean": 0.04,
+                    "relative_auprc_gain_over_dwm_mean": 0.12,
+                    "auroc_gain_positive_fraction": 1.0,
+                }
+            )
+
+    result = evaluate_frozen_functional_depth_matrix.classify_depth(
+        pd.DataFrame(rows)
+    ).set_index("method")
+
+    assert set(result.index) == {
+        "frozen_global_shrinkage",
+        "frozen_tf_specific_shrinkage",
+    }
+    assert result.loc["frozen_tf_specific_shrinkage", "high_auroc"] == 0.71
+
+
 def test_frozen_site_score_frame_preserves_artifact_indexes() -> None:
     sites = pd.DataFrame(
         {
