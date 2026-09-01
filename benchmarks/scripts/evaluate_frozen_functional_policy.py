@@ -367,6 +367,7 @@ def metric_record(
     positions: np.ndarray,
     prediction_seconds: float,
     minimum_sites_per_class: int,
+    split_name: str = "test",
 ) -> dict:
     metrics = binary_metrics(labels, score)
     positive = int(np.sum(labels == 1))
@@ -379,7 +380,7 @@ def metric_record(
         "candidate_id": candidate.candidate_id,
         "candidate_family": candidate.family,
         "method": method,
-        "split": "test",
+        "split": split_name,
         "status": (
             "eligible"
             if min(positive, negative) >= minimum_sites_per_class

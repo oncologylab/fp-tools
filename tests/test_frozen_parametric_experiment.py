@@ -12,6 +12,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 import freeze_parametric_holdouts  # noqa: E402
 import freeze_label_free_functional_models  # noqa: E402
+import evaluate_frozen_functional_depth_matrix  # noqa: E402
 import evaluate_frozen_functional_policy  # noqa: E402
 import evaluate_parametric_factorization  # noqa: E402
 import run_frozen_parametric_experiment  # noqa: E402
@@ -175,6 +176,31 @@ def test_frozen_functional_model_names_cannot_create_suffix_collisions() -> None
     assert first == "fda_shared_pool_tf"
     assert second == "fda_antisymmetric_pool_tf"
     assert first != second
+
+
+def test_cached_bias_depth_profiles_preserve_each_site_total() -> None:
+    observed = np.asarray([[2.0, 3.0, 5.0], [0.0, 7.0, 1.0]])
+    log_bias = np.log(np.asarray([[1.0, 2.0, 1.0], [3.0, 1.0, 2.0]]))
+    expected, valid = (
+        evaluate_frozen_functional_depth_matrix.expected_from_cached_log_bias(
+            observed,
+            log_bias,
+        )
+    )
+    assert valid.tolist() == [True, True]
+    assert np.allclose(expected.sum(axis=1), observed.sum(axis=1))
+    assert not np.isclose(expected[0].sum(), observed.sum())
+
+
+def test_depth_dwm_scaling_matches_local_totals() -> None:
+    observed = np.asarray([[2.0, 3.0, 5.0], [0.0, 7.0, 1.0]])
+    expected = np.asarray([[10.0, 20.0, 10.0], [3.0, 1.0, 2.0]])
+    scaled = evaluate_frozen_functional_depth_matrix.scale_expected_to_observed(
+        observed,
+        expected,
+    )
+    assert np.allclose(scaled.sum(axis=1), observed.sum(axis=1))
+    assert np.allclose(scaled[0] / scaled[0].sum(), expected[0] / expected[0].sum())
 
 
 def test_factorization_dwm_loader_accepts_verified_cache_and_rejects_parametric_label(
