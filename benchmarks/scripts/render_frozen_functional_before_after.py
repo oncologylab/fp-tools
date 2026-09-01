@@ -15,7 +15,12 @@ import pandas as pd
 TEST_SCHEMA = "fp-tools-frozen-functional-test-results-v1"
 NAKED_SCHEMA = "fp-tools-frozen-functional-naked-dna-v1"
 REPORT_SCHEMA = "fp-tools-frozen-functional-before-after-v1"
+DETECTOR_EVIDENCE_SCHEMA = "fp-tools-frozen-detector-evidence-v1"
 BASELINE_METHOD = "DWM_conventional_geometry"
+RAW_GUARDED_REPORT_CLASSES = {
+    "robust_tf_specific_gain",
+    "depth_dependent_tf_specific_gain",
+}
 
 
 def file_sha256(path: str | Path) -> str:
@@ -57,6 +62,58 @@ def load_inputs(
     profiles = pd.read_csv(checked_output(test, "profiles", test_manifest), sep="\t")
     safety = pd.read_csv(checked_output(naked, "rates", naked_manifest), sep="\t")
     return metrics, bootstrap, profiles, safety, test, naked
+
+
+def load_detector_evidence(manifest: Path) -> tuple[pd.DataFrame, dict, Path]:
+    document = json.loads(manifest.read_text(encoding="utf-8"))
+    if document.get("schema") != DETECTOR_EVIDENCE_SCHEMA:
+        raise ValueError("unsupported frozen detector evidence manifest")
+    evidence_path = checked_output(document, "per_tf_evidence", manifest)
+    return pd.read_csv(evidence_path, sep="\t"), document, evidence_path
+
+
+def apply_raw_guardrail(
+    summary: pd.DataFrame,
+    evidence: pd.DataFrame,
+) -> pd.DataFrame:
+    if evidence.duplicated(["cell", "tf"]).any():
+        raise ValueError("detector evidence contains duplicate TF tasks")
+    keep = [
+        "cell",
+        "tf",
+        "detector_classification",
+        "test_raw_auroc",
+        "test_raw_auprc",
+        "test_auroc",
+        "test_auprc",
+        "test_auroc_gain_over_raw",
+        "test_relative_auprc_gain_over_raw",
+        "test_raw_bootstrap_auroc_gain_lower_95",
+        "test_raw_bootstrap_auroc_gain_upper_95",
+        "test_raw_bootstrap_relative_auprc_gain_lower_95",
+        "test_raw_bootstrap_relative_auprc_gain_upper_95",
+        "replicate_samples",
+        "replicate_auroc_gain_over_raw_positive_fraction",
+        "replicate_auprc_gain_over_raw_positive_fraction",
+        "depth_both_gain_over_raw_fraction",
+        "depth_high_both_gain_over_raw_fraction",
+    ]
+    missing = {"cell", "tf", "detector_classification"}.difference(evidence.columns)
+    if missing:
+        raise ValueError("detector evidence lacks columns: " + ", ".join(sorted(missing)))
+    output = summary.merge(
+        evidence[[column for column in keep if column in evidence]],
+        on=["cell", "tf"],
+        how="left",
+        validate="one_to_one",
+    )
+    output["passes_raw_guardrail"] = output["detector_classification"].isin(
+        RAW_GUARDED_REPORT_CLASSES
+    )
+    output["report_qualified"] = (
+        output["report_qualified"] & output["passes_raw_guardrail"]
+    )
+    return output
 
 
 def qualified_candidates(
@@ -250,8 +307,33 @@ def render_report(row: pd.Series, profiles: pd.DataFrame, output: Path) -> None:
         f"Independent naked-DNA FPR {100.0 * row['candidate_false_positive_rate']:.1f}% "
         f"(Wilson upper {100.0 * row['candidate_wilson_upper_95']:.1f}%)"
     )
+    if pd.notna(row.get("test_raw_auroc")):
+        metrics += (
+            "\nRaw-signal guardrail on exact common support: "
+            f"AUROC {row['test_raw_auroc']:.3f} → {row['test_auroc']:.3f} "
+            f"(Δ {row['test_auroc_gain_over_raw']:+.3f}; 95% CI "
+            f"{row['test_raw_bootstrap_auroc_gain_lower_95']:+.3f} to "
+            f"{row['test_raw_bootstrap_auroc_gain_upper_95']:+.3f}); "
+            f"relative AUPRC Δ "
+            f"{100.0 * row['test_relative_auprc_gain_over_raw']:+.1f}% "
+            f"(95% CI "
+            f"{100.0 * row['test_raw_bootstrap_relative_auprc_gain_lower_95']:+.1f}% "
+            f"to {100.0 * row['test_raw_bootstrap_relative_auprc_gain_upper_95']:+.1f}%)"
+        )
+    if pd.notna(row.get("replicate_samples")):
+        replicate_fraction = min(
+            float(row["replicate_auroc_gain_over_raw_positive_fraction"]),
+            float(row["replicate_auprc_gain_over_raw_positive_fraction"]),
+        )
+        metrics += (
+            f"\nRaw-guard stability: both metrics positive in "
+            f"{100.0 * replicate_fraction:.0f}% of {int(row['replicate_samples'])} "
+            f"biological replicates and "
+            f"{100.0 * row['depth_high_both_gain_over_raw_fraction']:.0f}% of "
+            "25M/50M depth-seed runs."
+        )
     figure.suptitle(f"{cell} — {tf}: internal frozen before/after result", y=0.985)
-    figure.text(0.5, 0.885, metrics, ha="center", va="top", fontsize=9)
+    figure.text(0.5, 0.885, metrics, ha="center", va="top", fontsize=8.2)
     figure.text(
         0.5,
         0.018,
@@ -260,7 +342,8 @@ def render_report(row: pd.Series, profiles: pd.DataFrame, output: Path) -> None:
         fontsize=8,
         color="#555555",
     )
-    figure.subplots_adjust(top=0.76, bottom=0.12, left=0.08, right=0.98, hspace=0.10)
+    top = 0.69 if pd.notna(row.get("test_raw_auroc")) else 0.76
+    figure.subplots_adjust(top=top, bottom=0.12, left=0.08, right=0.98, hspace=0.10)
     output.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(output, format="pdf")
     plt.close(figure)
@@ -270,6 +353,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--test-manifest", type=Path, required=True)
     parser.add_argument("--naked-manifest", type=Path, required=True)
+    parser.add_argument(
+        "--detector-evidence-manifest",
+        type=Path,
+        help="Require a raw-guarded robust/depth-dependent detector classification.",
+    )
     parser.add_argument("--outdir", type=Path, required=True)
     args = parser.parse_args(argv)
 
@@ -278,6 +366,15 @@ def main(argv: list[str] | None = None) -> int:
         args.naked_manifest,
     )
     summary = qualified_candidates(metrics, bootstrap, safety)
+    evidence_document = None
+    evidence_path = None
+    if args.detector_evidence_manifest is not None:
+        evidence, evidence_document, evidence_path = load_detector_evidence(
+            args.detector_evidence_manifest
+        )
+        if evidence_document.get("policy_id") != test.get("policy_id"):
+            raise ValueError("report and detector evidence use different policies")
+        summary = apply_raw_guardrail(summary, evidence)
     args.outdir.mkdir(parents=True, exist_ok=True)
     summary_path = args.outdir / "before_after_metrics.tsv"
     summary.to_csv(summary_path, sep="\t", index=False)
@@ -296,11 +393,18 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
     readme = args.outdir / "README.md"
+    raw_guard_text = (
+        " A raw-signal guardrail was also required: only robust or "
+        "depth-dependent gains with biological-replicate and depth/seed "
+        "evidence were emitted."
+        if evidence_document is not None
+        else ""
+    )
     readme.write_text(
         "# Frozen parametric before/after reports\n\n"
         "PDFs are emitted only when both chromosome-block bootstrap intervals "
         "exclude zero and the frozen candidate passes independent naked-DNA "
-        "replicate-2 safety. These are internal K562/HepG2 chromosome-holdout "
+        f"replicate-2 safety.{raw_guard_text} These are internal K562/HepG2 chromosome-holdout "
         "results, not evidence of transfer to the unopened promotion holdouts. "
         "The current DWM package default is unchanged.\n",
         encoding="utf-8",
@@ -316,11 +420,22 @@ def main(argv: list[str] | None = None) -> int:
             "path": str(args.naked_manifest),
             "sha256": file_sha256(args.naked_manifest),
         },
+        "detector_evidence_manifest": (
+            {
+                "path": str(args.detector_evidence_manifest),
+                "sha256": file_sha256(args.detector_evidence_manifest),
+                "evidence_path": str(evidence_path),
+                "evidence_sha256": file_sha256(evidence_path),
+            }
+            if evidence_document is not None
+            else None
+        ),
         "qualification": {
             "eligible": True,
             "auroc_gain_lower_95_gt": 0.0,
             "relative_auprc_gain_lower_95_gt": 0.0,
             "independent_naked_dna_safety": True,
+            "raw_signal_guardrail": evidence_document is not None,
         },
         "tasks": int(len(summary)),
         "reports_emitted": int(len(reports)),

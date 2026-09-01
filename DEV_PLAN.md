@@ -232,17 +232,18 @@ a separately planned breaking release explicitly changes the contract.
 - A separate integrity-checked detector ledger now prevents TF-specific shape
   gains from being conflated with bias-correction gains. The globally frozen
   `count_only` operator passes independent naked-DNA replicate-2 safety for all
-  14 evaluable task panels. FOXA1 is its one depth-dependent research success:
-  on the exact common chromosome-test support it improves AUROC by 0.0624 and
-  relative AUPRC by 5.92% over raw signal, with chromosome-block bootstrap
-  lower bounds of 0.0351 and 2.63%. Both raw-guarded metrics improve in all
-  three HepG2 biological replicates and in every 25M/50M downsampling seed;
-  10M AUPRC is not yet stable. The detector also improves CTCF over DWM, but
-  its AUROC comparison with raw signal changes with support/depth and therefore
+  14 evaluable task panels. FOXA1 has a reproducible occupancy-classification
+  gain: on the exact common chromosome-test support it improves AUROC by
+  0.0624 and relative AUPRC by 5.92% over raw signal, both metrics improve in
+  all three HepG2 biological replicates, and 25M/50M seeds are stable. Visual
+  and numeric shape auditing rejects this as a footprint improvement, however:
+  the candidate has central enrichment rather than protection (depletion
+  -0.0423). It is therefore classified as an occupancy-signal diagnostic, not
+  a FOX footprint model. The detector also improves CTCF over DWM, but its
+  AUROC comparison with raw signal changes with support/depth and therefore
   does not supersede the simpler CTCF shrinkage result. The other seven
   internally eligible tasks fail the raw guardrail, and 12 tasks remain
-  underpowered. This is evidence for a FOX-family-specific count/shape route,
-  not a general detector or correction promotion.
+  underpowered. No general detector or correction promotion follows.
 
 ## Current ENCODE Resource
 

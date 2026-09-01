@@ -33,6 +33,7 @@ from summarize_frozen_parametric_tf_evidence import (  # noqa: E402
 SCHEMA = "fp-tools-frozen-detector-evidence-v1"
 TEST_SCHEMA = "fp-tools-frozen-functional-consensus-test-v1"
 NAKED_SCHEMA = "fp-tools-frozen-functional-consensus-naked-dna-v1"
+FUNCTIONAL_TEST_SCHEMA = "fp-tools-frozen-functional-test-results-v1"
 DEPTH_SCHEMAS = (
     "fp-tools-frozen-functional-depth-matrix-v2",
     "fp-tools-combined-frozen-functional-depth-matrix-v2",
@@ -239,6 +240,39 @@ def naked_evidence(rates: pd.DataFrame, operator: str) -> pd.DataFrame:
     )
 
 
+def shape_evidence(profiles: pd.DataFrame) -> pd.DataFrame:
+    selected = profiles[
+        profiles["method"].astype(str).str.startswith("frozen_")
+    ].copy()
+    descriptors = [
+        "center",
+        "shoulders",
+        "depletion",
+        "width",
+        "shoulder_distance",
+        "asymmetry",
+        "periodicity",
+    ]
+    rows = []
+    for (cell, tf), group in selected.groupby(["cell", "tf"], sort=True):
+        methods = group["method"].astype(str).unique()
+        if len(methods) != 1:
+            raise ValueError(f"multiple frozen profile methods for {cell}/{tf}")
+        row: dict[str, object] = {"cell": cell, "tf": tf}
+        for descriptor in descriptors:
+            values = group[descriptor].dropna().astype(float).unique()
+            if len(values) > 1:
+                raise ValueError(
+                    f"nonconstant {descriptor} descriptor for {cell}/{tf}"
+                )
+            row[f"shape_{descriptor}"] = values[0] if len(values) else np.nan
+        row["shape_has_central_protection"] = bool(
+            np.isfinite(row["shape_depletion"]) and row["shape_depletion"] > 0
+        )
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
 def classify_task(row: pd.Series) -> tuple[str, str]:
     if str(row.get("test_status", "underpowered")) != "eligible":
         return "underpowered", "collect_more_sites_or_labels"
@@ -246,6 +280,8 @@ def classify_task(row: pd.Series) -> tuple[str, str]:
         return "safety_not_evaluable", "do_not_promote"
     if not bool(row.get("naked_passes_safety")):
         return "safety_limited", "reject_detector"
+
+    shape_protection = bool(row.get("shape_has_central_protection", False))
 
     test_raw = (
         float(row.get("test_auroc_gain_over_raw", -np.inf)) > 0
@@ -264,6 +300,14 @@ def classify_task(row: pd.Series) -> tuple[str, str]:
     )
     depth_all = float(row.get("depth_both_gain_over_raw_fraction", 0.0))
     depth_high = float(row.get("depth_high_both_gain_over_raw_fraction", 0.0))
+    apparent_stable_gain = (
+        test_raw and raw_ci and replicate_fraction == 1.0 and depth_high == 1.0
+    )
+    if apparent_stable_gain and not shape_protection:
+        return (
+            "occupancy_signal_gain_without_footprint_protection",
+            "use_as_occupancy_diagnostic_not_footprint",
+        )
     if test_raw and raw_ci and replicate_fraction == 1.0 and depth_all == 1.0:
         return "robust_tf_specific_gain", "tf_specific_count_model_research_only"
     if test_raw and raw_ci and replicate_fraction == 1.0 and depth_high == 1.0:
@@ -324,6 +368,11 @@ def main(argv: list[str] | None = None) -> int:
     count_test_doc, count_test_path = checked_reference(
         test_doc["count_test_manifest"], args.test_manifest
     )
+    _count_test_doc, profiles, profiles_path = load_output(
+        count_test_path,
+        expected_schema=FUNCTIONAL_TEST_SCHEMA,
+        output="profiles",
+    )
     count_naked_doc, count_naked_path = checked_reference(
         naked_doc["count_naked_manifest"], args.naked_manifest
     )
@@ -350,6 +399,7 @@ def main(argv: list[str] | None = None) -> int:
         replicate_evidence(replicates),
         depth_evidence(depth),
         naked_evidence(naked, args.operator),
+        shape_evidence(profiles),
     )
     for frame in frames:
         report = report.merge(frame, on=["cell", "tf"], how="left", validate="one_to_one")
@@ -382,6 +432,7 @@ def main(argv: list[str] | None = None) -> int:
         test_path,
         bootstrap_path,
         count_test_path,
+        profiles_path,
         args.replicate_manifest,
         replicate_path,
         args.depth_manifest,

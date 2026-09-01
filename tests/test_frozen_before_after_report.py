@@ -67,6 +67,30 @@ def test_report_qualification_requires_significance_safety_and_power() -> None:
     assert observed == {"SAFE": True, "SMALL": False, "UNSAFE": False}
 
 
+def test_raw_guardrail_emits_only_robust_or_depth_dependent_tasks() -> None:
+    summary = pd.DataFrame(
+        {
+            "cell": ["CellA", "CellA", "CellA"],
+            "tf": ["ROBUST", "DEPTH", "SENSITIVE"],
+            "report_qualified": [True, True, True],
+        }
+    )
+    evidence = pd.DataFrame(
+        {
+            "cell": ["CellA", "CellA", "CellA"],
+            "tf": ["ROBUST", "DEPTH", "SENSITIVE"],
+            "detector_classification": [
+                "robust_tf_specific_gain",
+                "depth_dependent_tf_specific_gain",
+                "support_or_depth_sensitive_gain",
+            ],
+        }
+    )
+    result = module.apply_raw_guardrail(summary, evidence)
+    observed = dict(zip(result["tf"], result["report_qualified"], strict=True))
+    assert observed == {"DEPTH": True, "ROBUST": True, "SENSITIVE": False}
+
+
 def test_report_renderer_writes_a_one_page_pdf(tmp_path: Path) -> None:
     row = _metrics().iloc[0].copy()
     row["auroc_gain_lower_95"] = 0.02
