@@ -291,7 +291,9 @@ def discover_outputs(args: argparse.Namespace) -> list[Path]:
         return []
     if args.stage == "prep-nonpeaks":
         prefix = checked_repository_path(args.output_prefix, must_exist=False)
-        return sorted(prefix.parent.glob(prefix.name + "*"))
+        return sorted(
+            path for path in prefix.parent.glob(prefix.name + "*") if path.is_file()
+        )
     if args.stage in {"bias", "regulatory"}:
         directory = checked_repository_path(args.output_dir, must_exist=True)
         return sorted(path for path in directory.rglob("*") if path.is_file())

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,3 +69,23 @@ def test_regulatory_stage_keeps_models_external(tmp_path) -> None:
         for value in arguments
         if str(value).startswith("/work")
     )
+
+
+def test_prep_output_discovery_ignores_auxiliary_directories(
+    tmp_path, monkeypatch
+) -> None:
+    prefix = tmp_path / "K562"
+    expected = tmp_path / "K562_filtered.nonpeaks.bed"
+    expected.write_text("chr1\t100\t200\n", encoding="utf-8")
+    (tmp_path / "K562_auxiliary").mkdir()
+    monkeypatch.setattr(
+        module,
+        "checked_repository_path",
+        lambda path, *, must_exist: Path(path),
+    )
+
+    outputs = module.discover_outputs(
+        SimpleNamespace(stage="prep-nonpeaks", output_prefix=prefix)
+    )
+
+    assert outputs == [expected]
