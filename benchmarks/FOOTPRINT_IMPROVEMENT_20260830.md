@@ -490,23 +490,22 @@ interpretation without converting the CTCF result into a universal claim.
 An exact CTCF naked-DNA check then froze separate candidate and conventional
 score thresholds on 1,000 ChIP-negative validation sites per cell line before
 applying them to GSE164997 naked-DNA motif sites. The frozen TF geometry called
-1/116 finite HepG2 sites (0.86%; Wilson upper 95% bound 4.72%) and 1/123 finite
-K562 sites (0.81%; upper bound 4.46%). Both point estimates and uncertainty
-bounds therefore pass the prespecified 5% negative-control target. The raw
-conventional-score thresholds transferred poorly across samples (101/116 and
-111/123 calls), which is evidence of score-scale non-portability rather than a
-biological occupancy estimate. The Box reports now show the candidate safety
-result. This closes the exact naked-DNA check for the CTCF geometry but does not
-replace the pending external-cell transfer gate or justify package-wide
-promotion.
+1/200 finite sites in each cell-specific configuration (0.50%; Wilson upper 95%
+bound 2.78%). Both point estimates and uncertainty bounds therefore pass the
+prespecified 5% negative-control target. On the paired subset where the raw
+conventional score was finite, its thresholds transferred poorly across
+samples (101/116 HepG2 and 111/123 K562 calls), which is evidence of score-scale
+non-portability rather than a biological occupancy estimate. The Box reports
+now show the candidate safety result. This closes the exact naked-DNA check for
+the CTCF geometry but does not replace the pending external-cell transfer gate
+or justify package-wide promotion.
 
 The same frozen thresholds were next applied to an independently prepared
-second GSE164997 naked-DNA library. The candidate again called only 1/114
-finite HepG2 sites (0.88%; Wilson upper bound 4.80%) and 1/107 finite K562
-sites (0.93%; upper bound 5.10%). Thus the point estimate is stable near 1% in
-both libraries; the K562 second-library upper bound narrowly exceeds 5% because
-only 107 sites have complete signal. The concise report retains the first
-library's fully passing interval and the research record retains both results.
+second GSE164997 naked-DNA library. The candidate again called only 1/200
+finite sites in each cell-specific configuration (0.50%; Wilson upper bound
+2.78%). Thus the point estimate and uncertainty are stable across both
+libraries. Conventional-score availability was lower (114 and 107 sites), but
+does not limit the independently evaluated candidate geometry.
 
 A separate post-hoc, no-retuning transfer applied the K562-frozen DWM CTCF
 geometry to two external ENCODE cell types. On identical labeled sites, the
