@@ -736,6 +736,67 @@ def _safe_token(value: object) -> str:
     return str(value).replace("-", "m").replace(".", "p").replace("/", "_")
 
 
+def load_resumable_pooled_fit(
+    stem: Path,
+    *,
+    spec: BiasFeatureSpec,
+    source: str,
+    shift: tuple[int, int],
+    l2: float,
+    depth_name: str,
+    samples: Sequence[str],
+    seed: int,
+    training_windows: int,
+    training_cuts: float,
+) -> tuple[ConditionalSequenceBiasModel, float, float] | None:
+    """Load one complete pooled fit after validating its full identity.
+
+    A partially written or incompatible artifact is an integrity failure.  It
+    is never silently overwritten during a resumable benchmark run.
+    """
+
+    npz_path = Path(str(stem) + ".npz")
+    json_path = Path(str(stem) + ".json")
+    present = (npz_path.is_file(), json_path.is_file())
+    if not any(present):
+        return None
+    if not all(present):
+        raise ValueError(f"incomplete resumable pooled model: {stem}")
+    model = ConditionalSequenceBiasModel.load(npz_path)
+    if model.feature_spec != spec:
+        raise ValueError(f"resumable pooled model feature specification changed: {stem}")
+    metadata = model.metadata
+    expected = {
+        "training_source": source,
+        "configuration": "cross_cell_pooled",
+        "read_shift": list(shift),
+        "training_depth_cuts_per_sample": depth_name,
+        "samples": list(samples),
+        "seed": int(seed),
+        "training_windows": int(training_windows),
+    }
+    for field, value in expected.items():
+        if metadata.get(field) != value:
+            raise ValueError(
+                f"resumable pooled model {field} changed for {stem}: "
+                f"{metadata.get(field)!r} != {value!r}"
+            )
+    if not np.isclose(float(metadata.get("l2", np.nan)), float(l2), rtol=0, atol=1e-15):
+        raise ValueError(f"resumable pooled model l2 changed: {stem}")
+    if not np.isclose(
+        float(metadata.get("training_cuts", np.nan)),
+        float(training_cuts),
+        rtol=0,
+        atol=1e-8,
+    ):
+        raise ValueError(f"resumable pooled model training cuts changed: {stem}")
+    return (
+        model,
+        float(metadata.get("runtime_seconds", np.nan)),
+        float(metadata.get("peak_memory_increment_mb", np.nan)),
+    )
+
+
 def evaluate_models(
     datasets: dict[tuple[tuple[int, int], str, str], ControlWindowDataset],
     outdir: Path,
@@ -749,6 +810,7 @@ def evaluate_models(
     adaptation_strength: float,
     source: str,
     pooled_only: bool = False,
+    resume_complete_pooled_fits: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Fit the full sample/pooled/adapted development factorial."""
 
@@ -797,29 +859,64 @@ def evaluate_models(
                         }
                         pooled_contexts = np.concatenate([train_arrays[sample][0] for sample in samples])
                         pooled_counts = np.concatenate([thinned[sample] for sample in samples])
-                        pooled, pooled_runtime, pooled_memory = _fit_one(
-                            spec,
-                            pooled_contexts,
-                            pooled_counts,
-                            l2=l2,
-                            epochs=epochs,
-                            batch_windows=batch_windows,
-                            seed=stable_u64("pooled", shift, model_name, l2, depth_name, seed=seed) % (2**32 - 1),
+                        model_seed = (
+                            stable_u64(
+                                "pooled",
+                                shift,
+                                model_name,
+                                l2,
+                                depth_name,
+                                seed=seed,
+                            )
+                            % (2**32 - 1)
                         )
                         pooled_stem = model_dir / (
                             f"pooled.{source}.{model_name}.shift_{shift[0]}_{shift[1]}."
                             f"l2_{_safe_token(l2)}.depth_{depth_name}.seed_{seed}"
                         )
-                        pooled_npz, _ = pooled.save(
-                            pooled_stem,
-                            metadata={
-                                "training_source": source,
-                                "configuration": "cross_cell_pooled",
-                                "read_shift": list(shift),
-                                "training_depth_cuts_per_sample": depth_name,
-                                "samples": samples,
-                            },
+                        resumed = (
+                            load_resumable_pooled_fit(
+                                pooled_stem,
+                                spec=spec,
+                                source=source,
+                                shift=shift,
+                                l2=l2,
+                                depth_name=depth_name,
+                                samples=samples,
+                                seed=model_seed,
+                                training_windows=len(pooled_contexts),
+                                training_cuts=float(pooled_counts.sum()),
+                            )
+                            if resume_complete_pooled_fits
+                            else None
                         )
+                        if resumed is None:
+                            pooled, pooled_runtime, pooled_memory = _fit_one(
+                                spec,
+                                pooled_contexts,
+                                pooled_counts,
+                                l2=l2,
+                                epochs=epochs,
+                                batch_windows=batch_windows,
+                                seed=model_seed,
+                            )
+                            pooled_npz, _ = pooled.save(
+                                pooled_stem,
+                                metadata={
+                                    "training_source": source,
+                                    "configuration": "cross_cell_pooled",
+                                    "read_shift": list(shift),
+                                    "training_depth_cuts_per_sample": depth_name,
+                                    "samples": samples,
+                                    "runtime_seconds": pooled_runtime,
+                                    "peak_memory_increment_mb": pooled_memory,
+                                },
+                            )
+                            resumed_existing = False
+                        else:
+                            pooled, pooled_runtime, pooled_memory = resumed
+                            pooled_npz = Path(str(pooled_stem) + ".npz")
+                            resumed_existing = True
                         pooled_size = pooled_npz.stat().st_size / (1024 * 1024)
                         artifact_rows.append(
                             {
@@ -836,6 +933,10 @@ def evaluate_models(
                                 "runtime_seconds": pooled_runtime,
                                 "peak_memory_increment_mb": pooled_memory,
                                 "model_size_mb": pooled_size,
+                                "resumed_existing": resumed_existing,
+                                "runtime_measurement_available": bool(
+                                    np.isfinite(pooled_runtime)
+                                ),
                             }
                         )
 
@@ -863,6 +964,7 @@ def evaluate_models(
                                             "peak_memory_increment_mb": pooled_memory,
                                             "model_size_mb": pooled_size,
                                             "model_npz": str(pooled_npz),
+                                            "resumed_existing": resumed_existing,
                                             **conditional_metrics(pooled, contexts, counts),
                                         }
                                     )
@@ -1463,6 +1565,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Fit only the cross-cell pooled model for efficient hyperparameter/depth screening.",
     )
+    parser.add_argument(
+        "--resume-complete-pooled-fits",
+        action="store_true",
+        help=(
+            "Reuse checksum-valid pooled model artifacts with identical training "
+            "identity and rescore them; incompatible or partial artifacts fail."
+        ),
+    )
     return parser
 
 
@@ -1474,6 +1584,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args.depths = args.depths or [None]
     args.seeds = args.seeds or [args.seed]
     args.mitochondrial_chromosomes = args.mitochondrial_chromosomes or ["chrM", "MT"]
+    if args.resume_complete_pooled_fits and not args.pooled_only:
+        raise ValueError("--resume-complete-pooled-fits requires --pooled-only")
     if args.window_size < 20 or args.margin < 41:
         raise ValueError("window size must be >=20 and margin must be >=41")
     if not 0 < args.low_signal_quantile <= 1:
@@ -1498,6 +1610,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         adaptation_strength=args.adaptation_strength,
         source=args.source,
         pooled_only=args.pooled_only,
+        resume_complete_pooled_fits=args.resume_complete_pooled_fits,
     )
     selection = select_bias_configurations(
         metrics,
@@ -1560,6 +1673,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "training_depths": ["full" if value is None else value for value in args.depths],
         "seeds": args.seeds,
         "pooled_only": args.pooled_only,
+        "resume_complete_pooled_fits": args.resume_complete_pooled_fits,
         "test_chromosomes_scored": False,
         "retained_configurations": selection[selection["retained_for_functional_screen"]].to_dict("records"),
         "minimum_depth_recommendations": depth_recommendations.to_dict("records"),

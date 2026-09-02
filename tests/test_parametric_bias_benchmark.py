@@ -15,7 +15,9 @@ from evaluate_parametric_bias import (  # noqa: E402
     ControlWindowDataset,
     conditional_metrics,
     cut_position,
+    evaluate_models,
     gc_matched_indices,
+    load_resumable_pooled_fit,
     select_bias_configurations,
     select_bias_ensembles,
     split_mitochondrial_dataset,
@@ -135,6 +137,69 @@ def test_conditional_metrics_reward_fitted_sequence_model() -> None:
     assert metrics["conditional_nll"] < metrics["null_nll"]
     assert metrics["multinomial_deviance_per_cut"] >= 0
     assert np.isfinite(metrics["aggregate_jsd"])
+
+
+def test_complete_pooled_fit_resumes_with_identity_checks(tmp_path: Path) -> None:
+    train = _dataset(10)
+    validation = train.subset(np.arange(5), split="validation")
+    datasets = {
+        ((4, -5), "sample", "train"): train,
+        ((4, -5), "sample", "validation"): validation,
+    }
+    first_metrics, first_artifacts, _motifs = evaluate_models(
+        datasets,
+        tmp_path,
+        models=["selma10"],
+        l2_values=[0.001],
+        depths=[None],
+        seeds=[2026],
+        epochs=2,
+        batch_windows=10,
+        adaptation_strength=0.1,
+        source="synthetic",
+        pooled_only=True,
+    )
+    assert not first_artifacts["resumed_existing"].any()
+    resumed_metrics, resumed_artifacts, _motifs = evaluate_models(
+        datasets,
+        tmp_path,
+        models=["selma10"],
+        l2_values=[0.001],
+        depths=[None],
+        seeds=[2026],
+        epochs=2,
+        batch_windows=10,
+        adaptation_strength=0.1,
+        source="synthetic",
+        pooled_only=True,
+        resume_complete_pooled_fits=True,
+    )
+    assert resumed_artifacts["resumed_existing"].all()
+    assert resumed_artifacts["runtime_measurement_available"].all()
+    assert resumed_metrics["resumed_existing"].all()
+    assert np.allclose(
+        resumed_metrics["conditional_nll"],
+        first_metrics["conditional_nll"],
+    )
+
+    artifact = Path(resumed_artifacts.iloc[0]["model_npz"])
+    with pytest.raises(ValueError, match="read_shift changed"):
+        load_resumable_pooled_fit(
+            Path(str(artifact)[: -len(".npz")]),
+            spec=BiasFeatureSpec.selma10(),
+            source="synthetic",
+            shift=(4, -4),
+            l2=0.001,
+            depth_name="full",
+            samples=["sample"],
+            seed=int(ConditionalSequenceBiasModel.load(artifact).metadata["seed"]),
+            training_windows=int(
+                ConditionalSequenceBiasModel.load(artifact).metadata["training_windows"]
+            ),
+            training_cuts=float(
+                ConditionalSequenceBiasModel.load(artifact).metadata["training_cuts"]
+            ),
+        )
 
 
 def test_selection_uses_validation_only_and_keeps_two() -> None:
