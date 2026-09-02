@@ -1,0 +1,78 @@
+{
+  "schema": "fp-tools-background-experiment-plan-v1",
+  "name": "HepG2_pinned_ChromBPNet_prediction_and_same_site_evaluation_v1",
+  "prerequisite": {
+    "manifest": "benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/regulatory_core.regulatory.manifest.json",
+    "schema": "fp-tools-chrombpnet-reference-run-v1",
+    "stage": "regulatory",
+    "source_commit": "09938fdb4397ec0006510e5251e48920a505d4de",
+    "require_completed": true
+  },
+  "stages": [
+    {
+      "name": "HepG2_prediction",
+      "manifest": "benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/predictions/HepG2.predict.manifest.json",
+      "schema": "fp-tools-chrombpnet-reference-run-v1",
+      "stage": "predict",
+      "source_commit": "09938fdb4397ec0006510e5251e48920a505d4de",
+      "require_completed": true,
+      "command": [
+        "{python}",
+        "benchmarks/scripts/run_chrombpnet_reference.py",
+        "predict",
+        "--genome",
+        "data/public/raw/genome/hg38.fa",
+        "--chrom-sizes",
+        "data/public/processed/encode_k562_hepg2_atac_replicates/reference/hg38.chrom.sizes",
+        "--peaks",
+        "benchmarks/results/footprint_detectability_v1/encode_development_labels/atac_peaks/ENCFF536RJV.bed",
+        "--bias-model",
+        "benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/bias/models/bias.h5",
+        "--chrombpnet-model",
+        "benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/regulatory_core/models/chrombpnet.h5",
+        "--chrombpnet-nobias-model",
+        "benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/regulatory_core/models/chrombpnet_nobias.h5",
+        "--output-prefix",
+        "benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/predictions/HepG2",
+        "--batch-size",
+        "64"
+      ]
+    },
+    {
+      "name": "HepG2_same_site_evaluation",
+      "manifest": "benchmarks/results/frozen_parametric_factorization_v1_run2/chrombpnet_comparison/HepG2_complete/chrombpnet_comparison_manifest.json",
+      "schema": "fp-tools-chrombpnet-frozen-comparison-v1",
+      "command": [
+        "{python}",
+        "benchmarks/scripts/evaluate_chrombpnet_reference.py",
+        "--study",
+        "benchmarks/manifests/frozen_parametric_factorization_v1.spec.json",
+        "--test-artifact",
+        "HepG2=benchmarks/results/frozen_parametric_factorization_v1_run2/development_test_inputs/mito_log21_l2_1e-4_shift_4_-5/HepG2.json",
+        "--dwm-expected",
+        "HepG2=benchmarks/results/footprint_detectability_v1/ablation/signals/HepG2_rep1/full/seed_2026/fp_tools_dwm/HepG2_rep1.full.s2026_expected.bw",
+        "--bias-prediction",
+        "HepG2=benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/predictions/HepG2_bias.bw",
+        "--regulatory-prediction",
+        "HepG2=benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/predictions/HepG2_chrombpnet.bw",
+        "--nobias-prediction",
+        "HepG2=benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/predictions/HepG2_chrombpnet_nobias.bw",
+        "--reference-manifest",
+        "benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/predictions/HepG2.predict.manifest.json",
+        "--outdir",
+        "benchmarks/results/frozen_parametric_factorization_v1_run2/chrombpnet_comparison/HepG2_complete",
+        "--minimum-sites-per-class",
+        "200",
+        "--bootstrap-iterations",
+        "1000",
+        "--aggregate-bootstrap-iterations",
+        "500",
+        "--dispersion",
+        "0",
+        "--seed",
+        "2026"
+      ]
+    }
+  ],
+  "controller_manifest": "benchmarks/results/footprint_external_references/chrombpnet_runs/frozen_v1/HepG2/followup.controller.manifest.json"
+}
