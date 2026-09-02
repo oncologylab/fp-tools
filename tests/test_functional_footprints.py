@@ -378,6 +378,58 @@ def test_conditional_multinomial_bias_only_profiles_remain_shallow() -> None:
     assert result.descriptors.depletion < 0.15
 
 
+@pytest.mark.parametrize("smoother", ["spline", "gp"])
+def test_protected_conditional_mixture_enforces_canonical_profile_and_roundtrips(
+    smoother: str,
+    tmp_path: Path,
+) -> None:
+    observed, expected, labels, _motif_score = _synthetic_counts(seed=45)
+    positions = _positions()
+    model = ConditionalMultinomialMixture(
+        positions,
+        smoother=smoother,
+        max_iter=60,
+        tolerance=1e-6,
+        profile_constraint="canonical-protection",
+        protection_center_limit=10.0,
+        protection_shoulder_limit=40.0,
+    )
+    result = model.fit(observed, expected)
+    center = np.abs(positions) <= 10
+    shoulders = (np.abs(positions) > 10) & (np.abs(positions) <= 40)
+    assert np.all(result.footprint_profile[center] <= 1e-12)
+    assert np.all(result.footprint_profile[shoulders] >= -1e-12)
+    assert result.descriptors.depletion > 0.2
+    assert roc_auc_score(labels, result.posterior) > 0.85
+    model.save(tmp_path / f"protected_conditional_{smoother}")
+    loaded = ConditionalMultinomialMixture.load(
+        tmp_path / f"protected_conditional_{smoother}.npz"
+    )
+    assert loaded.profile_constraint == "canonical-protection"
+    assert loaded.protection_center_limit == 10.0
+    assert loaded.protection_shoulder_limit == 40.0
+    assert np.allclose(
+        loaded.predict(observed[:30], expected[:30]),
+        model.predict(observed[:30], expected[:30]),
+    )
+
+
+def test_protected_conditional_projection_rejects_center_enrichment() -> None:
+    positions = _positions()
+    profile = np.zeros_like(positions)
+    profile[np.abs(positions) <= 10] = 1.0
+    profile[(np.abs(positions) > 10) & (np.abs(positions) <= 40)] = -1.0
+    model = ConditionalMultinomialMixture(
+        positions,
+        profile_constraint="canonical-protection",
+    )
+    projected = model._constrain_profile(profile)
+    assert np.all(projected[np.abs(positions) <= 10] == 0.0)
+    assert np.all(
+        projected[(np.abs(positions) > 10) & (np.abs(positions) <= 40)] == 0.0
+    )
+
+
 def test_fda_and_hybrid_models_detect_shape(tmp_path: Path) -> None:
     observed, expected, labels, _motif_score = _synthetic_counts()
     x = _positions()

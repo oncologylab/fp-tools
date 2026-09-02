@@ -77,6 +77,19 @@ def candidate_grid() -> list[Candidate]:
                             window=window,
                         )
                     )
+    for smoother in ("spline", "gp"):
+        for background in ("none", "linear", "gp-long"):
+            for window in (30.0, 50.0, 80.0):
+                candidates.append(
+                    Candidate(
+                        "conditional-protected_"
+                        f"{smoother}.bg_{background}.window_{int(window)}",
+                        "conditional",
+                        smoother=smoother,
+                        background=background,
+                        window=window,
+                    )
+                )
     for family in ("fda", "hybrid"):
         for channel in CHANNELS:
             for training_pool in ("tf", "family"):
@@ -211,6 +224,15 @@ def _evaluate_candidate(
                 if candidate.family == "count"
                 else ConditionalMultinomialMixture
             )
+            conditional_kwargs = (
+                {
+                    "profile_constraint": "canonical-protection"
+                    if candidate.candidate_id.startswith("conditional-protected_")
+                    else "none"
+                }
+                if candidate.family == "conditional"
+                else {}
+            )
             family_model = model_class(
                 positions,
                 smoother=candidate.smoother,
@@ -221,6 +243,7 @@ def _evaluate_candidate(
                 prior_constraint="none",
                 profile_outer_limit=50.0,
                 likelihood_limit=candidate.window,
+                **conditional_kwargs,
             )
             family_result = family_model.fit(
                 train_observed[family_train],
@@ -236,6 +259,7 @@ def _evaluate_candidate(
                 prior_constraint="none",
                 profile_outer_limit=50.0,
                 likelihood_limit=candidate.window,
+                **conditional_kwargs,
             )
             result = model.fit(
                 train_observed[tf_train],

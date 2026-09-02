@@ -151,6 +151,15 @@ def fit_model(
             if candidate.family == "count"
             else ConditionalMultinomialMixture
         )
+        conditional_kwargs = (
+            {
+                "profile_constraint": "canonical-protection"
+                if candidate.candidate_id.startswith("conditional-protected_")
+                else "none"
+            }
+            if candidate.family == "conditional"
+            else {}
+        )
         family_model = model_class(
             positions,
             smoother=candidate.smoother,
@@ -161,6 +170,7 @@ def fit_model(
             prior_constraint="none",
             profile_outer_limit=50.0,
             likelihood_limit=candidate.window,
+            **conditional_kwargs,
         )
         family_result = family_model.fit(
             observed[family_indexes],
@@ -176,6 +186,7 @@ def fit_model(
             prior_constraint="none",
             profile_outer_limit=50.0,
             likelihood_limit=candidate.window,
+            **conditional_kwargs,
         )
         model.fit(
             observed[tf_indexes],

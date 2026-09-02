@@ -1429,9 +1429,46 @@ class ConditionalMultinomialMixture(BiasAwareFunctionalMixture):
     evaluated independently as a separate count component.
     """
 
-    def __init__(self, positions: np.ndarray, **kwargs: Any):
+    def __init__(
+        self,
+        positions: np.ndarray,
+        *,
+        profile_constraint: str = "none",
+        protection_center_limit: float = 10.0,
+        protection_shoulder_limit: float = 40.0,
+        **kwargs: Any,
+    ):
         super().__init__(positions, **kwargs)
+        if profile_constraint not in {"none", "canonical-protection"}:
+            raise ValueError(
+                "profile_constraint must be none or canonical-protection"
+            )
+        if protection_center_limit <= 0:
+            raise ValueError("protection_center_limit must be positive")
+        if protection_shoulder_limit <= protection_center_limit:
+            raise ValueError(
+                "protection_shoulder_limit must exceed protection_center_limit"
+            )
+        self.profile_constraint = profile_constraint
+        self.protection_center_limit = float(protection_center_limit)
+        self.protection_shoulder_limit = float(protection_shoulder_limit)
         self.evidence_temperature_: float = 1.0
+
+    def _constrain_profile(self, profile: np.ndarray) -> np.ndarray:
+        """Project a profile onto the optional canonical protection cone."""
+
+        values = np.asarray(profile, dtype=float).copy()
+        if values.shape != self.positions.shape:
+            raise ValueError("profile must match positions")
+        if self.profile_constraint == "canonical-protection":
+            distance = np.abs(self.positions)
+            center = distance <= self.protection_center_limit
+            shoulders = (distance > self.protection_center_limit) & (
+                distance <= self.protection_shoulder_limit
+            )
+            values[center] = np.minimum(values[center], 0.0)
+            values[shoulders] = np.maximum(values[shoulders], 0.0)
+        return values * self.profile_taper
 
     def _conditional_probabilities(
         self,
@@ -1502,7 +1539,7 @@ class ConditionalMultinomialMixture(BiasAwareFunctionalMixture):
                 raise ValueError("prior_profile must match positions")
             profile = prior.copy()
             prior_weight = self.shrinkage
-        profile = profile * self.profile_taper
+        profile = self._constrain_profile(profile)
 
         previous = -np.inf
         converged = False
@@ -1553,7 +1590,7 @@ class ConditionalMultinomialMixture(BiasAwareFunctionalMixture):
                 )
                 weights = weights + prior_weight
             smooth = self.smoother.fit(target, weights)
-            profile = smooth.mean * self.profile_taper
+            profile = self._constrain_profile(smooth.mean)
             smooth = SmoothResult(
                 profile,
                 smooth.standard_error * self.profile_taper,
@@ -1652,6 +1689,9 @@ class ConditionalMultinomialMixture(BiasAwareFunctionalMixture):
         document = json.loads(json_path.read_text(encoding="utf-8"))
         document["model_type"] = "conditional_multinomial_mixture"
         document["evidence_temperature"] = self.evidence_temperature_
+        document["profile_constraint"] = self.profile_constraint
+        document["protection_center_limit"] = self.protection_center_limit
+        document["protection_shoulder_limit"] = self.protection_shoulder_limit
         json_path.write_text(
             json.dumps(document, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
@@ -1709,6 +1749,13 @@ class ConditionalMultinomialMixture(BiasAwareFunctionalMixture):
                 None
                 if document.get("likelihood_limit") is None
                 else float(document["likelihood_limit"])
+            ),
+            profile_constraint=str(document.get("profile_constraint", "none")),
+            protection_center_limit=float(
+                document.get("protection_center_limit", 10.0)
+            ),
+            protection_shoulder_limit=float(
+                document.get("protection_shoulder_limit", 40.0)
             ),
         )
         model.result_ = FunctionalMixtureResult(

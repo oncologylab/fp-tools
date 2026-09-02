@@ -168,7 +168,7 @@ def test_loaded_strand_artifact_includes_raw_counts(tmp_path: Path) -> None:
 
 def test_label_free_grid_and_label_firewall() -> None:
     candidates = label_free_candidate_grid()
-    assert len(candidates) == 84
+    assert len(candidates) == 102
     assert {candidate.family for candidate in candidates} == {
         "count",
         "conditional",
@@ -177,6 +177,13 @@ def test_label_free_grid_and_label_firewall() -> None:
         "anchored-fda",
         "residualized-fda",
     }
+    protected = [
+        candidate
+        for candidate in candidates
+        if candidate.candidate_id.startswith("conditional-protected_")
+    ]
+    assert len(protected) == 18
+    assert {candidate.family for candidate in protected} == {"conditional"}
     anchored = [candidate for candidate in candidates if candidate.family == "anchored-fda"]
     assert len(anchored) == 18
     assert {candidate.anchor_strength for candidate in anchored} == {0.5, 1.0, 2.0}
