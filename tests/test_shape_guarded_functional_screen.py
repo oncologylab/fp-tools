@@ -68,6 +68,32 @@ def test_common_support_validates_labels_and_coverage():
         screen.common_support(candidate, raw, minimum_coverage=1.0)
 
 
+def test_common_support_uses_authoritative_raw_guardrail_on_name_collision():
+    candidate = pd.DataFrame(
+        [
+            {
+                "cell": "A",
+                "tf": "TF",
+                "TFBS_chr": "chr19",
+                "TFBS_start": 10,
+                "TFBS_end": 12,
+                "TFBS_strand": "+",
+                "label": 1,
+                "candidate_probability": 0.8,
+                "dwm_score": 0.2,
+                "raw_score": -99.0,
+            }
+        ]
+    )
+    raw = candidate.rename(columns={"label": "chip_label"}).copy()
+    raw["raw_score"] = 0.3
+    merged, _coverage = screen.common_support(
+        candidate, raw, minimum_coverage=1.0
+    )
+    assert merged.iloc[0]["raw_score"] == 0.3
+    assert "raw_score_candidate" not in merged
+
+
 def test_classification_requires_shape_and_safety():
     base = {
         "status": "eligible",

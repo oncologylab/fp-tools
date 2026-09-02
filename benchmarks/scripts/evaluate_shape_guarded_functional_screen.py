@@ -122,7 +122,14 @@ def common_support(
         raise ValueError("raw scores lack: " + ", ".join(sorted(missing)))
     if candidate.duplicated(SITE_KEYS).any() or raw.duplicated(SITE_KEYS).any():
         raise ValueError("score tables contain duplicate motif sites")
-    merged = candidate.merge(
+    # Newer frozen-policy score tables retain their own raw diagnostic.  The
+    # independently frozen shrinkage table is the raw guardrail for this audit,
+    # so remove any candidate-side copy before merging to keep its column name
+    # and provenance unambiguous.
+    candidate_for_merge = candidate.drop(
+        columns=[column for column in ("raw_score", "chip_label") if column in candidate]
+    )
+    merged = candidate_for_merge.merge(
         raw[SITE_KEYS + ["chip_label", "raw_score", "dwm_score"]],
         on=SITE_KEYS,
         how="inner",
