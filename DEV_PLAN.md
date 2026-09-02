@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-01
+Last updated: 2026-09-02
 
 ## Current Baseline
 
@@ -258,6 +258,44 @@ a separately planned breaking release explicitly changes the contract.
   This confirms that the current FDA/GP variants do not yet solve hard-TF
   footprint detection and prevents accessibility-driven occupancy gains from
   being reported as footprints.
+- A canonical-protection conditional model now constrains the learned center
+  to depletion and the shoulders to enrichment. Validation-frozen models were
+  evaluated for all 14 K562/HepG2 task contexts and passed independent
+  naked-DNA replicate-2 safety. On exact chromosome-test support, CTCF gains
+  over raw were 0.0589 AUROC/14.01% relative AUPRC in HepG2 and 0.0508/8.94%
+  in K562 with visibly canonical protection. The model beats DWM on both
+  metrics in all six biological replicates, but its full-replicate AUROC is
+  below raw in all six; no other TF has a defensible shape-guarded gain. It is
+  therefore a useful detector ablation, not a promotion candidate.
+- Both complete 120-fit mitochondrial and naked-DNA sequence-bias grids are
+  now collated into five-seed geometric ensembles. The naked-DNA grid ranks
+  LOG21, +4/-5, L2 0.01 first on held-out conditional likelihood; cross-source
+  qualification still retains the mitochondrial LOG21 ensemble for the
+  internal footprint experiment. Resumption is fail-closed: NPZ/JSON
+  checksums and the full source, shift, feature, penalty, depth, sample, seed,
+  window, and cut identity must match before an existing fit is rescored.
+- The official ChromBPNet reference is pinned to commit
+  `09938fdb4397ec0006510e5251e48920a505d4de` and a digest-locked TensorFlow
+  2.8 GPU container. On identical K562 test sites and conventional geometry,
+  frozen CPU parametric bias scores CTCF at AUROC 0.7421/AUPRC 0.7180, close
+  to ChromBPNet bias at 0.7509/0.7229 and above DWM at 0.6810/0.6455. Its
+  paired gains over DWM have positive chromosome-block intervals; its AUPRC
+  difference from ChromBPNet includes zero. Neither bias method is general:
+  both regress eligible MYC, while the parametric model gives only a small
+  ZNF384 gain over DWM and remains below raw. The checksum-locked HepG2 bias
+  model is complete; its regulatory reference and same-site comparison must
+  complete before any cross-context claim.
+- The significant, safety-passing internal CTCF partial-bias result has a
+  concise one-page report, metrics, checksums, and limitations in Box under
+  `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.
+  This is explicitly a research artifact; it does not change the package
+  default and is not evidence for a general TF correction.
+- The K562 deep-reference comparison has a second checksum-verified Box report
+  under
+  `Yaoxiang/fp-tools/2026-09-02_K562_CTCF_parametric_vs_ChromBPNet`.
+  It contains a one-page same-site aggregate and metric comparison, its source
+  metrics, and explicit limitations; the report does not claim general
+  promotion from the CTCF result.
 
 ## Current ENCODE Resource
 
