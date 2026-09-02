@@ -76,6 +76,7 @@ def test_bias_prediction_equal_to_observed_has_zero_residual_geometry() -> None:
     methods = reference.score_methods(
         observed,
         uniform,
+        observed * 2.0,
         observed * 4.0,
         observed,
         observed,
@@ -87,6 +88,11 @@ def test_bias_prediction_equal_to_observed_has_zero_residual_geometry() -> None:
     # roundoff even when the predicted and observed shapes are identical.
     np.testing.assert_allclose(score, 0.0, atol=5e-8)
     np.testing.assert_allclose(profile, 0.0, atol=2e-7)
+    parametric_score, parametric_profile = methods[
+        "frozen_parametric_bias_conventional_geometry"
+    ]
+    np.testing.assert_allclose(parametric_score, 0.0, atol=5e-8)
+    np.testing.assert_allclose(parametric_profile, 0.0, atol=2e-7)
     assert np.any(np.abs(methods["DWM_conventional_geometry"][0]) > 0)
 
 

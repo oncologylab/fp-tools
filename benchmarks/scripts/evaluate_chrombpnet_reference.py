@@ -3,10 +3,11 @@
 
 The benchmark places every signal on identical finite motif sites and uses the
 same conventional center-versus-shoulder geometry before comparing more
-specialized detectors.  ChromBPNet's bias prediction is treated as an expected
-cut profile and locally scaled to the observed total.  Its regulatory and
-bias-free predictions are total-matched before geometry scoring so count-head
-calibration cannot create an artificial advantage.
+specialized detectors.  The frozen parametric and ChromBPNet bias predictions
+are treated as expected cut profiles and locally scaled to the observed total.
+ChromBPNet's regulatory and bias-free predictions are total-matched before
+geometry scoring so count-head calibration cannot create an artificial
+advantage.
 """
 
 from __future__ import annotations
@@ -181,6 +182,7 @@ def scale_to_observed_total(observed: np.ndarray, prediction: np.ndarray) -> np.
 def score_methods(
     observed: np.ndarray,
     dwm_expected: np.ndarray,
+    parametric_expected: np.ndarray,
     bias_prediction: np.ndarray,
     regulatory_prediction: np.ndarray,
     nobias_prediction: np.ndarray,
@@ -191,11 +193,15 @@ def score_methods(
     """Return conventional-geometry scores and profiles for every arm."""
 
     dwm_expected = scale_to_observed_total(observed, dwm_expected)
+    parametric_expected = scale_to_observed_total(observed, parametric_expected)
     bias_prediction = scale_to_observed_total(observed, bias_prediction)
     regulatory_prediction = scale_to_observed_total(observed, regulatory_prediction)
     nobias_prediction = scale_to_observed_total(observed, nobias_prediction)
     dwm_score, dwm_residual = residual_score(
         observed, dwm_expected, positions, "deviance", dispersion
+    )
+    parametric_score, parametric_residual = residual_score(
+        observed, parametric_expected, positions, "deviance", dispersion
     )
     bias_score, bias_residual = residual_score(
         observed, bias_prediction, positions, "deviance", dispersion
@@ -205,6 +211,10 @@ def score_methods(
         "DWM_conventional_geometry": (
             dwm_score,
             normalize_functional_profiles(dwm_residual, positions),
+        ),
+        "frozen_parametric_bias_conventional_geometry": (
+            parametric_score,
+            normalize_functional_profiles(parametric_residual, positions),
         ),
         "ChromBPNet_bias_conventional_geometry": (
             bias_score,
@@ -390,6 +400,8 @@ def main(argv: list[str] | None = None) -> int:
         ],
         "common_finite_support": True,
         "prediction_totals_matched_to_observed": True,
+        "frozen_parametric_expected_from_test_artifact": True,
+        "head_to_head_parametric_vs_chrombpnet_bias": True,
         "test_labels_previously_opened_for_other_models": True,
         "external_reference_used_for_policy_selection": False,
         "minimum_sites_per_class": args.minimum_sites_per_class,
@@ -411,6 +423,9 @@ def main(argv: list[str] | None = None) -> int:
     for cell in sorted(cells):
         sites, arrays, document = loaded[cell]
         observed = np.asarray(arrays["plus_observed"] + arrays["minus_observed"])
+        parametric_expected = np.asarray(
+            arrays["plus_expected"] + arrays["minus_expected"]
+        )
         flank = int(document["metadata"]["flank"])
         positions = np.arange(-flank, flank + 1, dtype=float)
         extracted: dict[str, np.ndarray] = {}
@@ -449,6 +464,7 @@ def main(argv: list[str] | None = None) -> int:
             methods = score_methods(
                 observed[common],
                 extracted["dwm"][common],
+                parametric_expected[common],
                 extracted["bias"][common],
                 extracted["regulatory"][common],
                 extracted["nobias"][common],
@@ -512,11 +528,21 @@ def main(argv: list[str] | None = None) -> int:
             score_frames.append(score_frame)
             if min(np.sum(labels == 1), np.sum(labels == 0)) < args.minimum_sites_per_class:
                 continue
-            for baseline_name in ("DWM_conventional_geometry", "raw_geometry"):
+            comparison_targets = {
+                "DWM_conventional_geometry": [
+                    method for method in methods if method != "DWM_conventional_geometry"
+                ],
+                "raw_geometry": [
+                    method for method in methods if method != "raw_geometry"
+                ],
+                "ChromBPNet_bias_conventional_geometry": [
+                    "frozen_parametric_bias_conventional_geometry"
+                ],
+            }
+            for baseline_name, target_methods in comparison_targets.items():
                 baseline_score = methods[baseline_name][0]
-                for method, (score, _profiles) in methods.items():
-                    if method == baseline_name:
-                        continue
+                for method in target_methods:
+                    score = methods[method][0]
                     bootstrap_rows.append(
                         {
                             "cell": cell,
