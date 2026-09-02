@@ -101,6 +101,33 @@ def test_core_only_stages_skip_optional_interpretation() -> None:
     assert module.stage_arguments(regulatory)[:2] == ["chrombpnet", "train"]
 
 
+def test_predict_stage_does_not_require_training_fold() -> None:
+    parser = module.build_parser()
+    args = parser.parse_args(
+        [
+            "predict",
+            "--genome",
+            "test_data/genome.fa.gz",
+            "--chrom-sizes",
+            "test_data/chrom_sizes.txt",
+            "--peaks",
+            "test_data/merged_peaks.bed",
+            "--bias-model",
+            "test_data/fake_bias.h5",
+            "--chrombpnet-model",
+            "test_data/fake_chrombpnet.h5",
+            "--chrombpnet-nobias-model",
+            "test_data/fake_chrombpnet_nobias.h5",
+            "--output-prefix",
+            "benchmarks/results/footprint_external_references/fixture/prediction",
+        ]
+    )
+    arguments = module.stage_arguments(args)
+    assert arguments[:2] == ["chrombpnet", "pred_bw"]
+    assert "-fl" not in arguments
+    assert "-cmb" in arguments
+
+
 def test_prep_output_discovery_ignores_auxiliary_directories(
     tmp_path, monkeypatch
 ) -> None:

@@ -183,6 +183,27 @@ def smoke_arguments() -> list[str]:
 def stage_arguments(args: argparse.Namespace) -> list[str]:
     if args.stage == "smoke":
         return smoke_arguments()
+    if args.stage == "predict":
+        return [
+            "chrombpnet",
+            "pred_bw",
+            "-bm",
+            container_path(args.bias_model),
+            "-cm",
+            container_path(args.chrombpnet_model),
+            "-cmb",
+            container_path(args.chrombpnet_nobias_model),
+            "-r",
+            container_path(args.peaks),
+            "-g",
+            container_path(args.genome),
+            "-c",
+            container_path(args.chrom_sizes),
+            "-op",
+            container_path(args.output_prefix),
+            "-bs",
+            str(args.batch_size),
+        ]
     common = [
         "-g",
         container_path(args.genome),
@@ -234,27 +255,6 @@ def stage_arguments(args: argparse.Namespace) -> list[str]:
             *training,
             "-b",
             container_path(args.bias_model),
-        ]
-    if args.stage == "predict":
-        return [
-            "chrombpnet",
-            "pred_bw",
-            "-bm",
-            container_path(args.bias_model),
-            "-cm",
-            container_path(args.chrombpnet_model),
-            "-cmb",
-            container_path(args.chrombpnet_nobias_model),
-            "-r",
-            container_path(args.peaks),
-            "-g",
-            container_path(args.genome),
-            "-c",
-            container_path(args.chrom_sizes),
-            "-op",
-            container_path(args.output_prefix),
-            "-bs",
-            str(args.batch_size),
         ]
     raise ValueError(f"unknown stage: {args.stage}")
 
