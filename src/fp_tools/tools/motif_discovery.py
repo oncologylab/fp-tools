@@ -7,6 +7,7 @@ import argparse
 import csv
 import gzip
 import html
+import math
 import re
 import shlex
 import subprocess
@@ -22,6 +23,8 @@ from fp_tools.runtime import (
     prepare_command_runtime,
 )
 from fp_tools.utils.motif_databases import motif_db_table, resolve_motif_inputs
+from fp_tools.utils.motifs import MotifList, get_motif_format
+from fp_tools.utils.subprocess_commands import fp_tools_subprocess_command
 
 
 @dataclass(frozen=True)
@@ -124,6 +127,94 @@ def meme_command(fasta: str | Path, outdir: str | Path, method: str = "meme", ex
     return command
 
 
+def _validated_motif_list(path: Path) -> tuple[str, MotifList]:
+    if not path.is_file():
+        raise ValueError(f"Known motif file does not exist: {path}")
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise ValueError(f"Could not read known motif file {path}: {exc}") from exc
+    motif_format = get_motif_format(content)
+    if motif_format not in {"meme", "jaspar", "pfm", "transfac"}:
+        raise ValueError(
+            f"Known motif file has an unsupported format: {path}; "
+            "use MEME, JASPAR, PFM, or TRANSFAC"
+        )
+    try:
+        motifs = MotifList().from_file(str(path))
+    except SystemExit as exc:
+        raise ValueError(f"Invalid known motif file {path}: {exc}") from exc
+    if not motifs:
+        raise ValueError(f"Known motif file contains no motifs: {path}")
+    for motif in motifs:
+        if tuple(str(base).upper() for base in motif.bases) != ("A", "C", "G", "T"):
+            raise ValueError(f"Known motif file is not a DNA motif database: {path}")
+        if not motif.id or motif.length is None or motif.length < 1:
+            raise ValueError(f"Known motif file contains an invalid motif: {path}")
+        for row in motif.counts or []:
+            if any(
+                not math.isfinite(float(value)) or float(value) < 0
+                for value in row
+            ):
+                raise ValueError(
+                    f"Known motif file contains an invalid matrix value: {path}"
+                )
+    return motif_format, motifs
+
+
+def prepare_known_motifs_for_tomtom(
+    known_motifs: str | Path | list[str | Path] | None,
+    outdir: str | Path,
+) -> list[Path]:
+    """Return validated MEME inputs, converting other supported DNA formats."""
+
+    if known_motifs is None:
+        return []
+    inputs = (
+        [known_motifs]
+        if isinstance(known_motifs, (str, Path))
+        else list(known_motifs)
+    )
+    converted_dir = Path(outdir) / "known_motifs"
+    outputs: list[Path] = []
+    used_names: set[str] = set()
+    for source_value in inputs:
+        source = Path(source_value).expanduser()
+        motif_format, motifs = _validated_motif_list(source)
+        if motif_format == "meme":
+            outputs.append(source)
+            continue
+        converted_dir.mkdir(parents=True, exist_ok=True)
+        stem = re.sub(r"[^A-Za-z0-9_.-]+", "_", source.stem).strip("._")
+        stem = stem or "known_motifs"
+        name = f"{stem}.meme"
+        suffix = 2
+        while name in used_names:
+            name = f"{stem}_{suffix}.meme"
+            suffix += 1
+        used_names.add(name)
+        output = converted_dir / name
+        temporary = output.with_name(f".{output.name}.tmp")
+        try:
+            temporary.write_text(motifs.as_string("meme"), encoding="utf-8")
+            output_ids = [
+                (motif.id, motif.name, motif.length)
+                for motif in _validated_motif_list(temporary)[1]
+            ]
+            input_ids = [
+                (motif.id, motif.name, motif.length) for motif in motifs
+            ]
+            if output_ids != input_ids:
+                raise ValueError(
+                    f"Converted motif identifiers or matrices failed validation: {source}"
+                )
+            temporary.replace(output)
+        finally:
+            temporary.unlink(missing_ok=True)
+        outputs.append(output)
+    return outputs
+
+
 def write_motif_discovery_plan(
     fasta: str | Path,
     outdir: str | Path,
@@ -152,30 +243,32 @@ def write_motif_discovery_plan(
         " ".join(shlex.quote(part) for part in meme_command(fasta, discovery_dir, method=method, extra_args=extra_args or [])),
     ]
     tomtom_tsv = ""
-    known_motif_paths = []
-    if known_motifs is not None:
-        if isinstance(known_motifs, (str, Path)):
-            known_motif_paths = [known_motifs]
-        else:
-            known_motif_paths = list(known_motifs)
+    known_motif_paths = prepare_known_motifs_for_tomtom(known_motifs, outdir)
     if known_motif_paths:
+        tomtom_tsv = str(tomtom_dir / "tomtom.tsv")
         lines.extend(
             [
+                f"mkdir -p {shlex.quote(str(tomtom_dir))}",
                 " ".join(
-                    [
-                        "tomtom",
-                        "-oc",
-                        shlex.quote(str(tomtom_dir)),
-                        shlex.quote(str(motif_txt)),
-                        *[shlex.quote(str(path)) for path in known_motif_paths],
-                    ]
-                ),
+                    shlex.quote(str(part))
+                    for part in ["tomtom", "-text", motif_txt, *known_motif_paths]
+                )
+                + f" > {shlex.quote(tomtom_tsv)}",
             ]
         )
-        tomtom_tsv = f" --tomtom-tsv {shlex.quote(str(tomtom_dir / 'tomtom.tsv'))}"
+    summary_arguments = ["--meme-txt", str(motif_txt)]
+    if tomtom_tsv:
+        summary_arguments.extend(["--tomtom-tsv", tomtom_tsv])
+    summary_arguments.extend(
+        ["--out-tsv", str(summary_tsv), "--out-html", str(summary_html)]
+    )
     lines.append(
-        f"summarize-motifs --meme-txt {shlex.quote(str(motif_txt))}{tomtom_tsv} "
-        f"--out-tsv {shlex.quote(str(summary_tsv))} --out-html {shlex.quote(str(summary_html))}"
+        " ".join(
+            shlex.quote(str(part))
+            for part in fp_tools_subprocess_command(
+                "summarize-motifs", summary_arguments
+            )
+        )
     )
     script.write_text("\n".join(lines) + "\n", encoding="utf-8")
     script.chmod(0o755)
@@ -404,7 +497,11 @@ def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
     parser.add_argument("--outdir", required=True, help="External motif discovery output directory.")
     parser.add_argument("--script", help="Output shell script path. Defaults to <outdir>/run_motif_discovery.sh.")
     parser.add_argument("--method", choices=["meme", "dreme", "streme"], default="meme")
-    parser.add_argument("--known-motifs", help="Optional known motif database for Tomtom comparison.")
+    parser.add_argument(
+        "--known-motifs",
+        nargs="+",
+        help="Optional known motif database file(s) for Tomtom comparison.",
+    )
     parser.add_argument("--known-motif-db", help="Optional built-in motif database for Tomtom comparison.")
     parser.add_argument("--list-motif-dbs", action="store_true", help="List available built-in motif databases and exit.")
     parser.add_argument("--extra-args", nargs=argparse.REMAINDER, default=[], help="Additional arguments appended to MEME/DREME/STREME.")
@@ -446,23 +543,35 @@ def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
 
     try:
         known_motif_inputs = resolve_motif_inputs(
-            [args.known_motifs] if args.known_motifs else None,
+            args.known_motifs,
             args.known_motif_db,
             use_default=False,
         )
     except ValueError as exc:
         parser.error(str(exc))
-    script = write_motif_discovery_plan(
-        fasta,
-        outdir,
-        args.script or str(outdir / "run_motif_discovery.sh"),
-        method=args.method,
-        known_motifs=known_motif_inputs,
-        extra_args=args.extra_args,
-    )
+    try:
+        script = write_motif_discovery_plan(
+            fasta,
+            outdir,
+            args.script or str(outdir / "run_motif_discovery.sh"),
+            method=args.method,
+            known_motifs=known_motif_inputs,
+            extra_args=args.extra_args,
+        )
+    except (OSError, ValueError) as exc:
+        parser.error(str(exc))
     print(script)
     if args.execute:
-        subprocess.run([str(script)], check=True)
+        try:
+            result = subprocess.run([str(script)], check=False)
+        except OSError as exc:
+            parser.exit(2, f"discover-motifs: could not start {script}: {exc}\n")
+        if result.returncode:
+            parser.exit(
+                int(result.returncode),
+                "discover-motifs: generated workflow failed with exit code "
+                f"{result.returncode}; inspect {script} and the command output above.\n",
+            )
     return 0
 
 

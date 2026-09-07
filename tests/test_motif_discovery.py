@@ -1,6 +1,14 @@
+import contextlib
+import io
+import shlex
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
+
+from fp_tools.tools import motif_discovery
 
 from fp_tools.tools.motif_discovery import (
     discovery_motif_text,
@@ -9,6 +17,7 @@ from fp_tools.tools.motif_discovery import (
     motif_discovery_plan_main,
     parse_meme_txt,
     parse_tomtom_tsv,
+    prepare_known_motifs_for_tomtom,
     read_candidate_sites,
     summarize_motif_outputs,
     write_motif_discovery_plan,
@@ -56,7 +65,18 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
             known = tmp / "known.meme"
             script = tmp / "run.sh"
             fasta.write_text(">site1\nACGT\n", encoding="utf-8")
-            known.write_text("MEME version 4\n", encoding="utf-8")
+            known.write_text(
+                "MEME version 4\n\n"
+                "ALPHABET= ACGT\n\n"
+                "strands: + -\n\n"
+                "Background letter frequencies\n"
+                "A 0.25 C 0.25 G 0.25 T 0.25\n\n"
+                "MOTIF M1 known\n"
+                "letter-probability matrix: alength= 4 w= 2 nsites= 10 E= 0\n"
+                "0.7 0.1 0.1 0.1\n"
+                "0.1 0.1 0.1 0.7\n",
+                encoding="utf-8",
+            )
 
             path = write_motif_discovery_plan(
                 fasta,
@@ -73,6 +93,51 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
         self.assertIn("tomtom", text)
         self.assertIn("summarize-motifs", text)
         self.assertTrue(text.startswith("#!/usr/bin/env bash"))
+
+    def test_jaspar_inputs_are_converted_to_valid_ordered_meme(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            jaspar = root / "known.jaspar"
+            jaspar.write_text(
+                ">M1 First motif name\n"
+                "A [ 8 1 ]\nC [ 1 1 ]\nG [ 1 1 ]\nT [ 0 7 ]\n"
+                ">M2 Second motif\n"
+                "A [ 0 5 ]\nC [ 5 0 ]\nG [ 0 0 ]\nT [ 0 0 ]\n",
+                encoding="utf-8",
+            )
+            outputs = prepare_known_motifs_for_tomtom(
+                [jaspar], root / "results"
+            )
+            converted = outputs[0]
+            motif_format, motifs = motif_discovery._validated_motif_list(converted)
+
+            self.assertEqual(
+                converted, root / "results" / "known_motifs" / "known.meme"
+            )
+            self.assertEqual(motif_format, "meme")
+            self.assertEqual(
+                [(motif.id, motif.name) for motif in motifs],
+                [("M1", "First motif name"), ("M2", "Second motif")],
+            )
+            self.assertEqual(motifs[0].counts, [[8, 1], [1, 1], [1, 1], [0, 7]])
+
+    def test_valid_meme_input_is_passed_through_without_changes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source = root / "known.meme"
+            source.write_text(
+                "MEME version 4\n\nALPHABET= ACGT\n\nstrands: + -\n\n"
+                "Background letter frequencies\nA 0.25 C 0.25 G 0.25 T 0.25\n\n"
+                "MOTIF M1 Known\n"
+                "letter-probability matrix: alength= 4 w= 1 nsites= 10 E= 0\n"
+                "0.25 0.25 0.25 0.25\n",
+                encoding="utf-8",
+            )
+            before = source.read_bytes()
+            outputs = prepare_known_motifs_for_tomtom(source, root / "results")
+            self.assertEqual(outputs, [source])
+            self.assertEqual(source.read_bytes(), before)
+            self.assertFalse((root / "results" / "known_motifs").exists())
 
     def test_motif_discovery_plan_accepts_builtin_known_motif_db(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -93,10 +158,70 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
             )
             script = outdir / "run_motif_discovery.sh"
             text = script.read_text(encoding="utf-8")
+            converted = outdir / "known_motifs" / "JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.meme"
+            self.assertTrue(converted.is_file())
+            converted_count = len(
+                motif_discovery._validated_motif_list(converted)[1]
+            )
 
         self.assertEqual(code, 0)
         self.assertIn("tomtom", text)
-        self.assertIn("JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.txt", text)
+        self.assertIn("known_motifs", text)
+        self.assertIn("JASPAR2026_CORE_vertebrates_non-redundant_pfms_jaspar.meme", text)
+        self.assertEqual(converted_count, 1019)
+
+    def test_summary_command_uses_frozen_dispatch_and_quotes_every_token(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir) / "directory with spaces"
+            root.mkdir()
+            fasta = root / "sites file.fa"
+            fasta.write_text(">site1\nACGT\n", encoding="utf-8")
+            with mock.patch(
+                "fp_tools.utils.subprocess_commands.is_frozen", return_value=True
+            ), mock.patch.object(sys, "executable", "/Applications/fp tools"):
+                script = write_motif_discovery_plan(
+                    fasta, root / "motif results", root / "run plan.sh"
+                )
+            summary_tokens = shlex.split(script.read_text(encoding="utf-8").splitlines()[-1])
+
+        self.assertEqual(
+            summary_tokens[:3],
+            [
+                "/Applications/fp tools",
+                "--fp-tools-internal-command",
+                "summarize-motifs",
+            ],
+        )
+        self.assertIn(str(root / "motif results" / "meme" / "meme.txt"), summary_tokens)
+
+    def test_execute_failure_returns_actionable_nonzero_error(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            fasta = root / "sites.fa"
+            fasta.write_text(">site1\nACGT\n", encoding="utf-8")
+            stderr = io.StringIO()
+            with mock.patch.object(
+                motif_discovery, "prepare_command_runtime", return_value=None
+            ), mock.patch.object(
+                motif_discovery.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=7),
+            ), contextlib.redirect_stderr(stderr):
+                with self.assertRaises(SystemExit) as raised:
+                    motif_discovery_plan_main(
+                        [
+                            "--fasta",
+                            str(fasta),
+                            "--outdir",
+                            str(root / "results"),
+                            "--execute",
+                            "--runtime",
+                            "system",
+                        ]
+                    )
+            self.assertEqual(raised.exception.code, 7)
+            self.assertIn("generated workflow failed with exit code 7", stderr.getvalue())
+            self.assertIn("run_motif_discovery.sh", stderr.getvalue())
 
     def test_write_streme_plan_uses_streme_txt(self):
         with tempfile.TemporaryDirectory() as tmpdir:

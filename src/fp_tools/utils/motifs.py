@@ -244,7 +244,7 @@ class MotifList(list):
                         self[-1].set_counts(count_matrix)
                     probability_matrix = []  # type: ignore
                     self.append(OneMotif(motifid=""))
-                    cols = line.split()
+                    cols = line.split(maxsplit=2)
                     if len(cols) > 2:
                         motif_id, name = cols[1], cols[2]
                     else:
@@ -293,7 +293,8 @@ class MotifList(list):
                             self[-1].set_counts(count_matrix)  # type: ignore
                         cols = line.split()
                         if len(cols) > 1:
-                            motif_id, name = cols[0].replace(">", ""), cols[1]
+                            motif_id = cols[0].replace(">", "")
+                            name = " ".join(cols[1:])
                         else:
                             motif_id, name = cols[0].replace(">", ""), ""
                         self.append(OneMotif(name=name, motifid=motif_id))
