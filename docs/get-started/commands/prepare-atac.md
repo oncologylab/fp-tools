@@ -14,7 +14,7 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 ## Primary inputs
 
 - `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [bulk workflow guide](../workflows/bulk-atac-seq.md).
-- `--genome` — packaged `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
+- `--genome` — managed `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.
 
 Repeated rows with the same `sample`, `condition`, and `replicate` combine
@@ -47,6 +47,13 @@ Project-level files include:
 | `{project}/metadata/resolved_runs.tsv` | Resolved local/downloaded FASTQ files and run grouping. |
 | `{project}/metadata/samples.tsv` | Downstream `sample`, `condition`, `bam`, and `peaks` table accepted by core commands. |
 | `{project}/reports/qc_summary.tsv` | Cross-sample QC summary. |
+
+## Reference options
+
+Use `--reference-dir` to relocate the checksum-verified managed reference
+cache. For a custom genome label, provide `--fasta` and either an existing
+`--bowtie2-index` or the inputs needed to build one. `--blacklist` replaces the
+managed hg38/mm10 blacklist, while `--no-blacklist` disables it.
 
 Continue with [`atac-correct`](atac-correct.md), or see the
 [complete `prepare-atac` reference](../../api.md#prepare-atac).

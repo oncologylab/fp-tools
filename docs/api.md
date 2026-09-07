@@ -19,7 +19,7 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 | [`plot-aggregate`](#plot-aggregate) | Plot average signal around motif sites or other genomic regions as a static figure or interactive HTML report. |
 | [`review-multi-comparisons`](#review-multi-comparisons) | Combine differential-footprint reports as a scalable browser bundle or one self-contained HTML report. |
 | [`run-yaml-workflow`](#run-yaml-workflow) | Run one or more fp-tools jobs from a reusable YAML configuration. |
-| [`fp-tools-gui`](#fp-tools-gui) | Launch the browser interface for configuring and running fp-tools commands. |
+| [`fp-tools-gui`](#fp-tools-gui) | Launch the browser interface for configuring and running fp-tools commands. The Windows and Apple Silicon desktop downloads present the same interface in a native fp-tools application window. |
 | [`fp-tools-runtime`](#fp-tools-runtime) | Inspect, install, or repair the private external-tool runtime. Linux provides raw-read and de novo motif components; macOS and Windows provide the optional de novo motif component. |
 | [`discover-motifs`](#discover-motifs) | Prepare or run de novo motif discovery from candidate footprint intervals or an existing FASTA file. |
 | [`summarize-motifs`](#summarize-motifs) | Summarize MEME, STREME, DREME, and Tomtom results in a compact report. |
@@ -45,7 +45,7 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 **Primary inputs**
 
 - `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [bulk workflow guide](get-started/workflows/bulk-atac-seq.md).
-- `--genome` — packaged `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
+- `--genome` — managed `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.
 
 Repeated rows with the same `sample`, `condition`, and `replicate` combine
@@ -79,6 +79,13 @@ Project-level files include:
 | `{project}/metadata/samples.tsv` | Downstream `sample`, `condition`, `bam`, and `peaks` table accepted by core commands. |
 | `{project}/reports/qc_summary.tsv` | Cross-sample QC summary. |
 
+## Reference options
+
+Use `--reference-dir` to relocate the checksum-verified managed reference
+cache. For a custom genome label, provide `--fasta` and either an existing
+`--bowtie2-index` or the inputs needed to build one. `--blacklist` replaces the
+managed hg38/mm10 blacklist, while `--no-blacklist` disables it.
+
 **Complete options**
 
 ```text
@@ -89,9 +96,9 @@ usage: prepare-atac [-h] [--samples SAMPLES] [--genome GENOME]
                     [--condition-column CONDITION_COLUMN]
                     [--include INCLUDE [INCLUDE ...]]
                     [--reference-dir REFERENCE_DIR] [--fasta FASTA]
-                    [--bowtie2-index BOWTIE2_INDEX] [--blacklist BLACKLIST]
-                    [--tss TSS] [--macs-genome-size MACS_GENOME_SIZE]
-                    [--cores CORES]
+                    [--bowtie2-index BOWTIE2_INDEX]
+                    [--blacklist BLACKLIST | --no-blacklist] [--tss TSS]
+                    [--macs-genome-size MACS_GENOME_SIZE] [--cores CORES]
                     [--max-parallel-samples MAX_PARALLEL_SAMPLES]
                     [--memory-gb MEMORY_GB] [--keep-intermediates]
                     [--no-resume] [--fail-fast] [--dry-run] [--doctor]
@@ -129,6 +136,7 @@ options:
                         Existing Bowtie2 index prefix.
   --blacklist BLACKLIST
                         Custom blacklist BED.
+  --no-blacklist        Disable the managed blacklist for hg38 or mm10.
   --tss TSS             Optional TSS BED for enrichment QC.
   --macs-genome-size MACS_GENOME_SIZE
                         MACS3 genome size or hs/mm shorthand for custom
@@ -164,13 +172,13 @@ options:
 
 Run bulk ATAC-seq from BAM/BAI and peak BED inputs through interactive reports.
 
-The [bulk workflow guide](get-started/workflows/bulk-atac-seq.md) provides a runnable
-HepG2-versus-K562 ENCODE example.
+The [bulk workflow guide](get-started/workflows/bulk-atac-seq.md) provides minimal sample
+and comparison tables for a two-condition analysis.
 
 **Example command**
 
 ```bash
-bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv --genome hg38.fa.gz \
+bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv --genome hg38 \
   --outdir project --cores 8
 ```
 
@@ -178,7 +186,7 @@ bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv 
 
 - `--sample-table` — sample, condition, coordinate-sorted BAM, and peak BED columns.
 - `--comparison-table` — comparison, condition 1, and condition 2 columns.
-- `--genome` — reference FASTA matching the BAM and peak coordinates.
+- `--genome` — managed `hg38` or `mm10` assembly, or a reference FASTA matching the BAM and peak coordinates.
 - `--outdir` — project output directory.
 - `--cores` — total worker cores.
 
@@ -199,6 +207,17 @@ bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv 
 | `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for the workflow stages. |
 | `{project}/logs/bulk_footprinting/{stage}.stdout.log` and `{stage}.stderr.log` | Stage-specific logs for troubleshooting. |
 
+## Reference and motif options
+
+Use `--reference-dir` to relocate the checksum-verified managed reference
+cache. `--blacklist` replaces a managed assembly's blacklist, while
+`--no-blacklist` disables it. Custom FASTA inputs never infer a blacklist.
+
+Choose a packaged motif database with `--motif-db`, provide custom files with
+`--motifs`, or combine both options. With neither option, the workflow uses
+`jaspar2026_vertebrates`. Run `bulk-footprinting --list-motif-dbs` to list the
+packaged databases.
+
 FASTQ preprocessing is intentionally separate. Linux users can run
 [`prepare-atac`](#prepare-atac) first, then provide its generated
 `metadata/samples.tsv` to this command.
@@ -208,8 +227,10 @@ FASTQ preprocessing is intentionally separate. Linux users can run
 ```text
 usage: bulk-footprinting [-h] --sample-table SAMPLE_TABLE --comparison-table
                          COMPARISON_TABLE --genome GENOME
-                         [--blacklist BLACKLIST] [--motifs [MOTIFS ...]]
-                         [--motif-db MOTIF_DB]
+                         [--reference-dir REFERENCE_DIR]
+                         [--blacklist BLACKLIST | --no-blacklist]
+                         [--motifs [MOTIFS ...]] [--motif-db MOTIF_DB]
+                         [--list-motif-dbs]
                          [--normalization {none,condition-quantile,sample-quantile}]
                          [--plot-aggregate {sig,all,top,off}]
                          [--review-format {auto,bundle,standalone,none}]
@@ -225,13 +246,21 @@ options:
                         TSV with sample, condition, BAM, and peak BED columns.
   --comparison-table COMPARISON_TABLE
                         TSV with comparison, cond1, and cond2 columns.
-  --genome GENOME       Reference FASTA matching the BAM and peak coordinates.
+  --genome GENOME       Managed assembly (hg38 or mm10) or a reference FASTA
+                        matching the BAM and peak coordinates.
+  --reference-dir REFERENCE_DIR
+                        Managed reference cache root (default: ~/.cache/fp-
+                        tools/references).
   --blacklist BLACKLIST
-                        Optional blacklist BED used during bias correction.
+                        Blacklist BED overriding the managed assembly
+                        blacklist.
+  --no-blacklist        Disable the automatic hg38/mm10 blacklist.
   --motifs [MOTIFS ...]
                         Optional motif files.
-  --motif-db MOTIF_DB   Built-in motif database (default:
+  --motif-db MOTIF_DB   Built-in motif database to use alone or combine with
+                        --motifs (default when neither is provided:
                         jaspar2026_vertebrates).
+  --list-motif-dbs      List available built-in motif databases and exit.
   --normalization {none,condition-quantile,sample-quantile}
                         Differential-stage normalization (default: none).
   --plot-aggregate {sig,all,top,off}
@@ -303,6 +332,7 @@ same `{prefix}_*.bw`, `{prefix}_atacorrect.pdf`, and
 **Complete options**
 
 ```text
+Matplotlib is building the font cache; this may take a moment.
 usage: atac-correct [-h] [--bams [<bam> ...]] [--fragments [<fragments.tsv.gz> ...]]
                     [-g <fasta>] [-p [<bed> ...]] [--regions-in <bed>]
                     [--regions-out <bed>] [--blacklist <bed>] [--extend <int>]
@@ -1686,7 +1716,7 @@ discover-motifs --candidates project/samples/sample/footprints/sample_candidate_
 usage: discover-motifs [-h] (--fasta FASTA | --candidates CANDIDATES)
                        [--genome GENOME] [--flank FLANK] --outdir OUTDIR
                        [--script SCRIPT] [--method {meme,dreme,streme}]
-                       [--known-motifs KNOWN_MOTIFS]
+                       [--known-motifs KNOWN_MOTIFS [KNOWN_MOTIFS ...]]
                        [--known-motif-db KNOWN_MOTIF_DB] [--list-motif-dbs]
                        [--extra-args ...] [--execute]
                        [--runtime {auto,managed,system,container}]
@@ -1706,8 +1736,9 @@ options:
   --script SCRIPT       Output shell script path. Defaults to
                         <outdir>/run_motif_discovery.sh.
   --method {meme,dreme,streme}
-  --known-motifs KNOWN_MOTIFS
-                        Optional known motif database for Tomtom comparison.
+  --known-motifs KNOWN_MOTIFS [KNOWN_MOTIFS ...]
+                        Optional known motif database file(s) for Tomtom
+                        comparison.
   --known-motif-db KNOWN_MOTIF_DB
                         Optional built-in motif database for Tomtom
                         comparison.

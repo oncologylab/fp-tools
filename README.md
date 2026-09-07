@@ -50,12 +50,15 @@ BED files through the final interactive comparison report.
 bulk-footprinting \
   --sample-table samples.tsv \
   --comparison-table comparisons.tsv \
-  --genome hg38.fa.gz \
+  --genome hg38 \
   --outdir project \
   --cores 8
 ```
 
-The wrapper runs `atac-correct`, `call-footprints`, `match-motifs`,
+The `hg38` and `mm10` labels use checksum-verified FASTA and blacklist files
+from the managed reference cache. A custom FASTA path and optional custom
+blacklist can be supplied instead. The wrapper runs `atac-correct`,
+`call-footprints`, `match-motifs`,
 `diff-footprints`, and `review-multi-comparisons`. Each command can also be run
 directly. `diff-footprints --comparison-axis regions` compares matched genomic
 region sets within one sample or across biological replicates.

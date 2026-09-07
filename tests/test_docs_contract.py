@@ -284,18 +284,37 @@ class DocsEntryPointContractTest(unittest.TestCase):
             self.assertNotIn(forbidden, text)
 
     def test_bulk_workflow_uses_minimal_beginner_examples(self):
+        from fp_tools.utils.project_layout import (
+            read_comparison_table,
+            read_sample_table,
+        )
+
         guide = (
             ROOT / "docs" / "get-started" / "workflows" / "bulk-atac-seq.md"
         ).read_text(encoding="utf-8")
+        beginner_docs = ROOT / "docs" / "demos" / "data" / "bulk"
+        samples = read_sample_table(beginner_docs / "samples.tsv")
+        comparisons = read_comparison_table(beginner_docs / "comparisons.tsv")
+        self.assertEqual(len(samples), 4)
+        self.assertEqual({row.condition for row in samples}, {"control", "treated"})
+        self.assertEqual(len(comparisons), 1)
+        self.assertEqual(comparisons[0].cond1, "treated")
+        self.assertEqual(comparisons[0].cond2, "control")
+        self.assertIn("sample\tcondition\tbam\tpeaks", guide)
+        self.assertIn("comparison\tcond1\tcond2", guide)
+        self.assertIn("demos/data/bulk/samples.tsv", guide)
+        self.assertIn("demos/data/bulk/comparisons.tsv", guide)
         self.assertIn("encode_hepg2_k562_bams.tsv", guide)
         self.assertIn("encode_hepg2_k562_comparisons.tsv", guide)
-        self.assertIn("local_bam_peak_template.tsv", guide)
-        self.assertIn('??? note "Optional FASTQ-to-BAM preparation"', guide)
-        self.assertIn("prepare-atac --samples", guide)
-        self.assertIn("bulk-footprinting --sample-table", guide)
-        self.assertEqual(guide.count("```bash"), 2)
+        self.assertIn("--genome hg38", guide)
+        self.assertIn("--genome /references/custom.fa", guide)
+        self.assertIn("--reference-dir", guide)
+        self.assertIn("--blacklist", guide)
+        self.assertIn("--no-blacklist", guide)
+        self.assertIn("jaspar2026_vertebrates", guide)
+        self.assertIn("--list-motif-dbs", guide)
+        self.assertIn("Starting from FASTQ files", guide)
         for unnecessary_detail in (
-            "sample\tcondition",
             "Full seven-cell-line design",
             "encode_cancer_7line_bams.tsv",
             "encode_cancer_7line_comparisons.tsv",
@@ -305,6 +324,8 @@ class DocsEntryPointContractTest(unittest.TestCase):
             "Why the wrapper output is not byte-for-byte identical",
             "Representative ENCODE QC files",
             "not a reproduction of the pair-specific demo",
+            "CUT&RUN",
+            "hg39",
         ):
             self.assertNotIn(unnecessary_detail, guide)
 

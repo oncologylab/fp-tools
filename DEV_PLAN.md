@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-08-30
+Last updated: 2026-09-07
 
 ## Current Baseline
 
@@ -25,6 +25,10 @@ a separately planned breaking release explicitly changes the contract.
 - A managed, versioned external-tool runtime downloaded on first use, with
   Linux raw-read components, cross-platform optional MEME components, and the
   complete Linux container retained as an explicit backend.
+- Checksum-verified managed hg38 and mm10 analysis references, including
+  assembly-matched blacklists and FASTA indexes, shared by BAM-first bulk
+  analysis and Linux preprocessing. Custom FASTA inputs never infer a
+  blacklist.
 - Cross-platform one-command bulk analysis from coordinate-sorted BAM/BAI and
   matching peak BED files through portable multi-comparison HTML reports.
 - Separate Linux CLI/container FASTQ preparation through `prepare-atac`, which
@@ -51,6 +55,8 @@ a separately planned breaking release explicitly changes the contract.
   replicates, complete motif statistics, and curated all-site aggregate views.
 - Pseudobulk fragment/BAM generation and single-cell signature reporting.
 - Streamlit GUI whose saved YAML runs through `run-yaml-workflow`.
+- Reliable GUI background-job reconciliation based on retained child-process
+  handles and batch results, including recovery after an application restart.
 - Local tests, package builds, GitHub CI, GitHub Pages deployment, and manual
   PyPI publication.
 - A complete amd64/arm64 container with the external genomics toolchain and a
@@ -90,6 +96,12 @@ a separately planned breaking release explicitly changes the contract.
   presented as user inputs.
 - Browser-verified plot controls and SVG exports for aggregate and
   aggregate-free reports, including explicit subplot-bound checks.
+- Validated conversion of existing differential HTML reports and cache-safe
+  aggregate-profile generation, with actionable failures instead of silently
+  successful reports when requested aggregate data are unavailable.
+- Frozen-safe motif-discovery dispatch, format-aware JASPAR/PFM-to-MEME
+  conversion for Tomtom, verified TLS roots, and the exact Matplotlib raster,
+  PDF, and SVG backends required by packaged applications.
 - Command-aware logging across shared analysis engines, so `match-motifs` and
   `diff-footprints` retain their public names in direct and wrapper-run logs.
 - A manifest-pinned, storage-conscious ENCODE workflow for 17 biological

@@ -1,0 +1,5 @@
+sample	condition	bam	peaks
+control_rep1	control	data/bams/control_rep1.sorted.bam	data/peaks/control_rep1.peaks.bed
+control_rep2	control	data/bams/control_rep2.sorted.bam	data/peaks/control_rep2.peaks.bed
+treated_rep1	treated	data/bams/treated_rep1.sorted.bam	data/peaks/treated_rep1.peaks.bed
+treated_rep2	treated	data/bams/treated_rep2.sorted.bam	data/peaks/treated_rep2.peaks.bed
