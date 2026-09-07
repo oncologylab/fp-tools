@@ -126,6 +126,12 @@ relocation and a real Windows WSL2 import before release handoff. Its
 `publish_version` manual input can rebuild archives before repeating the
 public-consumer smoke.
 
+After the tagged macOS application and managed MEME runtime are both public,
+dispatch the `Release smoke` workflow with the published version. It must start
+from an empty runtime cache and complete STREME, JASPAR-to-MEME conversion,
+Tomtom, and the packaged motif summarizer twice from the released Apple Silicon
+application.
+
 The manual GitHub Actions `Publish` workflow uses the repository
 `PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or
 committed files. Rotate any token that was exposed outside a secret manager.

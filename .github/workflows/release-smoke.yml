@@ -1,0 +1,42 @@
+name: Release smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published release version, for example 0.2.2
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  macos-managed-meme:
+    name: macOS Apple Silicon / clean-cache managed MEME
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download and mount the released application
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          version="${RELEASE_VERSION#v}"
+          mkdir -p release release-mount
+          gh release download "v${version}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --pattern "fp-tools-gui-macos-apple-silicon.dmg" \
+            --dir release
+          hdiutil attach -nobrowse -readonly \
+            -mountpoint release-mount \
+            release/fp-tools-gui-macos-apple-silicon.dmg
+      - name: Run first-use and cached motif discovery
+        run: >-
+          python3 scripts/smoke_frozen_meme_release.py
+          release-mount/fp-tools.app/Contents/MacOS/fp-tools-gui
+      - name: Unmount the released application
+        if: always()
+        run: hdiutil detach release-mount || true

@@ -219,6 +219,28 @@ class ReleaseMetadataTest(unittest.TestCase):
         self.assertIn("playwright install --with-deps chromium", workflow)
         self.assertIn("scripts/audit_docs.py", workflow)
 
+    def test_release_smoke_runs_clean_cache_motif_discovery_on_macos(self):
+        workflow = (ROOT / ".github" / "workflows" / "release-smoke.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("macos-15", workflow)
+        self.assertIn("gh release download", workflow)
+        self.assertIn("scripts/smoke_frozen_meme_release.py", workflow)
+
+        smoke = (ROOT / "scripts" / "smoke_frozen_meme_release.py").read_text(
+            encoding="utf-8"
+        )
+        for requirement in [
+            "FP_TOOLS_RUNTIME_CACHE",
+            '"discover-motifs"',
+            '"--known-motifs"',
+            '"--execute"',
+            '"motif_summary.tsv"',
+            '"motif_summary.html"',
+            '"tomtom.tsv"',
+        ]:
+            self.assertIn(requirement, smoke)
+
     def test_console_script_smoke_helper_covers_declared_scripts(self):
         helper = ROOT / "scripts" / "smoke_console_scripts.py"
         self.assertTrue(helper.is_file())
