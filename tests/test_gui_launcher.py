@@ -399,6 +399,9 @@ class GuiLauncherTests(unittest.TestCase):
             self.assertEqual(packaged[source.name], source.read_text(encoding="utf-8"))
 
     def test_generic_forms_keep_supported_blank_fields(self):
+        from fp_tools.gui_app import GUI_FIELD_LABELS
+
+        self.assertEqual(GUI_FIELD_LABELS["genome"], "Reference genome")
         self.assertIn("sample_table", GENERIC_TOOL_DEFAULTS["bulk-footprinting"])
         self.assertNotIn("reads_table", GENERIC_TOOL_DEFAULTS["bulk-footprinting"])
         self.assertTrue(
