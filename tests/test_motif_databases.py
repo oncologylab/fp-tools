@@ -82,7 +82,7 @@ class MotifDatabaseTest(unittest.TestCase):
         self.assertIn("hocomoco14_core", result.stdout)
 
     def test_optional_motif_clis_list_motif_databases_without_required_inputs(self):
-        commands = ["sc-footprinting", "discover-motifs"]
+        commands = ["bulk-footprinting", "sc-footprinting", "discover-motifs"]
         for command in commands:
             exe = ROOT / ".venv" / "bin" / command
             if not exe.exists():

@@ -146,6 +146,8 @@ class GuiLauncherTests(unittest.TestCase):
     def test_fresh_gui_defaults_do_not_assume_repository_paths(self):
         self.assertEqual(GENERIC_TOOL_DEFAULTS["match-motifs"]["signals"], "")
         self.assertEqual(GENERIC_TOOL_DEFAULTS["bulk-footprinting"]["sample_table"], "")
+        self.assertEqual(GENERIC_TOOL_DEFAULTS["bulk-footprinting"]["motif_db"], "")
+        self.assertEqual(GENERIC_TOOL_DEFAULTS["bulk-footprinting"]["motifs"], [])
         self.assertEqual(GENERIC_TOOL_DEFAULTS["sc-footprinting"]["fragments"], "")
         self.assertFalse(GENERIC_TOOL_DEFAULTS["sc-footprinting"]["dry_run"])
 

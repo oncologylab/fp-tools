@@ -66,6 +66,55 @@ class WorkflowWrapperTest(unittest.TestCase):
             self.assertEqual(differential[differential.index("--plot-aggregate") + 1], "all")
             self.assertEqual(args.plot_aggregate, "all")
             self.assertEqual(args.review_format, "auto")
+            self.assertIn("--motif-db", differential)
+            self.assertEqual(
+                differential[differential.index("--motif-db") + 1],
+                "jaspar2026_vertebrates",
+            )
+
+    def test_bulk_wrapper_custom_motifs_do_not_gain_the_default_database(self):
+        parser = build_parser()
+        custom_only = parser.parse_args(
+            [
+                "--sample-table",
+                "samples.tsv",
+                "--comparison-table",
+                "comparisons.tsv",
+                "--genome",
+                "genome.fa",
+                "--outdir",
+                "project",
+                "--motifs",
+                "custom.jaspar",
+            ]
+        )
+        custom_command = dict(build_commands(custom_only))["match-motifs"]
+        self.assertIn("--motifs", custom_command)
+        self.assertIn("custom.jaspar", custom_command)
+        self.assertNotIn("--motif-db", custom_command)
+
+        combined = parser.parse_args(
+            [
+                "--sample-table",
+                "samples.tsv",
+                "--comparison-table",
+                "comparisons.tsv",
+                "--genome",
+                "genome.fa",
+                "--outdir",
+                "project",
+                "--motif-db",
+                "hocomoco14_core",
+                "--motifs",
+                "custom.jaspar",
+            ]
+        )
+        combined_command = dict(build_commands(combined))["match-motifs"]
+        self.assertEqual(
+            combined_command[combined_command.index("--motif-db") + 1],
+            "hocomoco14_core",
+        )
+        self.assertIn("custom.jaspar", combined_command)
 
     def test_bulk_wrapper_resolves_aggregate_free_auto_review_to_standalone(self):
         with tempfile.TemporaryDirectory() as tmpdir:
