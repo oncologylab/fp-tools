@@ -108,9 +108,10 @@ class ManagedReferenceTest(unittest.TestCase):
             result = references.resolve_analysis_reference(
                 "test", reference_dir=cache, dry_run=True
             )
-            self.assertEqual(result.fasta, cache / "test" / "test.fa")
+            expected_root = cache.resolve() / "test"
+            self.assertEqual(result.fasta, expected_root / "test.fa")
             self.assertEqual(
-                result.blacklist, cache / "test" / "test.blacklist.bed"
+                result.blacklist, expected_root / "test.blacklist.bed"
             )
             self.assertFalse(cache.exists())
             urlopen.assert_not_called()
