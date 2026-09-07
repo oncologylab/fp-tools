@@ -663,7 +663,9 @@ def _audit_loaded_config_sync(
             ("Review Format", "review_format"),
         ):
             _assert_control_value(page, label, values[key])
-        _assert_control_value(page, "Motifs", str(values["motifs"][0]))
+        _assert_control_value(
+            page, "Custom motif files (optional)", str(values["motifs"][0])
+        )
         _assert_control_value(page, "Validate configuration only", True)
         print("Audited loaded bulk-footprinting config", flush=True)
 
