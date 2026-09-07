@@ -45,6 +45,12 @@ if find_spec("bamnostic") is not None:
     datas += collect_data_files("bamnostic")
     hiddenimports.append("bamnostic")
 
+# urllib uses certifi's packaged CA file for verified first-use runtime and
+# reference downloads inside the frozen desktop application.
+if find_spec("certifi") is not None:
+    datas += collect_data_files("certifi")
+    hiddenimports.append("certifi")
+
 for distribution in ("fp-tools-bio", "streamlit"):
     datas += copy_metadata(distribution, recursive=True)
 

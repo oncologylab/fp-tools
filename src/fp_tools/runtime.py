@@ -13,11 +13,13 @@ import json
 import os
 import platform
 import shutil
+import ssl
 import subprocess
 import sys
 import tarfile
 import tempfile
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from contextlib import contextmanager
@@ -27,6 +29,7 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 from fp_tools import __version__
+from fp_tools.utils.network import network_error_message, verified_ca_bundle, verified_urlopen
 
 
 RUNTIME_MODES = ("auto", "managed", "system", "container")
@@ -130,14 +133,24 @@ def _runtime_spec(component: str, target_platform: str | None = None) -> dict:
 
 def _request_json(url: str, headers: dict[str, str] | None = None) -> tuple[dict, dict]:
     request = urllib.request.Request(url, headers=headers or {})
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return json.load(response), dict(response.headers)
+    try:
+        with verified_urlopen(request, timeout=60) as response:
+            return json.load(response), dict(response.headers)
+    except (OSError, ssl.SSLError, urllib.error.URLError) as exc:
+        raise RuntimeProvisionError(
+            network_error_message(url, exc, action="requesting runtime metadata")
+        ) from exc
 
 
 def _request_text(url: str) -> str:
     request = urllib.request.Request(url)
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return response.read().decode("utf-8")
+    try:
+        with verified_urlopen(request, timeout=60) as response:
+            return response.read().decode("utf-8")
+    except (OSError, ssl.SSLError, urllib.error.URLError) as exc:
+        raise RuntimeProvisionError(
+            network_error_message(url, exc, action="requesting a runtime checksum")
+        ) from exc
 
 
 def _oci_bearer_token(repository: str) -> str:
@@ -196,7 +209,7 @@ def _download(url: str, destination: Path, expected_size: int, expected_sha256: 
         headers["Authorization"] = f"Bearer {_oci_bearer_token(repository)}"
     request = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(request, timeout=120) as response:
+        with verified_urlopen(request, timeout=120) as response:
             resumed = bool(existing and getattr(response, "status", None) == 206)
             if existing and not resumed:
                 existing = 0
@@ -218,6 +231,12 @@ def _download(url: str, destination: Path, expected_size: int, expected_sha256: 
                         last_report = percent
             finally:
                 handle.close()
+    except RuntimeProvisionError:
+        raise
+    except (OSError, ssl.SSLError, urllib.error.URLError) as exc:
+        raise RuntimeProvisionError(
+            network_error_message(url, exc, action="downloading the runtime")
+        ) from exc
     except Exception as exc:
         raise RuntimeProvisionError(
             "Runtime download was interrupted; rerun the command to resume."
@@ -343,6 +362,28 @@ def ensure_native_runtime(component: str = "core") -> RuntimeActivation:
     return RuntimeActivation("managed", component, prefix=prefix)
 
 
+def _activate_ca_bundle(prefix: Path) -> Path:
+    """Configure relocated runtime clients without overriding a valid user CA."""
+
+    configured = [
+        Path(value).expanduser()
+        for variable in ("FP_TOOLS_CA_BUNDLE", "SSL_CERT_FILE", "CURL_CA_BUNDLE")
+        if (value := os.environ.get(variable))
+    ]
+    candidates = [
+        *configured,
+        prefix / "ssl" / "cacert.pem",
+        prefix / "Library" / "ssl" / "cacert.pem",
+        verified_ca_bundle(),
+    ]
+    bundle = next(path.resolve() for path in candidates if path.is_file())
+    for variable in ("SSL_CERT_FILE", "CURL_CA_BUNDLE"):
+        current = os.environ.get(variable)
+        if not current or not Path(current).expanduser().is_file():
+            os.environ[variable] = str(bundle)
+    return bundle
+
+
 def activate_runtime(component: str = "core", mode: str | None = None) -> RuntimeActivation:
     resolved = _runtime_mode(mode)
     if resolved == "system":
@@ -354,6 +395,7 @@ def activate_runtime(component: str = "core", mode: str | None = None) -> Runtim
         bin_dir = activation.prefix / ("Scripts" if os.name == "nt" else "bin")
         os.environ["PATH"] = str(bin_dir) + os.pathsep + os.environ.get("PATH", "")
         os.environ["FP_TOOLS_RUNTIME_PREFIX"] = str(activation.prefix)
+        _activate_ca_bundle(activation.prefix)
     return activation
 
 

@@ -2,16 +2,67 @@ import hashlib
 import io
 import json
 import os
+import ssl
 import tarfile
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
 from unittest import mock
 
 from fp_tools import runtime
+from fp_tools.utils import network
 
 
 class RuntimeManagerTest(unittest.TestCase):
+    def test_verified_urlopen_uses_required_certificate_context(self):
+        response = io.BytesIO(b"ok")
+        with mock.patch.object(
+            network.urllib.request, "urlopen", return_value=response
+        ) as urlopen:
+            with network.verified_urlopen(
+                "https://example.invalid/data", timeout=5
+            ) as opened:
+                self.assertEqual(opened.read(), b"ok")
+        context = urlopen.call_args.kwargs["context"]
+        self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+        self.assertTrue(context.check_hostname)
+
+    def test_valid_user_ca_bundle_takes_precedence(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            configured = Path(tmpdir) / "organization-ca.pem"
+            configured.write_text("placeholder", encoding="utf-8")
+            context = mock.MagicMock()
+            with mock.patch.dict(
+                os.environ,
+                {"FP_TOOLS_CA_BUNDLE": str(configured)},
+                clear=True,
+            ), mock.patch.object(
+                network.ssl, "create_default_context", return_value=context
+            ) as create_context:
+                self.assertIs(network.verified_ssl_context(), context)
+            create_context.assert_called_once_with(cafile=str(configured.resolve()))
+            self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+            self.assertTrue(context.check_hostname)
+
+    def test_runtime_certificate_failure_is_concise_and_actionable(self):
+        certificate_error = ssl.SSLCertVerificationError(
+            1, "CERTIFICATE_VERIFY_FAILED"
+        )
+        with mock.patch.object(
+            network.urllib.request,
+            "urlopen",
+            side_effect=urllib.error.URLError(certificate_error),
+        ):
+            with self.assertRaises(runtime.RuntimeProvisionError) as raised:
+                runtime._request_text(
+                    "https://example.invalid/checksum?credential=do-not-print"
+                )
+        message = str(raised.exception)
+        self.assertIn("TLS certificate verification failed", message)
+        self.assertIn("FP_TOOLS_CA_BUNDLE", message)
+        self.assertNotIn("do-not-print", message)
+
     def test_platform_keys_are_normalized(self):
         with mock.patch("platform.system", return_value="Darwin"), mock.patch(
             "platform.machine", return_value="arm64"
@@ -111,6 +162,29 @@ class RuntimeManagerTest(unittest.TestCase):
         self.assertEqual(url, archive.as_uri())
         self.assertEqual(size, 0)
         self.assertEqual(observed, digest)
+
+    def test_managed_runtime_activates_relocated_ca_bundle(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            prefix = Path(tmpdir) / "runtime"
+            (prefix / "bin").mkdir(parents=True)
+            bundle = prefix / "ssl" / "cacert.pem"
+            bundle.parent.mkdir(parents=True)
+            bundle.write_text("test certificate bundle\n", encoding="utf-8")
+            activation = runtime.RuntimeActivation(
+                "managed", "core", prefix=prefix
+            )
+            with mock.patch.object(
+                runtime, "ensure_native_runtime", return_value=activation
+            ), mock.patch.dict(os.environ, {"PATH": "/system/bin"}, clear=True):
+                observed = runtime.activate_runtime("core", "managed")
+                self.assertEqual(
+                    os.environ["CURL_CA_BUNDLE"], str(bundle.resolve())
+                )
+                self.assertEqual(os.environ["SSL_CERT_FILE"], str(bundle.resolve()))
+                self.assertTrue(
+                    os.environ["PATH"].startswith(str(prefix / "bin"))
+                )
+            self.assertEqual(observed, activation)
 
     def test_download_rejects_wrong_checksum(self):
         with tempfile.TemporaryDirectory() as tmpdir:

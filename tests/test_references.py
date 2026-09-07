@@ -4,11 +4,15 @@ import io
 import tempfile
 import time
 import unittest
+import ssl
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest import mock
 
 from fp_tools.utils import references
+from fp_tools.utils import network
+from fp_tools.runtime import RuntimeProvisionError
 
 
 def _compressed(payload: bytes) -> bytes:
@@ -143,6 +147,24 @@ class ManagedReferenceTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "mutually exclusive"):
                 references.resolve_analysis_reference(
                     fasta, blacklist=blacklist, no_blacklist=True
+                )
+
+    def test_certificate_failure_is_reported_as_a_runtime_error(self):
+        certificate_error = ssl.SSLCertVerificationError(
+            1, "CERTIFICATE_VERIFY_FAILED"
+        )
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(
+            references.REFERENCE_MANIFEST, self.manifest, clear=True
+        ), mock.patch.object(
+            network.urllib.request,
+            "urlopen",
+            side_effect=urllib.error.URLError(certificate_error),
+        ):
+            with self.assertRaisesRegex(
+                RuntimeProvisionError, "TLS certificate verification failed"
+            ):
+                references.resolve_analysis_reference(
+                    "test", reference_dir=tmp
                 )
 
 

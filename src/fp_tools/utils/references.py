@@ -7,12 +7,16 @@ import hashlib
 import json
 import os
 import shutil
+import ssl
 import tempfile
 import time
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from fp_tools.utils.network import network_error_message, verified_urlopen
 
 
 REFERENCE_MANIFEST: dict[str, dict[str, str]] = {
@@ -176,11 +180,20 @@ def _install_gzip_asset(
     download = Path(download_name)
     unpacked = Path(unpack_name)
     try:
-        with (
-            urllib.request.urlopen(source_url, timeout=timeout) as response,
-            download.open("wb") as target,
-        ):
-            shutil.copyfileobj(response, target)
+        try:
+            with (
+                verified_urlopen(source_url, timeout=timeout) as response,
+                download.open("wb") as target,
+            ):
+                shutil.copyfileobj(response, target)
+        except (OSError, ssl.SSLError, urllib.error.URLError) as exc:
+            from fp_tools.runtime import RuntimeProvisionError
+
+            raise RuntimeProvisionError(
+                network_error_message(
+                    source_url, exc, action="downloading a managed reference"
+                )
+            ) from exc
         if _digest(download, "md5") != compressed_md5:
             raise RuntimeError(
                 f"Checksum mismatch while downloading managed reference asset: {source_url}"

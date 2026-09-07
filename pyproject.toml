@@ -53,7 +53,8 @@ dependencies = [
   "xlsxwriter>=3.2.9,<4.0.0",
   "anndata>=0.12,<0.13",
   "PyYAML>=6.0,<7.0",
-  "streamlit>=1.44,<2.0"
+  "streamlit>=1.44,<2.0",
+  "certifi>=2025.8.3"
 ]
 
 [project.optional-dependencies]
@@ -181,6 +182,7 @@ xlsxwriter = ">=3.2.9,<4.0.0"
 anndata = ">=0.12,<0.13"
 pyyaml = ">=6.0,<7.0"
 streamlit = ">=1.44,<2.0"
+certifi = ">=2025.8.3"
 mkdocs = { version = ">=1.6,<2.0", optional = true }
 mkdocs-material = { version = ">=9.5,<10.0", optional = true }
 mkdocstrings = { version = ">=0.26,<1.0", extras = ["python"], optional = true }
