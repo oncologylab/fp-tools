@@ -88,6 +88,24 @@ class ReleaseMetadataTest(unittest.TestCase):
             with Image.open(icns_path) as icon:
                 self.assertEqual(icon.size, (1024, 1024))
 
+    def test_desktop_bundle_includes_scientific_plot_writers(self):
+        spec = (ROOT / "packaging/desktop/fp-tools-gui.spec").read_text(
+            encoding="utf-8"
+        )
+        for backend in [
+            "matplotlib.backends.backend_agg",
+            "matplotlib.backends.backend_pdf",
+            "matplotlib.backends.backend_svg",
+        ]:
+            self.assertIn(backend, spec)
+
+        smoke = (ROOT / "scripts/smoke_desktop_bundle.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('"find-signature-fp"', smoke)
+        self.assertIn('signature_output.glob("*.svg")', smoke)
+        self.assertIn('signature_output.glob("*.pdf")', smoke)
+
     def test_release_checklist_documents_required_gates(self):
         checklist = (ROOT / "RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
         for phrase in [

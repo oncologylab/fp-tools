@@ -17,6 +17,14 @@ datas = []
 binaries = []
 hiddenimports = []
 
+# Matplotlib selects these writers dynamically. Keep the desktop bundle small
+# while guaranteeing the formats emitted by fp-tools scientific reports.
+hiddenimports += [
+    "matplotlib.backends.backend_agg",
+    "matplotlib.backends.backend_pdf",
+    "matplotlib.backends.backend_svg",
+]
+
 # fp-tools dispatches commands lazily, and Streamlit discovers components at
 # runtime.  Collect both packages explicitly so every GUI workflow is present.
 for package in ("fp_tools", "streamlit"):

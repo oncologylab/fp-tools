@@ -13,6 +13,107 @@ import time
 import urllib.request
 from pathlib import Path
 
+
+def write_signature_fixture(root: Path) -> dict[str, Path]:
+    """Create a tiny three-cell-type input set for frozen plotting smoke tests."""
+
+    import anndata as ad
+    import numpy as np
+    import pandas as pd
+
+    root.mkdir(parents=True, exist_ok=True)
+    barcodes = ["B1-1", "B2-1", "M1-1", "M2-1", "T1-1", "T2-1"]
+    cell_types = ["B_cell", "B_cell", "Monocyte", "Monocyte", "T_NK_cell", "T_NK_cell"]
+    annotations = pd.DataFrame(
+        {
+            "barcode": barcodes,
+            "cell_type": cell_types,
+            "snap_cell_type": cell_types,
+            "umap_1": [-3.0, -2.8, 0.0, 0.2, 3.0, 3.2],
+            "umap_2": [1.0, 1.2, -1.0, -0.8, 1.0, 1.2],
+        }
+    )
+    annotations_path = root / "annotations.tsv"
+    annotations.to_csv(annotations_path, sep="\t", index=False)
+
+    h5ad_path = root / "cells.h5ad"
+    adata = ad.AnnData(
+        X=np.asarray(
+            [
+                [8, 2],
+                [7, 2],
+                [4, 5],
+                [4, 6],
+                [2, 8],
+                [2, 7],
+            ],
+            dtype=np.float32,
+        ),
+        obs=pd.DataFrame(index=barcodes),
+        var=pd.DataFrame(
+            {"selected": [True, True]},
+            index=["chr1:0-500", "chr1:500-1000"],
+        ),
+    )
+    adata.write_h5ad(h5ad_path)
+
+    marker_centers = {"STAT6": 100, "CEBPA": 300, "ZNF683": 700}
+    marker_groups = {
+        "STAT6": "B_cell",
+        "CEBPA": "Monocyte",
+        "ZNF683": "T_NK_cell",
+    }
+    site_dir = root / "motif_sites"
+    site_dir.mkdir()
+    fragment_lines = []
+    for marker, center in marker_centers.items():
+        (site_dir / f"{marker}.motif_hits.bed").write_text(
+            f"chr1\t{center - 2}\t{center + 2}\t{marker}\n",
+            encoding="utf-8",
+        )
+        for barcode, cell_type in zip(barcodes, cell_types, strict=True):
+            if cell_type == marker_groups[marker]:
+                start, end = center - 13, center + 14
+            else:
+                start, end = center - 2, center + 3
+            fragment_lines.append(f"chr1\t{start}\t{end}\t{barcode}\t1")
+    fragments_path = root / "fragments.tsv"
+    fragments_path.write_text("\n".join(fragment_lines) + "\n", encoding="utf-8")
+
+    score_rows = []
+    score_patterns = {
+        "STAT6_M1": ("STAT6", "B_cell", [2.0, 1.8, -0.8, -0.7, -0.6, -0.5]),
+        "CEBPA_M2": ("CEBPA", "Monocyte", [-0.7, -0.6, 2.0, 1.8, -0.5, -0.4]),
+        "ZNF683_M3": ("ZNF683", "T_NK_cell", [-0.6, -0.5, -0.7, -0.6, 2.0, 1.8]),
+    }
+    for motif_id, (tf_name, dominant, values) in score_patterns.items():
+        means = {
+            group: float(np.mean([value for value, cell in zip(values, cell_types, strict=True) if cell == group]))
+            for group in ("B_cell", "Monocyte", "T_NK_cell")
+        }
+        score_rows.append(
+            {
+                "motif_id": motif_id,
+                "tf_name": tf_name,
+                "dominant_cell_type": dominant,
+                "dynamic_range": float(max(values) - min(values)),
+                "B_cell_mean_z": means["B_cell"],
+                "Monocyte_mean_z": means["Monocyte"],
+                "T_NK_cell_mean_z": means["T_NK_cell"],
+                **dict(zip(barcodes, values, strict=True)),
+            }
+        )
+    all_scores_path = root / "all_motif_scores.tsv"
+    pd.DataFrame(score_rows).to_csv(all_scores_path, sep="\t", index=False)
+    return {
+        "annotations": annotations_path,
+        "fragments": fragments_path,
+        "h5ad": h5ad_path,
+        "site_dir": site_dir,
+        "all_scores": all_scores_path,
+    }
+
+
 def free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as handle:
         handle.bind(("127.0.0.1", 0))
@@ -146,6 +247,61 @@ def main() -> int:
             raise SystemExit(
                 "Frozen multiprocessing normalize-bigwig smoke failed:\n"
                 f"{normalize_run.stdout}\n{normalize_run.stderr}"
+            )
+
+        signature_fixture = write_signature_fixture(run_path / "signature_fixture")
+        signature_output = run_path / "find_signature_fp"
+        signature_run = subprocess.run(
+            [
+                str(executable),
+                "--fp-tools-internal-command",
+                "find-signature-fp",
+                "--annotations",
+                str(signature_fixture["annotations"]),
+                "--fragments",
+                str(signature_fixture["fragments"]),
+                "--h5ad",
+                str(signature_fixture["h5ad"]),
+                "--tf-site-dir",
+                str(signature_fixture["site_dir"]),
+                "--all-motif-score-table",
+                str(signature_fixture["all_scores"]),
+                "--markers",
+                "STAT6,CEBPA,ZNF683",
+                "--marker-groups",
+                "STAT6:B_cell,CEBPA:Monocyte,ZNF683:T_NK_cell",
+                "--knn",
+                "1",
+                "--flank",
+                "20",
+                "--center-half-width",
+                "2",
+                "--flank-inner",
+                "5",
+                "--flank-outer",
+                "15",
+                "--no-create-fragment-index",
+                "--top-motif-signatures-per-cell-type",
+                "1",
+                "--outdir",
+                str(signature_output),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=args.timeout,
+            cwd=run_dir,
+        )
+        signature_svgs = [
+            path for path in signature_output.glob("*.svg") if path.stat().st_size > 0
+        ]
+        signature_pdfs = [
+            path for path in signature_output.glob("*.pdf") if path.stat().st_size > 0
+        ]
+        if signature_run.returncode != 0 or not signature_svgs or not signature_pdfs:
+            raise SystemExit(
+                "Frozen find-signature-fp SVG/PDF smoke failed:\n"
+                f"{signature_run.stdout}\n{signature_run.stderr}\n"
+                f"SVG files: {len(signature_svgs)}; PDF files: {len(signature_pdfs)}"
             )
 
         port = free_port()
