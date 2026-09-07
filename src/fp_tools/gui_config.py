@@ -420,8 +420,6 @@ GUI_RAW_READ_KEYS = {
     "reads-table",
     "config",
     "profile",
-    "reference_dir",
-    "reference-dir",
     "fasta",
     "bowtie2_index",
     "bowtie2-index",
@@ -576,6 +574,11 @@ def _validate_gui_input_paths(tool: str, item: Mapping[str, Any], job_name: str)
     errors: list[str] = []
     for field, expected in GUI_INPUT_PATH_FIELDS.get(tool, {}).items():
         for value in _path_values(item.get(field)):
+            if tool == "bulk-footprinting" and field == "genome" and value.lower() in {
+                "hg38",
+                "mm10",
+            }:
+                continue
             if _is_remote_path(value):
                 errors.append(
                     f"{job_name}: '{field}' must be a local path; remote URLs are not supported: {value}"
@@ -595,6 +598,10 @@ def _validate_gui_input_paths(tool: str, item: Mapping[str, Any], job_name: str)
                 errors.append(f"{job_name}: BAM index (.bai) is missing for '{field}': {value}")
 
     if tool == "bulk-footprinting":
+        if str(item.get("blacklist") or "").strip() and bool(item.get("no_blacklist")):
+            errors.append(
+                f"{job_name}: 'blacklist' and 'no_blacklist' are mutually exclusive"
+            )
         table_text = str(item.get("sample_table") or "").strip()
         table_path = Path(table_text).expanduser() if table_text else None
         if table_path is not None and table_path.is_file():

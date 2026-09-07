@@ -70,7 +70,9 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "sample_table": "",
         "comparison_table": "",
         "genome": "",
+        "reference_dir": "",
         "blacklist": "",
+        "no_blacklist": False,
         "outdir": "",
         "motif_db": "jaspar2026_vertebrates",
         "plot_aggregate": "all",
@@ -195,7 +197,7 @@ GUI_FIELD_LABELS = {
     "cond_names": "Condition names",
     "fasta": "Candidate sequences FASTA (optional)",
     "fragments": "Fragments file",
-    "genome": "Genome FASTA",
+    "genome": "Reference genome",
     "genome_sizes": "Chromosome sizes",
     "group_by": "Annotation column",
     "h5ad": "Annotated h5ad file",
@@ -206,6 +208,7 @@ GUI_FIELD_LABELS = {
     "markers": "Marker motifs (one per line)",
     "meme_txt": "MEME motif file",
     "motif_db": "Motif database",
+    "no_blacklist": "Disable blacklist",
     "dry_run": "Validate configuration only",
     "out_html": "Output HTML",
     "out_tsv": "Output TSV",
@@ -214,6 +217,7 @@ GUI_FIELD_LABELS = {
     "output_html": "Output HTML (optional)",
     "peak_header": "Peak annotation header (optional)",
     "peaks": "Accessible regions BED",
+    "reference_dir": "Reference cache directory (optional)",
     "sample_table": "Samples TSV",
     "signals": "Footprint bigWig files",
     "tf_site_dir": "Motif-site directory",
@@ -233,7 +237,14 @@ GUI_TOOL_DESCRIPTIONS = {
 }
 
 GUI_ADVANCED_FIELDS = {
-    "bulk-footprinting": {"blacklist", "plot_aggregate", "review_format", "cores"},
+    "bulk-footprinting": {
+        "reference_dir",
+        "blacklist",
+        "no_blacklist",
+        "plot_aggregate",
+        "review_format",
+        "cores",
+    },
     "review-multi-comparisons": {"layout", "title", "output_html"},
     "match-motifs": {"peak_header", "skip_excel"},
     "normalize-bigwig": {"chrom_sizes", "workers", "stat", "target"},
@@ -245,6 +256,10 @@ GUI_ADVANCED_FIELDS = {
 
 GUI_FIELD_HELP: dict[str, dict[str, str]] = {
     "bulk-footprinting": {
+        "genome": "Enter hg38, mm10, or a path to a reference FASTA.",
+        "reference_dir": "Optional cache root for managed hg38/mm10 reference files.",
+        "blacklist": "Optional BED file overriding the managed hg38/mm10 blacklist.",
+        "no_blacklist": "Run without a blacklist. This cannot be combined with a blacklist BED.",
         "normalization": "Normalization applied during differential footprinting.",
         "plot_aggregate": "Motifs included in aggregate profiles, or off to omit profiles.",
         "review_format": "Bundle, standalone HTML, automatic selection, or no combined report.",

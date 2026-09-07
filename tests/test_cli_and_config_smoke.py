@@ -76,6 +76,22 @@ class CliAndConfigSmokeTest(unittest.TestCase):
                 "comparisons": [],
             }
             self.assertEqual(validate_gui_config(aligned), [])
+            managed = {
+                "samples": [
+                    {
+                        **base,
+                        "sample_table": str(samples),
+                        "genome": "hg38",
+                        "reference_dir": str(root / "reference-cache"),
+                        "no_blacklist": True,
+                    }
+                ],
+                "comparisons": [],
+            }
+            self.assertEqual(validate_gui_config(managed), [])
+            managed_command = expand_jobs(managed)[0].command
+            self.assertIn("--reference-dir", managed_command)
+            self.assertIn("--no-blacklist", managed_command)
             self.assertTrue(any("GUI bulk workflows" in error for error in validate_gui_config(raw)))
             self.assertTrue(any("GUI bulk workflows" in error for error in validate_gui_config(raw_extra)))
 

@@ -34,6 +34,7 @@ from fp_tools.runtime import (
     prepare_command_runtime,
 )
 from fp_tools.platform_support import require_raw_read_preparation_support
+from fp_tools.utils.references import REFERENCE_MANIFEST, resolve_analysis_reference
 try:
     import pysam
 except ImportError:  # Non-Linux wheels retain the help/error entry point only.
@@ -110,27 +111,6 @@ PROFILE_DEFAULTS: dict[str, dict[str, Any]] = {
             "memory_gb": 24,
             "sample_memory_gb": 16,
         },
-    },
-}
-
-REFERENCE_MANIFEST = {
-    "hg38": {
-        "fasta_url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz",
-        "fasta_md5": "1c9dcaddfa41027f17cd8f7a82c7293b",
-        "blacklist_url": "https://raw.githubusercontent.com/Boyle-Lab/Blacklist/61a04d2c5e49341d76735d485c61f0d1177d08a8/lists/hg38-blacklist.v2.bed.gz",
-        "blacklist_md5": "83fe6bf8187a64dee8079b80f75ba289",
-        "tss_gtf_url": "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.primary_assembly.annotation.gtf.gz",
-        "tss_gtf_md5": "8486a6bdcd27a8a7a08232d01cc13b77",
-        "macs_genome_size": "hs",
-    },
-    "mm10": {
-        "fasta_url": "https://hgdownload.soe.ucsc.edu/goldenPath/mm10/bigZips/mm10.fa.gz",
-        "fasta_md5": "db005b65828db31735f384e4c5787be5",
-        "blacklist_url": "https://raw.githubusercontent.com/Boyle-Lab/Blacklist/61a04d2c5e49341d76735d485c61f0d1177d08a8/lists/mm10-blacklist.v2.bed.gz",
-        "blacklist_md5": "4ae47e40309533c2a71de55494cda9bc",
-        "tss_gtf_url": "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M25/gencode.vM25.primary_assembly.annotation.gtf.gz",
-        "tss_gtf_md5": "c5125258a0a2c5250ddb4c192abbf4e8",
-        "macs_genome_size": "mm",
     },
 }
 
@@ -622,22 +602,6 @@ def materialize_run_fastqs(
     raise RuntimeError(f"fasterq-dump did not create FASTQs for {run.accession}")
 
 
-def _gunzip_to(source: Path, target: Path) -> None:
-    opener = gzip.open if source.suffix == ".gz" else open
-    with opener(source, "rb") as input_handle, target.open("wb") as output_handle:
-        shutil.copyfileobj(input_handle, output_handle)
-
-
-def _download_reference_asset(url: str, output: Path, expected_md5: str = "") -> Path:
-    compressed = output.with_suffix(output.suffix + ".gz")
-    download_file(url, compressed, expected_md5)
-    if not output.exists() or output.stat().st_mtime < compressed.stat().st_mtime:
-        tmp = output.with_suffix(output.suffix + ".tmp")
-        _gunzip_to(compressed, tmp)
-        tmp.replace(output)
-    return output
-
-
 def _download_tss_bed(url: str, output: Path, expected_md5: str = "") -> Path:
     gtf_gz = output.with_suffix(".gtf.gz")
     download_file(url, gtf_gz, expected_md5)
@@ -689,31 +653,38 @@ def prepare_reference(
     macs_genome_size: str | None = None,
     dry_run: bool = False,
     cores: int | None = None,
+    no_blacklist: bool = False,
 ) -> ReferenceBundle:
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", genome):
         raise ValueError(f"Genome label is not filesystem-safe: {genome!r}")
     assembly = genome
     root = Path(reference_dir).expanduser() / genome
+    manifest = REFERENCE_MANIFEST.get(genome, {})
+    if not fasta and manifest:
+        managed = resolve_analysis_reference(
+            genome,
+            reference_dir=reference_dir,
+            blacklist=blacklist,
+            no_blacklist=no_blacklist,
+            dry_run=dry_run,
+        )
+        fasta_path = managed.fasta
+        blacklist_path = managed.blacklist
+    else:
+        if not fasta:
+            raise ValueError("Custom genomes require --fasta")
+        fasta_path = Path(fasta).expanduser().resolve()
+        if not fasta_path.is_file():
+            raise ValueError(f"Custom reference FASTA does not exist: {fasta}")
+        blacklist_path = (
+            None
+            if no_blacklist
+            else Path(blacklist).expanduser().resolve() if blacklist else None
+        )
+        if blacklist_path is not None and not blacklist_path.is_file():
+            raise ValueError(f"Custom blacklist BED does not exist: {blacklist}")
     if not dry_run:
         root.mkdir(parents=True, exist_ok=True)
-    manifest = REFERENCE_MANIFEST.get(genome, {})
-    fasta_path = Path(fasta).expanduser().resolve() if fasta else root / f"{genome}.fa"
-    if not fasta and not fasta_path.exists():
-        if not manifest:
-            raise ValueError("Custom genomes require --fasta")
-        if not dry_run:
-            _download_reference_asset(
-                manifest["fasta_url"], fasta_path, manifest["fasta_md5"]
-            )
-    blacklist_path = (
-        Path(blacklist).expanduser().resolve()
-        if blacklist
-        else (root / f"{genome}.blacklist.bed" if manifest else None)
-    )
-    if blacklist_path and not blacklist and not blacklist_path.exists() and not dry_run:
-        _download_reference_asset(
-            manifest["blacklist_url"], blacklist_path, manifest["blacklist_md5"]
-        )
     if (
         not dry_run
         and fasta_path.exists()
@@ -1625,6 +1596,7 @@ def run_preprocessing(args: argparse.Namespace) -> int:
             args.macs_genome_size,
             True,
             int(settings["resources"]["cores"]),
+            args.no_blacklist,
         )
         print(
             f"prepare-atac: {len(samples)} sample(s), genome={args.genome}, outdir={root}"
@@ -1655,6 +1627,7 @@ def run_preprocessing(args: argparse.Namespace) -> int:
         args.macs_genome_size,
         False,
         int(settings["resources"]["cores"]),
+        args.no_blacklist,
     )
     results = []
     failures = []
@@ -1780,7 +1753,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--fasta", help="Custom reference FASTA.")
     parser.add_argument("--bowtie2-index", help="Existing Bowtie2 index prefix.")
-    parser.add_argument("--blacklist", help="Custom blacklist BED.")
+    blacklist_group = parser.add_mutually_exclusive_group()
+    blacklist_group.add_argument("--blacklist", help="Custom blacklist BED.")
+    blacklist_group.add_argument(
+        "--no-blacklist",
+        action="store_true",
+        help="Disable the managed blacklist for hg38 or mm10.",
+    )
     parser.add_argument("--tss", help="Optional TSS BED for enrichment QC.")
     parser.add_argument(
         "--macs-genome-size",

@@ -39,17 +39,20 @@ class WorkflowWrapperTest(unittest.TestCase):
                 "comparison\tcond1\tcond2\nA_vs_B\tA\tB\n",
                 encoding="utf-8",
             )
+            genome = root / "genome.fa"
+            genome.write_text(">chr1\nACGT\n", encoding="utf-8")
             parser = build_parser()
             args = parser.parse_args(
                 [
                     "--sample-table", str(samples),
                     "--comparison-table", str(comparisons),
-                    "--genome", "genome.fa",
+                    "--genome", str(genome),
                     "--outdir", str(root / "project"),
                     "--dry-run",
                 ]
             )
             self.assertEqual(run_bulk_footprinting(args), 0)
+            self.assertFalse((root / "project").exists())
             commands = build_commands(args)
             self.assertEqual(
                 [label for label, _ in commands],
