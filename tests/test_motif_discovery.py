@@ -223,6 +223,34 @@ class MotifDiscoveryPrepTest(unittest.TestCase):
             self.assertIn("generated workflow failed with exit code 7", stderr.getvalue())
             self.assertIn("run_motif_discovery.sh", stderr.getvalue())
 
+    def test_frozen_execute_resets_pyinstaller_environment_for_shell_child(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            fasta = root / "sites.fa"
+            fasta.write_text(">site1\nACGT\n", encoding="utf-8")
+            with mock.patch.object(
+                motif_discovery, "prepare_command_runtime", return_value=None
+            ), mock.patch.object(
+                motif_discovery.subprocess,
+                "run",
+                return_value=SimpleNamespace(returncode=0),
+            ) as runner, mock.patch.object(sys, "frozen", True, create=True):
+                code = motif_discovery_plan_main(
+                    [
+                        "--fasta",
+                        str(fasta),
+                        "--outdir",
+                        str(root / "results"),
+                        "--execute",
+                        "--runtime",
+                        "system",
+                    ]
+                )
+
+            self.assertEqual(code, 0)
+            environment = runner.call_args.kwargs["env"]
+            self.assertEqual(environment["PYINSTALLER_RESET_ENVIRONMENT"], "1")
+
     def test_write_streme_plan_uses_streme_txt(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)

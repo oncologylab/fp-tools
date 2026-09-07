@@ -8,6 +8,7 @@ import csv
 import gzip
 import html
 import math
+import os
 import re
 import shlex
 import subprocess
@@ -562,8 +563,18 @@ def motif_discovery_plan_main(argv: list[str] | None = None) -> int:
         parser.error(str(exc))
     print(script)
     if args.execute:
+        environment = None
+        if bool(getattr(sys, "frozen", False)):
+            # The generated workflow runs through bash before it calls the
+            # bundled summarize-motifs command.  Tell PyInstaller that this
+            # indirect child is an independent one-file application instance
+            # instead of inheriting the original bootloader's private state.
+            environment = os.environ.copy()
+            environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
         try:
-            result = subprocess.run([str(script)], check=False)
+            result = subprocess.run(
+                [str(script)], check=False, env=environment
+            )
         except OSError as exc:
             parser.exit(2, f"discover-motifs: could not start {script}: {exc}\n")
         if result.returncode:
