@@ -18,6 +18,7 @@ from fp_tools.utils.signals import (
     footprint_score_array_fast,
     local_maxima_indices,
 )
+from fp_tools.tools.review_multi_comparisons import read_diff_html_payload
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -535,7 +536,7 @@ class CliGoldenRegressionTest(unittest.TestCase):
                         (per_dir / "IRF1_MA0050.2" / "beds" / name).read_text(encoding="utf-8"),
                     )
 
-    def test_match_motifs_shared_project_summary_skips_per_motif_beds(self):
+    def test_cached_two_by_two_project_builds_aggregates_and_review(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             project = pathlib.Path(tmpdir) / "summary"
             (project / "peaks").mkdir(parents=True)
@@ -543,11 +544,34 @@ class CliGoldenRegressionTest(unittest.TestCase):
                 (ROOT / "test_data" / "merged_peaks.bed").read_text(encoding="utf-8"),
                 encoding="utf-8",
             )
-            (project / "samples.tsv").write_text("sample\tcondition\nA\tA\nB\tB\n", encoding="utf-8")
-            for sample, fixture in [("A", "Bcell_footprints.bw"), ("B", "Tcell_footprints.bw")]:
+            samples = [
+                ("A1", "A", "demo_Bcell_rep1_footprints.bw", "Bcell_corrected.bw"),
+                ("A2", "A", "demo_Bcell_rep2_footprints.bw", "Bcell_corrected.bw"),
+                ("B1", "B", "demo_Tcell_rep1_footprints.bw", "Tcell_corrected.bw"),
+                ("B2", "B", "demo_Tcell_rep2_footprints.bw", "Tcell_corrected.bw"),
+            ]
+            (project / "samples.tsv").write_text(
+                "sample\tcondition\n"
+                + "".join(f"{sample}\t{condition}\n" for sample, condition, _, _ in samples),
+                encoding="utf-8",
+            )
+            (project / "comparisons.tsv").write_text(
+                "comparison\tcond1\tcond2\nA_vs_B\tA\tB\n",
+                encoding="utf-8",
+            )
+            for sample, _, footprint_fixture, corrected_fixture in samples:
                 footprint_dir = project / "samples" / sample / "footprints"
                 footprint_dir.mkdir(parents=True)
-                os.symlink(ROOT / "test_data" / fixture, footprint_dir / f"{sample}_footprints.bw")
+                os.symlink(
+                    ROOT / "test_data" / footprint_fixture,
+                    footprint_dir / f"{sample}_footprints.bw",
+                )
+                correct_dir = project / "samples" / sample / "atac_correct"
+                correct_dir.mkdir(parents=True)
+                os.symlink(
+                    ROOT / "test_data" / corrected_fixture,
+                    correct_dir / f"{sample}_corrected.bw",
+                )
 
             run_command(
                 [
@@ -574,12 +598,65 @@ class CliGoldenRegressionTest(unittest.TestCase):
                 env={"FP_TOOLS_SYNC_MATCH_BEDS": "1"},
             )
 
-            for sample in ["A", "B"]:
+            for sample, _, _, _ in samples:
                 match_dir = project / "samples" / sample / "match_motifs"
                 self.assertTrue((match_dir / "motif_matches_results.txt").is_file())
                 self.assertTrue((match_dir / "cache" / "motif_sites.tsv.gz").is_file())
                 self.assertTrue((match_dir / "cache" / "background_scores.tsv.gz").is_file())
                 self.assertFalse((match_dir / "IRF1_MA0050.2").exists())
+
+            run_command(
+                [
+                    console_script("diff-footprints"),
+                    "--sample-table",
+                    project / "samples.tsv",
+                    "--comparison-table",
+                    project / "comparisons.tsv",
+                    "--layout",
+                    "project",
+                    "--genome",
+                    "test_data/genome.fa.gz",
+                    "--motifs",
+                    "test_data/individual_motifs/MA0050.2.jaspar",
+                    "--outdir",
+                    project,
+                    "--plot-aggregate",
+                    "all",
+                    "--aggregate-site-set",
+                    "all",
+                    "--cores",
+                    "4",
+                    "--skip-excel",
+                    "--verbosity",
+                    "1",
+                ],
+                timeout=120,
+            )
+            comparison_html = (
+                project
+                / "comparisons"
+                / "A_vs_B"
+                / "diff_footprints_A_B.html"
+            )
+            payload = read_diff_html_payload(comparison_html)
+            self.assertEqual(
+                [motif["prefix"] for motif in payload["aggregate"]["motifs"]],
+                ["IRF1_MA0050.2"],
+            )
+            self.assertGreater(payload["aggregate"]["motifs"][0]["n_sites"], 0)
+
+            review_dir = project / "reports" / "review_multi_comparisons"
+            run_command(
+                [
+                    console_script("review-multi-comparisons"),
+                    "--inputs",
+                    project / "comparisons",
+                    "--output-dir",
+                    review_dir,
+                ],
+                timeout=120,
+            )
+            self.assertGreater((review_dir / "index.html").stat().st_size, 0)
 
     def test_diff_footprints_replicate_grouping_writes_diagnostics(self):
         with tempfile.TemporaryDirectory() as tmpdir:

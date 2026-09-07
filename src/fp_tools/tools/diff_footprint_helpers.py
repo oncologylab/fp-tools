@@ -836,9 +836,17 @@ def _cached_aggregate_centers_for_row(prefix, comparison, site_set, aggregate_si
     return centers_by_condition, unique
 
 
-def _aggregate_centers_for_row(outdir, prefix, comparison, site_set, max_centers=None, aggregate_site_maps=None, cond_groups=None):
+def _aggregate_centers_for_row(
+    outdir,
+    prefix,
+    comparison,
+    site_set,
+    max_centers=None,
+    aggregate_site_maps=None,
+    cond_groups=None,
+):
     if aggregate_site_maps:
-        return _cached_aggregate_centers_for_row(
+        centers_by_condition, _ = _cached_aggregate_centers_for_row(
             prefix,
             comparison,
             site_set,
@@ -846,6 +854,26 @@ def _aggregate_centers_for_row(outdir, prefix, comparison, site_set, max_centers
             cond_groups or {},
             max_centers=max_centers,
         )
+        # Project-layout summary mode intentionally leaves the reusable sample
+        # folders without materialized per-motif BEDs. process_tfbs writes the
+        # selected motif sites to a temporary comparison tree, so use those
+        # files for any motif/condition absent from the reusable directories.
+        fallback_paths = _aggregate_bed_paths(outdir, prefix, comparison, site_set)
+        for cond in comparison:
+            if centers_by_condition.get(cond):
+                continue
+            centers_by_condition[cond] = _limit_aggregate_centers(
+                _read_bed_centers(fallback_paths[cond]),
+                max_centers,
+            )
+        unique = []
+        seen = set()
+        for centers in centers_by_condition.values():
+            for center in centers:
+                if center not in seen:
+                    seen.add(center)
+                    unique.append(center)
+        return centers_by_condition, unique
     paths = _aggregate_bed_paths(outdir, prefix, comparison, site_set)
     centers_by_condition = {cond: _limit_aggregate_centers(_read_bed_centers(path), max_centers) for cond, path in paths.items()}
     unique = []

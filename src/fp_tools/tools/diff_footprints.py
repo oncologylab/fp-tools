@@ -737,12 +737,12 @@ def run_diff_footprints_reuse_existing_results(args):
         motifs = _existing_result_motifs(info_table, comparison, args, motif_lookup=motif_lookup)
         aggregate_data = None
         if getattr(args, "aggregate_signals", None) and getattr(args, "plot_aggregate", "off") != "off":
-            try:
-                aggregate_data = build_diff_footprint_aggregate_payload(motifs, info_table, comparison, args)
-                if aggregate_data is None or len(aggregate_data.get("motifs", [])) == 0:
-                    logger.warning(f"No reusable aggregate profiles were found for {base}; writing volcano-only HTML")
-            except Exception as exc:
-                logger.warning(f"Could not build aggregate payload from existing motif BEDs: {exc}")
+            aggregate_data = _required_aggregate_payload(
+                motifs,
+                info_table,
+                comparison,
+                args,
+            )
         html_out = os.path.join(args.outdir, args.prefix + "_" + base + ".html")
         plot_interactive_diff_footprints(
             motifs,
@@ -756,6 +756,26 @@ def run_diff_footprints_reuse_existing_results(args):
 
     logger.info("Reuse mode skipped motif scanning, per-motif processing, static PDFs, and clustering.")
     logger.end()
+
+
+def _required_aggregate_payload(motifs, info_table, comparison, args):
+    """Build an explicitly requested aggregate payload or fail actionably."""
+
+    payload = build_diff_footprint_aggregate_payload(
+        motifs,
+        info_table,
+        comparison,
+        args,
+    )
+    if payload is None or not payload.get("motifs"):
+        label = " / ".join(str(value) for value in comparison)
+        raise ValueError(
+            f"Aggregate profiles were requested for {label}, but no valid motif-site "
+            "profiles could be produced. Verify that the match-motifs caches or "
+            "per-motif BED files contain sites and that the aggregate signal tracks "
+            "use the same reference assembly."
+        )
+    return payload
 
 
 def _read_cached_all_bed(path, peak_cols, sample_col_count=1):
@@ -2783,10 +2803,12 @@ def run_diff_footprints(args):
             html_out = os.path.join(args.outdir, args.prefix + "_" + base + ".html")
             aggregate_data = None
             if getattr(args, "aggregate_signals", None) and getattr(args, "plot_aggregate", "off") != "off":
-                try:
-                    aggregate_data = build_diff_footprint_aggregate_payload(motif_list, info_table, [c1, c2], args)
-                except Exception as exc:
-                    logger.warning(f"Could not build aggregate payload for interactive HTML: {exc}")
+                aggregate_data = _required_aggregate_payload(
+                    motif_list,
+                    info_table,
+                    [c1, c2],
+                    args,
+                )
             plot_interactive_diff_footprints(
                 motif_list,
                 [c1, c2],

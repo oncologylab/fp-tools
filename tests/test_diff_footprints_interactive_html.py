@@ -475,6 +475,86 @@ class InteractiveDiffFootprintsHtmlTest(unittest.TestCase):
             self.assertEqual(centers_by_condition["Tcell"], [("chr1", 35)])
             self.assertEqual(all_centers, [("chr1", 15), ("chr1", 35)])
 
+    def test_empty_cached_beds_fall_back_to_summary_mode_motif_beds(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            beds = root / "TF1" / "beds"
+            beds.mkdir(parents=True)
+            (beds / "TF1_all.bed").write_text(
+                "chr1\t10\t20\nchr1\t30\t40\n",
+                encoding="utf-8",
+            )
+            (beds / "TF1_Bcell_bound.bed").write_text(
+                "chr1\t10\t20\n",
+                encoding="utf-8",
+            )
+            (beds / "TF1_Tcell_bound.bed").write_text(
+                "chr1\t30\t40\n",
+                encoding="utf-8",
+            )
+
+            for site_set in ("all", "bound"):
+                centers_by_condition, all_centers = (
+                    diff_footprint_helpers._aggregate_centers_for_row(
+                        str(root),
+                        "TF1",
+                        ("Bcell", "Tcell"),
+                        site_set,
+                        aggregate_site_maps=[{}, {}],
+                        cond_groups={"Bcell": [0], "Tcell": [1]},
+                    )
+                )
+                self.assertTrue(all_centers)
+                self.assertTrue(centers_by_condition["Bcell"])
+                self.assertTrue(centers_by_condition["Tcell"])
+
+    def test_partial_cached_beds_fall_back_per_condition(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            beds = root / "TF1" / "beds"
+            beds.mkdir(parents=True)
+            cached_bcell = root / "cached_Bcell_bound.bed"
+            cached_bcell.write_text("chr1\t10\t20\n", encoding="utf-8")
+            (beds / "TF1_Tcell_bound.bed").write_text(
+                "chr1\t30\t40\n",
+                encoding="utf-8",
+            )
+
+            centers_by_condition, all_centers = (
+                diff_footprint_helpers._aggregate_centers_for_row(
+                    str(root),
+                    "TF1",
+                    ("Bcell", "Tcell"),
+                    "bound",
+                    aggregate_site_maps=[
+                        {"TF1": {"bound": str(cached_bcell)}},
+                        {},
+                    ],
+                    cond_groups={"Bcell": [0], "Tcell": [1]},
+                )
+            )
+            self.assertEqual(centers_by_condition["Bcell"], [("chr1", 15)])
+            self.assertEqual(centers_by_condition["Tcell"], [("chr1", 35)])
+            self.assertEqual(all_centers, [("chr1", 15), ("chr1", 35)])
+
+    def test_requested_aggregate_payload_must_contain_profiles(self):
+        args = SimpleNamespace()
+        with patch.object(
+            diff_footprints,
+            "build_diff_footprint_aggregate_payload",
+            return_value={"x": [-1, 0], "motifs": []},
+        ):
+            with self.assertRaisesRegex(
+                ValueError,
+                "Aggregate profiles were requested.*no valid motif-site profiles",
+            ):
+                diff_footprints._required_aggregate_payload(
+                    [],
+                    pd.DataFrame(),
+                    ("Bcell", "Tcell"),
+                    args,
+                )
+
 
 
     def test_aggregate_profile_normalization_uses_report_level_normalizers(self):
