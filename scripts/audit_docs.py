@@ -399,6 +399,64 @@ def audit_embedded_review(browser, failures: list[str]) -> None:
         page.close()
 
 
+def audit_existing_diff_conversion(browser, site_dir: Path, failures: list[str]) -> None:
+    """Convert the shipped v0.2.1 differential report and render every layer."""
+
+    from fp_tools.tools.plot_aggregate_batch import main as plot_aggregate_main
+
+    source = site_dir / "demos/reports/diff_footprints_K562_HepG2.html"
+    with tempfile.TemporaryDirectory(prefix="fp-tools-existing-html-audit-") as tmpdir:
+        output = Path(tmpdir) / "converted.html"
+        try:
+            result = plot_aggregate_main(
+                [
+                    "--input-html",
+                    str(source),
+                    "--output",
+                    str(output),
+                    "--title",
+                    "Existing differential report conversion",
+                ]
+            )
+        except (OSError, SystemExit, ValueError) as exc:
+            failures.append(f"existing HTML conversion failed: {exc}")
+            return
+        if result != 0 or not output.is_file() or output.stat().st_size == 0:
+            failures.append("existing HTML conversion did not produce a nonempty report")
+            return
+
+        page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        errors: list[str] = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        page.on(
+            "console",
+            lambda message: (
+                errors.append(message.text) if message.type == "error" else None
+            ),
+        )
+        try:
+            page.goto(output.as_uri(), wait_until="load", timeout=60_000)
+            page.locator(".aggregate-panel").first.wait_for(
+                state="visible",
+                timeout=60_000,
+            )
+            panel_count = page.locator(".aggregate-panel").count()
+            path_count = page.locator(".aggregate-panel path").count()
+            if panel_count == 0 or path_count == 0:
+                failures.append(
+                    "existing HTML conversion rendered no aggregate SVG curves"
+                )
+            detail = page.locator("#report-detail").inner_text()
+            if "Could not open report payload" in detail:
+                failures.append(f"existing HTML conversion reported: {detail}")
+        except PlaywrightTimeoutError as exc:
+            failures.append(f"existing HTML conversion did not render: {exc}")
+        finally:
+            page.close()
+        if errors:
+            failures.append(f"existing HTML conversion browser errors: {errors}")
+
+
 def audit(site_dir: Path) -> None:
     failures: list[str] = []
     with serve(site_dir) as base_url, sync_playwright() as playwright:
@@ -884,6 +942,7 @@ def audit(site_dir: Path) -> None:
                         )
                     page.close()
         audit_embedded_review(browser, failures)
+        audit_existing_diff_conversion(browser, site_dir, failures)
         browser.close()
     if failures:
         raise SystemExit("Documentation browser audit failed:\n- " + "\n- ".join(failures))

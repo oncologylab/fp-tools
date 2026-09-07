@@ -393,7 +393,12 @@ def read_embedded_payload(path: str | Path) -> dict:
         match = re.search(r"const\s+reportPayloadB64\s*=\s*['\"]([^'\"]+)['\"]", text)
     if not match:
         raise ValueError(f"Could not find reportPayloadB64 in {path}")
-    return _decode_payload_b64(match.group(1))
+    payload = _decode_payload_b64(match.group(1))
+    _validate_batch_payload(
+        _ensure_batch_payload(payload, Path(path).stem),
+        source_label=str(path),
+    )
+    return payload
 
 
 def _series_from_diff_payload(payload: dict, source_label: str) -> dict:
@@ -456,7 +461,22 @@ def _ensure_batch_payload(payload: dict, source_label: str = "") -> dict:
 def merge_payloads(payloads: list[dict]) -> dict:
     if not payloads:
         raise ValueError("No aggregate payloads were provided")
-    normalized = [_ensure_batch_payload(payload, f"report{idx + 1}") for idx, payload in enumerate(payloads)]
+    normalized = []
+    for idx, payload in enumerate(payloads):
+        batch_payload = _ensure_batch_payload(payload, f"report{idx + 1}")
+        normalized.append(
+            _validate_batch_payload(
+                batch_payload,
+                source_label=f"aggregate input {idx + 1}",
+            )
+        )
+    reference_x = normalized[0]["x"]
+    for idx, payload in enumerate(normalized[1:], start=2):
+        if payload["x"] != reference_x:
+            raise ValueError(
+                f"aggregate input {idx} uses a different x-axis; regenerate inputs "
+                "with the same aggregate flank before merging"
+            )
     merged = {"schema": "fp-tools.aggregate.batch.v2", "x": normalized[0].get("x") or [], "motifs": [], "conditions": [], "colors": {}, "logos": {}, "groups_defined": any(bool(p.get("groups_defined")) for p in normalized), "normalization": ", ".join(sorted({str(p.get("normalization") or "none") for p in normalized})), "site_set": _summarize_site_sets([str(p.get("site_set") or "") for p in normalized]), "x_label": normalized[0].get("x_label") or "Distance from motif center (bp)", "y_label": normalized[0].get("y_label") or "Corrected cut-site signal (a.u.)"}
     motifs_by_prefix: dict[str, dict] = {}
     for payload in normalized:
@@ -480,7 +500,87 @@ def merge_payloads(payloads: list[dict]) -> dict:
         for idx, cond in enumerate(merged["conditions"]):
             merged["colors"].setdefault(cond, DEFAULT_COLORS[idx % len(DEFAULT_COLORS)])
     merged["motifs"] = sorted(motifs_by_prefix.values(), key=lambda m: (str(m.get("name") or ""), str(m.get("prefix") or "")))
-    return merged
+    return _validate_batch_payload(merged, source_label="merged aggregate payload")
+
+
+def _finite_numeric_list(values, field: str) -> list[float]:
+    if isinstance(values, np.ndarray):
+        values = values.tolist()
+    if not isinstance(values, (list, tuple)):
+        raise ValueError(f"{field} must be an array of finite numeric values")
+    result = []
+    for idx, value in enumerate(values):
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{field}[{idx}] is not numeric") from exc
+        if not np.isfinite(numeric):
+            raise ValueError(f"{field}[{idx}] is not finite")
+        result.append(numeric)
+    return result
+
+
+def _validate_batch_payload(payload: dict, source_label: str = "aggregate payload") -> dict:
+    """Validate and canonicalize the schema consumed by the report JavaScript."""
+
+    if not isinstance(payload, dict):
+        raise ValueError(f"{source_label} is not a JSON object")
+    if payload.get("schema") != "fp-tools.aggregate.batch.v2":
+        raise ValueError(f"{source_label} has an unsupported aggregate schema")
+
+    x_values = _finite_numeric_list(payload.get("x"), f"{source_label} x-axis")
+    if not x_values:
+        raise ValueError(
+            f"{source_label} has no aggregate x-axis; regenerate the source report "
+            "with valid aggregate profiles"
+        )
+
+    motifs = payload.get("motifs")
+    if not isinstance(motifs, list) or not motifs:
+        raise ValueError(
+            f"{source_label} has no aggregate motifs; rerun diff-footprints with "
+            "--plot-aggregate all and valid aggregate signal tracks"
+        )
+
+    for motif_idx, motif in enumerate(motifs):
+        if not isinstance(motif, dict):
+            raise ValueError(f"{source_label} motif {motif_idx + 1} is not an object")
+        motif_label = str(
+            motif.get("prefix") or motif.get("name") or f"motif {motif_idx + 1}"
+        )
+        series_rows = motif.get("series")
+        if not isinstance(series_rows, list) or not series_rows:
+            raise ValueError(f"{source_label} motif {motif_label} has no profile series")
+        sample_count = 0
+        for series_idx, series in enumerate(series_rows):
+            if not isinstance(series, dict):
+                raise ValueError(
+                    f"{source_label} motif {motif_label} series {series_idx + 1} "
+                    "is not an object"
+                )
+            profile_label = str(
+                series.get("label") or series.get("id") or f"series {series_idx + 1}"
+            )
+            profile = _finite_numeric_list(
+                series.get("profile"),
+                f"{source_label} motif {motif_label} profile {profile_label}",
+            )
+            if len(profile) != len(x_values):
+                raise ValueError(
+                    f"{source_label} motif {motif_label} profile {profile_label} has "
+                    f"{len(profile)} values but the x-axis has {len(x_values)}"
+                )
+            series["profile"] = profile
+            if series.get("kind") == "sample":
+                sample_count += 1
+        if sample_count == 0:
+            raise ValueError(
+                f"{source_label} motif {motif_label} has no sample profile series; "
+                "regenerate the source report with per-sample aggregates"
+            )
+
+    payload["x"] = x_values
+    return payload
 
 
 def write_html(payload: dict, output: str | Path, title: str, default_layout: str = "2x2", show_summary: bool = True) -> None:
@@ -638,6 +738,7 @@ function renderColors(){{const card=colorControls.closest('.card');if(!payload.g
 function logoHtml(prefix){{const logo=(payload.logos||{{}})[prefix]||{{}};return logo.png?`<img alt="Motif logo" src="${{logo.png}}">`:'<span class="logo-empty">Motif logo unavailable</span>'}}
 function sampleControls(idx){{const colors=currentColors(),samples=allSamples(),groups=payload.groups_defined?(payload.conditions||[]):['__all__'];return groups.map(cond=>{{const groupSamples=cond==='__all__'?samples:samples.filter(s=>s.condition===cond),title=cond==='__all__'?'Samples':`${{escText(cond)}} samples`,dot=cond==='__all__'?'#64748b':(colors[cond]||'#64748b');return `<div class="sample-group"><div class="sample-group-title"><span class="sample-dot" style="background:${{dot}}"></span>${{title}}</div>${{groupSamples.map(s=>{{const st=sampleStyle(idx,s.label);return `<label class="sample-style-row"><input data-visible="${{idx}}:${{escText(s.label)}}" type="checkbox" ${{st.visible?'checked':''}}><span class="sample-style-name">${{escText(s.label)}}</span><input data-color="${{idx}}:${{escText(s.label)}}" type="color" value="${{st.color}}"><input data-alpha="${{idx}}:${{escText(s.label)}}" type="number" min="0.05" max="1" step="0.05" value="${{st.alpha}}"><input data-width="${{idx}}:${{escText(s.label)}}" type="number" min="0.2" max="5" step="0.1" value="${{st.width}}"><select data-type="${{idx}}:${{escText(s.label)}}"><option value="solid"${{st.type==='solid'?' selected':''}}>Solid</option><option value="dash"${{st.type==='dash'?' selected':''}}>Dash</option><option value="dot"${{st.type==='dot'?' selected':''}}>Dot</option></select></label>`}}).join('')}}</div>`}}).join('')}}
 function legendHtml(idx){{return allSamples().filter(s=>sampleStyle(idx,s.label).visible).map(s=>{{const st=sampleStyle(idx,s.label),dash=lineDash(st.type);return `<div class="legend-row"><svg viewBox="0 0 34 8"><line x1="1" y1="4" x2="33" y2="4" stroke="${{st.color}}" stroke-width="${{lineWidthValue(st.width,2)}}" stroke-opacity="${{alphaValue(st.alpha,.9)}}" ${{dash?`stroke-dasharray="${{dash}}"`:''}}/></svg><span>${{escText(s.label)}}</span></div>`}}).join('')}}
+function niceStep(raw){{if(!Number.isFinite(raw)||raw<=0)return 1;const power=Math.pow(10,Math.floor(Math.log10(raw))),fraction=raw/power;return (fraction<=1?1:fraction<=1.5?1.5:fraction<=2.5?2.5:fraction<=5?5:10)*power}}
 function niceTicks(min,max,n){{const out=[];for(let i=0;i<n;i++)out.push(min+(max-min)*(i/Math.max(1,n-1)));return out}}
 function fmt(v){{const a=Math.abs(v);if(!Number.isFinite(v))return'';if(a===0)return'0';if(a>=1)return v.toFixed(1).replace('-0.0','0.0');if(a>=.01)return v.toFixed(2).replace('-0.00','0.00');if(a>=.001)return v.toFixed(3).replace('-0.000','0.000');return v.toExponential(1).replace('-0.0e+0','0')}}
 function pathD(profile,x,sx,sy){{return profile.map((y,i)=>`${{i?'L':'M'}}${{sx(x[i]).toFixed(2)}},${{sy(y).toFixed(2)}}`).join(' ')}}
@@ -672,24 +773,33 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--title", default="Aggregate motif footprint browser")
     parser.add_argument("--hide-summary", action="store_true", help="Hide the TF site summary sidebar in the HTML report.")
     args = parser.parse_args(argv)
-    payloads = []
-    if args.manifest:
-        payloads.append(
-            build_payload(
-                _read_manifest(args.manifest),
-                flank=max(1, args.flank),
-                top_n=max(1, args.top_n),
-                normalization=args.normalization,
-                motif_names=args.motifs,
-                site_set=args.site_set,
+    try:
+        payloads = []
+        if args.manifest:
+            payloads.append(
+                build_payload(
+                    _read_manifest(args.manifest),
+                    flank=max(1, args.flank),
+                    top_n=max(1, args.top_n),
+                    normalization=args.normalization,
+                    motif_names=args.motifs,
+                    site_set=args.site_set,
+                )
             )
+        for path in args.input_html:
+            payloads.append(read_embedded_payload(path))
+        if not payloads:
+            parser.error("provide --manifest and/or --input-html")
+        payload = merge_payloads(payloads)
+        write_html(
+            payload,
+            args.output,
+            args.title,
+            default_layout=args.default_layout,
+            show_summary=not args.hide_summary,
         )
-    for path in args.input_html:
-        payloads.append(read_embedded_payload(path))
-    if not payloads:
-        parser.error("provide --manifest and/or --input-html")
-    payload = merge_payloads(payloads)
-    write_html(payload, args.output, args.title, default_layout=args.default_layout, show_summary=not args.hide_summary)
+    except (OSError, ValueError) as exc:
+        parser.error(str(exc))
     print(f"Wrote {args.output}")
     return 0
 

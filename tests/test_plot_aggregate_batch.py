@@ -1,5 +1,7 @@
 import base64
+import contextlib
 import gzip
+import io
 import json
 import re
 import tempfile
@@ -10,11 +12,16 @@ from fp_tools.tools.plot_aggregate_batch import (
     _compressed_json_b64,
     _discover_motifs,
     _motif_bed_path,
+    _validate_batch_payload,
     build_payload,
+    main,
     merge_payloads,
     read_embedded_payload,
     write_html,
 )
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _payload_from_html(path: Path) -> dict:
@@ -244,6 +251,110 @@ class PlotAggregateBatchTest(unittest.TestCase):
         self.assertNotIn("FP score", html)
         self.assertIn("plot_aggregate_grid.svg", html)
         self.assertIn("plot_aggregate_motif_logo_panel.svg", html)
+        self.assertIn("function niceStep", html)
+
+    def test_existing_v021_differential_demo_converts_to_valid_batch_schema(self):
+        source = ROOT / "docs/demos/reports/diff_footprints_K562_HepG2.html"
+        embedded = read_embedded_payload(source)
+        converted = merge_payloads([embedded])
+        self.assertEqual(converted["schema"], "fp-tools.aggregate.batch.v2")
+        self.assertEqual(len(converted["x"]), 200)
+        self.assertEqual(len(converted["motifs"]), 1019)
+        self.assertTrue(converted["motifs"][0]["series"])
+        self.assertTrue(
+            any(
+                series["kind"] == "sample"
+                for series in converted["motifs"][0]["series"]
+            )
+        )
+
+    def test_payload_validation_rejects_missing_and_misaligned_profiles(self):
+        base = {
+            "schema": "fp-tools.aggregate.batch.v2",
+            "x": [-1, 1],
+            "motifs": [
+                {
+                    "prefix": "TF1",
+                    "series": [
+                        {
+                            "kind": "sample",
+                            "label": "S1",
+                            "profile": [0.1, 0.2],
+                        }
+                    ],
+                }
+            ],
+        }
+        for payload, message in [
+            ({**base, "x": []}, "no aggregate x-axis"),
+            ({**base, "motifs": []}, "no aggregate motifs"),
+            (
+                {
+                    **base,
+                    "motifs": [
+                        {
+                            "prefix": "TF1",
+                            "series": [
+                                {
+                                    "kind": "sample",
+                                    "label": "S1",
+                                    "profile": [0.1],
+                                }
+                            ],
+                        }
+                    ],
+                },
+                "1 values but the x-axis has 2",
+            ),
+            (
+                {
+                    **base,
+                    "motifs": [
+                        {
+                            "prefix": "TF1",
+                            "series": [
+                                {
+                                    "kind": "condition",
+                                    "label": "A mean",
+                                    "profile": [0.1, 0.2],
+                                }
+                            ],
+                        }
+                    ],
+                },
+                "no sample profile series",
+            ),
+        ]:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ValueError, message):
+                    _validate_batch_payload(payload)
+
+    def test_cli_rejects_aggregate_free_html_without_writing_output(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source = root / "aggregate_free.html"
+            source.write_text(
+                '<script>const reportPayloadB64="'
+                + _compressed_json_b64({"aggregate": {"x": [-1, 1], "motifs": []}})
+                + '";</script>',
+                encoding="utf-8",
+            )
+            output = root / "converted.html"
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                with self.assertRaises(SystemExit) as raised:
+                    main(
+                        [
+                            "--input-html",
+                            str(source),
+                            "--output",
+                            str(output),
+                        ]
+                    )
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn("no aggregate motifs", stderr.getvalue())
+            self.assertIn("--plot-aggregate all", stderr.getvalue())
+            self.assertFalse(output.exists())
 
     def test_write_html_uses_column_layout_without_summary_sidebar(self):
         payload = {
