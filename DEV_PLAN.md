@@ -311,6 +311,17 @@ a separately planned breaking release explicitly changes the contract.
   leakage. Other TFs cannot pass relative safety from this CTCF-region DWM
   archive. See
   `benchmarks/CHROMBPNET_AUDIT_20260908.md` for the evidence and remaining work.
+- The one-page direct-bias renderer now rejects legacy factorization safety,
+  requires exact comparison identity plus coverage-qualified direct safety,
+  and gates on significant paired gains over DWM/raw and canonical protection.
+  It attaches safety only to the candidate, reports the actual cell/dispersion
+  and covariate imbalance, and preserves historical reports. The new HepG2
+  CTCF report is development evidence with candidate-screen safety; no general
+  correction, final untouched safety or package promotion is claimed. Its six
+  files were uploaded to the new Box folder
+  `Yaoxiang/fp-tools/2026-09-08_HepG2_CTCF_direct_bias_candidate_screen`
+  on 2026-09-08; `rclone check --download --one-way` reported six matches and
+  zero differences. Historical report folders were preserved.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

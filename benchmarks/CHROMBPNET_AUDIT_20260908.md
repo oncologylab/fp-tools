@@ -169,3 +169,21 @@ The expanded focused suite passes 42 tests, including exact scoring equivalence
 at both dispersions, validation-only calibration, untouched-input rejection,
 immutable threshold checks, informative denominators and DWM coverage guards.
 Both completed safety stages verify and skip on repeated invocation.
+
+The repaired one-page renderer requires exact comparison/operator provenance,
+coverage-qualified direct safety, significant paired gains over DWM and raw,
+and canonical central protection. It rejects legacy factorization safety TSVs,
+does not propagate candidate safety to other methods, and reports actual
+cell/dispersion and balance. Its regression tests expand the focused suite to
+46 passing tests. The HepG2 CTCF PDF is one A4 page, visually checked, with a
+portable metrics/provenance/limitations bundle under
+`benchmarks/results/reports/HepG2_CTCF_direct_bias_comparison_20260908_v1/`.
+All five entries in `SHA256SUMS` pass. PDF SHA-256:
+`e5f14d00774f9ea7a7098a6a67c7a26f58620738aa12f4fe463735c524539086`.
+Report ID:
+`060e71effed61b4fa4ec45326a4d138dee79308b5781d079d09d1e1ab55f0f88`.
+The six-file bundle was uploaded on 2026-09-08 to the new folder
+`yilab:Yaoxiang/fp-tools/2026-09-08_HepG2_CTCF_direct_bias_candidate_screen/`.
+`rclone check --download --one-way` verified six matching files and zero
+differences; the remote listing also contained exactly those six files.
+Historical reports and manuscript folders were not modified.

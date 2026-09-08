@@ -1,5 +1,18 @@
 # Footprint improvement experiment, 2026-08-30
 
+## Reference follow-up, 2026-09-08
+
+The pinned HepG2 ChromBPNet regulatory training, predictions and same-site
+comparison are complete and checksum-valid. The follow-up audit reports all
+21 K562/HepG2 TF tasks, signed aggregate shape, site balance and exact-method
+naked-DNA candidate screening. Only CTCF supports a narrow direct-bias result;
+the general promotion gates fail. The two cell comparisons retain different
+recorded dispersions. New cell holdouts and final naked-DNA replicate 3 remain
+unopened. See [the completed-reference audit](CHROMBPNET_AUDIT_20260908.md)
+for metrics, safety coverage limitations, immutable artifact identities and
+the verified HepG2 one-page report. The sections below preserve the earlier
+experiments and must not be read as new untouched evidence.
+
 ## Scope
 
 This time-boxed run used branch `research/footprint-improvement-20260830` and

@@ -665,3 +665,27 @@ and `coverage_manifest.json`, retaining absolute and DWM-comparable denominators
 The first stage's provisional screen field does not certify DWM coverage.
 These are development candidate checks; neither establishes final untouched
 safety, no occupancy leakage, or calibrated functional uncertainty.
+
+### One-page direct-bias comparison report
+
+The report renderer requires the completed comparison, its shape/balance audit,
+and the coverage-qualified direct-operator safety manifest. Legacy factorization
+safety TSVs are rejected. It checks exact comparison identity, significant
+AUROC/AUPRC gains over DWM and raw, canonical central protection, and a passing
+candidate FPR screen. Safety values appear only on the candidate's metric row.
+
+```bash
+python benchmarks/scripts/render_chrombpnet_parametric_report.py \
+  --comparison-manifest /path/to/data-checkout/benchmarks/results/frozen_parametric_factorization_v1_run2/chrombpnet_comparison/HepG2_complete/chrombpnet_comparison_manifest.json \
+  --safety-manifest benchmarks/results/direct_bias_safety_coverage/coverage_manifest.json \
+  --audit-manifest benchmarks/results/chrombpnet_development_audit/audit_manifest.json \
+  --data-root /path/to/data-checkout \
+  --cell HepG2 --tf CTCF \
+  --outdir benchmarks/results/reports/HepG2_CTCF_direct_bias
+```
+
+The new output folder contains a one-page A4 PDF, preview, metrics TSV,
+limitations README, portable provenance manifest and `SHA256SUMS`. Existing
+reports are never overwritten. The report states the actual cell, dispersion,
+covariate imbalance and safety denominators; it makes no equivalence claim
+about ChromBPNet and does not imply final holdout safety or general promotion.
