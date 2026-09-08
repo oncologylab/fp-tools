@@ -126,8 +126,11 @@ large-residual flag threshold. There are only 218 and 221 cuts across the
 informative CTCF profiles, respectively; this diagnostic does not prove absence
 of occupancy leakage or calibrated functional uncertainty.
 
-Next: assess whether CTCF gains survive a separately frozen
-diagnostic for motif-score/accessibility imbalance. No new SK-N-SH/GM23338
+The subsequent [frozen covariate diagnostic](CHROMBPNET_COVARIATE_DIAGNOSTIC_20260908.md)
+retains CTCF gains over DWM after tighter matching. K562's matched intervals
+against raw include zero, and difficult TFs remain weak or underpowered.
+Depth/replicate/resource and functional uncertainty gates remain incomplete.
+No new SK-N-SH/GM23338
 labels or final naked-DNA replicate-3 results were read by this audit.
 The general development gates already fail, so this result does not justify
 spending untouched holdouts or promoting a package method.

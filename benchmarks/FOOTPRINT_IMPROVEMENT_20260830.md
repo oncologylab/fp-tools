@@ -10,7 +10,10 @@ the general promotion gates fail. The two cell comparisons retain different
 recorded dispersions. New cell holdouts and final naked-DNA replicate 3 remain
 unopened. See [the completed-reference audit](CHROMBPNET_AUDIT_20260908.md)
 for metrics, safety coverage limitations, immutable artifact identities and
-the verified HepG2 one-page report. The sections below preserve the earlier
+the verified HepG2 one-page report. The subsequent
+[covariate-matching sensitivity](CHROMBPNET_COVARIATE_DIAGNOSTIC_20260908.md)
+supports CTCF gains over DWM but leaves K562 gains over raw uncertain and does
+not rescue difficult TFs. The sections below preserve the earlier
 experiments and must not be read as new untouched evidence.
 
 ## Scope

@@ -1,0 +1,36 @@
+{
+  "schema": "fp-tools-chrombpnet-covariate-diagnostic-plan-v1",
+  "evidence": "post_hoc_development_sensitivity",
+  "cells": ["HepG2", "K562"],
+  "training_chromosomes": ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15"],
+  "evaluation_chromosomes": ["chr19", "chr20", "chr21", "chr22", "chrX"],
+  "new_holdout_labels_allowed": false,
+  "candidate_retuning_allowed": false,
+  "caliper_standard_deviations_per_feature": 0.2,
+  "matching": "maximum_cardinality_then_minimum_squared_distance_within_chromosome",
+  "primary_policy": "motif_accessibility",
+  "policies": {
+    "motif_only": ["motif_score"],
+    "motif_accessibility": ["motif_score", "log_accessibility"],
+    "motif_accessibility_observed_total": ["motif_score", "log_accessibility", "log_observed_total"]
+  },
+  "maximum_absolute_smd": 0.1,
+  "minimum_sites_per_class": 200,
+  "bootstrap_iterations": 1000,
+  "aggregate_bootstrap_iterations": 500,
+  "seed": 2026,
+  "accessibility_tracks": {
+    "HepG2": {
+      "path": "benchmarks/results/footprint_detectability_v1/ablation/signals/HepG2_rep1/10m/seed_2026/fp_tools_dwm/HepG2_rep1.10m.s2026_uncorrected.bw",
+      "sha256": "53ecd9bffb0477a2313cf44e7c6c21200ba4f071263c98ada79a15f82760554d"
+    },
+    "K562": {
+      "path": "benchmarks/results/footprint_detectability_v1/ablation/signals/K562_rep1/10m/seed_2026/fp_tools_dwm/K562_rep1.10m.s2026_uncorrected.bw",
+      "sha256": "34704564b61f50b36cb573ec0b641c4deeb0a410d2ae11781436cb35b79c612d"
+    }
+  },
+  "source_plan": {
+    "path": "benchmarks/manifests/chrombpnet_direct_bias_safety_v1.json",
+    "sha256": "17fdfe8027649012eca39d23853926aebe100672c60cf2d44e29e6d2ab299bfd"
+  }
+}

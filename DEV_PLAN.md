@@ -322,6 +322,18 @@ a separately planned breaking release explicitly changes the contract.
   `Yaoxiang/fp-tools/2026-09-08_HepG2_CTCF_direct_bias_candidate_screen`
   on 2026-09-08; `rclone check --download --one-way` reported six matches and
   zero differences. Historical report folders were preserved.
+- A frozen post-hoc covariate sensitivity now covers all 21 development tasks
+  with three declared matching policies and unchanged scores/dispersions. The
+  primary motif/accessibility match retains 634 HepG2 and 609 K562 CTCF pairs
+  with covariate SMDs below 0.01. Parametric gains over DWM remain significant
+  in both cells (AUROC +0.0477/+0.0513, relative AUPRC +12.70%/+10.73%) with
+  canonical protection, but K562's intervals against raw include zero. A third
+  fixed policy also balances direct observed cut total and keeps that pattern.
+  Fourteen tasks become underpowered; balanced FOXA1/MYC remain near chance
+  and powered ZNF384 tasks remain weak without canonical protection. General
+  mean-gain and difficult-family gates still fail. This is sensitivity on
+  examined chromosomes, not new holdout evidence or a new candidate. See
+  `benchmarks/CHROMBPNET_COVARIATE_DIAGNOSTIC_20260908.md` for complete results.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

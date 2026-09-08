@@ -689,3 +689,42 @@ limitations README, portable provenance manifest and `SHA256SUMS`. Existing
 reports are never overwritten. The report states the actual cell, dispersion,
 covariate imbalance and safety denominators; it makes no equivalence claim
 about ChromBPNet and does not imply final holdout safety or general promotion.
+
+### Covariate-matched direct-bias diagnostic
+
+`evaluate_chrombpnet_covariate_diagnostic.py` tests whether existing K562/HepG2
+comparisons retain their discrimination and protection after tighter covariate
+matching. It never refits the candidate or changes its recorded dispersion.
+All three policies are declared in the plan: motif only; motif plus local
+accessibility (primary); and those two plus observed cut total.
+
+```bash
+python benchmarks/scripts/evaluate_chrombpnet_covariate_diagnostic.py \
+  --plan benchmarks/manifests/chrombpnet_covariate_diagnostic_v1.json \
+  --data-root /path/to/data-checkout \
+  --outdir benchmarks/results/chrombpnet_covariate_diagnostic
+```
+
+Covariate standard deviations come only from chr1–15. Accessibility is the
+201-position raw-track sum used by the archived matching tables; the pinned
+10M uncorrected tracks supply the missing training column and must reproduce
+the archived test values. Observed cut total comes from the direct BAM-derived
+profiles, preserving the distinction between that count and normalized track
+coverage. Accessibility and cut total use `log1p` for matching.
+
+Pairs share a chromosome and lie within 0.2 training standard deviations on
+every matching variable. The assignment first maximizes the number of valid
+1:1 pairs, then minimizes squared distance, with deterministic coordinate order.
+All selected cohorts and balance diagnostics are frozen before model score
+columns are read. No policy is chosen after seeing its AUROC or AUPRC.
+
+The diagnostic reuses recorded scores, reconstructs profiles for the new
+subsets and checks every reconstructed score against its original value.
+It preserves checkpoints for matched cohorts, profile reconstruction and each
+cell/policy evaluation. Completed checksum-valid stages are skipped on resume.
+Outputs include all policy metrics, chromosome-block intervals for powered
+tasks, signed shape summaries, balance and power failures, and primary-policy
+aggregate PDFs. The `test` split field names the historical chromosome fold;
+all these results are post-hoc development sensitivity, not untouched evidence.
+Conditioning on accessibility can also remove biological occupancy signal;
+this is not a causal adjustment or a new promotion result.
