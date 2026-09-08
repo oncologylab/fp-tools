@@ -878,6 +878,21 @@ This is post-hoc conditioning on observed ATAC counts, which can introduce
 selection effects. It does not establish a causal correction benefit,
 calibrated uncertainty, new biological replication or promotion evidence.
 
+`render_direct_bias_depth_balance.py` verifies the complete source graph and
+all nested secondary outputs before drawing all TFs on shared vertical axes:
+
+```bash
+python benchmarks/scripts/render_direct_bias_depth_balance.py \
+  --result benchmarks/results/direct_bias_depth_balance_20260908_v1/balance_manifest.json \
+  --data-root /path/to/original/data-checkout \
+  --outdir benchmarks/results/direct_bias_depth_balance_20260908_v1/plots \
+  --calculation-commit e8986ed
+```
+
+The figure set includes underpowered and non-estimable tasks, a multipage
+PDF, two CTCF PNG previews and a checksum manifest. See
+`benchmarks/DIRECT_BIAS_DEPTH_BALANCE_20260908.md` for the completed result.
+
 ### Direct-bias sequence inference resources
 
 `benchmark_direct_bias_inference.py` measures the archived production Cython

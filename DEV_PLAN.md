@@ -416,8 +416,15 @@ a separately planned breaking release explicitly changes the contract.
   using the original chr1–15 per-cell/TF scales. All selections precede new
   scores; underpowered and zero-pair outcomes remain explicit. Primary results
   and the queued 96-run evaluation are unchanged. This is a post-hoc
-  sensitivity check, not a new model or causal validation; its calculation
-  and result interpretation remain pending.
+  sensitivity check, not a new model or causal validation. The completed
+  36-run calculation balances all measured CTCF covariates below 0.04 SMD.
+  All six full-depth CTCF runs retain significant gains over both DWM
+  comparators, but HepG2 replicate 1's AUROC interval against raw includes
+  zero, and several lower-depth raw/protection checks fail. FOXA1/MYC lose
+  power after filtering; excluding them must not change the task denominator
+  used to claim a promotion gate. CTCF remains the only powered canonical
+  task. See `benchmarks/DIRECT_BIAS_DEPTH_BALANCE_20260908.md` for the complete
+  result, 21-page figure audit, frozen identities and limitations.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

@@ -101,6 +101,13 @@ The maximum is 0.1344. Matching the 10M reference does not guarantee balance
 at other depths or in other libraries. This is conditional sensitivity,
 not causal elimination of accessibility confounding.
 
+The later [current-depth balance sensitivity](DIRECT_BIAS_DEPTH_BALANCE_20260908.md)
+preserves this primary result and applies one fixed count caliper to the
+existing pairs. Its smaller cohorts retain full-depth CTCF gains over DWM,
+but some raw-signal and low-depth protection checks no longer pass. These
+secondary results qualify any broader robustness interpretation of this
+particular fixed-cohort study.
+
 Only CTCF passes canonical protection among powered tasks in any run. On the
 full-depth matched sites, HepG2 FOXA1 has AUROC 0.402–0.428, ZNF362 0.597–0.623,
 and ZNF384 0.570–0.590; K562 MYC has 0.497–0.500 and ZNF384 0.581–0.595.

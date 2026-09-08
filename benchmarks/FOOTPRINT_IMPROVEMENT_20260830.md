@@ -22,6 +22,15 @@ cut-total balance drifts in some fixed matched cohorts; general promotion
 remains unsupported. The sections below preserve the earlier
 experiments and must not be read as new untouched evidence.
 
+The completed [current-depth balance sensitivity](DIRECT_BIAS_DEPTH_BALANCE_20260908.md)
+keeps the original pairing and a fixed training-scale count caliper. Full-depth
+CTCF gains over both DWM comparators remain, but HepG2 replicate 1's AUROC
+interval against raw includes zero and several lower-depth checks weaken.
+Only CTCF retains powered canonical protection. Filtering also makes FOXA1
+and MYC underpowered; excluding them cannot establish a mean-gain gate on a
+different task set. This post-hoc diagnostic preserves the primary evidence
+and does not support general promotion.
+
 A frozen [sequence-inference resource diagnostic](DIRECT_BIAS_INFERENCE_20260908.md)
 completed 24 fresh-process measurements on identical development loci. The
 parametric scorer uses 47–48% of the compiled production DWM scorer's CPU
