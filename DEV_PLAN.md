@@ -393,6 +393,11 @@ a separately planned breaking release explicitly changes the contract.
   pins the production source tree/runtime, limits concurrency to two jobs and
   uses a kernel lock. This stage prepares data only; subsequent evaluation
   must freeze support across all 96 runs and preserve complete matched pairs.
+  The four fragment-count stages are complete: HepG2 replicates 2/3 contain
+  96,480,203/105,920,129 usable fragments, and K562 replicates 2/3 contain
+  76,393,585/114,471,886. All support the requested 50M depth. Preparation
+  is in progress; see `benchmarks/DIRECT_BIAS_REPLICATE_DEPTHS_20260908.md`
+  for the frozen identities, tested counting rule and remaining requirements.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.
