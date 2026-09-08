@@ -22,6 +22,13 @@ cut-total balance drifts in some fixed matched cohorts; general promotion
 remains unsupported. The sections below preserve the earlier
 experiments and must not be read as new untouched evidence.
 
+A frozen [sequence-inference resource diagnostic](DIRECT_BIAS_INFERENCE_20260908.md)
+completed 24 fresh-process measurements on identical development loci. The
+parametric scorer uses 47–48% of the compiled production DWM scorer's CPU
+time, with nearly equal worker peak memory. These component results exclude
+full correction and detector workflows; the full computational gates remain
+unmeasured and the difficult-family failures still prevent general advancement.
+
 ## Scope
 
 This time-boxed run used branch `research/footprint-improvement-20260830` and

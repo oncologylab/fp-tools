@@ -372,6 +372,12 @@ a separately planned breaking release explicitly changes the contract.
   worker peak memory. Its component ratios cannot certify the full workflow
   runtime/memory gates; fitting, BAM/FASTA I/O, local correction, detector
   scoring and track output remain outside this measurement.
+  All 24 workers completed: candidate/DWM mean CPU ratios are 0.47385 in
+  HepG2 and 0.47654 in K562, with maximum worker-memory ratios 0.99247 and
+  0.99202. Candidate propensities reproduce the archived values; every method
+  is numerically stable across timing repetitions. See
+  `benchmarks/DIRECT_BIAS_INFERENCE_20260908.md` for the frozen protocol,
+  checksums, validation and explicit disposition of the remaining gates.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

@@ -132,6 +132,10 @@ arrays in memory. It does not open upstream ensemble-member models. This is a
 coefficient-artifact measurement; it does not measure pipeline peak memory or
 CPU runtime and excludes input data, analysis caches and the Python runtime.
 Those computational gates and calibrated uncertainty remain incomplete.
+The subsequent [sequence-inference component benchmark](DIRECT_BIAS_INFERENCE_20260908.md)
+measures candidate/DWM CPU ratios of 0.474/0.477 in HepG2/K562, with nearly
+equal absolute worker memory. It excludes complete correction and detector
+workflows and therefore does not establish the end-to-end computational gates.
 Direct geometry scores are not calibrated binding probabilities; inherited
 metric-table calibration fields must not be used as evidence that they are.
 
