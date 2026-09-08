@@ -135,3 +135,17 @@ examples, benchmark scripts, and website docs. Store manual-run outputs in
 ignored example directories, `benchmarks/results/`, `data/public/`, or `/tmp`.
 Do not commit bulky public data, manuscript drafts, generated paper files, or
 local GUI run outputs unless explicitly requested.
+
+## Research Branch Evidence
+
+Footprint-improvement experiments stay on
+`research/footprint-improvement-20260830` or an isolated worktree based on it.
+Preserve completed checksum-valid outputs and the production DWM default.
+Do not merge experimental methods into `main`.
+
+Reports must identify the exact correction, scoring operator, dispersion,
+site support, and evidence split. Safety for a fitted factorization or a
+partial-bias policy does not establish safety for direct bias residuals.
+Unsigned functional separation alone is not evidence of central protection.
+Keep SK-N-SH/GM23338 labels and the final naked-DNA replicate unopened until
+their prespecified prerequisites pass; never retune on examined test labels.

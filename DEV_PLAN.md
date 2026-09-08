@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-02
+Last updated: 2026-09-08
 
 ## Current Baseline
 
@@ -283,8 +283,24 @@ a separately planned breaking release explicitly changes the contract.
   difference from ChromBPNet includes zero. Neither bias method is general:
   both regress eligible MYC, while the parametric model gives only a small
   ZNF384 gain over DWM and remains below raw. The checksum-locked HepG2 bias
-  model is complete; its regulatory reference and same-site comparison must
-  complete before any cross-context claim.
+  model, regulatory training, predictions, and same-site comparison are now
+  checksum-verified complete. The HepG2 comparison used dispersion zero,
+  whereas the recorded K562 comparison used 1.6144318781609228; their results
+  must remain separate experiments rather than a pooled common-operator claim.
+- A completed-reference audit now verifies comparison inputs, outputs and
+  canonical identities and reports all 21 development TF tasks with signed
+  protection, shoulders, asymmetry, label-dependent site retention, motif-score
+  balance and accessibility balance. Only CTCF has significant parametric gains
+  over both DWM and raw with canonical protection in both recorded comparisons.
+  HepG2 CTCF scores 0.7149 AUROC/0.7388 AUPRC versus DWM 0.6477/0.6250 and
+  ChromBPNet bias 0.7253/0.7570. The parametric mean gains across eligible tasks
+  are only 0.0112 AUROC/1.99% relative AUPRC in HepG2 and 0.0053/1.25% in
+  K562, below the general promotion gates. CTCF motif scores remain imbalanced
+  (standardized differences 0.482 HepG2 and 0.463 K562). The older deep-reference
+  report cited factorization-residual naked-DNA safety, which does not certify
+  the direct parametric scoring operator. Exact-method safety must be checked
+  separately before a new safety-passing report is issued. See
+  `benchmarks/CHROMBPNET_AUDIT_20260908.md` for the evidence and remaining work.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.
@@ -347,9 +363,10 @@ a separately planned breaking release explicitly changes the contract.
     pass.
 11. Run the `footprint_functional_v1` stages in order: establish the cut-site
     convention and control-trained parametric bias models; compare residual
-    formulations; freeze spline/FDA/GP/hybrid models on K562/HepG2; then score
-    GM12878/IMR-90 exactly once. Keep the current DWM correction and footprint
-    score as defaults unless every scientific and CPU performance gate passes.
+    formulations; freeze spline/FDA/GP/hybrid models on K562/HepG2; use the
+    already examined GM12878/IMR-90 only as transfer diagnostics. Keep the
+    current DWM correction and footprint score as defaults unless every
+    scientific and CPU performance gate passes.
 12. Complete `frozen_parametric_factorization_v1` without opening its new
     holdout labels out of order: finish the control-source grid, retain at most
     two frozen ensembles, select one residual on chr16--18, open chr19--22/X

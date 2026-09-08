@@ -581,8 +581,11 @@ before labels are revealed.
 paired locked-holdout metrics plus functional-separation, naked-DNA,
 bias-motif-response, replicate/seed/depth stability, runtime/memory/model-size,
 uncertainty-coverage, and GP-versus-spline evidence. Missing evidence is a
-failed gate. A development-only audit can explain what remains, but cannot
-return a promotion pass because locked GM12878/IMR-90 validation is mandatory.
+failed gate. Its original specification required GM12878/IMR-90; those cells
+have now been examined and provide diagnostic transfer evidence only. The
+current frozen parametric study reserves SK-N-SH/GM23338 as new promotion
+holdouts. Do not use this historical evaluator's original holdout designation
+to claim new untouched validation.
 
 ```bash
 .venv/bin/python benchmarks/scripts/evaluate_functional_promotion.py \
@@ -601,3 +604,34 @@ return a promotion pass because locked GM12878/IMR-90 validation is mandatory.
   --complexity <gp-versus-spline.tsv> \
   --outdir benchmarks/results/footprint_functional_v1/promotion
 ```
+
+### Completed ChromBPNet reference audit
+
+`audit_chrombpnet_comparison.py` reads completed checksum-valid comparisons;
+it never retrains a model or reruns prediction/evaluation. Run it from the
+research worktree, pointing `--data-root` to the checkout containing the ignored
+data. Relative study paths can resolve from the research worktree. Use a new
+output directory for each audit.
+
+```bash
+python benchmarks/scripts/audit_chrombpnet_comparison.py \
+  --data-root /path/to/data-checkout \
+  --comparison-manifest /path/to/data-checkout/benchmarks/results/frozen_parametric_factorization_v1_run2/chrombpnet_comparison/HepG2_complete/chrombpnet_comparison_manifest.json \
+  --comparison-manifest /path/to/data-checkout/benchmarks/results/frozen_parametric_factorization_v1_run2/chrombpnet_comparison/K562_complete/chrombpnet_comparison_manifest.json \
+  --outdir benchmarks/results/chrombpnet_development_audit
+```
+
+The output includes per-TF metrics, aggregate PDF panels for every task,
+signed shape descriptors, positive/negative retention and covariate balance,
+and a checksummed manifest. Genomic coordinates, strand and TF identify sites;
+the historical `site_id` column contains motif names and is not a unique locus.
+The audit accepts only previously opened K562/HepG2 development comparisons.
+
+The original HepG2 and K562 comparisons use different dispersions. DWM in these
+comparisons means total-matched DWM expectations followed by signed deviance
+and fixed geometry; it is not the production corrected-track footprint command.
+ChromBPNet regulatory/no-bias arms score predicted profiles, whereas the three
+bias arms score residual observed cuts. Their roles and aggregate units are
+reported separately. The earlier factorization-residual safety table does not
+certify direct parametric residuals. See `benchmarks/CHROMBPNET_AUDIT_20260908.md`
+for the current scientific interpretation.
