@@ -398,6 +398,17 @@ a separately planned breaking release explicitly changes the contract.
   76,393,585/114,471,886. All support the requested 50M depth. Preparation
   is in progress; see `benchmarks/DIRECT_BIAS_REPLICATE_DEPTHS_20260908.md`
   for the frozen identities, tested counting rule and remaining requirements.
+- The first sampling process terminated with exit 143 before completing any
+  sampling stage; the dependent queue correctly failed without starting an
+  evaluation. The termination cause is unknown. All four source BAM/BAI pairs
+  and count stages reverified, and 30 interrupted BAMs (54,098,858,454 bytes)
+  were preserved with checksums and unchanged file identities. No partial BAM
+  was accepted as complete. A separate logged-job supervisor now pins the
+  command specification, records supervisor/child identities and terminal
+  status, and forwards stop signals to its own child group. Detached launch
+  survives the short launcher process; receipt failure stops an unrecorded
+  child. Resume retains the original preparation/evaluator code, source tree,
+  runtime, inputs, scientific settings and completed counts.
 - The complete 96-run evaluator now extends the archived 36-run calculation
   with the 60 prepared replicate/depth inputs. It verifies nested sampling and
   correction provenance, pins the existing scientific code and runtime, and

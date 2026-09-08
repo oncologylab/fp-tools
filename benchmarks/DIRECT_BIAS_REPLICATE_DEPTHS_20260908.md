@@ -103,6 +103,34 @@ Input preparation does not resolve the difficult-family, uncertainty,
 untouched-safety or full workflow resource gates. Production DWM remains the
 default and the final manuscript remains frozen.
 
+## Interrupted sampling and recovery
+
+The first preparation process returned exit 143 after its last partial-file
+write at 2026-09-08 22:21:11 UTC. Its process was absent on inspection. The
+dependent queue then returned exit 1 because the watched preparation had
+ended without the required registry. No sampling stage or evaluation had
+completed. The termination cause could not be established from the available
+evidence.
+
+All four source BAM/BAI pairs and count-stage identities reverified. The 30
+partial BAMs, totaling 54,098,858,454 bytes, had no BGZF end-of-file marker.
+They were checksum-inventoried and atomically moved into
+`results/direct_bias_replicate_depth_inputs_20260908_interrupted_v1/`.
+Device, inode, byte size and modification time were unchanged after each
+move. All partial data and completed count manifests were preserved; no
+partial BAM was accepted as a completed subset.
+
+- Inventory ID: `c093024f991dafe04294e689b9b85a2975d7c12c7607dfdae684ddd5d5bd5ae7`.
+- Preservation ID: `2c53229839f497bc425c06b7f771ab4be87e2cd9fc524fd3c1498f93a3f93c4c`.
+
+Resumption reuses the four counts and the unchanged preparation/evaluation
+commands. The separate `run_logged_experiment.py` supervisor pins a command
+specification, preserves its exact bytes and records process identities,
+stdout and terminal status. A new attempt directory keeps earlier evidence
+intact. Detaching the supervisor from its short launcher is tested; it does
+not establish why the earlier process stopped or prevent external shutdown.
+A successful process exit still requires the scientific manifest verifiers.
+
 ## Validation
 
 All 101 focused evaluator, stability, sampler, preparation, queue, study and
@@ -120,6 +148,6 @@ coordinate identities and their sample DWM profiles on 9,361 HepG2 and
 5,972 K562 sites. All 12 frozen scientific source files and the original
 runtime match; no real extraction or scoring was repeated. The strict
 MkDocs build passed in 4.16 seconds, and the browser audit passed all 32
-pages at three widths. The four count stages remain complete and the same
-preparation controller is progressing through sampling. The full preparation
-and 96-run evaluation remain incomplete.
+pages at three widths. The four count stages remain complete; the recovery
+above preserves them. The full preparation and 96-run evaluation remain
+incomplete.

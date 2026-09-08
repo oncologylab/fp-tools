@@ -847,6 +847,37 @@ the prerequisite. Run the evaluator's `--verify-only` check before interpreting
 the completed results; a queue completion record alone does not audit every
 nested scientific input.
 
+### Durable execution of long research jobs
+
+`run_logged_experiment.py` supervises one checksum-pinned Linux command. Keep
+each attempt's JSON specification, logs and receipts under ignored benchmark
+results. The specification has schema `fp-tools-logged-experiment-job-v1`,
+`name`, a `command` argument array starting with an absolute executable,
+absolute `cwd` and `outdir`, and an `environment` mapping of explicit numerical
+thread settings or `PYTHONPATH`. It never records the full inherited environment.
+
+```bash
+python benchmarks/scripts/run_logged_experiment.py \
+  --spec /absolute/path/to/attempt/job.json \
+  --spec-sha256 <sha256-of-job-json>
+```
+
+For detached execution, start that argument array with `subprocess.Popen`,
+`start_new_session=True`, `stdin=subprocess.DEVNULL`, and stdout/stderr directed
+to a file. The supervisor retains a byte-identical `specification.json`,
+`launch.json`, `stdout.log` and `exit.json`. Launch evidence records both
+supervisor and child PIDs, start ticks and boot identity. Monitor the actual
+child identity when connecting a dependent queue. Reusing an attempt directory
+is rejected before another command starts; preserve its evidence and choose
+a new attempt directory after confirming that its processes are terminal.
+
+SIGTERM/SIGINT sent to the supervisor are forwarded to its child group. If
+writing a receipt fails, it stops the unrecorded child. Exit status is process
+evidence only: verify the experiment's complete nested scientific manifests
+before interpreting results. An interrupted sampling run still requires
+review and preservation of its partial files, followed by the unchanged
+frozen preparation command; a supervisor cannot make partial BAMs complete.
+
 ### Sensitivity to current-depth cut balance
 
 `audit_direct_bias_depth_balance.py` uses only the completed 36-run archive.

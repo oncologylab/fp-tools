@@ -158,6 +158,9 @@ per-run peak memory. Keep computational component evidence explicitly scoped.
 Derived BAM resume must verify the source identity, fragment-count and sampling
 settings, and BAM/BAI checksums. Preserve incomplete outputs for review instead
 of accepting file existence as evidence of completion.
+For long detached experiments, retain immutable command specifications and
+durable launch/exit receipts with PID, process start ticks and boot identity.
+A successful process exit does not replace scientific output verification.
 When extending a completed depth matrix, freeze common expected coverage for
 both cells before new extraction or scoring. Reuse archived profiles only
 after checking coordinate/label order and the matching DWM track; reuse
