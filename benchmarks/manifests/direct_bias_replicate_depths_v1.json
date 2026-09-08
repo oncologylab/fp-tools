@@ -1,0 +1,50 @@
+{
+  "schema": "fp-tools-direct-bias-replicate-depth-plan-v1",
+  "scope": "missing_development_replicate_depth_inputs",
+  "samples": ["HepG2_rep2", "HepG2_rep3", "K562_rep2", "K562_rep3"],
+  "depths": [10000000, 25000000, 50000000],
+  "seeds": [2026, 2027, 2028, 2029, 2030],
+  "sampling_rule": "blake2b(seed,query_name)<target_fragments/usable_fragments",
+  "fragment_count_rule": "downsample_bam_fragments.fragment_representative",
+  "fragment_count_implementation": "pinned_pysam_view_filter_verified_against_all_4096_SAM_flag_combinations",
+  "depths_above_available": "reject_without_capping_or_relabeling_full_depth",
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "candidate_retuning_allowed": false,
+  "candidate_model_sha256": "620f232f634423b8753e4d77f8cf72df87482c09193cb5e7e6b038917c47e89a",
+  "dwm_comparator": "refit_on_each_sample_depth_seed_using_recorded_replicate_1_command",
+  "dwm_cores": 4,
+  "maximum_parallel_jobs": 2,
+  "profile_extraction_minimum_mapq": 30,
+  "profile_read_shift": [4, -5],
+  "evaluation_chromosomes": ["chr19", "chr20", "chr21", "chr22", "chrX"],
+  "evaluation_policy": "freeze_96_run_expected_coverage_and_retain_complete_existing_matched_pairs_before_scoring",
+  "source_registry": {
+    "path": "benchmarks/results/frozen_parametric_factorization_v1_run2/bias_shrinkage/mito_log21_l2_1e-4_shift_4_-5/biological_replicates_full/depth_inputs.freeze.json",
+    "sha256": "71acce569092344b28a938d281e230659014e7fc2abdc9a3be358f4be6e6de9b"
+  },
+  "replicate_1_commands": {
+    "path": "benchmarks/results/footprint_detectability_v1/ablation/ablation_commands.tsv",
+    "sha256": "7b84234578f1c4f2bb13cce430f0527a0243f6894bc84c44b689eee4e9fea50e"
+  },
+  "full_replicate_commands": {
+    "path": "benchmarks/results/footprint_detectability_v1/ablation/dwm_biological_replicates.plan.tsv",
+    "sha256": "5e21e175ef3a7e5969b01c40f89c6ffbab764438ccc08adb55850ee30c26f2d0"
+  },
+  "genome": {
+    "path": "data/public/raw/genome/hg38.fa",
+    "sha256": "5be01555d98347fdb3714dc84c6f77c9d8bc774adcf32c6f7a8fa06f5baf5e51"
+  },
+  "genome_index": {
+    "path": "data/public/raw/genome/hg38.fa.fai",
+    "sha256": "3b425de206296a5c8053023fa5ca61da43cfe78c1737c12e58c83367c7e83c21"
+  },
+  "peaks": {
+    "path": "data/public/processed/encode_k562_hepg2_atac_replicates/peaks/merged_peaks.bed",
+    "sha256": "d19bb92f3a494fabeaabe1e5e0b9f4a11281c1a85a93992630bb498cda151f68"
+  },
+  "blacklist": {
+    "path": "data/public/processed/encode_k562_hepg2_atac_replicates/reference/hg38-blacklist.v2.bed",
+    "sha256": "31c69342df43bbc19dd8ef2886611a8150cb53e90f341de14d30e742c9251737"
+  }
+}

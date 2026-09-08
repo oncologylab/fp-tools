@@ -744,6 +744,51 @@ python benchmarks/scripts/render_direct_bias_stability_report.py \
   --outdir benchmarks/results/reports/CTCF_direct_bias_stability
 ```
 
+### Completing biological-replicate depth inputs
+
+`prepare_direct_bias_replicate_depths.py` prepares the 60 missing combinations
+for HepG2/K562 replicates 2 and 3: 10M/25M/50M with seeds 2026–2030. The
+existing 36-run experiment and its manifests remain unchanged. Preparation
+does not evaluate ChIP labels, refit the candidate or open a final control.
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python benchmarks/scripts/prepare_direct_bias_replicate_depths.py \
+  --plan benchmarks/manifests/direct_bias_replicate_depths_v1.json \
+  --data-root /path/to/original/data-checkout \
+  --outdir benchmarks/results/direct_bias_replicate_depth_inputs \
+  --phase freeze
+
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python benchmarks/scripts/prepare_direct_bias_replicate_depths.py \
+  --plan benchmarks/manifests/direct_bias_replicate_depths_v1.json \
+  --data-root /path/to/original/data-checkout \
+  --outdir benchmarks/results/direct_bias_replicate_depth_inputs \
+  --phase all
+```
+
+The freeze verifies the four full-depth source BAMs, their indexes, the genome,
+peaks, blacklist and the archived replicate-1 correction command. It records
+code, the production source-tree identity, native extensions and versions.
+Counting uses the original fragment eligibility rule through the pinned
+`pysam` SAM filter, tested against all 4,096 flag combinations; it does not
+introduce a MAPQ filter. The bit operations follow the
+[SAMtools filter-expression specification](https://www.htslib.org/doc/samtools.html#FILTER_EXPRESSIONS).
+The process count is at most two and a kernel lock prevents duplicate launches.
+
+Stages `count`, `sample` and `correct` can be run individually. Sampling
+preserves query-name pair decisions and nested depths, records actual selected
+fragment counts, and rejects a target above the available depth. Each subset
+gets a freshly estimated conventional DWM using the recorded replicate-1
+command; the full-depth reused bias model is not substituted. Completion
+requires all four tracks, the DWM artifact and diagnostic PDF with checksums.
+Interrupted output directories fail explicitly and remain available for review.
+
+`--phase verify --code-ref COMMIT` checks the final 60-row input registry,
+all source files and nested stage artifacts without preparing data again.
+Completed checksum-valid stages are reused. The generated registry is input
+preparation evidence; a subsequent 96-run evaluation must freeze positive
+expectation coverage across every run, preserve complete existing matched
+pairs and retain zero observed counts before scoring any new runs.
+
 ### Direct-bias sequence inference resources
 
 `benchmark_direct_bias_inference.py` measures the archived production Cython

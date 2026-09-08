@@ -384,6 +384,15 @@ a separately planned breaking release explicitly changes the contract.
   before the fix; the corrected implementation also rejects a source that
   differs from an explicitly frozen checksum. Historical data are preserved;
   this stricter path prepares missing inputs without rewriting old manifests.
+- The missing depth/seed inputs for HepG2/K562 replicates 2 and 3 now have a
+  separate frozen preparation plan. It declares all 60 missing combinations,
+  the original pair-preserving hash selection and the same refitted DWM
+  command used for replicate 1. A native fragment counter is verified against
+  the original predicate for all 4,096 SAM flag combinations, including MAPQ
+  zero and unpaired reads. Preparation checks source and nested output hashes,
+  pins the production source tree/runtime, limits concurrency to two jobs and
+  uses a kernel lock. This stage prepares data only; subsequent evaluation
+  must freeze support across all 96 runs and preserve complete matched pairs.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.
