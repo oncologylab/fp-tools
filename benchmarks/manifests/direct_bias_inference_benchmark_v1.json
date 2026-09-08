@@ -1,0 +1,68 @@
+{
+  "schema": "fp-tools-direct-bias-inference-plan-v1",
+  "scope": "sequence_inference_component_only",
+  "cells": ["HepG2", "K562"],
+  "chromosomes": ["chr19", "chr20", "chr21", "chr22", "chrX"],
+  "sites_per_cell": 512,
+  "flank": 100,
+  "margin": 41,
+  "repetitions": 6,
+  "warmup_sites": 16,
+  "seed": 2026,
+  "selection": "lowest_coordinate_sha256_among_all_run_expected_coverage",
+  "methods": ["production_dwm_sequence", "frozen_parametric_sequence"],
+  "process_order": "alternate_method_order_each_repetition",
+  "threads": 1,
+  "cpu_affinity_index": 0,
+  "model_training_allowed": false,
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "promotion_evidence": false,
+  "exclusions": ["model_training", "BAM_extraction", "FASTA_IO", "expected_count_normalization", "DWM_local_regression", "residual_calculation", "footprint_scoring", "track_output"],
+  "cache_policy": "identical_preextracted_sequences_loaded_before_warmup_and_timing",
+  "memory_measurement": "fresh_worker_absolute_Linux_VmHWM_including_common_imports_inputs_and_model",
+  "dwm_model_provenance": "checksum_pinned_local_production_atac_correct_10m_seed_2026_replicate_1_artifacts",
+  "source_configuration": {
+    "root": "research",
+    "path": "benchmarks/results/direct_bias_stability_20260908_v1/configuration.freeze.json",
+    "sha256": "7998850dd9eece77b668e0df04c8dbfa02a4bbca30adbdcee83170cb97add433"
+  },
+  "supports": {
+    "HepG2": {
+      "root": "research",
+      "path": "benchmarks/results/direct_bias_stability_20260908_v1/HepG2/support.json",
+      "sha256": "8abb888d20dc95e1848ad7566c63b731524569a283147121dc9de230ca0d8c28"
+    },
+    "K562": {
+      "root": "research",
+      "path": "benchmarks/results/direct_bias_stability_20260908_v1/K562/support.json",
+      "sha256": "478d5a70aaeb4d0bcbc9aef2cb6e1d47ec8c58c0450bf08e8ca40ea0ce1cf580"
+    }
+  },
+  "genome": {
+    "path": "data/public/raw/genome/hg38.fa",
+    "sha256": "5be01555d98347fdb3714dc84c6f77c9d8bc774adcf32c6f7a8fa06f5baf5e51"
+  },
+  "genome_index": {
+    "path": "data/public/raw/genome/hg38.fa.fai",
+    "sha256": "3b425de206296a5c8053023fa5ca61da43cfe78c1737c12e58c83367c7e83c21"
+  },
+  "parametric_model": {
+    "path": "benchmarks/results/frozen_parametric_factorization_v1_run2/enzyme_control/mitochondrial/ensembles/pooled.mitochondrial.cross_cell_pooled.loglinear21.shift_4_-5.l2_0p0001.depth_full.seed_ensemble.npz",
+    "sha256": "620f232f634423b8753e4d77f8cf72df87482c09193cb5e7e6b038917c47e89a"
+  },
+  "parametric_sidecar": {
+    "path": "benchmarks/results/frozen_parametric_factorization_v1_run2/enzyme_control/mitochondrial/ensembles/pooled.mitochondrial.cross_cell_pooled.loglinear21.shift_4_-5.l2_0p0001.depth_full.seed_ensemble.json",
+    "sha256": "c79105f9f821c055b110c542c78d4c06cb5a7bb5b19cc77c28790ec0784f6730"
+  },
+  "dwm_models": {
+    "HepG2": {
+      "path": "benchmarks/results/footprint_detectability_v1/ablation/signals/HepG2_rep1/10m/seed_2026/fp_tools_dwm/HepG2_rep1.10m.s2026_AtacBias.pickle",
+      "sha256": "f8d6c3b9ae7ecf8944811a17794d966fd373812ab82cdd5b542d437569741fb2"
+    },
+    "K562": {
+      "path": "benchmarks/results/footprint_detectability_v1/ablation/signals/K562_rep1/10m/seed_2026/fp_tools_dwm/K562_rep1.10m.s2026_AtacBias.pickle",
+      "sha256": "de951530650ba57336b417571e8f86b6fc552ccc796c5bc53ceb5f6c3aa475fd"
+    }
+  }
+}

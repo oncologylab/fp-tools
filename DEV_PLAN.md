@@ -364,6 +364,14 @@ a separately planned breaking release explicitly changes the contract.
   safety. The six report files were placed in the new Box folder
   `Yaoxiang/fp-tools/2026-09-08_CTCF_direct_bias_stability_coverage`; download
   verification reported six matches and zero differences on 2026-09-08.
+- A separate frozen sequence-inference benchmark compares the archived
+  production Cython DWM scorer with the unchanged parametric model on 512
+  coordinate-selected loci per development cell. Six paired repetitions use
+  alternating method order and fresh single-CPU processes. It validates the
+  candidate against archived strand propensities and measures absolute Linux
+  worker peak memory. Its component ratios cannot certify the full workflow
+  runtime/memory gates; fitting, BAM/FASTA I/O, local correction, detector
+  scoring and track output remain outside this measurement.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

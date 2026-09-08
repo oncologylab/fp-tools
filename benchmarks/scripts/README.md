@@ -736,6 +736,42 @@ python benchmarks/scripts/render_direct_bias_stability_report.py \
   --outdir benchmarks/results/reports/CTCF_direct_bias_stability
 ```
 
+### Direct-bias sequence inference resources
+
+`benchmark_direct_bias_inference.py` measures the archived production Cython
+DWM scorer and the frozen parametric scorer at identical genomic positions.
+The plan selects 512 loci per development cell from existing qualified
+coverage using coordinate hashes. ChIP labels and cut counts are not inputs
+to timing. Six repetitions alternate method order in fresh processes pinned
+to one CPU, with one thread and an identical sequence-input cache policy.
+
+```bash
+python benchmarks/scripts/benchmark_direct_bias_inference.py \
+  --plan benchmarks/manifests/direct_bias_inference_benchmark_v1.json \
+  --data-root /path/to/original/data-checkout \
+  --outdir benchmarks/results/direct_bias_inference
+```
+
+Use `--freeze-only` to freeze inputs and code before timing. Existing complete
+workers are verified and reused; partial workers fail explicitly. Use
+`--verify-only`, optionally with the immutable `--code-ref`, to verify all
+inputs, code and worker outputs without repeating measurements. Plan entries
+with `root: research` resolve against this worktree; other inputs resolve
+against `--data-root`.
+
+The timing measures sequence inference after model loading and warmup. Peak
+memory is the absolute Linux `VmHWM` in each fresh worker, including the shared
+import baseline, input bundle, model and output. It is not a difference of
+high-water marks or a parent's cumulative child peak. Candidate output must
+reproduce the archived strand propensities, and each method must reproduce
+its numerical output across repetitions.
+
+These are component diagnostics. They exclude model fitting, BAM extraction,
+FASTA I/O, DWM local regression, expected-count normalization, residual and
+footprint scoring, and track output. They cannot certify the full workflow
+runtime or memory promotion gates. The DWM pickles are checksum-pinned local
+production artifacts; this is not an entry point for untrusted model files.
+
 ### Covariate-matched direct-bias diagnostic
 
 `evaluate_chrombpnet_covariate_diagnostic.py` tests whether existing K562/HepG2

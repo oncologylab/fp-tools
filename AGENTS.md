@@ -151,5 +151,9 @@ Finite zero-filled DWM tracks do not establish an expected profile. Audit
 positive expectation coverage before comparing correction methods, and keep
 complete matched pairs when applying coverage exclusions. Depth matrices on
 tuning chromosomes must not be described as test-chromosome stability.
+Sequence-inference timings and coefficient-array sizes do not establish
+end-to-end CPU or memory gates. Use isolated processes for absolute peak
+memory; cumulative child peaks and differences of high-water marks are not
+per-run peak memory. Keep computational component evidence explicitly scoped.
 Keep SK-N-SH/GM23338 labels and the final naked-DNA replicate unopened until
 their prespecified prerequisites pass; never retune on examined test labels.
