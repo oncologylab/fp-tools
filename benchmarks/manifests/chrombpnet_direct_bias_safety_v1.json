@@ -1,0 +1,33 @@
+{
+  "schema": "fp-tools-direct-bias-safety-plan-v1",
+  "evidence": "retrospective_development_candidate_screen",
+  "operator": "total_matched_direct_expected_signed_deviance_conventional_geometry",
+  "target_validation_negative_call_rate": 0.05,
+  "minimum_validation_negatives": 200,
+  "naked_replicate": "NakedDNA_rep2",
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "residual_bootstraps": 1000,
+  "seed": 2026,
+  "motif_residual_absolute_center_flank_limit": 0.25,
+  "comparisons": [
+    {
+      "cell": "HepG2",
+      "path": "benchmarks/results/frozen_parametric_factorization_v1_run2/chrombpnet_comparison/HepG2_complete/chrombpnet_comparison_manifest.json",
+      "sha256": "0e9f2784e956db4e6dd27fa03cec8c20d87f18dddbb98e8f95128d23ff4318e7"
+    },
+    {
+      "cell": "K562",
+      "path": "benchmarks/results/frozen_parametric_factorization_v1_run2/chrombpnet_comparison/K562_complete/chrombpnet_comparison_manifest.json",
+      "sha256": "d7561868603fc5579438e5e5a5f013280f88b3641af3450a9db1c93cf92508db"
+    }
+  ],
+  "validation_input_registry": {
+    "path": "benchmarks/results/frozen_parametric_factorization_v1_run2/development_tune/mito_log21_l2_1e-4_shift_4_-5/residual_safety_rep2/factorization_residual_safety.json",
+    "sha256": "88e0954b741f165b888affa7f02e66db5c2d62cae37afa0f0bd60811540a42c0"
+  },
+  "naked_input_registry": {
+    "path": "benchmarks/results/frozen_parametric_factorization_v1_run2/bias_shrinkage/mito_log21_l2_1e-4_shift_4_-5/naked_rep2/bias_shrinkage_naked_inputs.freeze.json",
+    "sha256": "9703cd726f19e8dc84b5004d99cf36b550865fd15998a462a96b7bb685e118e8"
+  }
+}

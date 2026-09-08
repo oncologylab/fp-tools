@@ -635,3 +635,33 @@ bias arms score residual observed cuts. Their roles and aggregate units are
 reported separately. The earlier factorization-residual safety table does not
 certify direct parametric residuals. See `benchmarks/CHROMBPNET_AUDIT_20260908.md`
 for the current scientific interpretation.
+
+### Exact direct-bias candidate safety
+
+`audit_direct_bias_safety.py` freezes code, recorded inputs and per-cell
+dispersion, calibrates thresholds on chr16–18 negatives, then scores only
+the existing naked-DNA replicate-2 library. The supplied plan fixes both
+comparison manifests and input registries by checksum. It rejects final
+replicate 3 and new holdout cells. Completed checksum-valid runs are verified
+and skipped. Use the same code revision when verifying an existing freeze.
+
+```bash
+python benchmarks/scripts/audit_direct_bias_safety.py \
+  --plan benchmarks/manifests/chrombpnet_direct_bias_safety_v1.json \
+  --data-root /path/to/data-checkout \
+  --outdir benchmarks/results/direct_bias_safety
+
+python benchmarks/scripts/audit_direct_bias_safety_coverage.py \
+  --safety-manifest benchmarks/results/direct_bias_safety/safety_manifest.json \
+  --data-root /path/to/data-checkout \
+  --outdir benchmarks/results/direct_bias_safety_coverage
+```
+
+Both stages are required. The archived DWM control track covers CTCF regions;
+zero-filled profiles elsewhere cannot establish relative safety. The coverage
+stage reuses existing scores and thresholds and compares observed count shapes
+after removing a constant normalization scale. Read its `qualified_safety.tsv`
+and `coverage_manifest.json`, retaining absolute and DWM-comparable denominators.
+The first stage's provisional screen field does not certify DWM coverage.
+These are development candidate checks; neither establishes final untouched
+safety, no occupancy leakage, or calibrated functional uncertainty.

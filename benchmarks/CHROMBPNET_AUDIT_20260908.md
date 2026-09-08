@@ -87,14 +87,46 @@ That safety evaluator uses the factorization model's `expected_unbound`,
 including fitted sample bias strength and a per-site flank spline. The direct
 comparison instead uses total-matched `plus_expected + minus_expected`.
 The cited factorization FPR cannot certify this direct scoring operator.
-Historical artifacts remain unchanged; a new safety-passing report requires
-exact-method verification. Partial-bias and factorization safety remain
-evidence only for the methods actually tested.
+Historical artifacts remain unchanged. Partial-bias and factorization safety
+remain evidence only for the methods actually tested.
 
-Next: test the recorded direct operator on existing replicate-2 naked-DNA
-profiles with validation-only frozen thresholds and audit residual motif
-structure; preserve the distinction between candidate screening and final
-untouched safety. Assess whether CTCF gains survive a separately frozen
+The new exact-operator screen freezes the original model/input identities,
+each comparison's recorded dispersion, scoring code and runtime versions.
+It calibrates per-TF strict upper-tail thresholds only on informative
+chr16–18 ChIP-negative sites, requiring at least 200 negatives; thresholds
+are hashed before applying them to existing naked-DNA replicate-2 profiles.
+This is retrospective development candidate screening, not untouched testing.
+
+The first screen also exposed an archived DWM coverage defect: the track was
+produced for CTCF regions, while combined profile construction filled missing
+regions with zero and marked genomic windows valid. Most other TF expectations
+are therefore absent. A separate coverage qualification reuses the frozen
+thresholds and saved scores without recalibration or rescoring. It requires
+a positive DWM expectation and matching observed count proportions at a locus.
+The constant library normalization in the DWM uncorrected track is harmless
+to this shape comparison and total-matched residual operator.
+
+| Cell, CTCF | Absolute calls / informative sites | Absolute Wilson upper | Calls / DWM-comparable sites | Paired Wilson upper | Increase over DWM |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| HepG2 | 0/122 | 3.053% | 0/121 | 3.077% | 0.000 percentage points |
+| K562 | 1/115 | 4.762% | 1/114 | 4.802% | 0.877 percentage points |
+
+Both satisfy the candidate-screen FPR limits on absolute and paired support.
+DWM has zero CTCF calls. One informative site per cell lacks a DWM expectation;
+it remains in the absolute estimate and is excluded only from paired estimates.
+No observed count-shape disagreements remain. Non-CTCF tasks have at most one
+DWM-comparable site and cannot pass relative safety from this archive.
+The unqualified first-stage `passes_candidate_screen` field must not be used
+as a safety certificate; use `qualified_safety.tsv` and its coverage manifest.
+
+The parametric CTCF motif-centered log-residual effects are 0.00342
+(site-bootstrap interval −0.00007 to 0.00674) in HepG2 and 0.00310
+(−0.00139 to 0.00748) in K562. No task exceeds the recorded absolute 0.25
+large-residual flag threshold. There are only 218 and 221 cuts across the
+informative CTCF profiles, respectively; this diagnostic does not prove absence
+of occupancy leakage or calibrated functional uncertainty.
+
+Next: assess whether CTCF gains survive a separately frozen
 diagnostic for motif-score/accessibility imbalance. No new SK-N-SH/GM23338
 labels or final naked-DNA replicate-3 results were read by this audit.
 The general development gates already fail, so this result does not justify
@@ -119,3 +151,21 @@ unopened-cell rejection, signed protection and degenerate covariate balance.
 Strict MkDocs build passed; the Playwright documentation audit passed all 32
 pages at three viewport sizes with a dark system preference. Final PDF pages
 were pixel-identical to the 21 pages visually reviewed during the audit.
+
+The direct-bias screen is saved under
+`benchmarks/results/chrombpnet_direct_bias_safety_20260908_v1/`.
+Its configuration ID is
+`ba08ec8a215cdc75277fc48b39882664ec44a217d6aef3b5c37859cba0b22968`;
+threshold ID is
+`fe0a05f98952cdbb0f27f16e23ad9a9341befc7c36d544999463b2bfb7a6067f`;
+safety ID is
+`2f0a561fa46dc471eef9b5f75c2bade990d69fc91629d8fa35992580eddeb1bf`.
+The required coverage qualification is under
+`benchmarks/results/chrombpnet_direct_bias_safety_coverage_20260908_v2/`, ID
+`03110a9ace42ae2153d5919d7225986db74011dd5e5c7609d173161be8e51a54`.
+The initial coverage attempt stopped on a site-order check; a regression test
+now verifies the coordinate join when stored scores are grouped by TF.
+The expanded focused suite passes 42 tests, including exact scoring equivalence
+at both dispersions, validation-only calibration, untouched-input rejection,
+immutable threshold checks, informative denominators and DWM coverage guards.
+Both completed safety stages verify and skip on repeated invocation.

@@ -298,8 +298,18 @@ a separately planned breaking release explicitly changes the contract.
   K562, below the general promotion gates. CTCF motif scores remain imbalanced
   (standardized differences 0.482 HepG2 and 0.463 K562). The older deep-reference
   report cited factorization-residual naked-DNA safety, which does not certify
-  the direct parametric scoring operator. Exact-method safety must be checked
-  separately before a new safety-passing report is issued. See
+  the direct parametric scoring operator. A new direct-operator audit freezes
+  code, inputs and validation-only thresholds before scoring existing replicate-2
+  profiles. Its coverage qualification reuses those scores and thresholds:
+  only CTCF has sufficient archived DWM control coverage. On DWM-comparable
+  informative sites, HepG2 has 0/121 false calls (Wilson upper 3.08%); K562
+  has 1/114 (upper 4.80%, increase over DWM 0.88 percentage points). Each
+  excludes one informative site lacking a DWM expectation; the absolute
+  candidate FPR also passes with those sites retained. This is retrospective
+  development candidate screening, not final untouched safety. Sparse counts
+  and the absence of a large residual flag do not establish no occupancy
+  leakage. Other TFs cannot pass relative safety from this CTCF-region DWM
+  archive. See
   `benchmarks/CHROMBPNET_AUDIT_20260908.md` for the evidence and remaining work.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
