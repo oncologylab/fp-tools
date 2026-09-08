@@ -847,6 +847,37 @@ the prerequisite. Run the evaluator's `--verify-only` check before interpreting
 the completed results; a queue completion record alone does not audit every
 nested scientific input.
 
+### Sensitivity to current-depth cut balance
+
+`audit_direct_bias_depth_balance.py` uses only the completed 36-run archive.
+The original matched cohorts balance the reference library; observed-cut
+balance can drift at other depths or in other biological replicates. This
+secondary diagnostic keeps an original pair only when its current log1p cut
+totals differ by at most 0.2 standard deviations, using the already frozen
+per-cell/TF scales from chr1–15. It does not find new partners or choose a
+caliper from the resulting metrics. All 36 selections are frozen before new
+scoring; every source TF appears in the retention table, including zero-pair
+and underpowered outcomes.
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  python benchmarks/scripts/audit_direct_bias_depth_balance.py \
+  --plan benchmarks/manifests/direct_bias_depth_balance_v1.json \
+  --data-root /path/to/original/data-checkout \
+  --outdir benchmarks/results/direct_bias_depth_balance_20260908_v1
+```
+
+Use `--freeze-only` to stop after configuration and cohort selection, or
+`--verify-only --code-ref COMMIT` to verify completed inputs and nested outputs.
+The candidate, geometry, dispersions and statistical settings are inherited
+unchanged from the archived study. Counts, expectations and primary metrics
+are reused; only the secondary comparisons are newly evaluated. Outputs keep
+the primary and secondary evidence roles explicit and report retained-pair
+counts and current/reference covariate balance alongside performance and shape.
+This is post-hoc conditioning on observed ATAC counts, which can introduce
+selection effects. It does not establish a causal correction benefit,
+calibrated uncertainty, new biological replication or promotion evidence.
+
 ### Direct-bias sequence inference resources
 
 `benchmark_direct_bias_inference.py` measures the archived production Cython

@@ -410,6 +410,14 @@ a separately planned breaking release explicitly changes the contract.
   coverage, complete pairs, zero-cut sites, reuse, verification and nested
   output corruption. The real 60-run preparation remains in progress; the
   evaluator adds no new scientific result or promotion evidence yet.
+- A separate current-depth balance diagnostic addresses the observed cut-total
+  drift in the 36-run archive. Its fixed secondary rule retains original
+  partners only within the existing 0.2-SD caliper on current log1p cut totals,
+  using the original chr1–15 per-cell/TF scales. All selections precede new
+  scores; underpowered and zero-pair outcomes remain explicit. Primary results
+  and the queued 96-run evaluation are unchanged. This is a post-hoc
+  sensitivity check, not a new model or causal validation; its calculation
+  and result interpretation remain pending.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

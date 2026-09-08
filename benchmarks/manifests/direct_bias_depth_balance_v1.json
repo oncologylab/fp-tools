@@ -1,0 +1,39 @@
+{
+  "schema": "fp-tools-direct-bias-depth-balance-plan-v1",
+  "evidence": "post_hoc_development_current_depth_balance_sensitivity",
+  "cells": ["HepG2", "K562"],
+  "evaluation_chromosomes": ["chr19", "chr20", "chr21", "chr22", "chrX"],
+  "candidate_retuning_allowed": false,
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "available_matrix": "the_complete_archived_36_run_study",
+  "source_cohort": "motif_accessibility_observed_total",
+  "secondary_cohort": "existing_pairs_current_depth_caliper",
+  "selection": "retain_existing_complete_pairs_if_absolute_current_log1p_cut_total_difference_is_within_frozen_training_caliper",
+  "caliper_standard_deviations": 0.2,
+  "scales": "unchanged_original_chr1_15_per_cell_and_tf",
+  "maximum_absolute_smd": 0.1,
+  "zero_cut_pairs": "retain_if_the_same_symmetric_caliper_passes",
+  "model_scores_consulted_for_selection": false,
+  "rematching_allowed": false,
+  "all_run_selections_frozen_before_scoring": true,
+  "all_source_tfs_reported": true,
+  "primary_results_recomputed": false,
+  "candidate_and_metric_settings": "unchanged_from_the_36_run_source_configuration",
+  "source_configuration": {
+    "path": "benchmarks/results/direct_bias_stability_20260908_v1/configuration.freeze.json",
+    "sha256": "7998850dd9eece77b668e0df04c8dbfa02a4bbca30adbdcee83170cb97add433"
+  },
+  "source_result": {
+    "path": "benchmarks/results/direct_bias_stability_20260908_v1/stability_manifest.json",
+    "sha256": "94b4b887bef9431240967c7392970427a40d59470f8b1bc5ad069fa61bc0cfe0"
+  },
+  "matched_selection": {
+    "path": "benchmarks/results/chrombpnet_covariate_diagnostic_20260908_v2/matched_cohorts.freeze.json",
+    "sha256": "82cb0ea9d50c510820db7f3a8a874cf841be7eafed121868e6cfb671ba7bc1b4"
+  },
+  "training_scales": {
+    "path": "benchmarks/results/chrombpnet_covariate_diagnostic_20260908_v2/covariate_scales.freeze.json",
+    "sha256": "9b6ba56fe6da15130b06d7b23d3f5d0612667687f05e4ba4f3c6c76eaa6179ba"
+  }
+}
