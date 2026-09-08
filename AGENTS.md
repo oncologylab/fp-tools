@@ -155,5 +155,8 @@ Sequence-inference timings and coefficient-array sizes do not establish
 end-to-end CPU or memory gates. Use isolated processes for absolute peak
 memory; cumulative child peaks and differences of high-water marks are not
 per-run peak memory. Keep computational component evidence explicitly scoped.
+Derived BAM resume must verify the source identity, fragment-count and sampling
+settings, and BAM/BAI checksums. Preserve incomplete outputs for review instead
+of accepting file existence as evidence of completion.
 Keep SK-N-SH/GM23338 labels and the final naked-DNA replicate unopened until
 their prespecified prerequisites pass; never retune on examined test labels.

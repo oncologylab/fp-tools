@@ -188,6 +188,14 @@ count is not already known. The plan includes raw signal, PWM and DWM bias
 models, and a full-depth bias model reused at lower depths. It writes a separate
 evaluation matrix for fp-tools and the locked comparator methods.
 
+`downsample_bam_depth_matrix.py` now records source, BAM and index checksums
+with an identity for each target's sampling metadata. It resumes only complete
+matching targets and preserves their modification times. An interrupted target
+or historical metadata without the required checksums fails explicitly;
+previously frozen data can still be reused through their original verified
+registries. The helper does not rewrite old metadata or accept a BAM merely
+because the file exists.
+
 Summarize site-label metrics only after all methods have been evaluated on the
 same sites:
 

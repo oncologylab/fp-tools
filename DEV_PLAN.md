@@ -378,6 +378,12 @@ a separately planned breaking release explicitly changes the contract.
   is numerically stable across timing repetitions. See
   `benchmarks/DIRECT_BIAS_INFERENCE_20260908.md` for the frozen protocol,
   checksums, validation and explicit disposition of the remaining gates.
+- Nested depth-matrix resume now verifies source identity, sampling metadata,
+  BAM and index checksums. Previously it silently skipped any existing BAM,
+  including interrupted outputs. Regression fixtures reproduced six failures
+  before the fix; the corrected implementation also rejects a source that
+  differs from an explicitly frozen checksum. Historical data are preserved;
+  this stricter path prepares missing inputs without rewriting old manifests.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.
