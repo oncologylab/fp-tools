@@ -14,6 +14,8 @@ from hashlib import sha256
 from importlib.metadata import version
 import json
 from pathlib import Path
+import re
+import subprocess
 import sys
 
 import numpy as np
@@ -211,8 +213,78 @@ def verify_outputs(path, identity, root):
     document = json.loads(path.read_text())
     check_identity(document, identity)
     for entry in document["outputs"].values():
-        checked_path(entry, root)
+        target = checked_path(entry, root)
+        if target.suffix == ".json":
+            child = json.loads(target.read_text())
+            for child_identity in ("selection_id", "cache_id", "evaluation_id"):
+                if child_identity in child and "outputs" in child:
+                    verify_outputs(target, child_identity, root)
+                    break
     return document
+
+
+def verify_historical_result(result_path, root, *, code_ref=None):
+    """Verify frozen inputs/outputs without rebuilding a configuration or scoring.
+
+    An explicit immutable Git revision can supply calculation code after a
+    verification-only code update. Every blob must match its recorded SHA-256.
+    """
+    if code_ref is not None and not re.fullmatch(r"[0-9a-fA-F]{7,40}", code_ref):
+        raise ValueError("--code-ref must be an immutable Git commit hash")
+    done = json.loads(result_path.read_text())
+    if (done.get("schema") != SCHEMA or done.get("new_holdout_labels_read") is not False
+            or done.get("candidate_retuned") is not False):
+        raise ValueError("verification accepts only the frozen development diagnostic")
+    config = json.loads(result_path.with_name("configuration.freeze.json").read_text())
+    check_identity(config, "configuration_id")
+    if (config["configuration_id"] != done["configuration_id"]
+            or not config["inputs"] or not set(config["inputs"]).issubset({"HepG2", "K562"})):
+        raise ValueError("completed result and development configuration differ")
+    for item in config["code"]:
+        if code_ref is None:
+            checked_path(item, root)
+        else:
+            relative = Path(item["path"]).relative_to(REPOSITORY).as_posix()
+            data = subprocess.run(["git", "show", f"{code_ref}:{relative}"], cwd=REPOSITORY,
+                                  capture_output=True, check=True).stdout
+            if sha256(data).hexdigest() != item["sha256"]:
+                raise ValueError(f"Git calculation code checksum mismatch: {relative}")
+    checked_path(config["plan"], root)
+    verified = set()
+
+    def verify_inputs(node):
+        if isinstance(node, dict) and {"path", "sha256"}.issubset(node):
+            key = (node["path"], node["sha256"])
+            if key in verified:
+                return
+            path = checked_path(node, root)
+            verified.add(key)
+            if path.suffix == ".json":
+                metadata = json.loads(path.read_text())
+                if metadata.get("schema") == "fp-tools-strand-functional-profiles-v1":
+                    for field, hash_field in (("sites", "sites_sha256"), ("profiles_npz", "profiles_sha256")):
+                        verify_inputs({"path": metadata[field], "sha256": metadata[hash_field]})
+        elif isinstance(node, dict):
+            for value in node.values():
+                verify_inputs(value)
+        elif isinstance(node, list):
+            for value in node:
+                verify_inputs(value)
+
+    verify_inputs(config["inputs"])
+    done = verify_outputs(result_path, "diagnostic_id", root)
+    selection = verify_outputs(checked_path(done["outputs"]["selection"], root), "selection_id", root)
+    if (selection["selection_id"] != done["selection_id"]
+            or selection["configuration_id"] != config["configuration_id"]):
+        raise ValueError("completed cohort identity differs from diagnostic")
+    checked_caches = set()
+    for item in done["evaluations"]:
+        evaluation = verify_outputs(checked_path(item, root), "evaluation_id", root)
+        cache_path = result_path.parent / evaluation["cell"] / "profile_cache.json"
+        if cache_path not in checked_caches:
+            verify_outputs(cache_path, "cache_id", root)
+            checked_caches.add(cache_path)
+    return done
 
 
 def load_selected_profiles(inputs, root, selected, outdir):
@@ -354,7 +426,15 @@ def main(argv=None):
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument("--outdir", type=Path, required=True)
+    parser.add_argument("--verify-only", action="store_true", help="Verify existing artifacts without computing any stage")
+    parser.add_argument("--code-ref", help="Calculation-code commit hash, only with --verify-only")
     args = parser.parse_args(argv)
+    if args.verify_only:
+        verify_historical_result(args.outdir / "diagnostic_manifest.json", args.data_root, code_ref=args.code_ref)
+        print("Verified historical inputs, calculation code and nested outputs; no stage rerun.")
+        return 0
+    if args.code_ref is not None:
+        parser.error("--code-ref requires --verify-only")
     plan = json.loads(args.plan.read_text())
     inputs = resolve_plan(plan, args.data_root)
     code_names = [Path(__file__), SCRIPT_DIR / "audit_chrombpnet_comparison.py", SCRIPT_DIR / "audit_direct_bias_safety.py",

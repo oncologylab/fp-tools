@@ -140,3 +140,12 @@ boundaries, degenerate covariates, raw-track agreement, empty results and
 checksum-protected resumption. Independent verification checked the nested
 selection outputs, both profile caches, all six evaluations and calculation
 code hashes. Reinvoking the completed diagnostic verified and skipped it.
+
+Calculation code is preserved in commit `c39dcd9`. A subsequent verification
+fix checks cohort files nested beneath the parent manifest and adds
+`--verify-only --code-ref c39dcd9` for historical artifacts after code updates.
+The recorded calculation-code SHA-256 values are checked against Git blobs;
+the verifier does not rerun matching, scoring, bootstrapping or rendering.
+This verification passed on the completed run, and the expanded suite passes
+56 tests, including nested-file mutation and wrong/mutable code-reference
+rejection. The scientific outputs and their identifiers are unchanged.

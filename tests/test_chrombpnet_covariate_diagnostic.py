@@ -111,3 +111,39 @@ def test_raw_track_supplies_training_covariate_and_must_reproduce_archived_value
     assert m.add_covariates(frame, observed, accessibility=extracted).accessibility.equals(frame.accessibility)
     with pytest.raises(ValueError, match="archived accessibility"):
         m.add_covariates(frame, observed, accessibility=extracted * 2)
+
+
+def test_completed_manifest_verification_checks_nested_cohort_files(tmp_path):
+    m = module()
+    table = tmp_path / "cohorts.tsv"
+    table.write_text("cell\ttf\nK562\tCTCF\n")
+    selection = {"outputs": {"cohorts": m.record(table)}}
+    selection["selection_id"] = m.canonical_id(selection)
+    child = tmp_path / "matched_cohorts.freeze.json"
+    m.write_immutable(child, selection)
+    result = {"outputs": {"selection": m.record(child)}}
+    result["diagnostic_id"] = m.canonical_id(result)
+    parent = tmp_path / "diagnostic_manifest.json"
+    m.write_immutable(parent, result)
+    m.verify_outputs(parent, "diagnostic_id", tmp_path)
+    table.write_text("cell\ttf\nK562\tMYC\n")
+    with pytest.raises(ValueError, match="checksum"):
+        m.verify_outputs(parent, "diagnostic_id", tmp_path)
+
+
+def test_historical_verification_requires_immutable_matching_calculation_code(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    m = module()
+    with pytest.raises(ValueError, match="immutable Git commit"):
+        m.verify_historical_result(tmp_path / "missing.json", tmp_path, code_ref="main")
+    config = {"inputs": {"K562": {}}, "code": [{"path": str(m.REPOSITORY / "src/fp_tools/tools/parametric_bias.py"),
+                                                "sha256": "f" * 64}]}
+    config["configuration_id"] = m.canonical_id(config)
+    m.write_immutable(tmp_path / "configuration.freeze.json", config)
+    result = {"schema": m.SCHEMA, "new_holdout_labels_read": False, "candidate_retuned": False,
+              "configuration_id": config["configuration_id"]}
+    path = tmp_path / "diagnostic_manifest.json"
+    m.write_immutable(path, result)
+    monkeypatch.setattr(m.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(stdout=b"wrong code"))
+    with pytest.raises(ValueError, match="Git calculation code checksum mismatch"):
+        m.verify_historical_result(path, tmp_path, code_ref="c39dcd9")

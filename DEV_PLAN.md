@@ -334,6 +334,9 @@ a separately planned breaking release explicitly changes the contract.
   mean-gain and difficult-family gates still fail. This is sensitivity on
   examined chromosomes, not new holdout evidence or a new candidate. See
   `benchmarks/CHROMBPNET_COVARIATE_DIAGNOSTIC_20260908.md` for complete results.
+  Historical verification now checks nested cohort artifacts and can validate
+  recorded calculation-code blobs against their immutable Git commit without
+  rerunning completed experiments.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

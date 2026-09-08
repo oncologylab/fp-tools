@@ -728,3 +728,17 @@ aggregate PDFs. The `test` split field names the historical chromosome fold;
 all these results are post-hoc development sensitivity, not untouched evidence.
 Conditioning on accessibility can also remove biological occupancy signal;
 this is not a causal adjustment or a new promotion result.
+
+For an existing run after a verification-only code update, use `--verify-only`
+with the immutable calculation-code commit. This checks historical inputs,
+every recorded code blob, nested cohort files, profile caches and evaluation
+outputs without recreating a configuration or rerunning calculations. Mutable
+branch names are rejected for `--code-ref`.
+
+```bash
+python benchmarks/scripts/evaluate_chrombpnet_covariate_diagnostic.py \
+  --plan benchmarks/manifests/chrombpnet_covariate_diagnostic_v1.json \
+  --data-root /path/to/data-checkout \
+  --outdir benchmarks/results/chrombpnet_covariate_diagnostic_20260908_v2 \
+  --verify-only --code-ref c39dcd9
+```
