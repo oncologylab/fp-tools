@@ -1,0 +1,44 @@
+{
+  "schema": "fp-tools-direct-bias-stability-plan-v1",
+  "evidence": "post_hoc_development_stability",
+  "cells": ["HepG2", "K562"],
+  "evaluation_chromosomes": ["chr19", "chr20", "chr21", "chr22", "chrX"],
+  "candidate_retuning_allowed": false,
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "bias_model_sha256": "620f232f634423b8753e4d77f8cf72df87482c09193cb5e7e6b038917c47e89a",
+  "dispersion": {"HepG2": 0.0, "K562": 1.6144318781609228},
+  "depths": ["10m", "25m", "50m", "full"],
+  "seeds": [2026, 2027, 2028, 2029, 2030],
+  "replicates": [1, 2, 3],
+  "available_matrix": "replicate_1_depth_seed_matrix_plus_all_full_replicates",
+  "full_depth_randomization": "one_deterministic_endpoint_per_replicate",
+  "cohorts": ["original_support_with_expected_coverage", "motif_accessibility_observed_total"],
+  "cohort_membership": "fixed_original_or_matched_sites_intersected_with_all_run_expected_coverage",
+  "missing_expected_sites": "exclude_before_scoring_and_retain_complete_matched_pairs",
+  "zero_cut_sites": "retain_as_ties_on_fixed_support_and_report_counts",
+  "dwm_comparators": ["original_full_depth_replicate_1", "sample_and_depth_matched"],
+  "minimum_sites_per_class": 200,
+  "bootstrap_iterations": 1000,
+  "bootstrap_runs": "all_full_replicates_and_10m_seed_2026_reference",
+  "aggregate_bootstrap_iterations": 500,
+  "seed": 2026,
+  "source_plan": {
+    "path": "benchmarks/manifests/chrombpnet_covariate_diagnostic_v1.json",
+    "sha256": "20fc0f90a0b61c5b3cccbcea6b7e98172c6a745a5059c256c40ed2a0acd23ef8"
+  },
+  "matched_cohorts": {
+    "path": "benchmarks/results/chrombpnet_covariate_diagnostic_20260908_v2/matched_cohorts.freeze.json",
+    "sha256": "82cb0ea9d50c510820db7f3a8a874cf841be7eafed121868e6cfb671ba7bc1b4"
+  },
+  "input_registries": [
+    {
+      "path": "benchmarks/results/frozen_parametric_factorization_v1_run2/bias_shrinkage/mito_log21_l2_1e-4_shift_4_-5/depth_matrix_10_25_50/depth_inputs.freeze.json",
+      "sha256": "03649bd3bb7550e68b4e0795e8edb165c54cc1ad3a97901bbc71b8717913c9a0"
+    },
+    {
+      "path": "benchmarks/results/frozen_parametric_factorization_v1_run2/bias_shrinkage/mito_log21_l2_1e-4_shift_4_-5/biological_replicates_full/depth_inputs.freeze.json",
+      "sha256": "71acce569092344b28a938d281e230659014e7fc2abdc9a3be358f4be6e6de9b"
+    }
+  ]
+}

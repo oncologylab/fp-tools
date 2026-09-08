@@ -337,6 +337,17 @@ a separately planned breaking release explicitly changes the contract.
   Historical verification now checks nested cohort artifacts and can validate
   recorded calculation-code blobs against their immutable Git commit without
   rerunning completed experiments.
+- Direct-bias stability now has a fixed research plan for the 36 available
+  development BAMs: five seeds at 10M/25M/50M for replicate 1 plus all three
+  full-depth biological replicates per cell. Existing partial-bias matrices
+  use tuning chromosomes and cannot supply the missing test-site evidence.
+  Preflight also found zero DWM expectations at 65 HepG2 and 66 K562 CTCF
+  sites in the historical finite-support comparison. The new diagnostic
+  freezes positive expected coverage across all runs, preserves complete
+  existing matched pairs, and keeps zero observed-count sites. It separates
+  the original full-depth DWM expectation from sample/depth-matched DWM.
+  The candidate, geometry and recorded per-cell dispersions remain unchanged;
+  results are pending, and no promotion follows from this infrastructure.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

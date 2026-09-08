@@ -690,6 +690,37 @@ reports are never overwritten. The report states the actual cell, dispersion,
 covariate imbalance and safety denominators; it makes no equivalence claim
 about ChromBPNet and does not imply final holdout safety or general promotion.
 
+### Direct-bias development stability
+
+`audit_direct_bias_stability.py` uses the exact recorded direct-bias operator
+on previously examined chr19–22/X. The locked input registries contain five
+10M/25M/50M seeds of replicate 1 and all three full-depth biological replicates
+per development cell. The old matrices use tuning chromosomes; the script
+reuses the two existing 10M test profiles and extracts only the missing test
+profiles from checksum-verified BAMs and cached strand-specific propensities.
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python benchmarks/scripts/audit_direct_bias_stability.py \
+  --plan benchmarks/manifests/direct_bias_stability_v1.json \
+  --data-root /path/to/original/data-checkout \
+  --outdir benchmarks/results/direct_bias_stability
+```
+
+The configuration, code and inputs freeze before new scoring. A per-cell
+stage freezes sites with positive DWM expectations in every run and retains
+complete existing covariate-matched pairs without rematching. Zero observed
+counts remain in the fixed cohorts. Reports distinguish the original fixed
+full-depth DWM expectation from each sample/depth-matched DWM expectation.
+All runs have per-TF metrics, coverage and signed aggregate diagnostics;
+chromosome-block metric intervals cover every full replicate and the 10M
+seed-2026 reference. Five randomizations of one library are not five biological
+replicates. Replicates 2 and 3 do not yet have a depth/seed factorial panel.
+
+Completed stages are checksum-verified and reused. `--verify-only` checks the
+complete result without scoring; after code changes, add `--code-ref` with the
+immutable calculation commit. No new holdout labels, final naked-DNA control,
+model refitting or production integration is allowed by this diagnostic.
+
 ### Covariate-matched direct-bias diagnostic
 
 `evaluate_chrombpnet_covariate_diagnostic.py` tests whether existing K562/HepG2

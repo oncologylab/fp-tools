@@ -147,5 +147,9 @@ Reports must identify the exact correction, scoring operator, dispersion,
 site support, and evidence split. Safety for a fitted factorization or a
 partial-bias policy does not establish safety for direct bias residuals.
 Unsigned functional separation alone is not evidence of central protection.
+Finite zero-filled DWM tracks do not establish an expected profile. Audit
+positive expectation coverage before comparing correction methods, and keep
+complete matched pairs when applying coverage exclusions. Depth matrices on
+tuning chromosomes must not be described as test-chromosome stability.
 Keep SK-N-SH/GM23338 labels and the final naked-DNA replicate unopened until
 their prespecified prerequisites pass; never retune on examined test labels.
