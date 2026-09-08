@@ -67,13 +67,36 @@ ones without overwriting them. Old experiment manifests and already completed
 scientific outputs are unchanged. Temporary BAM files are not completion
 evidence.
 
-After all 60 new input sets pass verification, the 96-run evaluation must
-freeze positive DWM expectation support across every run before scoring.
-Coverage exclusions must retain complete existing matched pairs; zero observed
-counts must remain in the cohort. The previous 36 observed/expected profile
-arrays should be reused on the new common support, with new extraction only
-for the missing 60 runs. Any changed cohort requires a new comparison rather
-than combining metrics from different site sets.
+The 96-run evaluator now enforces positive DWM expectation support across
+every run and freezes both cells' cohort identities before new extraction
+or scoring. Coverage exclusions retain complete existing matched pairs;
+zero observed counts remain in the cohort. The previous 36 observed/expected
+profile arrays are reused on the new common support, with new extraction only
+for the missing 60 runs. Metrics are reused only if both site order and cohort
+memberships are unchanged; changed support requires a new comparison.
+
+Evaluator: `scripts/extend_direct_bias_stability.py`.
+Plan: `manifests/direct_bias_stability_96_v1.json`.
+Queue: `manifests/direct_bias_stability_96_queue_v1.json`.
+The queue waits for the existing preparation to finish and binds the
+evaluator's plan checksum. The plan in turn pins the evaluator code and
+the original 36-run configuration/result checksums. Preparation source,
+count, sampling, BAM/BAI, DWM command and nested output identities must
+verify before any scientific calculation begins.
+
+- Evaluator SHA-256: `07a8f9da64c4e3e028d90e2f0022ece79fa0d2fed3ba0cc3c1a3affe2a3414d4`.
+- Evaluation-plan SHA-256: `b646b58e22ddce161e58894ac3beb06fcb37d1e64739ed432309a0322e0ce7e1`.
+- Source 36-run configuration SHA-256: `7998850dd9eece77b668e0df04c8dbfa02a4bbca30adbdcee83170cb97add433`.
+- Source 36-run result SHA-256: `94b4b887bef9431240967c7392970427a40d59470f8b1bc5ad069fa61bc0cfe0`.
+
+This extension preserves the original mitochondrial LOG21 ensemble and
+conventional geometry, including HepG2 dispersion 0 and K562 dispersion
+1.6144318781609228. The four arms remain raw, fixed original DWM, sample/depth
+DWM and frozen parametric expectation, all compared on the same sites.
+Principal metric intervals cover the six full-depth endpoints and the six
+10M seed-2026 runs. Repeated sampling seeds do not create new biological
+replicates. Functional bands remain pointwise diagnostics, not a calibrated
+functional uncertainty certificate.
 
 These are development stability diagnostics on previously examined chr19–22/X.
 Input preparation does not resolve the difficult-family, uncertainty,
@@ -82,7 +105,21 @@ default and the final manuscript remains frozen.
 
 ## Validation
 
-All 60 focused sampler, preparation, study and documentation-contract tests
-passed. The strict MkDocs build passed, and the browser audit passed all 32
-pages at three widths. The four count stages completed with their source
-identities intact. The full preparation/evaluation matrix remains incomplete.
+All 101 focused evaluator, stability, sampler, preparation, queue, study and
+documentation-contract tests passed in 29.34 seconds. The small 96-run fixture
+retains 36 archived extractions, reuses 18 evaluations on unchanged support,
+recomputes the other cell's 18 evaluations after a coverage change, and
+extracts/evaluates the 60 new runs. It checks both support freezes before any
+new run, complete matched pairs, zero-cut retention, empty underpowered
+interval tables, completed-run reuse and rejection of changed nested outputs.
+The fixture's two-page A4 PDF was visually checked. These fixture numbers
+verify execution behavior and are not biological results.
+
+A read-only check of the real archived data verified all 36 extraction
+coordinate identities and their sample DWM profiles on 9,361 HepG2 and
+5,972 K562 sites. All 12 frozen scientific source files and the original
+runtime match; no real extraction or scoring was repeated. The strict
+MkDocs build passed in 4.16 seconds, and the browser audit passed all 32
+pages at three widths. The four count stages remain complete and the same
+preparation controller is progressing through sampling. The full preparation
+and 96-run evaluation remain incomplete.

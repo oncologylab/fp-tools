@@ -1,0 +1,39 @@
+{
+  "schema": "fp-tools-direct-bias-stability-96-plan-v1",
+  "evidence": "post_hoc_development_complete_replicate_depth_stability",
+  "cells": ["HepG2", "K562"],
+  "replicates": [1, 2, 3],
+  "depths": ["10m", "25m", "50m", "full"],
+  "seeds": [2026, 2027, 2028, 2029, 2030],
+  "full_depth_randomization": "one_deterministic_endpoint_per_replicate",
+  "evaluation_chromosomes": ["chr19", "chr20", "chr21", "chr22", "chrX"],
+  "candidate_retuning_allowed": false,
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "candidate_and_metric_settings": "unchanged_from_the_36_run_source_configuration",
+  "support_policy": "positive_expected_coverage_across_all_96_runs_and_complete_existing_matched_pairs",
+  "support_freeze_order": "both_cells_before_any_new_run_extraction_or_scoring",
+  "archived_profiles": "reuse_all_36_on_coordinate_verified_new_support",
+  "archived_metrics": "reuse_only_if_sites_and_both_cohort_memberships_are_identical",
+  "zero_count_sites": "retain_as_ties",
+  "evaluator_code": {
+    "path": "benchmarks/scripts/extend_direct_bias_stability.py",
+    "sha256": "07a8f9da64c4e3e028d90e2f0022ece79fa0d2fed3ba0cc3c1a3affe2a3414d4"
+  },
+  "source_configuration": {
+    "path": "benchmarks/results/direct_bias_stability_20260908_v1/configuration.freeze.json",
+    "sha256": "7998850dd9eece77b668e0df04c8dbfa02a4bbca30adbdcee83170cb97add433"
+  },
+  "source_result": {
+    "path": "benchmarks/results/direct_bias_stability_20260908_v1/stability_manifest.json",
+    "sha256": "94b4b887bef9431240967c7392970427a40d59470f8b1bc5ad069fa61bc0cfe0"
+  },
+  "preparation_configuration": {
+    "path": "benchmarks/results/direct_bias_replicate_depth_inputs_20260908_v1/configuration.freeze.json",
+    "sha256": "bede0ce8d5d43c3c86bd0491831783fbd31ae5ce91c7df425ecd111a656d40e7"
+  },
+  "prepared_inputs": {
+    "path": "benchmarks/results/direct_bias_replicate_depth_inputs_20260908_v1/prepared_inputs.json",
+    "configuration_id": "e0546cdd1edf72d66f6eac15c94131a59bdc579634d3b2427e71ab9bb2bfb497"
+  }
+}

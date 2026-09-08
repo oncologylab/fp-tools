@@ -398,6 +398,18 @@ a separately planned breaking release explicitly changes the contract.
   76,393,585/114,471,886. All support the requested 50M depth. Preparation
   is in progress; see `benchmarks/DIRECT_BIAS_REPLICATE_DEPTHS_20260908.md`
   for the frozen identities, tested counting rule and remaining requirements.
+- The complete 96-run evaluator now extends the archived 36-run calculation
+  with the 60 prepared replicate/depth inputs. It verifies nested sampling and
+  correction provenance, pins the existing scientific code and runtime, and
+  freezes both cells' all-run expectation coverage before new extraction or
+  scoring. All 36 archived profiles are reused after coordinate/label and
+  DWM-track checks. Metrics are reused only on identical original and matched
+  cohorts; changed coverage requires a fresh comparison on the new support.
+  The plan pins the evaluator checksum, and queued execution also pins the
+  plan checksum. A small 96-run fixture exercises unchanged and changed
+  coverage, complete pairs, zero-cut sites, reuse, verification and nested
+  output corruption. The real 60-run preparation remains in progress; the
+  evaluator adds no new scientific result or promotion evidence yet.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

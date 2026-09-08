@@ -789,6 +789,64 @@ preparation evidence; a subsequent 96-run evaluation must freeze positive
 expectation coverage across every run, preserve complete existing matched
 pairs and retain zero observed counts before scoring any new runs.
 
+### Complete 96-run development stability
+
+`extend_direct_bias_stability.py` combines the archived 36-run experiment
+with the 60 new inputs from `prepare_direct_bias_replicate_depths.py`. Its
+plan is `manifests/direct_bias_stability_96_v1.json`. It requires the completed
+preparation manifest and verifies source, sampling, correction and output
+checksums, including the exact frozen DWM command. A temporary BAM or an
+incomplete correction does not satisfy the prerequisite.
+
+Both cells' positive expected coverage and complete existing matched pairs
+are frozen before any new extraction or scoring. All 36 archived observed
+and expected matrices are reused after checking coordinates, labels and the
+matching DWM profile. Their metrics are reused only if the sites and both
+cohort memberships are identical. If coverage changes, metrics and aggregate
+bands are recomputed on the new support. Zero observed counts remain ties.
+The existing candidate, geometry, dispersions and metric settings remain fixed.
+
+The completed matrix has three biological replicates at each depth, five
+nested seeds per replicate at 10M/25M/50M and one full-depth endpoint per
+replicate. Principal chromosome-block intervals cover all six full endpoints
+and all six 10M seed-2026 runs. The outputs include per-TF metrics, aggregate
+profiles and pointwise bands, canonical-shape audits, coverage/balance tables,
+a multipage PDF and nested completion manifests.
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  python benchmarks/scripts/extend_direct_bias_stability.py \
+  --plan benchmarks/manifests/direct_bias_stability_96_v1.json \
+  --data-root /path/to/original/data-checkout \
+  --outdir benchmarks/results/direct_bias_stability_96_20260908_v1
+```
+
+The plan pins the evaluator code; `--plan-sha256` additionally binds a queued
+launch to the reviewed plan bytes. `--verify-only --code-ref COMMIT` verifies
+historical code, all recorded input files, both supports and all 96 nested
+stages without rerunning them. A kernel lock prevents simultaneous evaluators
+from writing the same output. Keep the code and plan unchanged while queued
+or running. These are post-hoc development results on examined chr19–22/X;
+the new holdout labels and final naked-DNA control are outside this workflow.
+
+The checked-in `direct_bias_stability_96_queue_v1.json` waits for the current
+dated preparation output, then launches the pinned evaluator. It expects
+the original data checkout at the sibling `../fp-tools` path. After verifying
+the existing preparation PID, start one controller with that PID:
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  python benchmarks/scripts/run_background_experiment_queue.py \
+  --plan benchmarks/manifests/direct_bias_stability_96_queue_v1.json \
+  --watch-pid PREPARATION_PID --poll-seconds 30 --timeout-seconds 0
+```
+
+Do not start a second preparation or evaluator while an existing controller
+is active. The queue fails if its watched preparation exits before producing
+the prerequisite. Run the evaluator's `--verify-only` check before interpreting
+the completed results; a queue completion record alone does not audit every
+nested scientific input.
+
 ### Direct-bias sequence inference resources
 
 `benchmark_direct_bias_inference.py` measures the archived production Cython

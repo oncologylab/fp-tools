@@ -1,0 +1,28 @@
+{
+  "schema": "fp-tools-background-experiment-plan-v1",
+  "name": "complete_96_run_direct_bias_development_stability_v1",
+  "prerequisite": {
+    "manifest": "benchmarks/results/direct_bias_replicate_depth_inputs_20260908_v1/prepared_inputs.json",
+    "schema": "fp-tools-direct-bias-replicate-depth-inputs-v1"
+  },
+  "stages": [
+    {
+      "name": "complete_96_run_development_evaluation",
+      "manifest": "benchmarks/results/direct_bias_stability_96_20260908_v1/stability_manifest.json",
+      "schema": "fp-tools-direct-bias-stability-96-v1",
+      "command": [
+        "{python}",
+        "benchmarks/scripts/extend_direct_bias_stability.py",
+        "--plan",
+        "benchmarks/manifests/direct_bias_stability_96_v1.json",
+        "--plan-sha256",
+        "b646b58e22ddce161e58894ac3beb06fcb37d1e64739ed432309a0322e0ce7e1",
+        "--data-root",
+        "{root}/../fp-tools",
+        "--outdir",
+        "benchmarks/results/direct_bias_stability_96_20260908_v1"
+      ]
+    }
+  ],
+  "controller_manifest": "benchmarks/results/direct_bias_stability_96_20260908_v1/queue.controller.json"
+}

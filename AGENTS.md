@@ -158,5 +158,9 @@ per-run peak memory. Keep computational component evidence explicitly scoped.
 Derived BAM resume must verify the source identity, fragment-count and sampling
 settings, and BAM/BAI checksums. Preserve incomplete outputs for review instead
 of accepting file existence as evidence of completion.
+When extending a completed depth matrix, freeze common expected coverage for
+both cells before new extraction or scoring. Reuse archived profiles only
+after checking coordinate/label order and the matching DWM track; reuse
+metrics only when both site support and cohort memberships are unchanged.
 Keep SK-N-SH/GM23338 labels and the final naked-DNA replicate unopened until
 their prespecified prerequisites pass; never retune on examined test labels.
