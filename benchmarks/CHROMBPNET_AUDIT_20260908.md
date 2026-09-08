@@ -4,6 +4,14 @@ Verified on 2026-09-08, starting from research commit `888c6e2`.
 This is development/diagnostic evidence. No promotion decision can pass from
 these results alone. Production defaults and the final manuscript are unchanged.
 
+Subsequent stability preflight found that finite support included zero-filled
+DWM expectations at 65/1,961 HepG2 and 66/1,975 K562 CTCF sites. The numerical
+results below are preserved historical comparisons; finite values alone do
+not establish a usable expected-bias profile at those sites. A separate
+coverage-qualified stability analysis freezes positive DWM expectations across
+all runs before rescoring and keeps complete matched pairs. Its exclusions
+must be considered when interpreting correction gains.
+
 ## Completed stages and provenance
 
 HepG2 regulatory training, all three prediction tracks, and the same-site

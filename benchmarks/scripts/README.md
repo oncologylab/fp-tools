@@ -721,6 +721,21 @@ complete result without scoring; after code changes, add `--code-ref` with the
 immutable calculation commit. No new holdout labels, final naked-DNA control,
 model refitting or production integration is allowed by this diagnostic.
 
+`render_direct_bias_stability_report.py` creates a one-page CTCF summary only
+after all 36 point-estimate directions, all six full-replicate intervals,
+canonical protection and exact-operator candidate safety pass its report
+checks. It preserves the observed-count balance drift, separate dispersions,
+sparse-control caveat and missing general-promotion evidence. Reports use a
+new immutable directory, portable source identities and SHA-256 checksums.
+
+```bash
+python benchmarks/scripts/render_direct_bias_stability_report.py \
+  --stability-manifest benchmarks/results/direct_bias_stability/stability_manifest.json \
+  --safety-manifest benchmarks/results/direct_bias_safety_coverage/coverage_manifest.json \
+  --data-root /path/to/original/data-checkout \
+  --outdir benchmarks/results/reports/CTCF_direct_bias_stability
+```
+
 ### Covariate-matched direct-bias diagnostic
 
 `evaluate_chrombpnet_covariate_diagnostic.py` tests whether existing K562/HepG2

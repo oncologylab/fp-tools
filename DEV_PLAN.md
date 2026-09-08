@@ -346,8 +346,24 @@ a separately planned breaking release explicitly changes the contract.
   freezes positive expected coverage across all runs, preserves complete
   existing matched pairs, and keeps zero observed-count sites. It separates
   the original full-depth DWM expectation from sample/depth-matched DWM.
-  The candidate, geometry and recorded per-cell dispersions remain unchanged;
-  results are pending, and no promotion follows from this infrastructure.
+  All 36 runs are complete and verified from calculation commit `c453a37`.
+  CTCF retains canonical protection and positive point gains over raw and both
+  DWM comparators throughout. All six full biological replicates have positive
+  AUROC/AUPRC bootstrap intervals against raw; matched AUROC gains are
+  0.0592–0.0627 in HepG2 and 0.0575–0.0666 in K562. No other powered TF passes
+  the canonical-shape screen. Current cut-total SMD drifts above 0.1 in 11/36
+  matched CTCF runs (maximum 0.134), so fixed matching does not eliminate
+  accessibility confounding. General relative-AUPRC and difficult-family gates
+  still fail; full runtime/memory, uncertainty and untouched safety remain
+  incomplete. See `benchmarks/DIRECT_BIAS_STABILITY_20260908.md` for the full
+  evidence, expected-coverage exclusions and limitations.
+- A concise CTCF stability report now requires all declared run directions,
+  full-replicate paired intervals, canonical protection and matching direct
+  safety identities before rendering. Its 36-row metrics TSV retains balance
+  drift and clearly distinguishes candidate-screen safety from untouched final
+  safety. The six report files were placed in the new Box folder
+  `Yaoxiang/fp-tools/2026-09-08_CTCF_direct_bias_stability_coverage`; download
+  verification reported six matches and zero differences on 2026-09-08.
 - The significant, safety-passing internal CTCF partial-bias result has a
   concise one-page report, metrics, checksums, and limitations in Box under
   `Yaoxiang/fp-tools/2026-09-02_CTCF_frozen_parametric_bias_shrinkage`.

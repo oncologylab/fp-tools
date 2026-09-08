@@ -13,7 +13,13 @@ for metrics, safety coverage limitations, immutable artifact identities and
 the verified HepG2 one-page report. The subsequent
 [covariate-matching sensitivity](CHROMBPNET_COVARIATE_DIAGNOSTIC_20260908.md)
 supports CTCF gains over DWM but leaves K562 gains over raw uncertain and does
-not rescue difficult TFs. The sections below preserve the earlier
+not rescue difficult TFs. A subsequent
+[coverage-qualified stability experiment](DIRECT_BIAS_STABILITY_20260908.md)
+completes the 36 available depth/seed/replicate runs on examined test chromosomes.
+CTCF gains over raw have positive intervals in all six full-depth biological
+replicates, while other powered TFs fail the canonical-shape screen. Current
+cut-total balance drifts in some fixed matched cohorts; general promotion
+remains unsupported. The sections below preserve the earlier
 experiments and must not be read as new untouched evidence.
 
 ## Scope

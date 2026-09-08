@@ -6,6 +6,14 @@ the original scoring geometry, and each cell's recorded dispersion unchanged.
 It does not update any candidate, original comparison, safety result or
 promotion decision. The broader research goal remains incomplete.
 
+Later stability preflight identified zero-filled DWM expectations in the
+original finite-support comparison, including 65 HepG2 and 66 K562 CTCF sites.
+This sensitivity inherits the original support rule. Its numerical results
+remain unchanged, but correction attribution also requires the separate
+positive-expectation coverage check. The new stability diagnostic retains
+complete existing matched pairs after that check; it does not rematch or
+retune on these outcomes.
+
 ## Frozen diagnostic and provenance
 
 `manifests/chrombpnet_covariate_diagnostic_v1.json` fixes three policies:
