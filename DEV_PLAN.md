@@ -395,9 +395,13 @@ a separately planned breaking release explicitly changes the contract.
   must freeze support across all 96 runs and preserve complete matched pairs.
   The four fragment-count stages are complete: HepG2 replicates 2/3 contain
   96,480,203/105,920,129 usable fragments, and K562 replicates 2/3 contain
-  76,393,585/114,471,886. All support the requested 50M depth. Preparation
-  is in progress; see `benchmarks/DIRECT_BIAS_REPLICATE_DEPTHS_20260908.md`
-  for the frozen identities, tested counting rule and remaining requirements.
+  76,393,585/114,471,886. All support the requested 50M depth. All four sampling
+  stages completed on 2026-09-09 UTC: independent checks passed for the exact
+  60-target matrix and all 180 BAM/index/metadata files, including checksums,
+  parent identities, metadata and indexed alignment counts. Conventional DWM
+  correction is running; the 96-run scientific evaluation remains pending.
+  See `benchmarks/DIRECT_BIAS_REPLICATE_DEPTHS_20260908.md` for the frozen
+  identities, actual selected-depth ranges and remaining requirements.
 - The first sampling process terminated with exit 143 before completing any
   sampling stage; the dependent queue correctly failed without starting an
   evaluation. The termination cause is unknown. All four source BAM/BAI pairs

@@ -3,8 +3,9 @@
 The existing stability experiment covers 36 runs: all depths and seeds for
 replicate 1, plus the full-depth endpoint for all three biological replicates
 in HepG2 and K562. The new input-preparation plan covers the remaining 60
-combinations for replicates 2 and 3. These inputs are still being prepared;
-no expanded scientific result or promotion is claimed.
+combinations for replicates 2 and 3. All sampled BAMs are complete and
+independently verified. Conventional DWM correction is running; the expanded
+scientific evaluation remains pending and no promotion is claimed.
 
 ## Frozen scope
 
@@ -51,9 +52,47 @@ depths under hash sampling; each completed subset records its actual selected
 fragment count. A requested target above available fragments fails rather
 than silently becoming a full-depth replicate.
 
+## Verified sampling matrix
+
+All four sampling stages completed on 2026-09-09 UTC under the unchanged
+configuration above. Each contains 15 targets: 10M, 25M and 50M fragments
+at seeds 2026–2030. Independent read-only verification passed for all 60
+targets and 180 BAM, index and metadata files.
+
+The checks covered every output checksum, the exact depth/seed matrix,
+parent count/configuration identities, frozen preparation code, sampling
+metadata identities and recorded source identity. BAM quickchecks passed;
+all headers declared coordinate order and all indexes were readable.
+Indexed mapped-alignment totals equaled twice the recorded selected-fragment
+counts, with zero unmapped alignments. Completed count and sampling stages
+were preserved.
+
+The following SHA-256 values bind each sample's `sampling.json` in the
+ignored output directory above, including all 45 nested output records:
+
+| Sample | Sampling-manifest SHA-256 |
+| --- | --- |
+| HepG2 replicate 2 | `861ca1a4a923acec56c81bce79eef4a89c32904cf866d0ea367868700f5a1f7a` |
+| HepG2 replicate 3 | `c400a9a39a4d5043027caf1da9108777dc0cce51f2de00a60a7813a738b33cac` |
+| K562 replicate 2 | `8ff1ffaf5f451e2de5709e4c030c6387fea9ba3cbf786c6e8eb3c192bed57cab` |
+| K562 replicate 3 | `b793cc7bdda2aa2c5fe34119e82540a5514af1d6b2f1b831076a4e16e41f80ca` |
+
+Actual selected depths vary under the frozen hash-sampling rule. Across the
+20 subsets at each nominal depth, the recorded counts span:
+
+| Nominal depth | Minimum selected fragments | Maximum selected fragments |
+| --- | ---: | ---: |
+| 10M | 9,996,258 | 10,004,550 |
+| 25M | 24,992,477 | 25,008,077 |
+| 50M | 49,991,996 | 50,006,069 |
+
+This verifies input integrity. All 60 conventional DWM corrections and the
+final preparation registry must pass their own checks before the queued
+96-run evaluation can calculate expanded footprint metrics.
+
 ## Remaining preparation and evaluation
 
-The controller creates missing subsets, then fits conventional DWM separately
+With sampling complete, the controller fits conventional DWM separately
 for each sample/depth/seed. It uses the recorded replicate-1 correction command,
 including all four output tracks and four CPU cores. It does not substitute
 the full-depth reused-bias comparator for a newly fitted low-depth comparator.
@@ -149,5 +188,5 @@ coordinate identities and their sample DWM profiles on 9,361 HepG2 and
 runtime match; no real extraction or scoring was repeated. The strict
 MkDocs build passed in 4.16 seconds, and the browser audit passed all 32
 pages at three widths. The four count stages remain complete; the recovery
-above preserves them. The full preparation and 96-run evaluation remain
-incomplete.
+above preserves them. The subsequent real sampling verification is recorded
+above. The full preparation and 96-run evaluation remain incomplete.
