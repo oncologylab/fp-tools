@@ -43,6 +43,13 @@ A real-browser regression reproduced the unintended submission. All 20 focused
 checks and the complete source-GUI browser audit pass after correction; no
 application code changed.
 
+The Windows audit also exposed an asynchronous example-selector race. The
+browser audit now waits for and selects the exact example option, verifies the
+selection, and uses normal actionable button clicks for all three loaders.
+The complete source-GUI audit and three repeated load/edit/example/upload
+cycles pass; the 20 focused checks pass in 2.20 seconds. Native desktop checks
+must still pass before these downloads are marked stable.
+
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk
 ATAC-seq footprinting, motif analysis, differential reports, and browser/YAML
 wrappers. Scientific workflow logic belongs in

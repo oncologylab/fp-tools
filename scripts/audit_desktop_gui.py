@@ -643,9 +643,7 @@ def _audit_loaded_config_sync(
         loader = page.locator("details", has_text="Load bulk-footprinting config").first
         if loader.get_attribute("open") is None:
             _open_expander(loader)
-        page.get_by_role("button", name="Load YAML from path", exact=True).evaluate(
-            "element => element.click()"
-        )
+        page.get_by_role("button", name="Load YAML from path", exact=True).click()
         _wait_for_settled_render(page)
         _open_expander(page.locator("details", has_text="Advanced options").first)
         expect(page.get_by_label("Samples TSV", exact=True)).to_have_value(
@@ -706,11 +704,13 @@ def _audit_loaded_config_sync(
         _open_expander(normalizer_loader)
         example_select = _control_by_label(page, "Example YAML")
         example_select.fill("normalize_bigwig_single.yml")
-        example_select.press("ArrowDown")
-        example_select.press("Enter")
-        page.get_by_role("button", name="Load example", exact=True).evaluate(
-            "element => element.click()"
+        page.get_by_role("option", name="normalize_bigwig_single.yml", exact=True).click()
+        _assert_control_value(page, "Example YAML", "normalize_bigwig_single.yml")
+        _wait_for_settled_render(page)
+        _open_expander(
+            page.locator("details", has_text="Load normalize-bigwig config").first
         )
+        page.get_by_role("button", name="Load example", exact=True).click()
         expect(page.get_by_label("Background regions BED", exact=True)).to_have_value(
             "test_data/merged_peaks.bed",
             timeout=30_000,
@@ -725,9 +725,7 @@ def _audit_loaded_config_sync(
         diff_loader = page.locator("details", has_text="Load diff-footprints config").first
         _open_expander(diff_loader)
         page.locator("input[type='file']").set_input_files(str(diff_path))
-        page.get_by_role("button", name="Apply uploaded YAML", exact=True).evaluate(
-            "element => element.click()"
-        )
+        page.get_by_role("button", name="Apply uploaded YAML", exact=True).click()
         _assert_control_value(page, "Comparison axis", diff_values["comparison_axis"])
         _assert_control_value(
             page,
