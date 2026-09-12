@@ -559,7 +559,7 @@ def _assert_control_value(page, label: str, expected: object) -> None:
             expect(control).to_be_checked(timeout=30_000)
         else:
             expect(control).not_to_be_checked(timeout=30_000)
-        actual = control.is_checked()
+        return
     else:
         control.wait_for(state="attached", timeout=30_000)
         tag_name = control.evaluate("element => element.tagName")
@@ -581,10 +581,10 @@ def _assert_control_value(page, label: str, expected: object) -> None:
                 page.wait_for_timeout(100)
         elif tag_name in {"INPUT", "TEXTAREA", "SELECT"}:
             expect(control).to_have_value(str(expected), timeout=30_000)
-            actual = control.input_value()
+            return
         else:
             expect(control).to_have_text(str(expected), timeout=30_000)
-            actual = control.inner_text().strip()
+            return
     if str(actual) != str(expected):
         raise RuntimeError(
             f"Control {label!r} shows {actual!r}; expected {expected!r}"
@@ -610,11 +610,11 @@ def _open_expander(details) -> None:
 
 
 def _submit_text_control(page, label: str, value: str) -> None:
-    """Enter a text value and wait until Streamlit records it server-side."""
+    """Commit text on blur without implicitly submitting a surrounding form."""
 
     control = _control_by_label(page, label)
     control.fill(value)
-    control.press("Enter")
+    control.press("Tab")
     expect(page.get_by_label(label, exact=True)).to_have_value(value, timeout=30_000)
 
 
@@ -671,9 +671,16 @@ def _audit_loaded_config_sync(
 
         new_outdir = str(workdir / "changed output only")
         _submit_text_control(page, "Output directory", new_outdir)
-        page.get_by_role("button", name="Update page config", exact=True).evaluate(
-            "element => element.click()"
+        previous_input_id = page.get_by_label("Output directory", exact=True).get_attribute("id")
+        if not previous_input_id:
+            raise RuntimeError("Output directory control has no widget ID")
+        page.get_by_role("button", name="Update page config", exact=True).click()
+        page.wait_for_function(
+            "previousId => !document.getElementById(previousId)",
+            arg=previous_input_id,
+            timeout=30_000,
         )
+        _wait_for_settled_render(page)
         _open_expander(page.locator("details", has_text="Advanced options").first)
         page.get_by_label("Output directory", exact=True).wait_for(timeout=30_000)
         _assert_control_value(page, "Output directory", new_outdir)

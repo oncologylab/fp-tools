@@ -34,6 +34,15 @@ audit. This validation-only follow-up changes no packaged source. Desktop
 bundles are rebuilt with the existing manual `publish_version=0.2.3` workflow;
 the release tag and package/runtime sources remain immutable.
 
+A second macOS audit reached configuration editing and exposed a timing-sensitive
+audit read: Enter implicitly submitted the form before the scripted button click,
+and the audit sampled values again after its retrying assertions had passed.
+The audit now commits text on blur, submits once, waits for the new widget
+revision, and uses retrying assertions without a second instantaneous read.
+A real-browser regression reproduced the unintended submission. All 20 focused
+checks and the complete source-GUI browser audit pass after correction; no
+application code changed.
+
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk
 ATAC-seq footprinting, motif analysis, differential reports, and browser/YAML
 wrappers. Scientific workflow logic belongs in
