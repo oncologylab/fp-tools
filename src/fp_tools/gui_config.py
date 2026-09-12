@@ -263,6 +263,11 @@ def normalize_config(config: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _merge_job_defaults(defaults: Mapping[str, Any], item: Mapping[str, Any]) -> dict[str, Any]:
+    """Apply the same shallow, explicit-override semantics on every wrapper path."""
+    return {**defaults, **item}
+
+
 def expand_jobs(config: Mapping[str, Any], only_tools: set[str] | None = None) -> list[JobSpec]:
     normalized = normalize_config(config)
     jobs: list[JobSpec] = []
@@ -272,8 +277,7 @@ def expand_jobs(config: Mapping[str, Any], only_tools: set[str] | None = None) -
         for idx, item in enumerate(normalized[section], start=1):
             if not isinstance(item, Mapping):
                 raise ValueError(f"Each item in '{section}' must be a mapping.")
-            merged = dict(defaults)
-            merged.update(dict(item))
+            merged = _merge_job_defaults(defaults, item)
             tool = canonical_tool_name(str(merged.get("tool", "")))
             if only_tools and tool not in only_tools:
                 continue
@@ -336,6 +340,7 @@ def validate_config(config: Mapping[str, Any]) -> list[str]:
 
     for section in ("samples", "comparisons"):
         for idx, item in enumerate(normalized[section], start=1):
+            item = _merge_job_defaults(normalized["defaults"], item)
             tool = canonical_tool_name(str(item.get("tool", "")))
             required = REQUIRED_FIELDS.get(tool, ())
             job_name = str(
@@ -634,6 +639,7 @@ def validate_gui_config(config: Mapping[str, Any]) -> list[str]:
     normalized_raw_flags = {"--" + key.lstrip("-").replace("_", "-") for key in GUI_RAW_READ_KEYS}
     for section in ("samples", "comparisons"):
         for idx, item in enumerate(normalized[section], start=1):
+            item = _merge_job_defaults(normalized["defaults"], item)
             tool = canonical_tool_name(str(item.get("tool", "")))
             job_name = str(
                 item.get("sample_id")

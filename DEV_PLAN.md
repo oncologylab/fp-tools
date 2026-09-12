@@ -138,6 +138,14 @@ a separately planned breaking release explicitly changes the contract.
 
 ## Near-Term Priorities
 
+### Unreleased maintenance: GitHub #68
+
+YAML job expansion, core validation and GUI validation now share defaults
+merging, with explicit per-job overrides. Required inputs, paths, choices and
+GUI restrictions therefore validate the values that will actually run.
+Five new regression cases pass; all 24 existing CLI/configuration tests pass.
+No public command or scientific default changes.
+
 1. Keep the seven-line ENCODE cancer resource reproducible and
    storage-conscious. Preserve all 1,019 motifs, 17 biological replicates, and
    21 prespecified contrasts; resource membership remains independent of
