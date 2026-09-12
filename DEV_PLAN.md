@@ -154,6 +154,12 @@ loads disable execution until a configuration is applied successfully.
 Structural YAML errors use ValueError; unexpected implementation exceptions
 remain visible. All 12 new GUI loading tests and five defaults tests pass.
 
+### Unreleased maintenance: GitHub #67
+
+The bulk form labels the required input "Comparisons TSV", consistent with
+existing CLI and config validation. The focused label/validation regression
+reproduced the old mismatch and passes with the corrected label.
+
 1. Keep the seven-line ENCODE cancer resource reproducible and
    storage-conscious. Preserve all 1,019 motifs, 17 biological replicates, and
    21 prespecified contrasts; resource membership remains independent of

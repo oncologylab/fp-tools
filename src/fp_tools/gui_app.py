@@ -195,7 +195,7 @@ GUI_FIELD_LABELS = {
     "bigwigs": "Signal bigWig files",
     "candidates": "Candidate regions BED",
     "chrom_sizes": "Chromosome sizes",
-    "comparison_table": "Comparisons TSV (optional)",
+    "comparison_table": "Comparisons TSV",
     "cond_names": "Condition names",
     "fasta": "Candidate sequences FASTA (optional)",
     "fragments": "Fragments file",
