@@ -4,7 +4,7 @@ Last updated: 2026-09-12
 
 ## Current Baseline
 
-### v0.2.3 release preparation
+### v0.2.3 maintenance release
 
 The user authorized a new release of main for retesting on 2026-09-12.
 Version 0.2.3 includes the fixes for #65–#68, frozen motif-discovery environment
@@ -13,11 +13,10 @@ citation, example, and managed-runtime versions are synchronized. Research
 methods and the published manuscript are unchanged. The two documented
 single-cell source issues remain known limitations of this maintenance release.
 
-Release artifacts are built from the versioned commit through the existing
-desktop, runtime, container, and wheel workflows. Public downloads remain
-marked as a prerelease until the required build and consumer checks pass.
-The website's desktop links stay on the last verified release until the new
-assets are available and verified.
+Release artifacts were built through the existing desktop, runtime, container,
+and wheel workflows. The release remained a prerelease while native checks
+were completed. Both public desktop downloads are now checksum-verified, and
+the website links point to v0.2.3.
 
 Local release preflight passed: 529 tests, one skip, 26 warnings in 206.21
 seconds; all console-script smoke checks; 18 YAML dry runs; `pip check`;
@@ -67,6 +66,25 @@ fixes the test interaction; 21 focused checks and three repeated loader cycles
 against Streamlit 1.63 pass, as does the complete GUI browser audit against the
 fresh PyPI installation. Packaged application source remains identical to
 the immutable v0.2.3 tag.
+
+The Apple Silicon job in Desktop bundles run 34699598672 passed frozen command
+dispatch, native startup, the full GUI audit, signing/quarantine checks, and DMG
+verification/mounting. Its public DMG SHA-256 is
+`1b40068d76aab3727bfe8dc5e1a5217f7e92f85e1289f234d1adb0f54409d3bd`.
+Release smoke run 34700091438 passed real first-use and cached managed motif
+discovery from that public DMG. All ten CI jobs in run 34699559584 passed.
+The Windows job in the same desktop run also passed frozen command dispatch,
+native startup, and the complete GUI audit. Both desktop bundles use commit
+fa6e8b4 for validation, with no package-source differences from the release tag.
+Desktop run 34699598672 completed successfully and attached both executables
+and their checksum manifest. The public Windows executable SHA-256 is
+`86c84896c6c3aea5c4e7dc58aaa34c4d37c77bb126fc01a6a41e4f5bc6f50ed2`.
+The release contains 24 assets, including nine runtime/checksum pairs, two
+container archives plus checksums, and the two desktop downloads plus checksums.
+The updated desktop links passed 37 documentation/release contracts in 28.10
+seconds, strict MkDocs, and the 33-page browser audit at three viewport sizes.
+Final release rechecks found no open GitHub issues; the research worktree stayed
+at 8a4a958 and the published manuscript was not modified.
 
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk
 ATAC-seq footprinting, motif analysis, differential reports, and browser/YAML
