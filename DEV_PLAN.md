@@ -4,6 +4,28 @@ Last updated: 2026-09-12
 
 ## Current Baseline
 
+### v0.2.3 release preparation
+
+The user authorized a new release of main for retesting on 2026-09-12.
+Version 0.2.3 includes the fixes for #65–#68, frozen motif-discovery environment
+repair, and the audience-oriented documentation update. Package, desktop,
+citation, example, and managed-runtime versions are synchronized. Research
+methods and the published manuscript are unchanged. The two documented
+single-cell source issues remain known limitations of this maintenance release.
+
+Release artifacts are built from the versioned commit through the existing
+desktop, runtime, container, and wheel workflows. Public downloads remain
+marked as a prerelease until the required build and consumer checks pass.
+The website's desktop links stay on the last verified release until the new
+assets are available and verified.
+
+Local release preflight passed: 529 tests, one skip, 26 warnings in 206.21
+seconds; all console-script smoke checks; 18 YAML dry runs; `pip check`;
+strict MkDocs; and source-distribution build/`twine check`. The source archive
+contains 192 entries with no manuscript, environment, or agent-state
+directories. A scan of 121 tracked package/packaging files found no private
+keys, credential-bearing URLs, token patterns, or personal workspace paths.
+
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk
 ATAC-seq footprinting, motif analysis, differential reports, and browser/YAML
 wrappers. Scientific workflow logic belongs in

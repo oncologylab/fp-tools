@@ -3,7 +3,7 @@
 Use this shell template to compare nutrient-stress ATAC-seq samples with
 `10_FBS_Ctrl`. It starts from aligned BAM files and peak BEDs.
 
-1. Install `fp-tools-bio==0.2.2` in the Python environment used by the script.
+1. Install `fp-tools-bio==0.2.3` in the Python environment used by the script.
 2. Copy `run_ctrl_vs_10fbs.sh` to your project folder and set `RAW`, `PROJECT`, and `REF_ROOT` to your input, output, and reference directories.
 3. Provide the coordinate-sorted BAM/BAI and peak BED files, plus the hg38 FASTA, FASTA index, and blacklist named in the script's setup comments.
 4. Create `PROJECT/metadata/samples.tsv` with `sample`, `condition`, `bam`, and `peaks` columns. Use one row per biological sample and file paths that are valid from the launch directory.
