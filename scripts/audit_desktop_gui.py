@@ -618,6 +618,15 @@ def _submit_text_control(page, label: str, value: str) -> None:
     expect(page.get_by_label(label, exact=True)).to_have_value(value, timeout=30_000)
 
 
+def _select_example(page, filename: str) -> None:
+    control = _control_by_label(page, "Example YAML")
+    control.fill(filename)
+    # React Aria comboboxes open on click; filling alone only changes the text.
+    control.click()
+    page.get_by_role("option", name=filename, exact=True).click()
+    _assert_control_value(page, "Example YAML", filename)
+
+
 def _audit_loaded_config_sync(
     browser,
     base_url: str,
@@ -702,10 +711,7 @@ def _audit_loaded_config_sync(
             "details", has_text="Load normalize-bigwig config"
         ).first
         _open_expander(normalizer_loader)
-        example_select = _control_by_label(page, "Example YAML")
-        example_select.fill("normalize_bigwig_single.yml")
-        page.get_by_role("option", name="normalize_bigwig_single.yml", exact=True).click()
-        _assert_control_value(page, "Example YAML", "normalize_bigwig_single.yml")
+        _select_example(page, "normalize_bigwig_single.yml")
         _wait_for_settled_render(page)
         _open_expander(
             page.locator("details", has_text="Load normalize-bigwig config").first

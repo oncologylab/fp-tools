@@ -50,6 +50,24 @@ The complete source-GUI audit and three repeated load/edit/example/upload
 cycles pass; the 20 focused checks pass in 2.20 seconds. Native desktop checks
 must still pass before these downloads are marked stable.
 
+Final main regression verification passed: 531 tests, one skip, 26 warnings in
+200.19 seconds. PyPI now contains all 15 version-0.2.3 platform wheels and the
+source archive. A fresh Linux wheel-only installation passed `pip check`, all
+console-script checks, a YAML dry run, and real managed STREME discovery with
+JASPAR conversion, Tomtom, and TSV/HTML summaries on both first-use and cached
+runs; the runtime cache marker was unchanged on reuse. All nine public runtime
+archives and both container archives match their published SHA-256 checksums.
+
+The next native audit isolated a dependency-specific test interaction:
+Streamlit 1.63 uses a click-triggered React Aria dropdown, while the original
+local environment used Streamlit 1.58. Filling text alone leaves the new menu
+closed. This was reproduced against the fresh public PyPI install and in a
+browser regression (one failure before correction). Explicitly opening the menu
+fixes the test interaction; 21 focused checks and three repeated loader cycles
+against Streamlit 1.63 pass, as does the complete GUI browser audit against the
+fresh PyPI installation. Packaged application source remains identical to
+the immutable v0.2.3 tag.
+
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk
 ATAC-seq footprinting, motif analysis, differential reports, and browser/YAML
 wrappers. Scientific workflow logic belongs in
