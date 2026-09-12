@@ -16,6 +16,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 class ReleaseMetadataTest(unittest.TestCase):
+    def test_linux_ci_installs_and_runs_pytest_regressions(self):
+        workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        self.assertIn("pip build twine pytest", workflow)
+        self.assertIn("run: .venv/bin/python -m pytest -q", workflow)
+
     def test_project_urls_point_to_active_repository(self):
         data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
         urls = data["project"]["urls"]

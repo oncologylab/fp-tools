@@ -62,7 +62,7 @@ jobs:
       - name: Install package
         run: |
           python -m venv .venv
-          .venv/bin/python -m pip install --upgrade pip build twine
+          .venv/bin/python -m pip install --upgrade pip build twine pytest
           .venv/bin/python -m pip install --only-binary=:all: -e .
 
       - name: Build and check release artifacts
@@ -81,4 +81,4 @@ jobs:
       - name: Run unit and regression tests
         env:
           FP_TOOLS_RUN_SLOW_REGRESSIONS: ${{ github.event.inputs.slow_regressions == 'true' && '1' || '0' }}
-        run: .venv/bin/python -m unittest discover -s tests -v
+        run: .venv/bin/python -m pytest -q
