@@ -1,6 +1,18 @@
 from copy import deepcopy
+import sys
 import pytest
 from streamlit.testing.v1 import AppTest
+
+
+@pytest.fixture(autouse=True)
+def restore_process_entrypoint():
+    # Streamlit's script runner replaces __main__. Do not let its temporary
+    # AppTest script become the entrypoint for later multiprocessing workers.
+    original = sys.modules["__main__"]
+    try:
+        yield
+    finally:
+        sys.modules["__main__"] = original
 
 
 def config_page():

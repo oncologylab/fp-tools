@@ -184,6 +184,13 @@ including the new function-based regressions and existing unittest cases.
 This avoids importing pytest-dependent tests into an environment without the
 test runner and ensures the new cases execute on Linux as well as Windows.
 
+The Windows CI follow-up exposed AppTest leaking its temporary `__main__`
+module into subsequent multiprocessing tests. GUI test teardown now restores
+the original process entrypoint. The failure was reproduced locally by running
+a GUI test followed by parallel normalization with the spawn start method;
+the same sequence passes after isolation. Production multiprocessing code is
+unchanged.
+
 The full pytest suite passed: 506 passed, one skipped, 26 warnings in 210.95
 seconds. All 24 aggregate tests passed after the final SVG sizing correction.
 Console-script smoke checks, the call-footprints YAML dry run and pip check
