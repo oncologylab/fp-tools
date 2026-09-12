@@ -19,6 +19,7 @@ from typing import Any
 
 import pandas as pd
 import streamlit as st
+import yaml
 
 from fp_tools import __version__
 from fp_tools.gui_config import (
@@ -1989,6 +1990,28 @@ def _render_generic_tool_page(run_dir: Path, tool: str) -> None:
         _render_run_controls(run_dir, label=tool.replace("-", "_"))
 
 
+def _apply_config_input(loader) -> None:
+    """Apply user input atomically; routine input errors must not truncate the page."""
+    try:
+        config = normalize_config(loader())
+        validate_gui_config(config)
+    except (ValueError, OSError, yaml.YAMLError) as exc:
+        if isinstance(exc, UnicodeError):
+            message = "YAML files must use UTF-8 encoding."
+        elif isinstance(exc, yaml.YAMLError):
+            mark = getattr(exc, "problem_mark", None)
+            location = f" at line {mark.line + 1}, column {mark.column + 1}" if mark else ""
+            message = f"Invalid YAML syntax{location}. Check indentation and values."
+        elif isinstance(exc, OSError):
+            message = f"Could not read YAML file: {exc.strerror or str(exc)}."
+        else:
+            message = str(exc)
+        st.session_state.config_load_error = message
+        st.error(message)
+        return
+    _set_config(config)
+
+
 def _render_config_page(run_dir: Path) -> None:
     _render_page_heading("Config", "Download, load, edit, save, and run YAML workflow configs.")
     form_col, run_col = _tool_layout("config")
@@ -2004,11 +2027,11 @@ def _render_config_page(run_dir: Path) -> None:
         with load_left:
             uploader = st.file_uploader("Load YAML file", type=["yml", "yaml"], key="config_uploader")
             if uploader is not None and st.button("Apply uploaded YAML", key="config_apply_upload"):
-                _set_config(parse_yaml_text(uploader.getvalue().decode("utf-8")))
+                _apply_config_input(lambda: parse_yaml_text(uploader.getvalue().decode("utf-8")))
         with load_right:
             load_path = st.text_input("Load config from path", key="config_load_path")
             if st.button("Load YAML from path", key="config_load_path_btn") and load_path.strip():
-                _set_config(normalize_config(load_yaml_config(load_path.strip())))
+                _apply_config_input(lambda: load_yaml_config(load_path.strip()))
 
         yaml_text = st.text_area(
             "Current YAML",
@@ -2019,7 +2042,7 @@ def _render_config_page(run_dir: Path) -> None:
         edit_left, edit_right = st.columns(2)
         with edit_left:
             if st.button("Apply YAML text", key="config_apply_text"):
-                _set_config(parse_yaml_text(yaml_text))
+                _apply_config_input(lambda: parse_yaml_text(yaml_text))
         with edit_right:
             save_path = st.text_input("Save current YAML to path", key="config_save_path")
             if st.button("Save YAML", key="config_save_btn") and save_path.strip():
@@ -2078,6 +2101,8 @@ def _friendly_validation_message(message: str) -> str:
 def _render_run_controls(run_dir: Path, label: str) -> None:
     normalized = normalize_config(st.session_state.current_config)
     validation_errors = validate_gui_config(normalized)
+    if st.session_state.get("config_load_error"):
+        validation_errors.append("Apply a valid configuration before starting a run.")
     has_validation_errors = bool(validation_errors)
     tool = _current_config_tool() or "none"
     touched = tool in set(st.session_state.get("touched_tools", set()))
@@ -2315,6 +2340,7 @@ def _set_config(
     notify: bool = True,
 ) -> None:
     st.session_state.current_config = normalize_config(config)
+    st.session_state.pop("config_load_error", None)
     if notify:
         touched = set(st.session_state.get("touched_tools", set()))
         current_tool = _current_config_tool()

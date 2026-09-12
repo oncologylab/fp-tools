@@ -146,6 +146,14 @@ GUI restrictions therefore validate the values that will actually run.
 Five new regression cases pass; all 24 existing CLI/configuration tests pass.
 No public command or scientific default changes.
 
+### Unreleased maintenance: GitHub #66
+
+Config text, uploads and path loading now report expected input errors without
+replacing the previous configuration or truncating Save/Run controls. Failed
+loads disable execution until a configuration is applied successfully.
+Structural YAML errors use ValueError; unexpected implementation exceptions
+remain visible. All 12 new GUI loading tests and five defaults tests pass.
+
 1. Keep the seven-line ENCODE cancer resource reproducible and
    storage-conscious. Preserve all 1,019 motifs, 17 biological replicates, and
    21 prespecified contrasts; resource membership remains independent of

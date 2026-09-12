@@ -195,7 +195,9 @@ def canonical_tool_name(name: str) -> str:
 
 def load_yaml_config(path: str | Path) -> dict[str, Any]:
     with Path(path).expanduser().open("r", encoding="utf-8") as handle:
-        data = yaml.safe_load(handle) or {}
+        data = yaml.safe_load(handle)
+    if data is None:
+        data = {}
     if not isinstance(data, Mapping):
         raise ValueError("Top-level YAML config must be a mapping.")
     return dict(data)
@@ -237,11 +239,13 @@ def normalize_config(config: Mapping[str, Any]) -> dict[str, Any]:
         job_id = raw.pop("job_id", "run")
         return make_single_config(tool, raw, job_id=job_id)
 
-    version = int(raw.get("version", CONFIG_VERSION))
+    try:
+        version = int(raw.get("version", CONFIG_VERSION))
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("'version' must be an integer.") from exc
     defaults = raw.get("defaults", {}) or {}
     samples = raw.get("samples", []) or []
     comparisons = raw.get("comparisons", []) or []
-    run_mode = raw.get("run_mode", "batch" if len(samples) + len(comparisons) > 1 else "single")
     run_root = raw.get("run_root")
 
     if not isinstance(defaults, Mapping):
@@ -250,6 +254,10 @@ def normalize_config(config: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("'samples' must be a list when present.")
     if not isinstance(comparisons, list):
         raise ValueError("'comparisons' must be a list when present.")
+    for section, items in (("samples", samples), ("comparisons", comparisons)):
+        if any(not isinstance(item, Mapping) for item in items):
+            raise ValueError(f"Each item in '{section}' must be a mapping.")
+    run_mode = raw.get("run_mode", "batch" if len(samples) + len(comparisons) > 1 else "single")
     if not samples and not comparisons:
         raise ValueError("Config must contain at least one item in 'samples' or 'comparisons'.")
 
@@ -328,7 +336,9 @@ def config_to_yaml_text(config: Mapping[str, Any]) -> str:
 
 
 def parse_yaml_text(text: str) -> dict[str, Any]:
-    data = yaml.safe_load(text) or {}
+    data = yaml.safe_load(text)
+    if data is None:
+        data = {}
     if not isinstance(data, Mapping):
         raise ValueError("YAML text must define a mapping.")
     return normalize_config(dict(data))
