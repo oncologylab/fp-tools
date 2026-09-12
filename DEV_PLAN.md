@@ -163,6 +163,34 @@ The bulk form labels the required input "Comparisons TSV", consistent with
 existing CLI and config validation. The focused label/validation regression
 reproduced the old mismatch and passes with the corrected label.
 
+### Unreleased maintenance: GitHub #65
+
+Legacy differential-report conversion and batch merging preserve selected
+A/C/G/T motif matrices. Aggregate cards and logo-panel exports render their
+information-content SVG logos, with existing SVG/PNG fallbacks. Invalid or
+missing matrices do not invalidate aggregate profiles. Fourteen focused
+tests pass, including five Chromium rendering/export cases; all ten existing
+aggregate batch tests also pass. The bundled legacy report (1,019 motifs,
+200 positions, pre-rendered PNG logos) retains its six displayed logos and
+curves with no browser errors. Matrix-only behavior is verified separately
+with synthetic fixtures because that bundled report has no motif matrices.
+SVG logos share the image height constraint; browser regressions and visual
+inspection confirm they fit inside the card instead of being cropped.
+
+### Maintenance validation, 2026-09-12
+
+The full pytest suite passed: 506 passed, one skipped, 26 warnings in 210.95
+seconds. All 24 aggregate tests passed after the final SVG sizing correction.
+Console-script smoke checks, the call-footprints YAML dry run and pip check
+passed. Strict MkDocs passed in 3.98 seconds; the browser audit passed all
+32 pages at three viewport sizes. These are Linux/source checks; newly built
+native macOS/Windows frozen applications have not been validated.
+
+GitHub was rechecked after verification: #65–#68 remain the only open issues.
+Their fixes are local and unreleased; no version bump, push, issue closure,
+release or deployment was performed. Research remains in its separate clean
+worktree for the next major version; the published manuscript is unchanged.
+
 1. Keep the seven-line ENCODE cancer resource reproducible and
    storage-conscious. Preserve all 1,019 motifs, 17 biological replicates, and
    21 prespecified contrasts; resource membership remains independent of
