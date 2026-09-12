@@ -115,7 +115,7 @@ class ReleaseMetadataTest(unittest.TestCase):
         checklist = (ROOT / "RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
         for phrase in [
             "pip check",
-            "unittest discover",
+            "pytest -q",
             "call-footprints --help",
             "diff-footprints --help",
             "cibuildwheel",

@@ -242,6 +242,12 @@ The 0.2.2 source distribution built successfully and passed `twine check`;
 its 192 entries contain no manuscript, environment, or agent-state directories.
 No package release or version change was made.
 
+CI caught one stale release-checklist assertion after the final documentation
+edit changed the test command from unittest discovery to pytest. The failure
+was reproduced locally; the contract now requires `pytest -q` and retains all
+other release-gate checks. All 62 documentation, demo, and release-metadata
+tests passed in 30.27 seconds after this correction.
+
 Two pre-existing single-cell behaviors need a separate source fix:
 
 - `pseudobulk_footprints.py` sets a motif-database default before resolving
