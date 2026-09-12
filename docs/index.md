@@ -11,10 +11,10 @@ hide:
 
 # Tn5-based chromatin footprinting and regulatory motif analysis
 
-`fp-tools` provides command-line and browser workflows for bulk and single-cell
-footprinting of Tn5-based chromatin profiling data, including ATAC-seq,
-CUT&Tag, and related assays. It connects bias correction, footprint scoring,
-motif analysis, replicate comparisons, and reusable reports.
+Use `fp-tools` to analyze ATAC-seq and CUT&Tag data, score chromatin footprints,
+and compare motif-associated signals between conditions. Run a complete
+workflow or individual steps from the command line, or use the GUI to prepare
+and run the same analyses.
 
 <div class="fp-badges">
   <a href="https://pypi.org/project/fp-tools-bio/">PyPI</a>
@@ -23,7 +23,7 @@ motif analysis, replicate comparisons, and reusable reports.
   <span>MIT license</span>
 </div>
 
-- Analyze aligned Tn5-based chromatin data from BAM and peak files.
+- Correct Tn5 sequence bias and score footprints from BAM and peak files.
 - Compare motif-associated footprint scores across samples and replicates.
 - Analyze pseudobulk and per-cell footprint signatures.
 - Export static figures and portable interactive HTML reports.

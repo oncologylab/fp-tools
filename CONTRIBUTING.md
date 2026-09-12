@@ -14,11 +14,19 @@ command-first architecture and reproducible scientific outputs.
 
 ## Local validation
 
-Run from the repository root:
+Create a development environment from the repository root:
+
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install -e '.[docs]' pytest
+```
+
+Then run the checks below. On Windows, use `.venv\Scripts\python` and
+`.venv\Scripts\mkdocs` for the corresponding executables.
 
 ```bash
 .venv/bin/python -m pip check
-.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m pytest -q
 .venv/bin/python scripts/smoke_console_scripts.py
 .venv/bin/mkdocs build --clean --strict
 git diff --check

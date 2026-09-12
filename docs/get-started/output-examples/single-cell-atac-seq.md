@@ -3,6 +3,11 @@
 The PBMC5k example shows per-cell footprint signatures across B cells,
 monocytes, and T/NK cells.
 
+Use the heatmap to compare motif signatures across cell groups. In the UMAPs,
+each panel places the same cells at the same coordinates; the colors show
+either cell labels or the selected motif's signature score. Similar colors
+within a group indicate a shared pattern of signal.
+
 ## Signature heatmap
 
 <figure class="fp-output-figure">
@@ -28,3 +33,7 @@ monocytes, and T/NK cells.
 Select either figure to open the full-resolution image. The
 [Single-cell workflow](../workflows/single-cell.md) describes the commands used
 to produce these outputs.
+
+The signatures are smoothed using neighboring cells to reduce sparse signal.
+They describe relative motif-associated patterns, not direct measurements of
+TF binding in individual cells.

@@ -24,6 +24,13 @@ replicates. Every BAM must be coordinate-sorted and have an adjacent index such
 as `control_rep1.sorted.bam.bai`. BAMs and peak BEDs must use the same genome
 assembly and chromosome names.
 
+| Column | What to enter |
+| --- | --- |
+| `sample` | A unique name for one biological sample, such as `control_rep1`. |
+| `condition` | The group to compare, such as `control` or `treated`. |
+| `bam` | Path to that sample's coordinate-sorted BAM file. |
+| `peaks` | Path to the matching peak BED file. |
+
 ## 2. Choose the comparison
 
 Create `comparisons.tsv` to define which conditions to compare:
@@ -35,7 +42,8 @@ treated_vs_control	treated	control
 
 [Download this comparison table](../../demos/data/bulk/comparisons.tsv). The
 reported change is `cond1` relative to `cond2`. Add another row for each
-additional comparison.
+additional comparison. Use a unique `comparison` name for the output folder;
+`cond1` and `cond2` must match values in the sample table's `condition` column.
 
 ## 3. Run the workflow
 
@@ -105,6 +113,11 @@ interactive comparison report under `{project}`. See the
 [`bulk-footprinting` command guide](../commands/bulk-footprinting.md) for exact
 file patterns and the [bulk output example](../output-examples/bulk-atac-seq.md)
 for a visual tour.
+
+Here, `{project}` means the directory supplied to `--outdir` (`project` in the
+example). `{sample}` in an output filename means a name from your sample table.
+Review the differential statistics together with the corrected cut-site
+profiles and agreement between biological replicates.
 
 ## ENCODE example
 

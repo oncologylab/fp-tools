@@ -1,6 +1,6 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-07
+Last updated: 2026-09-12
 
 ## Current Baseline
 
@@ -198,10 +198,64 @@ passed. Strict MkDocs passed in 3.98 seconds; the browser audit passed all
 32 pages at three viewport sizes. These are Linux/source checks; newly built
 native macOS/Windows frozen applications have not been validated.
 
-GitHub was rechecked after verification: #65–#68 remain the only open issues.
-Their fixes are local and unreleased; no version bump, push, issue closure,
-release or deployment was performed. Research remains in its separate clean
-worktree for the next major version; the published manuscript is unchanged.
+With the user's subsequent authorization, the maintenance fixes were pushed
+through `7d54f47` and #65–#68 were closed after verification. All ten CI jobs
+passed at that commit, as did the documentation build and Pages deployment.
+GitHub was rechecked on 2026-09-12 and had no open issues. These remain
+unreleased maintenance changes; the package version is still 0.2.2. Research
+remains in its separate clean worktree for the next major version; the
+published manuscript is unchanged.
+
+### Audience-oriented documentation review, 2026-09-12
+
+Reviewed all 29 website Markdown pages, including every public command guide,
+plus README, example instructions, contribution/security guidance, and the
+interactive demos. The guides now explain when to use a command, required
+inputs, concrete output paths, and how to review results. Minimal bulk sample
+and comparison tables remain source-neutral; the single-cell workflow now
+describes required annotation columns and AnnData counts/features. Corrected
+discovery execution instructions, signature flags and SVG output names,
+normalization QC paths, and project-mode table/output descriptions. The API
+reference is regenerated from the revised guides and installed command help.
+
+The GUI demo now identifies example-only behavior, provides valid copyable
+YAML, and uses source-neutral comparison names. Eight failing example checks
+were reproduced before correction. Twenty-two new regression cases validate
+all eleven displayed configurations, parse the resulting command arguments,
+and dry-run without reading input files or creating run state. A small CSS
+adjustment prevents long paths and YAML from widening mobile pages. Report
+demos use clearer controls and errors; the region example's initial title
+now matches its actual dataset. Scientific payloads, production algorithms,
+command interfaces, and defaults are unchanged.
+
+Validation: 45 focused documentation/demo tests passed in 2.17 seconds. The
+full pytest suite passed with 529 passed, one skipped, and 26 warnings in
+200.76 seconds. All 18 primary command examples parsed across the 17 guides;
+all 18 repository YAML examples passed dry runs. Console-script smoke checks,
+`pip check`, JavaScript syntax checks, and `git diff --check` passed. Strict
+MkDocs passed in 1.03 seconds. The GUI demo's twelve routes passed desktop
+and mobile browser checks with no JavaScript errors. The site-wide browser
+audit passed all 33 pages at three viewport sizes, including all 17 command
+guides; screenshots of the homepage, single-cell workflow, output report, and
+mobile GUI demo were visually reviewed.
+The 0.2.2 source distribution built successfully and passed `twine check`;
+its 192 entries contain no manuscript, environment, or agent-state directories.
+No package release or version change was made.
+
+Two pre-existing single-cell behaviors need a separate source fix:
+
+- `pseudobulk_footprints.py` sets a motif-database default before resolving
+  custom motifs, so custom-only `sc-footprinting` inputs also include the
+  default database. The revised guide makes no custom-only claim for this
+  command.
+- `find_signature_fp.py` reads annotations without checking `snap_cell_type`,
+  then requires that column when attaching annotations. The guides now state
+  the actual required columns; early validation still needs correction.
+
+These are Linux/source checks. No native frozen desktop application was built
+or validated during this documentation review.
+
+### Ongoing priorities
 
 1. Keep the seven-line ENCODE cancer resource reproducible and
    storage-conscious. Preserve all 1,019 motifs, 17 biological replicates, and
@@ -227,13 +281,11 @@ worktree for the next major version; the published manuscript is unchanged.
    desktop-app parity on Windows x64 and Apple Silicon. Test Linux raw-read and
    cross-platform MEME runtime artifacts separately, and keep the complete
    multi-architecture Linux container as a reproducible alternative backend.
-10. Execute the locked footprint detectability matrix, starting with K562 and
-    HepG2 labels and depth/correction diagnostics. Freeze a candidate only if
-    the development gates pass, then unlock MCF-7/A549/HCT116/Panc1 once. Keep
-    nutrient data as a prospective application rather than model-training data,
-    and do not promote a new scorer until held-out performance, calibration,
-    naked-DNA false-discovery control, and strong-positive non-regression gates
-    pass.
+10. Continue footprint-improvement experiments on the research branch for the
+    next major version, following the current locked manifests on that branch.
+    Keep nutrient data as a prospective application rather than training data.
+    Retain production defaults until all prespecified scientific and
+    computational promotion gates pass.
 
 ## Deferred or Experimental Work
 
@@ -254,7 +306,7 @@ metrics, validation, tests, and documentation are complete.
 
 ## Maintenance Gates
 
-Before pushing broad changes, run the full unittest suite, all console-script
+Before pushing broad changes, run the full pytest suite, all console-script
 help checks, YAML dry runs, `pip check`, strict MkDocs, release artifact checks,
 and relevant focused regressions. Release, GitHub Actions, Pages, and PyPI
 instructions belong only in `RELEASE_CHECKLIST.md`.

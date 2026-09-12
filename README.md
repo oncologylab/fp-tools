@@ -16,10 +16,10 @@
   </sub>
 </div>
 
-`fp-tools` is a command-first toolkit for footprinting Tn5-based chromatin
-profiling data, including ATAC-seq, CUT&Tag, and related assays. It provides bias
-correction, motif analysis, replicate-aware comparisons, and single-cell
-footprint signatures. The GUI and YAML runner call the same commands.
+`fp-tools` analyzes ATAC-seq and CUT&Tag data to measure chromatin footprints
+and compare motif-associated signals. Start with aligned reads and peak files
+for bulk analysis, or fragments and cell annotations for single-cell analysis.
+Run each step from the command line, save workflows as YAML, or use the GUI.
 
 ## Install
 
@@ -34,17 +34,25 @@ Choose one route:
 Python package example:
 
 ```bash
-python -m pip install --pre fp-tools-bio
-fp-tools-gui
+python -m pip install --upgrade fp-tools-bio
+bulk-footprinting --help
 ```
 
-Optional de novo motif tools are downloaded into a private, versioned cache on
-first use. Docker remains an optional reproducible backend.
+To open the browser interface, run `fp-tools-gui`. See the
+[installation guide](https://oncologylab.github.io/fp-tools/get-started/installation/)
+for desktop setup and remote-server instructions. Optional de novo motif tools
+are downloaded automatically on first use.
 
 ## Bulk ATAC-seq
 
 `bulk-footprinting` runs from coordinate-sorted BAM/BAI files and matching peak
 BED files through the final interactive comparison report.
+
+Prepare `samples.tsv` with one row per biological sample and the columns
+`sample`, `condition`, `bam`, and `peaks`. In `comparisons.tsv`, use `comparison`,
+`cond1`, and `cond2` to name each comparison and its two conditions. The
+[bulk workflow guide](https://oncologylab.github.io/fp-tools/get-started/workflows/bulk-atac-seq/)
+provides minimal tables and explains the required inputs.
 
 ```bash
 bulk-footprinting \
@@ -71,6 +79,9 @@ macOS/Windows installations start from BAM/BAI and peak BED files.
 
 `sc-footprinting` groups fragments, runs pseudobulk footprinting, and produces
 per-cell KNN footprint-signature heatmaps and UMAPs.
+
+The [single-cell workflow guide](https://oncologylab.github.io/fp-tools/get-started/workflows/single-cell/)
+explains the annotation columns and AnnData file required for this command.
 
 ```bash
 sc-footprinting \

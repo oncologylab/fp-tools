@@ -3,7 +3,7 @@
 **Linux CLI or Linux container only.** Download public ATAC-seq reads or use
 local FASTQ files, then trim, align, filter, call peaks, calculate alignment
 coverage, and write QC files. The GUI and native macOS/Windows installations
-start from filtered BAM/BAI and peak BED files.
+start from coordinate-sorted BAM/BAI and matching peak BED files.
 
 ## Example command
 
@@ -13,9 +13,17 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 
 ## Primary inputs
 
-- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [bulk workflow guide](../workflows/bulk-atac-seq.md).
+- `--samples` — TSV or CSV sample sheet. Provide `sample`, `condition`, and `fastq_1` paths or URLs; add `fastq_2` for paired-end reads. A public sequencing run can instead be supplied in `run_accession`.
 - `--genome` — managed `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.
+
+For paired-end local files, `metadata.tsv` can contain:
+
+```tsv
+sample	condition	fastq_1	fastq_2
+control_1	control	reads/control_1_R1.fastq.gz	reads/control_1_R2.fastq.gz
+treated_1	treated	reads/treated_1_R1.fastq.gz	reads/treated_1_R2.fastq.gz
+```
 
 Repeated rows with the same `sample`, `condition`, and `replicate` combine
 technical sequencing runs. Different `sample` values sharing a `condition` are
@@ -30,7 +38,7 @@ For each `{sample}`, the default modern profile writes:
 | `{project}/samples/{sample}/alignment/{sample}.filtered.bam` | Coordinate-sorted, filtered ATAC-seq alignment used downstream. |
 | `{project}/samples/{sample}/alignment/{sample}.filtered.bam.bai` | Samtools index for the filtered BAM. |
 | `{project}/samples/{sample}/peaks/{sample}.narrowPeak` | MACS3 narrow-peak calls before project-level merging. |
-| `{project}/samples/{sample}/tracks/{sample}.rp10m.bw` | Sequencing-depth-normalized alignment coverage bigWig. `rp10m` is retained only as the historical filename suffix. |
+| `{project}/samples/{sample}/tracks/{sample}.rp10m.bw` | Sequencing-depth-normalized alignment coverage bigWig for viewing read coverage. |
 | `{project}/samples/{sample}/qc/{sample}.fastp.html` | Interactive Fastp read-trimming QC report. |
 | `{project}/samples/{sample}/qc/{sample}.fastp.json` | Machine-readable Fastp metrics. |
 | `{project}/samples/{sample}/qc/flagstat.tsv` | Samtools alignment and filtering counts. |
@@ -45,15 +53,23 @@ Project-level files include:
 | `{project}/peaks/merged_peaks.bed` | Union of sample peak intervals. |
 | `{project}/peaks/merged_peaks_filtered.bed` | Analysis peak set after excluded chromosomes are removed. |
 | `{project}/metadata/resolved_runs.tsv` | Resolved local/downloaded FASTQ files and run grouping. |
-| `{project}/metadata/samples.tsv` | Downstream `sample`, `condition`, `bam`, and `peaks` table accepted by core commands. |
+| `{project}/metadata/samples.tsv` | `sample`, `condition`, `bam`, and `peaks` table ready for `bulk-footprinting`. |
 | `{project}/reports/qc_summary.tsv` | Cross-sample QC summary. |
 
 ## Reference options
 
-Use `--reference-dir` to relocate the checksum-verified managed reference
-cache. For a custom genome label, provide `--fasta` and either an existing
-`--bowtie2-index` or the inputs needed to build one. `--blacklist` replaces the
-managed hg38/mm10 blacklist, while `--no-blacklist` disables it.
+With `--genome hg38` or `--genome mm10`, the command downloads and verifies the
+matching reference and blacklist as needed. Use `--reference-dir` to choose
+where references are cached.
 
-Continue with [`atac-correct`](atac-correct.md), or see the
+For a custom genome label, provide `--fasta` and `--macs-genome-size`. Supply
+`--bowtie2-index` if you already have an index; otherwise the command builds one
+from the FASTA. `--blacklist` replaces the managed hg38/mm10 blacklist, while
+`--no-blacklist` disables it. Custom FASTA inputs use no blacklist unless you
+provide one.
+
+Review `reports/qc_summary.tsv` and the per-sample QC reports, then pass
+`metadata/samples.tsv` to [`bulk-footprinting`](bulk-footprinting.md) with your
+comparison table. The [bulk workflow guide](../workflows/bulk-atac-seq.md) shows
+the required comparison columns. See the
 [complete `prepare-atac` reference](../../api.md#prepare-atac).

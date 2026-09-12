@@ -117,7 +117,7 @@ async function fetchGzipJson(path) {
   if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
   if (!("DecompressionStream" in window))
     throw new Error(
-      "This report needs a modern browser with gzip DecompressionStream support.",
+      "Your browser cannot open the compressed report data. Update your browser and try again.",
     );
   const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
   return JSON.parse(await new Response(stream).text());
@@ -320,7 +320,7 @@ function renderSampleStyles() {
           return `<div class="sample-style-row"><input type="checkbox" data-sample-visible="${esc(sample)}" ${style.visible ? "checked" : ""} aria-label="Show ${esc(label)}"><span class="sample-style-name" title="${esc(label)}">${esc(label)}</span><input type="color" data-sample-color="${esc(sample)}" value="${style.color}" aria-label="Color for ${esc(label)}"><input type="number" data-sample-alpha="${esc(sample)}" min="0.1" max="1" step="0.1" value="${style.alpha}" aria-label="Opacity for ${esc(label)}"><input type="number" data-sample-width="${esc(sample)}" min="0.3" max="4" step="0.1" value="${style.width}" aria-label="Width for ${esc(label)}"><select data-sample-type="${esc(sample)}" aria-label="Line type for ${esc(label)}"><option value="solid" ${style.type === "solid" ? "selected" : ""}>Solid</option><option value="dash" ${style.type === "dash" ? "selected" : ""}>Dash</option><option value="dot" ${style.type === "dot" ? "selected" : ""}>Dot</option></select></div>`;
         })
         .join("");
-      return `<div class="sample-style-group"><div class="sample-style-group-title"><i class="sample-style-dot" style="background:${conditionColor}"></i>${esc(condition)}</div><div class="sample-style-row sample-style-head"><span>Show</span><span>Sample</span><span>Color</span><span>Alpha</span><span>Width</span><span>Type</span></div>${rows}</div>`;
+      return `<div class="sample-style-group"><div class="sample-style-group-title"><i class="sample-style-dot" style="background:${conditionColor}"></i>${esc(condition)}</div><div class="sample-style-row sample-style-head"><span>Show</span><span>Sample</span><span>Color</span><span>Opacity</span><span>Width</span><span>Type</span></div>${rows}</div>`;
     })
     .join("");
   const panel = $("sample-style-panel");
@@ -668,10 +668,10 @@ async function profileRecord(prefix) {
     const shard = state.entry?.profile_shards?.find(
       (item) => Number(item.id) === Number(motif.profile_shard),
     );
-    if (!shard) throw new Error(`No profile shard for ${prefix}`);
+    if (!shard) throw new Error(`The report does not include a profile data file for ${prefix}`);
     const shardPayload = await fetchGzipJsonCached(shard.file);
     motif = shardPayload.motifs.find((item) => item.prefix === prefix);
-    if (!motif) throw new Error(`Profile shard does not contain ${prefix}`);
+    if (!motif) throw new Error(`The profile data file does not contain ${prefix}`);
   }
   const samples = {},
     sampleMeta = {},
@@ -877,7 +877,7 @@ async function renderAggregateGrid() {
 function setSelectedMotif(prefix) {
   if (!state.aggregate.has(prefix)) {
     const motif = state.motifs.find((item) => item.prefix === prefix);
-    $("status").textContent = `${motifLabel(motif || { name: prefix })} has a statistical result, but no embedded aggregate profile.`;
+    $("status").textContent = `${motifLabel(motif || { name: prefix })} has a statistical result, but this report does not include its aggregate profile.`;
     return;
   }
   state.selected[state.active] = prefix;
@@ -921,7 +921,7 @@ async function loadComparison(reset = true) {
     !payload.conditions.includes(first) ||
     !payload.conditions.includes(second)
   )
-    throw new Error(`Payload conditions do not match ${first} and ${second}`);
+    throw new Error(`The report data do not match the selected comparison: ${first} vs ${second}`);
   state.motifs = payload.points.map((item) => orientedMotif(item, reversed));
   state.colors = {
     first: payload.colors[`${first}_up`] || "#dc2626",
@@ -1226,7 +1226,7 @@ function syncRows(source) {
   drawRank();
 }
 function showError(error) {
-  $("status").textContent = `Could not load resource: ${error.message}`;
+  $("status").textContent = `Report error: ${error.message}`;
   console.error(error);
 }
 

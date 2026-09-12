@@ -5,27 +5,27 @@ hide:
 
 # API Reference
 
-Direct CLI commands are the primary interface. Each reference includes a method summary, practical example, primary inputs, outputs, and the complete command options.
+Choose a command below to see when to use it, how to prepare its inputs, an example run, and the files it writes. The complete options follow each guide and are also available with `<command> --help`.
 
 | Command | Purpose |
 | --- | --- |
-| [`prepare-atac`](#prepare-atac) | **Linux CLI or Linux container only.** Download public ATAC-seq reads or use local FASTQ files, then trim, align, filter, call peaks, calculate alignment coverage, and write QC files. The GUI and native macOS/Windows installations start from filtered BAM/BAI and peak BED files. |
-| [`bulk-footprinting`](#bulk-footprinting) | Run bulk ATAC-seq from BAM/BAI and peak BED inputs through interactive reports. |
-| [`atac-correct`](#atac-correct) | Estimate Tn5 sequence bias from aligned ATAC-seq fragments and subtract the expected bias contribution from the observed cut-site signal. Run this before footprint scoring. |
-| [`call-footprints`](#call-footprints) | Calculate a continuous footprint score from bias-corrected cut-site signal within accessible regions. Higher local depletion relative to flanking signal produces stronger footprint evidence. |
-| [`match-motifs`](#match-motifs) | Scan accessible regions for motif instances, measure the footprint score at each instance, and classify sample-specific bound and unbound sites. Run this when motif locations and per-sample motif summaries are needed. |
-| [`diff-footprints`](#diff-footprints) | Compare motif-associated footprint scores across conditions or between user-defined region sets measured in the same sample(s). |
-| [`normalize-bigwig`](#normalize-bigwig) | Scale corrected cut-site signals using statistics measured over the same background regions. Use this optional step when samples require an explicitly shared signal scale before downstream scoring or plotting. |
-| [`plot-aggregate`](#plot-aggregate) | Plot average signal around motif sites or other genomic regions as a static figure or interactive HTML report. |
-| [`review-multi-comparisons`](#review-multi-comparisons) | Combine differential-footprint reports as a scalable browser bundle or one self-contained HTML report. |
-| [`run-yaml-workflow`](#run-yaml-workflow) | Run one or more fp-tools jobs from a reusable YAML configuration. |
+| [`prepare-atac`](#prepare-atac) | **Linux CLI or Linux container only.** Download public ATAC-seq reads or use local FASTQ files, then trim, align, filter, call peaks, calculate alignment coverage, and write QC files. The GUI and native macOS/Windows installations start from coordinate-sorted BAM/BAI and matching peak BED files. |
+| [`bulk-footprinting`](#bulk-footprinting) | Run a complete bulk ATAC-seq analysis from aligned reads and peak regions to footprint scores, motif comparisons, and interactive reports. |
+| [`atac-correct`](#atac-correct) | Correct ATAC-seq cut-site signal for Tn5 sequence bias. Start with coordinate-sorted BAM files, adjacent BAI indexes, and matching peak BED files. Use the corrected signal as the input to `call-footprints`. |
+| [`call-footprints`](#call-footprints) | Calculate a footprint score at each position in accessible regions using the corrected bigWigs from `atac-correct`. The score measures local cut-site depletion relative to the surrounding signal; higher scores indicate stronger footprint evidence. |
+| [`match-motifs`](#match-motifs) | Find motif matches in accessible regions and measure the footprint score at each match. This produces a motif summary for each sample and classifies sites as predicted bound or unbound. |
+| [`diff-footprints`](#diff-footprints) | Find motifs whose footprint scores differ between conditions. Start with the per-sample results from `match-motifs`. You can also compare two sets of genomic regions measured in the same samples. |
+| [`normalize-bigwig`](#normalize-bigwig) | Put corrected cut-site tracks on a comparable signal scale using the same background regions for every sample. This is an optional step after `atac-correct`; use the resulting tracks for downstream scoring or plotting when you need this normalization. |
+| [`plot-aggregate`](#plot-aggregate) | Plot the average cut-site signal around motif sites to inspect the shape of a footprint. Start with corrected bigWigs from `atac-correct` and motif results from `match-motifs`. Outputs can be static figures or an interactive HTML report. |
+| [`review-multi-comparisons`](#review-multi-comparisons) | Review several `diff-footprints` comparisons in one place. Combine the existing reports into a browser bundle or a single HTML file, then switch between comparisons to explore motif statistics and aggregate profiles. |
+| [`run-yaml-workflow`](#run-yaml-workflow) | Run one or more fp-tools commands from a saved YAML configuration. Use this to repeat a GUI run or apply the same settings to several samples or comparisons. |
 | [`fp-tools-gui`](#fp-tools-gui) | Launch the browser interface for configuring and running fp-tools commands. The Windows and Apple Silicon desktop downloads present the same interface in a native fp-tools application window. |
-| [`fp-tools-runtime`](#fp-tools-runtime) | Inspect, install, or repair the private external-tool runtime. Linux provides raw-read and de novo motif components; macOS and Windows provide the optional de novo motif component. |
-| [`discover-motifs`](#discover-motifs) | Prepare or run de novo motif discovery from candidate footprint intervals or an existing FASTA file. |
-| [`summarize-motifs`](#summarize-motifs) | Summarize MEME, STREME, DREME, and Tomtom results in a compact report. |
-| [`pseudobulk-fragments`](#pseudobulk-fragments) | Group single-cell ATAC fragments by a cell-annotation column to create pseudobulk inputs. |
-| [`find-signature-fp`](#find-signature-fp) | Calculate and plot per-cell footprint signatures from completed pseudobulk or motif analyses. |
-| [`sc-footprinting`](#sc-footprinting) | Run grouping, bias correction, footprint scoring, motif analysis, and per-cell signature reporting for single-cell ATAC-seq data. |
+| [`fp-tools-runtime`](#fp-tools-runtime) | Check or install the external programs used by `prepare-atac` and `discover-motifs`. fp-tools manages these programs separately from your other software. Linux supports read preparation and motif discovery; macOS and Windows support motif discovery. |
+| [`discover-motifs`](#discover-motifs) | Find recurring DNA sequence patterns in candidate footprint regions, without starting from a known motif list. Provide candidate intervals and a reference genome, or use sequences you have already extracted into a FASTA file. |
+| [`summarize-motifs`](#summarize-motifs) | Turn completed motif-discovery results into a table of motif sequences, significance values, and optional matches to known motifs. Add an HTML report to review the results in a browser. |
+| [`pseudobulk-fragments`](#pseudobulk-fragments) | Combine single-cell ATAC-seq fragments into groups such as cell types or donor–cell-type pairs. Each group becomes a pseudobulk sample for downstream analysis. |
+| [`find-signature-fp`](#find-signature-fp) | Score selected motif sites in individual cells and plot the results on a UMAP and in heatmaps. The command pools signal from nearby cells to reduce sparsity, so the scores describe relative footprint signatures rather than independent binding calls for every cell. |
+| [`sc-footprinting`](#sc-footprinting) | Analyze single-cell ATAC-seq by combining cells into pseudobulk groups, calling footprints and motif differences between groups, then mapping selected footprint signatures back to individual cells. |
 
 ## `prepare-atac`
 
@@ -34,7 +34,7 @@ Direct CLI commands are the primary interface. Each reference includes a method 
 **Linux CLI or Linux container only.** Download public ATAC-seq reads or use
 local FASTQ files, then trim, align, filter, call peaks, calculate alignment
 coverage, and write QC files. The GUI and native macOS/Windows installations
-start from filtered BAM/BAI and peak BED files.
+start from coordinate-sorted BAM/BAI and matching peak BED files.
 
 **Example command**
 
@@ -44,9 +44,17 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 
 **Primary inputs**
 
-- `--samples` — TSV or CSV sample sheet containing `sample`, `condition`, and either paired `fastq_1`/`fastq_2` paths or URLs. See the [bulk workflow guide](get-started/workflows/bulk-atac-seq.md).
+- `--samples` — TSV or CSV sample sheet. Provide `sample`, `condition`, and `fastq_1` paths or URLs; add `fastq_2` for paired-end reads. A public sequencing run can instead be supplied in `run_accession`.
 - `--genome` — managed `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.
+
+For paired-end local files, `metadata.tsv` can contain:
+
+```tsv
+sample	condition	fastq_1	fastq_2
+control_1	control	reads/control_1_R1.fastq.gz	reads/control_1_R2.fastq.gz
+treated_1	treated	reads/treated_1_R1.fastq.gz	reads/treated_1_R2.fastq.gz
+```
 
 Repeated rows with the same `sample`, `condition`, and `replicate` combine
 technical sequencing runs. Different `sample` values sharing a `condition` are
@@ -61,7 +69,7 @@ For each `{sample}`, the default modern profile writes:
 | `{project}/samples/{sample}/alignment/{sample}.filtered.bam` | Coordinate-sorted, filtered ATAC-seq alignment used downstream. |
 | `{project}/samples/{sample}/alignment/{sample}.filtered.bam.bai` | Samtools index for the filtered BAM. |
 | `{project}/samples/{sample}/peaks/{sample}.narrowPeak` | MACS3 narrow-peak calls before project-level merging. |
-| `{project}/samples/{sample}/tracks/{sample}.rp10m.bw` | Sequencing-depth-normalized alignment coverage bigWig. `rp10m` is retained only as the historical filename suffix. |
+| `{project}/samples/{sample}/tracks/{sample}.rp10m.bw` | Sequencing-depth-normalized alignment coverage bigWig for viewing read coverage. |
 | `{project}/samples/{sample}/qc/{sample}.fastp.html` | Interactive Fastp read-trimming QC report. |
 | `{project}/samples/{sample}/qc/{sample}.fastp.json` | Machine-readable Fastp metrics. |
 | `{project}/samples/{sample}/qc/flagstat.tsv` | Samtools alignment and filtering counts. |
@@ -76,15 +84,20 @@ Project-level files include:
 | `{project}/peaks/merged_peaks.bed` | Union of sample peak intervals. |
 | `{project}/peaks/merged_peaks_filtered.bed` | Analysis peak set after excluded chromosomes are removed. |
 | `{project}/metadata/resolved_runs.tsv` | Resolved local/downloaded FASTQ files and run grouping. |
-| `{project}/metadata/samples.tsv` | Downstream `sample`, `condition`, `bam`, and `peaks` table accepted by core commands. |
+| `{project}/metadata/samples.tsv` | `sample`, `condition`, `bam`, and `peaks` table ready for `bulk-footprinting`. |
 | `{project}/reports/qc_summary.tsv` | Cross-sample QC summary. |
 
 ## Reference options
 
-Use `--reference-dir` to relocate the checksum-verified managed reference
-cache. For a custom genome label, provide `--fasta` and either an existing
-`--bowtie2-index` or the inputs needed to build one. `--blacklist` replaces the
-managed hg38/mm10 blacklist, while `--no-blacklist` disables it.
+With `--genome hg38` or `--genome mm10`, the command downloads and verifies the
+matching reference and blacklist as needed. Use `--reference-dir` to choose
+where references are cached.
+
+For a custom genome label, provide `--fasta` and `--macs-genome-size`. Supply
+`--bowtie2-index` if you already have an index; otherwise the command builds one
+from the FASTA. `--blacklist` replaces the managed hg38/mm10 blacklist, while
+`--no-blacklist` disables it. Custom FASTA inputs use no blacklist unless you
+provide one.
 
 **Complete options**
 
@@ -170,7 +183,8 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Run bulk ATAC-seq from BAM/BAI and peak BED inputs through interactive reports.
+Run a complete bulk ATAC-seq analysis from aligned reads and peak regions to
+footprint scores, motif comparisons, and interactive reports.
 
 The [bulk workflow guide](get-started/workflows/bulk-atac-seq.md) provides minimal sample
 and comparison tables for a two-condition analysis.
@@ -184,11 +198,13 @@ bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv 
 
 **Primary inputs**
 
-- `--sample-table` — sample, condition, coordinate-sorted BAM, and peak BED columns.
-- `--comparison-table` — comparison, condition 1, and condition 2 columns.
+- `--sample-table` — TSV with `sample`, `condition`, `bam`, and `peaks` columns. Each BAM must be coordinate-sorted and have a matching BAI index.
+- `--comparison-table` — TSV with `comparison`, `cond1`, and `cond2` columns. Use condition names from the sample table.
 - `--genome` — managed `hg38` or `mm10` assembly, or a reference FASTA matching the BAM and peak coordinates.
 - `--outdir` — project output directory.
 - `--cores` — total worker cores.
+
+Use the same genome assembly and chromosome names for every BAM and BED file.
 
 **Main outputs**
 
@@ -207,10 +223,17 @@ bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv 
 | `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for the workflow stages. |
 | `{project}/logs/bulk_footprinting/{stage}.stdout.log` and `{stage}.stderr.log` | Stage-specific logs for troubleshooting. |
 
+Start by opening the comparison HTML report. Use the combined review to compare
+motif results across all requested comparisons, and inspect aggregate profiles
+alongside the statistics.
+
+Add `--dry-run` to check the inputs and inspect the commands before starting.
+
 ## Reference and motif options
 
-Use `--reference-dir` to relocate the checksum-verified managed reference
-cache. `--blacklist` replaces a managed assembly's blacklist, while
+Choosing `hg38` or `mm10` downloads and verifies the matching reference and
+blacklist as needed. Use `--reference-dir` to choose where they are cached.
+`--blacklist` replaces a managed assembly's blacklist, while
 `--no-blacklist` disables it. Custom FASTA inputs never infer a blacklist.
 
 Choose a packaged motif database with `--motif-db`, provide custom files with
@@ -218,7 +241,7 @@ Choose a packaged motif database with `--motif-db`, provide custom files with
 `jaspar2026_vertebrates`. Run `bulk-footprinting --list-motif-dbs` to list the
 packaged databases.
 
-FASTQ preprocessing is intentionally separate. Linux users can run
+If you have FASTQ files on Linux, run
 [`prepare-atac`](#prepare-atac) first, then provide its generated
 `metadata/samples.tsv` to this command.
 
@@ -289,32 +312,40 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Estimate Tn5 sequence bias from aligned ATAC-seq fragments and subtract the
-expected bias contribution from the observed cut-site signal. Run this before
-footprint scoring.
+Correct ATAC-seq cut-site signal for Tn5 sequence bias. Start with
+coordinate-sorted BAM files, adjacent BAI indexes, and matching peak BED files.
+Use the corrected signal as the input to `call-footprints`.
 
 **Example command**
 
 ```bash
-atac-correct --sample-table project/metadata/samples.tsv --genome hg38.fa.gz --blacklist hg38.blacklist.bed --outdir project
+atac-correct \
+  --sample-table project/metadata/samples.tsv \
+  --genome hg38.fa.gz \
+  --blacklist hg38.blacklist.bed \
+  --outdir project
 ```
 
 **Primary inputs**
 
-- `--sample-table` — TSV with `sample`, `condition`, `bam`, and `peaks`; BAM indexes must be adjacent to the BAMs.
+- `--sample-table` — tab-separated file with one row per sample and the columns `sample`, `condition`, `bam`, and `peaks`. Give each sample a unique name and use the same condition label for biological replicates.
 - `--genome` — reference FASTA whose chromosome names and assembly match every BAM and peak BED.
-- `--blacklist` — BED intervals excluded from bias estimation and corrected output.
+- `--blacklist` — optional assembly-matched BED of regions to exclude from bias estimation and corrected output.
 - `--outdir` — project directory represented by `{project}` below.
+
+Use the [sample-table example](get-started/workflows/bulk-atac-seq.md#1-prepare-the-sample-table)
+to prepare your inputs. Replace the FASTA and blacklist paths with your own
+files. A custom FASTA does not automatically select a blacklist.
 
 **Main outputs**
 
-For each `{sample}`, project layout writes:
+For each `{sample}` in the table, this command writes:
 
 | Path | Meaning |
 | --- | --- |
 | `{project}/samples/{sample}/atac_correct/{sample}_corrected.bw` | Bias-corrected cut-site signal. Positive positions have more observed cuts than expected; negative positions have fewer. |
 | `{project}/samples/{sample}/atac_correct/{sample}_atacorrect.pdf` | Diagnostic plots comparing learned Tn5 sequence bias before and after correction. Omitted with `--skip-qc`. |
-| `{project}/samples/{sample}/atac_correct/{sample}_AtacBias.pickle` | Serialized learned bias model for reuse or advanced debugging. It is not required by downstream commands. |
+| `{project}/samples/{sample}/atac_correct/{sample}_AtacBias.pickle` | Saved bias model for reuse. Downstream commands use the corrected bigWig and do not need this file. |
 
 With `--write-tracks all`, the same directory also contains:
 
@@ -328,6 +359,10 @@ Project-level peak outputs are `{project}/peaks/merged_peaks.bed` and
 `{project}/peaks/merged_peaks_filtered.bed`. A direct single-BAM run writes the
 same `{prefix}_*.bw`, `{prefix}_atacorrect.pdf`, and
 `{prefix}_AtacBias.pickle` patterns directly under `{outdir}`.
+
+Open the QC PDF to inspect the sequence-bias diagnostics, then use the
+corrected bigWig for footprint scoring. A negative corrected value means fewer
+cuts than the bias model expected; it does not by itself identify a bound TF.
 
 **Complete options**
 
@@ -463,15 +498,19 @@ Run arguments:
 
 <div class="fp-api-card" markdown="1">
 
-Calculate a continuous footprint score from bias-corrected cut-site signal
-within accessible regions. Higher local depletion relative to flanking signal
-produces stronger footprint evidence.
+Calculate a footprint score at each position in accessible regions using the
+corrected bigWigs from `atac-correct`. The score measures local cut-site
+depletion relative to the surrounding signal; higher scores indicate stronger
+footprint evidence.
 
 **Example command**
 
 ```bash
-call-footprints --signals A_corrected.bw B_corrected.bw --sample-names A B \
-  --regions merged_peaks.bed --sample-output-root project/samples
+call-footprints \
+  --signals A_corrected.bw B_corrected.bw \
+  --sample-names A B \
+  --regions merged_peaks.bed \
+  --sample-output-root project/samples
 ```
 
 **Primary inputs**
@@ -480,6 +519,10 @@ call-footprints --signals A_corrected.bw B_corrected.bw --sample-names A B \
 - `--sample-names` — labels in the same order as `--signals`.
 - `--regions` — BED intervals in which scores are calculated; normally the project merged, filtered peaks.
 - `--sample-output-root` — root represented by `{sample_root}` below.
+
+Replace `A_corrected.bw` and `B_corrected.bw` with your corrected tracks. In a
+project, these are under `project/samples/{sample}/atac_correct/`; use
+`project/peaks/merged_peaks_filtered.bed` for the regions.
 
 **Main outputs**
 
@@ -492,6 +535,10 @@ call-footprints --signals A_corrected.bw B_corrected.bw --sample-names A B \
 In direct mode, `--output result.bw` writes exactly `result.bw`; multiple
 signals written through `--outdir {outdir}` use
 `{outdir}/{signal_stem}_footprints.bw`.
+
+Pass the footprint score tracks to `match-motifs` to summarize evidence at
+known motif sites. Keep the corrected cut-site tracks for aggregate plots,
+which show the signal shape around those sites.
 
 **Complete options**
 
@@ -620,15 +667,20 @@ Run arguments:
 
 <div class="fp-api-card" markdown="1">
 
-Scan accessible regions for motif instances, measure the footprint score at
-each instance, and classify sample-specific bound and unbound sites. Run this
-when motif locations and per-sample motif summaries are needed.
+Find motif matches in accessible regions and measure the footprint score at
+each match. This produces a motif summary for each sample and classifies sites
+as predicted bound or unbound.
 
 **Example command**
 
 ```bash
-match-motifs --signals A_footprints.bw B_footprints.bw --sample-names A B --genome hg38.fa.gz \
-  --peaks merged_peaks.bed --motif-db jaspar2026_vertebrates --sample-output-root project/samples
+match-motifs \
+  --signals A_footprints.bw B_footprints.bw \
+  --sample-names A B \
+  --genome hg38.fa.gz \
+  --peaks merged_peaks.bed \
+  --motif-db jaspar2026_vertebrates \
+  --sample-output-root project/samples
 ```
 
 **Primary inputs**
@@ -640,17 +692,19 @@ match-motifs --signals A_footprints.bw B_footprints.bw --sample-names A B --geno
 - `--motif-db` — packaged motif collection; the example uses JASPAR 2026 vertebrates.
 - `--sample-output-root` — root represented by `{sample_root}` below.
 
+Use the score tracks from `call-footprints`. In a project, they are under
+`project/samples/{sample}/footprints/`; use the same reference FASTA and
+filtered peaks as the earlier steps.
+
 **Main outputs**
 
-For each `{sample}`, the default output directory is
+For each `{sample}`, the example writes to
 `{sample_root}/{sample}/match_motifs/`:
 
 | Path | Meaning |
 | --- | --- |
 | `motif_matches_results.txt` | Tab-separated motif summary with site counts and per-sample mean scores. |
-| `motif_matches_results.xlsx` | Excel copy of the motif summary unless `--skip-excel` is used. |
 | `motif_matches_distances.txt` | Motif-similarity distances used for motif clustering. |
-| `motif_matches_replicate_motif_score_matrix.tsv` | Motif-by-sample footprint score matrix when multiple samples are analyzed together. |
 | `cache/motif_sites.tsv.gz` | Compact scanned motif-site cache reusable by differential analysis. |
 | `cache/background_scores.tsv.gz` | Compact background-score cache. |
 | `{motif}/beds/{motif}_{sample}_all.bed` | All scanned instances for one motif. |
@@ -660,6 +714,21 @@ For each `{sample}`, the default output directory is
 `{motif}` follows the selected `--naming` convention, such as
 `CTCF_MA0139.2`. `--motif-outputs summary` omits the per-motif BED files but
 keeps the summary and reusable caches.
+
+The default shared scan in the example writes tab-separated summaries. An
+independent sample scan can also write `motif_matches_results.xlsx` unless
+`--skip-excel` is used. A joint analysis with repeated condition labels can
+write `motif_matches_replicate_motif_score_matrix.tsv`; separate per-sample
+folders do not contain that joint matrix.
+
+Start with `motif_matches_results.txt` to review site counts and mean scores.
+Bound and unbound are model-based classifications, not direct measurements of
+TF binding. Related TFs can recognize similar motifs, so a motif name alone
+does not distinguish every TF in a family.
+
+To use your own motifs, replace `--motif-db jaspar2026_vertebrates` with
+`--motifs your_motifs.meme`. Custom motifs alone do not add the default
+database; JASPAR 2026 vertebrates is used when neither option is supplied.
 
 **Complete options**
 
@@ -820,24 +889,35 @@ Run arguments:
 
 <div class="fp-api-card" markdown="1">
 
-Compare motif-associated footprint scores across conditions or between
-user-defined region sets measured in the same sample(s).
+Find motifs whose footprint scores differ between conditions. Start with the
+per-sample results from `match-motifs`. You can also compare two sets of
+genomic regions measured in the same samples.
 
 **Example command**
 
 ```bash
-diff-footprints --sample-table project/metadata/samples.tsv --comparison-table project/metadata/comparisons.tsv \
-  --genome hg38.fa.gz --peaks project/peaks/merged_peaks_filtered.bed --motif-db jaspar2026_vertebrates --outdir project
+diff-footprints \
+  --sample-table project/metadata/samples.tsv \
+  --comparison-table project/metadata/comparisons.tsv \
+  --genome hg38.fa.gz \
+  --peaks project/peaks/merged_peaks_filtered.bed \
+  --motif-db jaspar2026_vertebrates \
+  --outdir project
 ```
 
 **Primary inputs**
 
-- `--sample-table` — samples, conditions, footprint tracks, and reusable motif-result folders.
-- `--comparison-table` — condition pairs to compare.
-- `--genome` — reference genome FASTA.
+- `--sample-table` — TSV with `sample` and `condition` columns. Reuse the table from the earlier steps; the command finds results under `{project}/samples/{sample}/`.
+- `--comparison-table` — TSV with `comparison`, `cond1`, and `cond2` columns. Each row names one comparison and its two condition labels.
+- `--genome` — the reference FASTA used for motif matching.
 - `--peaks` — accessible-region BED file.
 - `--motif-db` — built-in motif database name.
 - `--outdir` — project directory for statistics, figures, and HTML reports.
+
+Condition labels must match the sample table. Include each biological
+replicate as its own sample row. See the
+[sample and comparison tables](get-started/workflows/bulk-atac-seq.md#1-prepare-the-sample-table)
+for a minimal example.
 
 **Main outputs**
 
@@ -848,7 +928,7 @@ comparison table and `{prefix}` defaults to `diff_footprints`:
 | Path | Meaning |
 | --- | --- |
 | `{prefix}_results.txt` | Tab-separated motif-level differential footprint statistics; change direction is `cond1 - cond2`. |
-| `{prefix}_results.xlsx` | Excel copy of the result table unless `--skip-excel` is used. |
+| `{prefix}_results.xlsx` | Excel copy in direct runs unless `--skip-excel` is used. Project comparison-table runs, including the example above, omit it. |
 | `{prefix}_distances.txt` | Motif distances used for clustering related motifs. |
 | `{prefix}_{cond1}_{cond2}.html` | Portable interactive report with volcano, motif, and embedded aggregate-profile views. |
 | `{prefix}_replicate_report.tsv` | Long-form per-replicate diagnostic data when replicate reporting is active. |
@@ -856,6 +936,13 @@ comparison table and `{prefix}` defaults to `diff_footprints`:
 | `{prefix}_replicate_report.png` | Replicate diagnostic figure. |
 | `{prefix}_figures.pdf` and `{prefix}_clusters.pdf` | Optional static summaries written with `--static-plots`. |
 | `{motif}/beds/{motif}_{condition}_bound.bed` | Motif instances classified as bound for a condition when full motif outputs are required. |
+
+Open the HTML report to explore motifs, then use the text result table for
+further analysis. Positive changes favor `cond1`; negative changes favor
+`cond2`. Check replicate agreement and the aggregate cut-site profiles along
+with the statistics when interpreting a difference.
+
+## Compare region sets
 
 Region-set analyses use the same result/report patterns and add confidence
 intervals, motif prevalence, region counts, per-replicate effects, and matching
@@ -1088,20 +1175,26 @@ Run arguments:
 
 <div class="fp-api-card" markdown="1">
 
-Scale corrected cut-site signals using statistics measured over the same
-background regions. Use this optional step when samples require an explicitly
-shared signal scale before downstream scoring or plotting.
+Put corrected cut-site tracks on a comparable signal scale using the same
+background regions for every sample. This is an optional step after
+`atac-correct`; use the resulting tracks for downstream scoring or plotting
+when you need this normalization.
 
 **Example command**
 
 ```bash
-normalize-bigwig --sample-table project/metadata/samples.tsv --background project/peaks/merged_peaks_filtered.bed \
-  --outdir project --method background-scale --stat q95 --target median
+normalize-bigwig \
+  --sample-table project/metadata/samples.tsv \
+  --background project/peaks/merged_peaks_filtered.bed \
+  --outdir project \
+  --method background-scale \
+  --stat q95 \
+  --target median
 ```
 
 **Primary inputs**
 
-- `--sample-table` — project samples whose `{sample}_corrected.bw` files are normalized together.
+- `--sample-table` — TSV with `sample` and `condition` columns; reuse the table from `atac-correct`. Tracks are read from `{project}/samples/{sample}/atac_correct/`.
 - `--background` — shared BED intervals used to calculate comparable background statistics.
 - `--outdir` — project directory represented by `{project}` below.
 - `--method` — transformation; `background-scale` multiplies each signal by a shared-target scale factor.
@@ -1113,8 +1206,12 @@ normalize-bigwig --sample-table project/metadata/samples.tsv --background projec
 | Path | Meaning |
 | --- | --- |
 | `{project}/samples/{sample}/normalize/{sample}_corrected_q95_scaled.bw` | Q95-scaled bias-corrected cut-site signal bigWig for one sample. |
-| `{project}/logs/normalize_q95/normalize_bigwig_qc.tsv` | Background statistics, selected statistic, target, and scale factor for every sample. |
-| `{project}/logs/normalize_q95/normalize_bigwig_manifest.tsv` | Sample-to-input/output signal mapping for downstream use. |
+| `{project}/normalize_bigwig_qc.tsv` | Background statistics, selected statistic, target, and scale factor for every sample. |
+| `{project}/normalize_bigwig_manifest.tsv` | Sample-to-input/output signal mapping for downstream use. |
+
+Check the QC table to see how much each track was scaled. The manifest lists
+the output paths to pass to the next command. Scaling changes signal
+magnitude; it does not by itself provide evidence of TF binding.
 
 In custom layout, default outputs use
 `{outdir}/{input_stem}.background_scale_{stat}.bw`, plus the two QC tables in
@@ -1182,24 +1279,29 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Plot average signal around motif sites or other genomic regions as a static
-figure or interactive HTML report.
-
-Multiple user-defined BED files are supported through `--TFBS`. Multiple
-`--regions` BED files can restrict or compare distinct regions of interest.
+Plot the average cut-site signal around motif sites to inspect the shape of a
+footprint. Start with corrected bigWigs from `atac-correct` and motif results
+from `match-motifs`. Outputs can be static figures or an interactive HTML
+report.
 
 **Example command**
 
 ```bash
-plot-aggregate --sample-table project/metadata/samples.tsv --motifs SPIB CEBPB --site-set bound --outdir project
+plot-aggregate \
+  --sample-table project/metadata/samples.tsv \
+  --motifs SPIB CEBPB \
+  --site-set bound \
+  --outdir project
 ```
 
 **Primary inputs**
 
-- `--sample-table` — samples, conditions, and bias-corrected cut-site signal bigWigs used for the aggregate profiles.
+- `--sample-table` — TSV with `sample` and `condition` columns; the command reads corrected tracks and motif results from `{project}/samples/{sample}/`.
 - `--motifs` — motif names or identifiers to plot.
-- `--site-set` — motif-site set; the example uses bound sites.
+- `--site-set` — sites to average; the example uses sites classified as bound in each sample.
 - `--outdir` — project directory containing motif results and receiving plots.
+
+Replace `SPIB CEBPB` with motifs present in your motif results.
 
 **Main outputs**
 
@@ -1212,6 +1314,16 @@ plot-aggregate --sample-table project/metadata/samples.tsv --motifs SPIB CEBPB -
 When both signal types are available, use footprint score bigWigs for motif
 statistics and bias-corrected cut-site signal bigWigs for observed aggregate
 profiles; label the chosen signal explicitly in figure captions.
+
+Look for central cut-site depletion relative to the flanking signal. Also
+compare the number of sites and the sample-to-sample consistency. Bound-site
+plots can use different sites in each sample; choose `--site-set all` to
+inspect all matched motif sites instead.
+
+For your own site sets, supply BED files with `--TFBS`. Use `--regions` to
+restrict or compare regions of interest.
+
+## Export a grid from a review report
 
 ```bash
 plot-aggregate \
@@ -1372,26 +1484,22 @@ Run arguments:
 
 <div class="fp-api-card" markdown="1">
 
-Combine differential-footprint reports as a scalable browser bundle or one
-self-contained HTML report.
+Review several `diff-footprints` comparisons in one place. Combine the
+existing reports into a browser bundle or a single HTML file, then switch
+between comparisons to explore motif statistics and aggregate profiles.
 
 **Example command**
 
 ```bash
-review-multi-comparisons --inputs project/comparisons --output-dir project/reports/review_multi_comparisons \
-  --default-comparison "HNF4A + FOXA2" "No HNF4A/FOXA2" \
-  --default-aggregate-motifs MA1494.2 MA0484.3 MA0047.4 MA0148.5 MA0046.3 MA0153.2 MA0102.5 MA0466.4 \
-  --default-aggregate-plots 8 --documentation-url https://oncologylab.github.io/fp-tools/
+review-multi-comparisons \
+  --inputs project/comparisons \
+  --output-dir project/reports/review_multi_comparisons
 ```
 
 **Primary inputs**
 
 - `--inputs` — report files or directories containing differential reports.
 - `--output-dir` — destination for the complete static bundle.
-- `--default-comparison` — condition or region pair shown first.
-- `--default-aggregate-motifs` — ordered motif panel shown first.
-- `--default-aggregate-plots` — initial number of aggregate panels.
-- `--documentation-url` — optional link back to the documentation site.
 
 **Main outputs**
 
@@ -1399,7 +1507,7 @@ review-multi-comparisons --inputs project/comparisons --output-dir project/repor
 
 | Path | Meaning |
 | --- | --- |
-| `{bundle}/index.html` | Browser entry point; open or publish this file together with the full bundle. |
+| `{bundle}/index.html` | Report entry page, served together with the other bundle files. |
 | `{bundle}/app.js`, `{bundle}/plot_controls.js`, and `{bundle}/styles.css` | Local application code, shared plot behavior, and styling. |
 | `{bundle}/data/metadata.json` | Comparison index and payload checksums. |
 | `{bundle}/data/reports/{comparison}.json.gz` | Compact data for one comparison. |
@@ -1407,27 +1515,42 @@ review-multi-comparisons --inputs project/comparisons --output-dir project/repor
 | `{bundle}/data/logos/` | Motif logo assets. |
 
 Project mode defaults to
-`{project}/reports/review_multi_comparisons/index.html`. The directory is a
-portable unit; copying only `index.html` produces a broken report.
+`{project}/reports/review_multi_comparisons/index.html`. Keep the entire
+directory together when copying or publishing a bundle.
+
+## Open the bundle
+
+The bundle loads its data through a web server. To view it locally, run:
+
+```bash
+python -m http.server 8000 --bind 127.0.0.1 \
+  --directory project/reports/review_multi_comparisons
+```
+
+Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your browser. Stop the
+server with `Ctrl+C` when you finish. To open a report directly without a
+server, use the standalone output below.
+
+To choose the bundle's opening view, add `--default-comparison` with the two
+condition or region labels, `--default-aggregate-motifs` with the motif names
+or IDs in display order, and `--default-aggregate-plots` with the number of
+panels. The selected labels and motifs must exist in the input reports.
+Use `--documentation-url` to add a documentation link.
 
 ## Standalone output
 
-Use `--output-html` instead of `--output-dir`. Aggregate profiles are optional,
-and `--labels` keeps repeated condition pairs distinct. The exact output is the
-path passed to `--output-html`; it is one portable HTML file with coordinated
-volcano, ranked-motif, logo, and SVG-export views. Aggregate controls appear
-only when profiles exist. One **Comparison** list selects the exact input record
-in `--labels` order, so repeated condition pairs remain distinct.
+Use `--output-html` instead of `--output-dir` to create one HTML file that you
+can open directly or share. It includes volcano plots, ranked motifs, logos,
+and SVG exports. Aggregate controls appear when the input reports contain
+profiles. Use `--labels` to give each input report a distinct name in the
+**Comparison** list, especially when reports compare the same condition pair.
 
-The ranked-motif waterfall has a compact switch between differential footprint
-score and `-log10(p-value)`. Bar color and the printed row value show the other
-metric: blue/red preserves the direction in both modes, while color strength
-shows the active color metric. The volcano uses a stable square plotting area.
-The volcano highlight selector includes `(none)`, and the **Label TFs**
-field accepts comma-separated TF names, motif IDs, or output prefixes. These
-controls work identically with and without aggregate profiles and are preserved
-in SVG exports. Waterfall, volcano, and combined-panel SVGs include the active
-comparison label inside the figure.
+In the ranked-motif plot, switch between differential footprint score and
+`-log10(p-value)` to change the ranking view. Use the legend to interpret the
+color scale and direction of change. In the volcano plot, use **Label TFs** to label
+selected TF names, motif IDs, or output prefixes, separated by commas. Select
+`(none)` in the highlight control to clear highlighting. SVG exports retain
+the selected comparison label and plot settings.
 
 ```bash
 review-multi-comparisons --inputs baseline/report.html dose1/report.html dose2/report.html \
@@ -1504,28 +1627,38 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Run one or more fp-tools jobs from a reusable YAML configuration.
+Run one or more fp-tools commands from a saved YAML configuration. Use this to
+repeat a GUI run or apply the same settings to several samples or comparisons.
 
 **Example command**
 
 ```bash
-run-yaml-workflow --config examples/gui_configs/diff_footprints_single.yml
+run-yaml-workflow --config workflow.yml --dry-run
+run-yaml-workflow --config workflow.yml --run-root project/yaml_runs
 ```
 
 **Primary inputs**
 
-- `--config` — command-compatible YAML configuration exported by the GUI or written directly.
+- `--config` — YAML configuration exported by the GUI or written directly.
+- `--run-root` — optional directory for job status and logs; it does not replace each command's analysis output directory.
+- `--dry-run` — print the commands without starting the analysis.
+
+Replace `workflow.yml` with your saved configuration. The first command prints
+the jobs without running them; check their inputs and output paths before
+running the second command. Jobs run sequentially.
 
 **Main outputs**
 
-- The exact files documented for each command named in the YAML; YAML does not create a separate analysis format.
+- The analysis files documented for each command named in the YAML.
 - Standard output containing the expanded command lines when `--dry-run` is used.
-- `{run_root}/{job_id}/config.yml` and `command.txt` — normalized per-job configuration and exact command.
+- `{run_root}/{job_id}/config.yml` and `command.txt` — saved settings and exact command for each job.
 - `{run_root}/{job_id}/status.json`, `stdout.log`, and `stderr.log` — completion state and captured command output.
 - `{run_root}/batch_index.tsv` — one-row-per-job batch status index.
 
-Paths are resolved according to the YAML runner and remain independent of GUI
-state. Inspect the dry-run expansion before starting a long workflow.
+Relative paths in the YAML are interpreted from the directory where you launch
+the command. Run from the same directory each time, or use absolute paths. If
+neither `--run-root` nor a YAML `run_root` is supplied, logs go to a new
+`fp-tools-batch-{timestamp}` folder in that directory.
 
 **Complete options**
 
@@ -1567,7 +1700,7 @@ the self-contained desktop downloads on the
 **Example command**
 
 ```bash
-fp-tools-gui --host 127.0.0.1 --port 8891 --run-dir project/gui_runs --no-browser
+fp-tools-gui --host 127.0.0.1 --port 8891 --run-dir project/gui_runs
 ```
 
 **Primary inputs**
@@ -1575,16 +1708,25 @@ fp-tools-gui --host 127.0.0.1 --port 8891 --run-dir project/gui_runs --no-browse
 - `--host` — interface on which the GUI listens (default: `127.0.0.1`).
 - `--port` — fixed browser port.
 - `--run-dir` — directory for GUI-managed configurations and runs.
-- `--no-browser` — start the server without opening a local browser.
+
+## Start an analysis
+
+1. Select the workflow or command from the sidebar.
+2. Enter your input paths and output directory, then select **Update page config**.
+3. Review the displayed command and resolve any validation errors before starting the run.
+4. Open **Run History** to check progress, read logs, and find the output files.
+
+Use the **Config** page to save the settings as YAML or load a previous run's
+configuration.
 
 **Main outputs**
 
-- `{run_dir}/{timestamp}_{label}/config.yml` — reusable command-compatible YAML saved for a configured run.
-- `{run_dir}/{timestamp}_{label}/status.json`, `launcher_stdout.log`, and `launcher_stderr.log` — launcher state and captured batch-runner output.
-- `{run_dir}/{timestamp}_{label}/{job_id}/status.json`, `command.txt`, `stdout.log`, and `stderr.log` — per-job state, exact command, and analysis logs.
-- The exact analysis files documented by the selected command; the GUI does not introduce GUI-only scientific outputs.
+- `{run_dir}/{timestamp}_{label}/config.yml` — saved YAML settings for the run.
+- `{run_dir}/{timestamp}_{label}/status.json`, `launcher_stdout.log`, and `launcher_stderr.log` — overall run status and logs.
+- `{run_dir}/{timestamp}_{label}/{job_id}/status.json`, `command.txt`, `stdout.log`, and `stderr.log` — each job's status, exact command, and analysis logs.
+- The analysis files documented by the selected command, written to the output directory you chose.
 
-Files under `{run_dir}` are local run state. A saved YAML remains runnable with
+A saved YAML can also be run from the command line with
 `run-yaml-workflow --config {run_dir}/{timestamp}_{label}/config.yml`.
 
 ## Local computer
@@ -1595,7 +1737,8 @@ ready. If it does not, open the local URL printed in the terminal.
 
 ## Remote Linux server
 
-Start fp-tools on the server without exposing a network port:
+Start fp-tools on the server. `--no-browser` prevents it from opening a browser
+on the server, and the default host setting limits access to that server:
 
 ```bash
 fp-tools-gui --no-browser --port 8891
@@ -1607,9 +1750,7 @@ On your computer, create an SSH tunnel and keep that terminal open:
 ssh -N -L 8891:127.0.0.1:8891 USER@SERVER
 ```
 
-Open `http://127.0.0.1:8891`. Binding with `--host 0.0.0.0` is also supported,
-but fp-tools does not add authentication; protect direct network access with a
-firewall, VPN, or reverse proxy.
+Open `http://127.0.0.1:8891` on your computer to use the server's GUI.
 
 **Complete options**
 
@@ -1633,9 +1774,10 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Inspect, install, or repair the private external-tool runtime. Linux provides
-raw-read and de novo motif components; macOS and Windows provide the optional
-de novo motif component.
+Check or install the external programs used by `prepare-atac` and
+`discover-motifs`. fp-tools manages these programs separately from your other
+software. Linux supports read preparation and motif discovery; macOS and
+Windows support motif discovery.
 
 **Example command**
 
@@ -1645,14 +1787,23 @@ fp-tools-runtime status
 
 **Primary inputs**
 
-The `status` action takes no input files.
+The `status` action takes no input files. To install the programs used for motif
+discovery before your first run:
+
+```bash
+fp-tools-runtime install meme
+```
+
+On Linux, use `fp-tools-runtime install core` for the default `prepare-atac`
+workflow, or `fp-tools-runtime install homer` for its `homer-atac` profile.
 
 **Main outputs**
 
 The command reports each runtime component, platform, installation state, and
-cache location. `install core` and `install homer` are Linux-only raw-read
-components. The MEME Suite component is installed only when requested by de
-novo motif discovery.
+cache location. Commands that need a managed component install it on first use,
+so manual installation is optional. If an installation is damaged, run
+`fp-tools-runtime repair meme` (or substitute the affected component), then
+check `fp-tools-runtime status` again.
 
 **Complete options**
 
@@ -1678,8 +1829,9 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Prepare or run de novo motif discovery from candidate footprint intervals or
-an existing FASTA file.
+Find recurring DNA sequence patterns in candidate footprint regions, without
+starting from a known motif list. Provide candidate intervals and a reference
+genome, or use sequences you have already extracted into a FASTA file.
 
 **Example command**
 
@@ -1691,12 +1843,17 @@ discover-motifs --candidates project/samples/sample/footprints/sample_candidate_
 **Primary inputs**
 
 - `--candidates` — candidate-footprint BED intervals.
-- `--genome` — reference genome used to extract candidate sequences.
+- `--genome` — reference FASTA matching the candidate coordinates; required with `--candidates`.
 - `--flank` — bases included on each side of a candidate center.
 - `--method` — discovery method; the example uses STREME.
 - `--known-motif-db` — optional known-motif database for Tomtom matching.
 - `--outdir` — directory for candidate FASTA files and discovery results.
 - `--execute` — run discovery immediately using the managed MEME Suite runtime.
+
+In the example, `--flank 75` extracts up to 75 bases on each side of each
+candidate center.
+Without `--execute`, the command writes the FASTA and a command script for
+inspection. It does not run discovery or create result summaries.
 
 **Main outputs**
 
@@ -1705,10 +1862,16 @@ discover-motifs --candidates project/samples/sample/footprints/sample_candidate_
 | Path | Meaning |
 | --- | --- |
 | `{outdir}/candidate_sequences.fa` | Reference sequences extracted around candidate footprint intervals. |
-| `{outdir}/run_motif_discovery.sh` | Reproducible MEME/DREME/STREME command plan. |
-| `{outdir}/{method}/streme.txt` or the method-equivalent MEME output | De novo motif models when `--execute` is used. |
+| `{outdir}/run_motif_discovery.sh` | Commands for discovery, optional known-motif matching, and summary reports. |
+| `{outdir}/streme/streme.txt`, `meme/meme.txt`, or `dreme/dreme.txt` | Discovered motif models from the selected method when `--execute` is used. |
 | `{outdir}/tomtom/tomtom.tsv` | Optional similarity matches to the selected known-motif database. |
-| `{outdir}/motif_summary.tsv` and `motif_summary.html` | Summary targets written by the generated plan after discovery and matching complete. |
+| `{outdir}/motif_summary.tsv` and `motif_summary.html` | Motif tables written after successful execution. |
+
+## Choose your sequence input
+
+Create candidate intervals with `call-footprints --output-bed`. If you already
+have a sequence FASTA, pass it with `--fasta` instead of `--candidates` and
+`--genome`. In that case the command uses your existing sequences directly.
 
 **Complete options**
 
@@ -1757,28 +1920,36 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Summarize MEME, STREME, DREME, and Tomtom results in a compact report.
+Turn completed motif-discovery results into a table of motif sequences,
+significance values, and optional matches to known motifs. Add an HTML report
+to review the results in a browser.
 
 **Example command**
 
 ```bash
 summarize-motifs --meme-txt project/de_novo/sample/streme/streme.txt \
-  --tomtom-tsv project/de_novo/sample/tomtom/tomtom.tsv --out-tsv project/de_novo/sample/motif_summary.tsv
+  --tomtom-tsv project/de_novo/sample/tomtom/tomtom.tsv \
+  --out-tsv project/de_novo/sample/motif_summary.tsv --out-html project/de_novo/sample/motif_summary.html
 ```
 
 **Primary inputs**
 
-- `--meme-txt` — MEME-compatible discovery output.
+- `--meme-txt` — discovery output such as `meme.txt`, `streme.txt`, or `dreme.txt`.
 - `--tomtom-tsv` — optional Tomtom known-motif matches.
 - `--out-tsv` — compact output table for discovered motifs and matches.
+- `--out-html` — optional browser report.
+
+Omit `--tomtom-tsv` if you did not run known-motif matching. This command reads
+existing results; it does not rerun motif discovery.
 
 **Main outputs**
 
-- the exact `--out-tsv` path — tab-separated discovered motif IDs, consensus sequences, significance values, and known-database matches when available.
-- the exact `--out-html` path — optional portable HTML table containing the same summary and motif logos when available.
+- The `--out-tsv` file — tab-separated discovered motif IDs, consensus sequences, significance values, and known-database matches when available.
+- The `--out-html` file — optional portable HTML table containing the same summary and consensus-sequence logos when available.
 
-The command does not rename the requested output prefix; in the example the
-primary file is `project/de_novo/sample/motif_summary.tsv`.
+Open `motif_summary.html` in a browser or import `motif_summary.tsv` into a
+spreadsheet. Known-motif matches help identify candidate TF families; they do
+not establish which TF is bound.
 
 **Complete options**
 
@@ -1805,8 +1976,9 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Group single-cell ATAC fragments by a cell-annotation column to create
-pseudobulk inputs.
+Combine single-cell ATAC-seq fragments into groups such as cell types or
+donor–cell-type pairs. Each group becomes a pseudobulk sample for downstream
+analysis.
 
 **Example command**
 
@@ -1817,26 +1989,33 @@ pseudobulk-fragments --fragments pbmc_fragments.tsv.gz --annotations cell_annota
 
 **Primary inputs**
 
-- `--fragments` — single-cell fragment TSV or TSV.GZ file.
-- `--annotations` — barcode-level cell annotation table.
-- `--group-by` — annotation column used to define pseudobulk groups.
-- `--genome-sizes` — chromosome sizes used to write signal tracks.
+- `--fragments` — TSV or TSV.GZ with chromosome, start, end, and barcode in its first four columns; a fifth column can contain fragment counts.
+- `--annotations` — TSV or CSV with `barcode` and the column named by `--group-by` (for example, `cell_type`).
+- `--group-by` — annotation column used to define pseudobulk groups; use `donor,cell_type` to keep donors separate within each cell type.
+- `--genome-sizes` — two-column chromosome-name and length file matching the fragments; required for the example's signal tracks.
 - `--write-cutsite-bigwigs` — write cut-site bigWigs for retained groups.
 - `--outdir` — directory for grouped fragments, tracks, and QC outputs.
 
 **Main outputs**
 
-For each sanitized `{group}` under `{outdir}`:
+`{group}` is the annotation value converted to a filename-safe name. Paths below
+are relative to `{outdir}`:
 
 | Path | Meaning |
 | --- | --- |
 | `{group}.fragments.tsv` or `{group}.fragments.tsv.gz` | Fragments assigned to the group; compressed/indexed form is controlled by the command options. |
 | `{group}.fragments.tsv.gz.tbi` | Optional Tabix index for random genomic access. |
 | `{group}.cutsites.cpm.bw` | Optional CPM-normalized cut-site signal bigWig written by `--write-cutsite-bigwigs`. |
-| `{group}.pseudo_pairs.sorted.bam` and `.bai` | Optional pseudo-paired alignment used by `atac-correct` with read shift `0 0`. |
+| `{group}.pseudo_pairs.sorted.bam` and `.bai` | Optional pseudo-paired alignment written with `--write-pseudo-bams`; use `atac-correct --read_shift 0 0` on these files. |
 | `pseudobulk_manifest.tsv` | Per-group paths, cell/fragment counts, and filter status. |
 | `fp_tools_manifest.yml` | Machine-readable run settings and retained groups. |
 | `pseudobulk_downstream_commands.sh` | Optional generated downstream command examples. |
+
+## Match cell barcodes
+
+By default, barcode matching ignores a trailing suffix such as `-1`. Add
+`--no-strip-barcode-suffix` when suffixes distinguish cells in your dataset.
+Use `--barcode-column` if your annotation barcode column has a different name.
 
 **Complete options**
 
@@ -1906,25 +2085,34 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Calculate and plot per-cell footprint signatures from completed pseudobulk or
-motif analyses.
+Score selected motif sites in individual cells and plot the results on a UMAP
+and in heatmaps. The command pools signal from nearby cells to reduce sparsity,
+so the scores describe relative footprint signatures rather than independent
+binding calls for every cell.
 
 **Example command**
 
 ```bash
 find-signature-fp --annotations cell_annotations.tsv --fragments pbmc_fragments.tsv.gz --h5ad pbmc_embedding.h5ad \
-  --tf-site-dir marker_motif_sites --all-motif-results project/pseudobulk/pseudobulk_diff_footprints_results.txt \
+  --all-motif-diff-dir project/pseudobulk/diff_footprints \
+  --all-motif-results project/pseudobulk/diff_footprints/pseudobulk_diff_footprints_results.txt \
   --outdir project/pseudobulk/signature_fp
 ```
 
 **Primary inputs**
 
-- `--annotations` — barcode-level cell annotation table.
-- `--fragments` — indexed single-cell fragment file.
-- `--h5ad` — single-cell object containing the spectral or UMAP embedding.
-- `--tf-site-dir` — motif-site directories from the footprint analysis.
-- `--all-motif-results` — completed motif-level differential result table.
+- `--annotations` — TSV with `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2` columns.
+- `--fragments` — single-cell fragment file with chromosome, start, end, and barcode in its first four columns; the command creates a missing Tabix index by default.
+- `--h5ad` — AnnData file with matching cell names, genomic-bin counts, and a boolean `selected` column in `var`. Bin names must use `chromosome:start-end`; the default bin size is 500 bases.
+- `--all-motif-diff-dir` — completed `diff-footprints` directory containing motif-site BED files.
+- `--all-motif-results` — motif-level results from that directory; supply it together with `--all-motif-diff-dir`.
 - `--outdir` — directory for per-cell scores, heatmaps, and UMAP figures.
+
+Use `cell_type` for broad labels and `snap_cell_type` for detailed labels; they
+can be the same if you have one annotation level. AnnData cell names must match
+the annotation barcodes. Smoothing uses `obsm['X_spectral']` if available,
+otherwise the annotation UMAP coordinates. The companion activity scores need
+the genomic-bin counts, so an embedding-only AnnData file is not sufficient.
 
 **Main outputs**
 
@@ -1935,12 +2123,23 @@ Under `{outdir}` the default names include:
 | `knn_footprint_signature_scores.tsv` | Per-cell KNN-smoothed footprint protection scores for selected TFs. |
 | `knn_footprint_orientation_summary.tsv` | Direction/orientation checks used to make marker scores comparable. |
 | `chromvar_like_motif_activity_scores.tsv` | Companion accessibility-derived motif activity scores. |
-| `knn_footprint_signature_umap.svg` and `.pdf` | Per-marker footprint-signature UMAP panels. |
-| `per_cell_footprint_signature_heatmap.svg` and `.pdf` | Selected-marker per-cell heatmap. |
-| `single_cell_footprinting_summary.svg` and `.pdf` | Combined heatmap and representative UMAP summary. |
+| `knn_footprint_signature_umap.svg` | Per-marker footprint-signature UMAP panels. |
+| `per_cell_footprint_signature_heatmap.svg` | Selected-marker per-cell heatmap. |
+| `single_cell_footprinting_summary.svg` | Combined heatmap and representative UMAP summary. |
 | `all_motif_per_cell_footprint_signature_heatmap.tsv` | Optional all-motif score matrix and metadata when all-motif inputs are supplied. |
 
-Additional top-motif and all-TF review files use their requested output prefix.
+Open the summary SVG first, then use the score tables to inspect individual
+cells. Additional top-motif plots and all-TF review PDFs are produced when
+all-motif inputs are supplied.
+
+## Choose marker TFs
+
+Choose TFs with `--markers TF1,TF2`. The default markers are
+`STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3`; each selected TF must have motif
+sites in your inputs. For selected-marker reports only, use `--tf-site-dir`
+and omit `--all-motif-diff-dir` and `--all-motif-results` from the example.
+This alternative directory must contain files named `{TF}.motif_hits.bed` or
+`{TF}.motif_peaks.bed`.
 
 **Complete options**
 
@@ -2062,8 +2261,9 @@ options:
 
 <div class="fp-api-card" markdown="1">
 
-Run grouping, bias correction, footprint scoring, motif analysis, and per-cell
-signature reporting for single-cell ATAC-seq data.
+Analyze single-cell ATAC-seq by combining cells into pseudobulk groups, calling
+footprints and motif differences between groups, then mapping selected
+footprint signatures back to individual cells.
 
 **Example command**
 
@@ -2075,19 +2275,30 @@ sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations
 
 **Primary inputs**
 
-- `--fragments` — single-cell fragment file.
-- `--annotations` — barcode-level cell annotation table.
-- `--h5ad` — AnnData file containing the cell embedding used for KNN smoothing.
+- `--fragments` — TSV or TSV.GZ with chromosome, start, end, and cell barcode in its first four columns.
+- `--annotations` — cell annotation TSV with `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2`, plus any additional grouping columns.
+- `--h5ad` — AnnData file containing the same cells and genomic-bin counts used for the companion motif-activity scores. See the requirements below.
 - `--group-by` — annotation column used to define pseudobulk groups.
-- `--genome-sizes` — chromosome sizes used to write grouped signal tracks.
-- `--genome` — reference genome FASTA.
+- `--genome-sizes` — two-column chromosome-name and length file used to write grouped signal tracks.
+- `--genome` — reference genome FASTA matching the fragments and peak coordinates.
 - `--peaks` — accessible-region BED file.
 - `--motif-db` — built-in motif database name.
 - `--outdir` — directory for pseudobulk tracks, motif results, and reports.
 
+The per-cell reports need annotation barcodes that match the AnnData cell names.
+Use `cell_type` for the broad cell labels and `snap_cell_type` for detailed
+labels; these can be the same if you have only one annotation level. UMAP
+coordinates go in `umap_1` and `umap_2`.
+
+The AnnData file needs genomic-bin names such as `chr1:0-500`, a count matrix,
+and a boolean `selected` column in its feature annotations (`var`). The
+companion activity calculation uses 500-base bins. Nearest-neighbor smoothing
+uses `obsm['X_spectral']` if present, otherwise the annotation UMAP coordinates.
+An embedding-only AnnData file is not sufficient.
+
 **Main outputs**
 
-`{outdir}` contains a complete staged workflow:
+Paths below are relative to `--outdir`; `{group}` is a retained pseudobulk group:
 
 | Path | Meaning |
 | --- | --- |
@@ -2101,6 +2312,12 @@ sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations
 | `pseudobulk_footprint_manifest.tsv` | Group paths and workflow completion state. |
 | `pseudobulk_footprint_commands.sh` | Exact generated commands for reproducibility. |
 | `logs/{stage}.stdout.log` and `{stage}.stderr.log` | Captured output for each stage. |
+
+Check the manifest for completed groups, then review the motif comparison and
+per-cell heatmaps. Per-cell scores combine signal from neighboring cells to
+reduce sparsity; interpret them as relative signatures, not independent
+binding calls for every cell. Use `--single-cell-signature-markers` to choose
+the TFs shown in the marker reports.
 
 **Complete options**
 

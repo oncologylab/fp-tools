@@ -1,6 +1,7 @@
 # [`bulk-footprinting`](../../api.md#bulk-footprinting)
 
-Run bulk ATAC-seq from BAM/BAI and peak BED inputs through interactive reports.
+Run a complete bulk ATAC-seq analysis from aligned reads and peak regions to
+footprint scores, motif comparisons, and interactive reports.
 
 The [bulk workflow guide](../workflows/bulk-atac-seq.md) provides minimal sample
 and comparison tables for a two-condition analysis.
@@ -14,11 +15,13 @@ bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv 
 
 ## Primary inputs
 
-- `--sample-table` — sample, condition, coordinate-sorted BAM, and peak BED columns.
-- `--comparison-table` — comparison, condition 1, and condition 2 columns.
+- `--sample-table` — TSV with `sample`, `condition`, `bam`, and `peaks` columns. Each BAM must be coordinate-sorted and have a matching BAI index.
+- `--comparison-table` — TSV with `comparison`, `cond1`, and `cond2` columns. Use condition names from the sample table.
 - `--genome` — managed `hg38` or `mm10` assembly, or a reference FASTA matching the BAM and peak coordinates.
 - `--outdir` — project output directory.
 - `--cores` — total worker cores.
+
+Use the same genome assembly and chromosome names for every BAM and BED file.
 
 ## Main outputs
 
@@ -37,10 +40,17 @@ bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv 
 | `{project}/logs/bulk_footprinting/bulk_footprinting_commands.sh` | Exact commands generated for the workflow stages. |
 | `{project}/logs/bulk_footprinting/{stage}.stdout.log` and `{stage}.stderr.log` | Stage-specific logs for troubleshooting. |
 
+Start by opening the comparison HTML report. Use the combined review to compare
+motif results across all requested comparisons, and inspect aggregate profiles
+alongside the statistics.
+
+Add `--dry-run` to check the inputs and inspect the commands before starting.
+
 ## Reference and motif options
 
-Use `--reference-dir` to relocate the checksum-verified managed reference
-cache. `--blacklist` replaces a managed assembly's blacklist, while
+Choosing `hg38` or `mm10` downloads and verifies the matching reference and
+blacklist as needed. Use `--reference-dir` to choose where they are cached.
+`--blacklist` replaces a managed assembly's blacklist, while
 `--no-blacklist` disables it. Custom FASTA inputs never infer a blacklist.
 
 Choose a packaged motif database with `--motif-db`, provide custom files with
@@ -48,6 +58,6 @@ Choose a packaged motif database with `--motif-db`, provide custom files with
 `jaspar2026_vertebrates`. Run `bulk-footprinting --list-motif-dbs` to list the
 packaged databases.
 
-FASTQ preprocessing is intentionally separate. Linux users can run
+If you have FASTQ files on Linux, run
 [`prepare-atac`](prepare-atac.md) first, then provide its generated
 `metadata/samples.tsv` to this command.

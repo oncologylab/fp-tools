@@ -18,7 +18,8 @@ Use this checklist before publishing `fp-tools-bio` or preparing paper benchmark
 Run the full local test suite:
 
 ```bash
-.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m pip install pytest
+.venv/bin/python -m pytest -q
 .venv/bin/python scripts/smoke_console_scripts.py
 ```
 
@@ -31,8 +32,8 @@ Required coverage before release:
 - progress logging behavior
 - stable fixture summaries for existing bigWig/BED test data
 
-GitHub Actions must also complete the full pytest suite on Windows for Python
-3.11, 3.12, and 3.13. Tests that require Linux-only BAM writing or indexing
+GitHub Actions must also complete the full pytest suite in the Linux test job
+and on Windows for Python 3.11, 3.12, and 3.13. Tests that require Linux-only BAM writing or indexing
 may skip explicitly; collection errors, separator-only failures, and
 locale-dependent decoding failures are release blockers.
 

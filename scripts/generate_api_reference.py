@@ -82,7 +82,7 @@ def main() -> int:
         "",
         "# API Reference",
         "",
-        "Direct CLI commands are the primary interface. Each reference includes a method summary, practical example, primary inputs, outputs, and the complete command options.",
+        "Choose a command below to see when to use it, how to prepare its inputs, an example run, and the files it writes. The complete options follow each guide and are also available with `<command> --help`.",
         "",
         "| Command | Purpose |",
         "| --- | --- |",

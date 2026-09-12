@@ -1,12 +1,14 @@
 # Tool overview
 
-The guides below cover common inputs and outputs. See the
-[API Reference](../api.md) for every option.
+Choose a command by the task you want to perform. Each guide explains its
+inputs, gives an example command, and lists the files it writes. See the
+[API Reference](../api.md) for all command options.
 
 If you are new to fp-tools, start with the [bulk ATAC-seq workflow](workflows/bulk-atac-seq.md):
-it includes a BAM/peak sample sheet, an explicit comparison table, ENCODE
-downloads, and the expected output layout. Optional Linux-only FASTQ
-preprocessing is kept separate under `prepare-atac`.
+it includes minimal sample and comparison tables and explains where to find
+your results. For fragments and cell annotations, use the
+[single-cell workflow](workflows/single-cell.md). Linux users starting from
+FASTQ files can prepare BAM and peak files with `prepare-atac` first.
 
 ## Core analysis
 
@@ -25,9 +27,9 @@ preprocessing is kept separate under `prepare-atac`.
 
 - [`bulk-footprinting`](commands/bulk-footprinting.md) — run the complete bulk workflow from BAM/BAI and peak BED inputs.
 - [`sc-footprinting`](commands/sc-footprinting.md) — run pseudobulk and per-cell single-cell ATAC-seq footprinting.
-- [`run-yaml-workflow`](commands/run-yaml-workflow.md) — run command-compatible jobs from YAML.
+- [`run-yaml-workflow`](commands/run-yaml-workflow.md) — run saved command settings from a YAML file.
 - [`fp-tools-gui`](commands/fp-tools-gui.md) — launch the browser interface.
-- [`fp-tools-runtime`](commands/fp-tools-runtime.md) — inspect or prepare the managed external-tool runtime.
+- [`fp-tools-runtime`](commands/fp-tools-runtime.md) — check or install the external tools used for read preparation and motif discovery.
 
 ## Linux preprocessing
 

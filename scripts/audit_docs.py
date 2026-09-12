@@ -28,6 +28,7 @@ COMMAND_PAGES = (
     "review-multi-comparisons",
     "run-yaml-workflow",
     "fp-tools-gui",
+    "fp-tools-runtime",
     "discover-motifs",
     "summarize-motifs",
     "pseudobulk-fragments",

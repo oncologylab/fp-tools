@@ -1,6 +1,13 @@
-# Examples Directory
+# Examples
 
-This directory holds reference outputs and manual-run artifacts so the project root stays focused on source, packaging, and shared test inputs.
+Start with [`gui_configs/`](gui_configs/README.md) for small YAML examples you
+can run from the command line or load in the GUI. Run repository examples from
+the repository root so their relative input paths resolve correctly. For your
+own bulk data, follow the
+[bulk workflow guide](https://oncologylab.github.io/fp-tools/get-started/workflows/bulk-atac-seq/)
+to prepare sample and comparison tables.
+
+Other example inputs and local output locations:
 
 - `atacorrect/`: ignored manual `atac-correct` outputs.
 - `scorebigwig/`: ignored manual `call-footprints` outputs.

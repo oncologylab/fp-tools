@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
       name="description"
-      content="Interactive pairwise fp-tools differential-footprinting reports."
+      content="Compare footprint scores between HNF4A/FOXA2-defined region sets in HepG2 cells."
     />
-    <title>Differential footprint report</title>
+    <title>HepG2 HNF4A/FOXA2 region footprints</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -16,37 +16,36 @@
         <header class="head">
           <div class="title-block">
             <h1>
-              <span id="report-title">Differential footprint report</span> (<span id="title-cond1">K562</span>
-              vs <span id="title-cond2">HepG2</span>)
+              <span id="report-title">HepG2 HNF4A/FOXA2 region footprints</span> (<span id="title-cond1">HNF4A + FOXA2</span>
+              vs <span id="title-cond2">No HNF4A/FOXA2</span>)
             </h1>
             <p id="report-method" class="sub">
-              Normalization: Q95-scale; aggregate sites: all motif matches; FDR &lt; 0.001;
-              |Δ FP score| &gt; 0.1; Bound Sites &gt; 500
+              Loading comparison settings…
             </p>
           </div>
           <div
             class="comparison-controls"
-            aria-label="Choose a pairwise comparison"
+            aria-label="Choose two region sets to compare"
           >
             <a id="documentation-return" class="documentation-link documentation-return" href="#" target="_top" hidden>Documentation</a>
             <label
-              >Condition 1<select
+              >Region set 1<select
                 id="condition-1"
-                aria-label="Condition 1"
+                aria-label="Region set 1"
               ></select
             ></label>
             <span class="versus" aria-hidden="true">vs</span>
             <label
-              >Condition 2<select
+              >Region set 2<select
                 id="condition-2"
-                aria-label="Condition 2"
+                aria-label="Region set 2"
               ></select
             ></label>
           </div>
         </header>
 
         <details id="options" class="options" open>
-          <summary>Show/Hide</summary>
+          <summary>Display and export options</summary>
           <div class="options-grid">
             <section class="option-col options-actions">
               <p class="section-title">Export</p>
@@ -77,7 +76,7 @@
               <div class="card control-stack">
                 <div id="color-controls" class="color-controls"></div>
                 <label class="rows-control"
-                  >Rows
+                  >Motifs shown
                   <input
                     id="rank-rows-slider"
                     type="range"
@@ -158,8 +157,7 @@
       Loading report…
     </p>
     <noscript
-      >This browser requires JavaScript to render the static result
-      files.</noscript
+      >Enable JavaScript in your browser to view the interactive report.</noscript
     >
     <script src="app.js" defer></script>
   </body>

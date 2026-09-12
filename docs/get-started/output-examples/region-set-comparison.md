@@ -24,14 +24,17 @@ diff-footprints --comparison-axis regions \
   --default-aggregate-plots 8 --outdir HepG2_region_comparison
 ```
 
-The primary effect is the matching-stratum-adjusted difference in region-level
-footprint score. All 1,019 motifs are tested; the eight specified motifs only
-set the initial aggregate display. Significance is calculated from paired
+The reported effect is the difference in region-level footprint score after
+accounting for the matched baseline-accessibility groups. All 1,019 motifs are
+tested; the eight specified motifs only set the initial aggregate display.
+Significance is calculated from paired
 replicate effects using the empirical-Bayes model.
 
-In the default view, HNF4A/HNF4G and FOXA1/FOXA2 footprints are stronger in
-co-bound regions. The HNF4A-only versus FOXA2-only view separates the two
-factor families.
+In the default view, HNF4A/HNF4G and FOXA1/FOXA2 motif-associated scores are
+higher in co-bound regions. The HNF4A-only versus FOXA2-only view separates the two
+factor families. Compare the aggregate cut-site profiles as well as the scores
+when interpreting these differences. The ChIP-seq labels define the region
+groups; motif scores alone do not establish TF binding.
 
 [All motif results](../../demos/data/region_set_HepG2_HNF4A_FOXA2_results.tsv.gz) ·
 [matching QC](../../demos/data/region_set_HepG2_matching_qc.tsv) ·

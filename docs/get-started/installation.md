@@ -5,8 +5,9 @@ hide:
 
 # Installation
 
-Choose the recommended option for your computer. Every GUI and desktop route
-starts from coordinate-sorted BAM/BAI files and matching peak BED files.
+Choose the recommended option for your computer. Bulk workflows in the GUI
+and desktop app start from coordinate-sorted BAM/BAI files and matching peak
+BED files. Single-cell workflows start from fragments and cell annotations.
 
 | Computer | Recommended installation |
 | --- | --- |
@@ -22,7 +23,7 @@ application window; no browser or Python installation is required.
 [Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.2/fp-tools-gui-windows-x64.exe){ .md-button }
 [Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.2/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
 
-Windows may ask you to confirm the unsigned preview download. The macOS preview
+Windows may ask you to confirm the unsigned app download. The macOS app
 is unsigned and has not been notarized by Apple, so Gatekeeper may report that
 Apple cannot verify the developer. Download it only from the official
 OncologyLab GitHub release page and verify the published SHA-256 checksum.
@@ -50,22 +51,39 @@ Use Python 3.11–3.13:
 
 ```bash
 python -m pip install --upgrade fp-tools-bio
-fp-tools-gui
+bulk-footprinting --help
 ```
 
-The Python-package GUI normally opens in your browser. If it does not, open
-`http://127.0.0.1:8891`.
+This installs all fp-tools commands, including the GUI. Use `<command> --help`
+to view a command's options, or follow a workflow linked below.
 
 On Windows, use `py` instead of `python` if needed.
 
-### Running on a remote Linux server
+To use the browser interface, run:
 
 ```bash
-fp-tools-gui --host 0.0.0.0 --port 8891 --no-browser
+fp-tools-gui
 ```
 
-Open `http://SERVER_IP:8891` from your computer, replacing `SERVER_IP` with the
-server address. The port must be permitted by the server firewall.
+The GUI normally opens in your browser. If it does not, open
+`http://127.0.0.1:8891`.
+
+### Running on a remote Linux server
+
+On the server, start the GUI:
+
+```bash
+fp-tools-gui --port 8891 --no-browser
+```
+
+On your computer, open an SSH tunnel, replacing `USER` and `SERVER` with your
+login name and server address:
+
+```bash
+ssh -N -L 8891:127.0.0.1:8891 USER@SERVER
+```
+
+Keep both commands running and open `http://127.0.0.1:8891` on your computer.
 
 ??? note "Optional Docker installation"
 

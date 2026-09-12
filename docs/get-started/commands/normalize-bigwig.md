@@ -7,20 +7,26 @@ core_nav:
 
 # [`normalize-bigwig`](../../api.md#normalize-bigwig)
 
-Scale corrected cut-site signals using statistics measured over the same
-background regions. Use this optional step when samples require an explicitly
-shared signal scale before downstream scoring or plotting.
+Put corrected cut-site tracks on a comparable signal scale using the same
+background regions for every sample. This is an optional step after
+`atac-correct`; use the resulting tracks for downstream scoring or plotting
+when you need this normalization.
 
 ## Example command
 
 ```bash
-normalize-bigwig --sample-table project/metadata/samples.tsv --background project/peaks/merged_peaks_filtered.bed \
-  --outdir project --method background-scale --stat q95 --target median
+normalize-bigwig \
+  --sample-table project/metadata/samples.tsv \
+  --background project/peaks/merged_peaks_filtered.bed \
+  --outdir project \
+  --method background-scale \
+  --stat q95 \
+  --target median
 ```
 
 ## Primary inputs
 
-- `--sample-table` — project samples whose `{sample}_corrected.bw` files are normalized together.
+- `--sample-table` — TSV with `sample` and `condition` columns; reuse the table from `atac-correct`. Tracks are read from `{project}/samples/{sample}/atac_correct/`.
 - `--background` — shared BED intervals used to calculate comparable background statistics.
 - `--outdir` — project directory represented by `{project}` below.
 - `--method` — transformation; `background-scale` multiplies each signal by a shared-target scale factor.
@@ -32,8 +38,12 @@ normalize-bigwig --sample-table project/metadata/samples.tsv --background projec
 | Path | Meaning |
 | --- | --- |
 | `{project}/samples/{sample}/normalize/{sample}_corrected_q95_scaled.bw` | Q95-scaled bias-corrected cut-site signal bigWig for one sample. |
-| `{project}/logs/normalize_q95/normalize_bigwig_qc.tsv` | Background statistics, selected statistic, target, and scale factor for every sample. |
-| `{project}/logs/normalize_q95/normalize_bigwig_manifest.tsv` | Sample-to-input/output signal mapping for downstream use. |
+| `{project}/normalize_bigwig_qc.tsv` | Background statistics, selected statistic, target, and scale factor for every sample. |
+| `{project}/normalize_bigwig_manifest.tsv` | Sample-to-input/output signal mapping for downstream use. |
+
+Check the QC table to see how much each track was scaled. The manifest lists
+the output paths to pass to the next command. Scaling changes signal
+magnitude; it does not by itself provide evidence of TF binding.
 
 In custom layout, default outputs use
 `{outdir}/{input_stem}.background_scale_{stat}.bw`, plus the two QC tables in

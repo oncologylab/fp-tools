@@ -59,7 +59,7 @@
         </header>
 
         <details id="options" class="options" open>
-          <summary>Show/Hide</summary>
+          <summary>Display and export options</summary>
           <div class="options-grid">
             <section class="option-col options-actions">
               <p class="section-title">Groups</p>
@@ -71,7 +71,7 @@
                   <span>−log10(p-value)</span>
                 </label>
                 <label class="rows-control"
-                  >Rows
+                  >Motifs shown
                   <input
                     id="rank-rows-slider"
                     type="range"
@@ -103,7 +103,7 @@
                     type="text"
                     placeholder="e.g. JUN, HIF2A"
                     aria-label="TF names to label on the volcano plot"
-                    title="Comma-separated TF names, motif IDs, or output prefixes"
+                    title="Enter TF names, motif IDs, or output prefixes, separated by commas"
                   />
                 </label>
               </div>
@@ -193,8 +193,7 @@
       Loading report…
     </p>
     <noscript
-      >This browser requires JavaScript to render the static result
-      files.</noscript
+      >Enable JavaScript in your browser to view the interactive report.</noscript
     >
     <script src="plot_controls.js" defer></script>
     <script src="app.js" defer></script>
