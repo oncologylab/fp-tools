@@ -654,7 +654,7 @@ def _audit_loaded_config_sync(
         )
         for label, key in (
             ("Samples TSV", "sample_table"),
-            ("Comparisons TSV (optional)", "comparison_table"),
+            ("Comparisons TSV", "comparison_table"),
             ("Reference genome", "genome"),
             ("Output directory", "outdir"),
             ("Cores", "cores"),
@@ -679,7 +679,7 @@ def _audit_loaded_config_sync(
         _assert_control_value(page, "Output directory", new_outdir)
         for label, key in (
             ("Samples TSV", "sample_table"),
-            ("Comparisons TSV (optional)", "comparison_table"),
+            ("Comparisons TSV", "comparison_table"),
             ("Reference genome", "genome"),
             ("Cores", "cores"),
             ("Normalization", "normalization"),
@@ -1170,7 +1170,7 @@ def main() -> int:
 
                     samples, comparisons, genome = _write_valid_bulk_fixture(workdir_path)
                     page.get_by_label("Samples TSV", exact=True).fill(str(samples))
-                    page.get_by_label("Comparisons TSV (optional)", exact=True).fill(str(comparisons))
+                    page.get_by_label("Comparisons TSV", exact=True).fill(str(comparisons))
                     page.get_by_label("Reference genome", exact=True).fill(str(genome))
                     page.get_by_label("Output directory", exact=True).fill(
                         str(workdir_path / "valid-bulk-output")

@@ -26,6 +26,14 @@ contains 192 entries with no manuscript, environment, or agent-state
 directories. A scan of 121 tracked package/packaging files found no private
 keys, credential-bearing URLs, token patterns, or personal workspace paths.
 
+The first native desktop audit found three stale selectors for the pre-#67
+"Comparisons TSV (optional)" label. The app correctly shows the required
+"Comparisons TSV" input. A new consumer-contract regression reproduced the
+mismatch; all 19 focused GUI/default/loading tests pass with the corrected
+audit. This validation-only follow-up changes no packaged source. Desktop
+bundles are rebuilt with the existing manual `publish_version=0.2.3` workflow;
+the release tag and package/runtime sources remain immutable.
+
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk
 ATAC-seq footprinting, motif analysis, differential reports, and browser/YAML
 wrappers. Scientific workflow logic belongs in
