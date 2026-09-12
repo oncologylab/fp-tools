@@ -153,6 +153,9 @@ replacing the previous configuration or truncating Save/Run controls. Failed
 loads disable execution until a configuration is applied successfully.
 Structural YAML errors use ValueError; unexpected implementation exceptions
 remain visible. All 12 new GUI loading tests and five defaults tests pass.
+The existing run-control unit test now uses the dictionary-style session-state
+fixture, so absent errors behave like actual Streamlit state. All 39 GUI
+launcher/loading tests pass, including the launch guard.
 
 ### Unreleased maintenance: GitHub #67
 

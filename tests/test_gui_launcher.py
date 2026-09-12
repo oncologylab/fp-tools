@@ -290,7 +290,7 @@ class GuiLauncherTests(unittest.TestCase):
             "comparisons": [],
         }
         fake_streamlit = MagicMock()
-        fake_streamlit.session_state.current_config = normalized
+        fake_streamlit.session_state = self._SessionState(current_config=normalized)
         fake_streamlit.button.return_value = True
 
         with (
