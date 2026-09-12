@@ -4,8 +4,11 @@ The existing stability experiment covers 36 runs: all depths and seeds for
 replicate 1, plus the full-depth endpoint for all three biological replicates
 in HepG2 and K562. The new input-preparation plan covers the remaining 60
 combinations for replicates 2 and 3. All sampled BAMs are complete and
-independently verified. Conventional DWM correction is running; the expanded
-scientific evaluation remains pending and no promotion is claimed.
+independently verified. All 60 DWM corrections and the expanded 96-run
+evaluation completed on September 10 and independently verified on September
+12. See [the final stability report](DIRECT_BIAS_STABILITY_96_20260912.md)
+for results, checksums and limitations. No promotion is claimed. The sections
+below retain the preparation protocol and its earlier validation history.
 
 ## Frozen scope
 
@@ -189,4 +192,6 @@ runtime match; no real extraction or scoring was repeated. The strict
 MkDocs build passed in 4.16 seconds, and the browser audit passed all 32
 pages at three widths. The four count stages remain complete; the recovery
 above preserves them. The subsequent real sampling verification is recorded
-above. The full preparation and 96-run evaluation remain incomplete.
+above. The subsequent full preparation and 96-run evaluation are complete;
+their independent verification and results are recorded in the final report
+linked above.

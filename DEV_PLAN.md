@@ -399,7 +399,9 @@ a separately planned breaking release explicitly changes the contract.
   stages completed on 2026-09-09 UTC: independent checks passed for the exact
   60-target matrix and all 180 BAM/index/metadata files, including checksums,
   parent identities, metadata and indexed alignment counts. Conventional DWM
-  correction is running; the 96-run scientific evaluation remains pending.
+  correction and the 96-run scientific evaluation completed on September 10.
+  Independent verification passed for all 60 corrections and all 96 runs on
+  September 12; no completed scientific stage was rerun.
   See `benchmarks/DIRECT_BIAS_REPLICATE_DEPTHS_20260908.md` for the frozen
   identities, actual selected-depth ranges and remaining requirements.
 - The first sampling process terminated with exit 143 before completing any
@@ -423,8 +425,15 @@ a separately planned breaking release explicitly changes the contract.
   The plan pins the evaluator checksum, and queued execution also pins the
   plan checksum. A small 96-run fixture exercises unchanged and changed
   coverage, complete pairs, zero-cut sites, reuse, verification and nested
-  output corruption. The real 60-run preparation remains in progress; the
-  evaluator adds no new scientific result or promotion evidence yet.
+  output corruption. The real calculation is complete: 36 archived
+  extractions were reused and all 96 evaluations used the newly frozen common
+  support. Matched CTCF AUROC/AUPRC point gains over raw and sample DWM are
+  positive in all runs, but protection passes only 94/96 and some low-depth
+  bootstrap intervals cross zero. No other powered matched TF has canonical
+  protection. All 21 aggregate pages were reviewed. The result does not pass
+  promotion gates; holdouts and final naked-DNA controls remain unopened.
+  See `benchmarks/DIRECT_BIAS_STABILITY_96_20260912.md` for verified hashes,
+  per-TF results, balance limitations and the historical-runtime audit.
 - A separate current-depth balance diagnostic addresses the observed cut-total
   drift in the 36-run archive. Its fixed secondary rule retains original
   partners only within the existing 0.2-SD caliper on current log1p cut totals,
