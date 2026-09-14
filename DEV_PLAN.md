@@ -4,6 +4,20 @@ Last updated: 2026-09-14
 
 ## Current Baseline
 
+### Post-v0.2.5 display maintenance
+
+The user's official Windows v0.2.5 retest passed #70–#73, actual example-sized
+bulk/differential/signature/discovery runs, 543 tests with 22 skips and 69
+subtests, and the GUI audit on rerun. This is user-reported Windows evidence,
+not macOS or full-scale single-cell certification.
+
+Issue #74 reproduced in the source GUI: the branding Markdown container's
+negative 16-pixel bottom margin left the title bottom at 37.58px while Workspace
+started at 30.84px. Removing that margin for the branding wrapper restores its
+natural height. A browser regression failed before the fix and passed afterward,
+checking containment and a minimum 4px gap on Home/Config, collapsed/expanded
+Workspace, 1280/1920 widths, and 1/1.25/2 device scale and CSS zoom factors.
+
 ### v0.2.5 maintenance work
 
 Issue #70: wrapper runtime replacement and path translation now stop at

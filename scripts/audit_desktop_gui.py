@@ -416,6 +416,34 @@ def _audit_simple_page(
         context.close()
 
 
+def _audit_sidebar_brand(browser, base_url: str) -> None:
+    for width in (1280, 1920):
+        for scale in (1, 1.25, 2):
+            context = browser.new_context(viewport={"width": width, "height": 1080}, device_scale_factor=scale)
+            page = context.new_page()
+            try:
+                for name in ("Home", "Config"):
+                    page.goto(f"{base_url}/?page={name}", wait_until="domcontentloaded")
+                    title = page.locator(".fp-sidebar-brand-title")
+                    title.wait_for(timeout=60_000)
+                    page.locator("body").evaluate("(el, scale) => el.style.zoom = scale", scale)
+                    workspace = page.locator("[data-testid='stSidebar'] details", has_text="Workspace").first
+                    for expanded in (False, True):
+                        workspace.evaluate("(el, expanded) => el.open = expanded", expanded)
+                        metrics = title.evaluate("""el => {
+                            const title = el.getBoundingClientRect();
+                            const wrapper = el.closest('[data-testid="stElementContainer"]').getBoundingClientRect();
+                            const workspace = document.querySelector('[data-testid="stSidebar"] [data-testid="stExpander"]').getBoundingClientRect();
+                            return {top: title.top, bottom: title.bottom, wrapperTop: wrapper.top,
+                                    wrapperBottom: wrapper.bottom, workspaceTop: workspace.top};
+                        }""")
+                        if metrics["bottom"] + 4 > metrics["workspaceTop"] or metrics["bottom"] > metrics["wrapperBottom"] + 0.5 or metrics["top"] < metrics["wrapperTop"] - 0.5:
+                            raise RuntimeError(f"Sidebar branding overlaps or escapes its wrapper at {width}/{scale}, {name}, expanded={expanded}: {metrics}")
+            finally:
+                context.close()
+    print("Sidebar branding containment and Workspace gap passed at both widths and all scales", flush=True)
+
+
 def _audit_compact_sidebar(
     browser,
     base_url: str,
@@ -1199,6 +1227,7 @@ def main() -> int:
                                 not args.skip_screenshots,
                             )
 
+                    _audit_sidebar_brand(browser, base_url)
                     _audit_compact_sidebar(
                         browser,
                         base_url,

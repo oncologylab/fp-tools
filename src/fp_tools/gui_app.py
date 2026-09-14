@@ -711,6 +711,8 @@ def _apply_page_style() -> None:
             text-transform: uppercase;
             line-height: 1.1;
         }
+        [data-testid="stMarkdown"]:has(.fp-sidebar-brand)
+        [data-testid="stMarkdownContainer"],
         [data-testid="stMarkdown"]:has(.fp-nav-group)
         [data-testid="stMarkdownContainer"] {
             margin-bottom: 0 !important;
