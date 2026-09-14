@@ -227,6 +227,13 @@ def _group_inputs(args: argparse.Namespace, grouping_dir: Path, include_chroms: 
 
 
 def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
+    if not args.single_cell_signature_script:
+        from fp_tools.utils.signature_annotations import read_signature_annotations
+
+        try:
+            read_signature_annotations(args.annotations, header_only=True)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     grouping_dir = outdir / "pseudobulk"

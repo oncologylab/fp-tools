@@ -15,7 +15,7 @@ sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations
 ## Primary inputs
 
 - `--fragments` — TSV or TSV.GZ with chromosome, start, end, and cell barcode in its first four columns.
-- `--annotations` — cell annotation TSV with `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2`, plus any additional grouping columns.
+- `--annotations` — cell annotation TSV or CSV with required `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2`, plus any additional grouping columns. The GUI and command check these columns before analysis starts.
 - `--h5ad` — AnnData file containing the same cells and genomic-bin counts used for the companion motif-activity scores. See the requirements below.
 - `--group-by` — annotation column used to define pseudobulk groups.
 - `--genome-sizes` — two-column chromosome-name and length file used to write grouped signal tracks.

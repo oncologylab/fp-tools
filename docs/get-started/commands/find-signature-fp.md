@@ -16,7 +16,7 @@ find-signature-fp --annotations cell_annotations.tsv --fragments pbmc_fragments.
 
 ## Primary inputs
 
-- `--annotations` — TSV with `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2` columns.
+- `--annotations` — TSV or CSV with required `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2` columns. The GUI and command check these columns before analysis starts.
 - `--fragments` — single-cell fragment file with chromosome, start, end, and barcode in its first four columns; the command creates a missing Tabix index by default.
 - `--h5ad` — AnnData file with matching cell names, genomic-bin counts, and a boolean `selected` column in `var`. Bin names must use `chromosome:start-end`; the default bin size is 500 bases.
 - `--all-motif-diff-dir` — completed `diff-footprints` directory containing motif-site BED files.

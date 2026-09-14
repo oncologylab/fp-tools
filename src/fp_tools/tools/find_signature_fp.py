@@ -97,12 +97,12 @@ def open_text(path: Path):
 
 
 def read_annotations(path: Path) -> pd.DataFrame:
-    annotations = pd.read_csv(path, sep="\t")
-    required = {"barcode", "cell_type", "umap_1", "umap_2"}
-    missing = required.difference(annotations.columns)
-    if missing:
-        raise SystemExit(f"Annotation table is missing required columns: {', '.join(sorted(missing))}")
-    return annotations
+    from fp_tools.utils.signature_annotations import read_signature_annotations
+
+    try:
+        return read_signature_annotations(path)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
 
 def site_path(site_dir: Path, tf: str) -> Path:
@@ -1626,7 +1626,7 @@ def score_all_motif_per_cell_heatmap(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--annotations", required=True, help="Cell annotation TSV/CSV with barcode, cell type, and UMAP columns.")
+    parser.add_argument("--annotations", required=True, help="Cell annotation TSV/CSV requiring barcode, cell_type, snap_cell_type, umap_1, and umap_2 columns.")
     parser.add_argument("--fragments", required=True, help="10x-style fragments TSV/TSV.GZ used to count cut sites around motif centers.")
     parser.add_argument("--h5ad", required=True, help="AnnData file containing the single-cell embedding used for KNN smoothing.")
     parser.add_argument("--tf-site-dir", help="Optional directory containing marker motif-site BED files named by TF. When omitted, marker sites are taken from --all-motif-diff-dir and --all-motif-results.")
@@ -1672,6 +1672,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--legacy-pbmc5k-names", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 
+    annotations = read_annotations(Path(args.annotations))
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     legacy_prefix = "pbmc5k_" if args.legacy_pbmc5k_names else ""
@@ -1680,7 +1681,6 @@ def main(argv: list[str] | None = None) -> int:
         "pbmc5k_all_tf_footprint_signature_umaps" if args.legacy_pbmc5k_names else "all_tf_footprint_signature_umaps"
     )
     markers = [marker.strip() for marker in args.markers.split(",") if marker.strip()]
-    annotations = read_annotations(Path(args.annotations))
     if args.tf_site_dir:
         sites = read_sites(Path(args.tf_site_dir), markers, args.max_sites_per_tf)
     elif args.all_motif_diff_dir and args.all_motif_results:

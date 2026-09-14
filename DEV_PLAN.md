@@ -15,6 +15,13 @@ Issue #71: managed WSL commands now initialize the guest executable PATH in a
 noninteractive shell, with user arguments passed positionally. The delegation
 regression failed before the fix; all 16 runtime tests passed afterward.
 
+Issue #72: shared TSV/CSV schema validation requires `snap_cell_type` alongside
+barcode, cell type, and UMAP coordinates. GUI preflight checks headers; built-in
+signature and sc-footprinting commands reject before output creation. Custom
+signature scripts keep their own schema. Three initial regressions reproduced
+the defect; the expanded annotation/pseudobulk suite passed 17 tests. The GUI
+browser audit now includes rejection and recovery before its real signature run.
+
 ### v0.2.4 marker-list maintenance release
 
 Issue #69 was reproduced on clean main at 9a072cb: the GUI's YAML marker list

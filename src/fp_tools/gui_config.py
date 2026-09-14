@@ -614,6 +614,15 @@ def _validate_gui_input_paths(tool: str, item: Mapping[str, Any], job_name: str)
                 continue
             if field == "bams" and path.suffix.lower() == ".bam" and not _bam_index_exists(path):
                 errors.append(f"{job_name}: BAM index (.bai) is missing for '{field}': {value}")
+            if field == "annotations" and tool in {"find-signature-fp", "sc-footprinting"} and not (
+                tool == "sc-footprinting" and item.get("single_cell_signature_script")
+            ):
+                from fp_tools.utils.signature_annotations import read_signature_annotations
+
+                try:
+                    read_signature_annotations(path, header_only=True)
+                except ValueError as exc:
+                    errors.append(f"{job_name}: {exc}")
 
     if tool == "bulk-footprinting":
         if str(item.get("blacklist") or "").strip() and bool(item.get("no_blacklist")):

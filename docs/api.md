@@ -367,7 +367,6 @@ cuts than the bias model expected; it does not by itself identify a bound TF.
 **Complete options**
 
 ```text
-Matplotlib is building the font cache; this may take a moment.
 usage: atac-correct [-h] [--bams [<bam> ...]] [--fragments [<fragments.tsv.gz> ...]]
                     [-g <fasta>] [-p [<bed> ...]] [--regions-in <bed>]
                     [--regions-out <bed>] [--blacklist <bed>] [--extend <int>]
@@ -2101,7 +2100,7 @@ find-signature-fp --annotations cell_annotations.tsv --fragments pbmc_fragments.
 
 **Primary inputs**
 
-- `--annotations` — TSV with `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2` columns.
+- `--annotations` — TSV or CSV with required `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2` columns. The GUI and command check these columns before analysis starts.
 - `--fragments` — single-cell fragment file with chromosome, start, end, and barcode in its first four columns; the command creates a missing Tabix index by default.
 - `--h5ad` — AnnData file with matching cell names, genomic-bin counts, and a boolean `selected` column in `var`. Bin names must use `chromosome:start-end`; the default bin size is 500 bases.
 - `--all-motif-diff-dir` — completed `diff-footprints` directory containing motif-site BED files.
@@ -2136,7 +2135,12 @@ all-motif inputs are supplied.
 
 Choose TFs with `--markers TF1,TF2`. The default markers are
 `STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3`; each selected TF must have motif
-sites in your inputs. For selected-marker reports only, use `--tf-site-dir`
+sites in your inputs. In the GUI, enter one marker per line. YAML accepts either
+a list such as `markers: [STAT6, CEBPA, ZNF683]` or the comma-separated form
+`markers: STAT6,CEBPA,ZNF683`. Saved GUI configurations run through
+`run-yaml-workflow` without conversion.
+
+For selected-marker reports only, use `--tf-site-dir`
 and omit `--all-motif-diff-dir` and `--all-motif-results` from the example.
 This alternative directory must contain files named `{TF}.motif_hits.bed` or
 `{TF}.motif_peaks.bed`.
@@ -2173,8 +2177,8 @@ Generate per-cell footprint-signature heatmaps and UMAP reports.
 options:
   -h, --help            show this help message and exit
   --annotations ANNOTATIONS
-                        Cell annotation TSV/CSV with barcode, cell type, and
-                        UMAP columns.
+                        Cell annotation TSV/CSV requiring barcode, cell_type,
+                        snap_cell_type, umap_1, and umap_2 columns.
   --fragments FRAGMENTS
                         10x-style fragments TSV/TSV.GZ used to count cut sites
                         around motif centers.
@@ -2276,7 +2280,7 @@ sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations
 **Primary inputs**
 
 - `--fragments` — TSV or TSV.GZ with chromosome, start, end, and cell barcode in its first four columns.
-- `--annotations` — cell annotation TSV with `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2`, plus any additional grouping columns.
+- `--annotations` — cell annotation TSV or CSV with required `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2`, plus any additional grouping columns. The GUI and command check these columns before analysis starts.
 - `--h5ad` — AnnData file containing the same cells and genomic-bin counts used for the companion motif-activity scores. See the requirements below.
 - `--group-by` — annotation column used to define pseudobulk groups.
 - `--genome-sizes` — two-column chromosome-name and length file used to write grouped signal tracks.

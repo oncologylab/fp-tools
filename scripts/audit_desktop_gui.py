@@ -1070,6 +1070,21 @@ def _audit_signature_runs(browser, base_url: str, workdir: Path, run_dir: Path, 
         _submit_text_control(page, "Marker motifs (one per line)", "STAT6\nCEBPA\nZNF683")
         page.get_by_role("button", name="Update page config", exact=True).click()
         page.get_by_text("Config is ready to run.", exact=True).wait_for(timeout=30_000)
+        annotation_text = inputs["annotations"].read_text(encoding="utf-8")
+        lines = [line.split("\t") for line in annotation_text.splitlines()]
+        snap_index = lines[0].index("snap_cell_type")
+        inputs["annotations"].write_text(
+            "\n".join("\t".join(value for i, value in enumerate(row) if i != snap_index) for row in lines) + "\n",
+            encoding="utf-8",
+        )
+        page.get_by_role("button", name="Update page config", exact=True).click()
+        expect(page.get_by_role("button", name="Start run", exact=True)).to_be_disabled()
+        expect(page.get_by_text("Annotation table is missing required columns: snap_cell_type", exact=False)).to_be_visible()
+        if first_output.exists():
+            raise RuntimeError("Invalid signature annotations created analysis outputs")
+        inputs["annotations"].write_text(annotation_text, encoding="utf-8")
+        page.get_by_role("button", name="Update page config", exact=True).click()
+        page.get_by_text("Config is ready to run.", exact=True).wait_for(timeout=30_000)
         saved = launch_and_wait()
         assert_signature_outputs(first_output)
         if saved["samples"][0]["markers"] != ["STAT6", "CEBPA", "ZNF683"]:

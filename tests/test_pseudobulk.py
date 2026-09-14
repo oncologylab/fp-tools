@@ -487,7 +487,7 @@ class PseudobulkTest(unittest.TestCase):
             h5ad = tmp / "cells.h5ad"
             outdir = tmp / "workflow"
             fragments.write_text("chr1\t10\t20\tcellA\t2\nchr1\t30\t40\tcellB\t1\n", encoding="utf-8")
-            annotations.write_text("barcode\tcell_type\ncellA\tB\ncellB\tB\n", encoding="utf-8")
+            annotations.write_text("barcode\tcell_type\tsnap_cell_type\tumap_1\tumap_2\ncellA\tB\tB\t0\t0\ncellB\tB\tB\t1\t1\n", encoding="utf-8")
             genome_sizes.write_text("chr1\t100\n", encoding="utf-8")
             genome.write_text(">chr1\n" + "A" * 100 + "\n", encoding="utf-8")
             peaks.write_text("chr1\t1\t80\n", encoding="utf-8")
@@ -554,7 +554,7 @@ class PseudobulkTest(unittest.TestCase):
             outdir = tmp / "workflow"
             tf_site_dir.mkdir()
             fragments.write_text("chr1\t10\t20\tcellA\t2\nchr1\t30\t40\tcellB\t1\n", encoding="utf-8")
-            annotations.write_text("barcode\tcell_type\tumap_1\tumap_2\ncellA\tB_cell\t0\t0\ncellB\tB_cell\t1\t1\n", encoding="utf-8")
+            annotations.write_text("barcode\tcell_type\tsnap_cell_type\tumap_1\tumap_2\ncellA\tB_cell\tB_cell\t0\t0\ncellB\tB_cell\tB_cell\t1\t1\n", encoding="utf-8")
             genome_sizes.write_text("chr1\t100\n", encoding="utf-8")
             genome.write_text(">chr1\n" + "A" * 100 + "\n", encoding="utf-8")
             peaks.write_text("chr1\t1\t80\n", encoding="utf-8")
