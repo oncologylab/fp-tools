@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 
 from fp_tools.gui_app import GENERIC_TOOL_DEFAULTS
+from fp_tools.gui_config import build_cli_command, config_to_yaml_text, expand_jobs, parse_yaml_text
 from fp_tools.tools.pseudobulk_footprints import build_parser, run_pseudobulk_footprints
 
 
@@ -40,3 +41,18 @@ def test_sc_motif_selection_matches_generated_commands(tmp_path, custom, databas
         assert diff[diff.index("--motif-db") + 1] == expected
     assert GENERIC_TOOL_DEFAULTS["sc-footprinting"]["motif_db"] == ""
     assert "motifs" in GENERIC_TOOL_DEFAULTS["sc-footprinting"]
+
+
+@pytest.mark.parametrize("motifs,database", [(None, None), (["custom.jaspar"], None),
+                                           (None, "hocomoco14_core"), (["custom.jaspar"], "hocomoco14_core")])
+def test_sc_yaml_roundtrip_preserves_explicit_motif_choices(motifs, database):
+    item = {"tool": "sc-footprinting", "fragments": "fragments.tsv", "annotations": "annotations.tsv",
+            "h5ad": "cells.h5ad", "group_by": "cell_type", "genome": "genome.fa",
+            "genome_sizes": "genome.sizes", "peaks": "peaks.bed", "outdir": "output"}
+    defaults = {"motifs": motifs, "motif_db": database}
+    config = {"version": 1, "defaults": defaults, "samples": [item]}
+    restored = parse_yaml_text(config_to_yaml_text(config))
+    job = expand_jobs(restored)[0]
+    command = build_cli_command(job.tool, job.params)
+    assert ("--motifs" in command) == bool(motifs)
+    assert ("--motif-db" in command) == bool(database)

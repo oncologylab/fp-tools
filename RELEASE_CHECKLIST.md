@@ -133,6 +133,12 @@ from an empty runtime cache and complete STREME, JASPAR-to-MEME conversion,
 Tomtom, and the packaged motif summarizer twice from the released Apple Silicon
 application.
 
+The same `Release smoke` workflow must pass its two isolated Windows public-EXE
+jobs, with default discovery parameters and explicit STREME extra arguments.
+Each job verifies the EXE checksum, a fresh managed WSL import, cached reuse,
+paths containing spaces, both runtime-option spellings, and all discovery
+outputs. Calling STREME by absolute path with `--version` is not sufficient.
+
 The manual GitHub Actions `Publish` workflow uses the repository
 `PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or
 committed files. Rotate any token that was exposed outside a secret manager.

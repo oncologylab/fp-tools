@@ -12,6 +12,39 @@ permissions:
   contents: read
 
 jobs:
+  windows-managed-meme:
+    name: Windows public EXE / ${{ matrix.case }} discovery
+    runs-on: windows-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [default, extra]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Download and verify the released executable
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          $version = $env:RELEASE_VERSION -replace '^v', ''
+          gh release download "v$version" --repo $env:GITHUB_REPOSITORY --pattern 'fp-tools-gui-windows-x64.exe' --pattern 'SHA256SUMS.txt' --dir release
+          if ($LASTEXITCODE -ne 0) { throw 'Release download failed' }
+          $line = Get-Content release/SHA256SUMS.txt | Where-Object { $_ -match 'fp-tools-gui-windows-x64.exe$' }
+          $expected = ($line -split '\s+')[0]
+          $actual = (Get-FileHash release/fp-tools-gui-windows-x64.exe -Algorithm SHA256).Hash
+          if (!$expected -or $actual -ne $expected) { throw 'Windows EXE checksum mismatch' }
+      - name: Run fresh-import and cached discovery through the public EXE
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          python scripts/smoke_windows_meme_release.py release/fp-tools-gui-windows-x64.exe --version $env:RELEASE_VERSION --case ${{ matrix.case }}
+          if ($LASTEXITCODE -ne 0) { throw 'Public Windows discovery failed' }
   macos-managed-meme:
     name: macOS Apple Silicon / clean-cache managed MEME
     runs-on: macos-15

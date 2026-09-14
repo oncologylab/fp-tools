@@ -28,6 +28,11 @@ database empty; explicit saved database choices remain explicit. Four motif
 selection regressions failed before the fix and passed afterward, checking
 both resolver inputs and generated differential commands.
 
+Additional verification: 40 annotation/configuration tests passed (6 warnings,
+65.35 seconds), and eight motif command/YAML regressions passed (2.11 seconds).
+Release smoke now requires public Windows EXE discovery in two isolated runners
+(default and extra-argument cases), with fresh WSL imports and cached repeats.
+
 ### v0.2.4 marker-list maintenance release
 
 Issue #69 was reproduced on clean main at 9a072cb: the GUI's YAML marker list
