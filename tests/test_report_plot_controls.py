@@ -115,6 +115,23 @@ class ReportPlotControlsTest(unittest.TestCase):
             self.assertNotIn('<script src="plot_controls.js"', document)
 
     @unittest.skipUnless(shutil.which("node"), "Node.js is required for JavaScript behavior checks")
+    def test_scientific_labels_retain_zero_exponents(self):
+        program = r"""
+const fs = require('fs');
+const vm = require('vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const formatter = source.match(/function fmtSci\(value\) \{[\s\S]*?\n\}/)[0];
+const context = vm.createContext({});
+vm.runInContext(formatter, context);
+const values = [0, 1, 0.05, 1e-10, NaN, Infinity, 'invalid'];
+process.stdout.write(JSON.stringify(values.map(value => context.fmtSci(value))));
+"""
+        result = subprocess.run(["node", "-e", program, str(RESOURCE_ROOT / "app.js")],
+                                check=True, capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout),
+                         ["0.0e+0", "1.0e+0", "5.0e-2", "1.0e-10", "NA", "NA", "NA"])
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is required for JavaScript behavior checks")
     def test_rank_modes_and_tf_name_matching(self):
         script = RESOURCE_ROOT / "plot_controls.js"
         program = r"""

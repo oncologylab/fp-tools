@@ -17,6 +17,7 @@ from urllib.parse import quote
 from playwright.sync_api import expect, sync_playwright
 
 from fp_tools.tools.review_multi_comparisons import write_review_html
+from fp_tools.tools.static_comparison_browser import build_static_browser
 
 
 def fixture_payload(include_aggregates: bool) -> dict:
@@ -98,6 +99,34 @@ def write_fixtures(output_dir: Path) -> list[Path]:
         )
         reports.append(report)
     return reports
+
+
+def audit_fdr_labels(browser, root: Path) -> None:
+    payload = fixture_payload(True)
+    for point in payload["points"]:
+        point["fdr"] = 1.0
+        payload["motif_matrices"][point["prefix"]] = [
+            [8, 1, 1, 1], [1, 8, 1, 1], [1, 1, 8, 1], [1, 1, 1, 8]
+        ]
+    report = build_static_browser([payload], root / "fdr-one", "FDR formatting regression")
+    page = browser.new_page(viewport={"width": 1800, "height": 1050})
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    try:
+        with serve_report(report) as url:
+            page.goto(url, wait_until="load")
+            expect(page.locator("#selected-grid")).to_contain_text("FDR = 1.0e+0")
+            titles = page.locator("#chart title").all_text_contents()
+            if not any("FDR 1.0e+0" in title for title in titles):
+                raise AssertionError(f"Missing valid FDR=1 volcano tooltip: {titles}")
+            svg = downloaded_svg(page, "#download-logo")
+            if "FDR = 1.0e+0" not in svg:
+                raise AssertionError("Exported motif-card SVG lacks a complete exponent")
+            if errors:
+                raise AssertionError(errors)
+    finally:
+        page.close()
+    print("PASS FDR=1 cards, volcano tooltips, and downloaded SVG text")
 
 
 class QuietRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -380,6 +409,8 @@ def main() -> int:
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
+            with tempfile.TemporaryDirectory(prefix="fp-tools-fdr-audit-") as fdr_root:
+                audit_fdr_labels(browser, Path(fdr_root))
             for report in reports:
                 page = browser.new_page(viewport={"width": 1800, "height": 1050})
                 screenshot = (

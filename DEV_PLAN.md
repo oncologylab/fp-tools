@@ -18,6 +18,14 @@ natural height. A browser regression failed before the fix and passed afterward,
 checking containment and a minimum 4px gap on Home/Config, collapsed/expanded
 Workspace, 1280/1920 widths, and 1/1.25/2 device scale and CSS zoom factors.
 
+Issue #75 reproduced in the shared report formatter: exponent zero became an
+incomplete `e+` suffix. JavaScript's native exponential output now retains the
+zero. Formatting tests cover 0, 1, 0.05, 1e-10, NaN, infinity, and invalid text.
+The focused regression failed before the fix; all 47 related report/GUI tests
+passed afterward (6.75 seconds). The browser audit passed FDR=1 cards, volcano
+tooltips, and downloaded motif-card SVG text, plus both existing aggregate and
+aggregate-free plot-control fixtures. Numerical results are unchanged.
+
 ### v0.2.5 maintenance work
 
 Issue #70: wrapper runtime replacement and path translation now stop at
