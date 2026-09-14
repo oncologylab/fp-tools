@@ -7,6 +7,7 @@ import argparse
 import functools
 import http.server
 import re
+import subprocess
 import tempfile
 import threading
 import xml.etree.ElementTree as ET
@@ -16,7 +17,7 @@ from urllib.parse import quote
 
 from playwright.sync_api import expect, sync_playwright
 
-from fp_tools.tools.review_multi_comparisons import write_review_html
+from fp_tools.tools.review_multi_comparisons import _compressed_json_b64, write_review_html
 from fp_tools.tools.static_comparison_browser import build_static_browser
 
 
@@ -101,14 +102,22 @@ def write_fixtures(output_dir: Path) -> list[Path]:
     return reports
 
 
-def audit_fdr_labels(browser, root: Path) -> None:
+def audit_fdr_labels(browser, root: Path, executable: Path | None = None) -> None:
     payload = fixture_payload(True)
     for point in payload["points"]:
         point["fdr"] = 1.0
         payload["motif_matrices"][point["prefix"]] = [
             [8, 1, 1, 1], [1, 8, 1, 1], [1, 1, 8, 1], [1, 1, 1, 8]
         ]
-    report = build_static_browser([payload], root / "fdr-one", "FDR formatting regression")
+    if executable is None:
+        report = build_static_browser([payload], root / "fdr-one", "FDR formatting regression")
+    else:
+        source = root / "fdr-input.html"
+        source.write_text(f'<script>const reportPayloadB64="{_compressed_json_b64(payload)}";</script>', encoding="utf-8")
+        subprocess.run([str(executable), "--fp-tools-internal-command", "review-multi-comparisons",
+                        "--inputs", str(source), "--output-dir", str(root / "fdr-one")],
+                       check=True, timeout=120)
+        report = root / "fdr-one" / "index.html"
     page = browser.new_page(viewport={"width": 1800, "height": 1050})
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))

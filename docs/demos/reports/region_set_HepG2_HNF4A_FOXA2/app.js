@@ -47,7 +47,7 @@ function fmt(value, digits = 3) {
 function fmtSci(value) {
   const number = Number(value);
   return Number.isFinite(number)
-    ? number.toExponential(1).replace("e-0", "e-").replace("e+0", "e+")
+    ? number.toExponential(1)
     : "NA";
 }
 function motifLabel(motif) {

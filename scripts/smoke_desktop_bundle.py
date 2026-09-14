@@ -279,6 +279,15 @@ def main() -> int:
             )
 
         signature_fixture = write_signature_fixture(run_path / "signature_fixture")
+        from audit_report_plot_controls import audit_fdr_labels
+        from playwright.sync_api import sync_playwright
+
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            try:
+                audit_fdr_labels(browser, run_path, executable)
+            finally:
+                browser.close()
         invalid_annotations = run_path / "annotations_missing_snap.tsv"
         import pandas as pd
         pd.read_csv(signature_fixture["annotations"], sep="\t").drop(columns=["snap_cell_type"]).to_csv(

@@ -26,6 +26,13 @@ passed afterward (6.75 seconds). The browser audit passed FDR=1 cards, volcano
 tooltips, and downloaded motif-card SVG text, plus both existing aggregate and
 aggregate-free plot-control fixtures. Numerical results are unchanged.
 
+Both website demo formatter copies are synchronized. Native desktop smoke now
+generates an FDR=1 report through the frozen command and checks cards, tooltips,
+and the downloaded SVG in a real browser. The same command path passed with
+the source adapter before native builds. Documentation/demo contracts passed
+37 tests in 24.94 seconds. These fixes are being prepared for v0.2.6; the
+published v0.2.5 artifacts are unchanged.
+
 ### v0.2.5 maintenance work
 
 Issue #70: wrapper runtime replacement and path translation now stop at
