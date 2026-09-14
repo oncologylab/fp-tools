@@ -51,7 +51,12 @@ all-motif inputs are supplied.
 
 Choose TFs with `--markers TF1,TF2`. The default markers are
 `STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3`; each selected TF must have motif
-sites in your inputs. For selected-marker reports only, use `--tf-site-dir`
+sites in your inputs. In the GUI, enter one marker per line. YAML accepts either
+a list such as `markers: [STAT6, CEBPA, ZNF683]` or the comma-separated form
+`markers: STAT6,CEBPA,ZNF683`. Saved GUI configurations run through
+`run-yaml-workflow` without conversion.
+
+For selected-marker reports only, use `--tf-site-dir`
 and omit `--all-motif-diff-dir` and `--all-motif-results` from the example.
 This alternative directory must contain files named `{TF}.motif_hits.bed` or
 `{TF}.motif_peaks.bed`.
