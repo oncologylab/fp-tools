@@ -15,6 +15,21 @@ from fp_tools.utils import network
 
 
 class RuntimeManagerTest(unittest.TestCase):
+    def test_wsl_launch_initializes_guest_path_without_interpolating_arguments(self):
+        activation = runtime.RuntimeActivation("managed", "meme", distro="test-distro")
+        literal = "space and $(do-not-execute)"
+        with mock.patch.object(runtime, "ensure_wsl_runtime", return_value=activation), mock.patch.object(
+            runtime, "_wsl_path", side_effect=lambda distro, path: "/mapped/" + path
+        ), mock.patch.object(runtime.subprocess, "run", return_value=mock.Mock(returncode=7)) as run:
+            self.assertEqual(runtime.run_managed_wsl_command(
+                "discover-motifs", ["--extra-args", literal], set(), "meme"
+            ), 7)
+        command = run.call_args.args[0]
+        shell = command.index("--exec") + 1
+        self.assertEqual(command[shell:shell + 4], ["/bin/bash", "--noprofile", "--norc", "-c"])
+        self.assertEqual(command[shell + 4], 'export PATH="/opt/conda/bin${PATH:+:$PATH}"; exec "$@"')
+        self.assertEqual(command[shell + 5:], ["fp-tools-wsl", "/opt/conda/bin/discover-motifs", "--runtime", "system", "--extra-args", literal])
+
     def test_runtime_rewrite_preserves_external_remainder(self):
         tail = ["--extra-args", "--dna", "--runtime", "external", "--fasta=x y"]
         for option in ([], ["--runtime", "managed"], ["--runtime=managed"]):

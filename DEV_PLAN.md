@@ -11,6 +11,10 @@ Issue #70: wrapper runtime replacement and path translation now stop at
 regressions failed before the fix; all 15 runtime tests passed afterward.
 Native public Windows discovery remains a release gate.
 
+Issue #71: managed WSL commands now initialize the guest executable PATH in a
+noninteractive shell, with user arguments passed positionally. The delegation
+regression failed before the fix; all 16 runtime tests passed afterward.
+
 ### v0.2.4 marker-list maintenance release
 
 Issue #69 was reproduced on clean main at 9a072cb: the GUI's YAML marker list
