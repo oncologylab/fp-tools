@@ -21,7 +21,8 @@ sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations
 - `--genome-sizes` — two-column chromosome-name and length file used to write grouped signal tracks.
 - `--genome` — reference genome FASTA matching the fragments and peak coordinates.
 - `--peaks` — accessible-region BED file.
-- `--motif-db` — built-in motif database name.
+- `--motif-db` — optional built-in motif database name.
+- `--motifs` — optional custom motif files. Custom motifs alone use only those files; explicitly supply `--motif-db` as well to combine them. When neither option is supplied, the command uses `jaspar2026_vertebrates`.
 - `--outdir` — directory for pseudobulk tracks, motif results, and reports.
 
 The per-cell reports need annotation barcodes that match the AnnData cell names.

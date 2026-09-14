@@ -164,7 +164,8 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "genome_sizes": "",
         "genome": "",
         "peaks": "",
-        "motif_db": "jaspar2026_vertebrates",
+        "motif_db": "",
+        "motifs": "",
         "dry_run": False,
     },
 }

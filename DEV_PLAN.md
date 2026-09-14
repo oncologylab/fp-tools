@@ -22,6 +22,12 @@ signature scripts keep their own schema. Three initial regressions reproduced
 the defect; the expanded annotation/pseudobulk suite passed 17 tests. The GUI
 browser audit now includes rejection and recovery before its real signature run.
 
+Issue #73: sc-footprinting now selects JASPAR only when neither a database nor
+custom motifs are supplied. GUI defaults expose custom motifs and leave the
+database empty; explicit saved database choices remain explicit. Four motif
+selection regressions failed before the fix and passed afterward, checking
+both resolver inputs and generated differential commands.
+
 ### v0.2.4 marker-list maintenance release
 
 Issue #69 was reproduced on clean main at 9a072cb: the GUI's YAML marker list

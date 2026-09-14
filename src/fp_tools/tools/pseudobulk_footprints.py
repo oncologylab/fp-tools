@@ -234,6 +234,7 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
             read_signature_annotations(args.annotations, header_only=True)
         except ValueError as exc:
             raise SystemExit(str(exc)) from exc
+    motif_db = args.motif_db or (DEFAULT_MOTIF_DB if not args.motifs else None)
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     grouping_dir = outdir / "pseudobulk"
@@ -370,7 +371,7 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
 
     output_manifest = pd.DataFrame(rows)
     runnable_mask = output_manifest["status"].isin(["succeeded", "dry_run"])
-    motif_inputs = resolve_motif_inputs(args.motifs, args.motif_db, use_default=False)
+    motif_inputs = resolve_motif_inputs(args.motifs, motif_db, use_default=False)
     diff_results: Path | None = None
     motif_report_available = bool(motif_inputs and runnable_mask.any())
     if motif_inputs and runnable_mask.any():
@@ -401,8 +402,8 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
             "--cores",
             str(args.cores),
         ]
-        if args.motif_db:
-            diff_command.extend(["--motif-db", str(args.motif_db)])
+        if motif_db:
+            diff_command.extend(["--motif-db", str(motif_db)])
         if args.motifs:
             diff_command.extend(["--motifs", *[str(path) for path in args.motifs]])
         if args.peak_header:
@@ -494,7 +495,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--top-n", type=int, default=None, help="Optional top N candidate footprints per group.")
     parser.add_argument("--read-shift", nargs=2, type=int, metavar=("FWD", "REV"), help="Override the atac-correct read shift for fragment cut sites (default: 0 0).")
     parser.add_argument("--motifs", nargs="*", help="Optional motif file(s); when provided, run motif-aware diff-footprints on pseudobulk footprint tracks.")
-    parser.add_argument("--motif-db", default=DEFAULT_MOTIF_DB, help=f"Built-in motif database for motif matching (default: {DEFAULT_MOTIF_DB}); can be combined with --motifs.")
+    parser.add_argument("--motif-db", help=f"Built-in motif database; defaults to {DEFAULT_MOTIF_DB} only when neither --motif-db nor --motifs is supplied. Explicitly supply both to combine them.")
     parser.add_argument("--list-motif-dbs", action="store_true", help="List available built-in motif databases and exit.")
     parser.add_argument("--peak-header", help="Optional peak-header file passed to diff-footprints.")
     parser.add_argument("--diff-prefix", dest="diff_prefix", default="pseudobulk_diff_footprints", help="Prefix for optional motif-aware diff-footprints outputs.")
