@@ -33,6 +33,12 @@ the source adapter before native builds. Documentation/demo contracts passed
 37 tests in 24.94 seconds. These fixes are being prepared for v0.2.6; the
 published v0.2.5 artifacts are unchanged.
 
+Release preflight passed 567 tests, one skip, and 26 warnings in 261.46 seconds.
+The complete source GUI audit passed, including branding geometry and real
+signature runs. Strict MkDocs and the 33-page, three-viewport docs audit passed.
+Version metadata and runtime artifact names are synchronized to v0.2.6 while
+external-tool pins and scientific implementations remain unchanged.
+
 ### v0.2.5 maintenance work
 
 Issue #70: wrapper runtime replacement and path translation now stop at
