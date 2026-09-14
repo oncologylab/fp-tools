@@ -24,6 +24,19 @@ remains required before stable designation and closing #69.
 The complete source GUI audit also passed against Streamlit 1.63, including
 both real marker-list launches and identical scores. All console-script checks,
 18 YAML dry runs, and `pip check` passed.
+Release preflight passed 550 tests, one skip, and 26 warnings in 267.24 seconds;
+strict MkDocs and the 33-page/three-viewport documentation audit also passed.
+The source archive passed `twine check` with 194 entries and no manuscript,
+environment, or agent-state directories. A scan of 119 tracked package and
+packaging files found no secret/private-path patterns. Version metadata and
+all nine runtime artifact names are synchronized to 0.2.4; external-tool pins
+are unchanged, and website downloads remain on verified v0.2.3 until new assets
+pass their checks.
+The normal isolated editable build succeeded; the initial non-isolated attempt
+used local Cython 3.2.5 outside the declared build range and was discarded.
+The installed 0.2.4 package passed dependency and compiled-extension import
+checks, 35 release/marker tests in 90.89 seconds, and 14 rebuilt-kernel regression
+tests with one skip in 89.24 seconds. No build-requirement changes were needed.
 
 ### v0.2.3 maintenance release
 
