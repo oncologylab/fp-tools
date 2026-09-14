@@ -39,6 +39,43 @@ signature runs. Strict MkDocs and the 33-page, three-viewport docs audit passed.
 Version metadata and runtime artifact names are synchronized to v0.2.6 while
 external-tool pins and scientific implementations remain unchanged.
 
+v0.2.6 is tagged at 7b37433. Its isolated editable build and dependency check
+passed, followed by 22 installed release/report tests (28.37 seconds), all
+console-script checks, and 18 YAML dry runs. The sdist passed twine and hygiene
+checks (197 entries); 122 tracked package/packaging files passed the secret and
+private-path scan.
+
+CI run 34903980310 passed all ten jobs. The full Linux job reported 549 passed,
+16 skipped, 26 warnings, and 87 subtests; each Windows Python 3.11–3.13 job
+reported 537 passed, 28 skipped, one warning, and 69 subtests. Counts are kept
+separate for each environment. Desktop run 34904025645 passed both platforms,
+including frozen report generation, FDR=1 browser/SVG checks, branding geometry,
+actual GUI signature runs, and macOS signing/DMG validation.
+
+Managed runtimes (34904025641), containers (34904025640), and Publish
+(34904026255) passed. PyPI has all 15 wheels and one sdist. All 13 public
+binary/archive downloads match their checksums. Desktop SHA-256 values:
+
+- Windows EXE: `21e1f07199f79477bcb5a90f7e13249b1ee736b49d9a9b9e2fa02041c65a5ba4`
+- Apple Silicon DMG: `6479e871e1d4be068b1cf1c692cf5b5f6381b0987b655bcb13b45d7e9bd7117b`
+
+Fresh PyPI checks passed console scripts, FDR browser/export regressions,
+identical direct/list-YAML signature scores with SVG/PDF output, annotation
+preflight, and first-use/cached Linux managed discovery. Release smoke run
+34905697537 passed all three public-download jobs: macOS and Windows default
+and extra-argument discovery, including fresh/cached runtimes and all five
+required output types. No scientific implementation or shared scientific
+helper changed relative to v0.2.5.
+
+Final download-page contracts passed 37 tests in 29.99 seconds, followed by
+strict MkDocs and the 33-page, three-viewport browser audit. Both live website
+demo JavaScript files were independently checked for the corrected formatter.
+Existing report files retain embedded JavaScript; regenerate their review HTML
+to update formatting without repeating statistical analysis. The existing
+optional STREME HTML-helper warning remains documented. Native checks use small
+fixtures and do not certify full-scale single-cell analysis. Research work and
+the published manuscript were not modified.
+
 ### v0.2.5 maintenance work
 
 Issue #70: wrapper runtime replacement and path translation now stop at
