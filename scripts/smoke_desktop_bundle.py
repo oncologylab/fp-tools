@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import socket
 import signal
@@ -12,6 +13,8 @@ import tempfile
 import time
 import urllib.request
 from pathlib import Path
+
+import yaml
 
 
 def write_signature_fixture(root: Path) -> dict[str, Path]:
@@ -112,6 +115,32 @@ def write_signature_fixture(root: Path) -> dict[str, Path]:
         "site_dir": site_dir,
         "all_scores": all_scores_path,
     }
+
+
+def signature_config(inputs: dict[str, Path], outdir: Path) -> dict:
+    """The same deterministic signature job through GUI/YAML wrappers."""
+    return {"tool": "find-signature-fp", "annotations": str(inputs["annotations"]),
+            "fragments": str(inputs["fragments"]), "h5ad": str(inputs["h5ad"]),
+            "tf_site_dir": str(inputs["site_dir"]),
+            "all_motif_score_table": str(inputs["all_scores"]),
+            "markers": ["STAT6", "CEBPA", "ZNF683"],
+            "marker_groups": "STAT6:B_cell,CEBPA:Monocyte,ZNF683:T_NK_cell",
+            "knn": 1, "flank": 20, "center_half_width": 2,
+            "flank_inner": 5, "flank_outer": 15,
+            "no_create_fragment_index": True,
+            "top_motif_signatures_per_cell_type": 1, "outdir": str(outdir)}
+
+
+def assert_signature_outputs(output: Path, reference: Path | None = None) -> None:
+    for filename in ("knn_footprint_signature_scores.tsv", "chromvar_like_motif_activity_scores.tsv"):
+        path = output / filename
+        if not path.is_file() or not path.stat().st_size:
+            raise RuntimeError(f"Signature output is missing: {path}")
+        if reference is not None and path.read_bytes() != (reference / filename).read_bytes():
+            raise RuntimeError(f"YAML and direct CLI signature scores differ: {filename}")
+    for suffix in ("svg", "pdf"):
+        if not any(path.stat().st_size for path in output.glob(f"*.{suffix}")):
+            raise RuntimeError(f"Signature output has no nonempty {suffix} plots: {output}")
 
 
 def free_port() -> int:
@@ -303,6 +332,23 @@ def main() -> int:
                 f"{signature_run.stdout}\n{signature_run.stderr}\n"
                 f"SVG files: {len(signature_svgs)}; PDF files: {len(signature_pdfs)}"
             )
+
+        yaml_output = run_path / "find_signature_yaml"
+        config_path = run_path / "signature.yml"
+        config_path.write_text(yaml.safe_dump(signature_config(signature_fixture, yaml_output)), encoding="utf-8")
+        yaml_runs = run_path / "signature_yaml_runs"
+        yaml_run = subprocess.run(
+            [str(executable), "--fp-tools-internal-command", "run-yaml-workflow",
+             "--config", str(config_path), "--run-root", str(yaml_runs)],
+            capture_output=True, text=True, timeout=max(args.timeout, 180), cwd=run_dir,
+        )
+        if yaml_run.returncode:
+            raise SystemExit(f"Frozen marker-list YAML failed:\n{yaml_run.stdout}\n{yaml_run.stderr}")
+        status = json.loads((yaml_runs / "run" / "status.json").read_text(encoding="utf-8"))
+        if status["status"] != "succeeded" or status["exit_code"] != 0:
+            raise SystemExit(f"Frozen YAML child failed: {status}")
+        assert_signature_outputs(yaml_output, signature_output)
+        print("Frozen marker-list YAML matches direct CLI scores and renders SVG/PDF", flush=True)
 
         port = free_port()
         process = subprocess.Popen(

@@ -1,8 +1,29 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-12
+Last updated: 2026-09-14
 
 ## Current Baseline
+
+### v0.2.4 marker-list maintenance release
+
+Issue #69 was reproduced on clean main at 9a072cb: the GUI's YAML marker list
+passed validation but expanded into multiple values for the single-value
+`find-signature-fp --markers` argument. Six focused regressions failed before
+the fix, with eleven controls passing. The shared serializer now joins only
+this tool/flag's list into one comma-separated argument. Scalar strings,
+defaults, explicit overrides, empty-list omission, other list arguments, and
+the supplied configuration are preserved. No scientific implementation changed.
+
+All 65 focused configuration, GUI, example, and wrapper tests passed in 64.18
+seconds, including real list-YAML execution with byte-identical primary score
+TSVs compared with direct scalar CLI execution. Both paths produced SVG/PDF
+plots. The native smoke and browser audits now require this marker-list path,
+including successful parent/child statuses from dedicated-form and Config runs.
+The user selected a full v0.2.4 release; native/public-consumer verification
+remains required before stable designation and closing #69.
+The complete source GUI audit also passed against Streamlit 1.63, including
+both real marker-list launches and identical scores. All console-script checks,
+18 YAML dry runs, and `pip check` passed.
 
 ### v0.2.3 maintenance release
 

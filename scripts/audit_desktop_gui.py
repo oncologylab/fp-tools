@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import socket
@@ -1016,6 +1017,82 @@ def _audit_validation_layout(
         context.close()
 
 
+def _audit_signature_runs(browser, base_url: str, workdir: Path, run_dir: Path, output: Path) -> None:
+    """Execute marker lists from the dedicated form and a reloaded Config page."""
+    from smoke_desktop_bundle import assert_signature_outputs, signature_config, write_signature_fixture
+
+    inputs = write_signature_fixture(workdir / "signature_inputs")
+    first_output = workdir / "signature_form_output"
+    config_path = workdir / "signature_input.yml"
+    config_path.write_text(yaml.safe_dump(signature_config(inputs, first_output)), encoding="utf-8")
+    context = browser.new_context(viewport={"width": 1440, "height": 960})
+    page = context.new_page()
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+
+    def launch_and_wait():
+        existing = set(run_dir.iterdir()) if run_dir.exists() else set()
+        page.get_by_role("button", name="Start run", exact=True).click()
+        deadline = time.monotonic() + 240
+        while time.monotonic() < deadline:
+            created = set(run_dir.iterdir()) - existing if run_dir.exists() else set()
+            if len(created) == 1:
+                folder = next(iter(created))
+                try:
+                    status = json.loads((folder / "status.json").read_text(encoding="utf-8"))
+                except (FileNotFoundError, json.JSONDecodeError):
+                    status = {}
+                if status.get("status") in {"failed", "succeeded"}:
+                    if status["status"] != "succeeded" or status.get("exit_code") != 0:
+                        raise RuntimeError(f"GUI marker-list run failed: {status}")
+                    children = list(folder.glob("*/status.json"))
+                    if len(children) != 1:
+                        raise RuntimeError(f"Expected one signature child status: {children}")
+                    child = json.loads(children[0].read_text(encoding="utf-8"))
+                    command = child["command"]
+                    if child["status"] != "succeeded" or child["exit_code"] != 0:
+                        raise RuntimeError(f"Signature child failed: {child}")
+                    if command[command.index("--markers") + 1] != "STAT6,CEBPA,ZNF683":
+                        raise RuntimeError(f"Marker list was not serialized as one argument: {command}")
+                    return yaml.safe_load((folder / "config.yml").read_text(encoding="utf-8"))
+            page.wait_for_timeout(500)
+        raise RuntimeError("GUI marker-list run did not finish within 240 seconds")
+
+    try:
+        page.goto(f"{base_url}/?page=find-signature-fp", wait_until="domcontentloaded")
+        page.locator(".fp-page-heading h1", has_text="find-signature-fp").wait_for(timeout=60_000)
+        expect(page.get_by_label("Marker motifs (one per line)", exact=True)).to_have_value(
+            "STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3")
+        _open_expander(page.locator("details", has_text="Load find-signature-fp config").first)
+        _submit_text_control(page, "Config path", str(config_path))
+        page.get_by_role("button", name="Load YAML from path", exact=True).click()
+        expect(page.get_by_label("Output directory", exact=True)).to_have_value(str(first_output))
+        _submit_text_control(page, "Marker motifs (one per line)", "STAT6\nCEBPA\nZNF683")
+        page.get_by_role("button", name="Update page config", exact=True).click()
+        page.get_by_text("Config is ready to run.", exact=True).wait_for(timeout=30_000)
+        saved = launch_and_wait()
+        assert_signature_outputs(first_output)
+        if saved["samples"][0]["markers"] != ["STAT6", "CEBPA", "ZNF683"]:
+            raise RuntimeError("Dedicated form did not preserve YAML marker list")
+        second_output = workdir / "signature_config_output"
+        saved["samples"][0]["outdir"] = str(second_output)
+        page.goto(f"{base_url}/?page=Config", wait_until="domcontentloaded")
+        page.get_by_label("Current YAML", exact=True).fill(yaml.safe_dump(saved))
+        page.get_by_role("button", name="Apply YAML text", exact=True).click()
+        page.get_by_text("Config is ready to run.", exact=True).wait_for(timeout=30_000)
+        launch_and_wait()
+        assert_signature_outputs(second_output, first_output)
+        if errors:
+            raise RuntimeError(f"Signature GUI browser errors: {errors}")
+        page.screenshot(path=str(output / "signature-marker-list-success.png"))
+        print("Dedicated GUI and Config marker-list runs succeeded with identical scores", flush=True)
+    except Exception:
+        page.screenshot(path=str(output / "signature-marker-list-failure.png"))
+        raise
+    finally:
+        context.close()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("executable")
@@ -1191,6 +1268,7 @@ def main() -> int:
                     if start_button.is_disabled():
                         raise RuntimeError("Start run remains disabled after the bulk configuration becomes valid")
                     context.close()
+                    _audit_signature_runs(browser, base_url, workdir_path, run_dir, output)
                 finally:
                     browser.close()
         finally:

@@ -322,7 +322,10 @@ def build_cli_command(tool: str, params: Mapping[str, Any]) -> list[str]:
             if not value:
                 continue
             command.append(flag)
-            command.extend(str(item) for item in value)
+            if tool == "find-signature-fp" and flag == "--markers":
+                command.append(",".join(str(item) for item in value))
+            else:
+                command.extend(str(item) for item in value)
             continue
         command.extend([flag, str(value)])
 
