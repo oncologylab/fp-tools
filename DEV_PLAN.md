@@ -38,6 +38,29 @@ The installed 0.2.4 package passed dependency and compiled-extension import
 checks, 35 release/marker tests in 90.89 seconds, and 14 rebuilt-kernel regression
 tests with one skip in 89.24 seconds. No build-requirement changes were needed.
 
+All release artifacts use immutable tag v0.2.4 at eee84dd. CI run 34873541255
+passed all ten jobs. Desktop run 34873565672 passed both native platforms,
+including frozen list-YAML versus scalar-CLI scores, both real GUI launch
+paths, parent/child completion, SVG/PDF output, and Mac DMG checks. Public
+desktop SHA-256 values were independently verified:
+
+- Apple Silicon DMG: `76ad18f42d51ba9446b0631592d9a7dcb7fba9ac06707ea139cb2e7e828d9cd1`
+- Windows x64 EXE: `f4efbb56ae7d2b30e86f92b555f6ecc46e4d33339c804c9f311f45c15447b012`
+
+Managed runtimes run 34873565698 passed, including a real Windows WSL2 import;
+all nine public archives match their sidecars. Container run 34873565689 passed
+both architectures, and both public archives match their checksum manifest.
+Release smoke run 34874636136 passed real cold-cache and cached motif discovery
+from the public Apple Silicon DMG.
+
+Publish run 34873604321 delivered all 15 wheels and one source distribution.
+A fresh Linux wheel-only PyPI installation passed dependency/console/YAML
+checks, real marker-list YAML with byte-identical scalar CLI score tables and
+SVG/PDF output, and cold-cache/cached managed motif discovery with an unchanged
+cache marker. Research stayed at 8a4a958; the published manuscript was untouched.
+The final v0.2.4 download links passed 37 documentation/release contracts in
+29.43 seconds, strict MkDocs, and the 33-page audit at three viewport sizes.
+
 ### v0.2.3 maintenance release
 
 The user authorized a new release of main for retesting on 2026-09-12.
