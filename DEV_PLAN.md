@@ -41,6 +41,13 @@ The source GUI audit passed including annotation rejection/recovery and
 identical real signature scores. The docs audit passed 33 pages at three
 viewports; console smoke, dependency checks, and strict MkDocs also passed.
 
+v0.2.5 release preparation synchronizes package, desktop, citation, example,
+and runtime versions while preserving all external-tool pins. The isolated
+editable build succeeded, all 18 YAML dry runs passed, and the source archive
+passed twine validation and hygiene checks (197 entries). A scan of 122 tracked
+package/packaging files found no secret or private-path patterns. Native and
+public-consumer verification remain required before stable release.
+
 ### v0.2.4 marker-list maintenance release
 
 Issue #69 was reproduced on clean main at 9a072cb: the GUI's YAML marker list
