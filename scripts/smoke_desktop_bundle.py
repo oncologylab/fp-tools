@@ -279,6 +279,20 @@ def main() -> int:
             )
 
         signature_fixture = write_signature_fixture(run_path / "signature_fixture")
+        invalid_annotations = run_path / "annotations_missing_snap.tsv"
+        import pandas as pd
+        pd.read_csv(signature_fixture["annotations"], sep="\t").drop(columns=["snap_cell_type"]).to_csv(
+            invalid_annotations, sep="\t", index=False
+        )
+        invalid_output = run_path / "invalid_signature"
+        invalid_run = subprocess.run(
+            [str(executable), "--fp-tools-internal-command", "find-signature-fp",
+             "--annotations", str(invalid_annotations), "--fragments", str(signature_fixture["fragments"]),
+             "--h5ad", str(signature_fixture["h5ad"]), "--outdir", str(invalid_output)],
+            capture_output=True, text=True, timeout=args.timeout, cwd=run_dir,
+        )
+        if invalid_run.returncode == 0 or "snap_cell_type" not in invalid_run.stderr or invalid_output.exists():
+            raise SystemExit(f"Frozen annotation preflight failed: {invalid_run.stdout}\n{invalid_run.stderr}")
         signature_output = run_path / "find_signature_fp"
         signature_run = subprocess.run(
             [
