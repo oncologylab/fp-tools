@@ -15,6 +15,24 @@ from fp_tools.utils import network
 
 
 class RuntimeManagerTest(unittest.TestCase):
+    def test_runtime_rewrite_preserves_external_remainder(self):
+        tail = ["--extra-args", "--dna", "--runtime", "external", "--fasta=x y"]
+        for option in ([], ["--runtime", "managed"], ["--runtime=managed"]):
+            arguments = ["--fasta", "input file.fa", *option, *tail]
+            original = list(arguments)
+            self.assertEqual(
+                runtime._replace_runtime_option(arguments, "system"),
+                ["--fasta", "input file.fa", "--runtime", "system", *tail],
+            )
+            self.assertEqual(arguments, original)
+
+    def test_path_translation_preserves_external_remainder(self):
+        arguments = ["--fasta", "input.fa", "--extra-args", "--fasta", "literal", "--fasta=other"]
+        self.assertEqual(
+            runtime.translate_flag_paths(arguments, {"--fasta"}, lambda p: "mapped/" + p),
+            ["--fasta", "mapped/input.fa", *arguments[2:]],
+        )
+
     def test_verified_urlopen_uses_required_certificate_context(self):
         response = io.BytesIO(b"ok")
         with mock.patch.object(

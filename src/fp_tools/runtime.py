@@ -474,9 +474,11 @@ def _looks_like_url(value: str) -> bool:
 
 
 def _replace_runtime_option(arguments: list[str], value: str) -> list[str]:
+    # argparse.REMAINDER belongs to the external program, not our wrapper.
+    boundary = arguments.index("--extra-args") if "--extra-args" in arguments else len(arguments)
     output: list[str] = []
     skip = False
-    for index, argument in enumerate(arguments):
+    for argument in arguments[:boundary]:
         if skip:
             skip = False
             continue
@@ -487,6 +489,7 @@ def _replace_runtime_option(arguments: list[str], value: str) -> list[str]:
             continue
         output.append(argument)
     output.extend(["--runtime", value])
+    output.extend(arguments[boundary:])
     return output
 
 
@@ -516,6 +519,9 @@ def translate_flag_paths(
     arguments = list(map(str, arguments))
     while index < len(arguments):
         argument = arguments[index]
+        if argument == "--extra-args":
+            translated.extend(arguments[index:])
+            break
         if argument in path_flags and index + 1 < len(arguments):
             translated.append(argument)
             index += 1

@@ -4,6 +4,13 @@ Last updated: 2026-09-14
 
 ## Current Baseline
 
+### v0.2.5 maintenance work
+
+Issue #70: wrapper runtime replacement and path translation now stop at
+`--extra-args`, preserving external arguments verbatim. Both focused
+regressions failed before the fix; all 15 runtime tests passed afterward.
+Native public Windows discovery remains a release gate.
+
 ### v0.2.4 marker-list maintenance release
 
 Issue #69 was reproduced on clean main at 9a072cb: the GUI's YAML marker list
