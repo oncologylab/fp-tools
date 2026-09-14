@@ -33,6 +33,14 @@ Additional verification: 40 annotation/configuration tests passed (6 warnings,
 Release smoke now requires public Windows EXE discovery in two isolated runners
 (default and extra-argument cases), with fresh WSL imports and cached repeats.
 
+The first full run found two maintenance inconsistencies (559 passed, one skip):
+the packaged single-cell example still carried the removed default, and the
+command guide needed to show its newly documented custom-motif option. Both
+were corrected; all 64 focused runtime/GUI/docs tests passed in 2.49 seconds.
+The source GUI audit passed including annotation rejection/recovery and
+identical real signature scores. The docs audit passed 33 pages at three
+viewports; console smoke, dependency checks, and strict MkDocs also passed.
+
 ### v0.2.4 marker-list maintenance release
 
 Issue #69 was reproduced on clean main at 9a072cb: the GUI's YAML marker list

@@ -2277,6 +2277,9 @@ sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations
   --motif-db jaspar2026_vertebrates --outdir project/pseudobulk
 ```
 
+For custom motifs alone, replace `--motif-db jaspar2026_vertebrates` with
+`--motifs custom.jaspar`. Supply both options only to combine the motif sets.
+
 **Primary inputs**
 
 - `--fragments` — TSV or TSV.GZ with chromosome, start, end, and cell barcode in its first four columns.

@@ -1095,6 +1095,18 @@ def _audit_signature_runs(browser, base_url: str, workdir: Path, run_dir: Path, 
         page.get_by_label("Current YAML", exact=True).fill(yaml.safe_dump(saved))
         page.get_by_role("button", name="Apply YAML text", exact=True).click()
         page.get_by_text("Config is ready to run.", exact=True).wait_for(timeout=30_000)
+        inputs["annotations"].write_text(
+            "\n".join("\t".join(value for i, value in enumerate(row) if i != snap_index) for row in lines) + "\n",
+            encoding="utf-8",
+        )
+        page.get_by_role("button", name="Apply YAML text", exact=True).click()
+        expect(page.get_by_role("button", name="Start run", exact=True)).to_be_disabled()
+        expect(page.get_by_text("Annotation table is missing required columns: snap_cell_type", exact=False)).to_be_visible()
+        if second_output.exists():
+            raise RuntimeError("Invalid Config annotations created analysis outputs")
+        inputs["annotations"].write_text(annotation_text, encoding="utf-8")
+        page.get_by_role("button", name="Apply YAML text", exact=True).click()
+        page.get_by_text("Config is ready to run.", exact=True).wait_for(timeout=30_000)
         launch_and_wait()
         assert_signature_outputs(second_output, first_output)
         if errors:

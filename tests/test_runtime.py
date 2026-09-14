@@ -15,6 +15,19 @@ from fp_tools.utils import network
 
 
 class RuntimeManagerTest(unittest.TestCase):
+    def test_container_delegation_preserves_remainder(self):
+        tail = ["--extra-args", "--runtime=external", "--fasta", "/external/literal path"]
+        with mock.patch.object(runtime.shutil, "which", return_value="docker"), mock.patch.object(
+            runtime.subprocess, "run", return_value=mock.Mock(returncode=0)
+        ) as run:
+            self.assertEqual(runtime.run_container_command(
+                "discover-motifs", ["--runtime=container", *tail], {"--fasta"}
+            ), 0)
+        command = run.call_args.args[0]
+        start = command.index("discover-motifs")
+        self.assertEqual(command[start + 1:], ["--runtime", "system", *tail])
+        self.assertFalse(any("/external" in value for value in command[:start]))
+
     def test_wsl_launch_initializes_guest_path_without_interpolating_arguments(self):
         activation = runtime.RuntimeActivation("managed", "meme", distro="test-distro")
         literal = "space and $(do-not-execute)"

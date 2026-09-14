@@ -11,6 +11,5 @@ samples:
     genome_sizes: data/public/processed/pseudobulk_pbmc5k_scatac/hg38.chrom.sizes
     genome: data/public/raw/genome/hg38.fa
     peaks: data/public/raw/10x_pbmc5k_scatac/atac_pbmc_5k_snatac2_selected_bins.demo.bed
-    motif_db: jaspar2026_vertebrates
     dry_run: true
 comparisons: []
