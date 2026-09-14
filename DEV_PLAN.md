@@ -48,6 +48,53 @@ passed twine validation and hygiene checks (197 entries). A scan of 122 tracked
 package/packaging files found no secret or private-path patterns. Native and
 public-consumer verification remain required before stable release.
 
+Final local preflight passed 566 tests, one skip, and 26 warnings in 252.65
+seconds. Both the complete source GUI audit (including dedicated-form and
+Config annotation rejection/recovery) and the 33-page, three-viewport docs
+audit passed. Version v0.2.5 is tagged immutably at e509a3a.
+
+CI run 34887790047 passed all ten jobs: Linux full-suite results were 548
+passed, 16 skipped, 26 warnings, and 87 subtests; each Windows Python 3.11–3.13
+full-suite result was 536 passed, 28 skipped, one warning, and 69 subtests.
+Counts are reported separately for each environment, including skips and subtests.
+Desktop run 34888066236 passed both native platforms, including actual GUI
+signature runs, parent/child completion, annotation preflight, SVG/PDF output,
+and macOS signing/DMG verification. Public desktop checksums were verified:
+
+- Windows EXE: `ae58dd25f9502760178378ac724868f2e40b2642a89544d1a15e780437a6a9ff`
+- Apple Silicon DMG: `37f738d2d40a53e837b593991593957cc3bc27cdfa5ba6703a9913f9f157c8cd`
+
+Managed runtimes run 34888066224 passed, including Windows WSL import.
+Container run 34888066250 and Publish run 34888067597 passed. The complete
+PyPI inventory contains 15 wheels and one sdist. All 13 public binary/archive
+downloads (nine runtimes, two containers, two desktops) match their checksums.
+Fresh PyPI first-use and cached Linux managed discovery passed all five
+outputs without reinstalling the runtime. Fresh PyPI direct and list-YAML
+signature runs produced identical score tables and SVG/PDF outputs; invalid
+annotations were rejected before output creation.
+
+Release smoke run 34889899040 passed all three public-download jobs: macOS
+first-use/cached discovery, and two isolated Windows EXE jobs using default
+parameters and STREME extra arguments. Each Windows job verified the EXE
+checksum, fresh WSL import, cached reuse, paths with spaces, both runtime flag
+spellings, and all five output types. This is end-to-end discovery evidence,
+separate from the runtime's absolute-path STREME version check.
+Download-page documentation/release contracts passed 37 tests in 29.44 seconds.
+These tests use small deterministic fixtures; no full large-data single-cell
+certification or new scientific performance claim is made. Production scoring
+defaults, research work, and the published manuscript remain unchanged.
+
+Nonblocking diagnostic: in the public Windows runs with paths containing
+spaces, STREME's optional upstream HTML helper warned that its XML input was
+not found (with additional Perl locale warnings). STREME text output, converted
+motifs, Tomtom TSV, and fp-tools' own summary TSV/HTML were present and nonempty.
+The optional STREME HTML file is not included in the five-output acceptance
+claim; no claim of warning-free vendor-tool execution is made.
+
+The v0.2.5 download links passed strict MkDocs and the final 33-page,
+three-viewport browser audit before publication. Website deployment and issue
+closure are tracked in GitHub rather than changing the immutable release tag.
+
 ### v0.2.4 marker-list maintenance release
 
 Issue #69 was reproduced on clean main at 9a072cb: the GUI's YAML marker list
