@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import codecs
+import io
 import os
 import shlex
 import subprocess
@@ -74,7 +75,11 @@ def run_logged(
                 handle.flush()
 
         def drain(pipe, log, console, collect=False):
-            decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+            # Normalize console newlines once so nested Windows wrappers do
+            # not translate CRLF into CRCRLF. Log bytes remain untouched.
+            decoder = io.IncrementalNewlineDecoder(
+                codecs.getincrementaldecoder("utf-8")(errors="replace"), translate=True,
+            )
             at_line_start = True
 
             def echo(text):

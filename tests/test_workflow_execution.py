@@ -130,6 +130,15 @@ def test_pipeline_data_is_not_echoed(tmp_path, capsys):
     assert "producer note" in captured.err
 
 
+def test_windows_line_endings_are_normalized_only_for_console(tmp_path, capsys):
+    from fp_tools.utils.workflow_execution import run_logged
+    path = tmp_path / "raw.log"
+    script = "import os,time; os.write(1,b'first\\r'); time.sleep(.05); os.write(1,b'\\nsecond\\r\\n')"
+    assert run_logged([sys.executable, "-c", script], stdout_log=path).returncode == 0
+    assert capsys.readouterr().out == "first\nsecond\n"
+    assert path.read_bytes() == b"first\r\nsecond\r\n"
+
+
 def test_binary_file_output_is_preserved(tmp_path, capsys):
     from fp_tools.utils.workflow_execution import run_logged
     output = tmp_path / "data"

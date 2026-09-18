@@ -24,6 +24,12 @@ expected eight cores on a four-core runner despite the new shared cap. That
 explicit-limit test now controls the available budget at sixteen cores; the
 separate automatic-selection and excessive-budget regressions remain enabled.
 
+Windows CI also exposed CRLF expansion across nested workflow wrappers. Console
+decoding now normalizes line endings incrementally before writing through the
+platform's text stream; raw log bytes remain unchanged. A Linux reproduction
+with a split CRLF failed before the fix and was added alongside the native
+Windows nested-wrapper regression.
+
 ### Unreleased issue #76: comparison preflight and report preservation
 
 Bulk workflows with a combined review now reject repeated unordered condition
