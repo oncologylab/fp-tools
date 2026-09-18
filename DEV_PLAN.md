@@ -4,6 +4,26 @@ Last updated: 2026-09-18
 
 ## Current Baseline
 
+### Unreleased issue #76: comparison preflight and report preservation
+
+Bulk workflows with a combined review now reject repeated unordered condition
+pairs (including reversed pairs) and self-comparisons before reference resolution
+or output creation, including dry runs. Duplicate errors identify both comparison
+IDs and their physical TSV line numbers. Separate reports selected with
+`--review-format none` still permit repeated pairs and explicit sample subsets.
+
+Static review bundles are built in temporary storage before replacing report
+output. Invalid payloads, duplicate pairs, filename collisions, and invalid
+default comparison/motif/plot options therefore preserve existing output and
+leave no new partial report. This protects against input-validation failures;
+it does not claim atomic replacement during disk or filesystem failures.
+
+All 26 initial regressions failed before the fix. Final related regressions:
+**57 passed in 2.35 seconds**. Full Linux/source suite: **621 passed, 1 skipped,
+26 warnings in 251.98 seconds**. Both affected console commands passed help
+checks, and `git diff --check` passed. Native desktop builds were not rerun.
+No scientific calculations, research files, or manuscript files changed.
+
 ### Unreleased workflow usability improvements
 
 Managed reference resolution now offers opt-in progress messages for downloads,

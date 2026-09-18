@@ -165,7 +165,8 @@ def build_commands(args: argparse.Namespace) -> list[tuple[str, list[str]]]:
 
 
 def run_bulk_footprinting(args: argparse.Namespace) -> int:
-    comparisons = read_comparison_table(args.comparison_table)
+    review_format = _resolve_review_format(args)
+    comparisons = read_comparison_table(args.comparison_table, unique_pairs=review_format != "none")
     samples = read_sample_table(args.sample_table)
     conditions = {row.condition for row in samples}
     unknown = sorted({value for row in comparisons for value in (row.cond1, row.cond2)} - conditions)

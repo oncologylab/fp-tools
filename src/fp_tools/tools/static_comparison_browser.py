@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import tempfile
 
 
 PROFILE_SHARDS = 16
@@ -275,6 +276,30 @@ def build_static_browser(
     default_aggregate_plots: int | None = None,
     documentation_url: str | None = None,
 ) -> Path:
+    """Build completely before replacing output, preserving it on invalid input."""
+    with tempfile.TemporaryDirectory(prefix="fp-tools-review-") as temporary:
+        staged = Path(temporary) / "review"
+        _build_static_browser(
+            payloads, staged, title, default_comparison, default_motifs,
+            default_aggregate_plots, documentation_url,
+        )
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        if (output_dir / "data").exists():
+            shutil.rmtree(output_dir / "data")
+        shutil.copytree(staged, output_dir, dirs_exist_ok=True)
+    return output_dir / "index.html"
+
+
+def _build_static_browser(
+    payloads: list[dict],
+    output_dir: str | Path,
+    title: str,
+    default_comparison: tuple[str, str] | list[str] | None = None,
+    default_motifs: list[str] | None = None,
+    default_aggregate_plots: int | None = None,
+    documentation_url: str | None = None,
+) -> Path:
     """Write an ENCODE-demo-compatible static browser bundle."""
     if not payloads:
         raise ValueError("No comparison payloads were supplied")
@@ -304,6 +329,8 @@ def build_static_browser(
             raise ValueError(f"Duplicate or invalid comparison: {condition1} vs {condition2}")
         seen_pairs.add(pair)
         comparison = f"{_safe_name(condition1)}_vs_{_safe_name(condition2)}"
+        if comparison in comparison_ids:
+            raise ValueError(f"Comparison filename collision: {condition1} vs {condition2}")
         comparison_ids.append(comparison)
         compact, shards = split_browser_payload(payload)
         report_path = reports_dir / f"{comparison}.json.gz"

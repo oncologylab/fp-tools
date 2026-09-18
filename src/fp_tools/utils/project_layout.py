@@ -145,11 +145,16 @@ def _first(row: dict[str, str], names: tuple[str, ...], default: str = "") -> st
 
 
 def _read_tsv(path: str | Path) -> list[dict[str, str]]:
+    return [row for _, row in _read_tsv_lines(path)]
+
+
+def _read_tsv_lines(path: str | Path):
     with Path(path).expanduser().open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         if reader.fieldnames is None:
             raise ValueError(f"{path} is missing a header row")
-        return [dict(row) for row in reader]
+        for row in reader:
+            yield reader.line_num, dict(row)
 
 
 def read_sample_table(path: str | Path) -> list[SampleRecord]:
@@ -181,9 +186,10 @@ def _split_samples(value: str) -> tuple[str, ...]:
     return tuple(part.strip() for part in re.split(r"[,;]", value) if part.strip())
 
 
-def read_comparison_table(path: str | Path) -> list[ComparisonRecord]:
+def read_comparison_table(path: str | Path, *, unique_pairs: bool = False) -> list[ComparisonRecord]:
     records = []
-    for line_no, row in enumerate(_read_tsv(path), start=2):
+    pairs = {}
+    for line_no, row in _read_tsv_lines(path):
         comparison = _first(row, ("comparison", "comparison_id", "name"))
         cond1 = _first(row, ("cond1", "condition1", "target", "target_label"))
         cond2 = _first(row, ("cond2", "condition2", "baseline", "baseline_label"))
@@ -197,6 +203,19 @@ def read_comparison_table(path: str | Path) -> list[ComparisonRecord]:
             raise ValueError(f"{path}:{line_no} requires cond1 and cond2 columns")
         if not comparison:
             comparison = f"{cond1}_vs_{cond2}"
+        if unique_pairs:
+            if cond1 == cond2:
+                raise ValueError(f"{path}: comparison {comparison!r} (line {line_no}) compares {cond1!r} with itself")
+            pair = frozenset((cond1, cond2))
+            if pair in pairs:
+                previous, previous_line = pairs[pair]
+                raise ValueError(
+                    f"{path}: duplicate condition pair: {previous!r} (line {previous_line}) and "
+                    f"{comparison!r} (line {line_no}). Combined reviews require one comparison "
+                    "per condition pair, including reversed pairs; use --review-format none "
+                    "for separate reports with repeated condition labels."
+                )
+            pairs[pair] = (comparison, line_no)
         records.append(
             ComparisonRecord(
                 comparison=comparison,
