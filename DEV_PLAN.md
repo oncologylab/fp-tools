@@ -19,6 +19,11 @@ and public-consumer checks: each still covers a supported interface or artifact.
 The opt-in slow correction regression remains available for scientific changes.
 Release verification results will be recorded after the corresponding jobs finish.
 
+Initial release CI found one host-dependent pseudobulk command assertion: it
+expected eight cores on a four-core runner despite the new shared cap. That
+explicit-limit test now controls the available budget at sixteen cores; the
+separate automatic-selection and excessive-budget regressions remain enabled.
+
 ### Unreleased issue #76: comparison preflight and report preservation
 
 Bulk workflows with a combined review now reject repeated unordered condition

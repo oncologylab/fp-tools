@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 import gzip
@@ -678,7 +679,8 @@ class PseudobulkTest(unittest.TestCase):
             self.assertIn("diff_results", manifest)
             self.assertIn("tagged_bam", manifest)
 
-    def test_write_downstream_commands_for_kept_groups(self):
+    @patch("fp_tools.utils.resources.available_cores", return_value=16)
+    def test_write_downstream_commands_for_kept_groups(self, _available_cores):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             fragments = tmp / "fragments.tsv"
