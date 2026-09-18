@@ -37,6 +37,12 @@ and on Windows for Python 3.11, 3.12, and 3.13. Tests that require Linux-only
 BAM writing or indexing may skip explicitly; collection errors, separator-only failures, and
 locale-dependent decoding failures are release blockers.
 
+The Windows full suite includes the portable I/O and launcher regressions;
+do not run those a second time in the same job. Linux/macOS portable-install
+jobs retain the focused checks because they do not run the full suite.
+Wheel, frozen-desktop, runtime, container, documentation-browser, and released
+download checks exercise different artifacts and remain separate release gates.
+
 ## 3. CLI Smoke Checks
 
 Primary current API checks:

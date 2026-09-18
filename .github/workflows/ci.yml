@@ -36,9 +36,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --only-binary=:all: .
           python -m pip check
-      - name: Portable command and I/O tests
+      - name: Portable command checks
+        run: python scripts/smoke_console_scripts.py
+      - name: Portable I/O and launcher tests
+        if: runner.os != 'Windows'
         run: |
-          python scripts/smoke_console_scripts.py
           python -m unittest discover -s tests -p "test_cross_platform_io.py" -v
           python -m unittest discover -s tests -p "test_gui_launcher.py" -v
       - name: Install Windows test runner
@@ -67,7 +69,6 @@ jobs:
 
       - name: Build and check release artifacts
         run: |
-          .venv/bin/python -m pip install build
           (cd /tmp && $GITHUB_WORKSPACE/.venv/bin/python -m build $GITHUB_WORKSPACE --outdir $GITHUB_WORKSPACE/dist)
           .venv/bin/python -m twine check dist/*
 

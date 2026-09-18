@@ -4,6 +4,21 @@ Last updated: 2026-09-18
 
 ## Current Baseline
 
+### v0.2.7 release preparation
+
+Version metadata, desktop metadata, managed-runtime archive names, and example
+version pins are synchronized to 0.2.7. The bulk manual explains the unique
+condition-pair requirement and the separate-report option for repeated labels.
+Download links remain on the verified prior release until new assets pass.
+
+The seven GitHub workflows were reviewed. Removed the redundant `build`
+reinstallation and the separate Windows I/O/launcher test invocation (those
+tests remain in the full Windows suite). Retained all regression tests and
+platform, frozen-app, managed-runtime, container, wheel, documentation-browser,
+and public-consumer checks: each still covers a supported interface or artifact.
+The opt-in slow correction regression remains available for scientific changes.
+Release verification results will be recorded after the corresponding jobs finish.
+
 ### Unreleased issue #76: comparison preflight and report preservation
 
 Bulk workflows with a combined review now reject repeated unordered condition

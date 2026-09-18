@@ -53,6 +53,12 @@ alongside the statistics.
 
 Add `--dry-run` to check the inputs and inspect the commands before starting.
 
+For a combined review, include each condition pair only once. Reversing the
+conditions still counts as the same pair. Repeated pairs are rejected before
+reference downloads or analysis, with the comparison IDs and table line numbers
+shown in the error. To run separate comparisons with the same condition labels
+but different sample subsets, use `--review-format none`.
+
 ## Reference and motif options
 
 Choosing `hg38` or `mm10` downloads and verifies the matching reference and
