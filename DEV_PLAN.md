@@ -49,6 +49,15 @@ These are unreleased maintenance changes. Native Windows/macOS frozen execution,
 full-scale single-cell analysis, and full raw-read preprocessing were not rerun.
 Production scientific defaults, research work, and manuscript files are unchanged.
 
+Documentation and both distributed bulk YAML examples now show managed hg38
+without a fixed core count or a mismatched custom blacklist. Normal examples
+omit fixed core limits; the complete command reference retains the optional
+limit. Workflow guides explain automatic resources and live diagnostics.
+Documentation/contracts/demo regressions passed **44 tests in 2.52 seconds**;
+strict MkDocs and the browser audit of **33 pages at three viewports**, including
+the dark color preference, passed. The command reference was regenerated from
+the current parsers.
+
 ### Post-v0.2.5 display maintenance
 
 The user's official Windows v0.2.5 retest passed #70–#73, actual example-sized

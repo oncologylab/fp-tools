@@ -13,6 +13,10 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 
 ## Primary inputs
 
+The workflow uses all available cores by default, sharing its core budget across
+concurrent samples. Tool diagnostics appear live in the terminal and remain in
+the sample logs; alignment data continue to go to their output files.
+
 - `--samples` — TSV or CSV sample sheet. Provide `sample`, `condition`, and `fastq_1` paths or URLs; add `fastq_2` for paired-end reads. A public sequencing run can instead be supplied in `run_accession`.
 - `--genome` — managed `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.

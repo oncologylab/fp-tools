@@ -429,7 +429,7 @@ outdir: project/comparisons/control_vs_treated</pre>
           ["Output folder", "project/samples/Bcell/atac_correct"],
           ["Cores", "8"]
         ],
-        yaml: "tool: atac-correct\nbams:\n  - Bcell.bam\ngenome: hg38.fa\npeaks: merged_peaks.bed\nblacklist: hg38.blacklist.bed\noutdir: project/samples/Bcell/atac_correct\ncores: 8",
+        yaml: "tool: atac-correct\nbams:\n  - Bcell.bam\ngenome: hg38.fa\npeaks: merged_peaks.bed\nblacklist: hg38.blacklist.bed\noutdir: project/samples/Bcell/atac_correct",
         metrics: [["Tool", "ATAC"], ["Input", "BAM"], ["Output", "bigWig"]]
       },
       "call-footprints": {
@@ -443,7 +443,7 @@ outdir: project/comparisons/control_vs_treated</pre>
           ["Cores", "8"],
           ["Input source", "atac-correct output"]
         ],
-        yaml: "tool: call-footprints\nsignal: Bcell_corrected.bw\nregions: merged_peaks.bed\nscore: footprint\noutput: Bcell_footprints.bw\ncores: 8",
+        yaml: "tool: call-footprints\nsignal: Bcell_corrected.bw\nregions: merged_peaks.bed\nscore: footprint\noutput: Bcell_footprints.bw",
         metrics: [["Tool", "Score"], ["Input", "bigWig"], ["Output", "bigWig"]]
       },
       "match-motifs": {
@@ -457,7 +457,7 @@ outdir: project/comparisons/control_vs_treated</pre>
           ["Footprint bigWig", "Bcell_footprints.bw"],
           ["Cores", "8"]
         ],
-        yaml: "tool: match-motifs\nsignals:\n  - Bcell_footprints.bw\nmotif_db: jaspar2026_vertebrates\ngenome: hg38.fa\npeaks: merged_peaks.bed\noutdir: results/motif_sites\ncores: 8",
+        yaml: "tool: match-motifs\nsignals:\n  - Bcell_footprints.bw\nmotif_db: jaspar2026_vertebrates\ngenome: hg38.fa\npeaks: merged_peaks.bed\noutdir: results/motif_sites",
         metrics: [["Tool", "Motifs"], ["Database", "JASPAR"], ["Output", "BED"]]
       },
       "diff-footprints": {

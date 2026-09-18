@@ -59,9 +59,11 @@ bulk-footprinting \
   --sample-table samples.tsv \
   --comparison-table comparisons.tsv \
   --genome hg38 \
-  --outdir project \
-  --cores 8
+  --outdir project
 ```
+
+The workflow uses all available cores by default. Stage progress and command
+messages appear live in your terminal and are also saved in the project logs.
 
 The `hg38` and `mm10` labels use checksum-verified FASTA and blacklist files
 from the managed reference cache. A custom FASTA path and optional custom

@@ -44,6 +44,10 @@ prepare-atac --samples metadata.tsv --genome hg38 --outdir project
 
 **Primary inputs**
 
+The workflow uses all available cores by default, sharing its core budget across
+concurrent samples. Tool diagnostics appear live in the terminal and remain in
+the sample logs; alignment data continue to go to their output files.
+
 - `--samples` — TSV or CSV sample sheet. Provide `sample`, `condition`, and `fastq_1` paths or URLs; add `fastq_2` for paired-end reads. A public sequencing run can instead be supplied in `run_accession`.
 - `--genome` — managed `hg38` or `mm10` reference label, or a custom label used with explicit reference options.
 - `--outdir` — project directory represented by `{project}` below.
@@ -154,7 +158,8 @@ options:
   --macs-genome-size MACS_GENOME_SIZE
                         MACS3 genome size or hs/mm shorthand for custom
                         genomes.
-  --cores CORES         Total core budget.
+  --cores CORES         Optional total core limit (default: all available
+                        cores).
   --max-parallel-samples MAX_PARALLEL_SAMPLES
                         Maximum samples processed concurrently (default:
                         config value).
@@ -193,16 +198,23 @@ and comparison tables for a two-condition analysis.
 
 ```bash
 bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv --genome hg38 \
-  --outdir project --cores 8
+  --outdir project
 ```
 
 **Primary inputs**
+
+The workflow uses all available cores by default. It shows each stage and its
+command output live in the terminal, while keeping the log files listed below.
+The complete options include an optional core limit.
+
+In the graphical user interface (GUI), leave the Cores field blank to select
+all available cores when the workflow runs. Enter a number only to limit it.
+Saved configurations retain automatic selection across machines.
 
 - `--sample-table` — TSV with `sample`, `condition`, `bam`, and `peaks` columns. Each BAM must be coordinate-sorted and have a matching BAI index.
 - `--comparison-table` — TSV with `comparison`, `cond1`, and `cond2` columns. Use condition names from the sample table.
 - `--genome` — managed `hg38` or `mm10` assembly, or a reference FASTA matching the BAM and peak coordinates.
 - `--outdir` — project output directory.
-- `--cores` — total worker cores.
 
 Use the same genome assembly and chromosome names for every BAM and BED file.
 
@@ -294,7 +306,8 @@ options:
                         aggregation is off and bundle otherwise (default:
                         auto).
   --outdir OUTDIR       Project output directory.
-  --cores CORES         Total worker cores passed to each stage (default: 1).
+  --cores CORES         Optional total worker core limit (default: all
+                        available cores).
   --resume              Skip stages whose expected outputs are complete.
   --force               Rerun stages even when outputs already exist.
   --dry-run             Validate inputs and print the commands without running
@@ -1644,7 +1657,11 @@ run-yaml-workflow --config workflow.yml --run-root project/yaml_runs
 
 Replace `workflow.yml` with your saved configuration. The first command prints
 the jobs without running them; check their inputs and output paths before
-running the second command. Jobs run sequentially.
+running the second command. Jobs run sequentially, and each job's output appears
+live in the terminal as well as in its saved logs. Commands that support a core
+budget use all available cores when `cores` is omitted or set to `null`. An
+explicit number is retained. A job-level `cores: null` also overrides a limit
+in `defaults`, allowing the execution machine to choose its available cores.
 
 **Main outputs**
 
@@ -2282,6 +2299,11 @@ For custom motifs alone, replace `--motif-db jaspar2026_vertebrates` with
 
 **Primary inputs**
 
+The workflow uses all available cores by default. Grouping progress and child
+command output appear in the terminal; child output is also saved in the run's
+`logs` directory. In the graphical user interface (GUI), leave the Cores field
+blank for automatic selection, or enter a limit.
+
 - `--fragments` — TSV or TSV.GZ with chromosome, start, end, and cell barcode in its first four columns.
 - `--annotations` — cell annotation TSV or CSV with required `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2`, plus any additional grouping columns. The GUI and command check these columns before analysis starts.
 - `--h5ad` — AnnData file containing the same cells and genomic-bin counts used for the companion motif-activity scores. See the requirements below.
@@ -2473,8 +2495,8 @@ options:
   --single-cell-signature-max-motifs SINGLE_CELL_SIGNATURE_MAX_MOTIFS
                         Optional smoke-test limit for all-motif per-cell
                         heatmap scoring.
-  --cores CORES         Cores for grouping, atac-correct, and footprint
-                        scoring (default: 1).
+  --cores CORES         Optional core limit for grouping, correction, and
+                        footprint scoring (default: all available cores).
   --resume              Skip atac-correct/call-footprints steps whose expected
                         outputs already exist.
   --force               Run atac-correct/call-footprints even if outputs

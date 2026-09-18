@@ -17,6 +17,11 @@ For custom motifs alone, replace `--motif-db jaspar2026_vertebrates` with
 
 ## Primary inputs
 
+The workflow uses all available cores by default. Grouping progress and child
+command output appear in the terminal; child output is also saved in the run's
+`logs` directory. In the graphical user interface (GUI), leave the Cores field
+blank for automatic selection, or enter a limit.
+
 - `--fragments` — TSV or TSV.GZ with chromosome, start, end, and cell barcode in its first four columns.
 - `--annotations` — cell annotation TSV or CSV with required `barcode`, `cell_type`, `snap_cell_type`, `umap_1`, and `umap_2`, plus any additional grouping columns. The GUI and command check these columns before analysis starts.
 - `--h5ad` — AnnData file containing the same cells and genomic-bin counts used for the companion motif-activity scores. See the requirements below.

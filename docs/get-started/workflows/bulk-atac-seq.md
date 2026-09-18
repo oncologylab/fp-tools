@@ -54,9 +54,13 @@ bulk-footprinting \
   --sample-table samples.tsv \
   --comparison-table comparisons.tsv \
   --genome hg38 \
-  --outdir project \
-  --cores 8
+  --outdir project
 ```
+
+The workflow uses all available cores by default. The terminal shows reference
+preparation, the selected blacklist, the core budget, and live output from each
+analysis stage. Messages are also saved under `project/logs/bulk_footprinting`.
+For mouse data aligned to mm10, replace `--genome hg38` with `--genome mm10`.
 
 On first use, fp-tools downloads the hg38 FASTA and blacklist, verifies their
 checksums, builds the FASTA index, and saves them in the managed reference
@@ -86,8 +90,7 @@ bulk-footprinting \
   --comparison-table comparisons.tsv \
   --genome /references/custom.fa \
   --blacklist /references/custom.blacklist.bed \
-  --outdir project \
-  --cores 8
+  --outdir project
 ```
 
 Omit `--blacklist` when the custom assembly has no blacklist.

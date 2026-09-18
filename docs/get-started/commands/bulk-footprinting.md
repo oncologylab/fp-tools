@@ -10,16 +10,23 @@ and comparison tables for a two-condition analysis.
 
 ```bash
 bulk-footprinting --sample-table samples.tsv --comparison-table comparisons.tsv --genome hg38 \
-  --outdir project --cores 8
+  --outdir project
 ```
 
 ## Primary inputs
+
+The workflow uses all available cores by default. It shows each stage and its
+command output live in the terminal, while keeping the log files listed below.
+The complete options include an optional core limit.
+
+In the graphical user interface (GUI), leave the Cores field blank to select
+all available cores when the workflow runs. Enter a number only to limit it.
+Saved configurations retain automatic selection across machines.
 
 - `--sample-table` — TSV with `sample`, `condition`, `bam`, and `peaks` columns. Each BAM must be coordinate-sorted and have a matching BAI index.
 - `--comparison-table` — TSV with `comparison`, `cond1`, and `cond2` columns. Use condition names from the sample table.
 - `--genome` — managed `hg38` or `mm10` assembly, or a reference FASTA matching the BAM and peak coordinates.
 - `--outdir` — project output directory.
-- `--cores` — total worker cores.
 
 Use the same genome assembly and chromosome names for every BAM and BED file.
 

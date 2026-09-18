@@ -18,7 +18,11 @@ run-yaml-workflow --config workflow.yml --run-root project/yaml_runs
 
 Replace `workflow.yml` with your saved configuration. The first command prints
 the jobs without running them; check their inputs and output paths before
-running the second command. Jobs run sequentially.
+running the second command. Jobs run sequentially, and each job's output appears
+live in the terminal as well as in its saved logs. Commands that support a core
+budget use all available cores when `cores` is omitted or set to `null`. An
+explicit number is retained. A job-level `cores: null` also overrides a limit
+in `defaults`, allowing the execution machine to choose its available cores.
 
 ## Main outputs
 
