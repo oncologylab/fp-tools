@@ -391,10 +391,13 @@ def _resolve_folder_inputs(args):
 def _sample_worker_plan(n_items, cores, requested=None):
     """Return (sample_workers, cores_per_sample) for sample-level batch commands."""
 
+    if requested is not None and cores is None:
+        from fp_tools.utils.resources import resolve_cores
+        cores = resolve_cores(None)
     if n_items <= 1:
         return 1, cores
     if requested is not None:
-        workers = max(1, min(int(requested), n_items))
+        workers = max(1, min(int(requested), n_items, max(1, int(cores))))
     else:
         if cores is None:
             return 1, cores
@@ -500,7 +503,8 @@ def _run_match_motifs_shared_project(args, sample_args_list):
             )
         if getattr(args, "motif_outputs", "auto") != "summary":
             requested_cores = getattr(args, "cores", None)
-            total_cores = int(requested_cores) if requested_cores is not None else (os.cpu_count() or 1)
+            from fp_tools.utils.resources import resolve_cores
+            total_cores = resolve_cores(requested_cores)
             _shared_match_status(args, "starting background BED materialization")
             _launch_async_match_motif_bed_materialization(sample_args_list, total_cores)
         else:
@@ -1621,7 +1625,8 @@ def _materialize_match_motif_beds(args, motif_names, logger, source_root=None):
         return
 
     requested_cores = getattr(args, "cores", None)
-    workers_available = int(requested_cores) if requested_cores is not None else (os.cpu_count() or 1)
+    from fp_tools.utils.resources import resolve_cores
+    workers_available = resolve_cores(requested_cores)
     workers = max(1, min(workers_available, len(tasks)))
     logger.info(f"Writing per-motif BED files from cache with {workers} worker(s)")
     if workers == 1:

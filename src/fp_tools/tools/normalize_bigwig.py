@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import math
-import multiprocessing as mp
 import re
 import sys
 from concurrent.futures import ProcessPoolExecutor
@@ -14,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 from fp_tools.utils import bigwig as pyBigWig
+from fp_tools.utils.resources import resolve_cores
 from fp_tools.utils.project_layout import (
     corrected_bigwig_path,
     is_project_layout,
@@ -293,8 +293,7 @@ def normalize_bigwigs(
         raise ValueError("output_paths must have the same length as bigwigs")
     if sample_names is not None and len(sample_names) != len(bigwigs):
         raise ValueError("sample_names must have the same length as bigwigs")
-    if workers is None:
-        workers = mp.cpu_count()
+    workers = resolve_cores(workers)
     workers = max(1, min(int(workers or 1), len(bigwigs)))
     background_regions = _read_background(background)
     chrom_size_dict = _read_chrom_sizes(chrom_sizes) if chrom_sizes else None

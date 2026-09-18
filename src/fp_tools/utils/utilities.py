@@ -61,28 +61,9 @@ def check_cores(given_cores, logger):
     back to all available cores with a warning.
     """
 
-    available_cores = mp.cpu_count()
+    from fp_tools.utils.resources import resolve_cores
 
-    if given_cores is None:
-        return available_cores
-
-    if given_cores < 1:
-        logger.warning(
-            "Invalid '--cores' value {0}; using all available cores ({1}).".format(
-                given_cores, available_cores
-            )
-        )
-        return available_cores
-
-    if given_cores > available_cores:
-        logger.warning(
-            "Requested {0} cores, but only {1} are available; using {1}.".format(
-                given_cores, available_cores
-            )
-        )
-        return available_cores
-
-    return given_cores
+    return resolve_cores(given_cores, warn=logger.warning)
 
 
 def run_parallel(FUNC, input_chunks, arguments, n_cores, logger, progress_label="Progress:"):

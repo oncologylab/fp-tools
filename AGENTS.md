@@ -18,6 +18,10 @@ unless the user explicitly asks to publish the manuscript source.
   Python entry points rather than moving workflow logic into Streamlit code.
 - Direct CLI remains primary. YAML configs and the GUI are wrapper paths, not
   replacements for direct command use.
+- Omitted core budgets use all process-visible cores. Keep automatic settings
+  portable in saved configurations and preserve explicit user limits.
+- Workflow wrappers stream child diagnostics to the console and retain stage
+  logs. Never echo binary or machine-readable data intended for output files.
 - GUI-saved YAML must remain runnable with `run-yaml-workflow`.
 - Every GUI and the Windows/macOS desktop applications start bulk workflows
   from coordinate-sorted BAM/BAI and matching peak BED files. Do not expose

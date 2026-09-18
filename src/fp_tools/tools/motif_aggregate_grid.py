@@ -11,6 +11,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+from fp_tools.utils.resources import resolve_cores
 
 import matplotlib
 import numpy as np
@@ -424,7 +425,7 @@ def _compute_missing_condition_profiles(
             tasks.append((prefix, condition, sample_rows, flank))
     if not tasks:
         return {}
-    workers = cores or (os.cpu_count() or 1)
+    workers = resolve_cores(cores)
     workers = max(1, min(workers, len(tasks)))
     out: dict[tuple[str, str], dict] = {}
     if workers == 1:

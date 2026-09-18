@@ -3,31 +3,31 @@ import unittest
 from unittest import mock
 
 from fp_tools.parsers import add_atacorrect_arguments, add_diff_footprints_arguments, add_scorebigwig_arguments
-from fp_tools.utils import utilities
+from fp_tools.utils import utilities, resources
 
 
 class CoreHandlingTest(unittest.TestCase):
     def test_respects_valid_requested_core_count(self):
         logger = mock.Mock()
-        with mock.patch.object(utilities.mp, "cpu_count", return_value=16):
+        with mock.patch.object(resources, "available_cores", return_value=16):
             self.assertEqual(utilities.check_cores(4, logger), 4)
         logger.warning.assert_not_called()
 
     def test_caps_requested_cores_to_available_cores(self):
         logger = mock.Mock()
-        with mock.patch.object(utilities.mp, "cpu_count", return_value=8):
+        with mock.patch.object(resources, "available_cores", return_value=8):
             self.assertEqual(utilities.check_cores(32, logger), 8)
         logger.warning.assert_called_once()
 
     def test_omitted_core_count_uses_all_available_cores_without_warning(self):
         logger = mock.Mock()
-        with mock.patch.object(utilities.mp, "cpu_count", return_value=12):
+        with mock.patch.object(resources, "available_cores", return_value=12):
             self.assertEqual(utilities.check_cores(None, logger), 12)
         logger.warning.assert_not_called()
 
     def test_invalid_core_count_uses_all_available_cores_with_warning(self):
         logger = mock.Mock()
-        with mock.patch.object(utilities.mp, "cpu_count", return_value=12):
+        with mock.patch.object(resources, "available_cores", return_value=12):
             self.assertEqual(utilities.check_cores(0, logger), 12)
         logger.warning.assert_called_once()
 

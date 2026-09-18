@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import gzip
-import multiprocessing
 import re
 import shlex
 from concurrent.futures import ProcessPoolExecutor
@@ -15,6 +14,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 from fp_tools.utils.alignment import open_alignment
+from fp_tools.utils.resources import resolve_cores
 
 from fp_tools.utils import bigwig as pyBigWig
 
@@ -294,7 +294,7 @@ def group_bam_by_tag(
         )
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
-    cores = multiprocessing.cpu_count() if cores is None else max(1, int(cores))
+    cores = resolve_cores(cores)
 
     barcode_to_group = load_annotations(annotations, barcode_column, group_by, strip_barcode_suffix=strip_barcode_suffix)
     handles = {}
@@ -512,7 +512,7 @@ def group_fragments(
         raise ValueError("--genome-sizes is required with --write-cutsite-bigwigs")
     if write_pseudo_bams and genome_sizes is None:
         raise ValueError("--genome-sizes is required with --write-pseudo-bams")
-    cores = multiprocessing.cpu_count() if cores is None else max(1, int(cores))
+    cores = resolve_cores(cores)
 
     barcode_to_group = load_annotations(annotations, barcode_column, group_by, strip_barcode_suffix=strip_barcode_suffix)
     handles = {}
@@ -657,7 +657,7 @@ def write_downstream_commands(
 
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    cores = max(1, int(cores))
+    cores = resolve_cores(cores)
     genome_arg = shlex.quote(str(genome_sizes)) if genome_sizes else "GENOME_SIZES.txt"
     lines = [
         "#!/usr/bin/env bash",

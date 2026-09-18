@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 from fp_tools.utils import bigwig as pyBigWig
+from fp_tools.utils.resources import available_cores
 
 try:
     import pysam
@@ -125,7 +126,7 @@ class PrepareAtacConfigTest(unittest.TestCase):
         self.assertEqual(settings["peaks"]["homer_local_fold"], 15)
         self.assertEqual(
             settings["resources"]["cores"],
-            PROFILE_DEFAULTS["homer-atac"]["resources"]["cores"],
+            available_cores(),
         )
 
     def test_sort_memory_is_bounded_by_total_run_budget(self):

@@ -176,10 +176,13 @@ def _is_batch_request(args):
 def _sample_worker_plan(n_items, cores, requested=None):
     """Return (sample_workers, cores_per_sample) for multi-signal dispatch."""
 
+    if requested is not None and cores is None:
+        from fp_tools.utils.resources import resolve_cores
+        cores = resolve_cores(None)
     if n_items <= 1:
         return 1, cores
     if requested is not None:
-        workers = max(1, min(int(requested), n_items))
+        workers = max(1, min(int(requested), n_items, max(1, int(cores))))
     else:
         if cores is None:
             return 1, cores

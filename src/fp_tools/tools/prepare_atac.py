@@ -35,6 +35,8 @@ from fp_tools.runtime import (
 )
 from fp_tools.platform_support import require_raw_read_preparation_support
 from fp_tools.utils.references import REFERENCE_MANIFEST, resolve_analysis_reference
+from fp_tools.utils.resources import resolve_cores
+from fp_tools.utils.workflow_execution import run_logged
 try:
     import pysam
 except ImportError:  # Non-Linux wheels retain the help/error entry point only.
@@ -73,7 +75,7 @@ DEFAULTS: dict[str, Any] = {
     },
     "cleanup": {"keep_intermediates": False},
     "resources": {
-        "cores": max(1, os.cpu_count() or 1),
+        "cores": None,
         "max_parallel_samples": 1,
         "memory_gb": None,
     },
@@ -106,7 +108,7 @@ PROFILE_DEFAULTS: dict[str, dict[str, Any]] = {
             "homer_local_size": 150000,
         },
         "resources": {
-            "cores": max(1, os.cpu_count() or 1),
+            "cores": None,
             "max_parallel_samples": 1,
             "memory_gb": 24,
             "sample_memory_gb": 16,
@@ -225,8 +227,9 @@ def load_settings(
     provider = str(settings["download"].get("provider", "auto"))
     if provider not in {"auto", "ena", "sra"}:
         raise ValueError("download.provider must be auto, ena, or sra")
-    if int(settings["resources"].get("cores") or 0) < 1:
+    if resources.get("cores") is not None and int(resources["cores"]) < 1:
         raise ValueError("resources.cores must be at least 1")
+    resources["cores"] = resolve_cores(None) if resources.get("cores") is None else int(resources["cores"])
     if int(settings["resources"].get("max_parallel_samples") or 0) < 1:
         raise ValueError("resources.max_parallel_samples must be at least 1")
     for section in ("trim", "align", "filter", "peaks", "tracks"):
@@ -395,41 +398,17 @@ def resolve_ena_fastqs(
 def _run(
     command: list[str], log: Path | None = None, cwd: Path | None = None, stdout=None
 ) -> None:
-    if log:
-        log.parent.mkdir(parents=True, exist_ok=True)
-        with log.open("a", encoding="utf-8") as handle:
-            handle.write("$ " + " ".join(command) + "\n")
-            result = subprocess.run(
-                command,
-                cwd=cwd,
-                stdout=stdout or handle,
-                stderr=handle,
-                text=stdout is None,
-            )
-    else:
-        result = subprocess.run(command, cwd=cwd, stdout=stdout)
+    result = run_logged(command, stdout_log=log, stderr_log=log, cwd=cwd,
+                        stdout_target=stdout, append=True, label=str(log) if log else None)
     if result.returncode:
         raise subprocess.CalledProcessError(result.returncode, command)
 
 
 def _run_pipeline(first: list[str], second: list[str], log: Path) -> None:
-    log.parent.mkdir(parents=True, exist_ok=True)
-    with log.open("a", encoding="utf-8") as handle:
-        handle.write("$ " + " ".join(first) + " | " + " ".join(second) + "\n")
-        left = subprocess.Popen(
-            first, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=handle
-        )
-        right = subprocess.Popen(
-            second, stdin=left.stdout, stdout=handle, stderr=handle
-        )
-        if left.stdout:
-            left.stdout.close()
-        right_rc = right.wait()
-        left_rc = left.wait()
-    if left_rc:
-        raise subprocess.CalledProcessError(left_rc, first)
-    if right_rc:
-        raise subprocess.CalledProcessError(right_rc, second)
+    result = run_logged(second, input_command=first, stdout_log=log, stderr_log=log,
+                        append=True, label=str(log))
+    if result.returncode:
+        raise subprocess.CalledProcessError(result.returncode, [*first, "|", *second])
 
 
 def download_file(
@@ -667,6 +646,7 @@ def prepare_reference(
             blacklist=blacklist,
             no_blacklist=no_blacklist,
             dry_run=dry_run,
+            progress=lambda message: print(f"[reference] {message}", flush=True),
         )
         fasta_path = managed.fasta
         blacklist_path = managed.blacklist
@@ -711,7 +691,7 @@ def prepare_reference(
             [
                 "bowtie2-build",
                 "--threads",
-                str(max(1, cores or os.cpu_count() or 1)),
+                str(resolve_cores(cores)),
                 str(fasta_path),
                 str(index_prefix),
             ]
@@ -995,21 +975,12 @@ def _frip(bam: Path, peaks: Path, log: Path) -> float:
     total = _bam_count(bam)
     if total == 0:
         return 0.0
-    first = subprocess.Popen(
-        ["bedtools", "intersect", "-u", "-abam", str(bam), "-b", str(peaks)],
-        stdout=subprocess.PIPE,
-        stderr=log.open("a"),
-    )
-    second = subprocess.run(
+    second = run_logged(
         ["samtools", "view", "-c", "-"],
-        stdin=first.stdout,
-        capture_output=True,
-        text=True,
+        input_command=["bedtools", "intersect", "-u", "-abam", str(bam), "-b", str(peaks)],
+        stderr_log=log, append=True, capture_stdout=True, label=str(log),
     )
-    if first.stdout:
-        first.stdout.close()
-    rc = first.wait()
-    if rc or second.returncode:
+    if second.returncode:
         raise RuntimeError("Failed to calculate FRiP")
     return int(second.stdout.strip() or 0) / total
 
@@ -1118,6 +1089,7 @@ def process_sample(
             state.get("fingerprint") == fingerprint
             and state.get("status") == "complete"
         ):
+            print(f"[resume] {sample.sample}: preprocessing complete", flush=True)
             return {
                 "sample": sample.sample,
                 "condition": sample.condition,
@@ -1561,6 +1533,10 @@ def run_preprocessing(args: argparse.Namespace) -> int:
     if args.keep_intermediates:
         overrides["cleanup"] = {"keep_intermediates": True}
     settings = load_settings(args.config, overrides or None)
+    settings["resources"]["cores"] = resolve_cores(
+        settings["resources"]["cores"], warn=lambda message: print(message, file=sys.stderr, flush=True)
+    )
+    print(f"[resources] Using {settings['resources']['cores']} total worker cores", flush=True)
     samples = read_preprocess_metadata(
         args.samples, args.id_column, args.sample_column, args.condition_column
     )
@@ -1632,7 +1608,8 @@ def run_preprocessing(args: argparse.Namespace) -> int:
     results = []
     failures = []
     parallel = min(
-        len(samples), int(settings["resources"].get("max_parallel_samples") or 1)
+        len(samples), int(settings["resources"].get("max_parallel_samples") or 1),
+        int(settings["resources"]["cores"]),
     )
     memory_gb = settings["resources"].get("memory_gb")
     if memory_gb:
@@ -1765,7 +1742,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--macs-genome-size",
         help="MACS3 genome size or hs/mm shorthand for custom genomes.",
     )
-    parser.add_argument("--cores", type=int, help="Total core budget.")
+    parser.add_argument("--cores", type=int, help="Optional total core limit (default: all available cores).")
     parser.add_argument(
         "--max-parallel-samples",
         type=int,

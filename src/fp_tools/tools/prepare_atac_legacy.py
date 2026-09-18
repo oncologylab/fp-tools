@@ -193,6 +193,7 @@ def process_legacy_sample(
             state.get("fingerprint") == fingerprint
             and state.get("status") == "complete"
         ):
+            print(f"[resume] {sample.sample}: preprocessing complete", flush=True)
             return {
                 "sample": sample.sample,
                 "condition": sample.condition,

@@ -15,6 +15,40 @@ in 0.38 seconds**, including corrupted downloads, cache reuse, overrides,
 disabled filtering, and download-free dry runs. This is fixture-based source
 verification; it does not claim a new full-genome download or native desktop run.
 
+Workflow execution now resolves omitted core limits from process-visible logical
+processors, including affinity restrictions. Bulk, single-cell, preprocessing,
+YAML, and graphical forms share the automatic setting; explicit limits remain
+available. Sample concurrency stays within the resolved total budget. Clearing
+a loaded graphical core limit saves a portable null value and restores automatic
+selection. Single-cell annotation validation still precedes output creation.
+
+Bulk, single-cell, preprocessing, and YAML subprocess diagnostics stream live
+while retaining their existing log files. Stages report commands, completion,
+failures, and resume skips. Binary pipeline output and machine-readable counts
+remain separate from console diagnostics. Frozen command dispatch flushes its
+Python streams, and child processes inherit the launcher's process group.
+
+Validation on Linux/source:
+
+- Full regression suite: **593 passed, 1 skipped, 26 warnings in 252.42 seconds**.
+  After the final process-group compatibility adjustment, execution, graphical
+  job, runtime, and platform regressions passed **47 tests in 3.07 seconds**.
+- A synthetic two-sample bulk workflow completed all five stages with automatic
+  32 cores and with one core. Four signal tracks and differential numerical
+  values agreed at relative tolerance 1e-5 and absolute tolerance 1e-6. Resume
+  skipped all five stages without rewriting tracks.
+- Read-only UCSC checks confirmed both pinned reference FASTA checksums against
+  upstream checksum lists. Both downloaded blacklist checksums matched their
+  manifests; all 636 hg38 and 3,435 mm10 intervals fit their assembly's chromosome
+  sizes. No full reference genome was downloaded for this check.
+- All console-script checks, **18 example YAML dry runs**, and `pip check` passed.
+- The source graphical browser audit passed, including actual signature runs;
+  an additional browser check passed clearing and saving a loaded core limit.
+
+These are unreleased maintenance changes. Native Windows/macOS frozen execution,
+full-scale single-cell analysis, and full raw-read preprocessing were not rerun.
+Production scientific defaults, research work, and manuscript files are unchanged.
+
 ### Post-v0.2.5 display maintenance
 
 The user's official Windows v0.2.5 retest passed #70–#73, actual example-sized

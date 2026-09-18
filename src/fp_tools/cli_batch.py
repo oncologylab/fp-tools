@@ -11,13 +11,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 
 from fp_tools.gui_config import JobSpec, canonical_tool_name, dump_yaml_config, expand_jobs, load_yaml_config, normalize_config
 from fp_tools.utils.subprocess_commands import resolve_fp_tools_subprocess
+from fp_tools.utils.workflow_execution import run_logged
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -125,8 +125,16 @@ def run_job(job: JobSpec, run_root: Path) -> int:
     env.setdefault("XDG_CACHE_HOME", str(cache_dir))
     env.setdefault("MPLCONFIGDIR", str(mpl_dir))
 
-    with stdout_path.open("w", encoding="utf-8") as stdout_handle, stderr_path.open("w", encoding="utf-8") as stderr_handle:
-        process = subprocess.run(command, stdout=stdout_handle, stderr=stderr_handle, text=True, env=env)
+    try:
+        process = run_logged(command, stdout_log=stdout_path, stderr_log=stderr_path, env=env, label=job.job_id)
+    except (OSError, KeyboardInterrupt) as exc:
+        status.update(status="failed", finished_at=datetime.now().isoformat(timespec="seconds"),
+                      exit_code=130 if isinstance(exc, KeyboardInterrupt) else 1, error=str(exc))
+        status_path.write_text(json.dumps(status, indent=2), encoding="utf-8")
+        if isinstance(exc, KeyboardInterrupt):
+            raise
+        print(f"{job.job_id}: {exc}; see {run_dir}", file=sys.stderr, flush=True)
+        return 1
 
     status["status"] = "succeeded" if process.returncode == 0 else "failed"
     status["finished_at"] = datetime.now().isoformat(timespec="seconds")

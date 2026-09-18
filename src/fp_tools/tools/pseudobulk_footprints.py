@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import os
 import shlex
-import subprocess
 import sys
 from pathlib import Path
 
@@ -15,7 +14,9 @@ import pandas as pd
 from fp_tools.tools.find_signature_fp import DEFAULT_KNN_NEIGHBORS
 from fp_tools.tools.pseudobulk import _parse_chrom_list, _truthy, group_bam_by_tag, group_fragments
 from fp_tools.utils.motif_databases import DEFAULT_MOTIF_DB, motif_db_table, resolve_motif_inputs
+from fp_tools.utils.resources import resolve_cores
 from fp_tools.utils.subprocess_commands import python_script_subprocess_command, resolve_fp_tools_subprocess
+from fp_tools.utils.workflow_execution import run_logged
 
 
 def _split_csv(value: str | None) -> list[str]:
@@ -93,8 +94,7 @@ def _run_command(command: list[str], stdout_path: Path, stderr_path: Path) -> in
     env.setdefault("XDG_CACHE_HOME", str(stdout_path.parent / ".cache"))
     Path(env["MPLCONFIGDIR"]).mkdir(parents=True, exist_ok=True)
     Path(env["XDG_CACHE_HOME"]).mkdir(parents=True, exist_ok=True)
-    with stdout_path.open("w", encoding="utf-8") as stdout, stderr_path.open("w", encoding="utf-8") as stderr:
-        result = subprocess.run(resolved, stdout=stdout, stderr=stderr, text=True, env=env, check=False)
+    result = run_logged(resolved, stdout_log=stdout_path, stderr_log=stderr_path, env=env, label=stdout_path.stem)
     return result.returncode
 
 
@@ -227,6 +227,7 @@ def _group_inputs(args: argparse.Namespace, grouping_dir: Path, include_chroms: 
 
 
 def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
+    args = argparse.Namespace(**vars(args))
     if not args.single_cell_signature_script:
         from fp_tools.utils.signature_annotations import read_signature_annotations
 
@@ -234,6 +235,8 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
             read_signature_annotations(args.annotations, header_only=True)
         except ValueError as exc:
             raise SystemExit(str(exc)) from exc
+    args.cores = resolve_cores(getattr(args, "cores", None), warn=lambda message: print(message, file=sys.stderr, flush=True))
+    print(f"[resources] Using {args.cores} worker cores", flush=True)
     motif_db = args.motif_db or (DEFAULT_MOTIF_DB if not args.motifs else None)
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -255,7 +258,9 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
         exclude_chroms=exclude_chroms,
     )
 
+    print("[start] Grouping single-cell inputs", flush=True)
     manifest = _group_inputs(args, grouping_dir, include_chroms, exclude_chroms)
+    print("[done] Grouping single-cell inputs", flush=True)
     selected_groups = set(_split_csv(args.groups))
     rows = []
     commands: list[tuple[str, list[str]]] = []
@@ -345,12 +350,16 @@ def run_pseudobulk_footprints(args: argparse.Namespace) -> int:
                 if code != 0:
                     status = "atacorrect_failed"
                     exit_code = code
+            else:
+                print(f"[resume] {group}: atac-correct complete", flush=True)
             footprint_complete = _existing_ok(footprint_bigwig) and _existing_ok(candidate_bed)
             if status == "succeeded" and (args.force or not (args.resume and footprint_complete)):
                 code = _run_command(footprint_command, fp_stdout, fp_stderr)
                 if code != 0:
                     status = "call_footprints_failed"
                     exit_code = code
+            elif status == "succeeded":
+                print(f"[resume] {group}: call-footprints complete", flush=True)
 
         row.update(
             {
@@ -524,7 +533,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--single-cell-signature-max-sites-per-motif", type=int, default=200, help="Maximum motif instances per motif for optional all-motif per-cell heatmap scoring; use 0 for all sites (default: 200).")
     parser.add_argument("--single-cell-signature-max-motifs", type=int, help="Optional smoke-test limit for all-motif per-cell heatmap scoring.")
-    parser.add_argument("--cores", type=int, default=1, help="Cores for grouping, atac-correct, and footprint scoring (default: 1).")
+    parser.add_argument("--cores", type=int, default=None, help="Optional core limit for grouping, correction, and footprint scoring (default: all available cores).")
     parser.add_argument("--resume", action="store_true", help="Skip atac-correct/call-footprints steps whose expected outputs already exist.")
     parser.add_argument("--force", action="store_true", help="Run atac-correct/call-footprints even if outputs already exist.")
     parser.add_argument("--dry-run", action="store_true", help="Write manifests and commands without running atac-correct, call-footprints, motif detection, or plots.")

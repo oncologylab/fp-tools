@@ -79,7 +79,7 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "motifs": [],
         "plot_aggregate": "all",
         "review_format": "auto",
-        "cores": 4,
+        "cores": None,
     },
     "review-multi-comparisons": {
         "sample_id": "comparison_browser_run",
@@ -110,7 +110,7 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "stat": "q95",
         "target": "median",
         "chrom_sizes": "",
-        "workers": 2,
+        "workers": None,
     },
     "discover-motifs": {
         "sample_id": "motif_discovery_run",
@@ -155,6 +155,7 @@ GENERIC_TOOL_DEFAULTS: dict[str, dict[str, Any]] = {
         "max_motifs": 25,
     },
     "sc-footprinting": {
+        "cores": None,
         "sample_id": "pseudobulk_footprints_run",
         "fragments": "",
         "annotations": "",
@@ -1139,7 +1140,7 @@ def _ensure_session_config() -> None:
     if "current_config" not in st.session_state:
         st.session_state.current_config = make_single_config(
             "atac-correct",
-            {"bams": [], "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": 1},
+            {"bams": [], "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": None},
             job_id="run",
         )
     if "gui_run_dir" not in st.session_state:
@@ -1200,9 +1201,9 @@ def _default_config_for_tool(tool: str) -> dict[str, Any]:
     tool = canonical_tool_name(tool)
     defaults: dict[str, Any]
     if tool == "atac-correct":
-        defaults = {"bams": [], "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": 1}
+        defaults = {"bams": [], "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": None}
     elif tool == "call-footprints":
-        defaults = {"signal": "", "regions": "", "output": "", "score": "footprint", "cores": 1}
+        defaults = {"signal": "", "regions": "", "output": "", "score": "footprint", "cores": None}
     elif tool == "diff-footprints":
         defaults = {
             "comparison_axis": "conditions",
@@ -1214,7 +1215,7 @@ def _default_config_for_tool(tool: str) -> dict[str, Any]:
             "peak_header": "",
             "outdir": "",
             "cond_names": ["Bcell"],
-            "cores": 1,
+            "cores": None,
             "skip_excel": False,
         }
     elif tool == "plot-aggregate":
@@ -1440,7 +1441,7 @@ def _render_atacorrect_page(run_dir: Path) -> None:
         single = _current_single_params("atac-correct")
         batch_rows = _current_sample_rows(
             "atac-correct",
-            default_rows=[{"sample_id": "sample1", "bams": "", "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": 1}],
+            default_rows=[{"sample_id": "sample1", "bams": "", "genome": "", "peaks": "", "blacklist": "", "outdir": "", "cores": None}],
         )
         if mode == "Single run":
             with st.form(_config_widget_key("ataccorrect_single_form")):
@@ -1477,13 +1478,7 @@ def _render_atacorrect_page(run_dir: Path) -> None:
                         value=str(single.get("outdir", "")),
                         key=_config_widget_key("atacorrect_outdir"),
                     )
-                    cores = st.number_input(
-                        "Cores",
-                        min_value=1,
-                        value=int(single.get("cores", 1)),
-                        step=1,
-                        key=_config_widget_key("atacorrect_cores"),
-                    )
+                    cores = _render_core_limit(single.get("cores"), "atacorrect_cores")
                 submitted = st.form_submit_button("Update page config")
             if submitted:
                 _set_config(
@@ -1495,7 +1490,7 @@ def _render_atacorrect_page(run_dir: Path) -> None:
                             "peaks": peaks,
                             "blacklist": blacklist,
                             "outdir": outdir,
-                            "cores": int(cores),
+                            "cores": cores,
                         },
                         job_id="atacorrect_run",
                     )
@@ -1533,7 +1528,7 @@ def _render_footprintscores_page(run_dir: Path) -> None:
         single = _current_single_params("call-footprints")
         batch_rows = _current_sample_rows(
             "call-footprints",
-            default_rows=[{"sample_id": "sample1", "signal": "", "regions": "", "output": "", "score": "footprint", "cores": 1}],
+            default_rows=[{"sample_id": "sample1", "signal": "", "regions": "", "output": "", "score": "footprint", "cores": None}],
         )
         if mode == "Single run":
             with st.form(_config_widget_key("footprintscores_single_form")):
@@ -1563,13 +1558,7 @@ def _render_footprintscores_page(run_dir: Path) -> None:
                         index=score_values.index(score_default) if score_default in score_values else 0,
                         key=_config_widget_key("footprintscores_score"),
                     )
-                    cores = st.number_input(
-                        "Cores",
-                        min_value=1,
-                        value=int(single.get("cores", 1)),
-                        step=1,
-                        key=_config_widget_key("fs_single_cores"),
-                    )
+                    cores = _render_core_limit(single.get("cores"), "fs_single_cores")
                 submitted = st.form_submit_button("Update page config")
             if submitted:
                 _set_config(
@@ -1580,7 +1569,7 @@ def _render_footprintscores_page(run_dir: Path) -> None:
                             "regions": regions,
                             "output": output,
                             "score": score,
-                            "cores": int(cores),
+                            "cores": cores,
                         },
                         job_id="footprintscores_run",
                     )
@@ -1638,7 +1627,7 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
                     "peak_header": "",
                     "outdir": "",
                     "cond_names": "Sample1",
-                    "cores": 1,
+                    "cores": None,
                     "skip_excel": False,
                 }
             ],
@@ -1656,7 +1645,7 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
                     "peaks": "",
                     "peak_header": "",
                     "outdir": "",
-                    "cores": 1,
+                    "cores": None,
                     "skip_excel": False,
                 }
             ],
@@ -1707,13 +1696,7 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
                         value=str(single.get("outdir", "")),
                         key=_config_widget_key("diff_footprints_outdir"),
                     )
-                    cores = st.number_input(
-                        "Cores",
-                        min_value=1,
-                        value=int(single.get("cores", 1)),
-                        step=1,
-                        key=_config_widget_key("diff_footprints_single_cores"),
-                    )
+                    cores = _render_core_limit(single.get("cores"), "diff_footprints_single_cores")
                     skip_excel = st.checkbox(
                         "Skip Excel",
                         value=bool(single.get("skip_excel", False)),
@@ -1775,7 +1758,7 @@ def _render_diff_footprints_page(run_dir: Path) -> None:
                             "regions": _split_multi(regions),
                             "region_labels": _split_multi(region_labels),
                             "region_strata_column": int(region_strata_column) or None,
-                            "cores": int(cores),
+                            "cores": cores,
                             "skip_excel": bool(skip_excel),
                         },
                         job_id="diff_footprints_single",
@@ -2278,7 +2261,28 @@ def _prepare_generic_params(tool: str, params: dict[str, Any]) -> dict[str, Any]
     return prepared
 
 
+def _render_core_limit(value: Any, key: str) -> int | None:
+    """An empty numeric field preserves automatic cores in portable configs."""
+    try:
+        limit = int(value) if value not in (None, "") else None
+    except (TypeError, ValueError):
+        limit = None
+    if limit is not None and limit < 1:
+        limit = None
+    widget_key = _config_widget_key(key)
+    if widget_key not in st.session_state:
+        st.session_state[widget_key] = limit
+    return st.number_input(
+        "Cores", min_value=1, value=None, step=1,
+        placeholder="Automatic—all available cores",
+        help="Leave blank to use all available cores, or enter a limit.",
+        key=widget_key,
+    )
+
+
 def _render_generic_field(tool: str, key: str, default_value: Any) -> Any:
+    if key in {"cores", "workers"}:
+        return _render_core_limit(default_value, f"{tool}_{key}")
     value = default_value
     help_text = GUI_FIELD_HELP.get(tool, {}).get(key)
     if isinstance(value, list):
@@ -2360,14 +2364,26 @@ def _set_config(
 def _data_editor(title: str, default_rows: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
     st.subheader(title)
     df = pd.DataFrame(default_rows)
+    core_columns = [name for name in ("cores", "workers") if name in df.columns]
     edited = st.data_editor(
         df,
         num_rows="dynamic",
         width="stretch",
         key=_config_widget_key(key),
+        column_config={name: st.column_config.NumberColumn(
+            name.capitalize(), min_value=1, step=1,
+            help="Leave blank to use all available cores.",
+        ) for name in core_columns},
     )
     cleaned = edited.fillna("").to_dict(orient="records")
-    return [row for row in cleaned if any(str(value).strip() for value in row.values())]
+    for row in cleaned:
+        for name in core_columns:
+            value = row.get(name)
+            if value in (None, ""):
+                row[name] = None
+            elif isinstance(value, (int, float)) and float(value).is_integer():
+                row[name] = int(value)
+    return [row for row in cleaned if any(value is not None and str(value).strip() for value in row.values())]
 
 
 def _current_config() -> dict[str, Any]:

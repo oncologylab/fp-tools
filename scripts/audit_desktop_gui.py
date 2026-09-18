@@ -732,6 +732,23 @@ def _audit_loaded_config_sync(
             _assert_control_value(page, label, values[key])
         print("Audited edited bulk-footprinting config", flush=True)
 
+        _submit_text_control(page, "Cores", "")
+        previous_input_id = page.get_by_label("Cores", exact=True).get_attribute("id")
+        page.get_by_role("button", name="Update page config", exact=True).click()
+        page.wait_for_function(
+            "previousId => !document.getElementById(previousId)",
+            arg=previous_input_id, timeout=30_000,
+        )
+        _wait_for_settled_render(page)
+        _open_expander(page.locator("details", has_text="Advanced options").first)
+        _assert_control_value(page, "Cores", "")
+        preview = page.locator("details", has_text="Preview runnable YAML").first
+        _open_expander(preview)
+        saved = yaml.safe_load(preview.locator("code").first.inner_text())
+        if saved["samples"][0].get("cores", "missing") is not None:
+            raise RuntimeError("Cleared core limit was not saved as automatic")
+        print("Audited automatic cores after clearing a loaded limit", flush=True)
+
         page.goto(f"{base_url}/?page=normalize-bigwig", wait_until="domcontentloaded")
         page.locator(".fp-page-heading h1", has_text="normalize-bigwig").wait_for(
             timeout=60_000

@@ -47,6 +47,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if arguments and arguments[0] == INTERNAL_COMMAND_FLAG:
         if len(arguments) < 2:
             raise SystemExit(f"{INTERNAL_COMMAND_FLAG} requires a command name")
+        # Frozen Python ignores PYTHONUNBUFFERED; explicitly flush print output
+        # when a workflow parent is streaming these child pipes.
+        for stream in (sys.stdout, sys.stderr):
+            if hasattr(stream, "reconfigure"):
+                stream.reconfigure(encoding="utf-8", line_buffering=True, write_through=True)
         return dispatch_command(arguments[1], arguments[2:])
     if arguments and arguments[0] == INTERNAL_MATCH_BEDS_FLAG:
         if len(arguments) != 2:
