@@ -4,12 +4,12 @@ Last updated: 2026-09-18
 
 ## Current Baseline
 
-### v0.2.7 release preparation
+### v0.2.7 release verification
 
 Version metadata, desktop metadata, managed-runtime archive names, and example
 version pins are synchronized to 0.2.7. The bulk manual explains the unique
 condition-pair requirement and the separate-report option for repeated labels.
-Download links remain on the verified prior release until new assets pass.
+Download links were updated after verifying the new public desktop checksums.
 
 The seven GitHub workflows were reviewed. Removed the redundant `build`
 reinstallation and the separate Windows I/O/launcher test invocation (those
@@ -17,7 +17,12 @@ tests remain in the full Windows suite). Retained all regression tests and
 platform, frozen-app, managed-runtime, container, wheel, documentation-browser,
 and public-consumer checks: each still covers a supported interface or artifact.
 The opt-in slow correction regression remains available for scientific changes.
-Release verification results will be recorded after the corresponding jobs finish.
+CI passed on the release commit (`2006ddd`, run 35362549641), including all ten
+jobs. Linux reported 604 passed, 16 skipped, 26 warnings, and 87 passing subtests;
+Windows Python 3.12 reported 592 passed, 28 skipped, one warning, and 69 passing
+subtests, with Python 3.11 and 3.13 also passing. The earlier local full suite
+passed 621 tests with one skip; the subsequent newline regression passed in the
+35-test focused suite and in native CI.
 
 Initial release CI found one host-dependent pseudobulk command assertion: it
 expected eight cores on a four-core runner despite the new shared cap. That
@@ -35,6 +40,30 @@ exposed an audit helper that clicked an already-open example dropdown closed.
 The helper now selects a visible option directly and only clicks to open a
 closed dropdown. Browser regressions cover both Streamlit interaction styles.
 This change affects validation infrastructure only; packaged source is unchanged.
+
+CI for the audit-only update also passed (35365072838). The replacement desktop
+workflow (35365071565) passed on both Windows and Apple Silicon, including the
+GUI audit, frozen commands, signing verification, and DMG checks. The v0.2.7 tag
+is unchanged; desktop package source matches the tagged package exactly.
+
+Managed runtimes (35363897961), both containers (35363898176), and Publish
+(35363898235) passed. PyPI has all 15 wheels and one sdist; all 16 published file
+digests were verified. A fresh PyPI wheel installation passed dependency and
+console checks and 76 focused regressions, then completed a real five-stage
+synthetic bulk analysis. Its four signal tracks agreed with the single-core
+baseline, and all five resume stages skipped successfully. Local source archive
+hygiene checks passed for 202 entries; documentation and release contracts
+passed 39 tests, strict MkDocs passed, and 33 pages passed three-viewport browser
+audits. All 18 example YAML dry runs passed.
+
+Verified desktop SHA-256 values:
+
+- Windows EXE: `1c4de8be7c2544106bb6aac07a32821be13aa266a5570fe92526370d9624e150`
+- Apple Silicon DMG: `a232603c1da5091906cdd06e84263613067a3e08c0803be35df11b81f1254479`
+
+Public-download discovery validation is tracked by Release smoke run
+35366795530; final consumer-check results are recorded on the v0.2.7 release
+page. This release contains no research-branch methods or manuscript changes.
 
 ### Unreleased issue #76: comparison preflight and report preservation
 
