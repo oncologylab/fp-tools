@@ -15,6 +15,7 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from collections.abc import Callable
 
 from fp_tools.utils.network import network_error_message, verified_urlopen
 
@@ -161,13 +162,19 @@ def _install_gzip_asset(
     output: Path,
     *,
     timeout: int = 120,
+    progress: Callable[[str], None] | None = None,
 ) -> bool:
     """Install a compressed remote asset atomically; return whether it changed."""
 
     if _installed_asset_is_valid(
         output, source_url=source_url, compressed_md5=compressed_md5
     ):
+        if progress:
+            progress(f"Using verified cached file: {output}")
         return False
+
+    if progress:
+        progress(f"Downloading and verifying: {output.name}")
 
     download_descriptor, download_name = tempfile.mkstemp(
         prefix=f".{output.name}.", suffix=".download.gz", dir=output.parent
@@ -217,6 +224,8 @@ def _install_gzip_asset(
                 "source_url": source_url,
             },
         )
+        if progress:
+            progress(f"Verified and installed: {output}")
         return True
     finally:
         download.unlink(missing_ok=True)
@@ -336,6 +345,7 @@ def resolve_analysis_reference(
     blacklist: str | os.PathLike[str] | None = None,
     no_blacklist: bool = False,
     dry_run: bool = False,
+    progress: Callable[[str], None] | None = None,
 ) -> AnalysisReference:
     """Resolve a managed assembly name or a user-owned FASTA path."""
 
@@ -375,16 +385,21 @@ def resolve_analysis_reference(
 
     root.mkdir(parents=True, exist_ok=True)
     manifest = REFERENCE_MANIFEST[assembly]
+    if progress:
+        progress(f"Resolving {assembly} reference in {root}")
     with _DirectoryLock(root / ".reference.lock"):
         _install_gzip_asset(
-            manifest["fasta_url"], manifest["fasta_md5"], fasta
+            manifest["fasta_url"], manifest["fasta_md5"], fasta, progress=progress
         )
+        if progress:
+            progress(f"Checking/building reference index: {fasta}.fai")
         _ensure_fasta_index(fasta)
         if selected_blacklist == managed_blacklist:
             _install_gzip_asset(
                 manifest["blacklist_url"],
                 manifest["blacklist_md5"],
                 managed_blacklist,
+                progress=progress,
             )
     return AnalysisReference(
         assembly=assembly,

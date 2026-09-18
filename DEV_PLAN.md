@@ -1,8 +1,19 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-14
+Last updated: 2026-09-18
 
 ## Current Baseline
+
+### Unreleased workflow usability improvements
+
+Managed reference resolution now offers opt-in progress messages for downloads,
+checksum verification, cache reuse, and index preparation. The existing hg38
+and mm10 manifests and assembly-specific blacklists are unchanged. Custom
+references still never infer a blacklist; explicit overrides and disabling
+filtering retain their existing behavior. Reference regressions: **11 passed
+in 0.38 seconds**, including corrupted downloads, cache reuse, overrides,
+disabled filtering, and download-free dry runs. This is fixture-based source
+verification; it does not claim a new full-genome download or native desktop run.
 
 ### Post-v0.2.5 display maintenance
 

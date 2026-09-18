@@ -139,6 +139,35 @@ class ManagedReferenceTest(unittest.TestCase):
             self.assertIsNone(result.assembly)
             self.assertIsNone(result.blacklist)
 
+    def test_progress_reports_download_and_cache_reuse(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(
+            references.REFERENCE_MANIFEST, self.manifest, clear=True
+        ), mock.patch.object(references.urllib.request, "urlopen", side_effect=self._response):
+            messages = []
+            references.resolve_analysis_reference("test", reference_dir=tmp, progress=messages.append)
+            self.assertEqual(sum("Downloading and verifying" in line for line in messages), 2)
+            self.assertTrue(any("reference index" in line for line in messages))
+            messages.clear()
+            references.resolve_analysis_reference("test", reference_dir=tmp, progress=messages.append)
+            self.assertEqual(sum("Using verified cached file" in line for line in messages), 2)
+            self.assertFalse(any("Downloading" in line for line in messages))
+
+    def test_checksum_failure_does_not_install_asset(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(
+            references.REFERENCE_MANIFEST, self.manifest, clear=True
+        ), mock.patch.object(references.urllib.request, "urlopen", return_value=io.BytesIO(b"corrupt")):
+            with self.assertRaisesRegex(RuntimeError, "Checksum mismatch"):
+                references.resolve_analysis_reference("test", reference_dir=tmp)
+            self.assertFalse((Path(tmp) / "test" / "test.fa").exists())
+
+    def test_disabling_blacklist_downloads_only_reference(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(
+            references.REFERENCE_MANIFEST, self.manifest, clear=True
+        ), mock.patch.object(references.urllib.request, "urlopen", side_effect=self._response) as download:
+            result = references.resolve_analysis_reference("test", reference_dir=tmp, no_blacklist=True)
+            self.assertIsNone(result.blacklist)
+            self.assertEqual(download.call_count, 1)
+
     def test_blacklist_and_disable_flag_are_mutually_exclusive(self):
         with tempfile.TemporaryDirectory() as tmp:
             fasta = Path(tmp) / "custom.fa"
