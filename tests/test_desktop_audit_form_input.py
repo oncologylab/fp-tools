@@ -33,7 +33,8 @@ def test_editing_text_waits_for_the_explicit_submit_button():
             browser.close()
 
 
-def test_example_selection_opens_a_click_triggered_dropdown():
+@pytest.mark.parametrize("opens_on_input", [False, True])
+def test_example_selection_opens_a_click_triggered_dropdown(opens_on_input):
     with playwright.sync_playwright() as runtime:
         try:
             browser = runtime.chromium.launch()
@@ -46,13 +47,15 @@ def test_example_selection_opens_a_click_triggered_dropdown():
             page.set_default_timeout(1000)
             page.set_content('''
                 <input aria-label="Example YAML" role="combobox"
-                  onclick="document.querySelector('[role=listbox]').hidden=false">
+                  onclick="const list=document.querySelector('[role=listbox]'); list.hidden=!list.hidden">
                 <div role="listbox" hidden>
                   <div role="option" onclick="window.selected=true;
                     document.querySelector('input').value=this.textContent;
                     this.parentElement.hidden=true">normalize_bigwig_single.yml</div>
                 </div>
             ''')
+            if opens_on_input:
+                page.locator("input").evaluate("input => input.oninput = () => document.querySelector('[role=listbox]').hidden=false")
             _select_example(page, "normalize_bigwig_single.yml")
             assert page.evaluate("window.selected") is True
             assert page.get_by_label("Example YAML").input_value() == "normalize_bigwig_single.yml"

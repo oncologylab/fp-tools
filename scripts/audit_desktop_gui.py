@@ -650,9 +650,14 @@ def _submit_text_control(page, label: str, value: str) -> None:
 def _select_example(page, filename: str) -> None:
     control = _control_by_label(page, "Example YAML")
     control.fill(filename)
-    # React Aria comboboxes open on click; filling alone only changes the text.
-    control.click()
-    page.get_by_role("option", name=filename, exact=True).click()
+    option = page.get_by_role("option", name=filename, exact=True)
+    # Supported Streamlit versions open either on input or on click. Clicking
+    # an already-open combobox can close it, so check its rendered state first.
+    try:
+        expect(option).to_be_visible(timeout=1_000)
+    except AssertionError:
+        control.click()
+    option.click()
     _assert_control_value(page, "Example YAML", filename)
 
 

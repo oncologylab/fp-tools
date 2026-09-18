@@ -30,6 +30,12 @@ platform's text stream; raw log bytes remain unchanged. A Linux reproduction
 with a split CRLF failed before the fix and was added alongside the native
 Windows nested-wrapper regression.
 
+The tagged macOS desktop passed command dispatch and automatic-core checks but
+exposed an audit helper that clicked an already-open example dropdown closed.
+The helper now selects a visible option directly and only clicks to open a
+closed dropdown. Browser regressions cover both Streamlit interaction styles.
+This change affects validation infrastructure only; packaged source is unchanged.
+
 ### Unreleased issue #76: comparison preflight and report preservation
 
 Bulk workflows with a combined review now reject repeated unordered condition
