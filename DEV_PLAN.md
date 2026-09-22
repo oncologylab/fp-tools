@@ -4,11 +4,26 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Current checkpoint — historical-region isolation verified:** all 269 archived
+positive expected profiles reproduce their shape with the historical output
+layout. Expanding the layout changes three shapes under otherwise identical
+settings. Two additional historical coverage discrepancies overlap the verified
+hg38 blacklist; this is a provenance clue, not proof of the original command.
+Nine focused tests passed in 2.00 s and immutable artifact verification passed.
+See `benchmarks/CONTROL_REGION_LAYOUT_20260922.md`. Next freeze a matched
+blacklist-aware reconstruction, retaining excluded-site denominators and all
+previous artifacts. Do not rescore against the unqualified expanded reference.
+After reference qualification, diagnose low-count normalization on training
+and replicate-1 controls, then require exact-operator safety before broader
+candidate evaluation. Complete-workflow CPU/memory gates remain unmeasured.
+Main and untouched promotion controls remain outside this work.
+
 **All-site control reference constructed but overlap qualification failed:**
 all 4,200 observed profiles match corrected BAM extraction; positive expected
 coverage increases from 269 to 2,892 windows. Three old positive windows
 (two CTCF, one FOXA1) change expected shape where merged output regions change
-the ten-base correction-window phase. Eight tests passed in 1.91 s; model
+the correction-window layout. Phase and boundary context have not been
+separately isolated. Eight tests passed in 1.91 s; model
 count arrays are unchanged. Do not rescreen using the unqualified reference.
 See `benchmarks/ALL_SITE_CONTROL_REFERENCE_20260922.md`. Next freeze a
 historical-region-only rerun with the same model, implementation and disabled
