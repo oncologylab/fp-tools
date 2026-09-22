@@ -4,6 +4,24 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Fixed-radius scoring primitive ready:** `radius_background.py` implements
+the same half-count background model at prespecified outer radii 100, 200 and
+500 with prefix sums. The fixed deviance dispersion and detector geometry
+remain unchanged. Fourteen relevant tests passed in 1.62 s, including scalar
+agreement, 100-radius parity, arbitrary log-bias offsets, complete scoring halo
+parity, missing sequence and zero-count ties. The training comparison protocol
+is `benchmarks/manifests/radius_training_comparison_v1.json`; its real-data
+execution configuration is not yet frozen, and no radius has been evaluated
+or selected by discrimination. Preserve all 21 tasks and complete common-
+support pairs, audit any balance changes, and report floating-point rank
+sensitivity against the earlier 100-radius result.
+
+**HepG2 wider profiles independently verified:** the stage contains 20,019
+sites, all alignment-valid, with shared central counts and bias values matching
+the prior extraction. K562 extraction child 677733 was confirmed live at
+7 min 30 s. Full extraction and common-support diagnostic results remain
+pending; do not rerun the completed HepG2 stage.
+
 **Independent wider-background auditor ready:** `audit_wide_background.py`
 recalculates flank counts with prefix sums and exposures in log space, checks
 every archived diagnostic row, and reports all 126 task/strand/radius rows on
