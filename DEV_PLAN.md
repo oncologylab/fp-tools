@@ -30,7 +30,23 @@ URLs and a practical glossary. The browser audit's navigation expectation was
 updated with the label. Local verification: 30 focused documentation/helper
 tests passed; the full suite passed 633 tests with one skip and 26 warnings
 in 265.83 seconds. Console-script smoke checks, YAML dry-run and pip check
-passed. Strict MkDocs passed; the updated browser audit is still running.
+passed. Strict MkDocs passed; the browser audit passed all 33 pages at three
+viewport sizes, including dark-system-preference checks.
+
+The PBMC teaching dataset contains 300 cells (100 per broad group), 101,637
+chr22 genomic bins with 5,669 selected, and 110,888 fragment records. The builder
+rejects changed source hashes and records provenance, per-file checksums and
+interpretation limits. Independent checks confirmed matching barcodes,
+nonnegative integer counts, preserved embeddings, indexed fragments and hg38
+coordinate bounds. A second build reproduced all analysis inputs byte for byte.
+The complete YAML workflow passed on Linux in 307.2 seconds with automatic core
+selection, producing three successful groups, motif comparisons and per-cell
+figures. These are tutorial execution checks, not new biological evidence.
+
+The release consumer workflow now runs the same real dataset through both the
+published Windows EXE and macOS application, in addition to existing discovery
+checks. The tutorial ZIP SHA-256 is
+`282a93e6f8dec57a18249b9c724e60ebe58b44921142730342401e5a24d8418b`.
 
 ### v0.2.7 release verification
 

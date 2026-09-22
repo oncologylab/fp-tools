@@ -145,6 +145,12 @@ Each job verifies the EXE checksum, a fresh managed WSL import, cached reuse,
 paths containing spaces, both runtime-option spellings, and all discovery
 outputs. Calling STREME by absolute path with `--version` is not sufficient.
 
+For v0.2.8 onward, attach `fp-tools-pbmc-chr22-demo-v1.zip` and its SHA-256
+sidecar before dispatching Release smoke. The Windows default case and macOS
+job also verify the tutorial archive and inputs, corrected command help, and
+the complete three-group single-cell workflow through the published desktop
+applications. Keep this real-data check separate from synthetic GUI fixtures.
+
 The manual GitHub Actions `Publish` workflow uses the repository
 `PYPI_API_TOKEN` secret. Do not paste PyPI tokens into chat, shell history, or
 committed files. Rotate any token that was exposed outside a secret manager.

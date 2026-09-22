@@ -45,6 +45,12 @@ jobs:
         run: |
           python scripts/smoke_windows_meme_release.py release/fp-tools-gui-windows-x64.exe --version $env:RELEASE_VERSION --case ${{ matrix.case }}
           if ($LASTEXITCODE -ne 0) { throw 'Public Windows discovery failed' }
+      - name: Run the complete real PBMC tutorial
+        if: matrix.case == 'default'
+        shell: pwsh
+        run: |
+          python scripts/smoke_pbmc_demo_release.py release/fp-tools-gui-windows-x64.exe --version '${{ inputs.version }}'
+          if ($LASTEXITCODE -ne 0) { throw 'Public Windows PBMC tutorial failed' }
   macos-managed-meme:
     name: macOS Apple Silicon / clean-cache managed MEME
     runs-on: macos-15
@@ -70,6 +76,11 @@ jobs:
         run: >-
           python3 scripts/smoke_frozen_meme_release.py
           release-mount/fp-tools.app/Contents/MacOS/fp-tools-gui
+      - name: Run the complete real PBMC tutorial
+        run: >-
+          python3 scripts/smoke_pbmc_demo_release.py
+          release-mount/fp-tools.app/Contents/MacOS/fp-tools-gui
+          --version '${{ inputs.version }}'
       - name: Unmount the released application
         if: always()
         run: hdiutil detach release-mount || true

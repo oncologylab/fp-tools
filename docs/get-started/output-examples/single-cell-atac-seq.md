@@ -3,6 +3,11 @@
 The PBMC5k example shows per-cell footprint signatures across B cells,
 monocytes, and T/NK cells.
 
+To run a small, complete example yourself, follow the
+[PBMC chromosome-22 tutorial](../workflows/single-cell.md#small-pbmc-example).
+That 300-cell subset teaches the workflow; the figures here use the larger
+PBMC5k dataset and will differ.
+
 Use the heatmap to compare motif signatures across cell groups. In the UMAPs,
 each panel places the same cells at the same coordinates; the colors show
 either cell labels or the selected motif's signature score. Similar colors
