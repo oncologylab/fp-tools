@@ -1,0 +1,65 @@
+{
+  "schema": "fp-tools-corrected-count-safety-protocol-v1",
+  "status": "protocol_locked_execution_configuration_pending",
+  "evidence": "post_hoc_corrected_implementation_candidate_screen",
+  "source_configuration": {
+    "path": "benchmarks/results/chrombpnet_direct_bias_safety_20260908_v1/configuration.freeze.json",
+    "sha256": "47713aa95f1805d9a2294822c08638107bdcdf67907e846e107bddfa7c5eae01"
+  },
+  "source_thresholds": {
+    "path": "benchmarks/results/chrombpnet_direct_bias_safety_20260908_v1/thresholds.freeze.json",
+    "sha256": "1a22caf030aad2db3beff0b0686c8562276e3af45a36c5a7c1c8d593ab62d7f1"
+  },
+  "source_result": {
+    "path": "benchmarks/results/chrombpnet_direct_bias_safety_20260908_v1/safety_manifest.json",
+    "sha256": "c72d9f56f12418a655b787f73a7ae398c1aa6872750e7bb1e73d56057337e93b"
+  },
+  "cells": ["HepG2", "K562"],
+  "operator": "total_matched_direct_expected_signed_deviance_conventional_geometry",
+  "dispersion": {"HepG2": 0.0, "K562": 1.6144318781609228},
+  "bias_model_sha256": "620f232f634423b8753e4d77f8cf72df87482c09193cb5e7e6b038917c47e89a",
+  "flank": 100,
+  "read_shift": [4, -5],
+  "minimum_mapq": 30,
+  "keep_duplicates": false,
+  "calibration_chromosomes": ["chr16", "chr17", "chr18"],
+  "calibration_label": 0,
+  "target_validation_negative_call_rate": 0.05,
+  "minimum_validation_negatives": 200,
+  "naked_replicate": "NakedDNA_rep2",
+  "residual_bootstraps": 1000,
+  "seed": 2026,
+  "motif_residual_absolute_center_flank_limit": 0.25,
+  "analyses": [
+    {
+      "name": "fixed_threshold_extraction_effect",
+      "purpose": "Isolate count-extraction changes with the archived thresholds unchanged.",
+      "thresholds": "source_thresholds",
+      "decision_role": "diagnostic_only"
+    },
+    {
+      "name": "corrected_calibration",
+      "purpose": "Evaluate the corrected implementation with the original calibration rule on corrected tuning negatives.",
+      "thresholds": "recompute_once_before_control_scoring",
+      "decision_role": "primary_development_candidate_screen"
+    }
+  ],
+  "requirements": [
+    "Freeze code, runtime, BAM/BAI identities, source profiles, tracks, site order and all output paths before extraction.",
+    "Reextract observed counts for both calibration and replicate-2 controls; never reuse affected observed arrays.",
+    "Reuse only checksum-valid sequence log-bias profiles and expected DWM tracks with verified site order; rescale each strand expectation to corrected strand totals.",
+    "Preserve every original task and motif locus. Report invalid windows, zero counts and underpowered tasks explicitly.",
+    "Use identical corrected observed counts for both scoring arms. Keep original validity support as a diagnostic and report any changes separately.",
+    "Freeze both methods' recalibrated thresholds before scoring replicate 2. Do not select between analyses based on control outcomes.",
+    "For historical-rule calibration retain the original eligibility rule; additionally report zero or unavailable DWM expectation among calibration negatives. Unqualified baseline calibration cannot establish relative safety.",
+    "Report absolute candidate rates on all finite sites and informative sites, plus paired relative rates only where DWM expectation is positive and normalized observed profile shapes agree.",
+    "Report archived versus corrected baseline-comparable memberships and count differences; do not hide denominator changes behind a rate comparison.",
+    "Require false-positive rate and Wilson upper bound at most 0.05 and paired increase over DWM at most 0.01; retain residual-shape and observed-profile disagreement checks.",
+    "Retain every historical artifact unchanged. Verify nested outputs independently before interpreting a successful process exit.",
+    "Replicate 2 is previously examined candidate-screen evidence; it cannot establish final untouched safety, functional uncertainty coverage or occupancy-leakage exclusion."
+  ],
+  "candidate_retuning_allowed": false,
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "promotion_eligible": false
+}

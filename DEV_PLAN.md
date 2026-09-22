@@ -4,6 +4,21 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Corrected safety protocol:**
+`benchmarks/manifests/corrected_count_safety_protocol_v1.json` fixes the next
+negative-control reassessment before reading corrected control scores. Both
+calibration and naked-DNA replicate-2 profiles used the affected extractor:
+the archived inputs contain 36,931/26,647 development sites and 2,400/1,800
+control sites for HepG2/K562, respectively. Sequence log-bias arrays are
+available, so fresh observed counts can be combined with the same model
+without fitting or new labels. Fixed historical thresholds isolate extraction
+effects; independently recalibrated thresholds use only original tuning
+negatives and the original rule. Both analyses are mandatory, with the latter
+designated the primary development screen before outcomes are known.
+Zero baseline expectation, profile disagreements and changed denominators
+must remain explicit. This protocol is not an execution freeze or safety
+result; the new input builder and scorer are still required.
+
 **Current execution, September 22:** the corrected-count freeze completed
 successfully (exit 0; 761.65 seconds), with configuration SHA-256
 `59dd9a562d31e49ebd7bd2303d1fc458412f8170dad174d7292696ccc13d7b32`.
