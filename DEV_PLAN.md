@@ -4,6 +4,21 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Global scoring primitive tested:** `global_parametric_scoring.py` converts
+genomic expectations directly to signed-deviance residuals and the existing
+conventional geometry, without window-total rescaling. A 140-base-pair halo
+preserves complete count-to-footprint results across chunk boundaries for
+Poisson and negative-binomial residuals. Missing expectation remains missing
+evidence. Fifteen related tests passed (1.43 s). This is synthetic numerical
+verification only; no real-data scores, safety, or full-pipeline claim exists.
+
+**Global training extraction active:** the execution configuration is frozen
+at SHA-256 `d903eec175130993afe35e6f3c64701e25399d1e29f6d2b98f8750825849b328`.
+Supervisor 620697 tracks child 620699 (start ticks 119031082). The job uses
+the existing 10-million-fragment replicate-1 BAMs and all recorded training
+coordinates: 20,019 HepG2 and 14,987 K562. Its scope remains numerical/output
+parity and coverage, with no labels read or discrimination scoring.
+
 **Global training-profile runner implemented:** the new initial-stage runner
 extracts 401-position strand counts and fresh sequence propensities on
 label-free chr1–15 coordinates. It audits scalar/halo agreement, genomic
