@@ -4,6 +4,16 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Fixed-operator screen implemented:** `screen_fixed_shape_operators.py`
+preserves all 126 task/operator rows, excludes missing expected coverage from
+calibration, and freezes thresholds before the previously examined replicate-2
+screen. Missing models, insufficient calibration, and unavailable baseline
+support cannot pass. Zero-count sites are never called. Eighteen focused
+screen/normalization/safety tests passed (1.61 s). The execution configuration
+is frozen at SHA-256
+`1074877deb1f4781e7e6115c5325ff02bfb6cd8c17f86dd5def004bfdfcfe5d5`;
+supervised calibration is running. No control result is claimed yet.
+
 **Fixed-normalization tuning verified:** corrected artifacts were reassessed
 on identical tuning sites with all 189 metric rows preserved. DWM and
 parametric spline metrics are unchanged; raw-spline metrics change slightly

@@ -1205,3 +1205,16 @@ or the corresponding PNGs. Curves describe input profiles by correction;
 changing the detector does not change these curves. Numerical tuning gains
 do not establish significant canonical protection, independent safety or
 complete-workflow computational performance.
+
+`screen_fixed_shape_operators.py` evaluates all fitted, fixed-normalization
+models under `fixed_shape_operator_safety_v1.json`. With `--data-root` and a
+fresh `--outdir`, run `--freeze-only`, `--calibrate-only`, no mode flag for
+control scoring, then `--verify-only`. Calibration uses only tuning negatives
+with positive observed counts and valid positive expectation from both
+correction methods. All thresholds are frozen before control scoring.
+The 126-row ledger retains missing models and insufficient calibration.
+Per-site output records scores, thresholds, calls and coverage exclusions.
+Absolute false-positive rates include candidate-valid sites separately from
+positive-count sites; relative rates use comparable baseline support only.
+This is a previously examined replicate-2 false-positive-rate screen, not
+complete safety, calibrated uncertainty, or untouched promotion evidence.
