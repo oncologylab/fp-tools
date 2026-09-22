@@ -4,6 +4,18 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Secondary broad-count balance sensitivity completed:** the covariate-only
+frozen prefix rule retains 2,517/3,949 pairs, leaving only three powered tasks,
+17 underpowered tasks and one unavailable task. All 147 method/task rows remain
+explicit. HepG2 ZNF384 weakens (radius-500 AUPRC 0.5554 versus DWM 0.5837);
+K562 ZNF384 retains a numerical gain with only 92 pairs. HepG2 ZNF362 keeps
+all 256 original pairs and its earlier result. No secondary shape claim is
+made. Six tests passed, both artifact verifiers passed, and independent pair,
+balance and rank-metric checks passed. Exact evidence is in
+`benchmarks/RADIUS_SECONDARY_BALANCE_20260922.md`. Next freeze direct
+three-covariate matching from the full existing training pool to address power
+without selecting on scores; preserve both earlier analyses and all tasks.
+
 **Radius accessibility/control audit complete:** all original pairs and tasks
 retained. Counts at offsets 101–500 are imbalanced for CTCF (SMD −0.746/−0.522)
 and ZNF384 (−0.210/−0.225), despite balanced central counts. The parametric
