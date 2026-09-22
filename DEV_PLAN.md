@@ -201,6 +201,14 @@ historical run and only the Python 3.12.3 build timestamp differed; the new
 configuration records the current runtime. All 20 documentation-contract
 tests and the strict MkDocs build passed after adding the runner.
 
+The before/after reporter `compare_corrected_count_reassessment.py` is separate
+from the pinned calculation. It requires the full corrected run matrix and
+paired metric/shape/coverage/bootstrap identities, rejects changed class counts
+or eligibility, retains unscored tasks via the coverage denominator, and emits
+paired tables plus corrected aggregate plots. Six focused tests passed in
+1.85 seconds. Reported reader-effect differences are descriptive; they are not
+confidence intervals for the implementation change or a new method result.
+
 ## Current Baseline
 
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk

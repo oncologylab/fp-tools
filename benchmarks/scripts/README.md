@@ -1136,3 +1136,22 @@ stages are verified and reused; incomplete files are preserved and rejected.
 The new five summary tables record metrics, shape, coverage, profiles and
 bootstrap intervals. These are post-hoc implementation-reassessment results,
 not untouched validation or authority to tune on examined chromosomes.
+
+After all corrected stages and their independent verification finish, create
+the before/after tables and aggregate PDF in another new directory:
+
+```bash
+python benchmarks/scripts/compare_corrected_count_reassessment.py \
+  --data-root /path/to/original-data-checkout \
+  --corrected benchmarks/results/corrected_count_reassessment_local \
+  --outdir benchmarks/results/corrected_count_comparison_local
+```
+
+The report retains all 21 tasks, including those without scored rows. It rejects
+changed row identities, class counts and power classifications. It records
+metric changes, protection gains/losses and unchanged principal-comparison
+identities. The full-depth means summarize the three biological replicates;
+seed runs are not treated as independent biological replicates. Numerical
+before/after differences do not establish their statistical significance.
+Full input verification, visual plot review, independent safety and resource
+measurement remain separate requirements.
