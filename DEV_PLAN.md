@@ -4,6 +4,22 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Full stable models and exact-operator safety screen complete:** 147 model
+records frozen; 60 calibrated/scored combinations, 80 missing wider control
+profiles and seven missing models retained. Corrected CTCF fails replicate-2
+safety: normalized DWM calls about 21% of informative sites and conditional
+parametric calls 9–10%. K562 MEF2D/parametric has Wilson upper 8.75%, also
+failing; its DWM control has no informative support. Only raw CTCF in both
+cells and a raw K562 ARID3A fallback pass the narrow screen; ARID3A has only
+one paired DWM site. No promotion follows. Fifteen tests passed in 1.50 s;
+all model, calibration and control rows independently verified. A failed
+data-root resolution attempt was preserved and corrected in a separate v2
+runner; original data hashes match. See `benchmarks/STABLE_GEOMETRY_SAFETY_20260922.md`.
+Next audit normalization/depth behavior on training and replicate-1 controls,
+and missing expected coverage in archived DWM control profiles. Do not retune
+thresholds against observed replicate-2 failures. Main, final controls and
+untouched promotion labels remain unchanged.
+
 **Stable detector chromosome-direction audit verified:** all 8,820 paired
 effects, 2,205 fixed-center audits and 588 summaries independently checked;
 12 tests passed in 2.60 s and all three 21-task maps visually reviewed.
