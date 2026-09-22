@@ -4,6 +4,18 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Next corrected-data candidate comparison:**
+`benchmarks/manifests/corrected_shape_development_v1.json` fixes a training/tuning
+factorial comparison of raw counts, DWM-expected residuals and frozen-parametric
+residuals with conventional geometry, training-selected symmetric geometry and
+the existing spline detector with family/global shrinkage. The new
+`corrected_shape_candidates.py` fits only chr1–15 and rejects training templates
+with central enrichment. Five focused tests passed, including rejection of
+tuning/test inputs, preservation of underpowered tasks, family-prior isolation
+and unchanged model coefficients during prediction. Matched cohort preparation,
+execution/model freezes and the real tuning comparison remain to be implemented;
+no new candidate-performance result is claimed from these synthetic tests.
+
 **Verified corrected control result:** all four safety profiles and both
 threshold analyses have completed and passed independent verification. The
 fixed-threshold candidate call counts are unchanged across all 21 tasks.

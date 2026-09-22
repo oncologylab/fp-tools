@@ -1,0 +1,72 @@
+{
+  "schema": "fp-tools-corrected-shape-development-protocol-v1",
+  "status": "protocol_locked_execution_configuration_pending",
+  "evidence": "training_and_tuning_candidate_development",
+  "profile_inputs": [
+    {
+      "cell": "HepG2",
+      "path": "benchmarks/results/corrected_safety_profiles_20260922_v1/HepG2.validation.json",
+      "sha256": "5125985a813cd58e2fe56e854775e53f49d1eb08520c8204386e1fee836de3be"
+    },
+    {
+      "cell": "K562",
+      "path": "benchmarks/results/corrected_safety_profiles_20260922_v1/K562.validation.json",
+      "sha256": "0a92dfb6953a4985f53dcf9519d210b7cfeafa66fbf92137fc7562a589efd2a9"
+    }
+  ],
+  "dwm_source_configuration": {
+    "path": "benchmarks/results/chrombpnet_direct_bias_safety_20260908_v1/configuration.freeze.json",
+    "sha256": "47713aa95f1805d9a2294822c08638107bdcdf67907e846e107bddfa7c5eae01"
+  },
+  "train_chromosomes": ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15"],
+  "tune_chromosomes": ["chr16", "chr17", "chr18"],
+  "corrections": ["raw", "DWM_expected", "parametric_direct"],
+  "detectors": ["conventional", "trained_geometry", "hierarchical_spline"],
+  "geometry_grid": [[7, 12, 40], [3, 8, 40], [3, 8, 60], [5, 10, 40], [5, 10, 60], [10, 15, 40], [10, 15, 60], [15, 20, 40], [15, 20, 60], [20, 25, 40], [20, 25, 60]],
+  "minimum_sites_per_class": 200,
+  "matching": {
+    "scope": "within_cell_tf_split",
+    "features": ["motif_score", "log1p_corrected_observed_total"],
+    "method": "optimal_standardized_squared_euclidean",
+    "ratio": 1,
+    "positive_subsampling_seed": 2026,
+    "maximum_standardized_pair_distance": 0.5,
+    "maximum_absolute_standardized_mean_difference": 0.1,
+    "freeze_before_detector_fitting": true,
+    "reuse_identical_memberships_for_all_corrections_and_detectors": true
+  },
+  "expected_support": "fresh_valid_and_finite_positive_parametric_and_DWM_expected_total",
+  "zero_observed_sites": "retain_as_ties_if_expected_support_exists",
+  "spline": {
+    "smoother": "spline",
+    "spline_penalty": 10.0,
+    "window_limit": 50.0,
+    "variance_shrinkage": 0.5,
+    "variance_floor": 0.05,
+    "prior_strength": 250.0,
+    "prior": "equal_other_task_family_contrasts_else_global_excluding_same_tf_across_cells"
+  },
+  "training_selection": "maximum_training_AUROC_geometry_with_conventional_first_tie_order",
+  "training_shape_screen": "normalized_positive_minus_negative_center_below_zero_and_below_both_shoulders",
+  "model_freeze_before_tune_scoring": true,
+  "tune_reporting": {
+    "candidate_selection": "none_in_this_diagnostic",
+    "retain_all_21_tasks": true,
+    "report_underpowered_unbalanced_and_failed_training_shapes": true,
+    "metrics": ["AUROC", "AUPRC", "signed_central_contrast", "left_shoulder", "right_shoulder", "asymmetry", "standardized_functional_separation"],
+    "score_semantics": "ranks_not_calibrated_binding_probabilities",
+    "shape_interpretation": "development_diagnostic_not_calibrated_functional_uncertainty"
+  },
+  "scope_limits": [
+    "Only original replicate 1 at 10 million fragments and seed 2026 is included at this stage.",
+    "Expected-DWM residual geometry is a same-operator correction comparison, not a complete production-pipeline benchmark.",
+    "Do not fit, select, or change the grid using examined test or transfer labels.",
+    "A higher discrimination metric without central protection is not footprint improvement.",
+    "Freeze exact code, runtime, inputs and cohort identities before fitting; freeze model artifacts before tuning evaluation.",
+    "Any later selected policy needs separately frozen depth, replicate, safety, uncertainty and full-resource evaluation."
+  ],
+  "test_chromosome_access_allowed": false,
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "promotion_eligible": false
+}
