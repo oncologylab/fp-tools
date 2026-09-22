@@ -4,6 +4,21 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Blacklist and output-layout effects separated:** the all-site blacklist
+intervention leaves every eligible observed profile and expected shape
+unchanged, removes signal at 12 blacklisted sites, and retains 2,880 positive
+expected profiles among all 4,200 rows. All 269 historical positive windows
+remain, with the same three layout-induced shape differences. Twelve focused
+tests passed in 2.44 s; independent interval reconstruction verified 25,200
+profiles and both comparison masks. See `benchmarks/BLACKLISTED_CONTROL_LAYOUTS_20260922.md`.
+The expanded reference remains unqualified; do not waive its overlap gate or
+retune candidates on replicate 2. The exclusion/layout diagnosis is now
+resolved sufficiently to move to the outstanding low-count normalization
+diagnostic using training and replicate-1 controls. Freeze counts, normalization
+components and fixed-model outputs before inspecting their relationships;
+preserve all failed operators. Full-workflow resource and promotion gates
+remain outstanding, and untouched labels/final controls stay unopened.
+
 **Blacklist intervention resolves historical coverage discrepancies:** adding
 the checksum-locked hg38 blacklist to the matched historical-region command
 reproduces all 269 positive expected windows, with zero support, expected-shape
