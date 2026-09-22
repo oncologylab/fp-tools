@@ -1244,3 +1244,17 @@ applies the existing descriptive ledger calculation to its pinned corrected
 manifest. It checks the verification receipt, retains all 21 tasks, and
 preserves shape exceptions. It does not certify promotion or replace the
 separate safety, uncertainty, output-compatibility, and resource studies.
+
+`build_global_parametric_training_profiles.py` implements the initial stage
+of `global_parametric_track_development_v1.json`. With `--data-root` and a
+fresh research `--outdir`, run `--freeze-only`, then without a mode flag, then
+`--verify-only`. Freeze and execution may take several minutes; retain
+`run_logged_experiment.py` launch/exit receipts. The runner reads coordinate
+columns only and extracts chr1–15 with a 200-base-pair flank. A 100-base-pair
+halo supports the new expectation at every position in the central profile.
+It checks archived observed counts, independent scalar calculations, chunk
+parity, overlapping positions, and explicit missing coverage. It writes no
+discrimination scores, fits no model, and reads no control or holdout labels.
+Its arrays are in genomic orientation; downstream motif-oriented analysis
+must explicitly orient both strands. Earlier conditional-profile evidence
+does not establish the performance or safety of this new operator.

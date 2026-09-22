@@ -4,6 +4,16 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Global training-profile runner implemented:** the new initial-stage runner
+extracts 401-position strand counts and fresh sequence propensities on
+label-free chr1–15 coordinates. It audits scalar/halo agreement, genomic
+overlaps, archived observed counts, and missing coverage before any scoring.
+Nine focused tests passed (1.50 s). A supervised input freeze is active;
+real-data numerical compatibility and coverage are not yet established.
+Protocol, model sidecar, reference/index, source alignment/index, code, and
+runtime identities are recorded before extraction. No tuning, control, or
+test scoring is authorized by this initial stage.
+
 **Corrected 96-run comparison complete:** all inputs/outputs were independently
 verified, all 21 aggregate pages visually reviewed, and the unchanged ledger
 calculation rebuilt for corrected counts. CTCF full-depth mean AUROC gains
