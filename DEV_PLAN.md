@@ -4,6 +4,26 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Conditional score ceiling explains much of low sensitivity:** the frozen
+audit retains all 40,824 rows and 210 task/group summaries. Seven focused tests
+passed in 3.69 s; independent probability-product and convolution checks
+verified all rows/summaries with zero observed-score discrepancy. Of 4,053
+positive-label training sites, 3,589 (88.6%) cannot reach the unchanged nominal
+threshold under the selected parametric model even with zero central cuts.
+Only 464 can reach it, of which 105 are called. All positive ZNF362/ZNF384
+sites are unreachable in the examined tasks. With fixed geometry and identical
+counts, their parametric expected central probability is about 3% versus
+20.55% under uniform propensities. This is model-conditional, not proof of an
+absence of footprint information or a sequencing-depth recommendation.
+Only two eligible parametric replicate-1 control sites can reach threshold;
+none can in the uniform arm, limiting what zero control calls establish.
+See `benchmarks/CONDITIONAL_SCORE_CEILING_20260922.md`. Next freeze a fixed-geometry
+observed-versus-expected central-count calibration audit on permitted naked-DNA
+replicate 1 before attributing the zinc-finger limit entirely to depth. Keep
+strand/shoulder effects separate and use all tasks; do not select an analysis
+only for the weakest family or change thresholds. Further depth work must use
+verified BAM identities and training coordinates, never examined test labels.
+
 **Count-conditioned candidate improves ranks but remains power-limited:** a
 strand-conditioned binomial depletion score was frozen and tested with uniform
 and fixed parametric propensities on the unchanged 8,106 matched training sites.
