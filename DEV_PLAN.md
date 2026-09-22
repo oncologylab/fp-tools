@@ -4,6 +4,17 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Stable numerical successor verified:** score rounding, exact rank-sum
+selection and a numerical protection margin were frozen before the repeat.
+All 2,205 fits and saved held scores agree under equivalent normalization
+solvers; zero fold metrics change beyond arithmetic roundoff (previously 287).
+Ten tests passed in 3.15 s; full independent verification covers 6,615 fold
+rows and 441 summaries. Geometry helps CTCF and K562 MEF2D diagnostically,
+but does not rescue the zinc-finger tasks. No scientific promotion gate is
+newly passed. See `benchmarks/STABLE_GEOMETRY_CROSSFIT_20260922.md`.
+Next quantify chromosome-wise stability and signed protection of this exact
+detector before any full-training candidate freeze or negative-control test.
+
 **Balanced-cohort geometry cross-fitting complete, numerical limitation found:**
 all 2,205 fits, 6,615 fold rows and 441 summaries verified; seven tests passed
 in 2.96 s. Equivalent normalization perturbs scores by at most 2.91e-13 but
