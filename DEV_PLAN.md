@@ -4,6 +4,19 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Low-count model simulation verified:** the separately frozen Gamma–Poisson
+prototype completed all 50 synthetic cases (50,000 draws each). Nine focused
+tests passed in 1.56 s, and independent artifact verification passed. Nominal
+95% scalar predictive coverage was 94.964–100% under the Poisson working
+model but fell to 15.018% in the strongest overdispersion stress case.
+This is not calibrated biological or functional uncertainty. No real-data
+scores, labels, controls, or promotion gates were evaluated by this stage.
+The next step requires a separate execution freeze for identical-site
+training-chromosome comparisons, retaining all 21 tasks and separating
+expectation changes from residual and detector changes. Do not retune this
+prior using examined tests or controls. See
+`benchmarks/GAMMA_POISSON_SIMULATION_20260922.md`.
+
 **Global training parity verified; coverage remains limiting:** both cells
 completed with zero observed/expected/validity overlap conflicts and matching
 scalar/halo checks. Independent profile and coverage verification passed.
@@ -23,19 +36,20 @@ Poisson and negative-binomial residuals. Missing expectation remains missing
 evidence. Fifteen related tests passed (1.43 s). This is synthetic numerical
 verification only; no real-data scores, safety, or full-pipeline claim exists.
 
-**Global training extraction active:** the execution configuration is frozen
+**Historical extraction launch (now completed and verified above):** the execution configuration was frozen
 at SHA-256 `d903eec175130993afe35e6f3c64701e25399d1e29f6d2b98f8750825849b328`.
-Supervisor 620697 tracks child 620699 (start ticks 119031082). The job uses
+Supervisor 620697 tracked child 620699 (start ticks 119031082). The job used
 the existing 10-million-fragment replicate-1 BAMs and all recorded training
 coordinates: 20,019 HepG2 and 14,987 K562. Its scope remains numerical/output
 parity and coverage, with no labels read or discrimination scoring.
 
-**Global training-profile runner implemented:** the new initial-stage runner
+**Historical training-profile runner implementation:** the initial-stage runner
 extracts 401-position strand counts and fresh sequence propensities on
 label-free chr1–15 coordinates. It audits scalar/halo agreement, genomic
 overlaps, archived observed counts, and missing coverage before any scoring.
-Nine focused tests passed (1.50 s). A supervised input freeze is active;
-real-data numerical compatibility and coverage are not yet established.
+Nine focused tests passed (1.50 s). At that stage the supervised input freeze
+was active; numerical compatibility and coverage have since been established
+as reported above.
 Protocol, model sidecar, reference/index, source alignment/index, code, and
 runtime identities are recorded before extraction. No tuning, control, or
 test scoring is authorized by this initial stage.
