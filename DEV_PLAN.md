@@ -80,9 +80,44 @@ Forty-two focused ledger, stability-extension and report tests passed in
 26.28 seconds. The real ledger and its exact immutable rerun passed, with
 SHA-256 `33d65e9025ccb23ef09d640bf2e8757107547ba62656297f9c5c360693ed4d88`.
 Output: `benchmarks/results/direct_bias_gate_ledger_20260922_v1/gate_ledger.json`.
-The full historical nested-input verifier was also started independently;
-its completion must be checked before claiming that deeper verification.
+The full historical nested-input verifier subsequently exited 0 and verified
+all 96 runs, frozen inputs, archived reuse and outputs without rerunning a
+stage (`--verify-only --code-ref c9ecd82`). The browser audit also passed all
+32 pages at three viewport sizes with a dark-system preference. Historical
+verification checks recorded code; it does not certify an identical current
+scientific runtime for a new experiment.
 No scientific computation, holdout access or production change occurred.
+
+### Complete-workflow resource evidence contract
+
+The research promotion checker previously accepted a generic runtime/memory
+table without end-to-end scope or matched workload identities. Twelve new
+regressions failed before correction. Resource evidence now requires total
+process-tree CPU time, absolute process-tree peak memory, fitting plus
+application, frozen benchmark/workload identities, matching core/cache settings
+and all six repetitions per workload. It rejects nonfinite/negative values,
+duplicate or unmatched runs and missing repetition pairs. Worst workload
+ratios prevent a fast case from hiding a slow one. Wall time remains recorded
+but cannot substitute for CPU time. Legacy component tables fail this gate.
+These checks validate table consistency, not the authenticity of declarations;
+the benchmark producer must still verify its frozen matrix and artifacts.
+
+The premeasurement protocol is
+`benchmarks/manifests/end_to_end_resource_protocol_v1.json`, SHA-256
+`eeff0c5ecf2bee1741c8719205a8072b9f736e93d08fb0ef230c9df5b38adc2b`.
+It specifies both development cells, all three biological replicates at 10M
+and full depth, six timing repetitions and a shared four-core budget. It
+includes fitting, input reading, correction, scoring and equivalent output
+products. Frozen-model reuse and same-operator correction comparisons remain
+separate diagnostics. This locks the protocol, not an executable benchmark:
+exact command/input/code/runtime hashes, output-contract parity and validated
+process-tree instrumentation are required before measurement. No runtime
+ratio or computational promotion pass is claimed. The host's cgroup root is
+not writable by the current user; a suitable isolated memory-accounting path
+must be verified rather than substituting sampled or parent-only peaks.
+After adding the six-repetition guard, all 31 focused resource, promotion and
+ledger tests passed in 1.00 second. All 20 documentation-contract tests and the
+strict MkDocs build passed. No timing or scientific model run was started.
 
 ## Current Baseline
 

@@ -1037,3 +1037,33 @@ overwritten. Full nested-input verification remains the separate
 `extend_direct_bias_stability.py --verify-only --code-ref c9ecd82` operation.
 The ledger's missing safety/resource/uncertainty statuses cannot be interpreted
 as passes. Consult the exact-operator safety report separately.
+
+### Complete-workflow resource measurements
+
+`../manifests/end_to_end_resource_protocol_v1.json` locks the premeasurement
+design. Execution must additionally freeze the exact commands, inputs, code,
+runtime, expected case matrix and validated measurement implementation. No
+complete-workflow measurement exists yet. Candidate and production DWM must
+write equivalent products; the same-operator DWM residual comparison is a
+separate diagnostic, not a substitute for the production baseline.
+
+The promotion evaluator's resource TSV now requires `cpu_seconds` alongside
+`runtime_seconds`, `peak_memory_mb` and `model_size_mb`. It also requires
+`benchmark_id` and `workload_id` (SHA-256 identities), `repetition` (0–5),
+integer `cores`, and these explicit scope fields:
+
+| Field | Required value |
+| --- | --- |
+| `resource_scope` | `complete_pipeline` |
+| `pipeline_mode` | `fit_and_apply` |
+| `cache_policy` | `fresh_process_warm_os_cache` |
+| `cpu_scope` | `process_tree` |
+| `memory_scope` | `absolute_process_tree_peak` |
+
+Every candidate run must pair with a baseline run having the same workload,
+repetition, cores, cache policy and pipeline mode. All six repetitions are
+required. CPU ratios use within-workload means; memory ratios use absolute
+within-workload maxima. Every workload must pass. The producer must verify
+that the entire frozen case matrix is present: declarations in a TSV cannot
+prove that its inputs, commands or measurement instrumentation were valid.
+Older sequence-component tables remain diagnostic evidence and fail this gate.

@@ -77,10 +77,20 @@ def _evidence(pairs: pd.DataFrame):
         {
             "candidate_id": ["DWM:spline", "LOG:gp"],
             "runtime_seconds": [100.0, 150.0],
+            "cpu_seconds": [100.0, 150.0],
             "peak_memory_mb": [1000.0, 1200.0],
             "model_size_mb": [0.0, 2.0],
+            "benchmark_id": ["a" * 64] * 2,
+            "workload_id": ["b" * 64] * 2,
+            "repetition": [0, 0], "cores": [1, 1],
+            "cache_policy": ["fresh_process_warm_os_cache"] * 2,
+            "pipeline_mode": ["fit_and_apply"] * 2,
+            "resource_scope": ["complete_pipeline"] * 2,
+            "cpu_scope": ["process_tree"] * 2,
+            "memory_scope": ["absolute_process_tree_peak"] * 2,
         }
     )
+    resources = pd.concat([resources.assign(repetition=index) for index in range(6)], ignore_index=True)
     uncertainty = pd.DataFrame(
         {"candidate_id": ["LOG:gp"], "empirical_coverage": [0.90]}
     )

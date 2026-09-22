@@ -227,22 +227,68 @@ def resource_evidence(
     candidate: str,
     baseline: str,
     gates: dict,
-) -> tuple[bool, dict[str, float]]:
-    evidence = {"runtime_ratio": np.nan, "memory_ratio": np.nan, "model_size_mb": np.nan}
+) -> tuple[bool, dict]:
+    evidence = {"runtime_ratio": np.nan, "memory_ratio": np.nan, "model_size_mb": np.nan,
+                "scope": "complete_pipeline", "reason": "missing_resource_evidence"}
     if frame is None or frame.empty:
         return False, evidence
     method_column = "candidate_id" if "candidate_id" in frame else "method"
-    required = {method_column, "runtime_seconds", "peak_memory_mb", "model_size_mb"}
+    required = {method_column, "runtime_seconds", "cpu_seconds", "peak_memory_mb", "model_size_mb",
+                "benchmark_id", "workload_id", "repetition", "cores", "cache_policy",
+                "pipeline_mode", "resource_scope", "cpu_scope", "memory_scope"}
     if not required.issubset(frame.columns):
-        raise ValueError("resource metrics are missing required columns")
-    candidate_rows = frame[frame[method_column].astype(str) == candidate]
-    baseline_rows = frame[frame[method_column].astype(str) == baseline]
-    if candidate_rows.empty or baseline_rows.empty:
+        evidence["reason"] = "missing_complete_pipeline_fields"
+        evidence["missing_columns"] = sorted(required - set(frame.columns))
         return False, evidence
-    runtime_ratio = float(candidate_rows["runtime_seconds"].mean() / max(baseline_rows["runtime_seconds"].mean(), 1e-12))
-    memory_ratio = float(candidate_rows["peak_memory_mb"].max() / max(baseline_rows["peak_memory_mb"].max(), 1e-12))
+    rows = frame[frame[method_column].astype(str).isin([candidate, baseline])].copy()
+    if rows.empty or candidate == baseline:
+        return False, evidence
+    scopes = {"resource_scope": "complete_pipeline", "cpu_scope": "process_tree",
+              "memory_scope": "absolute_process_tree_peak", "pipeline_mode": "fit_and_apply",
+              "cache_policy": "fresh_process_warm_os_cache"}
+    if any(not rows[name].eq(value).all() for name, value in scopes.items()):
+        evidence["reason"] = "unsupported_or_incomplete_measurement_scope"
+        return False, evidence
+    for name in ("cpu_seconds", "runtime_seconds", "peak_memory_mb", "model_size_mb", "cores", "repetition"):
+        rows[name] = pd.to_numeric(rows[name], errors="coerce")
+        minimum = 0 if name in ("model_size_mb", "repetition") else np.nextafter(0., 1.)
+        if not np.isfinite(rows[name]).all() or not rows[name].ge(minimum).all():
+            evidence["reason"] = "invalid_resource_values"
+            return False, evidence
+    if (not rows["cores"].ge(1).all() or not rows["cores"].mod(1).eq(0).all()
+            or not rows["repetition"].mod(1).eq(0).all()
+            or rows["benchmark_id"].nunique() != 1
+            or any(not rows[n].astype(str).str.fullmatch(r"[0-9a-f]{64}").all()
+                   for n in ("benchmark_id", "workload_id"))):
+        evidence["reason"] = "invalid_benchmark_identity"
+        return False, evidence
+    keys = ["benchmark_id", "workload_id", "repetition", "cores", "cache_policy", "pipeline_mode"]
+    if rows.duplicated([method_column, *keys]).any():
+        evidence["reason"] = "duplicate_resource_run"
+        return False, evidence
+    candidate_rows = rows[rows[method_column].astype(str) == candidate]
+    baseline_rows = rows[rows[method_column].astype(str) == baseline]
+    paired = candidate_rows.merge(baseline_rows, on=keys, how="outer", indicator=True,
+                                  suffixes=("_candidate", "_baseline"), validate="one_to_one")
+    if paired.empty or not paired["_merge"].eq("both").all():
+        evidence["reason"] = "unmatched_resource_workloads"
+        return False, evidence
+    # Every workload must pass. An inexpensive case must not hide a regression
+    # elsewhere. Repetitions within a workload are averaged for CPU time;
+    # memory uses the largest absolute process-tree peak for each method.
+    groups = paired.groupby([k for k in keys if k != "repetition"], dropna=False)
+    if any(set(g.repetition) != set(range(6)) for _, g in groups):
+        evidence["reason"] = "incomplete_six_repetition_workload"
+        return False, evidence
+    runtime_ratio = max(float(g.cpu_seconds_candidate.mean() / g.cpu_seconds_baseline.mean())
+                        for _, g in groups)
+    memory_ratio = max(float(g.peak_memory_mb_candidate.max() / g.peak_memory_mb_baseline.max())
+                       for _, g in groups)
     model_size = float(candidate_rows["model_size_mb"].max())
-    evidence = {"runtime_ratio": runtime_ratio, "memory_ratio": memory_ratio, "model_size_mb": model_size}
+    evidence = {"runtime_ratio": runtime_ratio, "memory_ratio": memory_ratio, "model_size_mb": model_size,
+                "scope": "complete_pipeline", "runtime_measure": "total_process_tree_cpu_seconds",
+                "paired_runs": len(paired), "reason": "evaluated_declared_paired_evidence",
+                "provenance_requirement": "The producer must independently verify the frozen benchmark matrix, code, inputs and outputs; table declarations alone do not certify those artifacts."}
     return bool(
         runtime_ratio <= float(gates["maximum_runtime_ratio_to_dwm"])
         and memory_ratio <= float(gates["maximum_memory_ratio_to_dwm"])

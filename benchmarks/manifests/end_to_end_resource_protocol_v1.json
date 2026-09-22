@@ -1,0 +1,64 @@
+{
+  "schema": "fp-tools-end-to-end-resource-protocol-v1",
+  "status": "protocol_locked_execution_configuration_pending",
+  "purpose": "Complete-workflow resource evidence for research candidates; not a scientific promotion by itself",
+  "cells": ["HepG2", "K562"],
+  "primary_samples": ["HepG2_rep1", "HepG2_rep2", "HepG2_rep3", "K562_rep1", "K562_rep2", "K562_rep3"],
+  "primary_depths": ["10m", "full"],
+  "depth_sampling_seed": 2026,
+  "timing_repetitions": 6,
+  "core_budget": 4,
+  "numeric_library_threads_per_process": 1,
+  "ordering": "alternate candidate and baseline order within each workload and repetition",
+  "cache_policy": "fresh_process_warm_os_cache",
+  "cache_rules": [
+    "Start every measured arm in a new process tree and new output directory",
+    "Prewarm identical immutable input files outside the timed region for both methods",
+    "Include all model loading, parsing, extraction, computation and output serialization inside timing",
+    "Do not use cached observed profiles, expected profiles, residuals, scores or analysis outputs in measured execution",
+    "Run resource measurements without another research workload on this host; record remaining host activity"
+  ],
+  "primary_mode": "fit_and_apply",
+  "secondary_mode": "apply_frozen_model_diagnostic_only",
+  "primary_stages": [
+    "load checksum-locked aligned BAM and BAI, FASTA and index, blacklist and peak/region inputs",
+    "fit bias model from each method's prespecified training inputs; include control-data I/O and every ensemble seed required by the candidate",
+    "extract observed cuts and infer expected cuts",
+    "apply the frozen normalization and correction operator",
+    "compute the frozen footprint detector",
+    "write the same declared user-facing output products and verify their complete coverage"
+  ],
+  "baseline": "production DWM correction and footprint workflow from research checkout at frozen code identity",
+  "additional_control": "same-operator DWM expectation/residual scoring, reported separately to distinguish correction from detector effects",
+  "timing": {
+    "cpu_scope": "process_tree",
+    "cpu_definition": "sum of user and system CPU seconds for all measured processes including reaped descendants",
+    "wall_definition": "monotonic elapsed time from fresh workflow launch through final output closure",
+    "memory_scope": "absolute_process_tree_peak",
+    "memory_requirement": "isolated process-tree accounting with a documented absolute simultaneous peak; do not substitute parent-only RSS, sampled peaks, cumulative child high-water marks, or subtraction of high-water marks",
+    "model_size": "all deployable model files and required sidecars, including every ensemble component"
+  },
+  "comparison": {
+    "pairing": ["benchmark_id", "workload_id", "repetition", "cores", "cache_policy", "pipeline_mode"],
+    "runtime_ratio": "largest across workloads of candidate mean CPU divided by baseline mean CPU",
+    "memory_ratio": "largest across workloads of candidate maximum absolute peak divided by baseline maximum absolute peak",
+    "maximum_cpu_ratio": 2.0,
+    "maximum_peak_memory_ratio": 1.5,
+    "maximum_model_size_mb": 25.0,
+    "incomplete_cases": "fail closed; retain failed and interrupted attempts without selecting favorable repeats"
+  },
+  "execution_freeze_requires": [
+    "exact command arrays and complete expected case matrix",
+    "SHA-256 identities of every scientific input, configuration, model source, and calculation module",
+    "runtime, native extensions, CPU affinity and measurement implementation identities",
+    "candidate and baseline produce equivalent output contracts; any unsupported production product leaves the gate incomplete",
+    "same-method numerical, site-order, strand-orientation and shape parity tests against archived or independent reference calculations",
+    "declared model-training source chromosomes and no selection using examined test labels",
+    "verified process-tree CPU and absolute peak-memory instrumentation",
+    "immutable configuration hash created before the first resource measurement"
+  ],
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "candidate_retuning_during_measurement_allowed": false,
+  "promotion_evidence_available": false
+}
