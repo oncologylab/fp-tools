@@ -1155,3 +1155,32 @@ seed runs are not treated as independent biological replicates. Numerical
 before/after differences do not establish their statistical significance.
 Full input verification, visual plot review, independent safety and resource
 measurement remain separate requirements.
+
+Corrected-count safety uses the separately locked
+`benchmarks/manifests/corrected_count_safety_protocol_v1.json`. The following
+research template requires the original archived inputs and a fresh output
+directory at each freeze. Set the thread variables shown above. First run
+`rebuild_corrected_safety_profiles.py` with `--data-root` and `--outdir`:
+use `--freeze-only`, then no mode flag for extraction, then `--verify-only`.
+This rebuilds both development and naked-DNA replicate-2 profiles while
+preserving the frozen sequence model and original site order. It does not
+score controls or fit a candidate.
+
+Next run `reassess_corrected_safety.py` with the same `--data-root` and a new
+`--outdir`, in this order:
+
+1. `--freeze-only --profiles <verified-profile-output-directory>` freezes the
+   complete comparison inputs and calculation code.
+2. `--calibrate-only` freezes both historical and corrected thresholds. Only
+   tuning-chromosome negatives determine the corrected thresholds.
+3. No mode flag evaluates the previously examined replicate-2 control.
+4. `--verify-only` checks the frozen inputs, thresholds and completed outputs.
+
+Use `run_logged_experiment.py` for detached execution and retain its launch
+and exit receipts. A process exit alone does not establish verified results.
+The output contains safety tables, per-site membership/count changes,
+residual diagnostics and aggregate curve data. Historical thresholds isolate
+extraction effects; corrected calibration is the prespecified primary
+development screen. Missing baseline calibration expectation prevents a
+relative safety pass. Neither analysis is untouched validation, and neither
+authorizes promotion or access to final control/holdout labels.
