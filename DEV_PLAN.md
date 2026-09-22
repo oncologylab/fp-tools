@@ -4,6 +4,18 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Training chromosome-block sensitivity verified:** 2,000 fixed draws per
+cell across all 147 rows. HepG2 ZNF362/ZNF384 discrimination intervals exclude
+zero, but central-protection intervals cross zero; K562 ZNF384 discrimination
+also remains uncertain. No general footprint improvement or promotion gate
+is established. Four tests passed in 2.52 s; artifact verification, all 147
+interval/count checks and 420 independent explicit-replication score/shape
+checks passed. See `benchmarks/RADIUS_TRAINING_UNCERTAINTY_20260922.md`.
+Next diagnose weak signed protection on balanced training cohorts before
+adding model complexity; freeze any new detector and test its exact operator
+on permitted negative controls. Full-workflow resource qualification remains
+incomplete. Main and unopened promotion labels remain untouched.
+
 **Full-pool seven-arm comparison verified and reviewed:** all 147 task/method
 rows retained; 140 score/curve rows independently checked against saved panels
 and seven unavailable rows confirmed. All 21 aggregate panels visually checked.
