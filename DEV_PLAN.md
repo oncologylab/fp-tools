@@ -4,6 +4,19 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Gamma background training comparison complete; do not advance this policy:**
+all 3,949 matched pairs across 21 tasks remained available in five correction/
+residual arms with fixed conventional geometry. All 105 saved metric rows were
+independently recomputed and all 21 aggregate plots visually reviewed.
+The new predictive residual reduced CTCF training discrimination relative to
+the existing conditional parametric residual in both cells. Full-denominator
+mean AUROC gain over the matched DWM residual was only 0.00317 (descriptive,
+including underpowered tasks). Coverage recovery is not accuracy improvement.
+Thirteen focused tests passed in 2.51 s. No tuning/test/control evaluation or
+full-resource qualification follows from this result. Preserve the negative
+result and avoid spending untouched labels on this unchanged policy.
+See `benchmarks/GAMMA_TRAINING_COMPARISON_20260922.md` for exact evidence.
+
 **Low-count model simulation verified:** the separately frozen Gamma–Poisson
 prototype completed all 50 synthetic cases (50,000 draws each). Nine focused
 tests passed in 1.56 s, and independent artifact verification passed. Nominal
