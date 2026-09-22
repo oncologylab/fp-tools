@@ -4,6 +4,27 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Caliper assignment diagnosis:** exhaustive synthetic checks show that forcing
+a full minimum-cost assignment before filtering can discard every valid pair.
+The new constrained matcher maximizes in-caliper cardinality, then minimizes
+distance. Nineteen matching/cohort/candidate tests passed in 1.47 seconds.
+Version 2 preserves version 1 and changes only this assignment objective; it
+retains the 0.5 pair-distance limit, 0.1 absolute standardized mean-difference
+limit, 200-per-class power requirement, original support and chromosome splits.
+Its freeze SHA-256 is
+`1b05603cc09b3c69f63c60af20e89c5a8b5fe3e753d5d35aeb99eaac421dff2a`.
+Execution exited 0 in 8.24 seconds and independent verification passed.
+Result: `benchmarks/results/corrected_shape_cohorts_20260922_v2/`, manifest
+SHA-256 `39300d43e6cee4da314da08999729ffd6c48202dc83667957d42c6411cec023d`.
+
+CTCF train/tune pair counts increase to 567/651 in HepG2 and 505/595 in K562,
+but all four remain covariate-imbalanced. Across all 42 rows, 25 are unbalanced
+and 17 underpowered; none is eligible. This diagnoses an assignment problem
+and remaining systematic covariate imbalance, not absence of footprint signal.
+No detector has been fitted or tuning score inspected. Balance must become an
+explicit covariate-only subset-selection constraint before candidate fitting;
+do not weaken the current gates or choose pairs using footprint outcomes.
+
 **Corrected cohort preparation completed:** the first shared-support matching
 protocol completed in 31.99 seconds and passed independent verification.
 Configuration SHA-256:
