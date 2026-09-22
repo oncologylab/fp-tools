@@ -1067,3 +1067,24 @@ within-workload maxima. Every workload must pass. The producer must verify
 that the entire frozen case matrix is present: declarations in a TSV cannot
 prove that its inputs, commands or measurement instrumentation were valid.
 Older sequence-component tables remain diagnostic evidence and fail this gate.
+
+On a Linux host with a systemd user manager and delegated CPU/memory cgroup
+controllers, qualify process-tree accounting before scientific measurement:
+
+```bash
+python benchmarks/scripts/probe_process_tree_resources.py \
+  --outdir benchmarks/results/process_tree_probe_local
+```
+
+This command runs synthetic sequential, concurrent, failed and orphaned-child
+cases only. It requires a new output directory and retains logs and receipts.
+Each workload receives a fresh kernel cgroup, outside the supervisor's memory
+and CPU accounting. It reads the absolute simultaneous `memory.peak` and the
+entire subtree's `cpu.stat`, including children that have already exited.
+Memory is cgroup-accounted bytes (reported as decimal MB), including charged
+file cache and kernel memory; it is not RSS. The frozen benchmark must use the
+same accounting and cache policy for both methods. A failed qualification is
+not permission to substitute sampled peaks or parent-only memory.
+
+The probe stops and clears only its uniquely named temporary user services.
+It neither reads scientific data nor supplies a computational promotion pass.

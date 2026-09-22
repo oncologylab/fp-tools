@@ -119,6 +119,34 @@ After adding the six-repetition guard, all 31 focused resource, promotion and
 ledger tests passed in 1.00 second. All 20 documentation-contract tests and the
 strict MkDocs build passed. No timing or scientific model run was started.
 
+### Process-tree measurement qualification
+
+The cgroup root is not writable, but the existing user systemd manager can
+create a dedicated delegated service. A benchmark-only synthetic probe now
+moves its supervisor outside a fresh measured subtree, places the command in
+that subtree before exec and reads the kernel's `cpu.stat` and `memory.peak`
+after the command and descendants exit. It rejects leftover descendants and
+failed commands, retains their measurements and cleans up only its own units.
+The measured memory is kernel-accounted cgroup memory, including charged file
+cache and kernel memory, not resident-set size. Both benchmark arms must use
+this same metric and the frozen cache policy.
+
+The qualified four-case probe used no biological data or model. Two sequential
+32-MiB child allocations used 0.498529 CPU seconds and peaked at 42.209280 MB;
+two simultaneous allocations used 0.497108 CPU seconds and peaked at 79.167488
+MB. An exit-7 command and a parent that left a child running were both rejected.
+All probe services were removed. These results distinguish descendant CPU and
+simultaneous memory from parent-only or cumulative measurements; they are not
+scientific speed or memory improvements. All 23 focused instrumentation and
+resource-gate tests passed in 0.47 seconds.
+
+Evidence: `benchmarks/results/process_tree_probe_20260922_v2/probe.json`,
+SHA-256 `74fa8f93de827bffc2a948a0da66c7db80c3fd504d771d134c29912e46c2fce0`.
+The earlier successful three-case probe remains preserved separately. The
+complete-workflow execution freeze still requires scientific command adapters,
+equivalent output products, numerical parity, input identities and the exact
+runtime. No candidate timing, fitting, holdout reading or promotion occurred.
+
 ## Current Baseline
 
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk
