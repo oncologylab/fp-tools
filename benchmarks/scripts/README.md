@@ -1088,3 +1088,28 @@ not permission to substitute sampled peaks or parent-only memory.
 
 The probe stops and clears only its uniquely named temporary user services.
 It neither reads scientific data nor supplies a computational promotion pass.
+
+### Research extraction correctness
+
+Read `../STRAND_EXTRACTION_AUDIT_20260922.md` before reusing historical strand
+profiles. The corrected reader visits each requested chromosome once to avoid
+double-counting long alignments across disjoint fetch windows and to retain
+soft-clipped cuts outside aligned query spans. Old files remain preserved.
+
+`audit_strand_extraction.py` freezes code, data and label-free training-chr1
+coordinates before comparing the old and corrected reader against independent
+sorted-cut counting. It never fits or scores a candidate. From the research
+root, use a new ignored output directory:
+
+```bash
+python benchmarks/scripts/audit_strand_extraction.py \
+  --data-root /path/to/original-data-checkout \
+  --outdir benchmarks/results/strand_extraction_audit_local --freeze-only
+python benchmarks/scripts/audit_strand_extraction.py \
+  --data-root /path/to/original-data-checkout \
+  --outdir benchmarks/results/strand_extraction_audit_local
+```
+
+The source registry is checksum-pinned to the completed 96-run configuration.
+The script rejects changed inputs/code/runtime and an existing completed audit.
+It is a correctness diagnostic, not a new evaluation or promotion result.

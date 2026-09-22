@@ -1,5 +1,11 @@
 # Completed ChromBPNet development reference audit
 
+**September 22 qualification:** the research strand extractor was subsequently
+found to duplicate some window assignments and miss some soft-clipped cuts.
+[The training-only audit](STRAND_EXTRACTION_AUDIT_20260922.md) confirms count
+differences. Results below remain historical evidence; effects on the reference
+comparisons and exact-operator safety require corrected-count reassessment.
+
 Verified on 2026-09-08, starting from research commit `888c6e2`.
 This is development/diagnostic evidence. No promotion decision can pass from
 these results alone. Production defaults and the final manuscript are unchanged.

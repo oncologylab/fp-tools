@@ -1,5 +1,12 @@
 # Complete 96-run direct-bias development stability
 
+**September 22 qualification:** a research extraction bug was subsequently
+confirmed on training data. The numerical results below are preserved
+historical computations; their metric/shape impact requires a separately
+frozen corrected-count reassessment. See
+[the extraction audit](STRAND_EXTRACTION_AUDIT_20260922.md). Checksum integrity
+does not establish extraction correctness. No promotion is supported.
+
 All 60 missing conventional DWM corrections and all 96 stability evaluations
 are complete and independently verified. CTCF retains useful development
 gains in both cells, but the candidate does not pass general promotion gates.

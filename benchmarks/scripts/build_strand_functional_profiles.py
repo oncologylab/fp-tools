@@ -108,7 +108,12 @@ def extract_strand_cut_profiles(
     minimum_mapq: int = 30,
     keep_duplicates: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Extract genomic plus/minus cuts with overlap-aware BAM traversal."""
+    """Extract each genomic cut once, including cuts outside aligned spans.
+
+    Traverse each requested chromosome once. Fetching separate motif windows
+    can return a long alignment repeatedly and can miss soft-clipped cut
+    positions whose alignment does not overlap the window at all.
+    """
 
     try:
         import pysam
@@ -117,6 +122,9 @@ def extract_strand_cut_profiles(
     missing = REQUIRED_COLUMNS.difference(sites.columns)
     if missing:
         raise ValueError("sites are missing columns: " + ", ".join(sorted(missing)))
+    if flank < 0:
+        raise ValueError("flank must be non-negative")
+    sites = sites.reset_index(drop=True)
     width = flank * 2 + 1
     plus = np.zeros((len(sites), width), dtype=np.uint32)
     minus = np.zeros_like(plus)
@@ -145,20 +153,18 @@ def extract_strand_cut_profiles(
             rows = rows[order]
             window_starts = window_starts[order]
             window_ends = window_ends[order]
-            for region_start, region_end in _merged_ranges(window_starts, window_ends):
-                for read in bam.fetch(chromosome, region_start, region_end):
-                    if not _usable_read(read, minimum_mapq, keep_duplicates):
-                        continue
-                    cut = cut_position_from_alignment(read, read_shift)
-                    first = int(np.searchsorted(window_starts, cut - width + 1, side="left"))
-                    last = int(np.searchsorted(window_starts, cut, side="right"))
-                    for position in range(first, last):
-                        if cut >= window_ends[position]:
-                            continue
-                        offset = cut - int(window_starts[position])
-                        if 0 <= offset < width:
-                            target = minus if read.is_reverse else plus
-                            target[int(rows[position]), offset] += 1
+            for read in bam.fetch(chromosome):
+                if not _usable_read(read, minimum_mapq, keep_duplicates):
+                    continue
+                cut = cut_position_from_alignment(read, read_shift)
+                if cut < window_starts[0] or cut >= window_ends[-1]:
+                    continue
+                first = int(np.searchsorted(window_starts, cut - width + 1, side="left"))
+                last = int(np.searchsorted(window_starts, cut, side="right"))
+                for position in range(first, last):
+                    offset = cut - int(window_starts[position])
+                    target = minus if read.is_reverse else plus
+                    target[int(rows[position]), offset] += 1
     return plus, minus, valid
 
 

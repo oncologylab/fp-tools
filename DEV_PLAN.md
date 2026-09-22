@@ -4,6 +4,14 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**September 22 extraction qualification:** the research strand-profile reader
+had duplicate-window and soft-clipping count defects. They are now fixed and
+confirmed against an independent training-only oracle. Historical stability,
+reference and safety computations remain preserved, but their scientific
+interpretation requires corrected-count reassessment; checksums alone do not
+establish extraction correctness. See
+`benchmarks/STRAND_EXTRACTION_AUDIT_20260922.md` before reusing their conclusions.
+
 Work exclusively in the research worktree on
 `research/footprint-improvement-20260830`. Improve footprint detection and
 interpretable protection across transcription factor (TF) families while
@@ -146,6 +154,24 @@ The earlier successful three-case probe remains preserved separately. The
 complete-workflow execution freeze still requires scientific command adapters,
 equivalent output products, numerical parity, input identities and the exact
 runtime. No candidate timing, fitting, holdout reading or promotion occurred.
+
+### Corrected research cut extraction
+
+The BAM-to-score parity work exposed a long alignment being counted twice
+when fetched by disjoint windows, and missed soft-clipped cuts outside queried
+alignment spans. Three boundary regressions failed before the fix. The reader
+now traverses each requested chromosome once and assigns each cut once per
+containing site, preserving legitimate overlap and positional row order.
+Forty focused regressions passed. No production code was changed.
+
+A frozen, label-free chromosome-1 audit compared old and corrected extraction
+on both development cells against independent sorted-cut counting. Exact
+oracle parity passed at 2,381 HepG2 and 1,943 K562 sites. Counts changed at 35
+and 15 sites, removing 173 and 45 duplicate assignments respectively. This
+does not quantify the impact on test metrics or safety. Archived artifacts
+remain unchanged, and no model was retuned. The new audit report records input,
+code and result hashes and the requirements for a separately frozen corrected
+reassessment. Runtime measurement must use the corrected reader.
 
 ## Current Baseline
 
