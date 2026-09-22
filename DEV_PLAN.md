@@ -1,6 +1,64 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-08
+Last updated: 2026-09-22
+
+## Next-major-version research goal
+
+Work exclusively in the research worktree on
+`research/footprint-improvement-20260830`. Improve footprint detection and
+interpretable protection across transcription factor (TF) families while
+measuring complete-workflow CPU time and peak memory. Main, released packages,
+the published manuscript and the production dinucleotide weight matrix (DWM)
+default remain unchanged. No integration or publication is authorized here.
+
+September 22 status audit: research HEAD is `8a4a958`, with 18 local commits
+after remote research HEAD `888c6e2`. Main is clean at `636db5f`. No relevant
+experiment process was found. The completed HepG2 ChromBPNet reference and
+96-run study supersede the older queued-stage handoff. The three primary
+96-run manifests and 198 referenced stage/summary files match their recorded
+checksums. This is a manifest/stage-summary audit, not a fresh verification of
+every nested BAM/profile input or a scientific rerun. The original holdout
+freeze matches its recorded hash and all 13 `labels_read` flags remain false;
+no holdout label contents were opened.
+
+The completed 96-run matrix is post-hoc development evidence on already
+examined chromosomes. CTCF point gains over raw and sample-specific DWM are
+positive throughout, but canonical protection passes 94/96 runs and some
+low-depth bootstrap intervals cross zero. No other powered matched TF has
+canonical protection. Independent exact-operator negative-control support is
+limited to CTCF. Sequence inference uses about 47% of DWM CPU time, but this
+excludes extraction, fitting, normalization, scoring and output. End-to-end
+resource gates, calibrated functional uncertainty, occupancy-leakage exclusion,
+two difficult families and untouched validation remain unestablished.
+
+Proceed in this order:
+
+1. Build a per-TF gate ledger from the existing reports, preserving original
+   task denominators, coverage exclusions and evidence splits. Reverify nested
+   inputs and the recorded runtime before reuse; do not rerun valid stages.
+2. Freeze a fair complete-workflow resource protocol with identical inputs,
+   outputs, core budgets and cache conditions. Measure fitting separately from
+   reuse, CPU and elapsed time, and absolute peak memory in isolated processes.
+   Require numerical/shape equivalence for implementation-only optimizations.
+3. Diagnose the low-depth CTCF exceptions and difficult-family failures.
+   Existing test results are descriptive only. Fit new candidates on chr1–15
+   and select on chr16–18; never retune using examined test or transfer labels.
+   Separate correction from scoring geometry in a frozen factorial comparison.
+   Prefer simple parametric or hierarchical-spline models before more complex
+   Gaussian-process models. Treat insufficient labels as a power limitation.
+4. Freeze each candidate's code, data, model, thresholds and evaluation before
+   scoring. Audit signed central protection, shoulders, asymmetry, coverage,
+   motif/accessibility balance and exact-operator negative-control behavior.
+   Require the existing scientific, uncertainty and computational gates in full;
+   narrow CTCF gains and faster sequence inference cannot waive them.
+5. Keep SK-N-SH/GM23338 labels and final naked-DNA replicate 3 locked until the
+   prespecified prerequisites pass. Record failed candidates without promotion.
+   Any later production integration requires separate authorization.
+
+The exact current scientific results and limitations are in
+`benchmarks/DIRECT_BIAS_STABILITY_96_20260912.md`; component resource results
+are in `benchmarks/DIRECT_BIAS_INFERENCE_20260908.md`. No new scientific
+experiment was launched during this status-and-goal setup.
 
 ## Current Baseline
 
