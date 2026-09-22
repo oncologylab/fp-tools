@@ -4,6 +4,17 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Direct three-covariate cohorts complete and verified:** matching the complete
+supported training pool restores 4,053 balanced pairs and ten powered tasks.
+HepG2/K562 CTCF retain 300/245 pairs, HepG2 ZNF362 291, and HepG2/K562 ZNF384
+303/238. MEF2A remains underpowered (190/169). All 21 tasks remain explicit.
+Fourteen tests passed in 1.43 s; separate artifact verification and independent
+sparse-graph maximum-cardinality, pair/caliper/support/balance checks passed.
+No footprint scores or shape outcomes were used for construction. Next freeze
+and recompute all seven fixed arms and exact-cohort aggregates; do not reuse
+earlier metrics or curves as if site membership were unchanged. Evidence is in
+`benchmarks/RADIUS_FULL_POOL_COHORTS_20260922.md`.
+
 **Secondary broad-count balance sensitivity completed:** the covariate-only
 frozen prefix rule retains 2,517/3,949 pairs, leaving only three powered tasks,
 17 underpowered tasks and one unavailable task. All 147 method/task rows remain
