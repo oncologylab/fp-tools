@@ -4,6 +4,19 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Stable detector chromosome-direction audit verified:** all 8,820 paired
+effects, 2,205 fixed-center audits and 588 summaries independently checked;
+12 tests passed in 2.60 s and all three 21-task maps visually reviewed.
+K562 MEF2D/DWM improves discrimination on 12/15 chromosomes, but fixed-center
+protection passes only 4/15; do not call it an established footprint gain.
+CTCF has stronger agreement; zinc-finger gains remain inconsistent or worse.
+See `benchmarks/STABLE_GEOMETRY_DIRECTION_20260922.md`. Next freeze the
+unchanged full-training geometry rule and exact model artifacts, preserve all
+tasks/fallbacks, then audit their exact operators on permitted development
+negative controls. Interpret the narrow MEF2D shape explicitly; do not borrow
+safety from an earlier operator. Main and untouched promotion labels remain
+unchanged. Full-workflow resource qualification remains incomplete.
+
 **Stable numerical successor verified:** score rounding, exact rank-sum
 selection and a numerical protection margin were frozen before the repeat.
 All 2,205 fits and saved held scores agree under equivalent normalization
