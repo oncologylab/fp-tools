@@ -4,6 +4,17 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Verified corrected control result:** all four safety profiles and both
+threshold analyses have completed and passed independent verification. The
+fixed-threshold candidate call counts are unchanged across all 21 tasks.
+CTCF control profiles and calls are unchanged, but the new calibration audit
+finds zero baseline expectation in 9/989 HepG2 and 5/895 K562 calibration
+negatives. The frozen protocol therefore withholds relative-safety passes;
+numerically favorable CTCF control rates alone cannot resolve that gap. See
+`benchmarks/CORRECTED_COUNT_SAFETY_20260922.md` for exact evidence and hashes.
+The 96-run corrected-count reassessment is still running. No promotion or
+new holdout access is justified.
+
 **Corrected safety protocol:**
 `benchmarks/manifests/corrected_count_safety_protocol_v1.json` fixes the next
 negative-control reassessment before reading corrected control scores. Both
