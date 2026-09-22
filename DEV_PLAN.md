@@ -48,6 +48,16 @@ published Windows EXE and macOS application, in addition to existing discovery
 checks. The tutorial ZIP SHA-256 is
 `282a93e6f8dec57a18249b9c724e60ebe58b44921142730342401e5a24d8418b`.
 
+### v0.2.8 release preparation
+
+Package, citation, desktop and runtime metadata and example version pins now
+agree on 0.2.8. The 34 release-metadata/runtime tests passed. The source
+distribution built successfully and passed twine validation; its metadata has
+the new description and public logo URL, and archive inspection found no
+manuscript, downloaded public datasets or transient agent files. Public
+download links remain on the verified 0.2.7 desktop assets until 0.2.8 assets
+are available and checked. Research and published manuscript files are untouched.
+
 ### v0.2.7 release verification
 
 Version metadata, desktop metadata, managed-runtime archive names, and example
