@@ -4,6 +4,18 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Higher-depth replicate-1 input audit completed:** the final filtered alignment
+and index pass quick checks, fresh full-file statistics and before/after input
+hash checks. It contains 78,358,765 mapped records versus 14,957,194 in the
+first-ten-million-pair alignment. Historical summary fields have different
+counting definitions and must not supply depth denominators. Full preparation
+also applies read-level blacklist and mitochondrial filtering; the files are
+not a controlled depth-only comparison. See
+`benchmarks/REP1_DEPTH_INPUT_AUDIT_20260922.md`. Next freeze higher-count
+development calibration at the same sites with unchanged model, regions and
+thresholds, explicitly retaining the preparation limitation. No new profiles
+or scientific scores were opened in this input audit.
+
 **Fixed-region replicate-1 calibration completed:** all 21 tasks and 4,200
 original sites are retained. Independent verification reproduced 50,400
 site-region rows, 378 calibration summaries, 63 likelihood comparisons and
