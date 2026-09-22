@@ -13,6 +13,26 @@ from scipy.special import betaln, expit, log_expit, logit
 from scipy.stats import norm
 
 
+def stable_beta_ratio(c, n, q, rho, log_q=None, log_one_minus_q=None):
+    """Log B(c+a,n-c+b)/B(a,b), without cancellation near rho=0.
+
+The rising-factorial identity is exact; it is not a dispersion floor or a
+binomial approximation. Keeping the binomial term separate also exposes the
+correct limit as concentration tends to infinity.
+    """
+    c,n,q=np.broadcast_arrays(np.asarray(c,float),np.asarray(n,float),np.asarray(q,float))
+    concentration=1/rho-1
+    lq=np.log(q) if log_q is None else log_q
+    lother=np.log1p(-q) if log_one_minus_q is None else log_one_minus_q
+    result=c*lq+(n-c)*lother
+    for j in range(1,int(n.max(initial=0))):
+        offset=np.log(j)-np.log(concentration)
+        result=result+np.where(c>j,np.logaddexp(0.,offset-lq),0.)
+        result=result+np.where(n-c>j,np.logaddexp(0.,offset-lother),0.)
+        result=result-np.where(n>j,np.log1p(j/concentration),0.)
+    return result
+
+
 def validate(c, n, p, rho):
     c, n, p = [np.asarray(v, float) for v in (c, n, p)]
     if (c.shape != (2,) or n.shape != c.shape or p.shape != c.shape
@@ -39,7 +59,10 @@ def log_likelihood(theta, c, n, p, rho):
             concentration = 1/rho - 1
             a = expit(eta) * concentration
             b = expit(-eta) * concentration
-            result = result + betaln(ci+a, ni-ci+b) - betaln(a, b)
+            if rho < .001:
+                result = result + stable_beta_ratio(ci,ni,expit(eta),rho,log_expit(eta),log_expit(-eta))
+            else:
+                result = result + betaln(ci+a, ni-ci+b) - betaln(a, b)
     return result
 
 
@@ -105,6 +128,8 @@ def fit_dispersion(c, n, p):
             from scipy.special import xlogy, xlog1py
             return -float((xlogy(c, p)+xlog1py(n-c, -p)).sum())
         good = (p > 0) & (p < 1) & (n > 0)
+        if rho < .001:
+            return -float(stable_beta_ratio(c[good],n[good],p[good],rho).sum())
         a, b = p[good]*(1/rho-1), (1-p[good])*(1/rho-1)
         return -float((betaln(c[good]+a, n[good]-c[good]+b)-betaln(a, b)).sum())
     fit = minimize_scalar(objective, bounds=(1e-7, .95), method='bounded',

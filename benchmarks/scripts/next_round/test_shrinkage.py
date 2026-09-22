@@ -60,6 +60,23 @@ class ModelTests(unittest.TestCase):
         result=fit_dispersion(np.zeros((200,2)),np.ones((200,2)),np.full((200,2),.2))
         self.assertFalse(result['identified'])
 
+    def test_near_binomial_beta_limit(self):
+        args=(0,0,2,0,.10781173120768375,.11067026163180288)
+        actual=posterior(*args,3.125415804005548e-7)
+        limiting=posterior(*args,0.)
+        self.assertLess(abs(actual['mean']-limiting['mean']),1e-6)
+        # An exact n=2,c=0 beta-binomial mass equals
+        # (1-q)*(1-q+rho*q), independently of the rising-factorial code.
+        from scipy.integrate import quad
+        from scipy.special import expit,logit
+        rho=3.125415804005548e-7
+        def density(t):
+            q=expit(logit(args[4])-t)
+            return norm.pdf(t)*(1-q)*(1-q+rho*q)
+        z=quad(density,-15,15,epsabs=1e-12)[0]
+        mean=quad(lambda t:t*density(t),-15,15,epsabs=1e-12)[0]/z
+        self.assertAlmostEqual(actual['mean'],mean,places=10)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
