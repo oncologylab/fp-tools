@@ -27,6 +27,13 @@ def test_package_description_has_public_logo_and_reader_summary():
     assert "Cython" not in meta["project"]["description"]
 
 
+def test_command_reference_preserves_original_title_anchor():
+    reference = (ROOT / "docs/api.md").read_text(encoding="utf-8")
+    generator = (ROOT / "scripts/generate_api_reference.py").read_text(encoding="utf-8")
+    assert 'id="api-reference"' in reference
+    assert 'id="api-reference"' in generator
+
+
 def test_local_container_examples_are_pinned_and_loopback_only():
     for file in ("README.md", "docs/get-started/installation.md"):
         text = (ROOT / file).read_text()

@@ -58,6 +58,16 @@ manuscript, downloaded public datasets or transient agent files. Public
 download links remain on the verified 0.2.7 desktop assets until 0.2.8 assets
 are available and checked. Research and published manuscript files are untouched.
 
+Release commit `ffcd12b` passed all ten CI jobs (run 35673993554) and the Docs
+build/deployment (35673993588). CI Linux reported 614 passed, 16 skipped and
+87 passing subtests; Windows Python 3.12 reported 596 passed, 34 skipped and
+69 passing subtests. Windows Python 3.11 and 3.13 also passed. The six new
+Bash-helper tests skip on Windows because that helper targets Linux/macOS.
+Tag v0.2.8 points to this verified package commit. The follow-up documentation
+change preserves the original `#api-reference` anchor and spells out tutorial
+checksum commands for each shell; 25 focused documentation tests and strict
+MkDocs passed after that change. Native release validation is pending.
+
 ### v0.2.7 release verification
 
 Version metadata, desktop metadata, managed-runtime archive names, and example

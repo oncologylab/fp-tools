@@ -90,9 +90,12 @@ peaks.
 
 Download `fp-tools-pbmc-chr22-demo-v1.zip` and its `.sha256` file from the
 [v0.2.8 release](https://github.com/oncologylab/fp-tools/releases/tag/v0.2.8).
-The ZIP is approximately 14.3 MB. Compare its SHA-256 checksum using the
-[installation instructions](../installation.md#verify-your-download), then
-extract the entire folder. It includes fragments and their index, annotations,
+The ZIP is approximately 14.3 MB. In macOS Terminal, run
+`shasum -a 256 fp-tools-pbmc-chr22-demo-v1.zip`; on Linux use `sha256sum` instead
+of `shasum -a 256`. In Windows PowerShell, run
+`Get-FileHash .\fp-tools-pbmc-chr22-demo-v1.zip -Algorithm SHA256`.
+Compare the complete hash with the `.sha256` file, then extract the entire
+folder. It includes fragments and their index, annotations,
 count AnnData, the chromosome FASTA and index, chromosome sizes, a matched
 blacklist, selected regions, and `workflow.yml`. `manifest.json` records the
 source hashes and subset definition; `SHA256SUMS.txt` records every input hash.
