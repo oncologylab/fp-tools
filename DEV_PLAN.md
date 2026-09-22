@@ -4,6 +4,18 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Corrected candidate training/tuning completed:** 11 model artifacts were
+fitted on chr1–15, frozen and verified before chr16–18 scoring. All 21 tasks
+remain in 189 correction/detector rows. The parametric CTCF spline improves
+tuning AUROC over the same correction's conventional geometry from 0.6377 to
+0.7063 in HepG2 and 0.6445 to 0.6764 in K562. This is point-estimate development
+discrimination, not evidence of stronger aggregate protection or promotion.
+Difficult-family shapes/performance remain inadequate. No policy was selected
+or refitted after tuning. Nine focused tests and independent result
+verification passed. See `benchmarks/CORRECTED_SHAPE_TUNING_20260922.md` for
+all scopes and exact hashes. Aggregate plotting/review, new-operator safety,
+calibrated uncertainty and end-to-end resource measurements remain outstanding.
+
 **Balanced cohort v3 verified:** a covariate-only rule takes the largest
 balanced prefix of v2 pairs ordered by distance and then pair ID. This keeps
 the 0.5 caliper, 0.1 balance bound, 200-per-class requirement, original expected
