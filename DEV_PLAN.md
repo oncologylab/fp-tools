@@ -4,6 +4,21 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Globally consistent prototype:** a research-only primitive now assigns one
+expectation per genomic position from same-strand counts and sequence bias in
+the symmetric 50–100 base-pair outer flanks. Ten primitive/output-contract
+tests passed (1.38 s), including scalar, halo-chunk, overlap, strand, and
+missing-support checks. The initial training-only protocol is locked in
+`global_parametric_track_development_v1.json`; no real-data evaluation or
+complete output pipeline exists yet. Earlier conditional-profile accuracy,
+safety, and timing claims do not transfer to this new operator.
+
+**Corrected 96-run verification passed:** independent full input/output
+verification exited 0 after 937.31 s. The corrected result manifest SHA-256
+is `71235831ce3559b5e5c81a5b30e4564879cf7afb11593cc69c221e9eb3d8b979`.
+The historical-versus-corrected comparison and aggregate rendering are now
+running with their input/script identities frozen in a supervised job.
+
 **Full-workflow output compatibility audited:** the current conditional
 expectation cannot be flattened exactly into one genomic track. Training-only
 overlap checks found expected conflicts in 1,498/1,558 HepG2 pairs and 777/814
