@@ -4,6 +4,18 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Negative-control DWM scope limitation verified:** all 17,311 expected-track
+bases fall within historical CTCF regions plus/minus 100. Of 4,200 control
+windows, 3,931 have no track entries; positive expectation exists in 267 CTCF
+and only two non-CTCF windows. One non-CTCF window has mismatched observed
+shape. Archived coordinate-valid flags do not establish expected support.
+Twelve tests passed in 1.42 s; all site classifications, summaries and track
+containment independently checked. See `benchmarks/CONTROL_TRACK_SCOPE_20260922.md`.
+Next freeze an all-site control-reference construction with the recorded
+inputs and existing DWM bias model, requiring overlap parity before any
+rescreening. Do not alter failed candidates or thresholds. Low-count
+normalization diagnosis on training/replicate-1 controls remains outstanding.
+
 **Full stable models and exact-operator safety screen complete:** 147 model
 records frozen; 60 calibrated/scored combinations, 80 missing wider control
 profiles and seven missing models retained. Corrected CTCF fails replicate-2
