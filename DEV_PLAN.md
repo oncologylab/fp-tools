@@ -4,6 +4,27 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Count-conditioned candidate improves ranks but remains power-limited:** a
+strand-conditioned binomial depletion score was frozen and tested with uniform
+and fixed parametric propensities on the unchanged 8,106 matched training sites.
+Ten focused tests passed in 2.84 s, including exact small-count null enumeration.
+Independent convolution exactly reproduced all 178,332 grid scores, 630 fits,
+1,260 folds and 84 summaries. Conditional-parametric selected geometry has
+descriptive mean AUROC gain 0.04252 and relative AUPRC gain 5.82% over conventional
+DWM across 20 available tasks; shape remains inconsistent and no promotion
+follows. Frozen full-training models give zero nominal calls on examined
+replicate 1, but only 9/20 available parametric tasks meet the informative
+Wilson bound because of limited counts. Independent audit verified all 42
+models, 8,400 control rows and rate/bound summaries. At the nominal threshold,
+held training positives yield only 105/4,053 calls (negatives 28/4,053); MEF2D
+and examined zinc-finger tasks have no positive-label calls. See
+`benchmarks/CONDITIONAL_PROTECTION_20260922.md`. Next freeze the analytic
+count-conditioned score ceiling (zero central cuts at fixed strand totals)
+to identify sites incapable of reaching the unchanged threshold. Use that
+diagnosis to decide whether additional permitted development depth can help;
+do not lower thresholds or claim zero calls prove broad safety. Main, untouched
+holdouts, final controls and all prior failures remain unchanged.
+
 **Unit-floor candidate does not broadly rescue performance:** frozen training
 cross-fitting retains all 21 tasks/seven correction arms and produces 2,205
 fits, 4,410 folds and 294 summaries. Conditional-parametric mean gains over
