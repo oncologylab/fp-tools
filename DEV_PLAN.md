@@ -4,6 +4,20 @@ Last updated: 2026-09-21
 
 ## Current Baseline
 
+### v0.2.9 corrective release preparation
+
+The indexed-fragment fallback fix passed the full local suite: 638 passed,
+one skipped, 26 warnings in 250.89 seconds. The complete per-cell stage also
+passed with pysam explicitly unavailable, using the real indexed PBMC tutorial
+inputs and the existing validated group-level outputs. Its score tables and
+all three group PDF exports completed. No production scientific method was
+changed; this enables the existing sequential reader on an unsupported index
+backend. Version metadata and example pins are synchronized to 0.2.9.
+The 59 release/runtime/documentation preflight tests and strict MkDocs passed;
+the 0.2.9 source distribution built and passed twine validation. The clean
+preparation environment also passed pip check and reproduced the annotation
+checksum; its recipe now explicitly installs the ZIP builder's pysam dependency.
+
 ### v0.2.8 public artifact verification
 
 Release tag v0.2.8 points to `ffcd12b`. All ten release CI jobs passed

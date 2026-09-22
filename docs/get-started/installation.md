@@ -21,8 +21,8 @@ BED files. Single-cell workflows start from fragments and cell annotations.
 Download the app for your computer, then open it. fp-tools opens in its own
 application window; no browser or Python installation is required.
 
-[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.7/fp-tools-gui-windows-x64.exe){ .md-button }
-[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.7/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
+[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.8/fp-tools-gui-windows-x64.exe){ .md-button }
+[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.8/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
 
 Windows may ask you to confirm the unsigned app download. The macOS app
 is unsigned and has not been notarized by Apple, so Gatekeeper may report that
@@ -31,7 +31,7 @@ OncologyLab GitHub release page and verify the published SHA-256 checksum.
 
 ### Verify your download
 
-Download [SHA256SUMS.txt](https://github.com/oncologylab/fp-tools/releases/download/v0.2.7/SHA256SUMS.txt)
+Download [SHA256SUMS.txt](https://github.com/oncologylab/fp-tools/releases/download/v0.2.8/SHA256SUMS.txt)
 from the same release as your app. In the folder containing your download, run:
 
 === "macOS Terminal"
@@ -140,8 +140,8 @@ Keep both commands running and open `http://127.0.0.1:8891` on your computer.
     interface from the folder containing your data:
 
     ```bash
-    docker build -t fp-tools:0.2.8 https://github.com/oncologylab/fp-tools.git#v0.2.8
-    docker run --rm -p 127.0.0.1:8891:8891 -v "${PWD}:/work" fp-tools:0.2.8
+    docker build -t fp-tools:0.2.9 https://github.com/oncologylab/fp-tools.git#v0.2.9
+    docker run --rm -p 127.0.0.1:8891:8891 -v "${PWD}:/work" fp-tools:0.2.9
     ```
 
     Open `http://127.0.0.1:8891`. Your current folder is mounted as `/work`, so
@@ -153,7 +153,7 @@ Keep both commands running and open `http://127.0.0.1:8891` on your computer.
     still change a rebuild; to reuse the packaged environment, download the
     matching architecture's container archive and checksum from the release,
     then load it with `docker load -i <archive.tar.gz>`. Published images use
-    the tag `fp-tools:v0.2.8`.
+    the tag `fp-tools:v0.2.9`.
 
     The Linux container also supports FASTQ-to-BAM preparation with
     `prepare-atac`; native Windows and macOS installations do not.

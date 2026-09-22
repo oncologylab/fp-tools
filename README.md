@@ -36,7 +36,7 @@ Choose one route:
 | --- | --- | --- |
 | Desktop app | Windows or Apple Silicon macOS | [Download](https://github.com/oncologylab/fp-tools/releases) |
 | Python package | Windows, macOS, or Linux with Python 3.11–3.13 | `python -m pip install fp-tools-bio` |
-| Container | Versioned analysis environment | `docker build -t fp-tools:0.2.8 https://github.com/oncologylab/fp-tools.git#v0.2.8` |
+| Container | Versioned analysis environment | `docker build -t fp-tools:0.2.9 https://github.com/oncologylab/fp-tools.git#v0.2.9` |
 
 Python package example:
 

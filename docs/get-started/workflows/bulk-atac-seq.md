@@ -138,8 +138,14 @@ Save the helper and both tables in the same working folder, then run
 `bash download_encode_hepg2_k562.sh` there. It creates `encode_data/bams` and
 `encode_data/peaks`, verifies downloads, and creates matching BAM indexes.
 Interrupted downloads resume when supported by the server; checksum-valid
-files are reused. Use the downloaded sample and comparison tables with the
-bulk command above. These are full public sequencing files, not a small
+files are reused. After the helper finishes, run with the supplied tables from
+that same working folder:
+
+```bash
+bulk-footprinting --sample-table encode_hepg2_k562_bams.tsv --comparison-table encode_hepg2_k562_comparisons.tsv --genome hg38 --outdir encode_results
+```
+
+These are full public sequencing files, not a small
 first-run fixture; download and analysis time depend on your connection and
 computer.
 You can also explore the finished

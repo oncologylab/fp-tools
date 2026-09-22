@@ -80,6 +80,9 @@ visual guide.
 
 ## Small PBMC example
 
+Use fp-tools 0.2.9 or later for this tutorial on Windows; it fixes reading
+fragments with an adjacent index when the optional tabix library is unavailable.
+
 This real peripheral blood mononuclear cell (PBMC) example contains 300 cells:
 100 B cells, 100 monocytes, and 100 T or natural killer cells. It retains human
 hg38 chromosome 22, 101,637 genomic bins (5,669 selected), and 110,888 fragment
@@ -90,7 +93,8 @@ peaks.
 
 Download `fp-tools-pbmc-chr22-demo-v1.zip` and its `.sha256` file from the
 [v0.2.8 release](https://github.com/oncologylab/fp-tools/releases/tag/v0.2.8).
-The ZIP is approximately 14.3 MB. In macOS Terminal, run
+The ZIP is approximately 14.3 MB. Open a terminal in the folder containing your
+download. On macOS, run
 `shasum -a 256 fp-tools-pbmc-chr22-demo-v1.zip`; on Linux use `sha256sum` instead
 of `shasum -a 256`. In Windows PowerShell, run
 `Get-FileHash .\fp-tools-pbmc-chr22-demo-v1.zip -Algorithm SHA256`.
@@ -126,10 +130,17 @@ There are no biological replicates in this example.
 
 For a source installation, the repository includes
 [`prepare_10x_pbmc5k_scatac.py`](https://github.com/oncologylab/fp-tools/blob/v0.2.8/benchmarks/scripts/prepare_10x_pbmc5k_scatac.py).
-Run the following from the root of a v0.2.8 source checkout in a separate
-Python environment with SnapATAC2, AnnData, pandas, and Matplotlib installed:
+This preparation step uses SnapATAC2 on Linux x86-64 or macOS. The downloadable
+tutorial does not require installing SnapATAC2. The recipe below was checked
+with Python 3.12 and the listed package versions. Run it from the root of a
+v0.2.8 source checkout:
 
 ```bash
+python3.12 -m venv ../fp-tools-pbmc-prep
+source ../fp-tools-pbmc-prep/bin/activate
+python -m pip install \
+  "snapatac2==2.9.0" "anndata==0.12.17" "pandas==2.3.3" \
+  "matplotlib==3.10.9" "pysam==0.23.3" "PyYAML==6.0.3"
 python benchmarks/scripts/prepare_10x_pbmc5k_scatac.py --chroms chr22
 ```
 
@@ -140,6 +151,8 @@ The script retrieves the matching fragment file and annotated AnnData through
 BED files, and a preparation summary. The `--chroms` setting limits the demo
 region list and chromosome-size table; it does not subset the source cells or
 count matrix. BED coordinates use zero-based starts and exclude the end.
+After preparing the files, reactivate your fp-tools environment to run the
+analysis, or select the prepared inputs in the desktop app.
 
 The annotated AnnData comes from
 [the SnapATAC2 PBMC5k archive](https://osf.io/download/e9vc3/); its SHA-256 is
