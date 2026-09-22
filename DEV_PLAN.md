@@ -4,6 +4,22 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Wider-context training diagnostic launched:** a new label-free extraction
+uses unchanged training coordinates, alignments, bias model and cut convention,
+with 600-base-pair context on each side. The frozen diagnostic reports
+zero-background frequency and exposure-adjusted left/right rate disagreement
+for outer radii 100, 200 and 500 (inner radius 50), retaining all tasks.
+No radius is selected and no labels or footprint scores are evaluated.
+Twelve related tests passed in 1.53 s. Execution configuration SHA-256 is
+`50483e6776d99a162a84b49aece5db1ff78abc5ea14fad32e468f93542ae7937`.
+Durable launch/exit evidence is under
+`benchmarks/results/wide_training_jobs_20260922/execute_attempt1/`;
+supervisor 677716 and child 677733 (start ticks 119307628) were confirmed live
+at launch. Recheck process identity and output verification before resuming.
+The frozen protocol is `benchmarks/manifests/wide_background_training_v1.json`.
+This tests background noise/heterogeneity, not scientific improvement or
+resource qualification. A later accuracy evaluation needs a separate freeze.
+
 **Gamma background training comparison complete; do not advance this policy:**
 all 3,949 matched pairs across 21 tasks remained available in five correction/
 residual arms with fixed conventional geometry. All 105 saved metric rows were

@@ -1,0 +1,23 @@
+{
+  "schema": "fp-tools-wide-background-training-v1",
+  "hypothesis": "Sparse short-flank counts may poorly estimate local rate; wider flanks can reduce count noise but may introduce spatial heterogeneity.",
+  "cells": ["HepG2", "K562"],
+  "chromosomes": ["chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15"],
+  "site_support": "all archived label-free training coordinates, unchanged",
+  "extraction_flank": 600,
+  "background_inner": 50,
+  "background_outer_grid": [100, 200, 500],
+  "rate_disagreement": "absolute log2((left_count+0.5)/left_exposure) minus log2((right_count+0.5)/right_exposure); report median and 90th percentile; 0.5 is explicit prior support",
+  "counts": "same replicate-1 10-million-fragment seed-2026 alignment inputs",
+  "read_shift": [4, -5],
+  "minimum_mapq": 30,
+  "keep_duplicates": false,
+  "bias_model": "unchanged frozen five-seed mitochondrial parametric ensemble",
+  "diagnostic": "per-strand central background count, zero-count frequency, finite-sequence coverage and left/right exposure-adjusted rate disagreement for every task and window",
+  "window_selection": "none in initial label-free diagnostic",
+  "scientific_scoring": false,
+  "labels_read": false,
+  "model_refitted": false,
+  "promotion_eligible": false,
+  "limitations": ["More finite expectations do not establish better footprints.", "Wider windows may cross accessibility boundaries or include regulatory signal.", "A later accuracy comparison requires a separate execution freeze.", "No uncertainty, safety or runtime claim transfers from earlier operators."]
+}
