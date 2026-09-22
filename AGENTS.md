@@ -138,6 +138,16 @@ local GUI run outputs unless explicitly requested.
 
 ## Research Branch Evidence
 
+The bounded September 22 next-round investigation uses the frozen protocol in
+`benchmarks/scripts/next_round/protocol.py` and per-attempt immutable manifests.
+In that round, keep SK-N-SH/GM23338 labels and final naked-DNA replicate 3 closed
+throughout, even if a development screen looks encouraging. The 8,106-site
+historical replay is nonnested; never substitute it for the new held-chromosome
+evaluation. Distinguish native DWM expectations from raw sequence propensities
+and detector-only changes. A sparse bigWig omits zeros: restore them only inside
+a verified processed-region contract, never by globally zero-filling missing
+output. Preserve failed audits, explicit exclusions and all 21 tasks.
+
 Footprint-improvement experiments stay on
 `research/footprint-improvement-20260830` or an isolated worktree based on it.
 Preserve completed checksum-valid outputs and the production DWM default.

@@ -4,6 +4,23 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Bounded next-round investigation in progress (isolated research worktree):**
+`benchmarks/scripts/next_round/` implements the requested fixed-geometry,
+zero-centred binomial and beta-binomial shrinkage comparison. The experiment
+policy and permitted input hashes were frozen before new scoring. Independent
+quadrature fixtures (40 model/count combinations), exact zero-information and
+support checks, calibration order-statistic checks, and independent CIGAR/pair
+fixtures passed. All 21 tasks remain in the ledger. The original 8,106-site
+replay is explicitly nonnested; a separately frozen training-chromosome
+matching procedure retained 6,020 held sites. New fragment accounting and
+same-source depth arrays are running with durable receipts. These engineering
+checks and launched jobs are not scientific qualification. The final evidence
+package and independent scientific verification are still outstanding.
+
+For this round, SK-N-SH/GM23338 labels and final naked-DNA replicate 3 stay
+closed regardless of development results. No main, release, or manuscript
+changes are authorized by this investigation.
+
 **Higher-count replicate-1 calibration and count screen completed:** independent
 verification reproduced all 50,400 regional rows/378 summaries, then all 42
 frozen models, 8,400 screen rows and 42 rate/Wilson summaries with zero score
