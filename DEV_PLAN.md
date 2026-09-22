@@ -35,6 +35,16 @@ safety-profile, corrected-count and extraction regression tests passed in
 3.56 seconds. Completion and independent verification remain pending; these
 profiles are not themselves safety scores or a passed safety gate.
 
+`benchmarks/scripts/reassess_corrected_safety.py` implements the separate
+comparison freeze, calibration-only and control-evaluation stages. The fixed
+threshold analysis is explicitly diagnostic; the corrected calibration is the
+prespecified primary development screen. It retains all sites, records changes
+in baseline-comparable membership, reports residual diagnostics and curves,
+and prevents unavailable calibration expectation from establishing relative
+safety. Tests cover threshold freezing before control access, both analyses,
+missing baseline support, invalid-site retention and output corruption/partial
+output preservation. Real scoring awaits completed profile verification.
+
 **Current execution, September 22:** the corrected-count freeze completed
 successfully (exit 0; 761.65 seconds), with configuration SHA-256
 `59dd9a562d31e49ebd7bd2303d1fc458412f8170dad174d7292696ccc13d7b32`.
