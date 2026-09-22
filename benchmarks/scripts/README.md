@@ -1229,3 +1229,11 @@ of chr16–18. Three chromosomes give weak uncertainty information: these
 descriptive intervals are not calibrated functional uncertainty or the
 principal promotion interval. Missing-class draws remain explicit and make
 the corresponding interval unavailable.
+
+`audit_site_conditioned_tracks.py` checks the full-workflow output boundary
+using training chromosomes only. Run with `--data-root`, a fresh `--outdir`,
+and `--freeze-only`, then execute without a mode flag and use `--verify-only`.
+It compares shared genomic positions in adjacent overlapping motif windows,
+restoring genomic orientation. A conflict disproves an exact single-track
+representation of the frozen profiles; no conflict in this subset would not
+certify the full output contract. This audit never changes or averages profiles.

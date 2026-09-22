@@ -4,6 +4,16 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Full-workflow output compatibility audited:** the current conditional
+expectation cannot be flattened exactly into one genomic track. Training-only
+overlap checks found expected conflicts in 1,498/1,558 HepG2 pairs and 777/814
+K562 pairs, with zero observed-cut disagreements. Five tests and independent
+real-result verification passed. This is window-specific normalization, not
+a new extraction error. Do not silently average profiles or call site-array
+timing a production-equivalent resource benchmark. A globally consistent
+operator needs its own frozen scientific evaluation before equivalent-output
+resource measurements. See `benchmarks/SITE_CONDITIONED_OUTPUT_CONTRACT_20260922.md`.
+
 **Tuning sensitivity verified:** all 378 comparisons are complete with
 independent result verification. Parametric trained geometry versus DWM
 conventional scoring improves pooled CTCF AUROC by 0.04463 in HepG2 and 0.04887
