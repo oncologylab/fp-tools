@@ -1,0 +1,69 @@
+{
+  "schema": "fp-tools-fixed-shape-operator-safety-protocol-v1",
+  "status": "protocol_locked_execution_configuration_pending",
+  "evidence": "previously_examined_replicate2_development_screen",
+  "models": {
+    "path": "benchmarks/results/corrected_shape_normalization_20260922_v1/models.freeze.json",
+    "sha256": "52986cf07c0861f39ef2a96966056ba7867b4d454ee45c3d475c9e7da2aa1f84"
+  },
+  "corrected_profile_configuration": {
+    "path": "benchmarks/results/corrected_safety_profiles_20260922_v1/configuration.freeze.json",
+    "sha256": "dc053ee9d0e0d6154cabe0e3915a6a78ba39887ffe28e2850a5059db4aa3a9e9"
+  },
+  "direct_safety_configuration": {
+    "path": "benchmarks/results/corrected_safety_reassessment_20260922_v1/configuration.freeze.json",
+    "sha256": "0b2fab46058990d8536fa0897f8699dbe15c77681f449312c68c259c74364452"
+  },
+  "corrected_tuning_result": {
+    "path": "benchmarks/results/fixed_shape_tuning_20260922_v1/reassessment_manifest.json",
+    "sha256": "24096520aaab92947a0351a9208b32575392b5512d0a5aaab6ddf5ac71b5b65d"
+  },
+  "cells": ["HepG2", "K562"],
+  "task_count": 21,
+  "corrections": ["raw", "DWM_expected", "parametric_direct"],
+  "detectors": ["trained_geometry", "hierarchical_spline"],
+  "evaluate_all_fitted_models_without_tuning_metric_selection": true,
+  "retain_missing_models_in_task_ledger": true,
+  "baseline": "DWM_expected_signed_deviance_conventional_geometry",
+  "normalization": "artifact_fallback_frozen_on_chr1_to_chr15",
+  "calibration_chromosomes": ["chr16", "chr17", "chr18"],
+  "calibration_labels": "negative_only",
+  "calibration_support": "common_fresh_valid_positive_observed_total_positive_DWM_and_parametric_expectation",
+  "minimum_calibration_negatives": 200,
+  "threshold_rule": "conformal_upper_threshold",
+  "target_negative_call_rate": 0.05,
+  "freeze_all_thresholds_before_control_scoring": true,
+  "control": "NakedDNA_rep2",
+  "absolute_support": "all_finite_candidate_valid_sites_and_separately_positive_observed_total_sites",
+  "relative_support": "candidate_valid_positive_observed_total_positive_DWM_expectation_and_matching_normalized_observed_shape",
+  "missing_DWM_candidate_expectation": "unavailable_not_zero_expected_evidence",
+  "zero_observed_sites": "retained_in_ledger_but_never_called",
+  "maximum_false_positive_rate": 0.05,
+  "maximum_wilson_upper_95": 0.05,
+  "maximum_paired_increase_over_DWM": 0.01,
+  "report_fields": [
+    "calibration_negatives",
+    "calibration_exclusions",
+    "candidate_threshold",
+    "baseline_threshold",
+    "candidate_valid_sites",
+    "informative_sites",
+    "baseline_comparable_sites",
+    "false_positive_calls",
+    "wilson_upper_bound",
+    "paired_increase_over_DWM",
+    "unavailable_candidate_and_baseline_support",
+    "passes_fpr_screen"
+  ],
+  "limitations": [
+    "A false-positive-rate screen is not the complete safety, leakage, uncertainty or promotion gate.",
+    "Prior direct-residual safety does not establish learned-geometry or spline safety.",
+    "The baseline is an explicit same-input residual scorer, not the full production pipeline.",
+    "Preserve original controls, model weights, geometry, dispersion and thresholds once frozen.",
+    "Do not choose candidates or alter thresholds after viewing these control results."
+  ],
+  "model_refitting_allowed": false,
+  "new_holdout_labels_allowed": false,
+  "final_untouched_control_allowed": false,
+  "promotion_eligible": false
+}

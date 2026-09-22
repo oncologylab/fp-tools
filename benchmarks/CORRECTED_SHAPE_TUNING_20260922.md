@@ -131,3 +131,34 @@ Corrected model-freeze SHA-256:
 `52986cf07c0861f39ef2a96966056ba7867b4d454ee45c3d475c9e7da2aa1f84`.
 This correction establishes deterministic inference for the audited models;
 it does not establish improved accuracy, calibrated uncertainty or safety.
+
+### Corrected-artifact tuning reassessment
+
+The frozen model copies were subsequently scored on the identical tuning
+sites, without refitting or candidate selection. All 189 metric rows and
+21 tasks remain. DWM and parametric spline scores have no material change
+(maximum numerical differences below 1e-15), and their metrics are unchanged.
+Conventional and training-selected geometry scores are unchanged.
+
+Raw-spline scores change at 47 HepG2 ZNF362, 54 HepG2 ZNF384 and 70 K562 CTCF
+tuning sites. AUROC changes from 0.564280 to 0.564297, 0.549280 to 0.549966,
+and 0.639941 to 0.639254, respectively. These are implementation-reassessment
+differences, not new candidate improvements. All corrected spline predictions
+agree between singleton and full-task inference within 1e-10 tolerance.
+The aggregate curve artifacts are reused as originally defined per-task
+normalized input profiles; detector normalization does not retroactively
+replace those descriptive curves.
+
+Output: `benchmarks/results/fixed_shape_tuning_20260922_v1/`. Execution exited
+0 in 12.24 seconds and separate verification passed. Nine related tests passed
+in 1.47 seconds. Configuration SHA-256:
+`16b6b1ea9001d2e0c530bded93844fb9b8073509648ce3671fc376f9d38c1c7a`.
+Result SHA-256:
+`24096520aaab92947a0351a9208b32575392b5512d0a5aaab6ddf5ac71b5b65d`.
+
+The new-operator false-positive screen is specified in
+`benchmarks/manifests/fixed_shape_operator_safety_v1.json`. It includes every
+fitted model and retains missing candidates in the 21-task ledger. Thresholds
+must use common positive baseline expectation and be frozen before control
+scoring. Its execution configuration and results are still pending; no new
+operator safety pass is claimed.

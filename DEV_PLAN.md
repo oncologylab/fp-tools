@@ -4,6 +4,16 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Fixed-normalization tuning verified:** corrected artifacts were reassessed
+on identical tuning sites with all 189 metric rows preserved. DWM and
+parametric spline metrics are unchanged; raw-spline metrics change slightly
+(K562 CTCF AUROC 0.639941 to 0.639254). All corrected spline scores pass the
+singleton/batch check. No refit or candidate selection occurred. Nine related
+tests and independent real-result verification passed. The next operator
+safety protocol is locked in `fixed_shape_operator_safety_v1.json`: evaluate
+all fitted candidates, use common positive calibration expectation, and freeze
+thresholds before examining replicate-2 scores. Its execution remains pending.
+
 **Prediction consistency correction:** before screening the new operators on
 controls, a training-only audit found batch-dependent raw-spline predictions.
 The cause was recomputing a zero-outer-variation fallback from the prediction
