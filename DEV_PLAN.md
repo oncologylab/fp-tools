@@ -4,6 +4,17 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Higher-count replicate-1 calibration frozen and running:** the same 4,200
+training-control sites, all 21 tasks and unchanged region/model definitions
+are being evaluated against the audited full filtered alignment. Ten focused
+tests passed in 3.87 s. Durable supervisor 958690 and child 958691 were verified
+live; results and independent verification remain pending. Resume from the
+recorded process identity and receipts, never by assuming completion or
+restarting a live job. See
+`benchmarks/FULL_REP1_REGION_CALIBRATION_20260922.md` for hashes and exact scope.
+This remains development calibration with preprocessing differences, not
+depth-only evidence, independent safety or a promotion result.
+
 **Higher-depth replicate-1 input audit completed:** the final filtered alignment
 and index pass quick checks, fresh full-file statistics and before/after input
 hash checks. It contains 78,358,765 mapped records versus 14,957,194 in the
