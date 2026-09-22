@@ -4,6 +4,18 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Independent wider-background auditor ready:** `audit_wide_background.py`
+recalculates flank counts with prefix sums and exposures in log space, checks
+every archived diagnostic row, and reports all 126 task/strand/radius rows on
+common sequence support. It rejects changed coordinates, missing task rows and
+changed checksums. Twenty-nine related tests passed in 2.41 s. The extraction
+child 677733 was rechecked live at 3 min 41 s; no scientific result is inferred
+from elapsed time. After extraction completes, run its independent
+`--verify-only` before freezing and executing this audit. Left/right disagreement
+is a descriptive diagnostic: it can reflect sampling noise, sequence-model
+error or real regulatory heterogeneity, and is not a calibrated uncertainty
+measure. Overlapping site windows are not independent biological replicates.
+
 **Wider-context training diagnostic launched:** a new label-free extraction
 uses unchanged training coordinates, alignments, bias model and cut convention,
 with 600-base-pair context on each side. The frozen diagnostic reports
