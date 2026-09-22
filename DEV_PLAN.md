@@ -60,6 +60,30 @@ The exact current scientific results and limitations are in
 are in `benchmarks/DIRECT_BIAS_INFERENCE_20260908.md`. No new scientific
 experiment was launched during this status-and-goal setup.
 
+### September 22 gate-ledger implementation
+
+The new benchmark-only ledger validates the checksummed summary tables and
+preserves all 21 tasks and 48 runs per task. HepG2 HMGA1 has one matched site
+per class in the coverage table and no scored rows; it is retained explicitly
+instead of disappearing from the denominator. Principal interval availability,
+power, canonical protection and unresolved resource/uncertainty/safety gates
+are separate fields. No new scientific score or candidate selection is made.
+
+The ledger reproduces 46/48 canonical CTCF runs in HepG2 and 48/48 in K562.
+The two failures are HepG2 replicate 2, 10M, seeds 2026 and 2028: both have one
+significant central point, with central contrasts -0.054764 and +0.003386.
+Both retain positive shoulders. K562 has 5/6 principal sample-DWM comparisons
+with both lower bounds positive; HepG2 has 6/6. These observations describe
+examined test data and cannot be used to tune a new candidate.
+
+Forty-two focused ledger, stability-extension and report tests passed in
+26.28 seconds. The real ledger and its exact immutable rerun passed, with
+SHA-256 `33d65e9025ccb23ef09d640bf2e8757107547ba62656297f9c5c360693ed4d88`.
+Output: `benchmarks/results/direct_bias_gate_ledger_20260922_v1/gate_ledger.json`.
+The full historical nested-input verifier was also started independently;
+its completion must be checked before claiming that deeper verification.
+No scientific computation, holdout access or production change occurred.
+
 ## Current Baseline
 
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk

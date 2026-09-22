@@ -1012,3 +1012,28 @@ python benchmarks/scripts/evaluate_chrombpnet_covariate_diagnostic.py \
   --outdir benchmarks/results/chrombpnet_covariate_diagnostic_20260908_v2 \
   --verify-only --code-ref c39dcd9
 ```
+
+### Per-factor ledger for the completed 96-run experiment
+
+`build_direct_bias_gate_ledger.py` summarizes the unchanged development result.
+It preserves all 21 cell/TF tasks and all 48 runs per task, including unscored
+and underpowered tasks. It checks candidate/comparator class counts, recomputes
+paired metric gains, retains shape failures and checks the prespecified
+principal interval matrix. It does not calculate a new locked mean-gain gate,
+retune a model, read holdout labels or certify safety or promotion.
+
+```bash
+python benchmarks/scripts/build_direct_bias_gate_ledger.py \
+  --manifest benchmarks/results/direct_bias_stability_96_20260908_v1/stability_manifest.json \
+  --manifest-sha256 52fc25ca38d8a83b301ace2980a4947583a5605743cf729a66c6d9c8051da798 \
+  --outdir benchmarks/results/direct_bias_gate_ledger_20260922_v1
+```
+
+The output `gate_ledger.json` records the source identities, script checksum,
+per-task ranges, measured intervals, current-count imbalance and individual
+shape exceptions. The reader verifies all four source summary-table hashes.
+Exact repeated output is accepted; a different existing ledger is never
+overwritten. Full nested-input verification remains the separate
+`extend_direct_bias_stability.py --verify-only --code-ref c9ecd82` operation.
+The ledger's missing safety/resource/uncertainty statuses cannot be interpreted
+as passes. Consult the exact-operator safety report separately.
