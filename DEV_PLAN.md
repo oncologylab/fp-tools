@@ -4,6 +4,20 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Fixed-region replicate-1 calibration completed:** all 21 tasks and 4,200
+original sites are retained. Independent verification reproduced 50,400
+site-region rows, 378 calibration summaries, 63 likelihood comparisons and
+5,670 chromosome blocks; seven focused tests passed in 4.10 s. Zinc-finger
+central counts agree broadly with low parametric expectations, supporting
+sequence-related cleavage deficits rather than uniform cleavage. Exploratory
+central-count discrepancies remain for K562 CTCF, FOXA1 and MEF2D and HepG2
+HMGA1. These unadjusted, sparse-count development results do not establish
+general calibration, biological uncertainty coverage or promotion safety.
+See `benchmarks/REP1_REGION_CALIBRATION_20260922.md` for frozen hashes and all
+limitations. Next audit higher-depth replicate-1 provenance before freezing
+new extraction; larger intermediates alone are not verified final inputs.
+Main, untouched labels and final naked-DNA controls remain unchanged.
+
 **Conditional score ceiling explains much of low sensitivity:** the frozen
 audit retains all 40,824 rows and 210 task/group summaries. Seven focused tests
 passed in 3.69 s; independent probability-product and convolution checks
