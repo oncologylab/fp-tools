@@ -4,6 +4,17 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Balanced-cohort geometry cross-fitting complete, numerical limitation found:**
+all 2,205 fits, 6,615 fold rows and 441 summaries verified; seven tests passed
+in 2.96 s. Equivalent normalization perturbs scores by at most 2.91e-13 but
+changes rank metrics in 287 rows (maximum chromosome AUROC change 0.175).
+Do not accept this as a numerically qualified candidate evaluation. Preserve
+the run; next freeze a numerical tie policy for fitting and scoring, with
+sparse/flat-profile, batching and equivalent-solver checks, before a successor
+run. Do not select numerical tolerances to improve biological results.
+Details: `benchmarks/BALANCED_GEOMETRY_CROSSFIT_20260922.md`. No untouched
+labels were opened, no promotion gate passed, and main remains unchanged.
+
 **Training chromosome-block sensitivity verified:** 2,000 fixed draws per
 cell across all 147 rows. HepG2 ZNF362/ZNF384 discrimination intervals exclude
 zero, but central-protection intervals cross zero; K562 ZNF384 discrimination
