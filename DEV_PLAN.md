@@ -190,6 +190,16 @@ and matrix rejection, and prohibitions on retuning, holdout reads and old-count
 reuse. The new runner requires a configuration freeze before execution and
 binds resumed stages to their configuration, run identity and checksums.
 It does not establish a new method or close the independent-control gates.
+The supervised freeze was launched with durable receipts under
+`benchmarks/results/corrected_count_jobs_20260922/freeze_attempt1/` and a new
+scientific output root `benchmarks/results/corrected_count_reassessment_20260922_v1/`.
+Its job specification SHA-256 is
+`3cdaec83fa33c2a613ba5af8e084933caacfcd58a1243c099c853b07842e35e4`.
+Check the exit receipt before launching execution; launch evidence alone does
+not certify the freeze. At the launch audit, library versions matched the
+historical run and only the Python 3.12.3 build timestamp differed; the new
+configuration records the current runtime. All 20 documentation-contract
+tests and the strict MkDocs build passed after adding the runner.
 
 ## Current Baseline
 
