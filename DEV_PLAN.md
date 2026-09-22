@@ -1,8 +1,24 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-18
+Last updated: 2026-09-21
 
 ## Current Baseline
+
+### September 21 documentation review
+
+The ENCODE download helper now checks dependencies before creating directories
+or downloading files, supports GNU and macOS MD5 tools, reuses checksum-valid
+downloads, resumes partial transfers, and restarts when a server rejects range
+requests. A corrupt download cannot become an analysis input. The bulk guide
+documents shell prerequisites, including macOS samtools installation. Six
+focused offline regressions passed, covering prerequisite failure, cache reuse,
+two range-rejection codes, corruption, and the macOS checksum fallback.
+
+The review also confirmed incorrect aggregate export option spellings,
+incomplete AnnData help, a relative PyPI logo URL, and unsafe local Docker port
+binding in examples. Corrections and the complete PBMC tutorial are undergoing
+release validation; no native desktop or public-release result is claimed here
+until those checks complete.
 
 ### v0.2.7 release verification
 

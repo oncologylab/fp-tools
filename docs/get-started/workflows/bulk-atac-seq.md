@@ -124,10 +124,24 @@ profiles and agreement between biological replicates.
 
 ## ENCODE example
 
-To practice with public data, use the compact
+To practice with public data, use the
 [ENCODE BAM/peak sample sheet](../../demos/data/encode/encode_hepg2_k562_bams.tsv),
 [comparison table](../../demos/data/encode/encode_hepg2_k562_comparisons.tsv),
 and [download helper](../../demos/data/encode/download_encode_hepg2_k562.sh).
+The helper is a Bash script for Linux and macOS. Before running it, install
+`curl`, `gzip`, and `samtools`; macOS users with Homebrew can run
+`brew install samtools`. It accepts the built-in macOS `md5` or Linux `md5sum`
+and checks all prerequisites before downloading. Installing the desktop app
+does not install these shell commands.
+
+Save the helper and both tables in the same working folder, then run
+`bash download_encode_hepg2_k562.sh` there. It creates `encode_data/bams` and
+`encode_data/peaks`, verifies downloads, and creates matching BAM indexes.
+Interrupted downloads resume when supported by the server; checksum-valid
+files are reused. Use the downloaded sample and comparison tables with the
+bulk command above. These are full public sequencing files, not a small
+first-run fixture; download and analysis time depend on your connection and
+computer.
 You can also explore the finished
 [ENCODE cancer-cell-line reports](../../reports.md).
 
