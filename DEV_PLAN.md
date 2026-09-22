@@ -4,16 +4,20 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
-**Higher-count replicate-1 calibration frozen and running:** the same 4,200
-training-control sites, all 21 tasks and unchanged region/model definitions
-are being evaluated against the audited full filtered alignment. Ten focused
-tests passed in 3.87 s. Durable supervisor 958690 and child 958691 were verified
-live; results and independent verification remain pending. Resume from the
-recorded process identity and receipts, never by assuming completion or
-restarting a live job. See
-`benchmarks/FULL_REP1_REGION_CALIBRATION_20260922.md` for hashes and exact scope.
-This remains development calibration with preprocessing differences, not
-depth-only evidence, independent safety or a promotion result.
+**Higher-count replicate-1 calibration and count screen completed:** independent
+verification reproduced all 50,400 regional rows/378 summaries, then all 42
+frozen models, 8,400 screen rows and 42 rate/Wilson summaries with zero score
+discrepancy. Twelve focused tests passed in 3.85 s. Parametric calls are 2/3,343
+informative sites; 20/20 available tasks meet both descriptive bounds, but only
+65/3,967 eligible sites can reach threshold even with zero central cuts.
+Zinc-finger central counts agree broadly with sequence expectations, while
+seven pooled central-count discrepancies remain. Both jobs exited 0; no rerun
+is needed. See `benchmarks/FULL_REP1_REGION_CALIBRATION_20260922.md` and
+`benchmarks/FULL_REP1_COUNT_SCREEN_20260922.md`. No independent safety,
+depth-only effect or promotion is established. Next freeze higher-depth
+training-input evaluation of unchanged fold-specific detectors, with identical
+sites and coverage/motif/accessibility balance audits. Main and untouched
+controls/labels remain unchanged.
 
 **Higher-depth replicate-1 input audit completed:** the final filtered alignment
 and index pass quick checks, fresh full-file statistics and before/after input

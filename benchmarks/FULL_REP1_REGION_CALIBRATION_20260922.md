@@ -1,7 +1,6 @@
 # Higher-count replicate-1 calibration
 
-Status: frozen and launched; scientific results and independent verification
-are pending. Do not infer completion from this report or a profile file.
+Status: completed with exit 0 and independent verification. No promotion.
 
 The study uses the audited full filtered replicate-1 alignment at exactly the
 same 4,200 label-free chromosome 1–15 sites as the sparse-count calibration.
@@ -39,7 +38,7 @@ calibration manifest before calculating summaries. It then executes the
 independent verifier. Successful process exit must be accompanied by verified
 profile and calibration manifests and scientific review.
 
-## Validation so far
+## Validation
 
 Ten focused tests passed in 3.87 seconds: new orchestration checks plus existing
 regional calibration, conditional protection and score-ceiling tests.
@@ -48,12 +47,50 @@ changed policy, and refusal to extract missing profiles in verify mode.
 The previous checksum-valid sparse-count result was verified without rerunning
 its experiment. No full package regression or resource qualification is claimed.
 
-## Resume
+The complete run exited 0 after 851.3603534430731 seconds. The independent
+verifier reproduced all 50,400 site-region rows, 378 calibration/predictive
+intervals, 63 likelihood comparisons and 5,670 chromosome blocks. The supervisor
+receipt itself does not certify science; verification is recorded in stdout.
+This elapsed time is not a complete-workflow resource benchmark.
 
-Inspect the recorded live process identity and terminal receipt before any
-action. Do not restart because a status observation timed out. When terminal,
-inspect `stdout.log`, `exit.json`, `profiles_manifest.json` and
-`calibration/calibration_manifest.json`; run the script with `--stage verify`
-against the same output directory. Report all tasks, calibration discrepancies,
-strand/shoulder effects and independent-null assumptions. No promotion follows
-from this development calibration alone.
+- Profiles manifest SHA-256:
+  `5ded0f45025394bdb9e938010564dc9484a0b2abe449884c95eefe9171f6e543`.
+- Derived calibration configuration SHA-256:
+  `ec18c2a9876bf57042fddcb7d69efb4957b6993dfefe685176bf3b83dc7271e8`.
+- Calibration result SHA-256:
+  `5767c81e3a6464a3cc48d08e2e7d6b2a7075514af566f0cd0f81a9779d82e7c8`.
+
+## Scientific findings
+
+| Task | Central cuts | Parametric expectation | Independent-null interval |
+| --- | ---: | ---: | --- |
+| HepG2 ZNF362 | 20 | 17.33 | 10–26 |
+| HepG2 ZNF384 | 19 | 16.49 | 9–25 |
+| K562 ZNF384 | 16 | 15.45 | 8–23 |
+| HepG2 CTCF | 98 | 97.56 | 81–115 |
+| K562 CTCF | 95 | 109.19 | 92–127 |
+
+The zinc-finger deficit remains broadly consistent with sequence-related
+cleavage, not transcription-factor protection. Both CTCF observed central
+counts now fall within the model-predictive intervals. This does not erase the
+earlier K562 discrepancy or isolate depth as its cause: counts and preparation
+both differ, and the samples are not independent biological replicates.
+
+Seven of 21 pooled central counts exceed their independent-null predictive
+interval: HepG2 FOXA1, HMGA1, MEF2D and TBP; K562 FOXA1, MEF2D and TBP.
+Three pooled left-shoulder and two right-shoulder counts are also outside.
+Per-strand central discrepancies occur in six tasks on each strand. All are
+exploratory, unadjusted comparisons under independent-cut assumptions; biological
+coverage is uncalibrated. Better likelihood than uniform does not imply correct
+calibration. No occupancy-leakage conclusion follows from these discrepancies.
+
+All 21 tasks and all three regions are shown in
+`benchmarks/results/full_rep1_calibration_plots_20260922_v1/calibration.pdf`
+(also PNG and SVG). The rendered plot was inspected: labels, all tasks, region
+panels, legend and the uncertainty limitation are visible without overlap.
+`plot_full_rep1_calibration.py` records input/output checksums and preserves
+existing output directories. These are calibration plots, not binding-positive
+versus binding-negative aggregate protection plots.
+
+The subsequent unchanged-detector screen is documented in
+`FULL_REP1_COUNT_SCREEN_20260922.md`. All evidence remains development-only.
