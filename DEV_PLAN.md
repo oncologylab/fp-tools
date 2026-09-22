@@ -4,6 +4,23 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Current execution, September 22:** the corrected-count freeze completed
+successfully (exit 0; 761.65 seconds), with configuration SHA-256
+`59dd9a562d31e49ebd7bd2303d1fc458412f8170dad174d7292696ccc13d7b32`.
+The unchanged-candidate 96-run reassessment was launched at 08:06:38 UTC
+under the durable experiment supervisor. Its command checks that exact
+configuration hash before executing, and the runner checks frozen calculation
+code and runtime. Job specification SHA-256:
+`bcf41ee29fbdc7635648eab950e59ef2a7cf57f1d0ee6ac017a0a6a83bac8f74`.
+Receipts are in
+`benchmarks/results/corrected_count_jobs_20260922/execute_attempt1/`;
+scientific outputs are in
+`benchmarks/results/corrected_count_reassessment_20260922_v1/`.
+Launch is not completion: require the exit receipt, independent
+`--verify-only` verification, paired comparison, and aggregate-plot review
+before interpreting results. This remains post-hoc implementation reassessment,
+not candidate tuning or untouched validation. Main remains clean at `636db5f`.
+
 **September 22 extraction qualification:** the research strand-profile reader
 had duplicate-window and soft-clipping count defects. They are now fixed and
 confirmed against an independent training-only oracle. Historical stability,
