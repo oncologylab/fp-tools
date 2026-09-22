@@ -4,6 +4,19 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Prediction consistency correction:** before screening the new operators on
+controls, a training-only audit found batch-dependent raw-spline predictions.
+The cause was recomputing a zero-outer-variation fallback from the prediction
+batch. A research-only helper now freezes that fallback from training data.
+All 11 corrected copies preserve learned weights and full-training scores,
+and pass batch/singleton agreement checks. Original artifacts are unchanged.
+Ten related tests and independent real-artifact verification passed. Exact
+hashes and counts are in `benchmarks/CORRECTED_SHAPE_TUNING_20260922.md`.
+Reassess the frozen copies on tuning data, then calibrate the new operators
+on valid common expected support before the previously examined replicate-2
+screen. Neither this consistency fix nor prior direct-operator safety certifies
+the newly learned geometries/spline scores.
+
 **Corrected tuning plot review completed:** all 21 tasks are rendered on seven
 pages, with underpowered tasks and lack of confidence bands explicit. All seven
 page images were visually reviewed and eight output checksums verified. CTCF

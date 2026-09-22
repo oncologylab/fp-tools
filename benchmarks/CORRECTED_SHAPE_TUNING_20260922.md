@@ -1,5 +1,15 @@
 # Corrected-data training and tuning comparison
 
+**Subsequent normalization qualification:** a training-only inference audit
+found that legacy raw-spline predictions depended on prediction batch contents
+when a site had no outer-flank variation. The frozen results below remain the
+recorded full-task-batch calculation; they do not establish batch-independent
+raw-spline inference. A separate corrected model copy now freezes the fallback
+from training data, without changing learned weights. Its tuning reassessment
+and new-operator safety screen remain pending. DWM and parametric training
+scores had no material batch dependence in the audited sites; this is not a
+substitute for their corrected-artifact tuning and safety verification.
+
 Models were fitted on chr1–15 and frozen before scoring chr16–18. All 21
 cell/transcription-factor tasks remain in the output (189 correction/detector
 rows). This is development evidence from replicate 1, 10 million fragments,
@@ -96,3 +106,28 @@ Rendering manifest SHA-256:
 Three renderer tests passed in 2.48 seconds, and twenty documentation contracts
 passed in 0.42 seconds. Main, the published manuscript and locked holdout labels
 remain unchanged.
+
+## Training-frozen normalization correction
+
+The original raw-spline models changed scores between full-task batches and
+individual-site inference at 59/512 HepG2 ZNF362, 52/596 HepG2 ZNF384 and
+71/560 K562 CTCF training sites. Maximum absolute differences were approximately
+1.613, 2.723 and 3.841 score units. This is a reproducibility defect, not new
+biological evidence. The other eight model/correction combinations had only
+floating-point differences in this check.
+
+`freeze_shape_normalization.py` copies each artifact and adds a fallback scale
+computed from its original chr1–15 training profiles. No model is refitted;
+all original learned arrays and artifacts are preserved. Every corrected model
+reproduces its original full-training-batch scores and agrees between batch
+and singleton inference within 1e-10 tolerance. The real stage exited 0 in
+20.45 seconds and separate verification passed. Ten related tests passed in
+1.62 seconds.
+
+Output: `benchmarks/results/corrected_shape_normalization_20260922_v1/`.
+Configuration SHA-256:
+`106495fea837880a8b31aa6fa02432950e31ca6c487b3cd08718e67599543b1b`.
+Corrected model-freeze SHA-256:
+`52986cf07c0861f39ef2a96966056ba7867b4d454ee45c3d475c9e7da2aa1f84`.
+This correction establishes deterministic inference for the audited models;
+it does not establish improved accuracy, calibrated uncertainty or safety.
