@@ -1237,3 +1237,10 @@ It compares shared genomic positions in adjacent overlapping motif windows,
 restoring genomic orientation. A conflict disproves an exact single-track
 representation of the frozen profiles; no conflict in this subset would not
 certify the full output contract. This audit never changes or averages profiles.
+
+After independent full verification of the corrected 96-run reassessment,
+`build_corrected_count_gate_ledger.py --outdir <new-research-results-directory>`
+applies the existing descriptive ledger calculation to its pinned corrected
+manifest. It checks the verification receipt, retains all 21 tasks, and
+preserves shape exceptions. It does not certify promotion or replace the
+separate safety, uncertainty, output-compatibility, and resource studies.

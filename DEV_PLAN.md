@@ -4,6 +4,18 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Corrected 96-run comparison complete:** all inputs/outputs were independently
+verified, all 21 aggregate pages visually reviewed, and the unchanged ledger
+calculation rebuilt for corrected counts. CTCF full-depth mean AUROC gains
+versus sample-matched DWM are 0.111969 (HepG2) and 0.130023 (K562); extraction
+changes each run's CTCF AUROC by less than 0.0008. Low-depth failures remain:
+two HepG2 shape exceptions and a K562 replicate-3 10-million-read interval
+crossing zero. All 21 tasks and 746 shape exceptions remain explicit. This is
+post-hoc reassessment on already examined test chromosomes, not untouched
+evidence or data for retuning. Forty-one relevant tests passed (4.04 s).
+See `benchmarks/CORRECTED_COUNT_REASSESSMENT_20260922.md` for exact hashes,
+the complete scope, comparisons, and outstanding gates.
+
 **Globally consistent prototype:** a research-only primitive now assigns one
 expectation per genomic position from same-strand counts and sequence bias in
 the symmetric 50–100 base-pair outer flanks. Ten primitive/output-contract
