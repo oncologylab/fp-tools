@@ -35,7 +35,7 @@
     "freeze_before_detector_fitting": true,
     "reuse_identical_memberships_for_all_corrections_and_detectors": true
   },
-  "expected_support": "fresh_valid_and_finite_positive_parametric_and_DWM_expected_total",
+  "expected_support": "fresh_valid_finite_nonnegative_profiles_positive_DWM_expected_total_and_positive_parametric_expected_total_when_observed_total_positive",
   "zero_observed_sites": "retain_as_ties_if_expected_support_exists",
   "spline": {
     "smoother": "spline",
