@@ -25,6 +25,16 @@ or incomplete output reuse. Five focused tests passed, including invalid
 sequence rows and corruption detection. The real input freeze/extraction and
 corrected safety scorer remain outstanding.
 
+The subsequent real four-input freeze completed successfully. Configuration
+SHA-256: `dc053ee9d0e0d6154cabe0e3915a6a78ba39887ffe28e2850a5059db4aa3a9e9`.
+Fresh extraction is now supervised with receipts under
+`benchmarks/results/corrected_safety_jobs_20260922/execute_attempt1/`, with
+that configuration hash checked before execution. Outputs are under
+`benchmarks/results/corrected_safety_profiles_20260922_v1/`. Eighteen combined
+safety-profile, corrected-count and extraction regression tests passed in
+3.56 seconds. Completion and independent verification remain pending; these
+profiles are not themselves safety scores or a passed safety gate.
+
 **Current execution, September 22:** the corrected-count freeze completed
 successfully (exit 0; 761.65 seconds), with configuration SHA-256
 `59dd9a562d31e49ebd7bd2303d1fc458412f8170dad174d7292696ccc13d7b32`.
