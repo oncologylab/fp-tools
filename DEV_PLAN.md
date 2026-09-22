@@ -4,6 +4,28 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Corrected cohort preparation completed:** the first shared-support matching
+protocol completed in 31.99 seconds and passed independent verification.
+Configuration SHA-256:
+`738101be0f93fe665cf628fb4edec5637d8aee302575a8bd3c72648ae9033e70`;
+cohort manifest SHA-256:
+`1593a42b7d9ca3ec90b6508a2dbb88627a0732481ff319da14350fe155e7ceef`.
+Outputs are in `benchmarks/results/corrected_shape_cohorts_20260922_v1/`.
+All 42 task/split rows are retained: 40 are underpowered and two unbalanced;
+none is eligible for candidate fitting under this protocol. Ten focused
+cohort/candidate tests passed in 1.45 seconds. No detector was fitted or scored.
+
+For CTCF, common expected support remains large (HepG2 train/tune: 1,864/2,088
+sites; K562: 1,857/2,089), but optimal full assignment followed by the fixed
+distance caliper retains only 15/24 and 18/21 pairs. Motif score and observed
+coverage differ substantially between classes. Diagnose the assignment and
+caliper interaction before attributing the loss solely to absent biological
+information; do not relax power/balance gates or overwrite this result.
+The archived site metadata also labels chr16 as train. This new preparation
+uses the requested chromosome coordinates directly (chr1–15 train; chr16–18
+tune), rather than trusting that legacy column. Previously examined tuning
+data are not described as untouched evidence.
+
 **Next corrected-data candidate comparison:**
 `benchmarks/manifests/corrected_shape_development_v1.json` fixes a training/tuning
 factorial comparison of raw counts, DWM-expected residuals and frozen-parametric
