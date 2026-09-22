@@ -80,8 +80,7 @@ visual guide.
 
 ## Small PBMC example
 
-Use fp-tools 0.2.9 or later for this tutorial on Windows; it fixes reading
-fragments with an adjacent index when the optional tabix library is unavailable.
+Use fp-tools 0.2.9 or later for this tutorial on Windows.
 
 This real peripheral blood mononuclear cell (PBMC) example contains 300 cells:
 100 B cells, 100 monocytes, and 100 T or natural killer cells. It retains human
@@ -92,7 +91,7 @@ subset. Accessible regions are the source's selected bins, not newly called
 peaks.
 
 Download `fp-tools-pbmc-chr22-demo-v1.zip` and its `.sha256` file from the
-[v0.2.8 release](https://github.com/oncologylab/fp-tools/releases/tag/v0.2.8).
+[v0.2.9 release](https://github.com/oncologylab/fp-tools/releases/tag/v0.2.9).
 The ZIP is approximately 14.3 MB. Open a terminal in the folder containing your
 download. On macOS, run
 `shasum -a 256 fp-tools-pbmc-chr22-demo-v1.zip`; on Linux use `sha256sum` instead

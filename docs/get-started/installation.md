@@ -21,8 +21,8 @@ BED files. Single-cell workflows start from fragments and cell annotations.
 Download the app for your computer, then open it. fp-tools opens in its own
 application window; no browser or Python installation is required.
 
-[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.8/fp-tools-gui-windows-x64.exe){ .md-button }
-[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.8/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
+[Download for Windows](https://github.com/oncologylab/fp-tools/releases/download/v0.2.9/fp-tools-gui-windows-x64.exe){ .md-button }
+[Download for Apple silicon](https://github.com/oncologylab/fp-tools/releases/download/v0.2.9/fp-tools-gui-macos-apple-silicon.dmg){ .md-button }
 
 Windows may ask you to confirm the unsigned app download. The macOS app
 is unsigned and has not been notarized by Apple, so Gatekeeper may report that
@@ -31,7 +31,7 @@ OncologyLab GitHub release page and verify the published SHA-256 checksum.
 
 ### Verify your download
 
-Download [SHA256SUMS.txt](https://github.com/oncologylab/fp-tools/releases/download/v0.2.8/SHA256SUMS.txt)
+Download [SHA256SUMS.txt](https://github.com/oncologylab/fp-tools/releases/download/v0.2.9/SHA256SUMS.txt)
 from the same release as your app. In the folder containing your download, run:
 
 === "macOS Terminal"

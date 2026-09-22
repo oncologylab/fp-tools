@@ -4,6 +4,37 @@ Last updated: 2026-09-21
 
 ## Current Baseline
 
+### v0.2.9 published artifacts and documentation
+
+Release tag v0.2.9 points to `6de9dfa`. All ten CI jobs passed
+(35678562489): Linux reported 619 passed, 16 skipped and 87 passing subtests;
+Windows Python 3.12 reported 601 passed, 34 skipped and 69 passing subtests.
+The Windows Python 3.11 and 3.13 jobs also passed. Docs (35678562500),
+managed runtimes including Windows WSL2 import (35679397170), both containers
+(35679397165), and all wheel/source builds and PyPI publication (35679406092)
+passed.
+
+Desktop bundles (35679397167) passed both native platform checks. The first
+Mac GUI audit timed out waiting for a validation panel; an unchanged retry
+passed every assertion. The Windows frozen smoke includes the index-sidecar
+regression. No GUI assertions were removed or relaxed.
+
+All 14 public GitHub binary/archive downloads and all 16 PyPI files matched
+their published SHA-256 digests. A fresh PyPI 0.2.9 installation passed
+53 tests and 51 subtests, console-script smoke checks and pip check. The PyPI
+metadata has the corrected summary and absolute logo URL; the CAPTCHA
+limitation on inspecting the final PyPI HTML rendering still applies.
+
+The installation page links the checksum-verified 0.2.9 desktop downloads;
+the tutorial links the same immutable dataset attached to that release.
+Final documentation checks passed 25 focused tests, strict MkDocs and the
+33-page browser audit at three viewport sizes with dark-system preference.
+Public-download discovery and complete tutorial execution are tracked in
+[Release smoke run 35681473943](https://github.com/oncologylab/fp-tools/actions/runs/35681473943);
+the release notes record the final outcome. These checks cover the 300-cell
+teaching dataset, not full-scale single-cell performance or binding claims.
+Research work and the published manuscript remain unchanged.
+
 ### v0.2.9 corrective release preparation
 
 The indexed-fragment fallback fix passed the full local suite: 638 passed,
