@@ -4,6 +4,24 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Unit-floor candidate does not broadly rescue performance:** frozen training
+cross-fitting retains all 21 tasks/seven correction arms and produces 2,205
+fits, 4,410 folds and 294 summaries. Conditional-parametric mean gains over
+conventional DWM are 0.01558 AUROC and 3.30% relative AUPRC across 20 available
+tasks, below targets and not promotion evidence. CTCF remains strongest;
+K562 ZNF384 loses 0.05518 AUROC against the former normalized detector and
+fixed-center protection remains weak in difficult families. Nine tests passed
+in 2.04 s. Independent verification reproduced all geometry choices and fold
+metrics; one score differs by 1e-10 under equivalent solvers, so exact score
+parity is explicitly false. Failed verification snapshots are preserved.
+See `benchmarks/UNIT_FLOOR_GEOMETRY_20260922.md`. Do not advance this as a general
+replacement or tune per-task floors. Next specify and freeze a count-conditioned
+central-versus-shoulder scoring candidate using training data, with explicit
+strand counts and sequence probabilities, before evaluating it. Assess whether
+it can suppress low-count noise without discarding real protection; any null
+calibration claim requires its assumptions and exact operator to be checked.
+Untouched controls, promotion labels, main and all prior failures remain intact.
+
 **Low-count normalization diagnostic complete:** all 4,200 replicate-1 control
 sites are on training chromosomes; the membership ledger retains 35 blacklist
 overlaps, 1,569 zero-count sites and 200 unavailable-model sites (categories
