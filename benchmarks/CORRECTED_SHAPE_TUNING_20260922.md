@@ -80,5 +80,19 @@ Output directory: `benchmarks/results/corrected_shape_development_20260922_v1/`.
   exact serialized prediction parity and refusal to score before model freeze.
 
 Per-site scores and per-correction aggregate curve data are checksummed.
-Rendered aggregate plots and their visual review remain outstanding. Main,
-the published manuscript and locked holdout labels remain unchanged.
+All 21 tasks were subsequently rendered across seven pages in
+`benchmarks/results/corrected_shape_tuning_plots_20260922_v1/all_task_aggregates.pdf`.
+All seven page images were visually reviewed: labels and curves are readable,
+underpowered tasks remain explicit, and there is no general visual rescue of
+difficult families. CTCF retains the clearest central depletion and shoulders;
+the parametric curves do not establish stronger protection than DWM. Axes share
+limits within each task, and the central/shoulder windows are shaded. These
+are unsmoothed point-estimate contrasts with no confidence bands.
+
+The PDF and seven images match their recorded checksums. PDF SHA-256:
+`27a92fbb6bfffb066b28c944c17e869963478caa67ce76ec029d16acd52ed0dd`.
+Rendering manifest SHA-256:
+`18b83cdd449db1d832972077f7e6d4e6f6a412e0ffdc564a395bb7b3b3dd2ec1`.
+Three renderer tests passed in 2.48 seconds, and twenty documentation contracts
+passed in 0.42 seconds. Main, the published manuscript and locked holdout labels
+remain unchanged.

@@ -4,6 +4,14 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Corrected tuning plot review completed:** all 21 tasks are rendered on seven
+pages, with underpowered tasks and lack of confidence bands explicit. All seven
+page images were visually reviewed and eight output checksums verified. CTCF
+has the clearest depletion and shoulders; no general difficult-family rescue
+or stronger parametric protection over DWM is established. Three rendering
+tests and twenty documentation contracts passed. Exact plot hashes and
+interpretation are recorded in `benchmarks/CORRECTED_SHAPE_TUNING_20260922.md`.
+
 **Corrected candidate training/tuning completed:** 11 model artifacts were
 fitted on chr1–15, frozen and verified before chr16–18 scoring. All 21 tasks
 remain in 189 correction/detector rows. The parametric CTCF spline improves

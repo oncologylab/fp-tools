@@ -1184,3 +1184,24 @@ extraction effects; corrected calibration is the prespecified primary
 development screen. Missing baseline calibration expectation prevents a
 relative safety pass. Neither analysis is untouched validation, and neither
 authorizes promotion or access to final control/holdout labels.
+
+The corrected shape-development study uses three preserved cohort stages:
+`prepare_corrected_shape_cohorts.py`, `rematch_corrected_shape_cohorts.py`, and
+`balance_corrected_shape_cohorts.py`. Each requires its own fresh research
+output directory, `--freeze-only` before execution, and `--verify-only` after
+completion. The latter stages preserve the first result, enforce the same
+distance/balance/power limits, and select pairs using covariates only.
+
+`run_corrected_shape_development.py` then runs four separate stages with
+`--data-root` and a new `--outdir`: `--freeze-only`, `--fit-only`, no mode flag
+for tuning evaluation, and `--verify-only`. Models are fitted only on chr1–15
+and saved before chr16–18 scoring. The full 21-task denominator remains in
+the output. Scores are ranks, not calibrated binding probabilities.
+
+Render a verified result with `render_corrected_shape_tuning.py --data-root
+<original-data-checkout> --result-dir <verified-development-output> --outdir
+<new-research-plot-directory>`. Review every page of `all_task_aggregates.pdf`
+or the corresponding PNGs. Curves describe input profiles by correction;
+changing the detector does not change these curves. Numerical tuning gains
+do not establish significant canonical protection, independent safety or
+complete-workflow computational performance.
