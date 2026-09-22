@@ -4,6 +4,19 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Blacklist intervention resolves historical coverage discrepancies:** adding
+the checksum-locked hg38 blacklist to the matched historical-region command
+reproduces all 269 positive expected windows, with zero support, expected-shape
+or observed-shape discrepancies. All 4,200 sites remain, including 35 explicitly
+blacklisted motifs/windows. Eleven focused tests passed in 2.11 s; independent
+interval reconstruction verified 8,400 profiles and all exclusion flags.
+See `benchmarks/CONTROL_BLACKLIST_20260922.md`. This establishes a sufficient
+reconstruction, not complete provenance for the archived command. Next freeze
+a blacklist-aware all-site counterpart to distinguish exclusion effects from
+output-layout effects. The three existing layout differences remain real;
+preserve the failed expanded-reference qualification and do not rescore or
+retune failed candidates. Replicate 2 remains examined development evidence.
+
 **Current checkpoint — historical-region isolation verified:** all 269 archived
 positive expected profiles reproduce their shape with the historical output
 layout. Expanding the layout changes three shapes under otherwise identical
