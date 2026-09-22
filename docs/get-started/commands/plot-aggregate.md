@@ -29,7 +29,7 @@ Replace `SPIB CEBPB` with motifs present in your motif results.
 - `{project}/reports/plot_aggregate.html` — default project-layout interactive aggregate report with motif-centered signal profiles.
 - the exact `--output` path — static PDF/PNG/SVG or interactive HTML in custom layout.
 - the exact `--output-txt` path — optional per-position aggregate values.
-- the exact `--output-aggregated-signals`, `--output-aggregated-scores`, and `--output-aggregated-stats` paths — optional source tables when requested.
+- the exact `--output_aggregated_signals`, `--output_aggregated_scores`, and `--output_aggregated_stats` paths — optional source tables when requested.
 - the exact `--output` path in `--motif-grid` mode — multipage motif-by-comparison PDF built from a review bundle.
 
 When both signal types are available, use footprint score bigWigs for motif

@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/fp_tools_logo_horizontal.svg" alt="fp-tools — regulatory footprinting" width="560">
+  <img src="https://oncologylab.github.io/fp-tools/assets/fp_tools_logo_horizontal.svg" alt="fp-tools — regulatory footprinting" width="560">
   <br>
   <a href="https://pypi.org/project/fp-tools-bio/"><img alt="PyPI" src="https://img.shields.io/pypi/v/fp-tools-bio?color=1f9d55"></a>
   <a href="https://github.com/oncologylab/fp-tools/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/oncologylab/fp-tools/actions/workflows/ci.yml/badge.svg"></a>
@@ -16,10 +16,17 @@
   </sub>
 </div>
 
-`fp-tools` analyzes ATAC-seq and CUT&Tag data to measure chromatin footprints
-and compare motif-associated signals. Start with aligned reads and peak files
-for bulk analysis, or fragments and cell annotations for single-cell analysis.
-Run each step from the command line, save workflows as YAML, or use the GUI.
+`fp-tools` helps you study DNA-accessibility patterns in bulk and single-cell
+ATAC-seq (assay for transposase-accessible chromatin using sequencing) data. It
+corrects sequence-related bias, scores footprints around DNA motifs, and compares
+signals between samples or cell groups. Results include signal tracks, tables,
+figures, and interactive reports. Use the command-line interface (CLI), save
+settings in a YAML configuration file, or use the graphical user interface (GUI).
+
+A footprint or motif match is evidence to investigate, not proof that a specific
+transcription factor (TF) is bound. For CUT&Tag (cleavage under targets and
+tagmentation), interpret signals in the context of the targeted protein and
+assay controls; the ATAC-seq examples are not a CUT&Tag protocol.
 
 ## Install
 
@@ -29,7 +36,7 @@ Choose one route:
 | --- | --- | --- |
 | Desktop app | Windows or Apple Silicon macOS | [Download](https://github.com/oncologylab/fp-tools/releases) |
 | Python package | Windows, macOS, or Linux with Python 3.11–3.13 | `python -m pip install fp-tools-bio` |
-| Container | Complete reproducible environment | `docker build -t fp-tools:latest https://github.com/oncologylab/fp-tools.git#main` |
+| Container | Versioned analysis environment | `docker build -t fp-tools:0.2.8 https://github.com/oncologylab/fp-tools.git#v0.2.8` |
 
 Python package example:
 
@@ -67,7 +74,7 @@ messages appear live in your terminal and are also saved in the project logs.
 
 The `hg38` and `mm10` labels use checksum-verified FASTA and blacklist files
 from the managed reference cache. A custom FASTA path and optional custom
-blacklist can be supplied instead. The wrapper runs `atac-correct`,
+blacklist can be supplied instead. The workflow runs `atac-correct`,
 `call-footprints`, `match-motifs`,
 `diff-footprints`, and `review-multi-comparisons`. Each command can also be run
 directly. `diff-footprints --comparison-axis regions` compares matched genomic
@@ -80,16 +87,19 @@ macOS/Windows installations start from BAM/BAI and peak BED files.
 ## Single-cell ATAC-seq
 
 `sc-footprinting` groups fragments, runs pseudobulk footprinting, and produces
-per-cell KNN footprint-signature heatmaps and UMAPs.
+per-cell k-nearest-neighbor (KNN) footprint-signature heatmaps and uniform manifold
+approximation and projection (UMAP) views of cells.
 
 The [single-cell workflow guide](https://oncologylab.github.io/fp-tools/get-started/workflows/single-cell/)
-explains the annotation columns and AnnData file required for this command.
+provides a complete small real-data example and explains the annotation columns
+and AnnData count matrix required for this command. The command below is a
+template: replace the paths with your matched files and run from their folder.
 
 ```bash
 sc-footprinting \
   --fragments fragments.tsv.gz \
   --annotations cell_annotations.tsv \
-  --h5ad embedding.h5ad \
+  --h5ad genomic_bin_counts.h5ad \
   --group-by cell_type \
   --genome-sizes hg38.chrom.sizes \
   --genome hg38.fa.gz \
@@ -108,5 +118,5 @@ sc-footprinting \
 | De novo motifs | `discover-motifs`, `summarize-motifs` |
 | Single-cell utilities | `pseudobulk-fragments`, `find-signature-fp` |
 
-Use `<command> --help` for complete options. Practical examples and the API
+Use `<command> --help` for complete options. Practical examples and the command
 reference are available in the [documentation](https://oncologylab.github.io/fp-tools/).

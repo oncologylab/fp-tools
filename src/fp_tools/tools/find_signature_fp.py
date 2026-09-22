@@ -1628,7 +1628,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--annotations", required=True, help="Cell annotation TSV/CSV requiring barcode, cell_type, snap_cell_type, umap_1, and umap_2 columns.")
     parser.add_argument("--fragments", required=True, help="10x-style fragments TSV/TSV.GZ used to count cut sites around motif centers.")
-    parser.add_argument("--h5ad", required=True, help="AnnData file containing the single-cell embedding used for KNN smoothing.")
+    parser.add_argument("--h5ad", required=True, help="AnnData with matching cell barcodes, genomic-bin counts, and boolean var['selected']; optional embeddings support nearest-neighbor smoothing.")
     parser.add_argument("--tf-site-dir", help="Optional directory containing marker motif-site BED files named by TF. When omitted, marker sites are taken from --all-motif-diff-dir and --all-motif-results.")
     parser.add_argument("--outdir", required=True, help="Output directory for signature score tables, heatmaps, and UMAP reports.")
     parser.add_argument("--markers", default=",".join(MARKERS), help=f"Comma-separated marker TFs to score and plot (default: {','.join(MARKERS)}).")

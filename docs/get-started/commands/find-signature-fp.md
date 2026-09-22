@@ -8,7 +8,7 @@ binding calls for every cell.
 ## Example command
 
 ```bash
-find-signature-fp --annotations cell_annotations.tsv --fragments pbmc_fragments.tsv.gz --h5ad pbmc_embedding.h5ad \
+find-signature-fp --annotations cell_annotations.tsv --fragments pbmc_fragments.tsv.gz --h5ad genomic_bin_counts.h5ad \
   --all-motif-diff-dir project/pseudobulk/diff_footprints \
   --all-motif-results project/pseudobulk/diff_footprints/pseudobulk_diff_footprints_results.txt \
   --outdir project/pseudobulk/signature_fp

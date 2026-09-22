@@ -57,9 +57,9 @@ def add_atacorrect_arguments(parser):
 	optargs.add_argument('--scale-target', choices=["median", "mean"], default="median", help="Across-sample q95 target for --scale-corrected (default: median)")
 	optargs.add_argument('--scale-chrom-sizes', metavar="<chrom.sizes>", help="Optional chromosome sizes file for scaled bigWig output validation")
 	optargs.add_argument('--merged-peaks-out', metavar="<bed>", help="Path for internally merged peak BED when multiple --peaks files are supplied (default: <outdir>/merged_peaks.bed)")
-	optargs.add_argument('--drop-chroms', metavar="<chrom>", help="Drop any chromosomes in the list from the correction. The default is to drop the mitochrondrial chromosome. Default: ['chrM', 'chrMT', 'M', 'MT', 'Mito']", nargs="*", default=['chrM', 'chrMT', 'M', "MT", "Mito"])
+	optargs.add_argument('--drop-chroms', metavar="<chrom>", help="Drop any chromosomes in the list from the correction. The default is to drop the mitochondrial chromosome. Default: ['chrM', 'chrMT', 'M', 'MT', 'Mito']", nargs="*", default=['chrM', 'chrMT', 'M', "MT", "Mito"])
 
-	optargs = parser.add_argument_group('Advanced atac-correct arguments (no need to touch)')
+	optargs = parser.add_argument_group('Advanced options (defaults are suitable for most analyses)')
 	optargs.add_argument('--k_flank', metavar="<int>", help="Flank +/- of cutsite to estimate bias from (default: 12)", type=int, default=12)
 	optargs.add_argument('--read_shift', metavar="<int>", help="Read shift for forward and reverse reads (default: 4 -5)", nargs=2, type=int, default=[4,-5])
 	optargs.add_argument('--bg_shift', metavar="<int>", type=int, help="Read shift for estimation of background frequencies (default: 100)", default=100)
@@ -374,7 +374,7 @@ def add_aggregate_arguments(parser):
 	PLOT = parser.add_argument_group('Plot arguments')
 	PLOT.add_argument('--title', metavar="", help="Title of plot (default: \"Aggregated signals\")", default="Aggregated signals")
 	PLOT.add_argument('--format', choices=["auto", "pdf", "html"], default="auto", help="Output format for --output. auto uses the output file extension (default: auto)")
-	PLOT.add_argument('--flank', metavar="", help="Flanking basepairs (+/-) to show in plot (counted from middle of the TFBS) (default: 60)", default=60, type=int)
+	PLOT.add_argument('--flank', metavar="", help="Flanking base pairs (+/-) to show in plot (counted from middle of the TFBS) (default: 60)", default=60, type=int)
 	PLOT.add_argument('--motifs', metavar="<motif>", nargs="*", help="Motif prefixes, names, or IDs to plot from --match-dir")
 	PLOT.add_argument('--site-set', choices=["bound", "all", "unbound"], default="bound", help="Motif-site BED set to use from --match-dir (default: bound)")
 	PLOT.add_argument('--top-n', metavar="<int>", type=int, default=12, help="Number of motifs to plot from --match-dir when --motifs is omitted (default: 12)")
@@ -386,7 +386,7 @@ def add_aggregate_arguments(parser):
 	PLOT.add_argument('--region-labels', metavar="", help="Labels used for each regions file (default: prefix of each --regions)", nargs="*")
 	PLOT.add_argument('--control-label', metavar="<label>", help="Overlay each non-control signal against this control signal label (must match one of --signal-labels)", default=None)
 	PLOT.add_argument('--grid', metavar="<rows>x<cols>", help="Explicit grid layout for subplots, e.g. 2x5 or 3x4. Panels fill in order of the input signal files.", default=None)
-	PLOT.add_argument('--share-y', metavar="", help="Share y-axis range across plots (none/signals/sites/both). Use \"--share-y signals\" if bigwig signals have similar ranges. Use \"--share_y sites\" if sites per bigwig are comparable, but bigwigs themselves aren't comparable (default: none)", choices=["none", "signals", "sites", "both"], default="none")
+	PLOT.add_argument('--share-y', metavar="", help="Share y-axis range across plots (none/signals/sites/both). Use \"--share-y signals\" if bigwig signals have similar ranges. Use \"--share-y sites\" if sites per bigwig are comparable, but bigwigs themselves aren't comparable (default: none)", choices=["none", "signals", "sites", "both"], default="none")
 	
 	#Signals / regions
 	PLOT.add_argument('--normalize', action='store_true', help="Normalize the aggregate signal(s) to be between 0-1 (default: the true range of values is shown)")
@@ -395,7 +395,7 @@ def add_aggregate_arguments(parser):
 	PLOT.add_argument('--output_aggregated_stats', metavar="", default=None, help="Path to CSV file for aggregate mean/SD/stat summaries (default: None)")
 	PLOT.add_argument('--show-replicate-sd', action="store_true", help="Draw replicate SD ribbons when --cond-names contains repeated condition names")
 	PLOT.add_argument('--negate', action='store_true', help="Negate overlap with regions")
-	PLOT.add_argument('--smooth', metavar="<int>", type=int, help="Smooth output signal by taking the mean of <smooth> bp windows (default: 1 (no smooth)", default=1)
+	PLOT.add_argument('--smooth', metavar="<int>", type=int, help="Smooth output signal by taking the mean of <smooth> bp windows (default: 1; no smoothing)", default=1)
 	PLOT.add_argument('--log-transform', help="Log transform the signals before aggregation", action="store_true")
 	PLOT.add_argument('--plot-boundaries', help="Plot TFBS boundaries (Note: estimated from first region in each --TFBS)", action='store_true')
 	PLOT.add_argument('--signal-on-x', help="Show signals on x-axis and TFBSs on y-axis (default: signal is on y-axis)", action='store_true')

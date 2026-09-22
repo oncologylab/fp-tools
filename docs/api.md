@@ -3,7 +3,7 @@ hide:
   - navigation
 ---
 
-# API Reference
+# Command reference
 
 Choose a command below to see when to use it, how to prepare its inputs, an example run, and the files it writes. The complete options follow each guide and are also available with `<command> --help`.
 
@@ -241,6 +241,12 @@ alongside the statistics.
 
 Add `--dry-run` to check the inputs and inspect the commands before starting.
 
+For a combined review, include each condition pair only once. Reversing the
+conditions still counts as the same pair. Repeated pairs are rejected before
+reference downloads or analysis, with the comparison IDs and table line numbers
+shown in the error. To run separate comparisons with the same condition labels
+but different sample subsets, use `--review-format none`.
+
 ## Reference and motif options
 
 Choosing `hg38` or `mm10` downloads and verifies the matching reference and
@@ -462,10 +468,10 @@ Optional arguments:
                                    --peaks files are supplied (default:
                                    <outdir>/merged_peaks.bed)
   --drop-chroms [<chrom> ...]      Drop any chromosomes in the list from the correction.
-                                   The default is to drop the mitochrondrial chromosome.
+                                   The default is to drop the mitochondrial chromosome.
                                    Default: ['chrM', 'chrMT', 'M', 'MT', 'Mito']
 
-Advanced atac-correct arguments (no need to touch):
+Advanced options (defaults are suitable for most analyses):
   --k_flank <int>                  Flank +/- of cutsite to estimate bias from (default:
                                    12)
   --read_shift <int> <int>         Read shift for forward and reverse reads (default: 4
@@ -1320,7 +1326,7 @@ Replace `SPIB CEBPB` with motifs present in your motif results.
 - `{project}/reports/plot_aggregate.html` — default project-layout interactive aggregate report with motif-centered signal profiles.
 - the exact `--output` path — static PDF/PNG/SVG or interactive HTML in custom layout.
 - the exact `--output-txt` path — optional per-position aggregate values.
-- the exact `--output-aggregated-signals`, `--output-aggregated-scores`, and `--output-aggregated-stats` paths — optional source tables when requested.
+- the exact `--output_aggregated_signals`, `--output_aggregated_scores`, and `--output_aggregated_stats` paths — optional source tables when requested.
 - the exact `--output` path in `--motif-grid` mode — multipage motif-by-comparison PDF built from a review bundle.
 
 When both signal types are available, use footprint score bigWigs for motif
@@ -1417,7 +1423,7 @@ Plot arguments:
   --title                               Title of plot (default: "Aggregated signals")
   --format {auto,pdf,html}              Output format for --output. auto uses the output
                                         file extension (default: auto)
-  --flank                               Flanking basepairs (+/-) to show in plot (counted
+  --flank                               Flanking base pairs (+/-) to show in plot (counted
                                         from middle of the TFBS) (default: 60)
   --motifs [<motif> ...]                Motif prefixes, names, or IDs to plot from
                                         --match-dir
@@ -1445,7 +1451,7 @@ Plot arguments:
   --share-y                             Share y-axis range across plots
                                         (none/signals/sites/both). Use "--share-y signals"
                                         if bigwig signals have similar ranges. Use "--
-                                        share_y sites" if sites per bigwig are comparable,
+                                        share-y sites" if sites per bigwig are comparable,
                                         but bigwigs themselves aren't comparable (default:
                                         none)
   --normalize                           Normalize the aggregate signal(s) to be between
@@ -1460,7 +1466,7 @@ Plot arguments:
                                         contains repeated condition names
   --negate                              Negate overlap with regions
   --smooth <int>                        Smooth output signal by taking the mean of
-                                        <smooth> bp windows (default: 1 (no smooth)
+                                        <smooth> bp windows (default: 1; no smoothing)
   --log-transform                       Log transform the signals before aggregation
   --plot-boundaries                     Plot TFBS boundaries (Note: estimated from first
                                         region in each --TFBS)
@@ -2109,7 +2115,7 @@ binding calls for every cell.
 **Example command**
 
 ```bash
-find-signature-fp --annotations cell_annotations.tsv --fragments pbmc_fragments.tsv.gz --h5ad pbmc_embedding.h5ad \
+find-signature-fp --annotations cell_annotations.tsv --fragments pbmc_fragments.tsv.gz --h5ad genomic_bin_counts.h5ad \
   --all-motif-diff-dir project/pseudobulk/diff_footprints \
   --all-motif-results project/pseudobulk/diff_footprints/pseudobulk_diff_footprints_results.txt \
   --outdir project/pseudobulk/signature_fp
@@ -2199,8 +2205,9 @@ options:
   --fragments FRAGMENTS
                         10x-style fragments TSV/TSV.GZ used to count cut sites
                         around motif centers.
-  --h5ad H5AD           AnnData file containing the single-cell embedding used
-                        for KNN smoothing.
+  --h5ad H5AD           AnnData with matching cell barcodes, genomic-bin
+                        counts, and boolean var['selected']; optional
+                        embeddings support nearest-neighbor smoothing.
   --tf-site-dir TF_SITE_DIR
                         Optional directory containing marker motif-site BED
                         files named by TF. When omitted, marker sites are
@@ -2289,7 +2296,7 @@ footprint signatures back to individual cells.
 **Example command**
 
 ```bash
-sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations.tsv --h5ad cell_embedding.h5ad \
+sc-footprinting --fragments pbmc_fragments.tsv.gz --annotations cell_annotations.tsv --h5ad genomic_bin_counts.h5ad \
   --group-by cell_type --genome-sizes hg38.chrom.sizes --genome hg38.fa.gz --peaks merged_peaks.bed \
   --motif-db jaspar2026_vertebrates --outdir project/pseudobulk
 ```
@@ -2460,8 +2467,9 @@ options:
   --plot-script PLOT_SCRIPT
                         Plotting script path for optional aggregate plots.
   --h5ad SINGLE_CELL_SIGNATURE_H5AD, --single-cell-signature-h5ad SINGLE_CELL_SIGNATURE_H5AD
-                        AnnData file containing the cell embedding used for
-                        KNN footprint-signature smoothing.
+                        AnnData with matching cell barcodes, genomic-bin
+                        counts, and boolean var['selected']; an embedding
+                        alone is insufficient.
   --single-cell-signature-outdir SINGLE_CELL_SIGNATURE_OUTDIR
                         Output directory for optional per-cell signature
                         reports (default:

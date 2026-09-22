@@ -139,7 +139,7 @@ class DocsEntryPointContractTest(unittest.TestCase):
         top_level = re.findall(r"^  - ([^:]+):", nav, flags=re.MULTILINE)
         self.assertEqual(
             top_level,
-            ["Get Started", "Output Demo", "GUI Demo", "API Reference"],
+            ["Get Started", "Output Demo", "GUI Demo", "Command reference"],
         )
         for required in [
             "Home: index.md",

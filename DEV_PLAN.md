@@ -20,6 +20,18 @@ binding in examples. Corrections and the complete PBMC tutorial are undergoing
 release validation; no native desktop or public-release result is claimed here
 until those checks complete.
 
+Corrected all three aggregate CSV export flags and the shared-axis help, fixed
+reference copy errors, and clarified count AnnData requirements without changing
+accepted options. README and both package summaries now describe user tasks;
+the logo uses an absolute public URL. Installation adds checksum and shell
+instructions, isolated environments, printed GUI URLs, and release-pinned
+loopback Docker examples. Navigation is now “Command reference”, with stable
+URLs and a practical glossary. The browser audit's navigation expectation was
+updated with the label. Local verification: 30 focused documentation/helper
+tests passed; the full suite passed 633 tests with one skip and 26 warnings
+in 265.83 seconds. Console-script smoke checks, YAML dry-run and pip check
+passed. Strict MkDocs passed; the updated browser audit is still running.
+
 ### v0.2.7 release verification
 
 Version metadata, desktop metadata, managed-runtime archive names, and example

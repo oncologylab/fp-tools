@@ -80,7 +80,7 @@ def main() -> int:
         "  - navigation",
         "---",
         "",
-        "# API Reference",
+        "# Command reference",
         "",
         "Choose a command below to see when to use it, how to prepare its inputs, an example run, and the files it writes. The complete options follow each guide and are also available with `<command> --help`.",
         "",

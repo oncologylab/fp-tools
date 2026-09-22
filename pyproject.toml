@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fp-tools-bio"
 version = "0.2.7"
-description = "Standalone footprint tools with vendored Cython internals"
+description = "ATAC-seq footprinting, motif analysis, and interactive reports for bulk and single-cell data."
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Yaoxiang Li" }]
@@ -149,7 +149,7 @@ environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
 [tool.poetry]
 name = "fp-tools-bio"
 version = "0.2.7"
-description = "Standalone footprint tools with vendored Cython internals"
+description = "ATAC-seq footprinting, motif analysis, and interactive reports for bulk and single-cell data."
 authors = ["Yaoxiang Li"]
 readme = "README.md"
 packages = [{ include = "fp_tools", from = "src" }]

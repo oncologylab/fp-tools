@@ -705,7 +705,7 @@ def audit(site_dir: Path) -> None:
                                     f"{label}: repository controls are not right-aligned"
                                 )
                         expected_tab = (
-                            "API Reference"
+                            "Command reference"
                             if relative == "api/"
                             else "GUI Demo"
                             if relative == "gui/"

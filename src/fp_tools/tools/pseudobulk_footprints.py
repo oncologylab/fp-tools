@@ -516,7 +516,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--tfs", default="auto", help="Comma-separated TFs or 'auto' for plotting (default: auto).")
     parser.add_argument("--plot-flank", type=int, default=100, help="Flank for optional aggregate plots (default: 100).")
     parser.add_argument("--plot-script", default="manuscript/scripts/plot_pseudobulk_tf_aggregates.py", help="Plotting script path for optional aggregate plots.")
-    parser.add_argument("--h5ad", "--single-cell-signature-h5ad", dest="single_cell_signature_h5ad", required=True, help="AnnData file containing the cell embedding used for KNN footprint-signature smoothing.")
+    parser.add_argument("--h5ad", "--single-cell-signature-h5ad", dest="single_cell_signature_h5ad", required=True, help="AnnData with matching cell barcodes, genomic-bin counts, and boolean var['selected']; an embedding alone is insufficient.")
     parser.add_argument("--single-cell-signature-outdir", help="Output directory for optional per-cell signature reports (default: <outdir>/plots/single_cell_footprinting).")
     parser.add_argument("--single-cell-signature-markers", default="STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3", help="Comma-separated marker TFs for optional per-cell signature UMAPs (default: STAT6,FOSB,CEBPA,IRF8,RELA,ZNF683,NR4A1,SMAD3).")
     parser.add_argument("--single-cell-signature-fig-prefix", default="single_cell_footprinting", help="Output prefix for the combined single-cell footprint-signature SVG (default: single_cell_footprinting).")

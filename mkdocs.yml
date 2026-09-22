@@ -73,7 +73,7 @@ nav:
           - Region-set comparison: get-started/output-examples/region-set-comparison.md
   - Output Demo: reports.md
   - GUI Demo: gui.md
-  - API Reference: api.md
+  - Command reference: api.md
 
 markdown_extensions:
   - admonition
