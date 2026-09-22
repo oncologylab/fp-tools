@@ -4,6 +4,29 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Tuning sensitivity verified:** all 378 comparisons are complete with
+independent result verification. Parametric trained geometry versus DWM
+conventional scoring improves pooled CTCF AUROC by 0.04463 in HepG2 and 0.04887
+in K562, but the K562 three-block descriptive interval crosses zero
+[-0.04622, 0.06801]. K562 chr16 has only six positives and shows a loss; it
+remains in the analysis. HepG2 gains are positive on all three chromosomes.
+This does not establish calibrated uncertainty or a general footprint
+improvement. See `benchmarks/SHAPE_CHROMOSOME_SENSITIVITY_20260922.md`.
+
+**Corrected 96-run execution completed:** the supervised reassessment exited
+0 after 5,738.28 s. Independent full input/output verification is running as
+child PID 584758 (supervisor 584757); no final corrected scientific comparison
+is claimed before that check finishes. Verification specification SHA-256:
+`c86e2fbf5110b4814f6cfe320a4d11e48a373202147f0e16c1cce46db3af2515`.
+
+**Tuning chromosome sensitivity:** a new research-only helper preserves all
+189 metric rows against two explicit baselines, enumerates all 27 ordered
+three-chromosome resamples, and records missing-class draws without dropping
+them. Five focused tests passed (1.95 s). Configuration is frozen at
+`69027a08d0d7892e394fdbf4abce0930052d3af4f6cf870d198bdba34fbba2d2`;
+execution is supervised. This is post-hoc tuning sensitivity, not calibrated
+uncertainty, model selection, or untouched promotion evidence.
+
 **Exact spline operator fails the control screen:** all 126 ledger rows are
 complete and independently verified. Of 22 fitted operator rows, six pass
 only the previously examined replicate-2 FPR screen; 104 missing-model rows

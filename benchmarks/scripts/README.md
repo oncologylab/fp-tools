@@ -1218,3 +1218,14 @@ Absolute false-positive rates include candidate-valid sites separately from
 positive-count sites; relative rates use comparable baseline support only.
 This is a previously examined replicate-2 false-positive-rate screen, not
 complete safety, calibrated uncertainty, or untouched promotion evidence.
+
+`audit_shape_chromosome_sensitivity.py` diagnoses the fixed-model tuning
+comparisons without selecting a candidate. Run with `--data-root`, a fresh
+`--outdir`, and `--freeze-only`; then run without a mode flag and finish with
+`--verify-only`. It retains all 189 task/correction/detector rows against both
+the same-correction conventional detector and the DWM conventional detector.
+The output includes separate chromosome effects and all 27 ordered resamples
+of chr16–18. Three chromosomes give weak uncertainty information: these
+descriptive intervals are not calibrated functional uncertainty or the
+principal promotion interval. Missing-class draws remain explicit and make
+the corresponding interval unavailable.
