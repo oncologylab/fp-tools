@@ -4,6 +4,17 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**All-site control reference constructed but overlap qualification failed:**
+all 4,200 observed profiles match corrected BAM extraction; positive expected
+coverage increases from 269 to 2,892 windows. Three old positive windows
+(two CTCF, one FOXA1) change expected shape where merged output regions change
+the ten-base correction-window phase. Eight tests passed in 1.91 s; model
+count arrays are unchanged. Do not rescreen using the unqualified reference.
+See `benchmarks/ALL_SITE_CONTROL_REFERENCE_20260922.md`. Next freeze a
+historical-region-only rerun with the same model, implementation and disabled
+global scaling to isolate region-layout effects. Preserve all failed
+operators, thresholds and prior references. No promotion gate is passed.
+
 **Negative-control DWM scope limitation verified:** all 17,311 expected-track
 bases fall within historical CTCF regions plus/minus 100. Of 4,200 control
 windows, 3,931 have no track entries; positive expectation exists in 267 CTCF
