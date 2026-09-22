@@ -4,6 +4,37 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Radius comparison completed and reviewed:** all 126 metric rows independently
+recomputed, all 21 aggregate panels visually checked, all 3,949 original pairs
+retained. Radius 500 shows promising training discrimination and canonical
+point contrasts for HepG2 ZNF362/ZNF384 and K562 ZNF384. It is not promotion
+evidence: broader accessibility remains unaudited, functional-separation gains
+are below 25%, multiple difficult families are not established, and safety/
+uncertainty/stability/resource gates remain open. CTCF remains below the earlier
+conditional parametric comparator. The 100-radius implementation's maximum
+score difference is 1.547e-13 with no changed AUROC/AUPRC. Next freeze a
+training-only broad-accessibility and uniform-sequence comparator audit before
+candidate selection. See `benchmarks/RADIUS_TRAINING_COMPARISON_20260922.md`.
+
+**Wider extraction and independent audit complete:** both cells finished
+in 641.24 s; separate extraction and audit verification passed. All 126
+diagnostic rows were independently recomputed. Empty strand backgrounds
+decrease markedly with wider flanks, but CTCF left/right rate disagreement
+persists. This is label-free training evidence, not better discrimination or
+uncertainty calibration. Exact results and hashes are in
+`benchmarks/WIDE_BACKGROUND_DIAGNOSTIC_20260922.md`.
+
+**Historical fixed-radius comparison launch (now verified above):** the runner preserves the
+three reference arms and compares radii 100/200/500 on complete matched pairs,
+with fixed dispersion and geometry. It checks archived site hashes, observed
+counts, motif/count balance and numeric/rank parity against the earlier
+100-radius result. Fifteen relevant tests passed in 2.72 s, including a full
+synthetic 21-task, 126-row execution. Configuration SHA-256 is
+`c448b0a18ef1e4ce092eebdd4d6fe9a5861a5f389f13bdddc92c7f4c6db68beb`.
+Execution evidence is under
+`benchmarks/results/radius_training_jobs_20260922/execute_attempt1/`.
+No scientific completion or candidate selection is implied by launch.
+
 **Fixed-radius scoring primitive ready:** `radius_background.py` implements
 the same half-count background model at prespecified outer radii 100, 200 and
 500 with prefix sums. The fixed deviance dispersion and detector geometry
