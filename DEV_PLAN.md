@@ -4,6 +4,25 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Low-count normalization diagnostic complete:** all 4,200 replicate-1 control
+sites are on training chromosomes; the membership ledger retains 35 blacklist
+overlaps, 1,569 zero-count sites and 200 unavailable-model sites (categories
+overlap). Existing thresholds evaluate 2,497 informative eligible sites per
+available arm. Conditional parametric scores exceed threshold at 100 sites;
+CTCF contributes 12/120 HepG2 and 14/123 K562, and K562 MEF2D 11/134.
+No informative parametric profile uses the zero-variation fallback; minimum
+scale is 0.034, far above 1e-8. Called profiles have median normalization
+multiplier 13.61 versus 4.35 for noncalled profiles. This is a descriptive
+association, not proof of causality or a safety pass. Nine focused tests passed
+in 2.23 s; independent least-squares verification checked all 24,612 rows,
+scores and threshold decisions, plus equivalent expected-profile construction.
+See `benchmarks/LOW_COUNT_NORMALIZATION_20260922.md`. Next freeze a training-only
+comparison of a fixed unit scale floor against current normalization, using
+the same chromosome cross-fitting, matching, geometry and protection rule.
+Do not tune floors per task or against replicate 2, and do not change existing
+models/thresholds. This tests a concrete non-amplifying candidate; it does not
+relax any scientific, safety or full-workflow resource gate.
+
 **Blacklist and output-layout effects separated:** the all-site blacklist
 intervention leaves every eligible observed profile and expected shape
 unchanged, removes signal at 12 blacklisted sites, and retains 2,880 positive
