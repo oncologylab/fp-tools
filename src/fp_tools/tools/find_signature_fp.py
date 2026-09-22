@@ -287,10 +287,12 @@ def add_cut(profiles: np.ndarray, cell_index: int, chrom: str, position: int, mu
 
 
 def ensure_tabix_index(fragments: Path, create_index: bool) -> bool:
+    if pysam is None:
+        return False
     index_path = Path(str(fragments) + ".tbi")
     if index_path.exists():
         return True
-    if not create_index or pysam is None:
+    if not create_index:
         return False
     pysam.tabix_index(str(fragments), preset="bed", force=True, keep_original=True)
     return index_path.exists()

@@ -47,7 +47,7 @@ def main():
             else:
                 assert "genomic-bin counts" in help_text and "selected" in help_text
         subprocess.run([executable, "--fp-tools-internal-command", "run-yaml-workflow",
-                        "--config", "workflow.yml"], cwd=demo, check=True, timeout=1800)
+                        "--config", "workflow.yml"], cwd=demo, check=True, timeout=3600)
         with (demo / "results/pseudobulk_footprint_manifest.tsv").open() as handle:
             rows = list(csv.DictReader(handle, delimiter="\t"))
         assert len(rows) == 3 and all(row["status"] == "succeeded" for row in rows), rows

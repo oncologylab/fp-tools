@@ -4,6 +4,45 @@ Last updated: 2026-09-21
 
 ## Current Baseline
 
+### v0.2.8 public artifact verification
+
+Release tag v0.2.8 points to `ffcd12b`. All ten release CI jobs passed
+(35673993554), as did the follow-up documentation CI (35674786846).
+Desktop bundles (35674757902), managed runtimes (35674757819), both containers
+(35674757979), and all wheel/source builds and PyPI publication (35674767091)
+passed. The managed-runtime checks include a real Windows WSL2 import.
+
+All 14 GitHub binary/archive downloads and all 16 PyPI files matched their
+published SHA-256 digests. A fresh PyPI 0.2.8 installation passed console-script
+smoke checks, pip check, and 49 focused tests with 51 passing subtests.
+The corrected description and absolute logo URL are present in PyPI metadata;
+the public SVG renders at 1400 by 360 pixels. Direct inspection of the PyPI
+HTML page was blocked by Fastly's CAPTCHA, so its final visual rendering is
+not certified by this audit.
+
+The full PBMC preparation recipe also ran successfully in a separate output
+folder, reproducing the source annotation checksum and all 4,437 cells. Its
+documented preparation environment uses the tested Python/package versions.
+Final documentation checks passed 31 focused tests, strict MkDocs, and the
+33-page browser audit at three viewport sizes. The final source edits link
+the checksum-verified 0.2.8 desktop downloads and give exact commands for the
+supplied ENCODE tables. These documentation follow-ups do not alter the
+released package's scientific implementations.
+
+Public-download discovery passed on Windows and macOS. In release-consumer
+run 35675895339, the real PBMC tutorial passed on macOS (1150 seconds, three
+cores), but exposed a Windows bug after the group-level analysis completed:
+an existing fragment `.tbi` selected `pysam.TabixFile` even when pysam was
+unavailable. The source fix checks library availability before considering the
+index, retaining the sequential reader and existing cut-count behavior.
+Two indexed-input regressions failed before the fix; all four combinations of
+index presence and creation preference now pass. The focused signature/motif
+suite passed 30 tests. The frozen Windows fixture now includes an unused index
+sidecar to catch this before publication. The real-data consumer deadline was
+extended to an hour because Windows needed 1570 seconds before reaching the
+per-cell stage; all analysis and output checks remain enabled. A corrective
+patch release is required; existing v0.2.8 artifacts will not be replaced.
+
 ### September 21 documentation review
 
 The ENCODE download helper now checks dependencies before creating directories
@@ -16,9 +55,8 @@ two range-rejection codes, corruption, and the macOS checksum fallback.
 
 The review also confirmed incorrect aggregate export option spellings,
 incomplete AnnData help, a relative PyPI logo URL, and unsafe local Docker port
-binding in examples. Corrections and the complete PBMC tutorial are undergoing
-release validation; no native desktop or public-release result is claimed here
-until those checks complete.
+binding in examples. The corrections and complete PBMC tutorial have separate
+source, native-desktop and public-release validation results recorded above.
 
 Corrected all three aggregate CSV export flags and the shared-axis help, fixed
 reference copy errors, and clarified count AnnData requirements without changing
@@ -55,8 +93,9 @@ agree on 0.2.8. The 34 release-metadata/runtime tests passed. The source
 distribution built successfully and passed twine validation; its metadata has
 the new description and public logo URL, and archive inspection found no
 manuscript, downloaded public datasets or transient agent files. Public
-download links remain on the verified 0.2.7 desktop assets until 0.2.8 assets
-are available and checked. Research and published manuscript files are untouched.
+download links remained on the verified 0.2.7 desktop assets until 0.2.8 assets
+became available and passed checksum verification. Research and published
+manuscript files are untouched.
 
 Release commit `ffcd12b` passed all ten CI jobs (run 35673993554) and the Docs
 build/deployment (35673993588). CI Linux reported 614 passed, 16 skipped and
@@ -66,7 +105,7 @@ Bash-helper tests skip on Windows because that helper targets Linux/macOS.
 Tag v0.2.8 points to this verified package commit. The follow-up documentation
 change preserves the original `#api-reference` anchor and spells out tutorial
 checksum commands for each shell; 25 focused documentation tests and strict
-MkDocs passed after that change. Native release validation is pending.
+MkDocs passed after that change. Native release validation is recorded above.
 
 ### v0.2.7 release verification
 

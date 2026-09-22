@@ -82,6 +82,10 @@ def write_signature_fixture(root: Path) -> dict[str, Path]:
             fragment_lines.append(f"chr1\t{start}\t{end}\t{barcode}\t1")
     fragments_path = root / "fragments.tsv"
     fragments_path.write_text("\n".join(fragment_lines) + "\n", encoding="utf-8")
+    if os.name == "nt":
+        # Windows bundles intentionally use the sequential fragment reader.
+        # Even an unreadable sidecar must not select the unavailable pysam path.
+        Path(str(fragments_path) + ".tbi").write_bytes(b"unused index sentinel")
 
     score_rows = []
     score_patterns = {
