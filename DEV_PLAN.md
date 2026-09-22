@@ -17,7 +17,13 @@ negatives and the original rule. Both analyses are mandatory, with the latter
 designated the primary development screen before outcomes are known.
 Zero baseline expectation, profile disagreements and changed denominators
 must remain explicit. This protocol is not an execution freeze or safety
-result; the new input builder and scorer are still required.
+result. `benchmarks/scripts/rebuild_corrected_safety_profiles.py` now provides
+separate freeze, extraction and verification stages for the four archived
+development/control inputs. It preserves site order, strand orientation,
+original validity and fresh validity separately, and refuses changed inputs
+or incomplete output reuse. Five focused tests passed, including invalid
+sequence rows and corruption detection. The real input freeze/extraction and
+corrected safety scorer remain outstanding.
 
 **Current execution, September 22:** the corrected-count freeze completed
 successfully (exit 0; 761.65 seconds), with configuration SHA-256
