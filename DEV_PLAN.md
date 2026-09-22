@@ -4,6 +4,17 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Full-pool seven-arm comparison verified and reviewed:** all 147 task/method
+rows retained; 140 score/curve rows independently checked against saved panels
+and seven unavailable rows confirmed. All 21 aggregate panels visually checked.
+Radius 500 retains HepG2 ZNF362/ZNF384 AUROC gains of 0.0731/0.0612, but K562
+ZNF384 gains only 0.0170. Their functional-separation gains are 5.20%, 6.25%
+and 1.53%, far below 25%. Do not advance the unchanged policy to untouched
+promotion labels. Eight tests passed in 2.45 s; separate artifact verification
+passed. Exact evidence is in `benchmarks/RADIUS_FULL_POOL_COMPARISON_20260922.md`.
+Next freeze chromosome-block uncertainty diagnostics for balanced training
+scores and signed shape; they cannot substitute for untouched validation.
+
 **Direct three-covariate cohorts complete and verified:** matching the complete
 supported training pool restores 4,053 balanced pairs and ten powered tasks.
 HepG2/K562 CTCF retain 300/245 pairs, HepG2 ZNF362 291, and HepG2/K562 ZNF384
