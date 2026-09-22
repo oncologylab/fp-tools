@@ -1258,3 +1258,10 @@ discrimination scores, fits no model, and reads no control or holdout labels.
 Its arrays are in genomic orientation; downstream motif-oriented analysis
 must explicitly orient both strands. Earlier conditional-profile evidence
 does not establish the performance or safety of this new operator.
+
+After profile verification, `summarize_global_training_coverage.py` uses the
+same `--data-root` and a fresh `--outdir`, with `--freeze-only`, execution,
+and `--verify-only`. It independently reconstructs position validity and
+reports all 21 tasks, fixed-geometry support, full-profile support, and
+overlapping reasons for missing background. It reads no labels and evaluates
+no scores. Coverage counts alone do not establish matched-class power.

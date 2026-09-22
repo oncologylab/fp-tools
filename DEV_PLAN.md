@@ -4,6 +4,17 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Global training parity verified; coverage remains limiting:** both cells
+completed with zero observed/expected/validity overlap conflicts and matching
+scalar/halo checks. Independent profile and coverage verification passed.
+Conventional scoring support is 6,453/20,019 HepG2 and 5,248/14,987 K562 sites;
+complete 201-position support is only 3,861 and 3,246. Central exclusions are
+empty strand-specific backgrounds, not missing sequence. All 21 tasks remain
+explicit. No labels or real discrimination scores were evaluated. Preserve
+these exclusions and freeze any revised low-count model separately; do not
+reuse prior safety/accuracy claims. Exact evidence is in
+`benchmarks/GLOBAL_PARAMETRIC_TRAINING_PARITY_20260922.md`.
+
 **Global scoring primitive tested:** `global_parametric_scoring.py` converts
 genomic expectations directly to signed-deviance residuals and the existing
 conventional geometry, without window-total rescaling. A 140-base-pair halo
