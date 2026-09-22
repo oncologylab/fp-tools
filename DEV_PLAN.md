@@ -173,6 +173,24 @@ remain unchanged, and no model was retuned. The new audit report records input,
 code and result hashes and the requirements for a separately frozen corrected
 reassessment. Runtime measurement must use the corrected reader.
 
+### Fixed-candidate corrected-count reassessment
+
+`reassess_corrected_strand_counts.py` freezes a new 96-run computation using
+the original matrix, exact site/label order, complete matched pairs, model
+propensities, dispersions, scoring geometry and bootstrap settings. Both cells'
+contexts are frozen before corrected extraction. Every BAM is re-extracted;
+no archived observed counts are reused. Existing valid DWM expectations are
+reused with verified coordinate order. New outputs live separately from the
+historical experiment and retain explicit post-hoc/non-promotion status.
+
+Fifty-one focused reassessment, extraction and stability tests passed in
+28.70 seconds. Fixtures cover all 96 runs, verification without recomputation,
+corrupted output rejection, preserved incomplete artifacts, changed settings
+and matrix rejection, and prohibitions on retuning, holdout reads and old-count
+reuse. The new runner requires a configuration freeze before execution and
+binds resumed stages to their configuration, run identity and checksums.
+It does not establish a new method or close the independent-control gates.
+
 ## Current Baseline
 
 fp-tools is a command-first Python 3.11–3.13 package for bulk and pseudobulk

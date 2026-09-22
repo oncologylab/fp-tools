@@ -1113,3 +1113,26 @@ python benchmarks/scripts/audit_strand_extraction.py \
 The source registry is checksum-pinned to the completed 96-run configuration.
 The script rejects changed inputs/code/runtime and an existing completed audit.
 It is a correctness diagnostic, not a new evaluation or promotion result.
+
+The fixed-candidate reassessment of all 96 archived development runs uses
+`reassess_corrected_strand_counts.py`. Use a new research output directory;
+never point it at the historical experiment. Freeze before running:
+
+```bash
+export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+python benchmarks/scripts/reassess_corrected_strand_counts.py \
+  --data-root /path/to/original-data-checkout \
+  --outdir benchmarks/results/corrected_count_reassessment_local --freeze-only
+python benchmarks/scripts/reassess_corrected_strand_counts.py \
+  --data-root /path/to/original-data-checkout \
+  --outdir benchmarks/results/corrected_count_reassessment_local
+```
+
+Append `--verify-only` to verify all corrected inputs and completed outputs
+without extraction or scoring. The original candidate settings and cohorts
+cannot change. Observed counts are freshly extracted; existing DWM expectations
+and label-free sequence propensities retain their checked identities. Completed
+stages are verified and reused; incomplete files are preserved and rejected.
+The new five summary tables record metrics, shape, coverage, profiles and
+bootstrap intervals. These are post-hoc implementation-reassessment results,
+not untouched validation or authority to tune on examined chromosomes.
