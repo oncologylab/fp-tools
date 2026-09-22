@@ -13,9 +13,18 @@ support checks, calibration order-statistic checks, and independent CIGAR/pair
 fixtures passed. All 21 tasks remain in the ledger. The original 8,106-site
 replay is explicitly nonnested; a separately frozen training-chromosome
 matching procedure retained 6,020 held sites. New fragment accounting and
-same-source depth arrays are running with durable receipts. These engineering
-checks and launched jobs are not scientific qualification. The final evidence
-package and independent scientific verification are still outstanding.
+same-source depth arrays completed for all six chromatin libraries and the
+replicate-1 naked-DNA control. All twelve initial 10M/full scoring endpoints
+completed. Eleven focused regression tests passed in 3.213 s. Independent
+summary checks reproduced 3,528 control-rate rows, 420 shape rows (maximum
+absolute error 1.88e-13), and 147 full-screen task/comparator records.
+On 20 available tasks, both shrinkage candidates lose ranking performance
+against the existing LOG21 count-tail detector at full depth; the original
+21-task denominator and missing HMGA1 remain explicit. Do not advance the
+expensive depth/seed or resource matrices. Native full-depth DWM residual and
+strand qualification, functional uncertainty, and final controls remain
+incomplete or untested. Fragment-sharing inventories, final packaging and
+fresh-extraction verification are still outstanding.
 
 For this round, SK-N-SH/GM23338 labels and final naked-DNA replicate 3 stay
 closed regardless of development results. No main, release, or manuscript
