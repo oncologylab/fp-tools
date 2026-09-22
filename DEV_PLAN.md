@@ -4,6 +4,18 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Exact spline operator fails the control screen:** all 126 ledger rows are
+complete and independently verified. Of 22 fitted operator rows, six pass
+only the previously examined replicate-2 FPR screen; 104 missing-model rows
+remain explicit. Parametric CTCF splines call 5/122 HepG2 and 5/115 K562
+informative control sites, with Wilson upper bounds 9.24% and 9.78% and paired
+increases above one percentage point. Their tuning gains therefore do not
+establish a safe improvement. Trained CTCF geometries pass this narrow screen;
+no difficult-family rescue or promotion is established. Preserve all models
+and thresholds without control-driven retuning or retrospective selection.
+See `benchmarks/FIXED_SHAPE_OPERATOR_SCREEN_20260922.md` for exact hashes,
+support, validation, and limitations. Main remains clean at `636db5f`.
+
 **Fixed-operator screen implemented:** `screen_fixed_shape_operators.py`
 preserves all 126 task/operator rows, excludes missing expected coverage from
 calibration, and freezes thresholds before the previously examined replicate-2
