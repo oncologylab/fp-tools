@@ -4,6 +4,19 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Radius accessibility/control audit complete:** all original pairs and tasks
+retained. Counts at offsets 101–500 are imbalanced for CTCF (SMD −0.746/−0.522)
+and ZNF384 (−0.210/−0.225), despite balanced central counts. The parametric
+radius-500 arm still exceeds its uniform-sequence control by AUROC 0.0397
+for HepG2 ZNF362, 0.0567 for HepG2 ZNF384 and 0.0470 for K562 ZNF384.
+This does not eliminate broader-accessibility confounding. Seven relevant
+tests passed; separate artifact verification and independent recomputation
+of 105 associations, 21 metrics and 735 correlations passed. No candidate
+selection, rematching or holdout evaluation occurred. Next freeze a secondary
+broad-count-balanced analysis, selecting pairs only by covariates, retaining
+the primary evidence and reporting lost power. Exact evidence is in
+`benchmarks/RADIUS_ACCESSIBILITY_AUDIT_20260922.md`.
+
 **Radius comparison completed and reviewed:** all 126 metric rows independently
 recomputed, all 21 aggregate panels visually checked, all 3,949 original pairs
 retained. Radius 500 shows promising training discrimination and canonical

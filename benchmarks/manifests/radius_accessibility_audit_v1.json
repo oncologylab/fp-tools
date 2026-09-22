@@ -1,0 +1,22 @@
+{
+  "schema": "fp-tools-radius-accessibility-audit-v1",
+  "evidence": "training_only_diagnostic",
+  "source": "completed radius_training_comparison_20260922_v1; unchanged matched sites",
+  "features": ["central_201", "outer_50_100", "outer_50_200", "outer_50_500", "outer_101_500"],
+  "feature_transform_for_balance_and_correlation": "log1p total plus and minus observed counts",
+  "label_diagnostics": ["standardized mean difference", "AUROC for increasing counts", "AUROC for decreasing counts"],
+  "score_diagnostics": "Spearman correlation with each frozen scoring arm; constant vectors reported unavailable",
+  "uniform_comparator": "radius 500; log-bias tracks fixed to zero; identical half-count prior, per-strand background, fixed deviance dispersion and detector geometry",
+  "uniform_shape": "same fixed normalization fallback 1; report center, both shoulders, canonical sign and standardized functional separation",
+  "common_support": "exact retained sites in previous comparison; no rematching or exclusions",
+  "task_denominator": 21,
+  "minimum_pairs_for_power_label": 200,
+  "candidate_selection": false,
+  "refitting": false,
+  "tuning_evaluation": false,
+  "test_evaluation": false,
+  "holdout_evaluation": false,
+  "control_evaluation": false,
+  "promotion_eligible": false,
+  "interpretation": "Associations do not establish causal confounding or overcorrection; uniform exposure is a control for the contribution of sequence correction to the spatial baseline."
+}
