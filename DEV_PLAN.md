@@ -4,6 +4,26 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
+**Balanced cohort v3 verified:** a covariate-only rule takes the largest
+balanced prefix of v2 pairs ordered by distance and then pair ID. This keeps
+the 0.5 caliper, 0.1 balance bound, 200-per-class requirement, original expected
+support and paired memberships. It is not a global optimal balanced-subset
+claim and does not inspect any footprint score. Twenty-four related focused
+tests passed in 1.52 seconds. The real execution exited 0 in 5.73 seconds and
+independent verification passed. Freeze SHA-256:
+`3295079e67d0681e8f8d9b4d2e25e85099bebaac2679f58020834eb5b903db46`.
+Output: `benchmarks/results/corrected_shape_cohorts_20260922_v3/`; manifest
+SHA-256 `9b19e5644b4c7cb60ee2d5477b156e927953a60810a0e87f236cd5ce19a568b3`.
+
+Seventeen of 42 task/split rows are eligible and 25 underpowered. Seven tasks
+have both eligible training and tuning cohorts: HepG2 ARID3A, CTCF, FOXA1,
+ZNF362, ZNF384; K562 CTCF and ZNF384. CTCF train/tune pairs are 299/358 in
+HepG2 and 280/253 in K562; ZNF384 pairs are 298/270 and 241/231. All other
+tasks remain in the denominator. These are replicate-1, 10M, seed-2026
+development cohorts only. Next freeze and fit detector artifacts on training
+chromosomes, then evaluate tuning profiles without refitting. No candidate
+performance, protection improvement, safety or resource pass is established.
+
 **Caliper assignment diagnosis:** exhaustive synthetic checks show that forcing
 a full minimum-cost assignment before filtering can discard every valid pair.
 The new constrained matcher maximizes in-caliper cardinality, then minimizes
