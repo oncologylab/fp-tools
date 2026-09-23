@@ -55,6 +55,15 @@ record the unavailable 21st task. Stepwise precision–recall averaging avoids
 the area distortion of straight-line interpolation. The supplement changes
 no scientific outputs or archived evidence.
 
+The training/reuse clarification verifies the five frozen member metadata
+records against the 200-base mitochondrial cache records: 65 training and 16
+validation windows per cell, 22,784,008 cut events and 260 strand-window rows.
+These are historical training cut counts, not newly audited complete
+fragments. A revised two-slide explanation distinguishes 21-base input
+context, one-base prediction spacing, fixed detector geometry, shared bias
+coefficients and sample/site-specific inference. Cross-project or protocol
+transfer remains unqualified; no automatic retraining policy is claimed.
+
 For this round, SK-N-SH/GM23338 labels and final naked-DNA replicate 3 stay
 closed regardless of development results. No main, release, or manuscript
 changes are authorized by this investigation.
