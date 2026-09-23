@@ -4,7 +4,7 @@ Last updated: 2026-09-22
 
 ## Next-major-version research goal
 
-**Bounded next-round investigation in progress (isolated research worktree):**
+**Bounded next-round experiments completed; evidence packaging in progress:**
 `benchmarks/scripts/next_round/` implements the requested fixed-geometry,
 zero-centred binomial and beta-binomial shrinkage comparison. The experiment
 policy and permitted input hashes were frozen before new scoring. Independent
@@ -15,7 +15,7 @@ replay is explicitly nonnested; a separately frozen training-chromosome
 matching procedure retained 6,020 held sites. New fragment accounting and
 same-source depth arrays completed for all six chromatin libraries and the
 replicate-1 naked-DNA control. All twelve initial 10M/full scoring endpoints
-completed. Eleven focused regression tests passed in 3.213 s. Independent
+completed. Fifteen focused regression tests passed in 3.183 s. Independent
 summary checks reproduced 3,528 control-rate rows, 420 shape rows (maximum
 absolute error 1.88e-13), and 147 full-screen task/comparator records.
 On 20 available tasks, both shrinkage candidates lose ranking performance
@@ -23,8 +23,23 @@ against the existing LOG21 count-tail detector at full depth; the original
 21-task denominator and missing HMGA1 remain explicit. Do not advance the
 expensive depth/seed or resource matrices. Native full-depth DWM residual and
 strand qualification, functional uncertainty, and final controls remain
-incomplete or untested. Fragment-sharing inventories, final packaging and
-fresh-extraction verification are still outstanding.
+incomplete or untested. All six fragment-sharing inventories completed with
+no shared training windows across fitting/evaluation chromosomes. The portable
+replay reproduced 601,398 score/cohort rows with zero score differences and
+zero call disagreements. A separate control replay reproduced all 60 full-depth
+dispersion/threshold records. Final ZIP assembly and fresh-extraction
+verification are the remaining delivery checks.
+
+The frozen LOG21 bias compared with DWM propensities under the same binomial
+detector gains mean AUROC 0.022675 and relative average precision 2.7036% across
+20 available tasks. This is a development factorial comparison, not a native
+TOBIAS benchmark or the qualified original promotion comparator. Both new
+shrinkage scorers rank below the existing LOG21 count-tail scorer. Actual
+full-depth coverage is imbalanced in all 60 available task/library panels,
+and a covariate-only baseline is discriminative: these rank losses do not prove
+intrinsic biological inferiority. The cohort was not rematched after scoring.
+The two-slide PowerPoint preserves all task results, these qualifications and
+the no-advancement decision. See `benchmarks/NEXT_ROUND_20260922.md`.
 
 For this round, SK-N-SH/GM23338 labels and final naked-DNA replicate 3 stay
 closed regardless of development results. No main, release, or manuscript
