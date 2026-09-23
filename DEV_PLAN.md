@@ -46,6 +46,15 @@ intrinsic biological inferiority. The cohort was not rematched after scoring.
 The two-slide PowerPoint preserves all task results, these qualifications and
 the no-advancement decision. See `benchmarks/NEXT_ROUND_20260922.md`.
 
+A September 23 presentation supplement adds the explicit LOG21 feature and
+likelihood diagram, fixed-region schematic, and receiver operating
+characteristic/precision–recall curves. The four arms share identical held
+sites; 2,520 fold/method metrics reproduce exactly. Curves retain equal
+chromosome/library/task weighting over 20 available tasks and explicitly
+record the unavailable 21st task. Stepwise precision–recall averaging avoids
+the area distortion of straight-line interpolation. The supplement changes
+no scientific outputs or archived evidence.
+
 For this round, SK-N-SH/GM23338 labels and final naked-DNA replicate 3 stay
 closed regardless of development results. No main, release, or manuscript
 changes are authorized by this investigation.
