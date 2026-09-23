@@ -1,10 +1,10 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-22
+Last updated: 2026-09-23
 
 ## Next-major-version research goal
 
-**Bounded next-round experiments completed; evidence packaging in progress:**
+**Bounded next-round experiments and verified evidence delivery completed:**
 `benchmarks/scripts/next_round/` implements the requested fixed-geometry,
 zero-centred binomial and beta-binomial shrinkage comparison. The experiment
 policy and permitted input hashes were frozen before new scoring. Independent
@@ -27,8 +27,13 @@ incomplete or untested. All six fragment-sharing inventories completed with
 no shared training windows across fitting/evaluation chromosomes. The portable
 replay reproduced 601,398 score/cohort rows with zero score differences and
 zero call disagreements. A separate control replay reproduced all 60 full-depth
-dispersion/threshold records. Final ZIP assembly and fresh-extraction
-verification are the remaining delivery checks.
+dispersion/threshold records. The final ZIP was safely extracted into a new
+directory and its bundled read-only verifier exited zero, checking all 1,016
+manifested payloads, all 21 task records, 30,870 method/run/fold records and the
+scientific summaries. The archive contains an editable two-slide PowerPoint
+and visually checked PDF preview. Scientific qualification remains partial;
+no method is promoted. Archive identity and checks are recorded in
+`benchmarks/NEXT_ROUND_20260922.md`.
 
 The frozen LOG21 bias compared with DWM propensities under the same binomial
 detector gains mean AUROC 0.022675 and relative average precision 2.7036% across

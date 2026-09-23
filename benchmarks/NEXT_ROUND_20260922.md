@@ -76,3 +76,29 @@ read-only verification, provenance and preserved failed attempts. The final
 ZIP receipt and fresh-extraction verifier output are stored beside the
 archive. Only Linux/source execution and LibreOffice rendering were tested;
 native Windows/macOS presentation rendering was not tested.
+
+## Final delivery verification — September 23
+
+Archive: `benchmarks/results/fp_tools_next_round_evidence_2026-09-23_97ec5a4.zip`.
+The filename records the implementation commit; this later documentation
+receipt does not change its source or scientific outputs.
+
+- Size: 522,301,298 bytes (498.11 MiB).
+- SHA-256: `236aa5e744611a81d263cd90d52d30ef4ed80ae4d9315c7ef01076dad94cf0b6`.
+- ZIP integrity, single-root paths, duplicate/symlink checks and fresh
+  extraction passed: 1,017 entries including the checksum manifest.
+- From the fresh extraction, `python -B code/verify.py . --figure-check`
+  exited zero and checked all 1,016 manifested payloads, all 21 tasks and
+  30,870 method/run/fold records. All numerical verification results above
+  were reproduced from the packaged arrays and tables.
+- The selected text/gzip payload audit checked 830 files without matching
+  personal-path or credential patterns. The recorded access audit found no
+  prohibited reads within its stated tracing/allowlist scope; it is not
+  whole-host monitoring.
+- Both PowerPoint slides were visually inspected after Linux rendering; the
+  file reopens with 21 task rows and an explicit unavailable HMGA1 entry.
+
+The separate final verifier log is
+`benchmarks/results/next_round_fresh_verifier_v1.log`. Main remains clean at
+`636db5fc8b676759a5fc7587570a6bb5534dcc5c`; the original research checkout remains
+clean at `0569e2f59def36d04c990e0494873ec396c3d3c4`. No remote publication occurred.
