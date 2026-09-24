@@ -13,10 +13,10 @@ from fp_tools.tools.static_comparison_browser import build_static_browser, write
 from fp_tools.tools.plot_aggregate_batch import _ensure_batch_payload, write_html
 
 
-def fixtures(root):
+def fixtures(root, comparisons=5):
     root.mkdir(parents=True, exist_ok=True)
     payloads = []
-    for i in range(5):
+    for i in range(comparisons):
         p = fixture_payload(True)
         p['title'] = f'Axis fixture {i}'
         p['conditions'] = [f'Dose{i}', 'Control']
@@ -30,6 +30,8 @@ def fixtures(root):
             dict(prefix='fail', name='FAIL', motif_id='F', change=.4, pvalue=.001, fdr=.5, neglog10p=3, group='KD_up'),
             dict(prefix='missing', name='MISSING', motif_id='M', change=.7, pvalue=.002, fdr=None, neglog10p=2.7, group='KD_up'),
         ])
+        # The bundle's logo directory must contain its referenced test image.
+        p['logos']['JUN_M1'] = {'png': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAABCAIAAAB2XpiaAAAAFUlEQVR4nGOQbA/hzfv7dT7DHVNXACE6BVdtHw6KAAAAAElFTkSuQmCC'}
         payloads.append(p)
     review = dict(schema='fp-tools.review-multi-comparisons.v1', title='Axis audit',
                   comparisons=[dict(label=f'Dose {i}',payload=p) for i,p in enumerate(payloads)])

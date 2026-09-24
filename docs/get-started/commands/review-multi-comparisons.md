@@ -78,11 +78,18 @@ review-multi-comparisons --inputs baseline/report.html dose1/report.html dose2/r
 Choose **Classic** in the **View** menu for a compact layout with sample styles,
 exports and one selected motif in the left sidebar. Up to eight comparison
 panels appear on the right, with their aggregate plots together underneath.
-The **Plot controls** card sits below the motif logo. Open **Individual plot
-ranges**, select a numbered comparison, and adjust its volcano, waterfall or
-aggregate axes. **Shared scales** controls the group ranges; **Reset** removes
-an individual override. Classic starts with shared aggregate Y scaling and
-independent volcano/waterfall scales. **Top motifs** changes the waterfall count.
+The **Plot controls** card sits below the motif logo. Under **Plot ranges**, set
+**Apply ranges to** to **All** or a comparison name. Use the same sliders or
+minimum/maximum fields to adjust volcano X/Y, waterfall X or aggregate Y limits.
+**All** includes comparisons opened later, and replaces earlier individual
+limits for the axis you edit. Individual limits follow that comparison between
+panels, including duplicate displays. Custom limits stay in effect when you
+change the selected motif or view within the open report.
+
+**Auto scale** fits the chosen axis to the selected comparison, or to every
+comparison when **All** is selected. Classic starts with **All** selected and
+common automatic ranges. Aggregate autoscaling uses the current motif; missing
+profiles are identified and excluded. **Top motifs** changes the waterfall count.
 Use the sidebar's view selector to return to the other layouts.
 
 Open **Plot ranges and display filters** to change the view:

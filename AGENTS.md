@@ -116,6 +116,9 @@ The optional Classic review view preserves the compact sidebar/grid layout.
 Run `python scripts/audit_report_classic.py --output-dir
 benchmarks/results/report_classic_audit` when changing that view; controls must
 remain below the sidebar motif logo and must not mutate report payloads.
+Classic range controls use one All/comparison target selector. All includes
+hidden comparisons and replaces individual overrides for the edited axis;
+individual settings follow comparison identity, including duplicate panels.
 
 ## Coding Style
 

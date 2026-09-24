@@ -2,7 +2,60 @@
 
 Last updated: 2026-09-24
 
-## Optional Classic report view (unreleased)
+## Unified All/comparison ranges in Classic (unreleased)
+
+Classic now has one **Apply ranges to: All / comparison** selector below the
+motif logo. The same sliders and numeric endpoints edit volcano X/Y, waterfall
+X and aggregate Y. All includes every comparison, even those opened later,
+and replacing an All range clears individual exceptions for that axis. An
+individual setting follows comparison identity, including duplicate panels.
+Auto scale fits the selected comparison or the full report; initial ranges
+are common automatic ranges. Custom ranges persist through motif/view changes
+within the open report. Other views retain their existing controls.
+
+Full-report aggregate autoscaling loads the selected motif's hidden profiles
+with bounded, cached requests. Missing profiles are identified and excluded.
+Invalid limits retain the last valid range. SVG exports preserve displayed
+limits and filters. Visual inspection found a waterfall clipping notice too
+close to axis ticks; it now appears in the caption above the bars. Scientific
+payloads and result-table data are unchanged.
+
+The new target-selector regression failed on the previous renderer (value 0
+instead of All). Browser coverage now includes all four manual group ranges,
+hidden-comparison exceptions, duplicate displays, per-comparison and group
+autoscaling, rapid updates, invalid/empty inputs, missing profiles, motif/view
+switching, and exact displayed-plot markup in all applicable SVG exports.
+Nine-comparison fixtures ensure at least one profile is hidden on initial load.
+The stricter browser error check also exposed a missing PNG in the synthetic
+bundle fixture; the fixture now supplies its referenced test image.
+
+Final Linux/source validation: full suite **645 passed, 1 skipped, 26 warnings**
+in 254.36 seconds; focused report subset **60 passed** after the visual fix.
+Classic Playwright audits passed for embedded and lazy-loaded fixtures and
+all 46 actual comparisons, including the downloaded Box copy opened directly
+as a local file. No console, page, network or HTTP errors were recorded in
+those Classic audits. Desktop/mobile controls and plots, and all five rendered
+SVG exports, were visually inspected. Existing non-Classic axis/filter and
+report-export audits passed. Strict MkDocs passed; the documentation browser
+audit passed 33 pages at three viewport sizes with dark-system preference.
+Console-script smoke checks, YAML dry run and pip check passed. Documentation
+demo payloads and favicon are unchanged; bundled Classic assets match source.
+Native Windows/macOS applications were not rebuilt or executed.
+
+Receipts, screenshots and logs, including intermediate failed attempts, are
+under ignored `benchmarks/results/classic_all_ranges_20260924/`. The Box copy
+is `yilab:Yaoxiang/fp-tools/TGFb_timecourse2_vs0hr/review_multi_comparisons_classic.html`.
+Its downloaded size is 88,881,949 bytes and SHA-256 is
+`54dda3021a80aff1127977b2b825557a09f26093d39657cfe2cabb0fdf43055a`.
+The decoded scientific payload remains
+`c65535698139c885626600d0738edf73a9f78a2ac407c4c328d9e7a703e32114`.
+All 47 other HTML files have identical remote sizes and SHA-1 values. The
+previous Classic file was copied and hash-verified before replacement under
+`yilab:Yaoxiang/fp-tools/TGFb_timecourse2_vs0hr_classic_backup_20260924T155507Z/`.
+The original September 23 backup is untouched. No version bump, GitHub push,
+website deployment, native app rebuild, research or manuscript changes.
+
+## Initial Classic report view (superseded control layout)
 
 Multi-comparison reports now offer a Classic view based on the verified
 pre-control TGFb report: left sidebar, eight compact comparison panels, and a

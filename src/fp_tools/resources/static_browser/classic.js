@@ -4,13 +4,12 @@
 // Scientific payloads are supplied by the shared loader and are never edited.
 function createClassicView(host) {
   const byId = id => document.getElementById('classic-' + id);
-  host.innerHTML = "<div class=\"wrap\"><p class=\"sr-only\" id=\"classic-report-detail\">Loading report</p><main class=\"board\"><aside class=\"side\"><select id=\"classic-layout\" class=\"classic-view-choice\" aria-label=\"Report view\"><option value=\"single\">Single comparison</option><option value=\"side\">Side by side</option><option value=\"classic\" selected>Classic</option></select><section class=\"card\"><p class=\"section-title\">Sample line styles</p><div id=\"classic-sample-style-panel\" class=\"sample-style-panel\"></div></section><section class=\"card\"><p class=\"section-title\">Export editable SVG</p><div class=\"export-stack\"><button id=\"classic-download-logo\">Download motif logo panel</button><button id=\"classic-download-rank\">Download bar plot panel</button><button id=\"classic-download-volcano\">Download volcano plot panel</button><button id=\"classic-download-aggregate\">Download motif aggregate panel</button><button id=\"classic-download-panel\">Download combined panel</button></div><label class=\"rows-control\">Top motifs <input id=\"classic-rank-rows-slider\" type=\"range\" min=\"1\" max=\"200\" step=\"1\" value=\"20\"><input id=\"classic-rank-rows\" type=\"number\" min=\"1\" max=\"200\" step=\"1\" value=\"20\"></label><label class=\"rows-control\">Panels <span></span><select id=\"classic-panel-count\" aria-label=\"Number of comparison panels\"><option value=\"4\">4</option><option value=\"5\">5</option><option value=\"6\">6</option><option value=\"7\">7</option><option value=\"8\">8</option></select></label></section><section class=\"card\"><p class=\"section-title\">Selected motif</p><select id=\"classic-motif-select\" class=\"motif-select\"></select><div id=\"classic-motif-logo\" class=\"motif-logo\"></div></section><section id=\"classic-controls\" class=\"card classic-controls\"><p class=\"section-title\">Plot controls</p><div id=\"classic-filter\"></div><details open><summary>Shared scales</summary><div id=\"classic-sharing\"></div></details><details><summary>Individual plot ranges</summary><label>Comparison <select id=\"classic-edit-panel\" aria-label=\"Edit comparison panel\"></select></label><div id=\"classic-ranges\"></div></details><div id=\"classic-shared-range\"></div><p id=\"classic-status\" class=\"classic-status\" role=\"status\"></p></section></aside><section id=\"classic-comparison-grid\" class=\"plots comparison-grid\"></section><section class=\"aggregate-card\"><div class=\"aggregate-head\"><p class=\"section-title\">Motif aggregate review</p><span class=\"sub\">Group autoscale</span></div><div id=\"classic-aggregate-grid\" class=\"aggregate-grid\"></div></section></main></div>";
+  host.innerHTML = "<div class=\"wrap\"><p class=\"sr-only\" id=\"classic-report-detail\">Loading report</p><main class=\"board\"><aside class=\"side\"><select id=\"classic-layout\" class=\"classic-view-choice\" aria-label=\"Report view\"><option value=\"single\">Single comparison</option><option value=\"side\">Side by side</option><option value=\"classic\" selected>Classic</option></select><section class=\"card\"><p class=\"section-title\">Sample line styles</p><div id=\"classic-sample-style-panel\" class=\"sample-style-panel\"></div></section><section class=\"card\"><p class=\"section-title\">Export editable SVG</p><div class=\"export-stack\"><button id=\"classic-download-logo\">Download motif logo panel</button><button id=\"classic-download-rank\">Download bar plot panel</button><button id=\"classic-download-volcano\">Download volcano plot panel</button><button id=\"classic-download-aggregate\">Download motif aggregate panel</button><button id=\"classic-download-panel\">Download combined panel</button></div><label class=\"rows-control\">Top motifs <input id=\"classic-rank-rows-slider\" type=\"range\" min=\"1\" max=\"200\" step=\"1\" value=\"20\"><input id=\"classic-rank-rows\" type=\"number\" min=\"1\" max=\"200\" step=\"1\" value=\"20\"></label><label class=\"rows-control\">Panels <span></span><select id=\"classic-panel-count\" aria-label=\"Number of comparison panels\"><option value=\"4\">4</option><option value=\"5\">5</option><option value=\"6\">6</option><option value=\"7\">7</option><option value=\"8\">8</option></select></label></section><section class=\"card\"><p class=\"section-title\">Selected motif</p><select id=\"classic-motif-select\" class=\"motif-select\"></select><div id=\"classic-motif-logo\" class=\"motif-logo\"></div></section><section id=\"classic-controls\" class=\"card classic-controls\"><p class=\"section-title\">Plot controls</p><div id=\"classic-filter\"></div><details open><summary>Plot ranges</summary><label>Apply ranges to <select id=\"classic-edit-panel\" aria-label=\"Apply ranges to\"></select></label><p class=\"classic-range-help\">All includes comparisons opened later. Editing All replaces individual limits for that axis.</p><div id=\"classic-ranges\"></div></details><p id=\"classic-status\" class=\"classic-status\" role=\"status\"></p></section></aside><section id=\"classic-comparison-grid\" class=\"plots comparison-grid\"></section><section class=\"aggregate-card\"><div class=\"aggregate-head\"><p class=\"section-title\">Motif aggregate review</p><span class=\"sub\">Group autoscale</span></div><div id=\"classic-aggregate-grid\" class=\"aggregate-grid\"></div></section></main></div>";
   const aggregateDisplayBp=60, initialDisplayPanels=8;
   const plotSvgStyle="svg,text{font-family:Arial,Helvetica,sans-serif}.axis{stroke:#000;stroke-width:1.2}.zero{stroke:#555;stroke-width:1.1;stroke-dasharray:4 4}.grid{stroke:#e7edf5;stroke-width:1}.tick{font-size:10px;fill:#000;font-weight:900}.axis-label{font-size:11px;fill:#000;font-weight:900}.plot-title{font-size:13px;font-weight:900;fill:#000}";
   let review=null,slotComparisons=[],activePrefix=null,sampleLineStyles={},aggregateDomain=null;
-  let generation=0, editing=0, clipSerial=0;
-  const profiles=new Map(), failures=new Map(), ranges=new Map();
-  const shared={volcanoX:false,volcanoY:false,rankX:false,aggregateY:true};
+  let generation=0, editing='all', clipSerial=0;
+  const profiles=new Map(), failures=new Map(), ranges=new Map(), profileLoads=new Map();
   const comparisonGrid=byId('comparison-grid'),aggregateGrid=byId('aggregate-grid'),
     sampleStylePanel=byId('sample-style-panel'),motifSelect=byId('motif-select'),motifLogo=byId('motif-logo'),
     rankRowsSel=byId('rank-rows'),rankRowsSlider=byId('rank-rows-slider'),panelCountSel=byId('panel-count'),
@@ -119,26 +118,37 @@ function downloadLogoPanel(){const motif=allMotifs().find(m=>m.prefix===activePr
   function observations(payload,kind){
     return (kind==='rankX'?ranked(payload):(payload.points||[])).map(p=>kind==='volcanoY'?plotControls.negLog10P(p):p.change).filter(plotControls.numeric).map(Number);
   }
-  function autoRange(kind,slot){
-    if(kind==='aggregateY')return computeAggregateDomain(activePrefix,shared.aggregateY?null:slot);
-    const payloads=shared[kind]?review.comparisons.map(c=>c.payload):[compPayload(slotComparisons[slot])];
+  function autoRange(kind,target='all'){
+    if(kind==='aggregateY')return computeAggregateDomain(activePrefix,target);
+    const payloads=target==='all'?review.comparisons.map(c=>c.payload):[compPayload(Number(target))];
     const values=payloads.flatMap(p=>observations(p,kind));
-    if(kind==='volcanoY')return [0,niceLimit(Math.max(1,...values)*1.03)];
+    if(kind==='volcanoY')return [0,niceLimit(values.reduce((m,v)=>Math.max(m,v),1)*1.03)];
     const maximum=values.reduce((m,v)=>Math.max(m,Math.abs(v)),.01);
     const bound=niceLimit(maximum*(kind==='volcanoX'?1.05:1));
     return [-bound,bound];
   }
-  function rangeKey(kind,slot){
-    return kind+':'+slot+':'+slotComparisons[slot]+(kind==='aggregateY'?':'+activePrefix:'');
+  function rangeKey(kind,target){
+    return kind+':'+target;
+  }
+  function targetRange(kind,target){
+    const key=rangeKey(kind,target);
+    // An explicit null is an individual autoscale, not an inherited All range.
+    if(ranges.has(key))return ranges.get(key)||autoRange(kind,target);
+    return ranges.get(rangeKey(kind,'all'))||autoRange(kind);
+  }
+  function setRange(kind,target,next){
+    if(target==='all'){
+      for(const key of ranges.keys())if(key.startsWith(kind+':'))ranges.delete(key);
+    }
+    ranges.set(rangeKey(kind,target),next);
   }
   function rangeFor(kind,slot){
-    return ranges.get(rangeKey(kind,slot)) ||
-      (kind==='aggregateY'&&shared.aggregateY?ranges.get('aggregateY:shared'):null)||autoRange(kind,slot);
+    return targetRange(kind,String(slotComparisons[slot]));
   }
-  function computeAggregateDomain(prefix,onlySlot=null){
+  function computeAggregateDomain(prefix,target='all'){
     const values=[];
-    slotComparisons.forEach((index,slot)=>{
-      if(onlySlot!==null&&slot!==onlySlot)return;
+    review.comparisons.forEach((comparison,index)=>{
+      if(target!=='all'&&index!==Number(target))return;
       const payload=compPayload(index),motif=aggregateByPrefix(payload,prefix);
       if(motif)aggregateSamples(motif,index,payload).forEach(s=>(s.profile||[]).forEach((v,i)=>{
         const x=payload.aggregate?.x?.[i];
@@ -165,7 +175,8 @@ function downloadLogoPanel(){const motif=allMotifs().find(m=>m.prefix===activePr
     const h=Math.max(260,48+shown.length*(rowH+gap)+38),bottom=h-34,sx=v=>left+(v-low)/(high-low)*(right-left);
     const clip=clipping(left,32,right-left,bottom-32),parts=[frame(w,h,'rank-svg',slot,[low,high]),clip.markup];
     parts.push('<text x="170" y="13" class="plot-title" text-anchor="middle">Top differential motifs</text>');
-    parts.push('<text x="170" y="25" font-size="7" text-anchor="middle">'+escText(caption())+'</text>');
+    const clipped=shown.some(p=>p.change<low||p.change>high);
+    parts.push('<text x="170" y="25" font-size="7" text-anchor="middle">'+escText(caption()+(clipped?' · Range clips data':''))+'</text>');
     const mid=sx(0);
     if(low<=0&&high>=0)parts.push('<text x="'+(mid-6)+'" y="37" text-anchor="end" font-size="11" fill="'+conditionColor(payload,payload.conditions[1])+'">'+escText(payload.conditions[1])+'_up</text><text x="'+(mid+6)+'" y="37" font-size="11" fill="'+conditionColor(payload,payload.conditions[0])+'">'+escText(payload.conditions[0])+'_up</text>');
     let y=48;
@@ -181,7 +192,6 @@ function downloadLogoPanel(){const motif=allMotifs().find(m=>m.prefix===activePr
     niceTicks(low,high,5).forEach(v=>parts.push('<line x1="'+sx(v)+'" x2="'+sx(v)+'" y1="'+bottom+'" y2="'+(bottom+3)+'" class="axis"/><text x="'+sx(v)+'" y="'+(bottom+13)+'" class="tick" text-anchor="middle">'+fmt(v)+'</text>'));
     parts.push('<text x="'+((left+right)/2)+'" y="'+(h-5)+'" class="axis-label" text-anchor="middle">'+escText(payload.change_label||'Differential footprint score')+'</text>');
     if(!shown.length)parts.push('<text x="170" y="130" class="tick" text-anchor="middle">No motifs meet the display filter</text>');
-    if(shown.some(p=>p.change<low||p.change>high))parts.push('<text x="170" y="'+(h-19)+'" font-size="7" text-anchor="middle">Range clips data</text>');
     return parts.join('')+'</svg>';
   }
   function drawVolcano(payload,slot){
@@ -233,7 +243,8 @@ function downloadLogoPanel(){const motif=allMotifs().find(m=>m.prefix===activePr
     return parts.join('')+'</g></svg>';
   }
   function renderAggregates(){
-    host.querySelector('.aggregate-head .sub').textContent=shared.aggregateY?'Shared Y scale':'Individual Y scales';
+    const overridden=review.comparisons.some((_,i)=>ranges.has(rangeKey('aggregateY',String(i))));
+    host.querySelector('.aggregate-head .sub').textContent=overridden?'Individual Y limits applied':'All comparisons: common Y scale';
     aggregateGrid.innerHTML=slotComparisons.map((index,slot)=>{
       const p=compPayload(index),passText=pass(pointByPrefix(p,activePrefix)||{})?'':' · Does not meet display filter';
       const motif=aggregateByPrefix(p,activePrefix),domain=rangeFor('aggregateY',slot);
@@ -244,36 +255,41 @@ function downloadLogoPanel(){const motif=allMotifs().find(m=>m.prefix===activePr
   }
   async function ensureProfiles(){
     const prefix=activePrefix;
-    await Promise.all(slotComparisons.map(async index=>{
+    async function load(index){
       const key=index+':'+prefix,p=compPayload(index),m=aggregateByPrefix(p,prefix);
       if(!m||profiles.has(key)||failures.has(key))return;
       if(m.conditions?.some(c=>c.samples?.some(s=>Array.isArray(s.profile))))return;
-      try{
-        const context=await comparisonContext(index,0),record=await withView(context,()=>profileRecord(prefix));
-        profiles.set(key,{...m,conditions:m.conditions.map(c=>({...c,samples:c.samples.map(s=>({...s,profile:record.samples[s.name]}))}))});
-      }catch(error){failures.set(key,error.message);}
+      if(!profileLoads.has(key))profileLoads.set(key,(async()=>{
+        try{
+          const context=await comparisonContext(index,0),record=await withView(context,()=>profileRecord(prefix));
+          profiles.set(key,{...m,conditions:m.conditions.map(c=>({...c,samples:c.samples.map(s=>({...s,profile:record.samples[s.name]}))}))});
+        }catch(error){failures.set(key,error.message);}
+      })());
+      await profileLoads.get(key);
+    }
+    // All includes hidden comparisons. Cache profiles and bound concurrent I/O.
+    let next=0;
+    await Promise.all(Array.from({length:Math.min(4,review.comparisons.length)},async()=>{
+      while(next<review.comparisons.length)await load(next++);
     }));
   }
   function refreshRangeControls(){
-    editing=Math.min(editing,slotComparisons.length-1);
     const select=byId('edit-panel');
-    select.innerHTML=slotComparisons.map((index,slot)=>'<option value="'+slot+'">Comparison '+(slot+1)+': '+escText(compLabel(index))+'</option>').join('');
+    select.innerHTML='<option value="all">All</option>'+review.comparisons.map((_,index)=>'<option value="'+index+'">'+escText(compLabel(index))+'</option>').join('');
     select.value=editing;
-    select.onchange=()=>{editing=Number(select.value);refreshRangeControls();};
+    select.onchange=()=>{editing=select.value;refreshRangeControls();};
     const target=byId('ranges');target.replaceChildren();
     for(const [kind,label] of Object.entries({volcanoX:'Volcano X',volcanoY:'Volcano Y',rankX:'Waterfall X',aggregateY:'Aggregate Y'})){
-      const slot=editing,key=rangeKey(kind,slot);
-      target.append(plotControls.axisEditor(label,rangeFor(kind,slot),ranges.has(key),next=>{
-        if(next)ranges.set(key,next);else ranges.delete(key);
+      const selected=editing,key=rangeKey(kind,selected);
+      const custom=!!(ranges.has(key)?ranges.get(key):ranges.get(rangeKey(kind,'all')));
+      const editor=plotControls.axisEditor(label,targetRange(kind,selected),custom,next=>{
+        setRange(kind,selected,next);
         renderAll(false,false);
         if(!next)refreshRangeControls();
-      },kind==='volcanoY'));
+      },kind==='volcanoY');
+      editor.querySelector('button').textContent='Auto scale '+label;
+      target.append(editor);
     }
-    const linked=byId('shared-range');linked.replaceChildren();
-    if(shared.aggregateY)linked.append(plotControls.axisEditor('Shared aggregate Y',ranges.get('aggregateY:shared')||computeAggregateDomain(activePrefix),ranges.has('aggregateY:shared'),next=>{
-      if(next)ranges.set('aggregateY:shared',next);else ranges.delete('aggregateY:shared');
-      renderAll(false,false);if(!next)refreshRangeControls();
-    }));
   }
   async function renderAll(refreshStyles=true,refreshRanges=true){
     const request=++generation;
@@ -285,7 +301,8 @@ function downloadLogoPanel(){const motif=allMotifs().find(m=>m.prefix===activePr
     if(refreshStyles)renderSampleStyles();
     renderComparisons();renderSelected();renderAggregates();
     if(refreshRanges)refreshRangeControls();
-    const status='Display only: '+caption()+'. '+review.comparisons.length+' comparisons; '+slotComparisons.length+' displayed. Original statistics are unchanged.';
+    const missing=review.comparisons.filter((_,i)=>!aggregateByPrefix(compPayload(i),activePrefix)||failures.has(i+':'+activePrefix)).length;
+    const status='Display only: '+caption()+'. '+review.comparisons.length+' comparisons; '+slotComparisons.length+' displayed.'+(missing?' '+missing+' comparisons have no aggregate profile for this motif; excluded from aggregate autoscaling.':'')+' Original statistics are unchanged.';
     byId('status').textContent=status;reportDetail.textContent=status;
     host.querySelectorAll('.export-stack button').forEach(b=>b.disabled=false);
     host.dataset.ready='true';
@@ -328,12 +345,6 @@ function downloadLogoPanel(){const motif=allMotifs().find(m=>m.prefix===activePr
       renderAll(false);
     };
     byId('hide').onchange=()=>{view.hide=byId('hide').checked;$('hide-failing').checked=view.hide;renderAll(false);};
-    for(const [kind,label] of Object.entries({volcanoX:'Shared volcano X: all comparisons',volcanoY:'Shared volcano Y: all comparisons',rankX:'Shared waterfall X: all comparisons',aggregateY:'Shared aggregate Y: displayed plots'})){
-      const row=document.createElement('label'),input=document.createElement('input');
-      input.type='checkbox';input.id='classic-shared-'+kind;input.checked=shared[kind];
-      row.append(input,document.createTextNode(label));byId('sharing').append(row);
-      input.onchange=()=>{shared[kind]=input.checked;renderAll(false);};
-    }
     byId('layout').onchange=()=>{$('report-layout').value=byId('layout').value;$('report-layout').dispatchEvent(new Event('change'));};
     byId('download-rank').onclick=()=>downloadSvgList('.rank-svg','review_multi_comparisons_classic_barplots.svg');
     byId('download-volcano').onclick=()=>downloadSvgList('.volcano-svg','review_multi_comparisons_classic_volcano.svg');
