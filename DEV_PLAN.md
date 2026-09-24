@@ -36,6 +36,13 @@ and a representative individual report. All 47 rebuilt Box HTML files have
 identical decoded scientific payloads to the originals. Original HTML backup:
 `yilab:Yaoxiang/fp-tools/TGFb_timecourse2_vs0hr_html_backup_20260923T2124Z/`;
 download verification confirmed 47 matching files and zero differences.
+The authorized Box refresh replaced the 46 individual HTML reports first and
+the review HTML last. All 47 files downloaded from the updated destination
+matched the validated output SHA-256 values, with no missing or extra HTML files.
+The downloaded review passed the browser audit again across all 46 comparisons;
+the downloaded representative individual report also passed controls and exports.
+The refreshed review SHA-256 is
+`d8e17fe3e4744e85732b93170ade391f78bc86e97314e36b7f0e17abfba5506a`.
 Local receipts, screenshots and full validation logs are under the ignored
 `benchmarks/results/report_controls_20260923/` directory.
 
