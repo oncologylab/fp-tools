@@ -587,10 +587,17 @@ def audit(site_dir: Path) -> None:
                         and width >= 1050
                         and metrics["scrollHeight"] > metrics["clientHeight"]
                     ):
-                        failures.append(
-                            f"{label}: desktop document scroll "
-                            f"{metrics['scrollHeight']}>{metrics['clientHeight']}"
+                        # Axis/filter controls intentionally permit vertical page
+                        # scrolling. Still reject clipped content or an accidental
+                        # overflow on the former fixed-height report layout.
+                        scrollable = page.evaluate(
+                            "['auto','scroll','visible'].includes(getComputedStyle(document.body).overflowY)"
                         )
+                        if not scrollable or page.locator("#plot-settings").count() != 1:
+                            failures.append(
+                                f"{label}: inaccessible desktop document overflow "
+                                f"{metrics['scrollHeight']}>{metrics['clientHeight']}"
+                            )
                     if metrics["brokenImages"]:
                         failures.append(
                             f"{label}: broken images {metrics['brokenImages']}"

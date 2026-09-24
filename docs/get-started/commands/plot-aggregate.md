@@ -44,6 +44,14 @@ inspect all matched motif sites instead.
 For your own site sets, supply BED files with `--TFBS`. Use `--regions` to
 restrict or compare regions of interest.
 
+In the interactive aggregate report, open **Aggregate Y** below a plot to
+adjust its minimum and maximum with sliders or numeric inputs. Use
+**Shared aggregate Y: displayed plots** to match the scales across the visible
+plots. A custom range overrides the shared range for that plot; **Reset**
+restores automatic or shared scaling. A clipping notice appears when the
+chosen limits exclude signal values. SVG exports keep the displayed ranges;
+the underlying profiles remain unchanged.
+
 ## Export a grid from a review report
 
 ```bash

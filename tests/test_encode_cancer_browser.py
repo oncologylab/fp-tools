@@ -151,8 +151,10 @@ class EncodeCancerBrowserTest(unittest.TestCase):
 
     def test_volcano_y_axis_uses_comparison_specific_headroom(self):
         app = (ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/app.js").read_text(encoding="utf-8")
-        self.assertIn("rawYMax = Math.max(...yValues, 0)", app)
-        self.assertIn("yMax = rawYMax > 0 ? rawYMax * 1.05 : 1", app)
+        self.assertIn("plotControls.autoDomain(yValues, 'positive')", app)
+        self.assertIn("plotRange('volcanoY'", app)
+        controls = (ROOT / "docs/ENCODE-Cancer-Cell-lines-Footprinting/plot_controls.js").read_text(encoding="utf-8")
+        self.assertIn("if (mode === 'positive') return [0, hi * 1.05 || 1]", controls)
         self.assertNotIn("yMax = niceLimit(Math.max(...yValues", app)
 
     def test_static_reference_payload_matches_preserved_scientific_digest(self):

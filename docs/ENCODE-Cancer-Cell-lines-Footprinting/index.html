@@ -17,8 +17,8 @@
         <header class="head">
           <div class="title-block">
             <h1>
-              <span id="report-title">Differential footprint report</span> (<span id="title-cond1">K562</span>
-              vs <span id="title-cond2">HepG2</span>)
+              <span id="report-title">Differential footprint report</span> <span id="title-comparison">(<span id="title-cond1">K562</span>
+              vs <span id="title-cond2">HepG2</span>)</span>
             </h1>
             <p id="report-method" class="sub">
               Normalization: Q95-scale; aggregate sites: all motif matches; FDR &lt; 0.001;
@@ -29,16 +29,12 @@
             class="comparison-controls"
             aria-label="Choose a pairwise comparison"
           >
-            <a
-              id="documentation-return"
-              class="documentation-link"
-              href="../"
-              target="_top"
-              aria-label="Back to fp-tools documentation"
-              >← Documentation</a
-            >
+            <a id="documentation-return" class="documentation-link" href="../" target="_top" aria-label="Back to fp-tools documentation">← Documentation</a>
             <label id="comparison-selector-control" hidden
-              >Comparison<select id="comparison-selector" aria-label="Comparison"></select
+              >Comparison<select
+                id="comparison-selector"
+                aria-label="Comparison"
+              ></select
             ></label>
             <div id="condition-selector-controls" class="condition-selector-controls">
               <label
@@ -71,7 +67,7 @@
                   <span>−log10(p-value)</span>
                 </label>
                 <label class="rows-control"
-                  >Motifs shown
+                  >Rows
                   <input
                     id="rank-rows-slider"
                     type="range"
@@ -103,7 +99,7 @@
                     type="text"
                     placeholder="e.g. JUN, HIF2A"
                     aria-label="TF names to label on the volcano plot"
-                    title="Enter TF names, motif IDs, or output prefixes, separated by commas"
+                    title="Comma-separated TF names, motif IDs, or output prefixes"
                   />
                 </label>
               </div>
@@ -193,9 +189,11 @@
       Loading report…
     </p>
     <noscript
-      >Enable JavaScript in your browser to view the interactive report.</noscript
+      >This browser requires JavaScript to render the static result
+      files.</noscript
     >
     <script src="plot_controls.js" defer></script>
+    <script src="report_options.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>

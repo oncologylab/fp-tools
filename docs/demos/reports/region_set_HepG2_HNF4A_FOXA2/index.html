@@ -16,31 +16,40 @@
         <header class="head">
           <div class="title-block">
             <h1>
-              <span id="report-title">HepG2 HNF4A/FOXA2 region footprints</span> (<span id="title-cond1">HNF4A + FOXA2</span>
-              vs <span id="title-cond2">No HNF4A/FOXA2</span>)
+              <span id="report-title">Differential footprint report</span> <span id="title-comparison">(<span id="title-cond1">K562</span>
+              vs <span id="title-cond2">HepG2</span>)</span>
             </h1>
             <p id="report-method" class="sub">
-              Loading comparison settings…
+              Normalization: Q95-scale; aggregate sites: all motif matches; FDR &lt; 0.001;
+              |Δ FP score| &gt; 0.1; Bound Sites &gt; 500
             </p>
           </div>
           <div
             class="comparison-controls"
-            aria-label="Choose two region sets to compare"
+            aria-label="Choose a pairwise comparison"
           >
             <a id="documentation-return" class="documentation-link documentation-return" href="#" target="_top" hidden>Documentation</a>
-            <label
-              >Region set 1<select
-                id="condition-1"
-                aria-label="Region set 1"
+            <label id="comparison-selector-control" hidden
+              >Comparison<select
+                id="comparison-selector"
+                aria-label="Comparison"
               ></select
             ></label>
-            <span class="versus" aria-hidden="true">vs</span>
-            <label
-              >Region set 2<select
-                id="condition-2"
-                aria-label="Region set 2"
-              ></select
-            ></label>
+            <div id="condition-selector-controls" class="condition-selector-controls">
+              <label
+                >Region set 1<select
+                  id="condition-1"
+                  aria-label="Region set 1"
+                ></select
+              ></label>
+              <span class="versus" aria-hidden="true">vs</span>
+              <label
+                >Region set 2<select
+                  id="condition-2"
+                  aria-label="Region set 2"
+                ></select
+              ></label>
+            </div>
           </div>
         </header>
 
@@ -48,35 +57,16 @@
           <summary>Display and export options</summary>
           <div class="options-grid">
             <section class="option-col options-actions">
-              <p class="section-title">Export</p>
-              <div class="card export-stack">
-                <label class="format-row"
-                  >Format
-                  <select id="figure-format" aria-label="Figure export format">
-                    <option value="svg">Editable SVG</option>
-                    <option value="png">PNG</option>
-                    <option value="pdf">Print / PDF</option>
-                  </select>
-                </label>
-                <button id="download-logo" type="button">Motif logos</button>
-                <button id="download-rank" type="button">Bar plot</button>
-                <button id="download-volcano" type="button">Volcano plot</button>
-                <button id="download-aggregate" type="button">Aggregate plots</button>
-                <button id="download-panel" type="button">Combined panel</button>
-                <button id="download-tsv" type="button">Comparison TSV</button>
-                <a
-                  id="download-all"
-                  class="button-link"
-                  href="data/all_pairwise_results.tsv.gz"
-                  download
-                  >All results</a
-                >
-              </div>
-              <p class="section-title group-title">Groups</p>
+              <p class="section-title">Groups</p>
               <div class="card control-stack">
                 <div id="color-controls" class="color-controls"></div>
+                <label class="rank-sort-control" title="Switch the waterfall ranking metric">
+                  <span>Differential footprint score</span>
+                  <input id="rank-sort-toggle" type="checkbox" role="switch" />
+                  <span>−log10(p-value)</span>
+                </label>
                 <label class="rows-control"
-                  >Motifs shown
+                  >Rows
                   <input
                     id="rank-rows-slider"
                     type="range"
@@ -94,10 +84,51 @@
                     value="20"
                   />
                 </label>
+                <label class="volcano-highlight-control"
+                  >Volcano highlight
+                  <select id="volcano-highlight" aria-label="Volcano point highlighting">
+                    <option value="selected">Selected motifs</option>
+                    <option value="none">(none)</option>
+                  </select>
+                </label>
+                <label class="volcano-label-control"
+                  >Label TFs
+                  <input
+                    id="volcano-labels"
+                    type="text"
+                    placeholder="e.g. JUN, HIF2A"
+                    aria-label="TF names to label on the volcano plot"
+                    title="Comma-separated TF names, motif IDs, or output prefixes"
+                  />
+                </label>
+              </div>
+              <p class="section-title group-title">Export</p>
+              <div class="card export-stack">
+                <label class="format-row"
+                  >Format
+                  <select id="figure-format" aria-label="Figure export format">
+                    <option value="svg">Editable SVG</option>
+                    <option value="png">PNG</option>
+                    <option value="pdf">Print / PDF</option>
+                  </select>
+                </label>
+                <button id="download-logo" type="button">Motif logos</button>
+                <button id="download-rank" type="button">Bar plot</button>
+                <button id="download-volcano" type="button">Volcano plot</button>
+                <button id="download-aggregate" class="aggregate-only" type="button">Aggregate plots</button>
+                <button id="download-panel" type="button">Combined panel</button>
+                <button id="download-tsv" type="button">Comparison TSV</button>
+                <a
+                  id="download-all"
+                  class="button-link"
+                  href="data/all_pairwise_results.tsv.gz"
+                  download
+                  >All results</a
+                >
               </div>
             </section>
 
-            <section class="option-col options-samples">
+            <section class="option-col options-samples aggregate-only">
               <p class="section-title">Sample line styles</p>
               <div id="sample-style-panel" class="sample-style-panel"></div>
             </section>
@@ -105,7 +136,7 @@
             <section class="selected-card option-col">
               <div class="selected-toolbar">
                 <p class="section-title">Selected motifs</p>
-                <label
+                <label class="aggregate-only"
                   >Plots
                   <select
                     id="plot-count"
@@ -146,7 +177,7 @@
               aria-label="Differential footprint volcano plot"
             ></svg>
           </section>
-          <section class="aggregate-card">
+          <section class="aggregate-card aggregate-only">
             <div id="aggregate-legend" class="aggregate-legend"></div>
             <div id="aggregate-grid" class="aggregate-grid"></div>
           </section>
@@ -157,8 +188,11 @@
       Loading report…
     </p>
     <noscript
-      >Enable JavaScript in your browser to view the interactive report.</noscript
+      >This browser requires JavaScript to render the static result
+      files.</noscript
     >
+    <script src="plot_controls.js" defer></script>
+    <script src="report_options.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>

@@ -73,5 +73,38 @@ review-multi-comparisons --inputs baseline/report.html dose1/report.html dose2/r
   --labels Baseline "Dose 1" "Dose 2" --output-html review.html
 ```
 
+## Adjust plots and compare results
+
+Open **Plot ranges and display filters** to change the view:
+
+- **Single comparison** shows one comparison with several selected motifs.
+  **Side by side** shows two to eight comparisons. Click a selected motif to
+  inspect that same motif across the comparison panels.
+- **Shared volcano X/Y** and **Shared waterfall X** use the same scales across
+  every comparison in the report, including comparisons not currently visible.
+  Shared waterfall scaling follows the ranking, top-motif count and filter.
+- Each plot has range sliders and numeric minimum/maximum inputs. A custom
+  range overrides sharing for that plot; **Reset** returns it to automatic or
+  shared scaling. A notice identifies ranges that clip data.
+- **Shared aggregate Y** links the displayed aggregate footprint plots. You
+  can adjust that shared range or override individual plots. These settings
+  change the axes, not the signal values.
+
+**Top motifs (total)** sets the number of waterfall bars, with positive and
+negative changes represented when available. The initial display filter requires
+**false discovery rate (FDR) ≤ 0.05** and **absolute footprint-score change
+(|ΔFP|) ≥ 0.1**. Choose FDR or raw p-value, enter both cutoffs, and click
+**Apply filters**. Both criteria must be met. Missing values do not pass.
+
+Failing volcano points remain gray unless **Hide failing volcano points** is
+checked. Only passing motifs enter the waterfall or receive differential
+highlighting. You can still select a failing motif's aggregate for inspection;
+the report labels it accordingly. The volcano Y-axis always shows
+`−log10(raw p-value)`, including when filtering by FDR.
+
+Axis settings are remembered while the report is open. Figure exports retain
+the visible settings and filter criteria. Original statistics and full-result
+table downloads are unchanged; these controls do not rerun the analysis.
+
 Continue with the `--motif-grid` mode of [`plot-aggregate`](plot-aggregate.md), or
 see the [complete `review-multi-comparisons` reference](../../api.md#review-multi-comparisons).

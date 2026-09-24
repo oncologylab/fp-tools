@@ -96,11 +96,11 @@ function niceTicks(min, max, count = 5) {
   return out.length ? out : [min, max];
 }
 function colorFor(motif) {
-  if (!motif.significant) return state.colors.neutral;
+  if (!displayPass(motif)) return state.colors.neutral;
   return motif.effect >= 0 ? state.colors.first : state.colors.second;
 }
 function groupFor(motif) {
-  if (!motif.significant) return "n.s.";
+  if (!displayPass(motif)) return "Below display threshold";
   return motif.effect >= 0 ? `${state.first}_up` : `${state.second}_up`;
 }
 function downloadBlob(blob, name) {
@@ -123,7 +123,7 @@ async function fetchGzipJson(path) {
   if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
   if (!("DecompressionStream" in window))
     throw new Error(
-      "Your browser cannot open the compressed report data. Update your browser and try again.",
+      "This report needs a modern browser with gzip DecompressionStream support.",
     );
   const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
   return JSON.parse(await new Response(stream).text());
@@ -132,7 +132,7 @@ async function fetchGzipJson(path) {
 async function decodeEmbeddedPayload(payloadB64) {
   if (!("DecompressionStream" in window))
     throw new Error(
-      "Your browser cannot open the compressed report data. Update your browser and try again.",
+      "This report needs a modern browser with gzip DecompressionStream support.",
     );
   const bytes = Uint8Array.from(atob(payloadB64), (character) =>
       character.charCodeAt(0),
@@ -210,7 +210,7 @@ function comparisonEntry(first, second) {
 
 function orientedMotif(point, reversed) {
   const aggregate = state.aggregate.get(point.prefix),
-    effect = (reversed ? -1 : 1) * finite(point.change),
+    effect = plotControls.numeric(point.change) ? (reversed ? -1 : 1) * Number(point.change) : NaN,
     rawCiLower = Number(point.ci_lower),
     rawCiUpper = Number(point.ci_upper),
     ciLower = reversed && Number.isFinite(rawCiUpper) ? -rawCiUpper : point.ci_lower,
@@ -222,9 +222,9 @@ function orientedMotif(point, reversed) {
   return {
     ...point,
     effect,
-    pvalue: finite(point.pvalue, 1),
+    pvalue: plotControls.numeric(point.pvalue) ? Number(point.pvalue) : NaN,
     neglog10p: finite(point.neglog10p, logp(point.pvalue)),
-    qvalue: finite(point.fdr, 1),
+    qvalue: plotControls.numeric(point.fdr) ? Number(point.fdr) : NaN,
     significant,
     group,
     n_sites: aggregate?.n_sites ?? "",
@@ -320,15 +320,16 @@ function ensureSelected(reset = false) {
 
 function updateHeader() {
   const collectionTitle = state.metadata?.title || "Differential footprint report",
-    title = state.mode === "embedded"
+    title = view.layout === 'side' ? collectionTitle : state.mode === "embedded"
       ? state.entry?.label || collectionTitle
       : collectionTitle;
   $("report-title").textContent = title;
+  $('title-comparison').hidden = view.layout === 'side' || (title.includes(state.first) && title.includes(state.second));
   $("title-cond1").textContent = state.first;
   $("title-cond2").textContent = state.second;
   $("title-cond1").style.color = state.colors.first;
   $("title-cond2").style.color = state.colors.second;
-  document.title = `${title} (${state.first} vs ${state.second})`;
+  document.title = $('title-comparison').hidden ? title : `${title} (${state.first} vs ${state.second})`;
   $("report-method").textContent = state.payload?.report_label || "";
 }
 
@@ -375,9 +376,10 @@ function sampleStyle(sample, condition, index) {
   return state.sampleStyles.get(sample);
 }
 
-function renderSampleStyles() {
+function renderSampleStyles(target = $("sample-style-panel")) {
+  const styles = state.sampleStyles;
   const conditions = [state.first, state.second];
-  $("sample-style-panel").innerHTML = conditions
+  target.innerHTML = conditions
     .map((condition) => {
       const samples = conditionSamples(condition),
         conditionColor =
@@ -389,26 +391,26 @@ function renderSampleStyles() {
           return `<div class="sample-style-row"><input type="checkbox" data-sample-visible="${esc(sample)}" ${style.visible ? "checked" : ""} aria-label="Show ${esc(label)}"><span class="sample-style-name" title="${esc(label)}">${esc(label)}</span><input type="color" data-sample-color="${esc(sample)}" value="${style.color}" aria-label="Color for ${esc(label)}"><input type="number" data-sample-alpha="${esc(sample)}" min="0.1" max="1" step="0.1" value="${style.alpha}" aria-label="Opacity for ${esc(label)}"><input type="number" data-sample-width="${esc(sample)}" min="0.3" max="4" step="0.1" value="${style.width}" aria-label="Width for ${esc(label)}"><select data-sample-type="${esc(sample)}" aria-label="Line type for ${esc(label)}"><option value="solid" ${style.type === "solid" ? "selected" : ""}>Solid</option><option value="dash" ${style.type === "dash" ? "selected" : ""}>Dash</option><option value="dot" ${style.type === "dot" ? "selected" : ""}>Dot</option></select></div>`;
         })
         .join("");
-      return `<div class="sample-style-group"><div class="sample-style-group-title"><i class="sample-style-dot" style="background:${conditionColor}"></i>${esc(condition)}</div><div class="sample-style-row sample-style-head"><span>Show</span><span>Sample</span><span>Color</span><span>Opacity</span><span>Width</span><span>Type</span></div>${rows}</div>`;
+      return `<div class="sample-style-group"><div class="sample-style-group-title"><i class="sample-style-dot" style="background:${conditionColor}"></i>${esc(condition)}</div><div class="sample-style-row sample-style-head"><span>Show</span><span>Sample</span><span>Color</span><span>Alpha</span><span>Width</span><span>Type</span></div>${rows}</div>`;
     })
     .join("");
-  const panel = $("sample-style-panel");
+  const panel = target;
   panel.querySelectorAll("[data-sample-visible]").forEach((input) =>
     input.addEventListener("change", () => {
-      state.sampleStyles.get(input.dataset.sampleVisible).visible =
+      styles.get(input.dataset.sampleVisible).visible =
         input.checked;
       renderAll(false);
     }),
   );
   panel.querySelectorAll("[data-sample-color]").forEach((input) =>
     input.addEventListener("input", () => {
-      state.sampleStyles.get(input.dataset.sampleColor).color = input.value;
+      styles.get(input.dataset.sampleColor).color = input.value;
       renderAll(false);
     }),
   );
   panel.querySelectorAll("[data-sample-alpha]").forEach((input) =>
     input.addEventListener("input", () => {
-      state.sampleStyles.get(input.dataset.sampleAlpha).alpha = Math.max(
+      styles.get(input.dataset.sampleAlpha).alpha = Math.max(
         0.1,
         Math.min(1, finite(input.value, 0.7)),
       );
@@ -417,7 +419,7 @@ function renderSampleStyles() {
   );
   panel.querySelectorAll("[data-sample-width]").forEach((input) =>
     input.addEventListener("input", () => {
-      state.sampleStyles.get(input.dataset.sampleWidth).width = Math.max(
+      styles.get(input.dataset.sampleWidth).width = Math.max(
         0.3,
         Math.min(4, finite(input.value, 2)),
       );
@@ -426,7 +428,7 @@ function renderSampleStyles() {
   );
   panel.querySelectorAll("[data-sample-type]").forEach((input) =>
     input.addEventListener("change", () => {
-      state.sampleStyles.get(input.dataset.sampleType).type = input.value;
+      styles.get(input.dataset.sampleType).type = input.value;
       renderAll(false);
     }),
   );
@@ -668,7 +670,7 @@ function volcanoLabelLayout(items, sx, sy, bounds) {
   return [...groups.left, ...groups.right];
 }
 
-function renderVolcano() {
+function renderVolcano(target = $("chart")) {
   const width = 760,
     height = 760,
     margin = { top: 54, right: 48, bottom: 60, left: 84 },
@@ -676,14 +678,11 @@ function renderVolcano() {
     innerHeight = innerWidth,
     xValues = state.motifs.map((item) => item.effect),
     yValues = state.motifs.map((item) => item.neglog10p),
-    xLimit = niceLimit(
-      Math.max(...xValues.map((value) => Math.abs(value)), 1e-9) * 1.05,
-    ),
-    rawYMax = Math.max(...yValues, 0),
-    yMax = rawYMax > 0 ? rawYMax * 1.05 : 1,
+    [xMin, xMax] = plotRange('volcanoX', plotControls.autoDomain(xValues, 'symmetric')),
+    [yMin, yMax] = plotRange('volcanoY', plotControls.autoDomain(yValues, 'positive')),
     sx = (value) =>
-      margin.left + ((value + xLimit) / (2 * xLimit)) * innerWidth,
-    sy = (value) => margin.top + innerHeight - (value / yMax) * innerHeight,
+      margin.left + ((value - xMin) / (xMax - xMin)) * innerWidth,
+    sy = (value) => margin.top + innerHeight - ((value - yMin) / (yMax - yMin)) * innerHeight,
     tickStyle =
       "font-size:15px;font-weight:900;font-family:Helvetica,Arial,sans-serif",
     axisStyle =
@@ -694,12 +693,12 @@ function renderVolcano() {
     parts = [
       `<style>${plotSvgStyle}</style><text x="${width / 2}" y="24" class="plot-title" text-anchor="middle">Comparison: ${esc(comparisonTitle())}</text><rect x="${margin.left}" y="${margin.top}" width="${innerWidth}" height="${innerHeight}" fill="none" stroke="#d9e2ec"/>`,
     ];
-  niceTicks(0, yMax, 7).forEach((value) =>
+  niceTicks(yMin, yMax, 7).forEach((value) =>
     parts.push(
       `<line x1="${margin.left}" y1="${sy(value)}" x2="${margin.left + innerWidth}" y2="${sy(value)}" class="grid"/><text x="${margin.left - 12}" y="${sy(value) + 5}" class="tick" style="${tickStyle}" text-anchor="end">${fmt(value, 1)}</text>`,
     ),
   );
-  niceTicks(-xLimit, xLimit, 7).forEach((value) =>
+  niceTicks(xMin, xMax, 7).forEach((value) =>
     parts.push(
       `<line x1="${sx(value)}" y1="${margin.top}" x2="${sx(value)}" y2="${margin.top + innerHeight}" class="grid"/><text x="${sx(value)}" y="${margin.top + innerHeight + 24}" class="tick" style="${tickStyle}" text-anchor="middle">${fmt(value, 3)}</text>`,
     ),
@@ -708,7 +707,8 @@ function renderVolcano() {
     `<line x1="${sx(0)}" y1="${margin.top}" x2="${sx(0)}" y2="${margin.top + innerHeight}" class="zero"/><line x1="${margin.left}" y1="${margin.top + innerHeight}" x2="${margin.left + innerWidth}" y2="${margin.top + innerHeight}" class="axis"/><line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top + innerHeight}" class="axis"/><text x="${margin.left + innerWidth / 2}" y="${height - 10}" class="axis-label" style="${axisStyle}" text-anchor="middle">${esc(state.payload?.change_label || "Differential footprint score")}</text><text x="16" y="${margin.top + innerHeight / 2}" class="axis-label" style="${axisStyle}" text-anchor="middle" transform="rotate(-90 16 ${margin.top + innerHeight / 2})">-log10(p-value)</text><text x="${margin.left + 18}" y="${margin.top + innerHeight - 14}" font-size="24" font-weight="900" fill="${state.colors.second}">${esc(state.second)}_up</text><text x="${margin.left + innerWidth - 18}" y="${margin.top + innerHeight - 14}" text-anchor="end" font-size="24" font-weight="900" fill="${state.colors.first}">${esc(state.first)}_up</text>`,
   );
   state.motifs
-    .map((item) => ({ item, selected: selected.has(item.prefix) }))
+    .filter(item => (!view.hide || displayPass(item)) && plotControls.numeric(item.change))
+    .map((item) => ({ item, selected: selected.has(item.prefix) && displayPass(item) }))
     .sort((a, b) => Number(a.selected) - Number(b.selected))
     .forEach(({ item, selected: isSelected }) =>
       parts.push(
@@ -716,7 +716,7 @@ function renderVolcano() {
       ),
     );
   const labelItems = plotControls.matchingMotifs(
-      state.motifs,
+      state.motifs.filter(item => displayPass(item) && item.effect >= xMin && item.effect <= xMax && item.neglog10p >= yMin && item.neglog10p <= yMax),
       $("volcano-labels").value,
     ),
     labelLayout = volcanoLabelLayout(labelItems, sx, sy, {
@@ -733,8 +733,11 @@ function renderVolcano() {
       `<line class="volcano-label-line" x1="${pointX.toFixed(2)}" y1="${pointY.toFixed(2)}" x2="${labelX.toFixed(2)}" y2="${labelY.toFixed(2)}" stroke="#475569" stroke-width="1"/><text class="volcano-user-label" x="${(labelX + direction * 2).toFixed(2)}" y="${(labelY + 4).toFixed(2)}" text-anchor="${anchor}" font-family="Helvetica,Arial,sans-serif" font-size="12" font-weight="900" fill="#111827" stroke="none">${esc(item.name || motifLabel(item))}</text>`,
     );
   });
-  $("chart").innerHTML = parts.join("");
-  $("chart")
+  target.innerHTML = parts.join("");
+  target.dataset.xRange = JSON.stringify([xMin, xMax]); target.dataset.yRange = JSON.stringify([yMin, yMax]);
+  clipPlot(target, '.pt,.zero,.volcano-label-line,.volcano-user-label', [margin.left,margin.top,innerWidth,innerHeight]);
+  filterNote(target, state.motifs, state.motifs.some(p => p.effect < xMin || p.effect > xMax || p.neglog10p < yMin || p.neglog10p > yMax));
+  target
     .querySelectorAll("[data-prefix]")
     .forEach((node) =>
       node.addEventListener("click", () =>
@@ -743,13 +746,13 @@ function renderVolcano() {
     );
 }
 
-function drawRank() {
+function drawRank(target = $("rank-chart")) {
   const limit = Math.max(
-      2,
-      Math.min(200, Math.floor(Number($("rank-rows").value) || 20)),
+      1,
+      Math.floor(Number($("rank-rows").value) || 20),
     ),
     mode = rankMode(),
-    ranked = plotControls.rankMotifs(state.motifs, mode, limit),
+    ranked = plotControls.rankMotifs(state.motifs.filter(displayPass), mode, limit),
     positive = ranked.positive,
     negative = ranked.negative,
     shown = [...negative, ...positive],
@@ -757,7 +760,7 @@ function drawRank() {
     rowHeight = 14,
     rowGap = 3,
     sectionGap = 8,
-    margin = { top: 110, bottom: 68, left: 128, right: 14 },
+    margin = { top: 128, bottom: 68, left: 128, right: 14 },
     height = Math.max(
       430,
       margin.top +
@@ -765,15 +768,10 @@ function drawRank() {
         sectionGap +
         margin.bottom,
     ),
-    xMiddle = 246,
     xWidth = 112,
-    maxAbs = niceLimit(
-      Math.max(
-        ...shown.map((item) => Math.abs(plotControls.rankMetric(item, mode))),
-        1e-9,
-      ),
-    ),
-    sx = (value) => xMiddle + (value / maxAbs) * xWidth,
+    [xMin, xMax] = plotRange('rankX', plotControls.autoDomain(shown.map(item => plotControls.rankMetric(item, mode)), 'symmetric')),
+    sx = (value) => 134 + ((value - xMin) / (xMax - xMin)) * 2 * xWidth,
+    xMiddle = sx(0),
     axisY = height - 60,
     selected = visibleSelected(),
     effectColorMax = Math.max(
@@ -809,20 +807,20 @@ function drawRank() {
     parts = [
       `<style>${plotSvgStyle}</style><defs><linearGradient id="rank-color-gradient" x1="0" x2="1">${gradientStops}</linearGradient></defs><text x="${width / 2}" y="16" class="plot-title" text-anchor="middle">Top differential motifs</text><text x="${width / 2}" y="34" class="summary-label" text-anchor="middle">Comparison: ${esc(comparisonTitle())}</text><text x="8" y="49" class="summary-label">Color: ${esc(legendLabel)}</text><rect x="8" y="54" width="104" height="7" rx="2" fill="url(#rank-color-gradient)"/><text x="8" y="72" class="tick">${fmt(legendLow, 2)}</text><text x="60" y="72" class="tick" text-anchor="middle">${fmt(legendCenter, 2)}</text><text x="112" y="72" class="tick" text-anchor="end">${fmt(legendHigh, 2)}</text><line x1="${xMiddle}" y1="${margin.top - 20}" x2="${xMiddle}" y2="${axisY}" stroke="#172033" stroke-width="2.2"/><text x="${xMiddle - 6}" y="${margin.top - 27}" text-anchor="end" font-size="14" font-weight="900" fill="${state.colors.second}">${esc(state.second)}_up</text><text x="${xMiddle + 6}" y="${margin.top - 27}" text-anchor="start" font-size="14" font-weight="900" fill="${state.colors.first}">${esc(state.first)}_up</text>`,
     ];
-  niceTicks(-maxAbs, maxAbs, 5).forEach((value) =>
+  niceTicks(xMin, xMax, 5).forEach((value) =>
     parts.push(
       `<line x1="${sx(value)}" y1="${axisY - 4}" x2="${sx(value)}" y2="${axisY + 4}" class="axis"/><text x="${sx(value)}" y="${axisY + 17}" class="tick" text-anchor="middle">${fmt(value, 3)}</text>`,
     ),
   );
   parts.push(
-    `<line x1="${sx(-maxAbs)}" y1="${axisY}" x2="${sx(maxAbs)}" y2="${axisY}" class="axis"/><text x="${xMiddle}" y="${height - 8}" class="axis-label" text-anchor="middle">${esc(axisLabel)}</text>`,
+    `<line x1="${sx(xMin)}" y1="${axisY}" x2="${sx(xMax)}" y2="${axisY}" class="axis"/><text x="246" y="${height - 8}" class="axis-label" text-anchor="middle">${esc(axisLabel)}</text>`,
   );
   let y = margin.top;
   const drawRows = (rows) =>
     rows.forEach((item) => {
       const metric = plotControls.rankMetric(item, mode),
         opposite = plotControls.oppositeMetric(item, mode),
-        barWidth = (Math.abs(metric) / maxAbs) * xWidth,
+        barWidth = Math.abs(sx(metric) - sx(0)),
         x = metric >= 0 ? xMiddle : xMiddle - barWidth,
         isSelected = selected.has(item.prefix),
         name = motifLabel(item).slice(0, 20),
@@ -836,9 +834,23 @@ function drawRank() {
   drawRows(negative);
   y += sectionGap;
   drawRows(positive);
-  $("rank-chart").setAttribute("viewBox", `0 0 ${width} ${height}`);
-  $("rank-chart").innerHTML = parts.join("");
-  $("rank-chart")
+  target.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  target.innerHTML = parts.join("");
+  // Shift the color legend below the display-filter caption.
+  target.querySelectorAll('.summary-label,.tick').forEach(node => {
+    const y = Number(node.getAttribute('y')); if (y >= 49 && y <= 72) node.setAttribute('y', y + 15);
+  });
+  target.querySelector('rect[fill="url(#rank-color-gradient)"]')?.setAttribute('y', '69');
+  const gradientId = `rank-gradient-${++plotClipSerial}`;
+  target.querySelector('linearGradient')?.setAttribute('id', gradientId);
+  target.querySelector('rect[fill="url(#rank-color-gradient)"]')?.setAttribute('fill', `url(#${gradientId})`);
+  target.dataset.xRange = JSON.stringify([xMin, xMax]);
+  const zeroLine = target.querySelector('line[stroke="#172033"]');
+  if (xMin > 0 || xMax < 0) zeroLine?.remove();
+  clipPlot(target, '.rank-bar', [134,margin.top,2*xWidth,axisY-margin.top]);
+  filterNote(target, state.motifs, shown.some(p => {const v=plotControls.rankMetric(p,mode); return v<xMin||v>xMax;}));
+  if (!shown.length) target.insertAdjacentHTML('beforeend', '<text x="190" y="210" text-anchor="middle" class="tick">No motifs meet the display filter</text>');
+  target
     .querySelectorAll("[data-prefix]")
     .forEach((node) =>
       node.addEventListener("click", () =>
@@ -857,17 +869,17 @@ async function profileRecord(prefix) {
     const shard = state.entry?.profile_shards?.find(
       (item) => Number(item.id) === Number(motif.profile_shard),
     );
-    if (!shard) throw new Error(`The report does not include a profile data file for ${prefix}`);
+    if (!shard) throw new Error(`No profile shard for ${prefix}`);
     const shardPayload = await fetchGzipJsonCached(shard.file);
     motif = shardPayload.motifs.find((item) => item.prefix === prefix);
-    if (!motif) throw new Error(`The profile data file does not contain ${prefix}`);
+    if (!motif) throw new Error(`Profile shard does not contain ${prefix}`);
   }
   const samples = {},
     sampleMeta = {},
     conditionCounts = {};
   motif.conditions.forEach((condition) =>
     {
-      conditionCounts[condition.name] = Number(condition.n_sites || 0);
+      conditionCounts[condition.name] = plotControls.numeric(condition.n_sites) ? Number(condition.n_sites) : null;
       condition.samples.forEach((sample) => {
         samples[sample.name] = sample.profile;
         sampleMeta[sample.name] = sample;
@@ -940,8 +952,7 @@ function profileSvg(record, motif, index) {
     rawMin = Math.min(...values, 0),
     rawMax = Math.max(...values, 1e-9),
     padding = Math.max((rawMax - rawMin || 1) * 0.18, 1e-6),
-    yMin = rawMin - padding,
-    yMax = rawMax + padding,
+    [yMin, yMax] = plotRange('aggregateY', [rawMin - padding, rawMax + padding], `${motif.prefix}:${index}`),
     width = 300,
     height = 300,
     margin = { top: 42, right: 8, bottom: 34, left: 36 },
@@ -955,7 +966,7 @@ function profileSvg(record, motif, index) {
       innerHeight -
       ((value - yMin) / (yMax - yMin || 1)) * innerHeight,
     parts = [
-      `<svg class="aggregate-panel" data-panel="${index}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><style>${plotSvgStyle}</style><rect width="${width}" height="${height}" fill="#fff"/><text x="${width / 2}" y="17" class="plot-title" text-anchor="middle">${esc(motifLabel(motif))}</text><text x="${width / 2}" y="32" class="summary-label" text-anchor="middle">regions: ${Number(record.conditionCounts[state.first] || 0).toLocaleString()} / ${Number(record.conditionCounts[state.second] || 0).toLocaleString()}</text>`,
+      `<svg class="aggregate-panel" data-panel="${index}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><style>${plotSvgStyle}</style><rect width="${width}" height="${height}" fill="#fff"/><text x="${width / 2}" y="17" class="plot-title" text-anchor="middle">${esc(motifLabel(motif))}</text><text x="${width / 2}" y="32" class="summary-label" text-anchor="middle">regions: ${siteCountLabel(record.conditionCounts[state.first])} / ${siteCountLabel(record.conditionCounts[state.second])}</text>`,
     ];
   niceTicks(yMin, yMax, 4).forEach((value) =>
     parts.push(
@@ -985,7 +996,13 @@ function profileSvg(record, motif, index) {
   parts.push(
     `<text x="${margin.left + innerWidth / 2}" y="${height - 6}" class="axis-label" text-anchor="middle">${esc(state.payload?.aggregate?.x_label || "Distance from motif center (bp)")}</text><text x="10" y="${margin.top + innerHeight / 2}" class="axis-label" text-anchor="middle" transform="rotate(-90 10 ${margin.top + innerHeight / 2})">${esc(state.payload?.aggregate?.y_label || "Corrected cut-site signal")}</text></svg>`,
   );
-  return parts.join("");
+  const holder = document.createElement('div');
+  holder.innerHTML = parts.join('');
+  const svg = holder.firstElementChild;
+  svg.dataset.yRange = JSON.stringify([yMin, yMax]);
+  clipPlot(svg, 'path', [margin.left, margin.top, innerWidth, innerHeight]);
+  if (values.some(v => v < yMin || v > yMax)) svg.insertAdjacentHTML('beforeend', '<text x="150" y="41" text-anchor="middle" font-size="9">Range clips data</text>');
+  return svg.outerHTML;
 }
 
 function aggregateShape(count) {
@@ -1029,6 +1046,7 @@ function renderLegend() {
 }
 
 async function renderAggregateGrid() {
+  setFigureBusy(true);
   const token = ++state.renderRequest,
     prefixes = state.selected.slice(0, plotCount()),
     shape = aggregateShape(prefixes.length),
@@ -1045,14 +1063,21 @@ async function renderAggregateGrid() {
     const records = await Promise.all(prefixes.map(profileRecord));
     if (token !== state.renderRequest) return;
     const byPrefix = new Map(state.motifs.map((item) => [item.prefix, item]));
+    const items = prefixes.map((prefix,index) => ({context:{...state},record:records[index],motif:byPrefix.get(prefix),index}));
+    prepareAggregateRanges(items);
     grid.innerHTML = prefixes
       .map(
         (prefix, index) =>
           `<div class="aggregate-tile${index === state.active ? " active" : ""}" data-tile="${index}">${profileSvg(records[index], byPrefix.get(prefix), index)}</div>`,
       )
       .join("");
+    items.forEach((item,index) => {
+      item.parent = grid.querySelector(`[data-tile="${index}"]`);
+      item.node = item.parent.querySelector('svg'); attachAggregateControls(item);
+    });
     grid.querySelectorAll("[data-tile]").forEach((tile) =>
-      tile.addEventListener("click", () => {
+      tile.addEventListener("click", (event) => {
+        if (event.target.closest('input,button,summary,details,label')) return;
         state.active = Number(tile.dataset.tile);
         renderAll(false);
       }),
@@ -1061,12 +1086,13 @@ async function renderAggregateGrid() {
     if (token !== state.renderRequest) return;
     grid.innerHTML = `<div class="aggregate-tile"><svg viewBox="0 0 300 300"><text x="150" y="145" text-anchor="middle" class="axis-label">Profile unavailable</text><text x="150" y="165" text-anchor="middle" class="tick">${esc(error.message)}</text></svg></div>`;
   }
+  if (token === state.renderRequest && view.layout !== 'side') setFigureBusy(false);
 }
 
 function setSelectedMotif(prefix) {
   if (state.hasAggregates && !state.aggregate.has(prefix)) {
     const motif = state.motifs.find((item) => item.prefix === prefix);
-    $("status").textContent = `${motifLabel(motif || { name: prefix })} has a statistical result, but this report does not include its aggregate profile.`;
+    $("status").textContent = `${motifLabel(motif || { name: prefix })} has a statistical result, but no embedded aggregate profile.`;
     return;
   }
   state.selected[state.active] = prefix;
@@ -1083,10 +1109,12 @@ function renderAll(refreshControls = true) {
   renderSelectedCards();
   drawRank();
   renderVolcano();
-  if (state.hasAggregates) {
+  if (state.hasAggregates && view.layout !== 'side') {
     renderLegend();
     renderAggregateGrid();
   }
+  else { ++state.renderRequest; $('aggregate-grid').replaceChildren(); setFigureBusy(false); }
+  refreshViewControls();
 }
 
 async function loadComparison(reset = true) {
@@ -1113,7 +1141,7 @@ async function loadComparison(reset = true) {
     ({ entry } = comparisonEntry(first, second));
   }
   if (!entry || (!payload && state.mode === "embedded"))
-    throw new Error("Data for the selected comparison are unavailable");
+    throw new Error("The selected comparison payload is unavailable");
   state.first = first;
   state.second = second;
   const token = ++state.request;
@@ -1134,7 +1162,7 @@ async function loadComparison(reset = true) {
     !payload.conditions.includes(first) ||
     !payload.conditions.includes(second)
   )
-    throw new Error(`The report data do not match the selected comparison: ${first} vs ${second}`);
+    throw new Error(`Payload conditions do not match ${first} and ${second}`);
   state.motifs = payload.points.map((item) => orientedMotif(item, reversed));
   const colors = payload.colors || {};
   state.colors = {
@@ -1142,14 +1170,15 @@ async function loadComparison(reset = true) {
     second: colors[`${second}_up`] || "#2563eb",
     neutral: colors["n.s."] || "#8a94a6",
   };
-  state.sampleStyles = new Map();
+  if (!view.styles.has(entry.comparison)) view.styles.set(entry.comparison, new Map());
+  state.sampleStyles = view.styles.get(entry.comparison);
   state.logoDataCache = new Map();
   state.active = 0;
   ensureSelected(reset);
   renderAll(true);
   const significant = state.motifs.filter((item) => item.significant).length;
   $("status").textContent =
-    `${entry.label || `${first} vs ${second}`} | ${state.motifs.length.toLocaleString()} motifs | ${significant.toLocaleString()} significant | ${first} minus ${second}`;
+    `${entry.label || `${first} vs ${second}`} | ${state.motifs.length.toLocaleString()} motifs | ${significant.toLocaleString()} originally highlighted | ${first} minus ${second}`;
 }
 
 function handleConditionChange(changed) {
@@ -1177,6 +1206,7 @@ function availablePartners(condition) {
 }
 
 function comparisonTsv() {
+  if (bootstrap.singlePayload && state.payload?.results_tsv) return state.payload.results_tsv;
   const columns = [
       "condition1",
       "condition2",
@@ -1447,6 +1477,7 @@ function exportSvg(svg, name) {
 }
 
 function exportName(suffix) {
+  if (bootstrap.singlePayload) return `diff_footprints_${({motif_logos:'motif_logo_panel',barplot:'barplot',volcano:'volcano',aggregate:'aggregate_grid',combined:'panel',fp_tools:'results'})[suffix] || suffix}`;
   const base = state.mode === "embedded" && state.entry?.label
     ? state.entry.label
     : `${state.first}_vs_${state.second}`;
@@ -1464,16 +1495,16 @@ function bindExports() {
     }
   });
   $("download-rank").addEventListener("click", () =>
-    exportSvg(serializeSvg($("rank-chart")), exportName("barplot")),
+    exportSvg(view.layout === 'side' ? sidePanelSvg('rank') : serializeSvg($("rank-chart")), exportName("barplot")),
   );
   $("download-volcano").addEventListener("click", () =>
-    exportSvg(serializeSvg($("chart")), exportName("volcano")),
+    exportSvg(view.layout === 'side' ? sidePanelSvg('volcano') : serializeSvg($("chart")), exportName("volcano")),
   );
   $("download-aggregate").addEventListener("click", () =>
-    exportSvg(aggregateGridSvg(), exportName("aggregate")),
+    exportSvg(view.layout === 'side' ? sidePanelSvg('aggregate') : aggregateGridSvg(), exportName("aggregate")),
   );
   $("download-panel").addEventListener("click", () =>
-    exportSvg(combinedPanelSvg(), exportName("combined")),
+    exportSvg(view.layout === 'side' ? sidePanelSvg('combined') : combinedPanelSvg(), exportName("combined")),
   );
   $("download-tsv").addEventListener("click", () =>
     downloadBlob(
@@ -1497,15 +1528,15 @@ function bindExports() {
 
 function syncRows(source) {
   const value = Math.max(
-    2,
-    Math.min(200, Math.floor(Number(source.value) || 20)),
+    1,
+    Math.min(Number(source.max), Math.floor(Number(source.value) || 20)),
   );
   $("rank-rows").value = value;
   $("rank-rows-slider").value = value;
-  drawRank();
+  renderAll(false);
 }
 function showError(error) {
-  $("status").textContent = `Report error: ${error.message}`;
+  $("status").textContent = `Could not load resource: ${error.message}`;
   console.error(error);
 }
 
@@ -1514,15 +1545,18 @@ async function init() {
     let metadata;
     if (state.mode === "embedded") {
       state.review = await decodeEmbeddedPayload(bootstrap.payloadB64 || "");
+      if (bootstrap.singlePayload) state.review = {schema:'fp-tools.review-multi-comparisons.v1', title:state.review.title,
+        comparisons:[{label:state.review.title || state.review.conditions.join(' vs '), payload:state.review}]};
       if (state.review.schema !== "fp-tools.review-multi-comparisons.v1")
-        throw new Error("This report uses an unsupported data format. Regenerate it with the current fp-tools version.");
+        throw new Error("Unsupported embedded review payload");
       if (!state.review.comparisons?.length)
-        throw new Error("This report contains no comparisons");
+        throw new Error("The embedded review contains no comparisons");
       metadata = embeddedMetadata(state.review);
     } else {
       metadata = await fetchJson("data/metadata.json");
     }
     state.metadata = metadata;
+    setupReportOptions();
     if (metadata.documentation_url) {
       $("documentation-return").href = metadata.documentation_url;
       $("documentation-return").hidden = false;
@@ -1574,11 +1608,11 @@ async function init() {
     $("rank-rows-slider").addEventListener("input", (event) =>
       syncRows(event.target),
     );
-    $("rank-sort-toggle").addEventListener("change", drawRank);
-    $("volcano-highlight").addEventListener("change", renderVolcano);
-    $("volcano-labels").addEventListener("input", renderVolcano);
+    $("rank-sort-toggle").addEventListener("change", () => renderAll(false));
+    $("volcano-highlight").addEventListener("change", () => renderAll(false));
+    $("volcano-labels").addEventListener("input", () => renderAll(false));
     bindExports();
-    if (window.innerWidth >= 1100 && window.innerHeight < 900)
+    if (!bootstrap.singlePayload && window.innerWidth >= 1100 && window.innerHeight < 900)
       $("options").removeAttribute("open");
     await loadComparison(true);
   } catch (error) {

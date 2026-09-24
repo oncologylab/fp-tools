@@ -63,6 +63,16 @@ further analysis. Positive changes favor `cond1`; negative changes favor
 `cond2`. Check replicate agreement and the aggregate cut-site profiles along
 with the statistics when interpreting a difference.
 
+Use **Plot ranges and display filters** to adjust the volcano and waterfall
+axes, the number of top motifs, and the significance and absolute-change
+cutoffs. The initial display filter is false discovery rate (FDR) ≤ 0.05 and
+absolute footprint-score change (|ΔFP|) ≥ 0.1. Both criteria are required.
+Nonpassing volcano points remain gray unless you hide them. These are display
+settings; the original result tables remain unchanged. Aggregate plots also
+have individual or shared Y-axis controls. See the
+[plot-control guide](review-multi-comparisons.md#adjust-plots-and-compare-results)
+for details.
+
 ## Compare region sets
 
 Region-set analyses use the same result/report patterns and add confidence

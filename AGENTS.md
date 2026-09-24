@@ -106,6 +106,13 @@ For documentation changes, preserve the existing four-page MkDocs navigation
 and the two standalone demos. Run the strict MkDocs build and, when Playwright
 is installed, `python scripts/audit_docs.py --site-dir site`.
 
+For interactive report changes, keep display filters and axis settings separate
+from scientific payloads and result-table exports. Differential and review HTML
+share the static-browser renderer; standalone aggregate HTML uses the shared
+axis helpers. Run `python scripts/audit_report_axes.py --output-dir
+benchmarks/results/report_axis_audit` alongside the existing report-control
+audit. Preserve demo-specific branding and navigation when refreshing assets.
+
 ## Coding Style
 
 Follow the existing codebase style before introducing new patterns. Python

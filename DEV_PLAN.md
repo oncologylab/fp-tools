@@ -1,6 +1,43 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-21
+Last updated: 2026-09-23
+
+## Unreleased report display controls
+
+Main now shares presentation controls between individual differential reports
+and multi-comparison reviews. Single and side-by-side layouts support independent
+volcano X/Y and waterfall X sliders, numeric limits and reset; shared automatic
+scales include every comparison. Aggregate Y controls support individual plots
+and a shared range across displayed plots, including standalone batch reports.
+Waterfalls have axis ticks and an editable total motif count. Display filters
+require both the chosen p-value/FDR cutoff and absolute deltaFP cutoff (initially
+FDR <= 0.05 and |deltaFP| >= 0.1); failing volcano points remain gray or can be
+hidden. SVG exports retain the current display. Scientific payloads, full-table
+downloads and analysis calculations are unchanged.
+
+Regression coverage includes missing values, inclusive thresholds, invalid
+ranges, independent overrides for duplicate comparison panels, hidden comparisons
+in shared scales, empty filtered results, sliders/reset, exports and unchanged
+payloads. The browser audit covers embedded, bundled, individual and standalone
+aggregate reports. Documentation demos retain their branding and sample styles.
+The documentation audit permits intentional vertical scrolling for the new
+controls while retaining overlap, horizontal-overflow and plot-containment checks.
+
+Validation on Linux/source: 644 tests passed, 1 skipped (26 warnings); the final
+documentation/control contract subset passed 50 tests. Console-script smoke
+checks, the call-footprints YAML dry run and pip check passed. Native Windows
+and macOS frozen applications were not rebuilt or tested for this change.
+This is unreleased maintenance; no version bump, GitHub push or release.
+
+Strict MkDocs and the full documentation browser audit passed (33 pages, three
+viewport sizes, dark-system preference). The final axis/filter browser audit
+passed all four report formats plus the actual TGFb review (all 46 comparisons)
+and a representative individual report. All 47 rebuilt Box HTML files have
+identical decoded scientific payloads to the originals. Original HTML backup:
+`yilab:Yaoxiang/fp-tools/TGFb_timecourse2_vs0hr_html_backup_20260923T2124Z/`;
+download verification confirmed 47 matching files and zero differences.
+Local receipts, screenshots and full validation logs are under the ignored
+`benchmarks/results/report_controls_20260923/` directory.
 
 ## Current Baseline
 
