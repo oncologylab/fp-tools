@@ -12,6 +12,41 @@
   --options-height: 290px;
   --gap: 8px;
 }
+.plot-settings {margin: 8px; padding: 10px; background: #fff; border: 1px solid #d8e2ef; border-radius: 6px;}
+.settings-row {display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0;}
+.settings-row label {display: flex; align-items: center; gap: 5px;}
+.settings-row input[type=number] {width: 90px;}
+.axis-editor {padding: 5px; background: #f5f8fc; border-radius: 4px; font-size: 12px;}
+.axis-editor summary {cursor: pointer;}
+.axis-editor label {display: flex; align-items: center; gap: 4px; margin: 4px 0;}
+.axis-editor input[type=number] {width: 105px;}
+.axis-editor input[type=range] {width: 105px;}
+.axis-editor [aria-invalid=true] {outline: 2px solid #b91c1c;}
+.axis-editor [role=status] {display: block; color: #b91c1c;}
+#comparison-grid {display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 8px;}
+.comparison-card {min-width: 0; background: white; padding: 10px; border: 1px solid #d8e2ef; border-radius: 6px;}
+.comparison-card > select {width: 100%; margin-bottom: 8px;}
+.comparison-pair {display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.5fr); gap: 8px;}
+.comparison-pair svg {width: 100%; height: auto;}
+.side-aggregate {max-width: 520px; margin: 12px auto;}
+.side-aggregate svg {width: 100%; height: auto;}
+.side-legend,.aggregate-filter-note {font-size: 11px; color: #475569;}
+body:has(#plot-settings) {overflow-y: auto;}
+body:has(#plot-settings) .report {height: auto; min-height: 100vh;}
+body:has(#plot-settings) .dashboard {min-height: 600px;}
+body:has(#plot-settings) .head {height: auto; min-height: 58px;}
+body:has(#plot-settings) .head h1 {white-space: normal; font-size: clamp(18px,2vw,29px);}
+.aggregate-tile:has(.axis-editor) {overflow: visible; flex-direction: column; align-items: stretch; height: auto;}
+.aggregate-tile:has(.axis-editor) > svg {width: 100%; height: min(420px,calc(500px / var(--aggregate-rows,1))); flex: none;}
+.aggregate-card:has(.axis-editor) {overflow: auto;}
+.aggregate-grid:has(.axis-editor) {grid-template-rows: none; grid-auto-rows: max-content; align-content: start; height: max-content;}
+.aggregate-axis-controls {padding: 4px; min-width: 0;}
+.aggregate-axis-controls .axis-editor label {display: grid; grid-template-columns: auto minmax(0,1fr) minmax(0,1fr);}
+.aggregate-axis-controls .axis-editor input {width: 100%; min-width: 0;}
+body:has(#plot-settings) .wrap {height: auto;}
+body:has(#plot-settings) #status {position: static; margin: 8px;}
+@media(max-width:1100px) {#comparison-grid {grid-template-columns: 1fr;}}
+@media(max-width:600px) {.comparison-pair {grid-template-columns: 1fr;} .settings-row {align-items: stretch;}}
 * {
   box-sizing: border-box;
 }

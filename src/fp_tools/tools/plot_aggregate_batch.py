@@ -779,6 +779,11 @@ function updateGroupAutoscale(){{const panels=[...groupAutoscalePanels];if(!pane
 document.getElementById('download-grid').addEventListener('click',downloadGrid);document.getElementById('download-logo').addEventListener('click',downloadLogoPanel);document.getElementById('download-combined').addEventListener('click',downloadGrid);document.getElementById('group-autoscale').addEventListener('click',updateGroupAutoscale);document.getElementById('reset-autoscale').addEventListener('click',()=>{{groupAutoscaleDomain=null;groupAutoscalePanels.clear();renderAll(false)}});plotCountSel.addEventListener('change',()=>{{ensureSlots(false);groupAutoscaleDomain=null;renderAll(false)}});decodePayload().then(data=>{{payload=data;for(let i=1;i<=12;i++)plotCountSel.insertAdjacentHTML('beforeend',`<option value="${{i}}">${{i}}</option>`);plotCountSel.value=String(initialPlotCount());ensureSlots(true);renderAll()}}).catch(err=>{{reportDetail.textContent=`Could not open report payload: ${{err.message}}`}});
 </script></body></html>"""
     Path(output).parent.mkdir(parents=True, exist_ok=True)
+    from importlib.resources import files
+    resources = files("fp_tools.resources.static_browser")
+    additions = "".join("<script>\n" + resources.joinpath(name).read_text(encoding="utf-8") + "\n</script>"
+                        for name in ("plot_controls.js", "batch_axes.js"))
+    document = document.replace("</body>", additions + "</body>")
     Path(output).write_text(document, encoding="utf-8")
 
 

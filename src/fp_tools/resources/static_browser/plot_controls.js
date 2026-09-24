@@ -30,7 +30,7 @@
   }
 
   function rankMotifs(motifs, mode, limit) {
-    const total = Math.max(2, Math.floor(number(limit, 20))),
+    const total = Math.max(1, Math.floor(number(limit, 20))),
       negativeCount = Math.floor(total / 2),
       positiveCount = total - negativeCount,
       significanceOrder = (a, b) =>
@@ -59,10 +59,84 @@
           number(a.pvalue, 1) - number(b.pvalue, 1),
       );
     }
-    return {
-      negative: negative.slice(0, negativeCount),
-      positive: positive.slice(0, positiveCount),
-    };
+    const n = Math.min(negative.length, negativeCount + Math.max(0, positiveCount - positive.length));
+    const p = Math.min(positive.length, positiveCount + Math.max(0, negativeCount - negative.length));
+    return { negative: negative.slice(0, n), positive: positive.slice(0, p) };
+  }
+
+  function numeric(value) {
+    return value !== null && value !== undefined && value !== '' &&
+      typeof value !== 'boolean' && Number.isFinite(Number(value));
+  }
+
+  function passesDisplayFilter(point, filter) {
+    const effect = point.effect ?? point.change;
+    const probability = point[filter.metric];
+    return numeric(effect) && numeric(probability) &&
+      Number(probability) >= 0 && Number(probability) <= 1 &&
+      Number(probability) <= filter.alpha && Math.abs(Number(effect)) >= filter.delta;
+  }
+
+  function validRange(range) {
+    return Array.isArray(range) && range.length === 2 && range.every(numeric) &&
+      Number(range[0]) < Number(range[1]);
+  }
+
+  function autoDomain(values, mode = 'signed') {
+    let lo = 0, hi = 0;
+    for (const value of values) if (numeric(value)) {
+      lo = Math.min(lo, Number(value)); hi = Math.max(hi, Number(value));
+    }
+    if (mode === 'symmetric') {
+      const bound = Math.max(Math.abs(lo), hi) * 1.05 || 1;
+      return [-bound, bound];
+    }
+    if (mode === 'positive') return [0, hi * 1.05 || 1];
+    const pad = Math.max((hi - lo) * .18, 1e-6);
+    return [lo - pad, hi + pad];
+  }
+
+  // A reusable DOM control; callback receives only valid ranges or null (reset).
+  function axisEditor(label, range, custom, onChange, nonnegative = false) {
+    const box = document.createElement('details');
+    box.className = 'axis-editor';
+    const summary = document.createElement('summary');
+    summary.textContent = `${label}: ${range.map(v => Number(v.toPrecision(5))).join(' to ')}${custom ? ' · Custom range' : ' · Auto'}`;
+    box.append(summary);
+    const span = range[1] - range[0], bounds = [range[0] - span, range[1] + span];
+    if (nonnegative) bounds[0] = Math.max(0, bounds[0]);
+    const numbers = [], sliders = [], error = document.createElement('span');
+    error.setAttribute('role', 'status');
+    for (let i = 0; i < 2; i++) {
+      const row = document.createElement('label');
+      row.textContent = i ? 'Maximum ' : 'Minimum ';
+      const slider = document.createElement('input'), input = document.createElement('input');
+      slider.type = 'range'; slider.min = bounds[0]; slider.max = bounds[1];
+      slider.step = span / 1000; slider.value = range[i];
+      input.type = 'number'; input.step = 'any'; input.value = Number(range[i].toPrecision(8));
+      if (nonnegative) input.min = 0;
+      slider.setAttribute('aria-label', `${label} ${i ? 'maximum' : 'minimum'} slider`);
+      input.setAttribute('aria-label', `${label} ${i ? 'maximum' : 'minimum'}`);
+      row.append(slider, input); box.append(row); numbers.push(input); sliders.push(slider);
+      const commit = () => {
+        const next = numbers.map(n => n.value === '' ? '' : Number(n.value));
+        const valid = validRange(next) && (!nonnegative || next[0] >= 0);
+        numbers.forEach(n => n.setAttribute('aria-invalid', String(!valid)));
+        error.textContent = valid ? '' : 'Enter finite limits with minimum below maximum.';
+        if (!valid) return;
+        sliders.forEach((s, j) => {
+          s.min = Math.min(Number(s.min), next[0]); s.max = Math.max(Number(s.max), next[1]); s.value = next[j];
+        });
+        summary.textContent = `${label}: ${next.map(v => Number(v.toPrecision(5))).join(' to ')} · Custom range`;
+        onChange(next);
+      };
+      slider.addEventListener('input', () => {input.value = slider.value; commit();});
+      input.addEventListener('change', commit);
+    }
+    const reset = document.createElement('button'); reset.type = 'button';
+    reset.textContent = `Reset ${label}`; reset.addEventListener('click', () => onChange(null));
+    box.append(reset, error);
+    return box;
   }
 
   function parseInterestTerms(value) {
@@ -141,6 +215,11 @@
   }
 
   return {
+    numeric,
+    passesDisplayFilter,
+    validRange,
+    autoDomain,
+    axisEditor,
     matchingMotifs,
     negLog10P,
     oppositeMetric,

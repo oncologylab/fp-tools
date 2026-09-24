@@ -45,24 +45,29 @@ def _read_gzip_json(path: Path) -> dict:
         return json.load(handle)
 
 
-def write_embedded_static_browser(review_payload: dict, output: str | Path) -> Path:
+def write_embedded_static_browser(review_payload: dict, output: str | Path, *, default_view: str = "single", source_payload: dict | None = None, encoded_payload: str | None = None) -> Path:
     """Package the shared browser and a review payload into one portable HTML file."""
+    if default_view not in {"single", "side"}:
+        raise ValueError("default_view must be 'single' or 'side'")
     comparisons = review_payload.get("comparisons") or []
     if not comparisons:
         raise ValueError("No comparison payloads were supplied")
+    if source_payload is not None and (len(comparisons) != 1 or comparisons[0].get("payload") != source_payload):
+        raise ValueError("source_payload must match the single comparison payload")
     for record in comparisons:
         payload = record.get("payload") or {}
         if len(payload.get("conditions") or []) != 2 or not payload.get("points"):
             raise ValueError("Each input must be a two-condition diff-footprints report")
 
-    raw = json.dumps(
-        review_payload,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    ).encode("utf-8")
-    payload_b64 = base64.b64encode(
-        gzip.compress(raw, compresslevel=9, mtime=0)
-    ).decode("ascii")
+    embedded_payload = source_payload if source_payload is not None else review_payload
+    if encoded_payload is not None:
+        decoded = json.loads(gzip.decompress(base64.b64decode(encoded_payload, validate=True)))
+        if decoded != embedded_payload:
+            raise ValueError("encoded_payload does not match the supplied scientific payload")
+        payload_b64 = encoded_payload
+    else:
+        raw = json.dumps(embedded_payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        payload_b64 = base64.b64encode(gzip.compress(raw, compresslevel=9, mtime=0)).decode("ascii")
     has_aggregates = any(
         ((record.get("payload") or {}).get("aggregate") or {}).get("motifs")
         for record in comparisons
@@ -74,6 +79,7 @@ def write_embedded_static_browser(review_payload: dict, output: str | Path) -> P
     plot_controls = template_root.joinpath("plot_controls.js").read_text(
         encoding="utf-8"
     )
+    report_options = template_root.joinpath("report_options.js").read_text(encoding="utf-8")
     title = html.escape(
         str(
             review_payload.get("title")
@@ -84,7 +90,12 @@ def write_embedded_static_browser(review_payload: dict, output: str | Path) -> P
         f'<script>const reportPayloadB64="{payload_b64}",'
         f'hasAggregateProfiles={str(has_aggregates).lower()};'
         "window.fpToolsBrowserBootstrap={mode:\"embedded\","
-        "payloadB64:reportPayloadB64};</script>"
+        f"payloadB64:reportPayloadB64,defaultView:{json.dumps(default_view)},"
+        f"singlePayload:{str(source_payload is not None).lower()}}};</script>"
+    )
+    document = document.replace(
+        '<script src="report_options.js" defer></script>',
+        f"<script>\n{report_options}\n</script>",
     )
     document = document.replace(
         '<link rel="stylesheet" href="styles.css" />',
@@ -102,6 +113,8 @@ def write_embedded_static_browser(review_payload: dict, output: str | Path) -> P
         "<title>Differential footprint report</title>",
         f"<title>{title}</title>",
     )
+    if source_payload is not None:
+        document = document.replace('>Comparison TSV</button>', '>Download results TSV</button>')
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(document, encoding="utf-8")
@@ -410,7 +423,7 @@ def _build_static_browser(
     (data_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
 
     template_root = files("fp_tools.resources.static_browser")
-    for name in ("index.html", "plot_controls.js", "app.js", "styles.css"):
+    for name in ("index.html", "plot_controls.js", "report_options.js", "app.js", "styles.css"):
         (output_dir / name).write_bytes(template_root.joinpath(name).read_bytes())
     return output_dir / "index.html"
 
