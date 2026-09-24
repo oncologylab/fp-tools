@@ -286,7 +286,10 @@ class ReviewMultiComparisonsTest(unittest.TestCase):
         self.assertNotIn('id="aggregate-legends"', html)
         self.assertIn("function renderAggregateGrid", html)
         self.assertIn("function combinedPanelSvg", html)
-        self.assertNotIn("slotComparisons", html)
+        # Classic is available, but hidden legacy CLI settings still cannot
+        # switch the report away from its default single-comparison view.
+        self.assertIn('defaultView:"single"', html)
+        self.assertIn("function createClassicView", html)
 
     def test_parser_accepts_display_panels_option(self):
         parser = build_parser()

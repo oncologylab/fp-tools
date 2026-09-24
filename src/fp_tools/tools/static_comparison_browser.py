@@ -47,8 +47,8 @@ def _read_gzip_json(path: Path) -> dict:
 
 def write_embedded_static_browser(review_payload: dict, output: str | Path, *, default_view: str = "single", source_payload: dict | None = None, encoded_payload: str | None = None) -> Path:
     """Package the shared browser and a review payload into one portable HTML file."""
-    if default_view not in {"single", "side"}:
-        raise ValueError("default_view must be 'single' or 'side'")
+    if default_view not in {"single", "side", "classic"}:
+        raise ValueError("default_view must be 'single', 'side' or 'classic'")
     comparisons = review_payload.get("comparisons") or []
     if not comparisons:
         raise ValueError("No comparison payloads were supplied")
@@ -80,6 +80,8 @@ def write_embedded_static_browser(review_payload: dict, output: str | Path, *, d
         encoding="utf-8"
     )
     report_options = template_root.joinpath("report_options.js").read_text(encoding="utf-8")
+    classic = template_root.joinpath("classic.js").read_text(encoding="utf-8")
+    classic_css = template_root.joinpath("classic.css").read_text(encoding="utf-8")
     title = html.escape(
         str(
             review_payload.get("title")
@@ -97,6 +99,8 @@ def write_embedded_static_browser(review_payload: dict, output: str | Path, *, d
         '<script src="report_options.js" defer></script>',
         f"<script>\n{report_options}\n</script>",
     )
+    document = document.replace('<script src="classic.js" defer></script>', f"<script>\n{classic}\n</script>")
+    document = document.replace('<link rel="stylesheet" href="classic.css" />', f"<style>\n{classic_css}\n</style>")
     document = document.replace(
         '<link rel="stylesheet" href="styles.css" />',
         f"<style>\n{stylesheet}\n</style>",
@@ -423,7 +427,7 @@ def _build_static_browser(
     (data_dir / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
 
     template_root = files("fp_tools.resources.static_browser")
-    for name in ("index.html", "plot_controls.js", "report_options.js", "app.js", "styles.css"):
+    for name in ("index.html", "plot_controls.js", "report_options.js", "classic.js", "classic.css", "app.js", "styles.css"):
         (output_dir / name).write_bytes(template_root.joinpath(name).read_bytes())
     return output_dir / "index.html"
 

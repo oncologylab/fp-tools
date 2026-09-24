@@ -60,7 +60,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input-dir',type=Path,required=True)
     parser.add_argument('--output-dir',type=Path,required=True)
-    parser.add_argument('--review-view',choices=['single','side'],default='side')
+    parser.add_argument('--review-view',choices=['single','side','classic'],default='side')
     args=parser.parse_args()
     if args.input_dir.resolve()==args.output_dir.resolve():
         parser.error('Use a separate output directory to preserve the original HTML files.')

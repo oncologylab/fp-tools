@@ -70,3 +70,17 @@ def test_bundle_and_standalone_ship_same_options(tmp_path):
     from fp_tools.tools.review_multi_comparisons import _compressed_json_b64
     with pytest.raises(ValueError,match='encoded_payload'):
         write_embedded_static_browser(review,target,encoded_payload=_compressed_json_b64({'different':True}))
+
+
+def test_classic_is_an_optional_embedded_view_with_unchanged_payload(tmp_path):
+    from fp_tools.tools.static_comparison_browser import write_embedded_static_browser
+    from scripts.rebuild_report_html import read_report_payload
+    payload = {'conditions':['A','B'], 'points':[{'prefix':'M','change':.2,'pvalue':.01,'fdr':.02}]}
+    review = {'schema':'fp-tools.review-multi-comparisons.v1','comparisons':[{'payload':payload}]}
+    path = tmp_path/'classic.html'
+    write_embedded_static_browser(review,path,default_view='classic')
+    text = path.read_text()
+    assert 'defaultView:"classic"' in text
+    assert 'createClassicView' in text
+    assert '<script src=' not in text
+    assert read_report_payload(path) == review
