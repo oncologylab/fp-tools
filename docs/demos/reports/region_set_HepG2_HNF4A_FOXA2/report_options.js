@@ -131,7 +131,7 @@ function setupReportOptions() {
   const box = document.createElement('details'); box.id = 'plot-settings';
   box.className = 'plot-settings'; box.open = true;
   box.innerHTML = `<summary>Plot ranges and display filters</summary><div class="settings-row">
-    <label>View <select id="report-layout"><option value="single">Single comparison</option><option value="side">Side by side</option></select></label>
+    <label>View <select id="report-layout"><option value="single">Single comparison</option><option value="side">Side by side</option><option value="classic">Classic</option></select></label>
     <label id="comparison-count-label">Comparisons <input id="comparison-count" type="number" min="2" max="8" value="4"></label>
     <label>Significance <select id="filter-metric"><option value="fdr">False discovery rate (FDR)</option><option value="pvalue">Raw p-value</option></select></label>
     <label>Maximum <input id="filter-alpha" type="number" min="0" max="1" step="any" value="0.05"></label>
@@ -143,7 +143,7 @@ function setupReportOptions() {
     <div id="shared-aggregate-controls"></div>`;
   $('dashboard').before(box);
   const side = document.createElement('section'); side.id = 'comparison-grid'; $('dashboard').after(side);
-  $('report-layout').value = bootstrap.defaultView === 'side' ? 'side' : 'single';
+  $('report-layout').value = ['side','classic'].includes(bootstrap.defaultView) ? bootstrap.defaultView : 'single';
   view.layout = $('report-layout').value;
   $('report-layout').disabled = state.metadata.comparisons.length < 2;
   $('comparison-count').max = Math.min(8, state.metadata.comparisons.length);

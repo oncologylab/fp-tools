@@ -1,6 +1,55 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-23
+Last updated: 2026-09-24
+
+## Optional Classic report view (unreleased)
+
+Multi-comparison reports now offer a Classic view based on the verified
+pre-control TGFb report: left sidebar, eight compact comparison panels, and a
+separate aggregate grid. Sample curves retain the old 0.7 width / 0.9 alpha
+defaults without mean overlays. New display filters and shared/individual axis
+controls sit below the motif logo. A numbered selector chooses the panel to
+edit, including independent ranges when two panels show the same comparison.
+The original single and side-by-side views remain available and defaults are
+unchanged. Classic uses the shared loaders and filter/range helpers; bundled
+profiles are loaded on demand. Exports retain the current limits and filters.
+
+Classic defaults: eight panels (or all available if fewer), 20 top motifs,
+FDR <= 0.05 and |deltaFP| >= 0.1, shared displayed-aggregate Y scaling, and
+independent volcano/waterfall scales. Shared volcano and waterfall ranges use
+all comparisons, including hidden ones. Invalid limits retain the last valid
+range; reset removes the individual override. Missing profiles are labeled,
+not substituted with zero curves. Scientific payloads and result tables are
+unchanged. The Classic Box HTML is separate; existing reports and backups stay
+unchanged. No public CLI flags, scientific defaults, versions or releases change.
+
+Regression coverage includes compact/sidebar placement, duplicate comparison
+panels, hidden-comparison scaling, missing profiles, empty display filters,
+keyboard sliders, invalid limits, reset, all five SVG exports and switching
+back to the existing views. The old legacy-option test now asserts that the
+default remains single-comparison rather than rejecting any Classic code.
+The new browser audit is included in the existing docs workflow.
+
+Linux/source validation: 645 passed, 1 skipped, 26 warnings in 265.52 seconds;
+the focused report subset passed 41 tests. Classic browser checks passed for
+embedded and bundled fixtures and all 46 actual TGFb comparisons, including
+desktop/mobile screenshots. Existing axis/filter and report-export audits
+passed. Strict MkDocs and the documentation browser audit passed 33 pages at
+three viewport sizes with dark-system preference. Console-script smoke checks
+and pip check passed. Native Windows/macOS apps were not rebuilt or tested.
+Receipts, screenshots, preserved failed attempts and validation logs are under
+the ignored `benchmarks/results/classic_report_20260924/` directory.
+
+Published the authorized additional file
+`yilab:Yaoxiang/fp-tools/TGFb_timecourse2_vs0hr/review_multi_comparisons_classic.html`.
+The downloaded file is 88,881,855 bytes and matches validated output SHA-256
+`1d711531f7f5dde6c7630e52fd41459c75872625d559b0060e018290c6647231`.
+Its decoded scientific payload is identical to the verified backup. Before/after
+Box inventories confirm that all 47 pre-existing HTML files retain identical
+SHA-1 values and sizes; exactly one HTML file was added. The backup was not
+modified. Package/docs changes are local and unreleased; no GitHub push.
+The downloaded Box copy also passed the complete Classic browser audit across
+all 46 comparisons, including controls, exports, view switching and mobile layout.
 
 ## Unreleased report display controls
 

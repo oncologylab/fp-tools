@@ -112,6 +112,10 @@ share the static-browser renderer; standalone aggregate HTML uses the shared
 axis helpers. Run `python scripts/audit_report_axes.py --output-dir
 benchmarks/results/report_axis_audit` alongside the existing report-control
 audit. Preserve demo-specific branding and navigation when refreshing assets.
+The optional Classic review view preserves the compact sidebar/grid layout.
+Run `python scripts/audit_report_classic.py --output-dir
+benchmarks/results/report_classic_audit` when changing that view; controls must
+remain below the sidebar motif logo and must not mutate report payloads.
 
 ## Coding Style
 

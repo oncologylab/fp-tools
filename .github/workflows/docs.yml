@@ -43,6 +43,7 @@ jobs:
             --fixture-dir /tmp/fp-tools-report-control-fixtures \
             site/ENCODE-Cancer-Cell-lines-Footprinting/index.html
           python scripts/audit_report_axes.py --output-dir /tmp/fp-tools-report-axis-audit
+          python scripts/audit_report_classic.py --output-dir /tmp/fp-tools-classic-audit
 
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'

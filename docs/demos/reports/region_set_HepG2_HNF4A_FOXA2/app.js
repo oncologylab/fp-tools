@@ -1100,6 +1100,11 @@ function setSelectedMotif(prefix) {
 }
 
 function renderAll(refreshControls = true) {
+  if (view.layout === 'classic') {
+    window.fpToolsClassic.show().catch(showError);
+    return;
+  }
+  window.fpToolsClassic.hide();
   ensureSelected();
   updateHeader();
   if (refreshControls) {

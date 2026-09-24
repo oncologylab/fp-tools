@@ -75,6 +75,16 @@ review-multi-comparisons --inputs baseline/report.html dose1/report.html dose2/r
 
 ## Adjust plots and compare results
 
+Choose **Classic** in the **View** menu for a compact layout with sample styles,
+exports and one selected motif in the left sidebar. Up to eight comparison
+panels appear on the right, with their aggregate plots together underneath.
+The **Plot controls** card sits below the motif logo. Open **Individual plot
+ranges**, select a numbered comparison, and adjust its volcano, waterfall or
+aggregate axes. **Shared scales** controls the group ranges; **Reset** removes
+an individual override. Classic starts with shared aggregate Y scaling and
+independent volcano/waterfall scales. **Top motifs** changes the waterfall count.
+Use the sidebar's view selector to return to the other layouts.
+
 Open **Plot ranges and display filters** to change the view:
 
 - **Single comparison** shows one comparison with several selected motifs.
