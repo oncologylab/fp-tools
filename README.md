@@ -28,6 +28,33 @@ transcription factor (TF) is bound. For CUT&Tag (cleavage under targets and
 tagmentation), interpret signals in the context of the targeted protein and
 assay controls; the ATAC-seq examples are not a CUT&Tag protocol.
 
+## Choose your workflow
+
+<a href="https://raw.githubusercontent.com/oncologylab/fp-tools/main/docs/assets/fp-tools-workflow-animated.svg">
+  <picture>
+    <source media="(prefers-reduced-motion: no-preference)" srcset="https://raw.githubusercontent.com/oncologylab/fp-tools/main/docs/assets/fp-tools-workflow-animated.svg">
+    <img src="https://raw.githubusercontent.com/oncologylab/fp-tools/main/docs/assets/fp-tools-workflow.svg" width="1200" alt="fp-tools workflow map: bulk alignments lead to footprint tracks and comparison reports; single-cell fragments lead to group analysis and per-cell signatures; candidate intervals can enter optional motif discovery.">
+  </picture>
+</a>
+
+[Open full-size map](https://raw.githubusercontent.com/oncologylab/fp-tools/main/docs/assets/fp-tools-workflow-animated.svg)
+· [View static map](https://raw.githubusercontent.com/oncologylab/fp-tools/main/docs/assets/fp-tools-workflow.svg)
+
+- **Bulk samples:** start with sorted alignments, indexes and peak regions;
+  [`bulk-footprinting`](https://oncologylab.github.io/fp-tools/get-started/workflows/bulk-atac-seq/)
+  runs correction, footprint scoring, motif matching and comparison reports.
+- **Single cells:** start with fragments, cell annotations and matching genomic-bin
+  counts; [`sc-footprinting`](https://oncologylab.github.io/fp-tools/get-started/workflows/single-cell/)
+  combines cells into groups, analyzes their footprints and maps signatures back
+  to individual cells.
+- **New motifs:** export candidate footprint intervals, then use the optional
+  [motif discovery workflow](https://oncologylab.github.io/fp-tools/get-started/workflows/de-novo-motif-discovery/)
+  to find enriched motifs and compare them with known motifs.
+
+The map shows the main routes; each analysis command is also available directly.
+For targeted aggregate figures from existing motif results, use
+[`plot-aggregate`](https://oncologylab.github.io/fp-tools/get-started/commands/plot-aggregate/).
+
 ## Install
 
 Choose one route:

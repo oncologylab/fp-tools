@@ -1,6 +1,45 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-24
+Last updated: 2026-10-09
+
+## README workflow illustration (unreleased)
+
+Added original metro-style static and animated SVG maps in `docs/assets/`,
+linked from a new README "Choose your workflow" section. Three labeled routes
+cover bulk analysis, single-cell pseudobulk/per-cell analysis and optional motif
+discovery. Plain-language station labels accompany the public command names.
+The map keeps optional Linux-only FASTQ preparation separate, identifies
+barcode-matched genomic-bin AnnData as an additional signature input, and
+retains reference-matching and binding-interpretation limits. Bulk motif matching
+is a separate station; the single-cell route uses motif-aware diff-footprints.
+Short text alternatives link to the existing practical workflow guides.
+
+Both files have identical scientific content, editable Arial/Helvetica text,
+accessible title/description and no scripts, external fonts or image resources.
+Three decorative route markers move once over four seconds, then disappear.
+The README uses a static image fallback and an animated picture source only
+when no reduced-motion preference is set. This also leaves a static image for
+renderers that strip picture sources, including the locally checked PyPI HTML
+sanitizer. Direct SVG viewing also respects reduced motion and print mode.
+
+Local checks: 27 documentation tests passed; strict MkDocs passed. The existing
+documentation browser audit passed 33 pages at three viewport sizes while
+emulating a dark system preference. Playwright
+checked direct and image-embedded SVG rendering, marker movement and stopping,
+reduced-motion stability, and README previews at 1440/850/390-pixel widths in
+light/dark surroundings. No overlapping/out-of-bounds SVG text or browser errors
+were found. Static/animated XML content equality was verified after removing
+the animation style. Desktop/mobile screenshots were visually inspected; the
+mobile README includes full-size links and a readable text alternative.
+The initial embedded reduced-motion check failed, motivating the picture-based
+static fallback; intermediate evidence is preserved under ignored
+`benchmarks/results/readme_workflow_20261009/`.
+
+The nf-core/rnaseq metro map was a presentation reference, not copied artwork
+or workflow logic (reference file commit `5a54910c107678a4733579a188ea87eb785683b7`).
+No command, scientific, navigation or report behavior changes. Public asset
+URLs point to main and become available only after an authorized push. No
+GitHub/PyPI publication or live-rendering qualification is claimed.
 
 ## Unified All/comparison ranges in Classic (unreleased)
 
