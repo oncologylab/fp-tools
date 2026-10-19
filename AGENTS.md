@@ -138,6 +138,13 @@ local GUI run outputs unless explicitly requested.
 
 ## Research Branch Evidence
 
+The authorized nuclear follow-up follows
+`benchmarks/NUCLEAR_BIAS_ROUND_20261019.md`. Its control-first screen must pass
+before new chromatin scoring. Preserve original calibration outputs; reporting
+corrections belong in versioned new outputs. Keep all protected data closed,
+including naked-DNA replicate 2, and do not interpret ChIP-negative call rates
+as demonstrated false-positive rates.
+
 The October 2026 calibration follow-up (`benchmarks/scripts/calibration_round/`)
 rejected naked-DNA recalibration of LOG21. Do not rerun it or the next-round
 shrinkage candidates unchanged. Report count-stratified discrimination next to

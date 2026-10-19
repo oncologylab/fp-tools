@@ -4,6 +4,14 @@ Last updated: 2026-10-19
 
 ## Next-major-version research goal
 
+**Nuclear sequence-bias follow-up authorized; preparation in progress:** see
+`benchmarks/NUCLEAR_BIAS_ROUND_20261019.md`. Work is isolated on
+`research/footprint-nuclear-bias-20261019`. Correct reporting first, then freeze
+one nuclear-trained LOG21 candidate and its prespecified regularization ablation.
+Held naked-DNA controls govern whether any new chromatin scoring may proceed.
+The old rejection remains valid for the tested candidate, not every possible
+detector. Main and historical evidence are unchanged.
+
 **October calibration follow-up completed — candidate rejected:**
 `benchmarks/scripts/calibration_round/` froze one label-free candidate before
 scoring: LOG21 central-share recalibration (`a + b·logit p`) fitted on
