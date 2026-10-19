@@ -125,3 +125,20 @@ Resource evidence: none qualified. The complete-workflow CPU/memory protocol
 was intentionally not run because the screen failed; the unrun plan remains
 `benchmarks/manifests/end_to_end_resource_protocol_v1.json`. The whole round
 ran in a few minutes on 16 workers; that is not a workflow benchmark.
+
+## Evidence archive
+
+`benchmarks/results/fp_tools_calibration_evidence_2026-10-19_eaa31b1.zip`
+(ignored output; the filename records the packaging commit).
+
+- Size: 101,661,263 bytes (96.95 MiB), 219 entries including `SHA256SUMS`.
+- SHA-256: `ef1e2367c37f610441cf8e719f311538b9b30c954bd3ec079f66b1fd250b07c9`.
+- Integrity, single-root, duplicate and path-traversal checks passed; the
+  archive was extracted into a new empty directory.
+- From that extraction: `python -I -B code/verify.py .` exited 0 (218
+  manifested payloads, 32 fits, 33,200 exact tails, 16,086 calls, 6,300 fold
+  metrics, zero failures); 13 tests passed; `code/reanalyse.py` regenerated
+  all 16 result tables with zero mismatches, writing outside the package.
+- Contents exclude alignments, FASTA, bigWig, protected datasets and
+  credentials; local paths are replaced by `<LOCAL>`. Verifier log:
+  `benchmarks/results/calibration_round_fresh_verifier_v1.log`.
