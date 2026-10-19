@@ -38,7 +38,15 @@ depth/seed expansion or resource qualification is justified. Native production
 DWM qualification remains incomplete; this is not a native TOBIAS comparison.
 Independent calculations reproduce 72,240 new tails/calls and 8,820 defined
 rank/AP rows; 12 paired screens replay using the frozen aggregation contract.
-Full evidence packaging and fresh-extraction checks are recorded separately.
+The fresh-extracted archive passed 773 payload checksums, 8,400 independently
+checked control scores/calls, 1,380 power rows, 15 fold exclusions, 12,040
+sequence-prediction sites, 72,240 chromatin tails/calls and 8,820 rank/AP rows.
+Explicit replay reproduced all 12 screen, 252 paired-task and 294 task-metric
+rows. A representative raw profile was independently reconstructed (402 values)
+and visually inspected; all frozen code hashes resolve to packaged source.
+Fourteen focused nuclear tests pass. See
+`benchmarks/NUCLEAR_BIAS_RESULTS_20261019.md` for the archive hash, commands,
+scientific conclusions and the explicit incomplete shape/uncertainty work.
 
 **October calibration follow-up completed — candidate rejected:**
 `benchmarks/scripts/calibration_round/` froze one label-free candidate before
