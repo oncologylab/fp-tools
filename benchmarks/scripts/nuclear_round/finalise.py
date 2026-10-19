@@ -34,6 +34,21 @@ def finalise(out):
     sites=scores.drop_duplicates('site_id')[ledger_columns].copy()
     sites['cohort']='examined naked DNA replicate1 development controls'
     sites.to_csv(out/'tables/site_ledger.tsv.gz',sep='\t',index=False)
+    variance=[]
+    unique=scores[scores.eligible & scores.deduplicated_fit_representative & scores.LOG21_plus_valid
+                  & scores.LOG21_minus_valid & scores.DWM_plus_valid & scores.DWM_minus_valid]
+    for arm,g in unique.groupby('arm'):
+        pearson=0.;rows=0;observed=0.;expected=0.
+        for strand in ['plus','minus']:
+            n=g[strand+'_total'].to_numpy();c=g[strand+'_center'].to_numpy();q=g['q_'+strand].to_numpy()
+            valid=(n>0)&np.isfinite(q)&(q>0)&(q<1)
+            pearson+=np.sum((c[valid]-n[valid]*q[valid])**2/(n[valid]*q[valid]*(1-q[valid])))
+            rows+=int(valid.sum());observed+=c[valid].sum();expected+=(n[valid]*q[valid]).sum()
+        variance.append(dict(arm=arm,unique_supported_windows=len(g),informative_strand_rows=rows,
+            observed_center=observed,expected_center=expected,observed_over_expected=observed/expected,
+            conditional_Pearson_per_informative_strand=pearson/rows,
+            scope='descriptive working-binomial residual variance; no joint strand or functional uncertainty qualification'))
+    pd.DataFrame(variance).to_csv(out/'tables/conditional_variance_diagnostic.tsv',sep='\t',index=False)
     means.merge(calls,on=['arm','cell','tf'],validate='one_to_one',suffixes=('_mean','_calls')).to_csv(out/'tables/calibration.tsv',sep='\t',index=False)
     unavailable=[]
     for row in task.itertuples():
