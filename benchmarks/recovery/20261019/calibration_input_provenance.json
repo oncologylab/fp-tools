@@ -1,0 +1,1139 @@
+{
+  "examined_not_used": [
+    "naked-DNA replicate 2",
+    "chr16-22/X transfer labels",
+    "raw BAM/FASTA/bigWig"
+  ],
+  "permitted": {
+    "arrays/NakedDNA_rep1.propensities.npz": {
+      "bytes": 26156978,
+      "identity": "next-round derived development data: arrays/NakedDNA_rep1.propensities.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/NakedDNA_rep1.propensities.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/NakedDNA_rep1.propensities.npz",
+      "sha256": "938fa8cc7acb35cb2830dab9f9e36a3a41bbca6521eaded5edace7811a4f5d64"
+    },
+    "arrays/empirical_simulations/block_000.npz": {
+      "bytes": 2392,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_000.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_000.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_000.npz",
+      "sha256": "78f603c72d69e2560b2870e378d979ba830f6d39eaec5d09788f230452481e4e"
+    },
+    "arrays/empirical_simulations/block_001.npz": {
+      "bytes": 12422,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_001.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_001.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_001.npz",
+      "sha256": "3768b767ecb5bb6769d416b08c68f90cf77a29bf42c8c416ad424565b1e5f2b8"
+    },
+    "arrays/empirical_simulations/block_002.npz": {
+      "bytes": 23623,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_002.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_002.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_002.npz",
+      "sha256": "b84a18de27158d9cb3bb524de76d75d62ca6e3dec707fdd5974701a6608d616b"
+    },
+    "arrays/empirical_simulations/block_003.npz": {
+      "bytes": 49447,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_003.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_003.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_003.npz",
+      "sha256": "fbe54ef08f218eca8b0b85e15b3773936ff840156db6cc6e400b4c2d136699e6"
+    },
+    "arrays/empirical_simulations/block_004.npz": {
+      "bytes": 16780,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_004.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_004.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_004.npz",
+      "sha256": "7a6469d9df050fd2ff96937d3c2fa813d5ac4654952e9c0f17efd9bf721df38f"
+    },
+    "arrays/empirical_simulations/block_005.npz": {
+      "bytes": 17361,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_005.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_005.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_005.npz",
+      "sha256": "a4a2f026eafb5a6a2e3647796cc26eeb7770ad0ecbb09fbdac72938c0cc082f4"
+    },
+    "arrays/empirical_simulations/block_006.npz": {
+      "bytes": 36289,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_006.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_006.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_006.npz",
+      "sha256": "24566f24a06bd4196cdacdfe746760e4b42646426ffda2258775a8915267ffb4"
+    },
+    "arrays/empirical_simulations/block_007.npz": {
+      "bytes": 25366,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_007.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_007.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_007.npz",
+      "sha256": "718faab2526880ba8b56e9db4941391da3f9d69d4829ec312c4a0e40f36f7e93"
+    },
+    "arrays/empirical_simulations/block_008.npz": {
+      "bytes": 16080,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_008.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_008.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_008.npz",
+      "sha256": "0c60007568024f1b6f65e85f14aacfaf8ff86f9e308f789a57a7ba75de04bd92"
+    },
+    "arrays/empirical_simulations/block_009.npz": {
+      "bytes": 22778,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_009.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_009.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_009.npz",
+      "sha256": "cdcc3e33a029913777a3d62ffc6e4db0c584d5e19c893c08d34cfade6b266ba1"
+    },
+    "arrays/empirical_simulations/block_010.npz": {
+      "bytes": 2386,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_010.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_010.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_010.npz",
+      "sha256": "2317763a7fdab20daba3359918cd1e08c397960fa5ae0ae5367a108ba9acbb95"
+    },
+    "arrays/empirical_simulations/block_011.npz": {
+      "bytes": 26511,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_011.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_011.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_011.npz",
+      "sha256": "ae60c5f459e891296824df5c30d7cf4d03ca3b7a7a616adccfae1e8c2f9f8947"
+    },
+    "arrays/empirical_simulations/block_012.npz": {
+      "bytes": 2372,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_012.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_012.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_012.npz",
+      "sha256": "47d9429d339c18d79754881f2ec584ecb7b1fc5dd5163b484c7eb2f794fb78dd"
+    },
+    "arrays/empirical_simulations/block_013.npz": {
+      "bytes": 16096,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_013.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_013.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_013.npz",
+      "sha256": "b5dac4633896f9e9b2069baa8e4b50df410585ddc7c99c4edd894a1e8f5eab69"
+    },
+    "arrays/empirical_simulations/block_014.npz": {
+      "bytes": 25257,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_014.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_014.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_014.npz",
+      "sha256": "a6be4677624a98adc831a95790d2031fd53336ccdd1597229df65f62cc552602"
+    },
+    "arrays/empirical_simulations/block_015.npz": {
+      "bytes": 22746,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_015.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_015.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_015.npz",
+      "sha256": "8cd113999ca08ab8ca035bd396091ce61d8f4e6635861458092ec739bf1b5c0a"
+    },
+    "arrays/empirical_simulations/block_016.npz": {
+      "bytes": 36115,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_016.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_016.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_016.npz",
+      "sha256": "2679bf38245d04f2aa2197f4ca30a8c8c88f47fbaedc2ed32a9d42ea94390888"
+    },
+    "arrays/empirical_simulations/block_017.npz": {
+      "bytes": 43852,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_017.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_017.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_017.npz",
+      "sha256": "a66d26989f19c6ff80996703529d86d44b9b9d3099b6daf2975acc6c79c58dc6"
+    },
+    "arrays/empirical_simulations/block_018.npz": {
+      "bytes": 24988,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_018.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_018.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_018.npz",
+      "sha256": "d05b545c822d49295808c4610df91430215b817ec4ff83d38b5d07af21d042cb"
+    },
+    "arrays/empirical_simulations/block_019.npz": {
+      "bytes": 16106,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_019.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_019.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_019.npz",
+      "sha256": "3cfe96b2a0589c9a4f0436c1de6b1d0d4e9a0a0da7a588373568ed0e7d43aa41"
+    },
+    "arrays/empirical_simulations/block_020.npz": {
+      "bytes": 16336,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_020.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_020.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_020.npz",
+      "sha256": "fdaa177b637fe9f072f7953e20ec77ef2bc105833ed1ecf296c0777641b4871a"
+    },
+    "arrays/empirical_simulations/block_021.npz": {
+      "bytes": 18397,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_021.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_021.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_021.npz",
+      "sha256": "3938ea589bf8efe0f53da81c7f2e2e673430a303a7ab26e2bea7e86b8a1d0dfa"
+    },
+    "arrays/empirical_simulations/block_022.npz": {
+      "bytes": 16391,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_022.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_022.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_022.npz",
+      "sha256": "7491c0da74356cf1fc6d5836418da83d2c4d7270ae284946e57daf7901cf4420"
+    },
+    "arrays/empirical_simulations/block_023.npz": {
+      "bytes": 52531,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_023.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_023.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_023.npz",
+      "sha256": "474e30a075d25a5ab3d87ecac0c67cdc737d388247a4b26eb9bad27ba041bf5b"
+    },
+    "arrays/empirical_simulations/block_024.npz": {
+      "bytes": 23776,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_024.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_024.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_024.npz",
+      "sha256": "9e339c709927682b4e44393de6565bb40370da75de4b80cf2dfdf072068a8279"
+    },
+    "arrays/empirical_simulations/block_025.npz": {
+      "bytes": 35078,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_025.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_025.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_025.npz",
+      "sha256": "6ab44ab6966ce44e57732426ddbe6b942520789c80dcdf2f0e344a342453dc94"
+    },
+    "arrays/empirical_simulations/block_026.npz": {
+      "bytes": 15380,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_026.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_026.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_026.npz",
+      "sha256": "b75e806839813963c9deaeb0c16b15d1329e6603750360ae5f73efc2a928722c"
+    },
+    "arrays/empirical_simulations/block_027.npz": {
+      "bytes": 2419,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_027.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_027.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_027.npz",
+      "sha256": "c4be3dd4fdbf607dc4f23a5325840c4c8f1c5eca5ecebc7b1d71c2223284ffdb"
+    },
+    "arrays/empirical_simulations/block_028.npz": {
+      "bytes": 15797,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_028.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_028.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_028.npz",
+      "sha256": "0db293b3cdff071991f14746eb382082f74c1040eaa44fdd9b9ec95c168f327a"
+    },
+    "arrays/empirical_simulations/block_029.npz": {
+      "bytes": 2379,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_029.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_029.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_029.npz",
+      "sha256": "cf7b2265eebea0849b95d94090d44731a8ef123b204156440d2f7dac5ec5dcfa"
+    },
+    "arrays/empirical_simulations/block_030.npz": {
+      "bytes": 22560,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_030.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_030.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_030.npz",
+      "sha256": "c53ffb02cde18869a340d3a2f12311b6eb99c1818c13ca14770c4133a961e685"
+    },
+    "arrays/empirical_simulations/block_031.npz": {
+      "bytes": 2381,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_031.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_031.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_031.npz",
+      "sha256": "22de55ce7116a57d04b184c5f92fe74788d7fafe96b3b5d9c3fc7e97a3cd9562"
+    },
+    "arrays/empirical_simulations/block_032.npz": {
+      "bytes": 22446,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_032.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_032.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_032.npz",
+      "sha256": "b37c4da88e89a7890f9890122ba4b8bbb27202e1f66a49ec6b9e0372688288ee"
+    },
+    "arrays/empirical_simulations/block_033.npz": {
+      "bytes": 34309,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_033.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_033.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_033.npz",
+      "sha256": "c60e542917df77ca9e12779e52372f9e7c9e58f51db98e792f845b1cc90d617c"
+    },
+    "arrays/empirical_simulations/block_034.npz": {
+      "bytes": 85542,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_034.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_034.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_034.npz",
+      "sha256": "8b29ed3a9fa248e74a42e31adcaf6a399d89b51c479acc77cf1e93d5434e41de"
+    },
+    "arrays/empirical_simulations/block_035.npz": {
+      "bytes": 50139,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_035.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_035.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_035.npz",
+      "sha256": "57b6f675512797682b055d7fa88117db7de484c9e20e727956545c005b2d4ae1"
+    },
+    "arrays/empirical_simulations/block_036.npz": {
+      "bytes": 15412,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_036.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_036.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_036.npz",
+      "sha256": "edcc52b597d35c7a3a3b59493f8f3fa00beb46f6b8ce35001070fab18dc2eb90"
+    },
+    "arrays/empirical_simulations/block_037.npz": {
+      "bytes": 41215,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_037.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_037.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_037.npz",
+      "sha256": "79152d82d896bd8a8c44b4839b3a4c572f83be16f2cd310cd697f06842ebd85c"
+    },
+    "arrays/empirical_simulations/block_038.npz": {
+      "bytes": 3806,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_038.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_038.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_038.npz",
+      "sha256": "6fd46c03ea5657e945a96c47259d00e8dcd224dd69c9c3a1f9cf0e825b2985cc"
+    },
+    "arrays/empirical_simulations/block_039.npz": {
+      "bytes": 2396,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_039.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_039.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_039.npz",
+      "sha256": "01cf1643b7c5e58a30b0b94f9e0688acbf41375bbea89991e4dea31e2cbb57fc"
+    },
+    "arrays/empirical_simulations/block_040.npz": {
+      "bytes": 12483,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_040.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_040.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_040.npz",
+      "sha256": "dd216267d6c1bba4894a8b391f12cc36852b739ef15fad44c8f4ce13c43e4271"
+    },
+    "arrays/empirical_simulations/block_041.npz": {
+      "bytes": 39303,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_041.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_041.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_041.npz",
+      "sha256": "4961a30bbeadf69115e5a1a55f1d02913c178c34c745ab20ddbbb37e5510b12d"
+    },
+    "arrays/empirical_simulations/block_042.npz": {
+      "bytes": 27760,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_042.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_042.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_042.npz",
+      "sha256": "64bf814fb8583028a9052764a79dba9343ec9568e2c83bb8e66cb5ffcd420ada"
+    },
+    "arrays/empirical_simulations/block_043.npz": {
+      "bytes": 15446,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_043.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_043.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_043.npz",
+      "sha256": "db44dda6d20901deed884e85f88c1b031e1fa90f41fd9538547211b75c4cb2e9"
+    },
+    "arrays/empirical_simulations/block_044.npz": {
+      "bytes": 32644,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_044.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_044.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_044.npz",
+      "sha256": "a8cf7485306b010a5c6c5e30a1ee1ce5a978d6965f39b91b487c51e0d2117c02"
+    },
+    "arrays/empirical_simulations/block_045.npz": {
+      "bytes": 2374,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_045.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_045.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_045.npz",
+      "sha256": "8e05ce6bf20104055e3937c3c25cd60e44b35a196771255a575a8e7de08dcabe"
+    },
+    "arrays/empirical_simulations/block_046.npz": {
+      "bytes": 24576,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_046.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_046.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_046.npz",
+      "sha256": "1f230bc970dff7c5313a9ea31c85791b7f90c6bd76e7fe24a8bd78aa436b76d7"
+    },
+    "arrays/empirical_simulations/block_047.npz": {
+      "bytes": 2381,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_047.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_047.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_047.npz",
+      "sha256": "5123ef6cfe69f55c4aeea230edc4c9a3e70646400815ade419f0683b24f4ca6b"
+    },
+    "arrays/empirical_simulations/block_048.npz": {
+      "bytes": 2410,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_048.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_048.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_048.npz",
+      "sha256": "4292096d7575c50226c032405a107d4602df0a3d6fb7f82e5a46d2d08361b789"
+    },
+    "arrays/empirical_simulations/block_049.npz": {
+      "bytes": 15843,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_049.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_049.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_049.npz",
+      "sha256": "319a11f12bd09f8ba5d36753dcbc822cdfead17779b4e2e255879111b2639b23"
+    },
+    "arrays/empirical_simulations/block_050.npz": {
+      "bytes": 15439,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_050.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_050.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_050.npz",
+      "sha256": "e1a9316a2fe27dc5de44eeb89f07ea6ab28fa550c1558c74112c6ce0700a2f6a"
+    },
+    "arrays/empirical_simulations/block_051.npz": {
+      "bytes": 51547,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_051.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_051.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_051.npz",
+      "sha256": "00c88bb19dbd3190b84c3e1600d3f06b72541e0da2639ebd9ae531494bffb5bc"
+    },
+    "arrays/empirical_simulations/block_052.npz": {
+      "bytes": 46023,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_052.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_052.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_052.npz",
+      "sha256": "2537bee40b63ec8eb920c3015d9b910465997b986bbd12c89a552aa4bdc85d58"
+    },
+    "arrays/empirical_simulations/block_053.npz": {
+      "bytes": 15370,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_053.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_053.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_053.npz",
+      "sha256": "fc5e4436a47cd2ad3a87d2084526ddf0bc2d1190a6f8cae51e9475712a4a025e"
+    },
+    "arrays/empirical_simulations/block_054.npz": {
+      "bytes": 71068,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_054.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_054.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_054.npz",
+      "sha256": "0449d2bd4cf887f42ccf62b630cdc5defa870eee974348297b102073f153ab26"
+    },
+    "arrays/empirical_simulations/block_055.npz": {
+      "bytes": 56797,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_055.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_055.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_055.npz",
+      "sha256": "cfcfa47b0bf2525be5530d630160117908373d55d6b240c367c033e222804b11"
+    },
+    "arrays/empirical_simulations/block_056.npz": {
+      "bytes": 14445,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_056.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_056.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_056.npz",
+      "sha256": "9ce00c7b15ad254056faebc3d038b2d5d763d9a4b74890b3e048d66dc8febdb9"
+    },
+    "arrays/empirical_simulations/block_057.npz": {
+      "bytes": 39947,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_057.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_057.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_057.npz",
+      "sha256": "ba8552234d91c08386af1afd01f565c39eb046d431c18d27326d3fc0c419416b"
+    },
+    "arrays/empirical_simulations/block_058.npz": {
+      "bytes": 16197,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_058.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_058.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_058.npz",
+      "sha256": "a3d92718e12c07e2c17858fbeb11195570b8345b332a9dee5fb1edae285c3f3c"
+    },
+    "arrays/empirical_simulations/block_059.npz": {
+      "bytes": 22111,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_059.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_059.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_059.npz",
+      "sha256": "1e965c281be95a7ece447a294a85028af4953067e2484ed73b166c5b319b553a"
+    },
+    "arrays/empirical_simulations/block_060.npz": {
+      "bytes": 17160,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_060.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_060.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_060.npz",
+      "sha256": "22ffd2048b3dfa13a88f5947f16782a0408d4ba8a72297760e203a2eba262c12"
+    },
+    "arrays/empirical_simulations/block_061.npz": {
+      "bytes": 73300,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_061.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_061.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_061.npz",
+      "sha256": "427fef4f0e213acaf55ac72c66449cd9f4e5838226f1a53553270085e917f430"
+    },
+    "arrays/empirical_simulations/block_062.npz": {
+      "bytes": 37358,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_062.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_062.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_062.npz",
+      "sha256": "bb292941a8e0f116fa2517a1feca09391756fb5dbe2e203f002f7f5180760c38"
+    },
+    "arrays/empirical_simulations/block_063.npz": {
+      "bytes": 24584,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_063.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_063.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_063.npz",
+      "sha256": "ac495b237548e95e5f5e4f174017ab7225ab9a6f80734ce646495b81ff117d7d"
+    },
+    "arrays/empirical_simulations/block_064.npz": {
+      "bytes": 41046,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_064.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_064.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_064.npz",
+      "sha256": "36c3347a0edb78ace36fe3d7d430cab0494e07c1de7c8f676440d262ea3d61ed"
+    },
+    "arrays/empirical_simulations/block_065.npz": {
+      "bytes": 39334,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_065.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_065.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_065.npz",
+      "sha256": "f9490e6a89d9cb3d3b44f7cd67a05e05c9f546605a02063c6f407885045e3c90"
+    },
+    "arrays/empirical_simulations/block_066.npz": {
+      "bytes": 12274,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_066.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_066.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_066.npz",
+      "sha256": "08f1b9c7aa3b6b9795b28db1ff804055466cf0e21b72b24175a3f87b31fdedae"
+    },
+    "arrays/empirical_simulations/block_067.npz": {
+      "bytes": 25866,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_067.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_067.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_067.npz",
+      "sha256": "62e5db360bc2c45e61f32850a0c4d68367d54dd078c9b454ba7e3cdaf287fbd9"
+    },
+    "arrays/empirical_simulations/block_068.npz": {
+      "bytes": 25424,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_068.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_068.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_068.npz",
+      "sha256": "edeb509530e1209503eeebe014d93f3a487826eb7580ad9106b67d6e959dbb9e"
+    },
+    "arrays/empirical_simulations/block_069.npz": {
+      "bytes": 12323,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_069.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_069.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_069.npz",
+      "sha256": "d51c1855b65675e9a27ac8bad492c502da2b17aa116c38ec2e16f9ec00a80fb9"
+    },
+    "arrays/empirical_simulations/block_070.npz": {
+      "bytes": 25007,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_070.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_070.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_070.npz",
+      "sha256": "c3a900dfb3815c5e9e3c1b9bef1109a062b5c38b5cde2e41dfc7fa45d326b3ed"
+    },
+    "arrays/empirical_simulations/block_071.npz": {
+      "bytes": 16081,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_071.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_071.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_071.npz",
+      "sha256": "4ee674669b83b0892e40cbe590c70302ae32903e56d568d47fdb8191ee275ca0"
+    },
+    "arrays/empirical_simulations/block_072.npz": {
+      "bytes": 67899,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_072.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_072.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_072.npz",
+      "sha256": "c028c97fa42872003608ebbf288b6011bcf2367c5046aceb9d4e921b39077e21"
+    },
+    "arrays/empirical_simulations/block_073.npz": {
+      "bytes": 49516,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_073.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_073.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_073.npz",
+      "sha256": "35fdd8393128a207f867a4fd7244425ba23a9dcffbada6ddcd75e767a034d6f2"
+    },
+    "arrays/empirical_simulations/block_074.npz": {
+      "bytes": 42183,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_074.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_074.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_074.npz",
+      "sha256": "69f15ab5e0fa6349183a991160d22261ed4ade2afb667513a7c0f33a855735ba"
+    },
+    "arrays/empirical_simulations/block_075.npz": {
+      "bytes": 27101,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_075.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_075.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_075.npz",
+      "sha256": "659cd514071ccfbe310222cd43c81984b415a9fe800be246a86898c6f54055db"
+    },
+    "arrays/empirical_simulations/block_076.npz": {
+      "bytes": 16902,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_076.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_076.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_076.npz",
+      "sha256": "a839648f3750824b3d43544838ac40b27153da62920270d71beebbf2a99fc3ae"
+    },
+    "arrays/empirical_simulations/block_077.npz": {
+      "bytes": 50324,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_077.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_077.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_077.npz",
+      "sha256": "564e6cdd49a30e36e561abafca2baf9879087805a32858b2f3d7349a2b7d0430"
+    },
+    "arrays/empirical_simulations/block_078.npz": {
+      "bytes": 50738,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_078.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_078.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_078.npz",
+      "sha256": "53f1c53abcddc6dbdc3e4a4fa5f8a409516cd595df079225b2ce9bce1a8513ea"
+    },
+    "arrays/empirical_simulations/block_079.npz": {
+      "bytes": 21595,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_079.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_079.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_079.npz",
+      "sha256": "445ca5a094af69be3dce3cd776afbda2b2654a772118bb6782bb24b14e098cf8"
+    },
+    "arrays/empirical_simulations/block_080.npz": {
+      "bytes": 49645,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_080.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_080.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_080.npz",
+      "sha256": "7d9fc7286a93c1af979a04b8c021a339c3014f39588ffc062c332a88acffdd11"
+    },
+    "arrays/empirical_simulations/block_081.npz": {
+      "bytes": 13852,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_081.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_081.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_081.npz",
+      "sha256": "67f2b19d9a0da761ee945826fd04474b3603e10db428727b9314df8452084cce"
+    },
+    "arrays/empirical_simulations/block_082.npz": {
+      "bytes": 22513,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_082.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_082.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_082.npz",
+      "sha256": "a199aa04e0523689218fe760421a08be819eba1615b9469f2821704b13a2e881"
+    },
+    "arrays/empirical_simulations/block_083.npz": {
+      "bytes": 14618,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_083.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_083.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_083.npz",
+      "sha256": "154bf343f3b37116e271e8aebaafee10d9e89e4cb43700df2a0a66e8592ac4ae"
+    },
+    "arrays/empirical_simulations/block_084.npz": {
+      "bytes": 53702,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_084.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_084.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_084.npz",
+      "sha256": "5fbabd524d0bf33fc770ef33ccdcddd68c2e539a770db3b90f88b1b1eb9e153c"
+    },
+    "arrays/empirical_simulations/block_085.npz": {
+      "bytes": 29590,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_085.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_085.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_085.npz",
+      "sha256": "7478974e7edeeadbb6f864a3bc06cee9df612b35a57b2325999583bedbf512e4"
+    },
+    "arrays/empirical_simulations/block_086.npz": {
+      "bytes": 47450,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_086.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_086.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_086.npz",
+      "sha256": "ea8e48f07d68bcb1bccb0c77d375bddf5877905f7e1e906929b9b4bc677b3c75"
+    },
+    "arrays/empirical_simulations/block_087.npz": {
+      "bytes": 52147,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_087.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_087.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_087.npz",
+      "sha256": "8616e53d3e76db9158c485a7795f7f5c9932a4eb345115e81b9bb3ce0f3bc7d8"
+    },
+    "arrays/empirical_simulations/block_088.npz": {
+      "bytes": 61096,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_088.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_088.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_088.npz",
+      "sha256": "2063387d72613fcb0eb39086c586e87bbb6b9da1a7d69b016d9268668ebb95bc"
+    },
+    "arrays/empirical_simulations/block_089.npz": {
+      "bytes": 17570,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_089.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_089.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_089.npz",
+      "sha256": "712ffeff96de391d220512c9bd94a0b2af092d100dd577846153b55da7ba9145"
+    },
+    "arrays/empirical_simulations/block_090.npz": {
+      "bytes": 43854,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_090.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_090.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_090.npz",
+      "sha256": "7990da75f0f13ca6b5275001254433ebbbf8d9a113728676d2ae1e8355846088"
+    },
+    "arrays/empirical_simulations/block_091.npz": {
+      "bytes": 46748,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_091.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_091.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_091.npz",
+      "sha256": "da1fdc924027400bc25e680b0b7d5b1e15994abded4ae0ba1b845a2b99e4cd22"
+    },
+    "arrays/empirical_simulations/block_092.npz": {
+      "bytes": 38701,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_092.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_092.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_092.npz",
+      "sha256": "2bc31107eea904f614d172f19fd7ac2afce11abe29a21a7a9121432cfc06c1f6"
+    },
+    "arrays/empirical_simulations/block_093.npz": {
+      "bytes": 44236,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_093.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_093.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_093.npz",
+      "sha256": "dbc819f52ec3237b3f9643e913c07bdb7de6b8f4d6edb507c41c39f79fafd43f"
+    },
+    "arrays/empirical_simulations/block_094.npz": {
+      "bytes": 58298,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_094.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_094.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_094.npz",
+      "sha256": "3cb9fd9307cb93d5e618e773931e7f9e0a5003bf43fb379e9df6b5b35f21ce8a"
+    },
+    "arrays/empirical_simulations/block_095.npz": {
+      "bytes": 181429,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_095.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_095.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_095.npz",
+      "sha256": "d65c2035c0831582f1a44f664414198f12aa94e9afb9f989cbb46ae5075138c4"
+    },
+    "arrays/empirical_simulations/block_096.npz": {
+      "bytes": 32764,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_096.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_096.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_096.npz",
+      "sha256": "65923ed7ccd8600be1323fc3ba9ec98c106b749c9802d735cf0a787ddba58313"
+    },
+    "arrays/empirical_simulations/block_097.npz": {
+      "bytes": 40093,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_097.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_097.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_097.npz",
+      "sha256": "85942a43b38de7081b1e0d076c81c2ed32b8a3b21db0fed897bd36efb9f2fcee"
+    },
+    "arrays/empirical_simulations/block_098.npz": {
+      "bytes": 49185,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_098.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_098.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_098.npz",
+      "sha256": "79876d0af1f9001c77aa505e53e1a86d016ace412807483323e2a263aee8ac79"
+    },
+    "arrays/empirical_simulations/block_099.npz": {
+      "bytes": 38517,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_099.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_099.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_099.npz",
+      "sha256": "e874303d75aa81bf242e7ee34065885ee188ab9a51ab7158fbb1e4c28417527a"
+    },
+    "arrays/empirical_simulations/block_100.npz": {
+      "bytes": 85846,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_100.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_100.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_100.npz",
+      "sha256": "d5a839fb1d507348494b294b527a365e0d9bb575b5f853d0bbe4cd062f23c3ec"
+    },
+    "arrays/empirical_simulations/block_101.npz": {
+      "bytes": 39772,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_101.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_101.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_101.npz",
+      "sha256": "4db8306534825999c64ecb8ded5fd97ee239ddc46c8b1b3482c3e1472f078fcd"
+    },
+    "arrays/empirical_simulations/block_102.npz": {
+      "bytes": 46319,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_102.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_102.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_102.npz",
+      "sha256": "c5e32b9f70d8329758b9bf1d928d5cb0b4ae8b2b7b4f6f559636380ba00435d8"
+    },
+    "arrays/empirical_simulations/block_103.npz": {
+      "bytes": 33955,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_103.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_103.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_103.npz",
+      "sha256": "ab43c4ef72ba6302572d64cd968b7d7a01a74355f21a26f5800cbe41a59288e6"
+    },
+    "arrays/empirical_simulations/block_104.npz": {
+      "bytes": 30803,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_104.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_104.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_104.npz",
+      "sha256": "8627bb01c37f456cc628eca05f352617be14e1ff427258001a59232ee9b8bb57"
+    },
+    "arrays/empirical_simulations/block_105.npz": {
+      "bytes": 82716,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_105.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_105.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_105.npz",
+      "sha256": "12b3ec9dd3444683490df9a0852972f468dc846dd5b5d21c281b643837752325"
+    },
+    "arrays/empirical_simulations/block_106.npz": {
+      "bytes": 101623,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_106.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_106.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_106.npz",
+      "sha256": "246f6c72ae3bed5de6b57f2c3d97d0c7bc27988a001457dfa23930725d205173"
+    },
+    "arrays/empirical_simulations/block_107.npz": {
+      "bytes": 77349,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_107.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_107.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_107.npz",
+      "sha256": "2e579b32f3ba2f709f906cf6dfcc414e9fab0091bc3948b549c1c828db40b4d2"
+    },
+    "arrays/empirical_simulations/block_108.npz": {
+      "bytes": 47515,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_108.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_108.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_108.npz",
+      "sha256": "1e3603ebd2958740fd90ce2996ae852e33c92002f3e361dd4e3da922cea6c36d"
+    },
+    "arrays/empirical_simulations/block_109.npz": {
+      "bytes": 57827,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_109.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_109.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_109.npz",
+      "sha256": "1a0e824d52d369e9e1ac3ee0dbee390e976ee484729e209405891d963ac031e8"
+    },
+    "arrays/empirical_simulations/block_110.npz": {
+      "bytes": 12212,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_110.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_110.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_110.npz",
+      "sha256": "d21587afd41f184d72799a05d06f1545f6cac7d1b3ddd5cd66c0cb655105d1b3"
+    },
+    "arrays/empirical_simulations/block_111.npz": {
+      "bytes": 12126,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_111.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_111.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_111.npz",
+      "sha256": "a1ae0e50b291227b08819f370821bfd19bf8cea3d29fa2260f8e8dea0362c329"
+    },
+    "arrays/empirical_simulations/block_112.npz": {
+      "bytes": 85987,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_112.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_112.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_112.npz",
+      "sha256": "bd3464dea3148b07402f1d4b0d0d3d233a91fcbad81e72adbffe69722ee605e0"
+    },
+    "arrays/empirical_simulations/block_113.npz": {
+      "bytes": 53033,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_113.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_113.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_113.npz",
+      "sha256": "69e833971ca438cc59f8e251ff2ebd9233ce00a8a5923cee1952f1034191111a"
+    },
+    "arrays/empirical_simulations/block_114.npz": {
+      "bytes": 11904,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_114.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_114.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_114.npz",
+      "sha256": "a6343f09b38a35ed830100954482e9e5e6d5dcca0a95b30d33bf4fa50c7feb13"
+    },
+    "arrays/empirical_simulations/block_115.npz": {
+      "bytes": 76846,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_115.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_115.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_115.npz",
+      "sha256": "49569be1b0c447cd7fa4d11e5a590c9aa14c0a7894635c21f707c09bdb41ccee"
+    },
+    "arrays/empirical_simulations/block_116.npz": {
+      "bytes": 18461,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_116.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_116.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_116.npz",
+      "sha256": "e4b6959e42631715ab8033ad9b949ee407966fb0999299ed88a73fc412604a0f"
+    },
+    "arrays/empirical_simulations/block_117.npz": {
+      "bytes": 72354,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_117.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_117.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_117.npz",
+      "sha256": "149873dc20fe024769f2c6b17a5c49d7d88ba91481adc967afdf85e82f68d3ab"
+    },
+    "arrays/empirical_simulations/block_118.npz": {
+      "bytes": 79802,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_118.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_118.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_118.npz",
+      "sha256": "d457eef4df2aa65cf9c65d3339ef9f6b4fe543850a49ac933282ccd6e4165623"
+    },
+    "arrays/empirical_simulations/block_119.npz": {
+      "bytes": 41355,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_119.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_119.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_119.npz",
+      "sha256": "a88d09941b07118f8db169878ab2fd9b88ae7a0ea78801948ad1b311446e2fc8"
+    },
+    "arrays/empirical_simulations/block_120.npz": {
+      "bytes": 110890,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_120.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_120.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_120.npz",
+      "sha256": "f621fe34b687106aa8a22812e5a8009a1fca961c4bb8defccaf01f93a2c95d0e"
+    },
+    "arrays/empirical_simulations/block_121.npz": {
+      "bytes": 18432,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_121.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_121.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_121.npz",
+      "sha256": "931595baff9ccf4df9cb78ffb61f13da3805038d9db899021130934e70fbd9d3"
+    },
+    "arrays/empirical_simulations/block_122.npz": {
+      "bytes": 93276,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_122.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_122.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_122.npz",
+      "sha256": "818821e4dc67a5729d230d57e826209e66362941cd16a01b974a733e32c3b78a"
+    },
+    "arrays/empirical_simulations/block_123.npz": {
+      "bytes": 133099,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_123.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_123.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_123.npz",
+      "sha256": "b685e070865b22e8c1608150fe63a783156556e07ef843ad0f37c92e717fc5ad"
+    },
+    "arrays/empirical_simulations/block_124.npz": {
+      "bytes": 71820,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_124.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_124.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_124.npz",
+      "sha256": "68a5bf737e2fbbe87b9e2b76ba700e55e4b82c4b9a42b83f8379a23966e38a13"
+    },
+    "arrays/empirical_simulations/block_125.npz": {
+      "bytes": 69938,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_125.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_125.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_125.npz",
+      "sha256": "bcf33a7b0acede7b193bfe044ffd0f5494aa528454ddfdb58d9e2f7e7e8d124b"
+    },
+    "arrays/empirical_simulations/block_126.npz": {
+      "bytes": 16521,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_126.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_126.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_126.npz",
+      "sha256": "3809251f6aae962820461377e15e77d1c57cfff634b39e2aba3e57feccc425a6"
+    },
+    "arrays/empirical_simulations/block_127.npz": {
+      "bytes": 109759,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_127.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_127.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_127.npz",
+      "sha256": "7b134cffc20644406ca723c1da7f299d501a11d321c9da1bc04530038a62721d"
+    },
+    "arrays/empirical_simulations/block_128.npz": {
+      "bytes": 3657,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_128.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_128.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_128.npz",
+      "sha256": "313d9dae97e6c337abc2db5dd0ca285e9792ac8e1103f6dac2d63e8ba98a6968"
+    },
+    "arrays/empirical_simulations/block_129.npz": {
+      "bytes": 64579,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_129.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_129.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_129.npz",
+      "sha256": "13a8855fecb6bf270db8e87c5b36343031b49dcabc8bbc6d345ceb08ae425d68"
+    },
+    "arrays/empirical_simulations/block_130.npz": {
+      "bytes": 40156,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_130.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_130.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_130.npz",
+      "sha256": "55053987b26854531ffa3354018ca5b75bb9b79c65013a058d52c1293d9c1d10"
+    },
+    "arrays/empirical_simulations/block_131.npz": {
+      "bytes": 95008,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_131.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_131.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_131.npz",
+      "sha256": "61ff92ebfe827e32f079df935653d3e6c49a609516c34da3a362b2d6e5207af7"
+    },
+    "arrays/empirical_simulations/block_132.npz": {
+      "bytes": 85934,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_132.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_132.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_132.npz",
+      "sha256": "ee6eac7a23c11472774b66745396da4d9071c661fde3f4f0747f2488b87872ad"
+    },
+    "arrays/empirical_simulations/block_133.npz": {
+      "bytes": 168964,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_133.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_133.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_133.npz",
+      "sha256": "2932d6b5da5c67e77f762ea5db47c3b0f523bfa6ddba45df36f6adfd51c2fe7b"
+    },
+    "arrays/empirical_simulations/block_134.npz": {
+      "bytes": 38495,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_134.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_134.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_134.npz",
+      "sha256": "7e61952e1bd48cfc773dbb5918b78a203334bf292951e4e622ffdd3532db87b5"
+    },
+    "arrays/empirical_simulations/block_135.npz": {
+      "bytes": 67730,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_135.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_135.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_135.npz",
+      "sha256": "f8cbfadd133c6709cbd6250d7f33e110c701c62f66297da711bdf9e636728db8"
+    },
+    "arrays/empirical_simulations/block_136.npz": {
+      "bytes": 80966,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_136.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_136.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_136.npz",
+      "sha256": "4a91357abc8b87933ae70f68505eca17510f702f8a697a9129edccc4fcfaf4c5"
+    },
+    "arrays/empirical_simulations/block_137.npz": {
+      "bytes": 18511,
+      "identity": "next-round derived development data: arrays/empirical_simulations/block_137.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_137.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/empirical_simulations/block_137.npz",
+      "sha256": "66f12a9b630bb91311037df50dfccc1ff97b459747bb5420c6d4d359bbe5204f"
+    },
+    "models/frozen_LOG21.npz": {
+      "bytes": 7519,
+      "identity": "next-round derived development data: models/frozen_LOG21.npz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/models/frozen_LOG21.npz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/models/frozen_LOG21.npz",
+      "sha256": "620f232f634423b8753e4d77f8cf72df87482c09193cb5e7e6b038917c47e89a"
+    },
+    "tables/control_counts.full.tsv.gz": {
+      "bytes": 404492,
+      "identity": "next-round derived development data: tables/control_counts.full.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/control_counts.full.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/control_counts.full.tsv.gz",
+      "sha256": "f1a2bf1074f91070a40625b85503147d02442411a78a89a18df9354c16bc6101"
+    },
+    "tables/counts.HepG2_rep1.10M.tsv.gz": {
+      "bytes": 674801,
+      "identity": "next-round derived development data: tables/counts.HepG2_rep1.10M.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep1.10M.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep1.10M.tsv.gz",
+      "sha256": "1c840de2aba5063237b4c3b6361fe2b543a4b5cddd638f1d62ac1620294d72c8"
+    },
+    "tables/counts.HepG2_rep1.full.tsv.gz": {
+      "bytes": 729656,
+      "identity": "next-round derived development data: tables/counts.HepG2_rep1.full.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep1.full.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep1.full.tsv.gz",
+      "sha256": "ba03994e4f569df78fdcce313181484883fb7e4795b3bc7d1d872e820d570acd"
+    },
+    "tables/counts.HepG2_rep2.10M.tsv.gz": {
+      "bytes": 680439,
+      "identity": "next-round derived development data: tables/counts.HepG2_rep2.10M.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep2.10M.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep2.10M.tsv.gz",
+      "sha256": "0535502dec7260fa9c721b50943f8faf4ef14e1be8817ca8518b11cbaf15c1dd"
+    },
+    "tables/counts.HepG2_rep2.full.tsv.gz": {
+      "bytes": 733434,
+      "identity": "next-round derived development data: tables/counts.HepG2_rep2.full.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep2.full.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep2.full.tsv.gz",
+      "sha256": "e46286d4cfe2450256d188281589a68316a39e0fd7a48538d9a38a2d90d86af8"
+    },
+    "tables/counts.HepG2_rep3.10M.tsv.gz": {
+      "bytes": 677155,
+      "identity": "next-round derived development data: tables/counts.HepG2_rep3.10M.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep3.10M.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep3.10M.tsv.gz",
+      "sha256": "9f4c0b7abcdc457126a5ddb7a6c016f6d597d98a043964fe8279ab51b49f70ab"
+    },
+    "tables/counts.HepG2_rep3.full.tsv.gz": {
+      "bytes": 733428,
+      "identity": "next-round derived development data: tables/counts.HepG2_rep3.full.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep3.full.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.HepG2_rep3.full.tsv.gz",
+      "sha256": "b2a6477f64268ccdca8bc6309d8a40c204be75459241206acf43d663686ddf32"
+    },
+    "tables/counts.K562_rep1.10M.tsv.gz": {
+      "bytes": 489816,
+      "identity": "next-round derived development data: tables/counts.K562_rep1.10M.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep1.10M.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep1.10M.tsv.gz",
+      "sha256": "c836a379be68c625579a04b9d1a5bb666570fe7eb90c20e7136d4f04e14c1e30"
+    },
+    "tables/counts.K562_rep1.full.tsv.gz": {
+      "bytes": 526860,
+      "identity": "next-round derived development data: tables/counts.K562_rep1.full.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep1.full.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep1.full.tsv.gz",
+      "sha256": "a72576c8ba6bc6d98f8e57463fd540be181a72a03cc8d2593ead4227092bf963"
+    },
+    "tables/counts.K562_rep2.10M.tsv.gz": {
+      "bytes": 490438,
+      "identity": "next-round derived development data: tables/counts.K562_rep2.10M.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep2.10M.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep2.10M.tsv.gz",
+      "sha256": "baf369d9ed2097a95f86c5c32a0b0e2eebacf9b0f9033087ac0d269ff37798af"
+    },
+    "tables/counts.K562_rep2.full.tsv.gz": {
+      "bytes": 525866,
+      "identity": "next-round derived development data: tables/counts.K562_rep2.full.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep2.full.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep2.full.tsv.gz",
+      "sha256": "dfd7789450542fc2caf595bea13f606242619f45c8e8d8472584732fd5208e47"
+    },
+    "tables/counts.K562_rep3.10M.tsv.gz": {
+      "bytes": 489359,
+      "identity": "next-round derived development data: tables/counts.K562_rep3.10M.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep3.10M.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep3.10M.tsv.gz",
+      "sha256": "44eb84e60201d16189a3de69abd2622ea0f61622251a6b3ec6c07ea55cca810c"
+    },
+    "tables/counts.K562_rep3.full.tsv.gz": {
+      "bytes": 531056,
+      "identity": "next-round derived development data: tables/counts.K562_rep3.full.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep3.full.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/counts.K562_rep3.full.tsv.gz",
+      "sha256": "1e31531f3e0120b881c51b3c5f8ccfbb0a1697fbaca94814c2e422d916f544cb"
+    },
+    "tables/covariate_baseline_all_libraries.tsv.gz": {
+      "bytes": 1153995,
+      "identity": "next-round derived development data: tables/covariate_baseline_all_libraries.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/covariate_baseline_all_libraries.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/covariate_baseline_all_libraries.tsv.gz",
+      "sha256": "86b696f852ab123c7badc8f3d879bac99a206e164e0cd1e90d02346c32d1c325"
+    },
+    "tables/empirical_power.tsv": {
+      "bytes": 918833,
+      "identity": "next-round derived development data: tables/empirical_power.tsv",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/empirical_power.tsv",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/empirical_power.tsv",
+      "sha256": "617f7a177dc3ca6aaab71fdae32dfff8ab90ebc32c4a1433cc3e32209a37e601"
+    },
+    "tables/nested_sites.tsv.gz": {
+      "bytes": 333062,
+      "identity": "next-round derived development data: tables/nested_sites.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/nested_sites.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/nested_sites.tsv.gz",
+      "sha256": "be88fa50d9627b9ca039a0ba16360bf1fedf5501c3c7664c8853b2e911b79a67"
+    },
+    "tables/per_site_scores.tsv.gz": {
+      "bytes": 45430487,
+      "identity": "next-round derived development data: tables/per_site_scores.tsv.gz",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/per_site_scores.tsv.gz",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/per_site_scores.tsv.gz",
+      "sha256": "ac1166d9caa54bffcfd82015a763ccce6df351294cd29be7f380e68f1116d7c5"
+    },
+    "tables/task_ledger.tsv": {
+      "bytes": 7174,
+      "identity": "next-round derived development data: tables/task_ledger.tsv",
+      "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/task_ledger.tsv",
+      "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/task_ledger.tsv",
+      "sha256": "05f423eb18d69cf658b2046957fddd10fb95d2eb0fb94379149bf2003bb8ea21"
+    }
+  },
+  "policy": "only permitted entries are opened; each is re-hashed before use",
+  "protected_description": [
+    "SK-N-SH ENCSR587TRP labels",
+    "GM23338 ENCSR485TLP labels",
+    "final naked-DNA replicate 3 (SRR13450942)",
+    "nutrient-stress application data"
+  ],
+  "protected_identities": [
+    "ENCSR587TRP",
+    "ENCSR485TLP",
+    "SK-N-SH",
+    "GM23338",
+    "NakedDNA_rep3",
+    "naked_rep3",
+    "naked_dna_10m_rep3",
+    "SRR13450942",
+    "nutrient"
+  ],
+  "schema": "fp-tools-calibration-round-inputs-v1",
+  "source": "next_round_20260922_v1",
+  "source_archive": {
+    "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/fp_tools_next_round_evidence_2026-09-23_97ec5a4.zip",
+    "sha256": "236aa5e744611a81d263cd90d52d30ef4ed80ae4d9315c7ef01076dad94cf0b6"
+  }
+}

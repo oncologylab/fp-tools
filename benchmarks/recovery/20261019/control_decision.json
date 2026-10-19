@@ -1,0 +1,12 @@
+{
+  "chromatin_authorized": false,
+  "decision": "INCOMPLETE_NATIVE_DWM_QUALIFICATION",
+  "gates": {
+    "factorial_controls": true,
+    "likelihood": true,
+    "locked_controls": "NOT_TESTED_LOCKED",
+    "mean": true,
+    "native_DWM_support": "INCOMPLETE"
+  },
+  "reason": "No method substitution or tuning after the frozen primary screen."
+}

@@ -1,0 +1,9 @@
+{
+  "decision": "REJECTED_FOR_FOOTPRINT_IMPROVEMENT",
+  "control_component": "DEVELOPMENT_CRITERION_MET",
+  "chromatin_screen": "FAIL",
+  "native_DWM": "INCOMPLETE",
+  "locked_controls": "NOT_TESTED_LOCKED",
+  "expansion": "INTENTIONALLY_NOT_RUN_FAILED_ACCURACY_SCREEN",
+  "scientific_promotion": false
+}

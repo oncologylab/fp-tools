@@ -1,0 +1,14 @@
+{
+  "python": "3.12.3",
+  "platform": "Linux-6.17.0-35-generic-x86_64-with-glibc2.39",
+  "packages": {
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.9.0",
+    "pysam": "0.23.3",
+    "matplotlib": "3.10.9"
+  },
+  "threads_per_numerical_library": 1,
+  "training_workers": 16
+}

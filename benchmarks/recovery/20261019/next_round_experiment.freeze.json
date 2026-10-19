@@ -1,0 +1,460 @@
+{
+  "created_utc": "2026-09-22T19:45:37.351857+00:00",
+  "execution_commands": [
+    "python prepare.py arrays --outdir OUTPUT",
+    "python fragments.py --outdir OUTPUT --library LIBRARY",
+    "python run.py --outdir OUTPUT",
+    "python verify.py OUTPUT",
+    "python package.py OUTPUT"
+  ],
+  "implementation_freezes": "additional implementation modules must be hashed and fixtures passed before their first scientific scoring; no hypothesis, threshold or cohort changes",
+  "initial_code": {
+    "benchmarks/scripts/build_strand_functional_profiles.py": "dd47415e57b01c93ec03f7329d64b78884b992cda3a10a7c9e016adcee3f60a8",
+    "benchmarks/scripts/caliper_matching.py": "2f8a56edd8a98e875d6fc284c518509b19fc03dd0dd750ab9846236acf568d4a",
+    "benchmarks/scripts/conditional_protection_score.py": "0850b1f42a406dfbbc76e4c7945de66367f03c648d02fb41c9d9a28ac23fa75e",
+    "benchmarks/scripts/fixed_shape_normalization.py": "18850578283ae1d83dc1cd6e985897b26ccccfce0a9c075c6c1a6444aae9eea3",
+    "benchmarks/scripts/next_round/access.py": "4de7f155c58a745c58635df29d24b26f08864177e4330902fdc4250ae6de9cb0",
+    "benchmarks/scripts/next_round/prepare.py": "0b2ba65f43b0f89153f5ea326c1cccde000e24e4e7bf837c6ac475c3845c4d49",
+    "benchmarks/scripts/next_round/protocol.py": "df79359049345047b973d1b8730ce649fdf46b218683ba3a67ac27b9f69c91ef",
+    "benchmarks/scripts/next_round/shrinkage.py": "a20fd4b66a92d935d235b1e9d70ec870fa97240b939993ec94e40da522472873",
+    "benchmarks/scripts/next_round/test_shrinkage.py": "2cbbadd1b8cff7beaeab345e7275cd52a1f40b95952d80b2e621d7fbf2e3c542"
+  },
+  "input_identities": {
+    "HepG2_control": {
+      "bytes": 3560021,
+      "identity": "naked DNA replicate1 HepG2 locus panel",
+      "sha256": "b045b5ded839d749a17944c8858dc99f5f7ca6c5de780ea09030d25822dded45"
+    },
+    "HepG2_rep1_bai": {
+      "bytes": 3520760,
+      "identity": "HepG2_rep1 full development input bai",
+      "sha256": "36e798b6b71f854b54e638140a697a6cc80f363daa604f490b46c4bef3219f5d"
+    },
+    "HepG2_rep1_bam": {
+      "bytes": 8015578751,
+      "identity": "HepG2_rep1 full development input bam",
+      "sha256": "b56ef8647e5aac5f8a22d22292bf665272e2d7b24bccbbbf992107fa291868f7"
+    },
+    "HepG2_rep1_dwm_expected": {
+      "bytes": 838097094,
+      "identity": "HepG2_rep1 full development input dwm_expected",
+      "sha256": "a9576b82f71cc6066bf9c2a771db0eb92518463576479d8d65b0cb3e67a86e8b"
+    },
+    "HepG2_rep2_bai": {
+      "bytes": 3494464,
+      "identity": "HepG2_rep2 full development input bai",
+      "sha256": "1548f77e224c8c0c3bfeb9be9a15cb63713ed8f23f591e40c486947eff2563be"
+    },
+    "HepG2_rep2_bam": {
+      "bytes": 8061862581,
+      "identity": "HepG2_rep2 full development input bam",
+      "sha256": "e23c0ae36f9d162bc45528b75396837d00e81430a43506bb75ff6e36a22d01e9"
+    },
+    "HepG2_rep2_dwm_expected": {
+      "bytes": 830902646,
+      "identity": "HepG2_rep2 full development input dwm_expected",
+      "sha256": "71d4be767edb17d3c80763a612a2c2a12063a728ce8aca1e9b8a884733e63dfb"
+    },
+    "HepG2_rep3_bai": {
+      "bytes": 3650696,
+      "identity": "HepG2_rep3 full development input bai",
+      "sha256": "c9c74fdc3123e8d4d78b580a4f1e4700f25cd8ae87371c7e26e48ea4476fd5f3"
+    },
+    "HepG2_rep3_bam": {
+      "bytes": 9000802699,
+      "identity": "HepG2_rep3 full development input bam",
+      "sha256": "6b9d77101c151a815487168196c9ddd4ad625e68af489c863a527785346b7d9f"
+    },
+    "HepG2_rep3_dwm_expected": {
+      "bytes": 836025100,
+      "identity": "HepG2_rep3 full development input dwm_expected",
+      "sha256": "8089e015037fdc1b6ccdc3cb73b56ee8d4d5caefc0bb9c04512dd7e334b6b6e0"
+    },
+    "HepG2_wide": {
+      "bytes": 365087728,
+      "identity": "HepG2 rep1 training chr1-15 observed cuts and frozen LOG21 propensities",
+      "sha256": "f628bf41d3762e403477111d6107927812988a4d2f42eb68b6522ea235973773"
+    },
+    "K562_control": {
+      "bytes": 2672882,
+      "identity": "naked DNA replicate1 K562 locus panel",
+      "sha256": "4fe9bb765c6e683fa9795db32bff0c37794d1bda65a0c83de22aff5911972007"
+    },
+    "K562_rep1_bai": {
+      "bytes": 3375888,
+      "identity": "K562_rep1 full development input bai",
+      "sha256": "3b0e0c620caea70ac47d1356c5635ca7c8ca0d749910223c15291c096a803f29"
+    },
+    "K562_rep1_bam": {
+      "bytes": 7492959554,
+      "identity": "K562_rep1 full development input bam",
+      "sha256": "8509426da1ea50993f0c0e5da502a406345efb42b21f1eee233fbed4c959321e"
+    },
+    "K562_rep1_dwm_expected": {
+      "bytes": 872787717,
+      "identity": "K562_rep1 full development input dwm_expected",
+      "sha256": "7421dc1d3946ad0189c28457c7e652d2900cb5947426eafaef87850838aea3cd"
+    },
+    "K562_rep2_bai": {
+      "bytes": 3297448,
+      "identity": "K562_rep2 full development input bai",
+      "sha256": "b3aba86d1191819426800ee85e7bdeeb8de5015c496dab00615f8e9436cbde78"
+    },
+    "K562_rep2_bam": {
+      "bytes": 7056946200,
+      "identity": "K562_rep2 full development input bam",
+      "sha256": "c4e603806d63e342f93f7510f274193f4b23dae3b4a90fe0726eb1b721127466"
+    },
+    "K562_rep2_dwm_expected": {
+      "bytes": 868198500,
+      "identity": "K562_rep2 full development input dwm_expected",
+      "sha256": "b3ace6c2ca91086dd845e979ffad55ddb1d3bf9bb874b49f920e9bdba5efd070"
+    },
+    "K562_rep3_bai": {
+      "bytes": 3860392,
+      "identity": "K562_rep3 full development input bai",
+      "sha256": "9566848400900c465d450bc1c942a61207fc7bb7439403fcbcc86b0c349330d4"
+    },
+    "K562_rep3_bam": {
+      "bytes": 10012174956,
+      "identity": "K562_rep3 full development input bam",
+      "sha256": "1ed9d63b38d2430bc037493187fc3c0f73478d204dc55d6f1ed7c329f17105df"
+    },
+    "K562_rep3_dwm_expected": {
+      "bytes": 872795520,
+      "identity": "K562_rep3 full development input dwm_expected",
+      "sha256": "04490a46ecf08ff5ff5d345dfcc2fe981ba08a5e69293013bbf00c5ab7d36ebe"
+    },
+    "K562_wide": {
+      "bytes": 273291575,
+      "identity": "K562 rep1 training chr1-15 observed cuts and frozen LOG21 propensities",
+      "sha256": "b943f761ec8c582ce28b98bbef04b53d11db7dff5c430669064a61480b452ee6"
+    },
+    "LOG21": {
+      "bytes": 7519,
+      "identity": "mitochondrial five-seed bias model",
+      "sha256": "620f232f634423b8753e4d77f8cf72df87482c09193cb5e7e6b038917c47e89a"
+    },
+    "NakedDNA_rep1_bai": {
+      "bytes": 2442816,
+      "identity": "GSE164997 SRR13450940 naked DNA replicate1 index",
+      "sha256": "7e0e25282ead41ce92aa51292549fa79ebbc68e2f584d63772335a3c297d3d4a"
+    },
+    "NakedDNA_rep1_bam": {
+      "bytes": 5174440078,
+      "identity": "GSE164997 SRR13450940 naked DNA replicate1",
+      "sha256": "a04cb6abc7bd06f00f0c813e31ebba774e24481d2d7075cba036e6e2638afd66"
+    },
+    "control_old_AtacBias_pickle": {
+      "bytes": 2266071,
+      "identity": "naked DNA replicate1 historical limited DWM support",
+      "sha256": "243bcabdc61b8796a43338d3291f08cb7fd5c2806c85cf804aeece0384d8196e"
+    },
+    "control_old_expected_bw": {
+      "bytes": 188249,
+      "identity": "naked DNA replicate1 historical limited DWM support",
+      "sha256": "ec120ee9598d16644b4a7005ecd1103f8fbe086f2648fe094d6908b4d122c6fb"
+    },
+    "control_old_uncorrected_bw": {
+      "bytes": 20703,
+      "identity": "naked DNA replicate1 historical limited DWM support",
+      "sha256": "4eebd387cc803b99a9d314f24e468bcb1b967cc8cf578cdb0620d8a646b0055f"
+    },
+    "control_regions": {
+      "bytes": 5551119,
+      "identity": "training chr1-15; control_regions",
+      "sha256": "5a0b31c418779a82a82096e2fae148d8e42218db2f31c90da9a11a84baabbb87"
+    },
+    "full_registry": {
+      "bytes": 3614,
+      "identity": "K562/HepG2 full-depth input registry",
+      "sha256": "7d23f8751a8c996ec64f7312f017a2fd8015320d2b83c48899d254d0742e53d5"
+    },
+    "genome": {
+      "bytes": 3273481150,
+      "identity": "hg38 sequence",
+      "sha256": "5be01555d98347fdb3714dc84c6f77c9d8bc774adcf32c6f7a8fa06f5baf5e51"
+    },
+    "genome_index": {
+      "bytes": 19381,
+      "identity": "hg38 sequence index",
+      "sha256": "3b425de206296a5c8053023fa5ca61da43cfe78c1737c12e58c83367c7e83c21"
+    },
+    "pool": {
+      "bytes": 2478457,
+      "identity": "training chr1-15; pool",
+      "sha256": "ce26e3d39c0dc5580e8feb99a5cd622f4bab75a91f558c1b911fb1654ab116f9"
+    },
+    "replay_panels": {
+      "bytes": 58264704,
+      "identity": "training chr1-15; replay_panels",
+      "sha256": "9ec49fb369b1a3e7e38e25d408ccfb54a86806724ef2dcad400a7c60c6eaac89"
+    },
+    "replay_sites": {
+      "bytes": 754643,
+      "identity": "training chr1-15; replay_sites",
+      "sha256": "1dd728598e9de381af1f0ed82a5172d0ee46a49b20908253978a7408ea85cff8"
+    },
+    "resource_protocol": {
+      "bytes": 4295,
+      "identity": "immutable resource protocol",
+      "sha256": "eeff0c5ecf2bee1741c8719205a8072b9f736e93d08fb0ef230c9df5b38adc2b"
+    },
+    "tasks": {
+      "bytes": 2298,
+      "identity": "training chr1-15; tasks",
+      "sha256": "e671e2ca710fc822095008782c7433a5c548507242d96f3bd84f5952149010a7"
+    }
+  },
+  "policy": {
+    "advancement": {
+      "both_fail": "stop search; package negative and incomplete evidence",
+      "fallback_preferred": true,
+      "missing_evidence": "not met",
+      "primary_extra_requirement": "at least .01 mean AUROC over fallback, positive paired interval, no AUPRC or calibration worsening",
+      "requirements": "all original scientific numeric, shape, context, positive-control and principal interval gates, plus qualified development FPR/Wilson/paired DWM"
+    },
+    "bias": {
+      "l2": 0.0001,
+      "refit": false,
+      "sha256": "620f232f634423b8753e4d77f8cf72df87482c09193cb5e7e6b038917c47e89a",
+      "shift": [
+        4,
+        -5
+      ],
+      "source": "five-seed mitochondrial LOG21"
+    },
+    "bootstrap": {
+      "draws": 2000,
+      "scope": "fixed predictions, not full-refit uncertainty",
+      "seed": 2026,
+      "undefined": "no redraw; fewer than1900 valid draws is incomplete",
+      "unit": "synchronized chromosome blocks"
+    },
+    "calls": {
+      "fitting": "leave held chromosome out",
+      "minimum_unique_informative_controls": 200,
+      "new_rule": "ceil(.95*(n+1)) order statistic; strict greater-than",
+      "old_cap": 300.0,
+      "old_decimals": 10,
+      "old_threshold": 1.3010299957,
+      "pooling": "one library/depth/propensity, across tasks deduplicated by genomic window",
+      "zero_information_call": false
+    },
+    "canonical_geometry": [
+      5,
+      15,
+      40
+    ],
+    "cohorts": {
+      "anchor": "recorded rep1 10M counts, fixed membership across new libraries/depths",
+      "assignment": "maximum cardinality then minimum squared distance",
+      "balance": "largest distance-sorted prefix with every absolute pooled-SD SMD <= .1",
+      "caliper": 0.5,
+      "covariates": [
+        "motif_score",
+        "log1p_central_201",
+        "log1p_outer_101_500"
+      ],
+      "grouping": "whole chromosome held across all tasks and contexts; overlapping windows recorded",
+      "minimum_matched_pairs_for_task_gate": 200,
+      "missing_task": "HepG2 HMGA1 retained, never counted as zero or pass",
+      "primary": "original pre-match pool, held-chromosome matching with fitting-fold-only scaling",
+      "replay": "exact original 8106 sites, nonnested retrospective development"
+    },
+    "count_strata": [
+      "0",
+      "1",
+      "2-4",
+      "5-9",
+      "10-19",
+      "20-49",
+      "50-99",
+      "100+"
+    ],
+    "empirical_simulation": {
+      "empty_weight_population": "unavailable",
+      "normalization": "normalize within window, sample K source fragments with replacement",
+      "r": [
+        1.0,
+        0.75,
+        0.5,
+        0.25,
+        0.0
+      ],
+      "repetitions": 2000,
+      "seed": 2026,
+      "source": "naked DNA replicate1 only; complete fragments",
+      "truth": "realized marginal depletion, not binding biology",
+      "weight": "r**m per whole fragment, m central endpoints; 0**0=1",
+      "window_selection": "coordinate-hash order, nonoverlap, max10 per count/expected stratum"
+    },
+    "endpoints": {
+      "arms": [
+        "archived_DWM_residual",
+        "uniform_count_tail",
+        "LOG21_count_tail",
+        "LOG21_binomial",
+        "LOG21_beta_binomial",
+        "DWM_binomial",
+        "DWM_beta_binomial"
+      ],
+      "incomplete_panel": "no advancement; available endpoints are diagnostic only",
+      "initial_panel": "all three biological libraries per context at full and 10M where complete-pair qualified",
+      "only_advancement_screen": "full depth: equal held chromosome then equal biological library then equal task",
+      "primary_depth": "10M seed2026",
+      "unsupported_DWM": "no zero filling; mark arm incomplete and preserve other diagnostic arms"
+    },
+    "expected_strata": [
+      "<0.1",
+      "0.1-<0.5",
+      "0.5-<1",
+      "1-<3",
+      "3+"
+    ],
+    "geometry": [
+      7,
+      12,
+      40
+    ],
+    "hypotheses": [
+      "signed shrinkage improves ranking over significance",
+      "control overdispersion adds useful information beyond binomial shrinkage",
+      "low-count non-calls can reflect inadequate attainable significance",
+      "ranking changes do not change identical-site measured protection"
+    ],
+    "integration": {
+      "independent_oracle": "768-node Gauss-Legendre using SciPy PMFs",
+      "interval_atol": 1e-06,
+      "mean_probability_atol": 1e-08,
+      "method": "mode-split adaptive quadrature",
+      "quadrature_tolerance": 2e-11
+    },
+    "model_simulation": {
+      "misspecification": "null mean shift log odds +.5 and strand asymmetry +.5/-.5; correlated endpoints in empirical challenge",
+      "n_pairs": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          10,
+          10
+        ],
+        [
+          25,
+          25
+        ],
+        [
+          50,
+          50
+        ]
+      ],
+      "p_pairs": [
+        [
+          0.2,
+          0.2
+        ],
+        [
+          0.0001,
+          0.0001
+        ],
+        [
+          0.05,
+          0.4
+        ]
+      ],
+      "repetitions": 2000,
+      "rho": [
+        0.0,
+        0.1
+      ],
+      "seed": 2026,
+      "theta": [
+        0.0,
+        0.5,
+        1.0,
+        2.0
+      ]
+    },
+    "models": {
+      "fallback": "same model with rho=0",
+      "primary": "bias-offset beta-binomial with theta ~ Normal(0,1)",
+      "prior_sd_sensitivity": [
+        0.5,
+        2.0
+      ],
+      "ranking": "posterior mean signed theta",
+      "rho_fitting": "unique rep1 control windows on fitting chromosomes, theta=0",
+      "rho_range": [
+        0,
+        0.95
+      ],
+      "sensitivity_selection_allowed": false,
+      "strand_likelihood": "working composite, dependence not solved",
+      "unidentified": "profile support width > .25 or upper boundary or numerical failure"
+    },
+    "promotion_possible_this_round": false,
+    "protected_inputs_allowed": false,
+    "resources": {
+      "elapsed_hours": 72,
+      "formal_benchmark_cores": 4,
+      "formal_matrix_if_screen_not_met": "intentionally not run",
+      "formal_protocol": "end_to_end_resource_protocol_v1.json unchanged",
+      "maximum_ram_GiB": 64,
+      "maximum_scratch_GiB": 500,
+      "package_reserve_hours": 4,
+      "science_max_cores": 32
+    },
+    "schema": "fp-tools-next-round-v1",
+    "shape": {
+      "detector_identity": "same counts/expectations/cohort imply exactly unchanged aggregate profile",
+      "principal_population": "all held matched sites, not score-selected",
+      "representations": [
+        "raw",
+        "sequence expectation",
+        "signed deviance residual"
+      ],
+      "standardized_definition": "unchanged standardized_functional_separation on fixed outside-flank normalization",
+      "summaries": [
+        "site equal",
+        "count weighted",
+        "strand specific",
+        "combined",
+        "count and expected count strata"
+      ]
+    },
+    "task_denominator": 21,
+    "training_chromosomes": [
+      "chr1",
+      "chr2",
+      "chr3",
+      "chr4",
+      "chr5",
+      "chr6",
+      "chr7",
+      "chr8",
+      "chr9",
+      "chr10",
+      "chr11",
+      "chr12",
+      "chr13",
+      "chr14",
+      "chr15"
+    ],
+    "tuning_allowed": false
+  },
+  "source_commit": "0569e2f59def36d04c990e0494873ec396c3d3c4"
+}

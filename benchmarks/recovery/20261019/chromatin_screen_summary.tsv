@@ -1,0 +1,13 @@
+depth	method	reference	available_tasks	original_tasks	mean_auroc_gain	mean_relative_auprc_gain	bootstrap_low	bootstrap_high	valid_draws	scope
+full	nuclear_primary	DWM_count_tail	20	21	0.012710364300334051	0.011300490571088607	-0.006425574927725295	0.030941021708521414	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+full	nuclear_primary	LOG21_count_tail	20	21	-0.013574505378154056	-0.019922866222597112	-0.028816997138441717	0.0009543453874919497	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+full	nuclear_primary	LOG21NC1_count_tail	20	21	-0.024965138553773292	-0.031194884208044123	-0.03721326345849682	-0.012641116658395554	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+full	nuclear_ablation	DWM_count_tail	20	21	0.012174713187541927	0.00948958858673864	-0.007892201910102219	0.031655351749704866	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+full	nuclear_ablation	LOG21_count_tail	20	21	-0.014110156490946175	-0.021578060928088418	-0.03078438568888781	0.0013407684237888866	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+full	nuclear_ablation	LOG21NC1_count_tail	20	21	-0.025500789666565403	-0.032822350179305196	-0.039145695421928875	-0.012343461139857202	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+10M	nuclear_primary	DWM_count_tail	20	21	-0.0012667145131291392	-0.001792358082903454	-0.011679264073836597	0.009283594623083063	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+10M	nuclear_primary	LOG21_count_tail	20	21	-0.007488759882696028	-0.011120994256716605	-0.013320382610956354	-0.0019327578040483132	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+10M	nuclear_primary	LOG21NC1_count_tail	20	21	-0.010583778198276349	-0.013268889916590509	-0.01679789053702464	-0.004452829377507569	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+10M	nuclear_ablation	DWM_count_tail	20	21	-0.0016226357439054616	-0.0025375465406383383	-0.010063902351077337	0.0072003424221467344	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+10M	nuclear_ablation	LOG21_count_tail	20	21	-0.007844681113472352	-0.011817743476725928	-0.014113927684558917	-0.0015626419395006674	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty
+10M	nuclear_ablation	LOG21NC1_count_tail	20	21	-0.010939699429052673	-0.013966770420620564	-0.017388164950381136	-0.004269201147321195	1958	fixed predictions; synchronized chromosome blocks; not refitting uncertainty

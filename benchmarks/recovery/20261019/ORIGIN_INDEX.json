@@ -1,0 +1,114 @@
+[
+  {
+    "file": "nuclear_input_provenance.json",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/inputs.local.json",
+    "original_sha256": "f8a4015c9ada9194e8153660046f502a008ca3d06ecab55d24899495b0c81f36",
+    "packaged_sha256": "192e664ae2dee9c7672eee980af401aeb6009aa007e9f0c7fa582c060790c55f",
+    "transformation": "replace local project parent with <PROJECTS>; preserve artifact hashes"
+  },
+  {
+    "file": "chromatin_input_provenance.json",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/chromatin/inputs.local.json",
+    "original_sha256": "389505d76bd734af224cbedcf5fad02c20b33a5690d6423b81eabc5ce25a5166",
+    "packaged_sha256": "8c20db7d00e97023e0117d04518020d31b4a7998de76dbe2c95aa065c8e5e159",
+    "transformation": "replace local project parent with <PROJECTS>; preserve artifact hashes"
+  },
+  {
+    "file": "calibration_input_provenance.json",
+    "source": "fp-tools-calibration/benchmarks/results/calibration_round_20261019_v1/inputs.json",
+    "original_sha256": "01c8774d1152fbf1bcf5db386fe567ba7e87ccb860eae19820ed1948aa198bd6",
+    "packaged_sha256": "1154404f28693c264d9fbb5f97e73ec862b9707f99a08bb25ffe91e2cb8664dc",
+    "transformation": "replace local project parent with <PROJECTS>; preserve artifact hashes"
+  },
+  {
+    "file": "next_round_experiment.freeze.json",
+    "source": "fp-tools-next-round/benchmarks/results/next_round_20260922_v1/EXPERIMENT_PLAN.freeze.json",
+    "original_sha256": "35ff9d59fa12b54f84ddaa8cf9683388a3fa4f5eab68f4bbd3c8e68449755d8c",
+    "packaged_sha256": "35ff9d59fa12b54f84ddaa8cf9683388a3fa4f5eab68f4bbd3c8e68449755d8c",
+    "transformation": "replace local project parent with <PROJECTS>; preserve artifact hashes"
+  },
+  {
+    "file": "scientific_environment.json",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/environment.json",
+    "original_sha256": "c11cc573ad6dd9b180da82b4b721dec457b93e3ed8e53b3e6dd3cb2e4503149b",
+    "packaged_sha256": "c11cc573ad6dd9b180da82b4b721dec457b93e3ed8e53b3e6dd3cb2e4503149b",
+    "transformation": "replace local project parent with <PROJECTS>; preserve artifact hashes"
+  },
+  {
+    "file": "control_decision.json",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/control.decision.json",
+    "original_sha256": "8954c421c247be53984673c40f5e0fe62dfbd8a9a4a7ee3bf3ba90e51853cd5d",
+    "packaged_sha256": "8954c421c247be53984673c40f5e0fe62dfbd8a9a4a7ee3bf3ba90e51853cd5d",
+    "transformation": "replace local project parent with <PROJECTS>; preserve artifact hashes"
+  },
+  {
+    "file": "final_decision.json",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/final.decision.json",
+    "original_sha256": "629bb7a8ca3cea193b17291ba0a3e23062486c6e9088f93effe5e4484e8fc98e",
+    "packaged_sha256": "629bb7a8ca3cea193b17291ba0a3e23062486c6e9088f93effe5e4484e8fc98e",
+    "transformation": "replace local project parent with <PROJECTS>; preserve artifact hashes"
+  },
+  {
+    "file": "chromatin_screen_summary.tsv",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/chromatin/tables/screen_summary.tsv",
+    "original_sha256": "44bb80720dac829c9f16d1415b8dbb50828e351c94808b9454ed682b4a482ddf",
+    "packaged_sha256": "44bb80720dac829c9f16d1415b8dbb50828e351c94808b9454ed682b4a482ddf",
+    "transformation": "unchanged aggregate table"
+  },
+  {
+    "file": "chromatin_task_metrics.tsv",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/chromatin/tables/task_metrics.tsv",
+    "original_sha256": "bf409b0a793fd44f908abe9b6216b82c7912fe543d0d4e0f818969e4ad439eb9",
+    "packaged_sha256": "bf409b0a793fd44f908abe9b6216b82c7912fe543d0d4e0f818969e4ad439eb9",
+    "transformation": "unchanged aggregate table"
+  },
+  {
+    "file": "chromatin_shape_metrics.tsv",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/chromatin/tables/shape_metrics.tsv",
+    "original_sha256": "827f52476bfed47cc114ce01fe7c8ab4125a9dbaf585efe30576d4dba0772e98",
+    "packaged_sha256": "827f52476bfed47cc114ce01fe7c8ab4125a9dbaf585efe30576d4dba0772e98",
+    "transformation": "unchanged aggregate table"
+  },
+  {
+    "file": "task_ledger.tsv",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/tables/task_ledger.tsv",
+    "original_sha256": "32caf0f14ae777353307f09a236edce5800bfee3d54efcbe94184142ee4feb66",
+    "packaged_sha256": "32caf0f14ae777353307f09a236edce5800bfee3d54efcbe94184142ee4feb66",
+    "transformation": "unchanged aggregate table"
+  },
+  {
+    "file": "promotion_gates.tsv",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/tables/promotion_gates.tsv",
+    "original_sha256": "2b8b5684a217293787584e8d6b70a261fc9835bbc507c71f8c729fd7a72f76a3",
+    "packaged_sha256": "2b8b5684a217293787584e8d6b70a261fc9835bbc507c71f8c729fd7a72f76a3",
+    "transformation": "unchanged aggregate table"
+  },
+  {
+    "file": "control_task_means.tsv",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/tables/control_task_means.tsv",
+    "original_sha256": "e236c1561f60a3e1f352c4e892d446eced46d7c680a707991c4b9f0aa621f873",
+    "packaged_sha256": "e236c1561f60a3e1f352c4e892d446eced46d7c680a707991c4b9f0aa621f873",
+    "transformation": "unchanged aggregate table"
+  },
+  {
+    "file": "control_calls.tsv",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/tables/control_calls.tsv",
+    "original_sha256": "069151fef11703538e017a083d864d04148a0e01709fa102de71f7ca2918f3c7",
+    "packaged_sha256": "069151fef11703538e017a083d864d04148a0e01709fa102de71f7ca2918f3c7",
+    "transformation": "unchanged aggregate table"
+  },
+  {
+    "file": "control_likelihood.tsv",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/tables/paired_likelihood.tsv",
+    "original_sha256": "430e583ad6de38b7cd9d3849ac10c507bcc9c42abedd9d4b17f0b06974c33468",
+    "packaged_sha256": "430e583ad6de38b7cd9d3849ac10c507bcc9c42abedd9d4b17f0b06974c33468",
+    "transformation": "unchanged aggregate table"
+  },
+  {
+    "file": "power_curve_summary.tsv",
+    "source": "fp-tools-nuclear-bias/benchmarks/results/nuclear_bias_20261019_v1/tables/power_curve_summary.tsv",
+    "original_sha256": "c8858c1822da610f65264386dadc51f1afc4f6f36001a2fec6ae7a583a660230",
+    "packaged_sha256": "c8858c1822da610f65264386dadc51f1afc4f6f36001a2fec6ae7a583a660230",
+    "transformation": "unchanged aggregate table"
+  }
+]

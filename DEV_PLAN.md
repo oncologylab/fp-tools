@@ -4,6 +4,15 @@ Last updated: 2026-10-19
 
 ## Next-major-version research goal
 
+**Migration policy (19 October):** all research branches are on GitHub.
+Preserve code, public-data retrieval manifests, sanitized provenance and compact
+results there; do not upload bulk data or create a Box backup. The temporary
+backup was cancelled and its new Box folder removed. See
+`benchmarks/DEVELOPMENT_RECOVERY.md` and `benchmarks/recovery/20261019/` (19 files,
+296,465 bytes; all 18 payload hashes and the 21-task/12-screen ledgers verified).
+Large local arrays/models require regeneration in a new environment. Existing
+private manuscript and nonpublic-data copies remain separately authoritative.
+
 **Nuclear sequence-bias follow-up executed; chromatin candidate rejected:** see
 `benchmarks/NUCLEAR_BIAS_ROUND_20261019.md`. Work is isolated on
 `research/footprint-nuclear-bias-20261019`. Correct reporting first, then freeze

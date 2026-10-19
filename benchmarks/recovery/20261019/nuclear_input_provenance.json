@@ -1,0 +1,56 @@
+{
+  "NakedDNA_rep1_bai": {
+    "identity": "GSE164997 SRR13450940 naked DNA replicate1 index",
+    "path": "<PROJECTS>/fp-tools/data/public/processed/naked_dna_gse164997/samples/NakedDNA_rep1/alignment/NakedDNA_rep1.filtered.bam.bai",
+    "resolved_path": "<PROJECTS>/fp-tools/data/public/processed/naked_dna_gse164997/samples/NakedDNA_rep1/alignment/NakedDNA_rep1.filtered.bam.bai",
+    "sha256": "7e0e25282ead41ce92aa51292549fa79ebbc68e2f584d63772335a3c297d3d4a"
+  },
+  "NakedDNA_rep1_bam": {
+    "identity": "GSE164997 SRR13450940 naked DNA replicate1",
+    "path": "<PROJECTS>/fp-tools/data/public/processed/naked_dna_gse164997/samples/NakedDNA_rep1/alignment/NakedDNA_rep1.filtered.bam",
+    "resolved_path": "<PROJECTS>/fp-tools/data/public/processed/naked_dna_gse164997/samples/NakedDNA_rep1/alignment/NakedDNA_rep1.filtered.bam",
+    "sha256": "a04cb6abc7bd06f00f0c813e31ebba774e24481d2d7075cba036e6e2638afd66"
+  },
+  "blacklist": {
+    "identity": "hg38 blacklist v2",
+    "path": "<PROJECTS>/fp-tools/data/public/processed/encode_k562_hepg2_atac_replicates/reference/hg38-blacklist.v2.bed",
+    "resolved_path": "<PROJECTS>/fp-tools/data/public/processed/encode_k562_hepg2_atac_replicates/reference/hg38-blacklist.v2.bed",
+    "sha256": "31c69342df43bbc19dd8ef2886611a8150cb53e90f341de14d30e742c9251737"
+  },
+  "control_arrays": {
+    "identity": "naked DNA replicate1 paired observed arrays",
+    "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/NakedDNA_rep1.full.npz",
+    "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/arrays/NakedDNA_rep1.full.npz",
+    "sha256": "1f99e81666946756efd132b64e93d8552cfeb8087c32195db5a6d1bcc6ba9afc"
+  },
+  "controls": {
+    "identity": "naked DNA replicate1 control regional counts",
+    "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/control_counts.full.tsv.gz",
+    "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/control_counts.full.tsv.gz",
+    "sha256": "f1a2bf1074f91070a40625b85503147d02442411a78a89a18df9354c16bc6101"
+  },
+  "genome": {
+    "identity": "hg38 sequence",
+    "path": "<PROJECTS>/fp-tools/data/public/raw/genome/hg38.fa",
+    "resolved_path": "<PROJECTS>/fp-tools/data/public/raw/genome/hg38.fa",
+    "sha256": "5be01555d98347fdb3714dc84c6f77c9d8bc774adcf32c6f7a8fa06f5baf5e51"
+  },
+  "genome_index": {
+    "identity": "hg38 sequence index",
+    "path": "<PROJECTS>/fp-tools/data/public/raw/genome/hg38.fa.fai",
+    "resolved_path": "<PROJECTS>/fp-tools/data/public/raw/genome/hg38.fa.fai",
+    "sha256": "3b425de206296a5c8053023fa5ca61da43cfe78c1737c12e58c83367c7e83c21"
+  },
+  "ledger": {
+    "identity": "all21 task metadata",
+    "path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/task_ledger.tsv",
+    "resolved_path": "<PROJECTS>/fp-tools-next-round/benchmarks/results/next_round_20260922_v1/tables/task_ledger.tsv",
+    "sha256": "05f423eb18d69cf658b2046957fddd10fb95d2eb0fb94379149bf2003bb8ea21"
+  },
+  "old_scores": {
+    "identity": "naked DNA replicate1 historical reference scores",
+    "path": "<PROJECTS>/fp-tools-calibration/benchmarks/results/calibration_round_20261019_v1/tables/control_site_scores.tsv.gz",
+    "resolved_path": "<PROJECTS>/fp-tools-calibration/benchmarks/results/calibration_round_20261019_v1/tables/control_site_scores.tsv.gz",
+    "sha256": "50ccb2371db10c7ce06c6884e332bd890e0e627dc266a6fa1f80914b28ef9ea5"
+  }
+}

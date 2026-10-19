@@ -1,0 +1,17 @@
+gate	status	scope
+factorial_controls	DEVELOPMENT_CRITERION_MET	development control screen; not promotion
+likelihood	DEVELOPMENT_CRITERION_MET	development control screen; not promotion
+locked_controls	NOT_TESTED_LOCKED	development control screen; not promotion
+mean	DEVELOPMENT_CRITERION_MET	development control screen; not promotion
+native_DWM_support	INCOMPLETE	development control screen; not promotion
+AUROC_gain	FAIL	full-depth fixed-cohort DWM-propensity diagnostic; native comparison unqualified
+relative_AP_gain	FAIL	full-depth fixed-cohort DWM-propensity diagnostic; native comparison unqualified
+canonical_difficult_family_protection	INCOMPLETE	not qualified by this bounded development round
+two_contexts	INCOMPLETE	not qualified by this bounded development round
+positive_control_noninferiority	INCOMPLETE	not qualified by this bounded development round
+depth_seed_biological_replication	INCOMPLETE	not qualified by this bounded development round
+end_to_end_CPU	INCOMPLETE	not qualified by this bounded development round
+absolute_peak_memory	INCOMPLETE	not qualified by this bounded development round
+complete_deployed_artifact	INCOMPLETE	not qualified by this bounded development round
+functional_uncertainty	INCOMPLETE	not qualified by this bounded development round
+occupancy_leakage	INCOMPLETE	not qualified by this bounded development round

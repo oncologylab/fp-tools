@@ -138,6 +138,11 @@ local GUI run outputs unless explicitly requested.
 
 ## Research Branch Evidence
 
+For environment migration, the user wants GitHub code, public-data metadata,
+hashes and compact result summaries only. Do not start Box or bulk-data backups.
+Use `benchmarks/DEVELOPMENT_RECOVERY.md`; preserve protected-input restrictions
+when reconstructing public inputs. Large local artifacts are not on GitHub.
+
 The authorized nuclear follow-up follows
 `benchmarks/NUCLEAR_BIAS_ROUND_20261019.md`. Its control-first screen must pass
 before new chromatin scoring. Preserve original calibration outputs; reporting

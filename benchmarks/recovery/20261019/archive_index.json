@@ -1,0 +1,30 @@
+[
+  {
+    "name": "fp_tools_next_round_evidence_2026-10-19_1473f2d.zip",
+    "relative_original_path": "fp-tools-nuclear-bias/benchmarks/results/fp_tools_next_round_evidence_2026-10-19_1473f2d.zip",
+    "bytes": 374477584,
+    "sha256": "8953b12dd95b4d90aadf4e6b525fc6afdab9da02dbc4737f0f930bbd7fe1cc7f",
+    "storage": "original host only; not uploaded"
+  },
+  {
+    "name": "fp_tools_calibration_evidence_2026-10-19_eaa31b1.zip",
+    "relative_original_path": "fp-tools-calibration/benchmarks/results/fp_tools_calibration_evidence_2026-10-19_eaa31b1.zip",
+    "bytes": 101661263,
+    "sha256": "ef1e2367c37f610441cf8e719f311538b9b30c954bd3ec079f66b1fd250b07c9",
+    "storage": "original host only; not uploaded"
+  },
+  {
+    "name": "fp_tools_next_round_evidence_2026-09-23_97ec5a4.zip",
+    "relative_original_path": "fp-tools-next-round/benchmarks/results/fp_tools_next_round_evidence_2026-09-23_97ec5a4.zip",
+    "bytes": 522301298,
+    "sha256": "236aa5e744611a81d263cd90d52d30ef4ed80ae4d9315c7ef01076dad94cf0b6",
+    "storage": "original host only; not uploaded"
+  },
+  {
+    "name": "fp_tools_research_review_2026-09-22.zip",
+    "relative_original_path": "fp-tools-research/benchmarks/results/deep_research_review_20260922_v1/fp_tools_research_review_2026-09-22.zip",
+    "bytes": 627034,
+    "sha256": "69df28850de415bafd5ea0d220c329465296384e353bc73652c3286dd90e1043",
+    "storage": "original host only; not uploaded"
+  }
+]
