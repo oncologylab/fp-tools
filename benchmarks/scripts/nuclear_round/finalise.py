@@ -21,6 +21,30 @@ def finalise(out):
     task['depth_seed_replication_status']='INTENTIONALLY_NOT_RUN'
     task['resource_status']='INTENTIONALLY_NOT_RUN'
     task.to_csv(out/'tables/task_ledger.tsv',sep='\t',index=False)
+    scores=pd.read_csv(out/'tables/control_site_scores.tsv.gz',sep='\t')
+    scores['expected_center']=scores.plus_total*scores.q_plus+scores.minus_total*scores.q_minus
+    scores['geometry']='7,12,40'
+    scores['fitting_provenance']='naked DNA replicate1; exclude row TFBS_chr; equal coefficient seeds2026-2030'
+    scores.to_csv(out/'tables/counts_and_expectations.tsv.gz',sep='\t',index=False)
+    scores[['site_id','cell','tf','TFBS_chr','arm','geometry','fitting_provenance','score','ceiling','status','call','eligible','exclusion_reason']].to_csv(
+        out/'tables/per_site_scores.tsv.gz',sep='\t',index=False)
+    ledger_columns=['site_id','cell','tf','TFBS_chr','TFBS_start','TFBS_end','TFBS_strand','center',
+        'parent_locus_id','fold','overlap_group','physical_id','eligible','library','depth','seed']
+    sites=scores.drop_duplicates('site_id')[ledger_columns].copy()
+    sites['cohort']='examined naked DNA replicate1 development controls'
+    sites.to_csv(out/'tables/site_ledger.tsv.gz',sep='\t',index=False)
+    means.merge(calls,on=['arm','cell','tf'],validate='one_to_one',suffixes=('_mean','_calls')).to_csv(out/'tables/calibration.tsv',sep='\t',index=False)
+    unavailable=[]
+    for row in task.itertuples():
+        for c in range(1,16):
+            unavailable.append(dict(cell=row.cell,tf=row.tf,fold=f'chr{c}',status=row.new_chromatin_status,
+                auroc=None,average_precision=None,auroc_gain=None,relative_ap_gain=None,canonical_protection=None))
+    for name in ['fold_metrics','paired_deltas','shape_metrics']:
+        pd.DataFrame(unavailable).to_csv(out/f'tables/{name}.tsv',sep='\t',index=False)
+    accounting=dict(mapped_records=inventory['mapped_records'],complete_fragments=inventory['complete_fragments'],
+        excluded_records=inventory.get('excluded_records',0),singleton_or_ambiguous_retained_records=inventory.get('singleton_or_ambiguous_records',0),
+        invalid_pair_records=inventory.get('invalid_pair_records',0),coordinate_oracle_comparisons=inventory['oracle_comparisons'])
+    pd.DataFrame([accounting]).to_csv(out/'tables/fragment_accounting.tsv',sep='\t',index=False)
     gates=[]
     for key,value in decision['gates'].items():
         status=('DEVELOPMENT_CRITERION_MET' if value else 'FAIL') if isinstance(value,bool) else value

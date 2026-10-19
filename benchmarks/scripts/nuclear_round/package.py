@@ -65,7 +65,7 @@ results and ChromBPNet comparisons are historical, not new confirmation.
             shutil.copytree(attempt/name,target/name)
         for name in ['EXPERIMENT_PLAN.freeze.json','control.decision.json','extraction.complete.json','fit.complete.json']:
             shutil.copyfile(attempt/name,target/name)
-        for name in ['diagnostics.freeze.json','diagnostics.complete.json','IMPLEMENTATION_CORRECTION.freeze.json','context_export.json','environment.json','EXECUTIVE_FINDINGS.md','NEXT_DEEP_RESEARCH_PROMPT.md']:
+        for name in ['diagnostics.freeze.json','diagnostics.complete.json','IMPLEMENTATION_CORRECTION.freeze.json','DIAGNOSTICS_IMPLEMENTATION_CORRECTION.freeze.json','context_export.json','environment.json','EXECUTIVE_FINDINGS.md','NEXT_DEEP_RESEARCH_PROMPT.md']:
             if (attempt/name).exists():shutil.copyfile(attempt/name,target/name)
         if (attempt/'provenance').exists():shutil.copytree(attempt/'provenance',target/'provenance')
         if (attempt/'figures').exists():shutil.copytree(attempt/'figures',target/'figures')

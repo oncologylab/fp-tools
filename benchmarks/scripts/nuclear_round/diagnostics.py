@@ -38,7 +38,13 @@ def freeze(out):
 
 def run(out):
     frozen=json.loads((out/'diagnostics.freeze.json').read_text())
-    assert digest(__file__)==frozen['code_sha256']
+    expected=frozen['code_sha256']
+    amendment=out/'DIAGNOSTICS_IMPLEMENTATION_CORRECTION.freeze.json'
+    if amendment.exists():
+        record=json.loads(amendment.read_text())
+        assert record['original_sha256']==expected
+        expected=record['corrected_sha256']
+    assert digest(__file__)==expected
     inputs=json.loads((out/'diagnostics.inputs.local.json').read_text())
     def read_input(key):
         r=inputs[key];p=Path(r['path']);deny(p,r['identity'])
@@ -92,6 +98,10 @@ def run(out):
             if len(site_score)!=1:raise ValueError('simulation site identity')
             row=site_score.iloc[0]
             for i,r in enumerate(rs):
+                if not simulation_available(counts[i]):
+                    power.append(dict(block=block,site_id=site,cell=row.cell,tf=row.tf,chromosome=row.TFBS_chr,
+                        arm=arm,r=r,status='UNAVAILABLE_NO_SOURCE_OR_WEIGHT',draws=0))
+                    continue
                 c=counts[i];nplus=c[:,0].sum(1);nminus=c[:,1].sum(1);central=c[:,:,0].sum(1)
                 triples=np.stack([nplus,nminus,central],axis=1);unique,inverse=np.unique(triples,axis=0,return_inverse=True)
                 values=[];ceilings=[]
@@ -101,6 +111,7 @@ def run(out):
                 values=np.array(values)[inverse];ceilings=np.array(ceilings)[inverse]
                 original=effects[(effects.block==block)&(effects.r==r)].iloc[0]
                 power.append(dict(block=block,site_id=site,cell=row.cell,tf=row.tf,chromosome=row.TFBS_chr,arm=arm,r=r,
+                    status='AVAILABLE',
                     realised_depletion=1-original.realised_marginal_center_ratio,draws=len(values),
                     informative_draws=int(((nplus+nminus)>0).sum()),reachable_draws=int((ceilings>1.3010299957).sum()),
                     calls=int((values>1.3010299957).sum()),call_rate=float((values>1.3010299957).mean()),
@@ -113,6 +124,12 @@ def run(out):
     ax.set(xlabel='Realized central depletion (defined source windows)',ylabel='Call rate (same windows)',title='Whole-fragment synthetic challenge')
     ax.legend();fig.tight_layout();fig.savefig(out/'figures/power.png',dpi=180);plt.close(fig)
     dump(out/'diagnostics.complete.json',dict(regional_rows=len(regional),profile_rows=len(profiles),power_rows=len(power),independent_source_blocks=138))
+
+
+def simulation_available(counts):
+    counts=np.asarray(counts)
+    if counts.ndim!=3 or counts.shape[1:]!=(2,3):raise ValueError('simulation count layout')
+    return bool(np.all(counts>=0))
 
 
 if __name__=='__main__':

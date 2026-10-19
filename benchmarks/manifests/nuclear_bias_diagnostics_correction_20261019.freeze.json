@@ -1,0 +1,11 @@
+{
+  "created_unix": 1792427397.2828648,
+  "original_sha256": "f56fa4da7c4ec7eb2f893d95f0d3fad40b2af878dca8abb4211f2c4c0508aedc",
+  "corrected_sha256": "87a9997eb7366f1026f1737241c3828596de32f2d2bdd26d5b43deb75e5b15f2",
+  "reason": "Pre-scoring fixture audit found one archived r=0 perturbation with unavailable source weights. Preserve unavailable status; never score sentinel -1 counts or replace them by zeros.",
+  "hypotheses_inputs_calibration_and_candidates_unchanged": true,
+  "affected_stages": [
+    "diagnostics"
+  ],
+  "prior_candidate_scoring": false
+}
