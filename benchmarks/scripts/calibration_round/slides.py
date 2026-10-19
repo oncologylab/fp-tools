@@ -18,6 +18,7 @@ def text(slide, x, y, w, h, lines, size=12, color=INK, bold=False):
         p = frame.paragraphs[0] if i == 0 else frame.add_paragraph()
         content, style = (line, {}) if isinstance(line, str) else line
         run = p.add_run(); run.text = content
+        run.font.name = 'Arial'
         run.font.size = Pt(style.get('size', size)); run.font.bold = style.get('bold', bold)
         run.font.color.rgb = style.get('color', color); p.space_after = Pt(3)
     return box
@@ -30,6 +31,7 @@ def stage(slide, x, y, w, title, body, accent=False):
     frame = shape.text_frame; frame.word_wrap = True
     p = frame.paragraphs[0]; r = p.add_run(); r.text = title; r.font.bold = True; r.font.size = Pt(11); r.font.color.rgb = INK
     p2 = frame.add_paragraph(); r2 = p2.add_run(); r2.text = body; r2.font.size = Pt(9); r2.font.color.rgb = MUTED
+    r.font.name = r2.font.name = 'Arial'
 
 
 def main():
@@ -42,7 +44,7 @@ def main():
 
     s = prs.slides.add_slide(blank)
     text(s, .5, .3, 12.3, .6, 'Method: can a label-free null correction make LOG21 calls trustworthy?', 22, bold=True)
-    text(s, .5, .9, 12.3, .4, 'Research branch only · development data (chr1–15) · production DWM default unchanged', 11, MUTED)
+    text(s, .5, .9, 12.3, .4, 'Development chr1–15 only · dinucleotide weight matrix (DWM) production default unchanged', 11, MUTED)
     steps = [('1 Observed cuts', 'Strand cuts from complete fragments in centre −7..7 and shoulders ±12..40 (n, c)', False),
              ('2 LOG21 (frozen)', '21-bp context → one propensity per base; trained on mitochondrial reads, no labels', False),
              ('3 Null recalibration', 'q = expit(a + b·logit p); a, b from naked-DNA rep 1, held chromosome out (candidate)', True),
@@ -61,7 +63,7 @@ def main():
     s.shapes.add_picture(str(out / 'figures/control_null_mean.png'), Inches(6.9), Inches(2.95), height=Inches(4.4))
 
     s = prs.slides.add_slide(blank)
-    text(s, .5, .3, 12.3, .6, 'Defensible performance: rejected — the null is not the main limit', 22, bold=True)
+    text(s, .5, .3, 12.3, .6, 'Calibration candidate rejected: ranking gains did not rescue protection', 22, bold=True)
     text(s, .5, .9, 12.3, .4, 'Single frozen screen, full depth, 20/21 tasks; DWM arm is a factorial control, not native DWM or TOBIAS',
          11, MUTED)
     s.shapes.add_picture(str(out / 'figures/roc_pr_average.png'), Inches(.4), Inches(1.4), width=Inches(6.6))
@@ -72,7 +74,7 @@ def main():
              'Calibration: still 6/21 motif-specific discrepancies (gate ≤3).',
              'Accuracy: +0.037 AUROC [0.020, 0.053], +4.2% AP vs DWM (gate 10%); within coverage strata 0.513 = covariates 0.514.',
              'No canonical protection in any difficult family; 10M direction 4/6.',
-             'Naked-DNA null fails in chromatin: ChIP-negative central O/E 0.34–0.99; calls 11.8% (neg) vs 18.3% (pos).',
+             'ChIP-negative central O/E 0.34–0.99; calls 11.8% (neg) vs 18.3% (pos). Negative labels are not proven unbound controls.',
              ('Decision', {'bold': True, 'size': 13}),
              'Reject; keep LOG21 count-tail as research reference. Next only if authorized: naked-DNA-trained sequence model, '
              'tested on held naked-DNA chromosomes before any chromatin scoring.']

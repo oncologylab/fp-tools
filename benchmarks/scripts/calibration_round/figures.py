@@ -10,6 +10,7 @@ import pandas as pd  # noqa: E402
 from sklearn.metrics import precision_recall_curve, roc_curve  # noqa: E402
 
 from protocol import COMPARATOR, PRIMARY, REFERENCE  # noqa: E402
+from curve_reporting import curves, realised_power  # noqa: E402
 
 COLORS = {PRIMARY: '#2a78d6', REFERENCE: '#eb6834', COMPARATOR: '#1baf7a', 'covariates_only': '#eda100'}
 LABELS = {PRIMARY: 'LOG21 + naked-DNA recalibration (candidate)', REFERENCE: 'LOG21 count-tail (reference)',
@@ -32,30 +33,8 @@ def save(fig, out, name):
 
 
 def curve_data(scores, covariates, ledger):
-    """Per task, pool the three full-depth libraries' held sites (scores are unfitted except fold-held recalibration)."""
-    full = scores[scores.depth.eq('full')]
-    cov = covariates[covariates.depth.eq('full')][['site_id', 'library', 'score']]
-    grid = np.linspace(0, 1, 201)
-    rows = {}
-    for t in ledger.itertuples():
-        task = full[full.cell.eq(t.cell) & full.tf.eq(t.tf)]
-        for arm in [PRIMARY, REFERENCE, COMPARATOR, 'covariates_only']:
-            if arm == 'covariates_only':
-                g = task[task.arm.eq(REFERENCE)][['site_id', 'library', 'chip_label']].merge(cov, on=['site_id', 'library'], how='left')
-            else:
-                g = task[task.arm.eq(arm)]
-            g = g[np.isfinite(g.score)]
-            if g.chip_label.nunique() != 2:
-                rows[(t.cell, t.tf, arm)] = None
-                continue
-            fpr, tpr, _ = roc_curve(g.chip_label, g.score)
-            prec, rec, _ = precision_recall_curve(g.chip_label, g.score)
-            # Stepwise PR: precision at recall r is the best precision achieved at recall >= r.
-            order = np.argsort(rec)
-            rec_s, prec_s = rec[order], prec[order]
-            step = np.array([prec_s[rec_s >= r].max() for r in grid])
-            rows[(t.cell, t.tf, arm)] = dict(fpr=fpr, tpr=tpr, rec=rec, prec=prec, roc_grid=np.interp(grid, fpr, tpr),
-                                             pr_grid=step, prevalence=g.chip_label.mean())
+    """Compatibility helper; aggregation is equal chromosome, library, task."""
+    grid, rows, _, _ = curves(scores, covariates, ledger, list(COLORS), REFERENCE)
     return grid, rows
 
 
@@ -71,7 +50,7 @@ def roc_pr(out, grid, rows, ledger):
     axes[0].set(xlabel='False-positive rate', ylabel='True-positive rate', title='ROC, equal-task average')
     axes[1].set(xlabel='Recall', ylabel='Precision (stepwise)', title='Precision–recall, equal-task average', ylim=(.4, 1))
     fig.legend(loc='lower center', ncol=2, frameon=False, bbox_to_anchor=(.5, -.12))
-    fig.suptitle('Full depth, nested held cohort, 20 available tasks (HepG2 HMGA1 unavailable), three libraries pooled per task',
+    fig.suptitle('Full depth: equal held chromosome → library → task; AP computed separately, not area of mean curve',
                  fontsize=7, color=MUTED)
     save(fig, out, 'roc_pr_average')
     for kind in ['roc', 'pr']:
@@ -91,7 +70,7 @@ def roc_pr(out, grid, rows, ledger):
                 ax.plot([0, 1], [0, 1], color=MUTED, lw=.6, ls='--')
         handles = [plt.Line2D([], [], color=COLORS[a], lw=2) for a in COLORS]
         fig.legend(handles, [LABELS[a] for a in COLORS], loc='lower center', ncol=4, frameon=False)
-        fig.suptitle(f'All 21 tasks, full depth, {"ROC" if kind == "roc" else "precision–recall"} (pooled libraries)', color=INK)
+        fig.suptitle(f'All 21 tasks, full depth, {"ROC" if kind == "roc" else "precision–recall"} (equal held chromosome → library)', color=INK)
         fig.tight_layout(rect=[0, .05, 1, .96])
         save(fig, out, f'{kind}_all_tasks')
 
@@ -127,13 +106,13 @@ def shape_plot(out, shape):
 
 
 def power_plot(out, power):
-    p = power[power.status.eq('AVAILABLE')]
+    p = power[power.status.eq('AVAILABLE') & power.effect_status.eq('DEFINED')]
     fig, ax = plt.subplots(figsize=(4.2, 3.2))
     for arm in [PRIMARY, REFERENCE, COMPARATOR]:
-        g = p[p.arm.eq(arm)].groupby('r').call_rate.mean()
-        ax.plot(1 - g.index, g.values, marker='o', ms=4, lw=2, color=COLORS[arm], label=LABELS[arm])
-    ax.set(xlabel='Synthetic fraction of central-endpoint fragments removed', ylabel='Call rate (mean over windows)',
-           title='Whole-fragment challenge, 138 examined windows')
+        g = p[p.arm.eq(arm)].groupby('r')[['call_rate','realised_depletion']].mean()
+        ax.plot(g.realised_depletion, g.call_rate, marker='o', ms=4, lw=2, color=COLORS[arm], label=LABELS[arm])
+    ax.set(xlabel='Realised central-cut depletion (mean over defined windows)', ylabel='Call rate (same windows)',
+           title='Whole-fragment challenge; zero-source-center effects undefined')
     ax.legend(frameon=False, fontsize=6)
     save(fig, out, 'synthetic_power')
 
@@ -143,6 +122,7 @@ def main():
     parser.add_argument('--outdir', type=Path, required=True)
     parser.add_argument('--covariates', type=Path, required=True)
     parser.add_argument('--ledger', type=Path, required=True)
+    parser.add_argument('--empirical-power', type=Path, required=True)
     args = parser.parse_args()
     out = args.outdir.resolve()
     (out / 'figures').mkdir(exist_ok=True)
@@ -150,11 +130,19 @@ def main():
     if len(ledger) != 21:
         raise ValueError('task denominator changed')
     scores = read(out / 'tables/chromatin_site_scores.tsv.gz')
-    grid, rows = curve_data(scores, read(args.covariates), ledger)
+    grid, rows, source, metrics = curves(scores, read(args.covariates), ledger,
+                                        list(COLORS), REFERENCE)
+    source.to_csv(out / 'tables/curve_plot_source.tsv.gz', sep='\t', index=False)
+    metrics.to_csv(out / 'tables/curve_fold_metrics.tsv', sep='\t', index=False)
+    pd.DataFrame([dict(cell=c,tf=t,arm=a,auroc=v['auroc'],ap=v['ap'])
+                  for (c,t,a),v in rows.items() if v is not None]).to_csv(
+                      out / 'tables/curve_task_metrics.tsv', sep='\t', index=False)
     roc_pr(out, grid, rows, ledger)
     control_plot(out, read(out / 'tables/control_task_means.tsv'))
     shape_plot(out, read(out / 'tables/regional_shapes.tsv'))
-    power_plot(out, read(out / 'tables/synthetic_power.tsv'))
+    power = realised_power(read(out / 'tables/synthetic_power.tsv'), read(args.empirical_power))
+    power.to_csv(out / 'tables/power_plot_source.tsv', sep='\t', index=False)
+    power_plot(out, power)
 
 
 if __name__ == '__main__':
