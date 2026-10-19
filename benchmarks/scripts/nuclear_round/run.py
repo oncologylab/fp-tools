@@ -66,7 +66,12 @@ def freeze(out):
 def check(out):
     frozen=json.loads((out/'EXPERIMENT_PLAN.freeze.json').read_text())
     if frozen['policy']!=POLICY:raise ValueError('policy changed; preserve attempt')
+    correction=out/'IMPLEMENTATION_CORRECTION.freeze.json'
+    replacement=json.loads(correction.read_text())['code_replacement'] if correction.exists() else {}
     for rel,h in frozen['code'].items():
+        if rel in replacement:
+            if replacement[rel]['original_sha256']!=h:raise ValueError('amendment origin')
+            h=replacement[rel]['corrected_sha256']
         if digest(ROOT/rel)!=h:raise ValueError('code changed: '+rel)
 
 
@@ -233,6 +238,8 @@ def control(out):
                 plus_observed=plus,minus_observed=minus,plus_log_bias=lp,minus_log_bias=lm)
             qp=np.exp(logsumexp(lp[:,center],axis=1)-logsumexp(lp[:,region],axis=1))
             qm=np.exp(logsumexp(lm[:,center],axis=1)-logsumexp(lm[:,region],axis=1))
+            supported=np.isfinite(lp[:,region]).all(1)&np.isfinite(lm[:,region]).all(1)
+            qp=np.where(supported,qp,np.nan);qm=np.where(supported,qm,np.nan)
             result=frame.copy();result['arm']='nuclear_primary' if l2==.01 else 'nuclear_ablation'
             result['q_plus']=qp;result['q_minus']=qm
             values=[]
@@ -243,6 +250,9 @@ def control(out):
             result['score']=[v[0] for v in values];result['ceiling']=[v[1] for v in values]
             result['status']=np.select([~np.isfinite(result.score),result.total.eq(0),result.ceiling.le(1.3010299957),
                 result.score.gt(1.3010299957)],['UNAVAILABLE','NO_INFORMATION','ABSTAIN_UNREACHABLE','CALL'],default='NO_CALL')
+            eligible=result.eligible & result.DWM_plus_valid & result.DWM_minus_valid & result.LOG21_plus_valid & result.LOG21_minus_valid
+            result['exclusion_reason']=np.where(eligible,'','pre-existing eligibility/common-support exclusion')
+            result.loc[~eligible,'status']='EXCLUDED'
             result['call']=result.status.eq('CALL');scores.append(result)
     scored=pd.concat(scores,ignore_index=True)
     scored.to_csv(out/'tables/control_site_scores.tsv.gz',sep='\t',index=False)

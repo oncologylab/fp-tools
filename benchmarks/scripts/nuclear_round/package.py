@@ -65,8 +65,9 @@ results and ChromBPNet comparisons are historical, not new confirmation.
             shutil.copytree(attempt/name,target/name)
         for name in ['EXPERIMENT_PLAN.freeze.json','control.decision.json','extraction.complete.json','fit.complete.json']:
             shutil.copyfile(attempt/name,target/name)
-        for name in ['diagnostics.freeze.json','diagnostics.complete.json','context_export.json','environment.json','EXECUTIVE_FINDINGS.md','NEXT_DEEP_RESEARCH_PROMPT.md']:
+        for name in ['diagnostics.freeze.json','diagnostics.complete.json','IMPLEMENTATION_CORRECTION.freeze.json','context_export.json','environment.json','EXECUTIVE_FINDINGS.md','NEXT_DEEP_RESEARCH_PROMPT.md']:
             if (attempt/name).exists():shutil.copyfile(attempt/name,target/name)
+        if (attempt/'provenance').exists():shutil.copytree(attempt/'provenance',target/'provenance')
         if (attempt/'figures').exists():shutil.copytree(attempt/'figures',target/'figures')
         for name in ['EXECUTIVE_FINDINGS.md','NEXT_DEEP_RESEARCH_PROMPT.md']:
             if (attempt/name).exists():shutil.copyfile(attempt/name,out/name)
@@ -162,7 +163,7 @@ tables are tab-separated; compressed tables use gzip. Missing values are not zer
 - `score`: capped −log10 conditional two-strand count-tail probability, rounded
   to ten decimal places. Strict call threshold is >1.3010299957. `ceiling` is the
   same score with zero central counts; it is not a biological power estimate.
-- `status`: CALL, NO_CALL, ABSTAIN_UNREACHABLE, NO_INFORMATION or UNAVAILABLE.
+- `status`: CALL, NO_CALL, ABSTAIN_UNREACHABLE, NO_INFORMATION, UNAVAILABLE or EXCLUDED.
   Abstention is not a negative occupancy label. Eligibility/support counts and
   informative denominators are retained separately in control calibration tables.
 - `control.l2_*.npz`: ordered site IDs; plus/minus observed arrays and log bias

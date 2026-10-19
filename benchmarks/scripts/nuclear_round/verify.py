@@ -92,6 +92,7 @@ def verify(root):
             np.testing.assert_allclose([value,ceiling],[r.score,r.ceiling],atol=1.1e-10,rtol=0)
             status=('NO_INFORMATION' if n+m==0 else 'ABSTAIN_UNREACHABLE' if ceiling<=1.3010299957
                     else 'CALL' if value>1.3010299957 else 'NO_CALL')
+            if not (r.eligible and r.DWM_plus_valid and r.DWM_minus_valid and r.LOG21_plus_valid and r.LOG21_minus_valid):status='EXCLUDED'
             assert status==r.status and (status=='CALL')==r.call
             checked+=1
     folds=json.loads((scientific/'models/folds.json').read_text())

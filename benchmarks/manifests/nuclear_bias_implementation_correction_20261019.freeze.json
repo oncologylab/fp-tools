@@ -1,0 +1,26 @@
+{
+  "created_unix": 1792427106.3283162,
+  "reason": "Pre-scoring implementation audit: retain explicit ineligible states and require all regional sequence positions to be supported. No new candidate outcomes existed.",
+  "affected_stages": [
+    "control",
+    "dependent_diagnostics"
+  ],
+  "unaffected_functions_verified_by_AST": [
+    "freeze",
+    "pairs",
+    "oracle",
+    "extract",
+    "fit_one",
+    "fit",
+    "evaluate_control",
+    "main"
+  ],
+  "hypotheses_cohorts_thresholds_unchanged": true,
+  "code_replacement": {
+    "benchmarks/scripts/nuclear_round/run.py": {
+      "original_sha256": "4e2e36cf548f035e3eda98fe9c3c6c3df0f12b0f64ff70331c0c6f6f929e55e4",
+      "corrected_sha256": "9fe6446a3c31d6472ac83682005b6a4ce14ab467c19259c694303c97d90ed639"
+    }
+  },
+  "rerun_policy": "Run both control arms with corrected code; no control arm had run before correction."
+}
