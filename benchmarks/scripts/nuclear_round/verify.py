@@ -49,6 +49,36 @@ def verify(root):
                 scaled=np.exp(logits-logits[:,region].max(1)[:,None])
                 probability=scaled[:,center].sum(1)/scaled[:,region].sum(1)
                 np.testing.assert_allclose(probability,tab['q_'+strand],atol=2e-14,rtol=2e-14)
+            with np.load(scientific/'arrays/control_sequence_contexts.npz',allow_pickle=False) as contexts:
+                assert np.array_equal(contexts['site_id'],arrays['site_id'])
+                for chrom in [f'chr{i}' for i in range(1,16)]:
+                    indices=np.flatnonzero(contexts['chromosome']==chrom)
+                    if not len(indices):continue
+                    with np.load(scientific/f'models/{chrom}.l2_{l2}.ensemble.npz',allow_pickle=False) as model:
+                        members=[]
+                        for seed in range(2026,2031):
+                            path=scientific/f'models/{chrom}.l2_{l2}.seed_{seed}.npz'
+                            meta=json.loads(path.with_suffix('.json').read_text())
+                            assert meta['npz_sha256']==sha(path)
+                            assert meta['metadata']['held_chromosome']==chrom and meta['metadata']['seed']==seed
+                            with np.load(path,allow_pickle=False) as member:members.append({k:member[k] for k in member.files})
+                        for key in model.files:
+                            np.testing.assert_allclose(model[key],np.mean([member[key] for member in members],axis=0),atol=1e-14,rtol=1e-14)
+                        encoded=np.array([[{'A':0,'C':1,'G':2,'T':3}[base] for base in s]
+                                          for s in contexts['sequence'][indices]],dtype=np.int64)
+                        x=np.lib.stride_tricks.sliding_window_view(encoded,21,axis=1)[:,31:232,:]
+                        predictions=[]
+                        for strand in [x,3-x[:,:,::-1]]:
+                            predicted=sum(model['main'][j,strand[:,:,j]] for j in range(21))
+                            for distance in [1,5,9]:
+                                predicted+=sum(model[f'pair_{distance}'][j,strand[:,:,j],strand[:,:,j+distance]]
+                                               for j in range(21-distance))
+                            predictions.append(predicted)
+                        p,m=predictions;reverse=contexts['motif_strand'][indices]=='-'
+                        oriented_p=p.copy();oriented_m=m.copy()
+                        oriented_p[reverse]=m[reverse,::-1];oriented_m[reverse]=p[reverse,::-1]
+                        np.testing.assert_allclose(oriented_p,arrays['plus_log_bias'][indices],atol=1e-12,rtol=1e-12)
+                        np.testing.assert_allclose(oriented_m,arrays['minus_log_bias'][indices],atol=1e-12,rtol=1e-12)
         for r in tab.itertuples():
             n,m,c=int(r.plus_total),int(r.minus_total),int(r.plus_center+r.minus_center)
             if not np.isfinite([r.q_plus,r.q_minus]).all():

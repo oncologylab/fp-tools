@@ -40,6 +40,21 @@ def finalise(out):
     runs.extend(dict(stage=s,fold='',l2='',seed='',status='INTENTIONALLY_NOT_RUN_PREREQUISITE')
         for s in ['chromatin','robustness_panel','full_resource_matrix','locked_controls'])
     pd.DataFrame(runs).to_csv(out/'tables/run_ledger.tsv',sep='\t',index=False)
+    panel=[];resources=[]
+    for cell in ['K562','HepG2']:
+        for replicate in [1,2,3]:
+            library=f'{cell}_rep{replicate}'
+            for depth in ['10M','25M','50M','full']:
+                for seed in range(2026,2031):
+                    panel.append(dict(library=library,depth=depth,seed=seed,
+                        status='INTENTIONALLY_NOT_RUN_CONTROL_PREREQUISITE',evidence='no new chromatin scoring'))
+            for depth in ['10M','full']:
+                for repeat in range(1,7):
+                    resources.append(dict(library=library,depth=depth,seed=2026,repeat=repeat,cores=4,
+                        cpu_seconds=None,absolute_simultaneous_peak_bytes=None,
+                        status='INTENTIONALLY_NOT_RUN_CONTROL_PREREQUISITE'))
+    pd.DataFrame(panel).to_csv(out/'tables/depth_replication.tsv',sep='\t',index=False)
+    pd.DataFrame(resources).to_csv(out/'tables/resource_results.tsv',sep='\t',index=False)
     ll=likelihood[likelihood.arm.eq('nuclear_primary')]
     likelihood_text='\n'.join(f"- Versus {r.reference}: likelihood gain {r.gain:.3f}, 95% chromosome-block interval [{r.low:.3f}, {r.high:.3f}]." for r in ll.itertuples())
     text=f'''# Nuclear sequence-bias follow-up: {decision['decision']}

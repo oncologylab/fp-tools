@@ -20,6 +20,7 @@ def digest(path):
 
 def build(out,attempt=None):
     out.mkdir(parents=True,exist_ok=False)
+    sanitized=[];input_identities={}
     old=ROOT.parent/'fp-tools-calibration/benchmarks/results/fp_tools_calibration_evidence_2026-10-19'
     # This previously verified, privacy-filtered review package contains only
     # authorized derived training data. Its original checksums stay intact.
@@ -31,6 +32,31 @@ def build(out,attempt=None):
         shutil.copyfile(ROOT/'benchmarks/scripts/calibration_round'/name,destination)
     shutil.copyfile(ROOT/'benchmarks/CALIBRATION_REPORTING_CORRECTION_20261019.md',out/'REPORTING_CORRECTIONS.md')
     shutil.copyfile(ROOT/'benchmarks/NUCLEAR_BIAS_ROUND_20261019.md',out/'NUCLEAR_EXPERIMENT_PLAN.md')
+    plan=(ROOT/'benchmarks/NUCLEAR_BIAS_ROUND_20261019.md').read_text()
+    (out/'ORIGINAL_PROMOTION_REQUIREMENTS.md').write_text('# Original promotion requirements\n\n'+
+        plan.split('## Original promotion requirements (unchanged)\n\n',1)[1].split('## Resources and delivery',1)[0])
+    (out/'BASELINE_STATE.md').write_text('''# Baseline state
+
+Base commit: 690978f, rejected calibration round. Its source and archive remain
+unchanged. This branch first corrected reporting, then froze nuclear sequence
+training at source commit 28823cc before any new fit or scoring. See nuclear/
+EXPERIMENT_PLAN.freeze.json when included; it records exact source/input hashes.
+
+The prior nuclear LOG21 grid used the older first-10-million preparation without
+a blacklist and was not leave-one-training-chromosome-out. It cannot be reused
+as held-chromosome evidence for this round. New windows are genome-grid selected,
+without labels or count-based selection, with matched hg38 blacklist exclusion.
+
+Existing corrected extraction, original control arrays, the 6,020-site nested
+cohort, complete 21-task ledger and historical calibration scores were already
+available. No historical scientific stage was rerun to search for a new result.
+All 19 old numerical tables remain byte-identical. The independent old verifier
+checked 32 fits, 33,200 exact-tail rows, 16,086 calls and 6,300 fold metrics with
+zero failures. Corrected plotting summaries match all 80 available task/arm rows.
+
+Protected labels/controls remain closed. The earlier examined test/transfer
+results and ChromBPNet comparisons are historical, not new confirmation.
+''')
     status='REPORTING_CORRECTION_ONLY; nuclear scientific experiment not included'
     if attempt:
         if not (attempt/'control.decision.json').exists():raise ValueError('control stage incomplete')
@@ -39,7 +65,7 @@ def build(out,attempt=None):
             shutil.copytree(attempt/name,target/name)
         for name in ['EXPERIMENT_PLAN.freeze.json','control.decision.json','extraction.complete.json','fit.complete.json']:
             shutil.copyfile(attempt/name,target/name)
-        for name in ['diagnostics.freeze.json','diagnostics.complete.json','EXECUTIVE_FINDINGS.md','NEXT_DEEP_RESEARCH_PROMPT.md']:
+        for name in ['diagnostics.freeze.json','diagnostics.complete.json','context_export.json','environment.json','EXECUTIVE_FINDINGS.md','NEXT_DEEP_RESEARCH_PROMPT.md']:
             if (attempt/name).exists():shutil.copyfile(attempt/name,target/name)
         if (attempt/'figures').exists():shutil.copytree(attempt/'figures',target/'figures')
         for name in ['EXECUTIVE_FINDINGS.md','NEXT_DEEP_RESEARCH_PROMPT.md']:
@@ -49,18 +75,23 @@ def build(out,attempt=None):
             if (attempt/'logs'/name).exists():
                 text=(attempt/'logs'/name).read_text().replace(str(ROOT.parent),'<LOCAL_ROOT>')
                 (target/'logs'/name).write_text(text)
+                sanitized.append(dict(file='nuclear/logs/'+name,original_sha256=digest(attempt/'logs'/name),
+                    packaged_sha256=digest(target/'logs'/name),transformation='replace local workspace root by <LOCAL_ROOT>'))
         for name in ['extract.launch.json','extract.exit.json','fit.launch.json','fit.exit.json','control.launch.json','control.exit.json']:
             if (attempt/'logs'/name).exists():
                 text=(attempt/'logs'/name).read_text().replace(str(ROOT.parent),'<LOCAL_ROOT>')
                 (target/'logs'/name).write_text(text)
+                sanitized.append(dict(file='nuclear/logs/'+name,original_sha256=digest(attempt/'logs'/name),
+                    packaged_sha256=digest(target/'logs'/name),transformation='replace local workspace root by <LOCAL_ROOT>'))
         # No local input registry, raw collated BAM, or absolute-path launch logs.
         records=json.loads((attempt/'inputs.local.json').read_text())
+        input_identities={k:dict(identity=v['identity'],original_sha256=v['sha256']) for k,v in records.items()}
         inputs=out/'inputs';inputs.mkdir()
         for key,name in [('controls','control_counts.full.tsv.gz'),('old_scores','control_reference_scores.tsv.gz'),('ledger','task_ledger.tsv')]:
             p=Path(records[key]['path'])
             if digest(p)!=records[key]['sha256']:raise ValueError('input changed')
             shutil.copyfile(p,inputs/name)
-        for name in ['verify.py','run.py','access.py','protocol.py','test_access.py','test_run.py','diagnostics.py','finalise.py','package.py']:
+        for name in ['verify.py','run.py','access.py','protocol.py','test_access.py','test_run.py','diagnostics.py','finalise.py','package.py','export_contexts.py']:
             dest=out/'code'/name;dest.parent.mkdir(exist_ok=True)
             shutil.copyfile(Path(__file__).parent/name,dest)
         source=out/'source';source.mkdir()
@@ -69,6 +100,29 @@ def build(out,attempt=None):
             destination=source/name;destination.parent.mkdir(parents=True,exist_ok=True)
             shutil.copyfile(ROOT/name,destination)
         status=json.loads((attempt/'control.decision.json').read_text())['decision']
+        (out/'LIMITATIONS_AND_BLOCKERS.md').write_text('''# Limits and unrun work
+
+This package does not establish a footprint-detection improvement or promotion.
+The primary control screen and native-DWM support prerequisite govern the stop
+decision; see nuclear/control.decision.json. No new chromatin discrimination,
+canonical difficult-family rescue, depth/seed replication or end-to-end resource
+qualification is inferred from a control-only experiment.
+
+Controls are repeatedly examined naked-DNA replicate 1, shared across tasks.
+Repeated physical sites and fragment support induce dependence. Wilson bounds
+are descriptive; chromosome bootstrap intervals condition on fixed predictions
+and do not establish full refit uncertainty. Historical ChIP-negative calls are
+not a true false-positive estimate. Protein-free-DNA calibration alone does not
+establish chromatin calibration. Context 21 bases is distinct from one-base
+prediction resolution. Training source, depth, preparation and window selection
+differ from the frozen mitochondrial reference, limiting causal attribution.
+
+Native production DWM coverage/model-fitting scope remains unqualified. The
+same-detector DWM propensity arm is a diagnostic control, not direct TOBIAS.
+All locked-control, functional uncertainty and production workflow gates remain
+unmet. No protected content was opened and no main/release/manuscript changes
+were made. Any further experiment requires a new scientific question and freeze.
+''')
     (out/'README_FIRST.md').write_text(
         '# Nuclear-bias follow-up and corrected calibration evidence\n\n'
         f'Status: **{status}**. No production change or promotion.\n\n'
@@ -89,7 +143,48 @@ def build(out,attempt=None):
         historical_commit='690978f',historical_archive_sha256='ef1e2367c37f610441cf8e719f311538b9b30c954bd3ec079f66b1fd250b07c9',
         code_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         scope='authorized derived training data only; no raw BAM/FASTA or protected content',
+        inputs=input_identities,sanitized_payloads=sanitized,
         original_vs_packaged='historical_calibration retains original packaged hashes; nuclear freeze records original scientific inputs; root SHA256SUMS records this package'),indent=2)+'\n')
+    (out/'DATA_DICTIONARY.md').write_text('''# Data dictionary
+
+Historical fields and denominators retain their archived definitions. All nuclear
+tables are tab-separated; compressed tables use gzip. Missing values are not zero.
+
+- `site_id`: original stable physical/task-site identifier; `physical_id` and
+  `deduplicated_fit_representative` distinguish repeated task windows from unique
+  control observations. Repeated task rows are not independent controls.
+- `TFBS_chr`: held training chromosome (chr1–15); `cell` denotes the motif-task
+  panel, not a separate naked-DNA biological library. All controls use replicate 1.
+- `plus/minus_center`, `left`, `right`, `total`: motif-oriented integer cuts;
+  center is −7..7, shoulders −40..−12 and 12..40, total their sum per strand.
+- `q_plus/q_minus`: sequence-expected conditional central share; not binding
+  probabilities. Expected central counts are strand total multiplied by q.
+- `score`: capped −log10 conditional two-strand count-tail probability, rounded
+  to ten decimal places. Strict call threshold is >1.3010299957. `ceiling` is the
+  same score with zero central counts; it is not a biological power estimate.
+- `status`: CALL, NO_CALL, ABSTAIN_UNREACHABLE, NO_INFORMATION or UNAVAILABLE.
+  Abstention is not a negative occupancy label. Eligibility/support counts and
+  informative denominators are retained separately in control calibration tables.
+- `control.l2_*.npz`: ordered site IDs; plus/minus observed arrays and log bias
+  arrays, each 4200 × 201, offsets −100..100. No pickle or raw sequencing payload.
+- `training_windows.npz`: chromosome, start, sequence (200+82 bases including
+  context margins), and integer counts with axes window × strand × 200 bases.
+  `models/folds.json` lists selected row indices; every held chromosome is absent.
+- Model NPZ: main base coefficients and pair coefficients at distances 1/5/9.
+  JSON sidecars retain hashes, training histories, seeds and fitting provenance.
+- `power.tsv`: whole-fragment resampling; r is an endpoint-count weighting
+  parameter. `realised_depletion` is the corresponding marginal central-cut
+  depletion, undefined for a zero-source-center window. Draws from one window
+  are not independent biological libraries.
+- Curve plot sources: thresholds are summarized within held chromosomes and
+  averaged equally over chromosomes, libraries and available tasks. Mean-curve
+  area is not average precision; scalar AP is calculated from original scores.
+
+`FAIL`, `INCOMPLETE`, `NOT_TESTED_LOCKED` and `DEVELOPMENT_CRITERION_MET` are scoped
+statuses. No status in this package establishes complete promotion.
+''')
+    if attempt:
+        shutil.copyfile(ROOT/'benchmarks/manifests/end_to_end_resource_protocol_v1.json',out/'end_to_end_resource_protocol_v1.json')
     files=sorted(p for p in out.rglob('*') if p.is_file())
     for p in files:
         if p.is_symlink() or p.suffix in {'.bam','.fastq','.fa','.fasta'}:raise ValueError('unsafe payload')
