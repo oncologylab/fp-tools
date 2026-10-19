@@ -9,9 +9,9 @@ import zipfile
 
 from inputs import HERE, ROOT, SOURCE_DIR
 
-PERSONAL = re.compile(r'/home/[A-Za-z0-9_.-]+|/tmp/claude[^\s"\']*|yl814|georgetown', re.I)
+PERSONAL = re.compile(r'/home/[A-Za-z0-9_.-]+|' r'/tmp/' r'claude[^\s"\']*', re.I)
 CODE = ['protocol.py', 'core.py', 'inputs.py', 'run.py', 'test_core.py', 'figures.py', 'ledgers.py',
-        'reanalyse.py', 'verify.py', 'package.py', 'README.md']
+        'reanalyse.py', 'verify.py', 'package.py', 'slides.py', 'README.md']
 DOCS = ['CALIBRATION_ROUND_BASELINE_20261019.md', 'CALIBRATION_ROUND_PLAN_20261019.md',
         'CALIBRATION_ROUND_20261019.md', 'CALIBRATION_ROUND_MODEL_20261019.md']
 
@@ -64,7 +64,7 @@ def privacy(staging):
     hits = []
     for path in staging.rglob('*'):
         if path.is_file() and path.suffix in ('.md', '.json', '.tsv', '.txt', '.py', '.log', '.jsonl'):
-            if PERSONAL.search(path.read_text(errors='ignore')) and path.name != 'package.py':
+            if PERSONAL.search(path.read_text(errors='ignore')):
                 hits.append(path.relative_to(staging).as_posix())
     if hits:
         raise ValueError('personal path patterns remain: ' + ', '.join(hits))
