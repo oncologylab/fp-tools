@@ -33,11 +33,24 @@ git -C fp-tools worktree add ../fp-tools-research research/footprint-improvement
 git -C fp-tools worktree add ../fp-tools-next-round research/footprint-next-round-20260922
 git -C fp-tools worktree add ../fp-tools-calibration research/footprint-calibration-20261019
 git -C fp-tools worktree add ../fp-tools-nuclear-bias research/footprint-nuclear-bias-20261019
-rclone copy yilab:Yaoxiang/fp-tools/development_backup_2026-10-19/workspace . --checksum
-rclone check yilab:Yaoxiang/fp-tools/development_backup_2026-10-19/workspace . --one-way
+rclone copy yilab:Yaoxiang/fp-tools/development_backup_2026-10-19/recovery ./backup_metadata --checksum
+rclone copy yilab:Yaoxiang/fp-tools/development_backup_2026-10-19/parts ./backup_parts --checksum
+python - <<'PY'
+import hashlib, json
+from pathlib import Path
+status=json.loads(Path('backup_metadata/status.json').read_text())
+assert status['state']=='COMPLETE_VERIFIED', status
+for record in json.loads(Path('backup_metadata/parts.json').read_text()):
+    p=Path('backup_parts')/record['name'];h=hashlib.sha256()
+    with p.open('rb') as f:
+        for block in iter(lambda:f.read(8*1024*1024),b''):h.update(block)
+    assert p.stat().st_size==record['bytes'] and h.hexdigest()==record['sha256'],p
+print('All downloaded parts verified')
+PY
+cat backup_parts/workspace.tar.part-* | tar --no-same-owner -xf -
 ```
 
-The workspace folder preserves relative paths, including data, results,
+The ordered tar parts preserve relative paths, including data, results,
 manuscript material and examples. Git metadata and environments are excluded;
 recreate environments using the pinned project/research dependency records.
 The manuscript is a private backup only and must not be committed to Git.
@@ -70,14 +83,18 @@ the chromatin screen; restore its negative decision with its results.
 ## Resume an interrupted workspace backup on the original host
 
 ```bash
-python benchmarks/scripts/backup_development.py run \
+python benchmarks/scripts/archive_development_backup.py \
   --base /home/exouser/projects \
-  --out benchmarks/results/development_backup_20261019
+  --out benchmarks/results/development_backup_20261019 \
+  --remote yilab:Yaoxiang/fp-tools/development_backup_2026-10-19
 ```
 
 Run from the nuclear research worktree. The runner uses a process lock, rclone
-checksum comparison, immutable remote objects, retries, and a final independent
-rclone check. It never deletes scientific inputs or remote data. If source
+checksum comparison, immutable remote objects, retries, and a final remote
+part-set/checksum audit. Two-GiB parts avoid hundreds of thousands of individual
+Box upload requests; only a verified temporary transport part is removed locally.
+Resuming regenerates the deterministic tar stream and reuses identical remote
+parts. It never deletes scientific inputs or remote data. If source
 files changed after inventory, it refuses to claim completion; preserve the
 old attempt and make a new versioned inventory/destination for the changed
 snapshot. Logs and final status are copied to Box recovery metadata.
