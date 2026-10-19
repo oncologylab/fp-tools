@@ -99,7 +99,7 @@ results and ChromBPNet comparisons are historical, not new confirmation.
             if str(p.resolve())!=records[key]['resolved_path']:raise ValueError('input resolved path changed')
             if digest(p)!=records[key]['sha256']:raise ValueError('input changed')
             shutil.copyfile(p,inputs/name)
-        for name in ['verify.py','reanalyse.py','replot.py','run.py','access.py','protocol.py','test_access.py','test_run.py','diagnostics.py','finalise.py','package.py','export_contexts.py']:
+        for name in ['verify.py','reanalyse.py','replot.py','run.py','access.py','protocol.py','test_access.py','test_run.py','diagnostics.py','finalise.py','package.py','export_contexts.py','chromatin.py','chromatin_metrics.py','verify_chromatin.py','report_chromatin.py','replot_chromatin.py']:
             dest=out/'code'/name;dest.parent.mkdir(exist_ok=True)
             shutil.copyfile(Path(__file__).parent/name,dest)
         versions=json.loads((attempt/'environment.json').read_text())['packages']
@@ -107,7 +107,7 @@ results and ChromBPNet comparisons are historical, not new confirmation.
             ['numpy','pandas','scipy','scikit-learn','matplotlib']))
         source=out/'source';source.mkdir()
         for name in ['src/fp_tools/tools/parametric_bias.py','benchmarks/scripts/evaluate_parametric_bias.py',
-                     'benchmarks/scripts/conditional_protection_score.py']:
+                     'benchmarks/scripts/conditional_protection_score.py','benchmarks/scripts/fixed_shape_normalization.py','src/fp_tools/tools/functional_footprints.py']:
             destination=source/name;destination.parent.mkdir(parents=True,exist_ok=True)
             shutil.copyfile(ROOT/name,destination)
         status=json.loads((attempt/'control.decision.json').read_text())['decision']
@@ -207,6 +207,48 @@ statuses. No status in this package establishes complete promotion.
 ''')
     if attempt:
         shutil.copyfile(ROOT/'benchmarks/manifests/end_to_end_resource_protocol_v1.json',out/'end_to_end_resource_protocol_v1.json')
+        if (attempt/'chromatin/complete.json').exists():
+            sub=out/'chromatin';sub.mkdir()
+            for name in ['arrays','tables','figures','provenance']:
+                shutil.copytree(attempt/'chromatin'/name,sub/name)
+            for name in ['EXPERIMENT_PLAN.freeze.json','complete.json']:
+                shutil.copyfile(attempt/'chromatin'/name,sub/name)
+            (sub/'logs').mkdir()
+            for p in sorted((attempt/'chromatin/logs').iterdir()):
+                if not p.is_file() or p.is_symlink():raise ValueError('unexpected log')
+                text=p.read_text().replace(str(ROOT.parent),'<LOCAL_ROOT>')
+                dest=sub/'logs'/p.name;dest.write_text(text)
+                sanitized.append(dict(file=str(dest.relative_to(out)),original_sha256=digest(p),
+                    packaged_sha256=digest(dest),transformation='replace local workspace root'))
+            shutil.copyfile(attempt/'final.decision.json',out/'final.decision.json')
+            (out/'LIMITATIONS_AND_BLOCKERS.md').write_text('''# Limits and blockers
+
+The control component passed; the conditional fixed-cohort chromatin experiment
+ran and failed the accuracy screen. See EXECUTIVE_FINDINGS.md and final.decision.json.
+All 6 libraries, full/10M seed2026 were evaluated; further depths/seeds and full
+resource timing were intentionally stopped. Native production DWM strand and
+complete-fragment support remains incomplete; the comparator is DWM propensity,
+not a direct TOBIAS run. Locked safety and functional uncertainty remain unqualified.
+Previously constructed nested cohorts are reused development evidence, not fresh
+confirmation. Bootstrap conditions on fitted predictions. Naked-DNA task windows
+share one biological source and dependent fragments. ChIP-negative calls are not
+known false positives. Source, depth, preparation and window selection differ
+from mitochondrial training. No main, release or manuscript changes were made.
+
+All-task unstratified shape sources and arrays are complete. Additional
+count/expected-count-stratified shape panels and full functional-band calibration
+were not completed; no canonical difficult-family rescue is claimed. The
+chromatin independent verifier checks every new count-tail/call and rank/AP row;
+its block aggregation replay reuses the frozen contract. This is explicitly not
+an independent reimplementation of cohort matching or raw-data extraction.
+''')
+            with (out/'README_FIRST.md').open('a') as f:
+                f.write('\n## Final conditional-stage decision\n\nThe control receipt above predates the conditional chromatin diagnostic. The final decision is **REJECTED_FOR_FOOTPRINT_IMPROVEMENT**. Read final.decision.json and EXECUTIVE_FINDINGS.md. Verify new chromatin counts, calls and rankings using `python -B code/verify_chromatin.py .`; independently replay headline aggregation with `python -B code/verify_chromatin.py . --output ../chromatin_replay`. The complete derived arrays and all-task plot sources are in chromatin/. Historical slides remain explicitly historical.\n')
+            with (out/'BASELINE_STATE.md').open('a') as f:
+                f.write('\nThe successful control component triggered the already authorized fixed-cohort chromatin diagnostic, frozen at ff23cdf before scoring. It completed 216,720 rows, including 72,240 new model rows, and failed the accuracy screen. No model selection or new matching followed these results.\n')
+            origin=json.loads((out/'ORIGIN_INDEX.json').read_text());origin['sanitized_payloads']=sanitized
+            origin['chromatin_input_identities']=json.loads((sub/'EXPERIMENT_PLAN.freeze.json').read_text())['inputs']
+            (out/'ORIGIN_INDEX.json').write_text(json.dumps(origin,indent=2)+'\n')
     files=sorted(p for p in out.rglob('*') if p.is_file())
     for p in files:
         if p.is_symlink() or p.suffix in {'.bam','.fastq','.fa','.fasta'}:raise ValueError('unsafe payload')

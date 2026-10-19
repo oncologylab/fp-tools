@@ -1,0 +1,243 @@
+{
+  "authorization": "conditional Phase4 of plan committed before training; control component passed; native comparator unqualified so diagnostic only",
+  "code": {
+    "benchmarks/scripts/conditional_protection_score.py": "0850b1f42a406dfbbc76e4c7945de66367f03c648d02fb41c9d9a28ac23fa75e",
+    "benchmarks/scripts/fixed_shape_normalization.py": "18850578283ae1d83dc1cd6e985897b26ccccfce0a9c075c6c1a6444aae9eea3",
+    "benchmarks/scripts/nuclear_round/chromatin.py": "03ae9fec5268c9a5d92caba0e3c8ee45795b61c0e0f6dbd0460fa3e2a81092e1",
+    "benchmarks/scripts/nuclear_round/chromatin_metrics.py": "9cab020b81127d06e7c979a4d7e56ffd151b08174039a17436397f0813204210",
+    "src/fp_tools/tools/functional_footprints.py": "af44490a6ee2e1c657f3e10050dc13a0ed25e289b07f2322a5cf89c4bec4e608",
+    "src/fp_tools/tools/parametric_bias.py": "0faeca7de9e7573a57e64a326706c42a3dcf48bc446552e4806d3d8d1ae8c835"
+  },
+  "control_decision_sha256": "8954c421c247be53984673c40f5e0fe62dfbd8a9a4a7ee3bf3ba90e51853cd5d",
+  "created_unix": 1792429459.7951748,
+  "ensembles": {
+    "chr1.l2_0.0001.ensemble.npz": "b0be2663b4a5c787405e035e81cfff4188a5e96bb4afba0deaf6b0ed56bf7335",
+    "chr1.l2_0.01.ensemble.npz": "8398c746532061db927cbd13190639edaee9544ce5fae600a0a369db7fcec175",
+    "chr10.l2_0.0001.ensemble.npz": "f5ed966a09a521f490a8ab16a0ef474867219d0d1fbfa84fb683d62e8070c6d8",
+    "chr10.l2_0.01.ensemble.npz": "faae2e849123baf97d4f4f3377624b0f47f10fefbf0088a0330c41fa2a140652",
+    "chr11.l2_0.0001.ensemble.npz": "88cee6bc282652541d3291036102943a6c88dba9876e0ae5819f8cc41b3228e2",
+    "chr11.l2_0.01.ensemble.npz": "dc565b9339cb2a7318feee9d35e5d688f158b2f086b326ae201fdc03dfe17fa1",
+    "chr12.l2_0.0001.ensemble.npz": "540a8ab41b173e1a4485b615f9f4c0af709c591fea0b808f50792ccd228f3929",
+    "chr12.l2_0.01.ensemble.npz": "789b469d6b1d49c54c513f0b746f6e3d3f125c42423b519cc19c790da6c0a466",
+    "chr13.l2_0.0001.ensemble.npz": "5c27c59e90b90c5695fe08e938cc2728e636afd4fb2cd13a42b8d070546c92a2",
+    "chr13.l2_0.01.ensemble.npz": "5ccbf73f824e36c654493caaa096f10389ae361f0dee96aa61c0a3bf3f92c476",
+    "chr14.l2_0.0001.ensemble.npz": "c11b03bee5c196b0bc7d2693632329f62c9bc66a579c76cda3820256535fed51",
+    "chr14.l2_0.01.ensemble.npz": "8e1ac6cc8c56ecc15430542e64d5b616ed5199d8f26e7b97cd4b4e0b417c2e1a",
+    "chr15.l2_0.0001.ensemble.npz": "3f285662054ae4c1c6b8c1898e5accbcaae4b7b5e3d8837f2d1a7cab7f0fb43e",
+    "chr15.l2_0.01.ensemble.npz": "b901e798a5f5340f25b0d61c7688a3296071dc867c15b61bca514a2c1a5b9c13",
+    "chr2.l2_0.0001.ensemble.npz": "029dda4d14b0968c248d5f6717aee6788f384f3df8c5e06445ed3cc59cb9a711",
+    "chr2.l2_0.01.ensemble.npz": "88f09f120ccbc2f8e9f40e6a4c95484b6d3b9e6f5d074aa1462f47f89887a719",
+    "chr3.l2_0.0001.ensemble.npz": "1a6586952a6dcf0a56d7a699db8553ce2c5d0ddf4014d92998f580b1cdc2db26",
+    "chr3.l2_0.01.ensemble.npz": "556cf81044a58986187a8e40ab1096f0e98d7c9e3deca4bb7b4859518c6e1e55",
+    "chr4.l2_0.0001.ensemble.npz": "31f0a7d1a8e1c622883bd1eafcc847d4cfc4e8c390dcb57e3cbac474d67f6f60",
+    "chr4.l2_0.01.ensemble.npz": "b85791e9b91d40d52f703b1ff3aebda994ca6190fb23f19a7e75b02e49fb36fc",
+    "chr5.l2_0.0001.ensemble.npz": "1c6c293d0a0c5aae35f8e13d017e871e5995f1c8885f184a4b1a4d28525f2add",
+    "chr5.l2_0.01.ensemble.npz": "010ef8d80b73a57b0ec028d3d3a2651b1a50b384593a2b9f4b58c689e4fb10a4",
+    "chr6.l2_0.0001.ensemble.npz": "44d4cd3a19e55aa283765318ed7e034e2952d362e6d01689394ba4e5f170f36d",
+    "chr6.l2_0.01.ensemble.npz": "74267858f4ca79fe4b334abb9b5fd17b59d21b94de736c67846d9b8f5cb0bbc7",
+    "chr7.l2_0.0001.ensemble.npz": "df4b8b4c76331104e1ae44e79bf35a3e09b7e70343d312b04c2cc15ed0ae17e3",
+    "chr7.l2_0.01.ensemble.npz": "da6ed6dc166d3b5fce2474a0859d5bc5f88b9cb47a700ddc05361eca32873e29",
+    "chr8.l2_0.0001.ensemble.npz": "8eca64785be2dd51e5f7a9074acd0c382cbbcdbdf812b24d2ca85527b5da99df",
+    "chr8.l2_0.01.ensemble.npz": "b63843519d4aee2d89f989f2079b9293cc8d0eaf9a415305e533e641091636e4",
+    "chr9.l2_0.0001.ensemble.npz": "e1aa840e9a08e323f52836555e631ff72d6fa6a8222d6a28355f15eb07227ff3",
+    "chr9.l2_0.01.ensemble.npz": "f39c9ffd52d6e16d37e1ce51a5f787c5959809816e2ef437131eef20a20519ef"
+  },
+  "inputs": {
+    "arrays/HepG2_rep1.10M.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/HepG2_rep1.10M.npz",
+      "sha256": "800421774ad0a0d38624cf192260bca5ed2c84fe08a7a29d09ddad4de9a8fe9f"
+    },
+    "arrays/HepG2_rep1.full.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/HepG2_rep1.full.npz",
+      "sha256": "a44a41f4710a5cfd0b739dd9f233dbd70db417d07864b59228e1c2d287f41895"
+    },
+    "arrays/HepG2_rep1.propensities.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/HepG2_rep1.propensities.npz",
+      "sha256": "bc4be559aaa472a6fc9bf92848d826c199fd6f33b0181bdd980cc83dbda11136"
+    },
+    "arrays/HepG2_rep2.10M.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/HepG2_rep2.10M.npz",
+      "sha256": "029dbbd5842cca87a095839629dc9d454c5bfee4dc1d981ada603eea1a05359f"
+    },
+    "arrays/HepG2_rep2.full.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/HepG2_rep2.full.npz",
+      "sha256": "58dc0b6f7dd7fcec5876d03a550e20deb06d4aaf70590b1ca9ce5aedd15c2131"
+    },
+    "arrays/HepG2_rep2.propensities.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/HepG2_rep2.propensities.npz",
+      "sha256": "4ba60c75e404e8631c89c9a4285278481685dedd0a9ccd7f9186b13b6ecf64fd"
+    },
+    "arrays/HepG2_rep3.10M.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/HepG2_rep3.10M.npz",
+      "sha256": "be4ffc46ca7cd0e6612d1bfdce9f034025c327e0c920b88633bee7df0a2bc094"
+    },
+    "arrays/HepG2_rep3.full.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/HepG2_rep3.full.npz",
+      "sha256": "057019f48bf342ae5080b66d881c856f57086fca50c8d2b843bc23c10b65eeaf"
+    },
+    "arrays/HepG2_rep3.propensities.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/HepG2_rep3.propensities.npz",
+      "sha256": "82fdb6ce8fdd0ac44768866004844dc91a6b99dbf5ad897fecda0e46b6d220a4"
+    },
+    "arrays/K562_rep1.10M.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/K562_rep1.10M.npz",
+      "sha256": "16f3bad23a00be292e83014e25d56f2e4be18493b5ba205b8386e3ee1e92c732"
+    },
+    "arrays/K562_rep1.full.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/K562_rep1.full.npz",
+      "sha256": "36ce527fd05ba627a11cb73c18bf52b4615c5589a71afe385313c72859cdbae6"
+    },
+    "arrays/K562_rep1.propensities.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/K562_rep1.propensities.npz",
+      "sha256": "b78d9690ba82a41a1ad7b80a7967be1f756bcf82123231bc8416be0838212bfa"
+    },
+    "arrays/K562_rep2.10M.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/K562_rep2.10M.npz",
+      "sha256": "dfd64cac269f7bf85b03405e34297612b6e9ab34d211b35be2296afa66662818"
+    },
+    "arrays/K562_rep2.full.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/K562_rep2.full.npz",
+      "sha256": "5852c5e0ed01acfa5c95f55f027ac5d2bb568c9e0ad9a7aba74668eb4839c89e"
+    },
+    "arrays/K562_rep2.propensities.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/K562_rep2.propensities.npz",
+      "sha256": "cbfb4b3682568cfa8b2a895af4dc72b5cbe39d327aa371dacc749533b480ee3b"
+    },
+    "arrays/K562_rep3.10M.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/K562_rep3.10M.npz",
+      "sha256": "b8aaebe6b8723bc74129e27e87b8462000617aee278b89fbedfe0a9326a3229f"
+    },
+    "arrays/K562_rep3.full.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/K562_rep3.full.npz",
+      "sha256": "66f38e6663c799348969d61cd20174fefa8db4baf88d09c09a15588e03a1d8e9"
+    },
+    "arrays/K562_rep3.propensities.npz": {
+      "identity": "permitted chr1-15 development derived data: arrays/K562_rep3.propensities.npz",
+      "sha256": "92b166dddbd23826b81a7611e1e3abc8576641ee51b64bc103c5fc42454dbb39"
+    },
+    "baseline_scores": {
+      "identity": "permitted chr1-15 development derived data: baseline_scores",
+      "sha256": "3ae7ccadc4727c99b3b743df2941a7270b74de87f16a0ac3d59f72ce85e565c9"
+    },
+    "genome": {
+      "identity": "hg38 sequence",
+      "sha256": "5be01555d98347fdb3714dc84c6f77c9d8bc774adcf32c6f7a8fa06f5baf5e51"
+    },
+    "native_layout": {
+      "identity": "permitted chr1-15 development derived data: native_layout",
+      "sha256": "42642eb62cecfb6437c3f766e4cdec60365abf7dea9a1c20462d6163b6a5a9d6"
+    },
+    "native_qualification": {
+      "identity": "permitted chr1-15 development derived data: native_qualification",
+      "sha256": "161d9db880afa90ab76241fa60a2d8e99813cd96b4696bf6cb4720908e7db08a"
+    },
+    "tables/counts.HepG2_rep1.10M.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.HepG2_rep1.10M.tsv.gz",
+      "sha256": "1c840de2aba5063237b4c3b6361fe2b543a4b5cddd638f1d62ac1620294d72c8"
+    },
+    "tables/counts.HepG2_rep1.full.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.HepG2_rep1.full.tsv.gz",
+      "sha256": "ba03994e4f569df78fdcce313181484883fb7e4795b3bc7d1d872e820d570acd"
+    },
+    "tables/counts.HepG2_rep2.10M.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.HepG2_rep2.10M.tsv.gz",
+      "sha256": "0535502dec7260fa9c721b50943f8faf4ef14e1be8817ca8518b11cbaf15c1dd"
+    },
+    "tables/counts.HepG2_rep2.full.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.HepG2_rep2.full.tsv.gz",
+      "sha256": "e46286d4cfe2450256d188281589a68316a39e0fd7a48538d9a38a2d90d86af8"
+    },
+    "tables/counts.HepG2_rep3.10M.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.HepG2_rep3.10M.tsv.gz",
+      "sha256": "9f4c0b7abcdc457126a5ddb7a6c016f6d597d98a043964fe8279ab51b49f70ab"
+    },
+    "tables/counts.HepG2_rep3.full.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.HepG2_rep3.full.tsv.gz",
+      "sha256": "b2a6477f64268ccdca8bc6309d8a40c204be75459241206acf43d663686ddf32"
+    },
+    "tables/counts.K562_rep1.10M.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.K562_rep1.10M.tsv.gz",
+      "sha256": "c836a379be68c625579a04b9d1a5bb666570fe7eb90c20e7136d4f04e14c1e30"
+    },
+    "tables/counts.K562_rep1.full.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.K562_rep1.full.tsv.gz",
+      "sha256": "a72576c8ba6bc6d98f8e57463fd540be181a72a03cc8d2593ead4227092bf963"
+    },
+    "tables/counts.K562_rep2.10M.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.K562_rep2.10M.tsv.gz",
+      "sha256": "baf369d9ed2097a95f86c5c32a0b0e2eebacf9b0f9033087ac0d269ff37798af"
+    },
+    "tables/counts.K562_rep2.full.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.K562_rep2.full.tsv.gz",
+      "sha256": "dfd7789450542fc2caf595bea13f606242619f45c8e8d8472584732fd5208e47"
+    },
+    "tables/counts.K562_rep3.10M.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.K562_rep3.10M.tsv.gz",
+      "sha256": "44eb84e60201d16189a3de69abd2622ea0f61622251a6b3ec6c07ea55cca810c"
+    },
+    "tables/counts.K562_rep3.full.tsv.gz": {
+      "identity": "next-round derived development data: tables/counts.K562_rep3.full.tsv.gz",
+      "sha256": "1e31531f3e0120b881c51b3c5f8ccfbb0a1697fbaca94814c2e422d916f544cb"
+    },
+    "tables/covariate_baseline_all_libraries.tsv.gz": {
+      "identity": "next-round derived development data: tables/covariate_baseline_all_libraries.tsv.gz",
+      "sha256": "86b696f852ab123c7badc8f3d879bac99a206e164e0cd1e90d02346c32d1c325"
+    },
+    "tables/nested_sites.tsv.gz": {
+      "identity": "next-round derived development data: tables/nested_sites.tsv.gz",
+      "sha256": "be88fa50d9627b9ca039a0ba16360bf1fedf5501c3c7664c8853b2e911b79a67"
+    },
+    "tables/task_ledger.tsv": {
+      "identity": "next-round derived development data: tables/task_ledger.tsv",
+      "sha256": "05f423eb18d69cf658b2046957fddd10fb95d2eb0fb94379149bf2003bb8ea21"
+    }
+  },
+  "policy": {
+    "ablation_l2": 0.0001,
+    "cohort": "unchanged 6020 nested training sites; no rematching; all21 tasks",
+    "depths": [
+      "full",
+      "10M"
+    ],
+    "expansion": "only original full-depth accuracy/shape/positive-control/stability gates plus qualified native reference; otherwise stop",
+    "geometry": [
+      7,
+      12,
+      40
+    ],
+    "libraries": [
+      "HepG2_rep1",
+      "HepG2_rep2",
+      "HepG2_rep3",
+      "K562_rep1",
+      "K562_rep2",
+      "K562_rep3"
+    ],
+    "metrics": "unchanged calibration equal-chromosome/library/task functions; 2000 synchronized chromosome draws seed2026",
+    "minimum_positive_and_negative_sites": 200,
+    "native_DWM_qualified": false,
+    "primary_l2": 0.01,
+    "protected_contents_allowed": false,
+    "seeds": [
+      2026,
+      2027,
+      2028,
+      2029,
+      2030
+    ],
+    "shape": "unchanged outside-flank normalization fallback1; fixed deviance dispersion HepG2=0 K562=1.6144318781609228; original RMS standardized separation \u00b150",
+    "shape_geometry": [
+      [
+        5,
+        15,
+        40
+      ],
+      [
+        7,
+        12,
+        40
+      ]
+    ],
+    "threshold": 1.3010299957
+  }
+}

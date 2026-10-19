@@ -4,7 +4,7 @@ Last updated: 2026-10-19
 
 ## Next-major-version research goal
 
-**Nuclear sequence-bias follow-up authorized; preparation in progress:** see
+**Nuclear sequence-bias follow-up executed; chromatin candidate rejected:** see
 `benchmarks/NUCLEAR_BIAS_ROUND_20261019.md`. Work is isolated on
 `research/footprint-nuclear-bias-20261019`. Correct reporting first, then freeze
 one nuclear-trained LOG21 candidate and its prespecified regularization ablation.
@@ -27,7 +27,18 @@ calls or 19 historical tables changed. New nuclear infrastructure is committed
 in `28823cc`; its 11 focused access/pair/model-fixture tests pass. The immutable
 science freeze SHA-256 is
 `c83f76649a28defcd91144abce83b77963c992e7c53fba07aea8e6b2f121fecf`.
-Extraction is in progress; no new candidate qualification is yet claimed.
+Extraction completed: 39,179,095 complete fragments and 78,358,190 independent
+coordinate checks, zero mismatches. All 150 fits and 30 ensembles completed.
+The primary nuclear control component passed (2/21 discrepant task means), so
+the frozen conditional 6,020-site, six-library full/10M diagnostic ran. Full-depth
+AUROC gain versus same-detector DWM propensities is 0.012710, paired interval
+[-0.006426, 0.030941]; relative average-precision gain is 1.130%. At 10M the
+changes are -0.001267 and -0.179%. The accuracy screen fails; no expensive
+depth/seed expansion or resource qualification is justified. Native production
+DWM qualification remains incomplete; this is not a native TOBIAS comparison.
+Independent calculations reproduce 72,240 new tails/calls and 8,820 defined
+rank/AP rows; 12 paired screens replay using the frozen aggregation contract.
+Full evidence packaging and fresh-extraction checks are recorded separately.
 
 **October calibration follow-up completed — candidate rejected:**
 `benchmarks/scripts/calibration_round/` froze one label-free candidate before

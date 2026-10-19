@@ -145,6 +145,12 @@ corrections belong in versioned new outputs. Keep all protected data closed,
 including naked-DNA replicate 2, and do not interpret ChIP-negative call rates
 as demonstrated false-positive rates.
 
+The nuclear round completed its control component and conditional chromatin
+diagnostic. The chromatin accuracy screen failed; do not expand its depth/seed
+or resource matrix or substitute the ablation for the frozen primary. Its DWM
+propensity comparator is not a qualified native TOBIAS comparison. Preserve all
+results and require a distinct scientific question before any new model search.
+
 The October 2026 calibration follow-up (`benchmarks/scripts/calibration_round/`)
 rejected naked-DNA recalibration of LOG21. Do not rerun it or the next-round
 shrinkage candidates unchanged. Report count-stratified discrimination next to
