@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import zipfile
+from access import deny
 
 ROOT=Path(__file__).resolve().parents[3]
 
@@ -22,10 +23,13 @@ def build(out,attempt=None):
     out.mkdir(parents=True,exist_ok=False)
     sanitized=[];input_identities={}
     old=ROOT.parent/'fp-tools-calibration/benchmarks/results/fp_tools_calibration_evidence_2026-10-19'
+    deny(old,'verified historical derived-data package')
+    if old.is_symlink() or any(p.is_symlink() for p in old.rglob('*')):raise ValueError('symlink in historical payload')
     # This previously verified, privacy-filtered review package contains only
     # authorized derived training data. Its original checksums stay intact.
     shutil.copytree(old,out/'historical_calibration')
     reporting=ROOT/'benchmarks/results/calibration_reporting_20261019_v2'
+    if reporting.is_symlink() or any(p.is_symlink() for p in reporting.rglob('*')):raise ValueError('symlink in reporting payload')
     shutil.copytree(reporting,out/'corrected_reporting')
     for name in ['figures.py','slides.py','curve_reporting.py','test_curve_reporting.py','protocol.py']:
         destination=out/'reporting_code'/name;destination.parent.mkdir(exist_ok=True)
@@ -39,7 +43,7 @@ def build(out,attempt=None):
 
 Base commit: 690978f, rejected calibration round. Its source and archive remain
 unchanged. This branch first corrected reporting, then froze nuclear sequence
-training at source commit 28823cc before any new fit or scoring. See nuclear/
+training at source commit 28823cc before any new fit or scoring. See
 EXPERIMENT_PLAN.freeze.json when included; it records exact source/input hashes.
 
 The prior nuclear LOG21 grid used the older first-10-million preparation without
@@ -60,7 +64,7 @@ results and ChromBPNet comparisons are historical, not new confirmation.
     status='REPORTING_CORRECTION_ONLY; nuclear scientific experiment not included'
     if attempt:
         if not (attempt/'control.decision.json').exists():raise ValueError('control stage incomplete')
-        target=out/'nuclear';target.mkdir()
+        target=out
         for name in ['arrays','models','tables']:
             shutil.copytree(attempt/name,target/name)
         for name in ['EXPERIMENT_PLAN.freeze.json','control.decision.json','extraction.complete.json','fit.complete.json']:
@@ -76,23 +80,26 @@ results and ChromBPNet comparisons are historical, not new confirmation.
             if (attempt/'logs'/name).exists():
                 text=(attempt/'logs'/name).read_text().replace(str(ROOT.parent),'<LOCAL_ROOT>')
                 (target/'logs'/name).write_text(text)
-                sanitized.append(dict(file='nuclear/logs/'+name,original_sha256=digest(attempt/'logs'/name),
+                sanitized.append(dict(file='logs/'+name,original_sha256=digest(attempt/'logs'/name),
                     packaged_sha256=digest(target/'logs'/name),transformation='replace local workspace root by <LOCAL_ROOT>'))
         for name in ['extract.launch.json','extract.exit.json','fit.launch.json','fit.exit.json','control.launch.json','control.exit.json']:
             if (attempt/'logs'/name).exists():
                 text=(attempt/'logs'/name).read_text().replace(str(ROOT.parent),'<LOCAL_ROOT>')
                 (target/'logs'/name).write_text(text)
-                sanitized.append(dict(file='nuclear/logs/'+name,original_sha256=digest(attempt/'logs'/name),
+                sanitized.append(dict(file='logs/'+name,original_sha256=digest(attempt/'logs'/name),
                     packaged_sha256=digest(target/'logs'/name),transformation='replace local workspace root by <LOCAL_ROOT>'))
         # No local input registry, raw collated BAM, or absolute-path launch logs.
         records=json.loads((attempt/'inputs.local.json').read_text())
         input_identities={k:dict(identity=v['identity'],original_sha256=v['sha256']) for k,v in records.items()}
         inputs=out/'inputs';inputs.mkdir()
-        for key,name in [('controls','control_counts.full.tsv.gz'),('old_scores','control_reference_scores.tsv.gz'),('ledger','task_ledger.tsv')]:
+        for key,name in [('controls','control_counts.full.tsv.gz'),('control_arrays','control_observed.full.npz'),
+                         ('blacklist','hg38-blacklist.v2.bed'),('old_scores','control_reference_scores.tsv.gz'),('ledger','task_ledger.tsv')]:
             p=Path(records[key]['path'])
+            deny(p,records[key]['identity'])
+            if str(p.resolve())!=records[key]['resolved_path']:raise ValueError('input resolved path changed')
             if digest(p)!=records[key]['sha256']:raise ValueError('input changed')
             shutil.copyfile(p,inputs/name)
-        for name in ['verify.py','run.py','access.py','protocol.py','test_access.py','test_run.py','diagnostics.py','finalise.py','package.py','export_contexts.py']:
+        for name in ['verify.py','reanalyse.py','replot.py','run.py','access.py','protocol.py','test_access.py','test_run.py','diagnostics.py','finalise.py','package.py','export_contexts.py']:
             dest=out/'code'/name;dest.parent.mkdir(exist_ok=True)
             shutil.copyfile(Path(__file__).parent/name,dest)
         source=out/'source';source.mkdir()
@@ -105,7 +112,7 @@ results and ChromBPNet comparisons are historical, not new confirmation.
 
 This package does not establish a footprint-detection improvement or promotion.
 The primary control screen and native-DWM support prerequisite govern the stop
-decision; see nuclear/control.decision.json. No new chromatin discrimination,
+decision; see control.decision.json. No new chromatin discrimination,
 canonical difficult-family rescue, depth/seed replication or end-to-end resource
 qualification is inferred from a control-only experiment.
 
@@ -132,9 +139,13 @@ were made. Any further experiment requires a new scientific question and freeze.
         'the revised plots and editable slides. Historical scientific tables are unchanged.\n\n'
         'Historical independent verification (read-only):\n\n'
         '```bash\npython -I -B historical_calibration/code/verify.py historical_calibration\n```\n\n'
-        'If nuclear/ is present, verify all new regional counts, scores, calls and\n'
+        'If EXPERIMENT_PLAN.freeze.json is present, verify all new counts, scores, calls and\n'
         'control gates independently with `python -B code/verify.py .`. This does\n'
         'not train, extract or repair results. Dependencies: NumPy, pandas, SciPy;\n'
+        'write independently recomputed tables elsewhere with\n'
+        '`python -B code/reanalyse.py . --outdir ../independent_reanalysis`.\n'
+        'Recreate a representative figure with `python -B code/replot.py .\n'
+        '--output ../representative_control.png` (also needs Matplotlib).\n'
         'historical verification additionally uses scikit-learn. Raw-data training\n'
         'requires the original allowlisted environment; source/ preserves its code.\n\n'
         'Both rounds use already examined development data. Protected labels and\n'
@@ -145,6 +156,11 @@ were made. Any further experiment requires a new scientific question and freeze.
         code_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         scope='authorized derived training data only; no raw BAM/FASTA or protected content',
         inputs=input_identities,sanitized_payloads=sanitized,
+        source_mapping={'benchmarks/scripts/nuclear_round/':'code/',
+            'original_runner':'provenance/run.pre_control_correction.py',
+            'original_diagnostics':'provenance/diagnostics.pre_missingness_correction.py',
+            'original_parametric_and_score_modules':'source/ preserves their repository-relative paths',
+            'raw_inputs':'intentionally omitted; original hashes retained; derived arrays and short contexts enable reanalysis'},
         original_vs_packaged='historical_calibration retains original packaged hashes; nuclear freeze records original scientific inputs; root SHA256SUMS records this package'),indent=2)+'\n')
     (out/'DATA_DICTIONARY.md').write_text('''# Data dictionary
 

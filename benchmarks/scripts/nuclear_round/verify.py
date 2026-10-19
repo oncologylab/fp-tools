@@ -17,7 +17,7 @@ def sha(path):
     return h.hexdigest()
 
 
-def verify(root):
+def verify(root,return_tables=False):
     hashes=root/'SHA256SUMS'
     files=0
     if hashes.exists():
@@ -34,11 +34,15 @@ def verify(root):
     scores=pd.read_csv(scientific/'tables/control_site_scores.tsv.gz',sep='\t')
     controls=pd.read_csv(root/'inputs/control_counts.full.tsv.gz',sep='\t')
     assert len(controls)==4200 and controls.groupby(['cell','tf']).size().eq(200).all()
-    checked=0
+    checked=0;score_replay=[];mean_replay=[];call_replay=[];likelihood_replay=[]
     for arm,l2 in [('nuclear_primary',.01),('nuclear_ablation',.0001)]:
         tab=scores[scores.arm.eq(arm)].set_index('site_id').loc[controls.site_id].reset_index()
         with np.load(scientific/f'arrays/control.l2_{l2}.npz',allow_pickle=False) as arrays:
             assert np.array_equal(arrays['site_id'],controls.site_id.to_numpy(str))
+            if (root/'inputs/control_observed.full.npz').exists():
+                with np.load(root/'inputs/control_observed.full.npz',allow_pickle=False) as original:
+                    for name in ['site_id','plus_observed','minus_observed']:
+                        np.testing.assert_array_equal(arrays[name],original[name])
             offset=np.arange(201)-100
             center=np.abs(offset)<=7
             region=center|((np.abs(offset)>=12)&(np.abs(offset)<=40))
@@ -49,6 +53,14 @@ def verify(root):
                 scaled=np.exp(logits-logits[:,region].max(1)[:,None])
                 probability=scaled[:,center].sum(1)/scaled[:,region].sum(1)
                 np.testing.assert_allclose(probability,tab['q_'+strand],atol=2e-14,rtol=2e-14)
+                if (scientific/'tables/control_profile_plot_source.tsv.gz').exists():
+                    plotted=pd.read_csv(scientific/'tables/control_profile_plot_source.tsv.gz',sep='\t')
+                    expected=np.exp(logits-logsumexp(logits[:,region],axis=1)[:,None])*tab[strand+'_total'].to_numpy()[:,None]
+                    for (cell,tf),group in tab.groupby(['cell','tf']):
+                        rows=plotted[(plotted.arm==arm)&(plotted.strand==strand)&(plotted.cell==cell)&(plotted.tf==tf)].sort_values('offset')
+                        assert len(rows)==201 and rows.sites.eq(len(group)).all()
+                        np.testing.assert_allclose(rows.observed,observed[group.index].mean(0),atol=1e-12,rtol=1e-12)
+                        np.testing.assert_allclose(rows.expected,expected[group.index].mean(0),atol=1e-12,rtol=1e-12)
             with np.load(scientific/'arrays/control_sequence_contexts.npz',allow_pickle=False) as contexts:
                 assert np.array_equal(contexts['site_id'],arrays['site_id'])
                 for chrom in [f'chr{i}' for i in range(1,16)]:
@@ -94,6 +106,8 @@ def verify(root):
                     else 'CALL' if value>1.3010299957 else 'NO_CALL')
             if not (r.eligible and r.DWM_plus_valid and r.DWM_minus_valid and r.LOG21_plus_valid and r.LOG21_minus_valid):status='EXCLUDED'
             assert status==r.status and (status=='CALL')==r.call
+            score_replay.append(dict(site_id=r.site_id,cell=r.cell,tf=r.tf,chromosome=r.TFBS_chr,
+                arm=arm,score=value,ceiling=ceiling,status=status,call=status=='CALL'))
             checked+=1
     folds=json.loads((scientific/'models/folds.json').read_text())
     with np.load(scientific/'arrays/training_windows.npz',allow_pickle=False) as z:
@@ -124,6 +138,8 @@ def verify(root):
             recorded=task_means[(task_means.arm==arm)&(task_means.cell==cell)&(task_means.tf==tf)].iloc[0]
             np.testing.assert_allclose([o.sum(),e.sum(),low,high],
                 [recorded.observed,recorded.expected,recorded.ratio_low,recorded.ratio_high],rtol=1e-12,atol=1e-12)
+            mean_replay.append(dict(arm=arm,cell=cell,tf=tf,observed=o.sum(),expected=e.sum(),
+                ratio_low=low,ratio_high=high,discrepant=bool(low>1 or high<1),support_sites=len(group)))
             discrepant+=int(low>1 or high<1)
             info=group[group.total.gt(0)];n=len(info);k=int(info.call.sum());z=norm.ppf(.975)
             upper=((k/n+z*z/(2*n))+z*np.sqrt(k/n*(1-k/n)/n+z*z/(4*n*n)))/(1+z*z/n) if n else np.nan
@@ -131,6 +147,7 @@ def verify(root):
             delta=(k-int(ref.call.sum()))/n if n else np.nan
             saved=task_calls[(task_calls.arm==arm)&(task_calls.cell==cell)&(task_calls.tf==tf)].iloc[0]
             np.testing.assert_allclose([n,k,upper,delta],[saved.informative_sites,saved.calls,saved.wilson_upper,saved.paired_DWM_increase],rtol=1e-12,atol=1e-12)
+            call_replay.append(dict(arm=arm,cell=cell,tf=tf,informative_sites=n,calls=k,wilson_upper=upper,paired_DWM_increase=delta))
             controls_ok &= upper<=.05 and delta<=.01
         dedup=g[g.deduplicated_fit_representative].copy();positive=True
         for reference in ['LOG21_count_tail','LOG21NC1_count_tail']:
@@ -143,12 +160,51 @@ def verify(root):
             low,high=np.quantile(weights@blocks,[.025,.975])
             saved=likelihood[(likelihood.arm==arm)&(likelihood.reference==reference)].iloc[0]
             np.testing.assert_allclose([delta.sum(),low,high],[saved.gain,saved.low,saved.high],atol=1e-9,rtol=1e-11)
+            likelihood_replay.append(dict(arm=arm,reference=reference,gain=delta.sum(),low=low,high=high,unique_windows=len(dedup)))
             positive &= low>0
         recomputed[arm]=dict(mean=bool(discrepant<=3),likelihood=bool(positive),factorial_controls=bool(controls_ok))
     for key,value in recomputed['nuclear_primary'].items():assert decision['gates'][key]==value
-    return dict(checksummed_files=files,independent_score_and_call_rows=checked,
+    power_checks=0
+    if (scientific/'diagnostics.complete.json').exists():
+        power=pd.read_csv(scientific/'tables/power.tsv',sep='\t')
+        simroot=root/'historical_calibration/data/arrays/empirical_simulations'
+        for block in range(138):
+            with np.load(simroot/f'block_{block:03d}.npz',allow_pickle=False) as z:
+                site=str(z['site_id']);draws=z['counts'];rs=z['r'];endpoints=z['source_endpoints']
+            m=(np.abs(endpoints[:,0])<=7).astype(int)+(np.abs(endpoints[:,2])<=7).astype(int)
+            original=m.sum();k=len(m)
+            for arm in ['nuclear_primary','nuclear_ablation']:
+                row=scores[(scores.arm==arm)&(scores.site_id==site)].iloc[0];cache={}
+                for ix,r in enumerate(rs):
+                    record=power[(power.block==block)&(power.arm==arm)&(power.r==r)].iloc[0]
+                    if (draws[ix]<0).any():
+                        assert record.status=='UNAVAILABLE_NO_SOURCE_OR_WEIGHT';power_checks+=1;continue
+                    w=np.power(r,m);w=w/w.sum()
+                    depletion=1-k*np.dot(w,m)/original if original else np.nan
+                    np.testing.assert_allclose(depletion,record.realised_depletion,atol=1e-12,rtol=1e-12,equal_nan=True)
+                    counts=draws[ix];n=counts[:,0].sum(1);minus=counts[:,1].sum(1);central=counts[:,:,0].sum(1)
+                    triples,frequency=np.unique(np.column_stack([n,minus,central]),axis=0,return_counts=True)
+                    calls=0;reachable=0
+                    for (a,b,c),freq in zip(triples,frequency):
+                        key=int(a),int(b),int(c)
+                        if key not in cache:
+                            distribution=np.convolve(binom.pmf(np.arange(a+1),a,row.q_plus),binom.pmf(np.arange(b+1),b,row.q_minus))
+                            p=distribution[:c+1].sum();p0=distribution[0]
+                            score=round(min(300.,max(0.,-np.log10(max(p,1e-300)))),10)
+                            ceiling=round(min(300.,max(0.,-np.log10(max(p0,1e-300)))),10)
+                            cache[key]=(score>1.3010299957,ceiling>1.3010299957)
+                        call,reach=cache[key];calls+=int(freq)*call;reachable+=int(freq)*reach
+                    assert calls==record.calls and reachable==record.reachable_draws
+                    assert len(counts)==record.draws and int(((n+minus)>0).sum())==record.informative_draws
+                    np.testing.assert_allclose(calls/len(counts),record.call_rate,rtol=1e-12,atol=1e-12)
+                    power_checks+=1
+    result=dict(checksummed_files=files,independent_score_and_call_rows=checked,
         fold_exclusion_checks=len(folds),status='VERIFIED_RECORDED_CONTROL_OUTPUTS',
-        scientific_qualification=False,decision=decision['decision'])
+        independent_power_rows=power_checks,scientific_qualification=False,decision=decision['decision'])
+    if return_tables:
+        result['tables']={name:pd.DataFrame(records) for name,records in
+            [('per_site_scores',score_replay),('control_task_means',mean_replay),('control_calls',call_replay),('paired_likelihood',likelihood_replay)]}
+    return result
 
 
 if __name__=='__main__':

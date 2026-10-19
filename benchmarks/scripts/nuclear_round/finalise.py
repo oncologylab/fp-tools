@@ -2,6 +2,7 @@
 import argparse
 import json
 from pathlib import Path
+import numpy as np
 import pandas as pd
 
 
@@ -79,6 +80,21 @@ def finalise(out):
                         status='INTENTIONALLY_NOT_RUN_CONTROL_PREREQUISITE'))
     pd.DataFrame(panel).to_csv(out/'tables/depth_replication.tsv',sep='\t',index=False)
     pd.DataFrame(resources).to_csv(out/'tables/resource_results.tsv',sep='\t',index=False)
+    if (out/'tables/power.tsv').exists():
+        power=pd.read_csv(out/'tables/power.tsv',sep='\t')
+        power['conditional_mc_se']=np.sqrt(power.call_rate*(1-power.call_rate)/power.draws.replace(0,np.nan))
+        power['uncertainty_scope']='Monte Carlo uncertainty conditional on one empirical source window; not biological replication'
+        power.to_csv(out/'tables/power_with_mc_uncertainty.tsv',sep='\t',index=False)
+        summary=[]
+        for (arm,r),group in power[power.status.eq('AVAILABLE') & np.isfinite(power.realised_depletion)].groupby(['arm','r']):
+            group=group.sort_values('block');n=len(group)
+            weights=np.random.default_rng(2026).multinomial(n,np.repeat(1/n,n),2000)/n
+            draws=weights@group.call_rate.to_numpy();low,high=np.quantile(draws,[.025,.975])
+            summary.append(dict(arm=arm,r=r,defined_source_windows=n,independent_libraries=1,
+                mean_realised_depletion=group.realised_depletion.mean(),mean_call_rate=group.call_rate.mean(),
+                source_window_bootstrap_low=low,source_window_bootstrap_high=high,
+                scope='descriptive source-window bootstrap; deliberately stratified development windows, not population power'))
+        pd.DataFrame(summary).to_csv(out/'tables/power_curve_summary.tsv',sep='\t',index=False)
     ll=likelihood[likelihood.arm.eq('nuclear_primary')]
     likelihood_text='\n'.join(f"- Versus {r.reference}: likelihood gain {r.gain:.3f}, 95% chromosome-block interval [{r.low:.3f}, {r.high:.3f}]." for r in ll.itertuples())
     text=f'''# Nuclear sequence-bias follow-up: {decision['decision']}
