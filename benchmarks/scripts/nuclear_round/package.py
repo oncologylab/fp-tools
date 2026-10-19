@@ -102,6 +102,9 @@ results and ChromBPNet comparisons are historical, not new confirmation.
         for name in ['verify.py','reanalyse.py','replot.py','run.py','access.py','protocol.py','test_access.py','test_run.py','diagnostics.py','finalise.py','package.py','export_contexts.py']:
             dest=out/'code'/name;dest.parent.mkdir(exist_ok=True)
             shutil.copyfile(Path(__file__).parent/name,dest)
+        versions=json.loads((attempt/'environment.json').read_text())['packages']
+        (out/'code/requirements.txt').write_text(''.join(f'{name}=={versions[name]}\n' for name in
+            ['numpy','pandas','scipy','scikit-learn','matplotlib']))
         source=out/'source';source.mkdir()
         for name in ['src/fp_tools/tools/parametric_bias.py','benchmarks/scripts/evaluate_parametric_bias.py',
                      'benchmarks/scripts/conditional_protection_score.py']:
@@ -137,6 +140,8 @@ were made. Any further experiment requires a new scientific question and freeze.
         'Read REPORTING_CORRECTIONS.md before historical material. The historical\n'
         'archive is preserved for provenance; use corrected_reporting/figures for\n'
         'the revised plots and editable slides. Historical scientific tables are unchanged.\n\n'
+        'Editable slide text specifies Arial. The Linux PDF preview uses compatible\n'
+        'font substitution; both pages were rendered and visually checked.\n\n'
         'Historical independent verification (read-only):\n\n'
         '```bash\npython -I -B historical_calibration/code/verify.py historical_calibration\n```\n\n'
         'If EXPERIMENT_PLAN.freeze.json is present, verify all new counts, scores, calls and\n'

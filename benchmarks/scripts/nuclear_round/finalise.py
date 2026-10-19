@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 
 
 def finalise(out):
@@ -98,6 +99,11 @@ def finalise(out):
     if (out/'tables/power.tsv').exists():
         power=pd.read_csv(out/'tables/power.tsv',sep='\t')
         power['conditional_mc_se']=np.sqrt(power.call_rate*(1-power.call_rate)/power.draws.replace(0,np.nan))
+        n=power.draws.replace(0,np.nan);p=power.call_rate;z=norm.ppf(.975)
+        center=(p+z*z/(2*n))/(1+z*z/n)
+        half=z*np.sqrt(p*(1-p)/n+z*z/(4*n*n))/(1+z*z/n)
+        power['conditional_mc_wilson95_low']=center-half
+        power['conditional_mc_wilson95_high']=center+half
         power['uncertainty_scope']='Monte Carlo uncertainty conditional on one empirical source window; not biological replication'
         power.to_csv(out/'tables/power_with_mc_uncertainty.tsv',sep='\t',index=False)
         summary=[]
