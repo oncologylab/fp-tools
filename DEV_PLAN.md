@@ -1,8 +1,25 @@
 # fp-tools Development Plan
 
-Last updated: 2026-09-23
+Last updated: 2026-10-19
 
 ## Next-major-version research goal
+
+**October calibration follow-up completed — candidate rejected:**
+`benchmarks/scripts/calibration_round/` froze one label-free candidate before
+scoring: LOG21 central-share recalibration (`a + b·logit p`) fitted on
+naked-DNA replicate 1 with held chromosomes, an intercept-only ablation, the
+unchanged LOG21 count-tail reference and a DWM-propensity factorial control on
+the original 6,020-site nested cohort. One intercept fixes the pooled
+naked-DNA mean (LOG21 under-predicts central cuts by 16%) and lowers Pearson
+dispersion from 1.22 to 1.04, but 6/21 motif-specific control discrepancies
+remain, the naked-DNA null does not transfer to chromatin motif sites, and
+discrimination within coverage strata equals covariates only (0.513 vs
+0.514). Gates A, B, F and H fail; the candidate is rejected and no seed,
+replicate or resource panel was run. Only CTCF shows reproducible canonical
+protection. The independent verifier and full replay passed. See
+`benchmarks/CALIBRATION_ROUND_20261019.md`. If a later round is authorized,
+first test a naked-DNA-trained sequence model on held naked-DNA chromosomes
+before any chromatin scoring. Protected labels and replicate 3 stay closed.
 
 **Bounded next-round experiments and verified evidence delivery completed:**
 `benchmarks/scripts/next_round/` implements the requested fixed-geometry,

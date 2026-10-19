@@ -138,6 +138,12 @@ local GUI run outputs unless explicitly requested.
 
 ## Research Branch Evidence
 
+The October 2026 calibration follow-up (`benchmarks/scripts/calibration_round/`)
+rejected naked-DNA recalibration of LOG21. Do not rerun it or the next-round
+shrinkage candidates unchanged. Report count-stratified discrimination next to
+plain AUROC: coverage confounding explains most count-tail ranking gains.
+A null calibrated on protein-free DNA is not a calibrated chromatin null.
+
 The bounded September 22 next-round investigation uses the frozen protocol in
 `benchmarks/scripts/next_round/protocol.py` and per-attempt immutable manifests.
 In that round, keep SK-N-SH/GM23338 labels and final naked-DNA replicate 3 closed
