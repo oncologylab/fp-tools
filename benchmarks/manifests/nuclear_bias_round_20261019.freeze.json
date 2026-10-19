@@ -1,0 +1,141 @@
+{
+  "code": {
+    "benchmarks/scripts/conditional_protection_score.py": "0850b1f42a406dfbbc76e4c7945de66367f03c648d02fb41c9d9a28ac23fa75e",
+    "benchmarks/scripts/evaluate_parametric_bias.py": "9157d9cf2b24668d04b35054894186608bb6c1b3c1feb33283930217afea0491",
+    "benchmarks/scripts/nuclear_round/access.py": "267cbce43230aadef489c5f693789fc45bfe0f1fdf315e6975954dc8732dca2f",
+    "benchmarks/scripts/nuclear_round/protocol.py": "a987b247ec23c59787d6ae3e79a065b78ef4cf9c8b39f821adbbaa9e13988c52",
+    "benchmarks/scripts/nuclear_round/run.py": "4e2e36cf548f035e3eda98fe9c3c6c3df0f12b0f64ff70331c0c6f6f929e55e4",
+    "benchmarks/scripts/nuclear_round/test_access.py": "0108e0aa695a1fac8c9993eb03129ecb784be4946b7c10cf1d6aa9335021b414",
+    "benchmarks/scripts/nuclear_round/test_run.py": "e90f937f6738a1336842ac6442f462ce264ba6efe96437ed8d5bb108ebd0abb4",
+    "src/fp_tools/tools/parametric_bias.py": "0faeca7de9e7573a57e64a326706c42a3dcf48bc446552e4806d3d8d1ae8c835"
+  },
+  "commands": [
+    "run.py freeze --outdir ATTEMPT",
+    "run.py extract --outdir ATTEMPT",
+    "run.py fit --outdir ATTEMPT --workers 16",
+    "run.py control --outdir ATTEMPT"
+  ],
+  "created_unix": 1792426039.875044,
+  "inputs": {
+    "NakedDNA_rep1_bai": {
+      "identity": "GSE164997 SRR13450940 naked DNA replicate1 index",
+      "sha256": "7e0e25282ead41ce92aa51292549fa79ebbc68e2f584d63772335a3c297d3d4a"
+    },
+    "NakedDNA_rep1_bam": {
+      "identity": "GSE164997 SRR13450940 naked DNA replicate1",
+      "sha256": "a04cb6abc7bd06f00f0c813e31ebba774e24481d2d7075cba036e6e2638afd66"
+    },
+    "blacklist": {
+      "identity": "hg38 blacklist v2",
+      "sha256": "31c69342df43bbc19dd8ef2886611a8150cb53e90f341de14d30e742c9251737"
+    },
+    "control_arrays": {
+      "identity": "naked DNA replicate1 paired observed arrays",
+      "sha256": "1f99e81666946756efd132b64e93d8552cfeb8087c32195db5a6d1bcc6ba9afc"
+    },
+    "controls": {
+      "identity": "naked DNA replicate1 control regional counts",
+      "sha256": "f1a2bf1074f91070a40625b85503147d02442411a78a89a18df9354c16bc6101"
+    },
+    "genome": {
+      "identity": "hg38 sequence",
+      "sha256": "5be01555d98347fdb3714dc84c6f77c9d8bc774adcf32c6f7a8fa06f5baf5e51"
+    },
+    "genome_index": {
+      "identity": "hg38 sequence index",
+      "sha256": "3b425de206296a5c8053023fa5ca61da43cfe78c1737c12e58c83367c7e83c21"
+    },
+    "ledger": {
+      "identity": "all21 task metadata",
+      "sha256": "05f423eb18d69cf658b2046957fddd10fb95d2eb0fb94379149bf2003bb8ea21"
+    },
+    "old_scores": {
+      "identity": "naked DNA replicate1 historical reference scores",
+      "sha256": "50ccb2371db10c7ce06c6884e332bd890e0e627dc266a6fa1f80914b28ef9ea5"
+    }
+  },
+  "policy": {
+    "ablation_l2": 0.0001,
+    "chromatin_until_control_pass": false,
+    "chromosomes": [
+      "chr1",
+      "chr2",
+      "chr3",
+      "chr4",
+      "chr5",
+      "chr6",
+      "chr7",
+      "chr8",
+      "chr9",
+      "chr10",
+      "chr11",
+      "chr12",
+      "chr13",
+      "chr14",
+      "chr15"
+    ],
+    "context": 21,
+    "detector": {
+      "cap": 300,
+      "comparison": "strict greater than",
+      "geometry": [
+        7,
+        12,
+        40
+      ],
+      "round_decimals": 10,
+      "threshold": 1.3010299957
+    },
+    "extraction": "both members of unique reciprocal primary MAPQ>=30 nonduplicate nonQCfail read-name/read-group pairs; independent CIGAR oracle",
+    "fitting": "leave one training chromosome out, five seeds per fold; equal coefficient ensemble",
+    "margin": 41,
+    "optimizer": {
+      "batch_windows": 64,
+      "epochs": 100,
+      "learning_rate": 0.03,
+      "patience": 12,
+      "tolerance": 1e-07
+    },
+    "pair_distances": [
+      1,
+      5,
+      9
+    ],
+    "primary_l2": 0.01,
+    "protected_contents_allowed": false,
+    "resource_budget": {
+      "elapsed_hours": 72,
+      "max_memory_gib": 64,
+      "max_new_scratch_gib": 500,
+      "max_workers": 32,
+      "packaging_reserve_hours": 4
+    },
+    "sampling": "smallest blake2b coordinate hashes among genome-grid windows with ACGT sequence and no halo blacklist overlap; no count or label selection",
+    "schema": "nuclear-bias-round-v1",
+    "screen": {
+      "bootstrap_draws": 2000,
+      "conditional_likelihood": "paired chromosome sum, unique controls, lower95%>0 versus mitochondrial and intercept-only",
+      "controls": "all tasks informative Wilson upper <=.05 and same-site DWM call increase <=.01; native DWM qualification separate",
+      "minimum_valid_draws": 1900,
+      "primary_failure": "stop; do not substitute ablation or retune",
+      "seed": 2026,
+      "task_means": "at most 3/21 intervals excluding observed/expected=1"
+    },
+    "seeds": [
+      2026,
+      2027,
+      2028,
+      2029,
+      2030
+    ],
+    "shifts": [
+      4,
+      -5
+    ],
+    "tuning_allowed": false,
+    "window_size": 200,
+    "windows_per_fold": 3000
+  },
+  "source_commit": "28823ccf5c45e26f60b49530ab3545637acd9e1c",
+  "training_window_selection": "genome-coordinate hash, independent of counts/labels"
+}

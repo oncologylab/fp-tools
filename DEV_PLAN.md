@@ -12,6 +12,23 @@ Held naked-DNA controls govern whether any new chromatin scoring may proceed.
 The old rejection remains valid for the tested candidate, not every possible
 detector. Main and historical evidence are unchanged.
 
+Reporting correction completed in `bc6be4f`: held-chromosome/library/task ROC/PR
+weights match headline metrics; synthetic-power axes use realized depletion;
+Arial slides were rendered and visually checked. Four new plotting tests plus
+13 calibration tests pass; three extraction-oracle tests pass in a separate
+process. Combining the two legacy benchmark test directories in one pytest
+invocation causes their generic `protocol` modules to collide, so their focused
+checks use separate processes. This is not a scientific output failure.
+
+The correction archive has 270 checksum-valid payloads on fresh extraction.
+The independent historical verifier reports zero failures, and 80 available
+task/arm curve summaries reproduce the archived scalar values. No old scores,
+calls or 19 historical tables changed. New nuclear infrastructure is committed
+in `28823cc`; its 11 focused access/pair/model-fixture tests pass. The immutable
+science freeze SHA-256 is
+`c83f76649a28defcd91144abce83b77963c992e7c53fba07aea8e6b2f121fecf`.
+Extraction is in progress; no new candidate qualification is yet claimed.
+
 **October calibration follow-up completed — candidate rejected:**
 `benchmarks/scripts/calibration_round/` froze one label-free candidate before
 scoring: LOG21 central-share recalibration (`a + b·logit p`) fitted on
