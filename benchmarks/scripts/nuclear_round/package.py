@@ -31,6 +31,12 @@ def build(out,attempt=None):
     reporting=ROOT/'benchmarks/results/calibration_reporting_20261019_v2'
     if reporting.is_symlink() or any(p.is_symlink() for p in reporting.rglob('*')):raise ValueError('symlink in reporting payload')
     shutil.copytree(reporting,out/'corrected_reporting')
+    receipt=out/'corrected_reporting/package_receipt.log'
+    if receipt.exists():
+        original=digest(receipt)
+        receipt.write_text(receipt.read_text().replace(str(ROOT.parent),'<LOCAL_ROOT>'))
+        sanitized.append(dict(file=str(receipt.relative_to(out)),original_sha256=original,
+            packaged_sha256=digest(receipt),transformation='replace local workspace root'))
     for name in ['figures.py','slides.py','curve_reporting.py','test_curve_reporting.py','protocol.py']:
         destination=out/'reporting_code'/name;destination.parent.mkdir(exist_ok=True)
         shutil.copyfile(ROOT/'benchmarks/scripts/calibration_round'/name,destination)
